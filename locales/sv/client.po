@@ -229,8 +229,9 @@ msgstr "{0, plural, one {Vill läsa # kapitel} other {Vill läsa # kapitel}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "{actionError} Refresh the page and try again."
-msgstr ""
+msgstr "{actionError} Uppdatera sidan och försök igen."
 
 #: src/App.tsx
 #, fuzzy
@@ -238,8 +239,9 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, one {# nedladdning pågår} other {# nedladdningar pågår}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{adds} added by you, {excluded} excluded from taste"
-msgstr ""
+msgstr "{adds} tillagda av dig, {excluded} uteslutna från smaken"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -343,8 +345,9 @@ msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, one {# kap} other {# kap}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
-msgstr ""
+msgstr "{count, plural, one {# titel} other {# titlar}}"
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -403,8 +406,9 @@ msgid "{eta} left"
 msgstr "{eta} kvar"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{exposed} seen elsewhere"
-msgstr ""
+msgstr "{exposed} sedda på annat håll"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -616,8 +620,9 @@ msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, one {# behöver åtgärdas} other {# behöver åtgärdas}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{pushingDown} kept out of your taste"
-msgstr ""
+msgstr "{pushingDown} hålls utanför din smak"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -625,8 +630,9 @@ msgid "{queued, plural, one {Auto-matching # series in the background.} other {A
 msgstr "{queued, plural, one {Matchar # serie automatiskt i bakgrunden.} other {Matchar # serier automatiskt i bakgrunden.}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{rated} rated"
-msgstr ""
+msgstr "{rated} betygsatta"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1019,12 +1025,14 @@ msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> list
 msgstr "<0>{sub}</0> listar underkapitel (1.1, 1.2, …), medan <1>{whole}</1> listar hela kapitel för samma innehåll, så båda visas som separata rader nedan."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
-msgstr ""
+msgstr "<0>Utesluten från smaken</0> håller en hylltitel utanför rankningen. Läshistoriken påverkas inte."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Hide and dismiss</0> only affect that one title."
-msgstr ""
+msgstr "<0>Dölj och avfärda</0> påverkar bara den titeln."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -1032,16 +1040,19 @@ msgid "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so p
 msgstr "<0>MAKI_ALLOW_LOCAL_LOGIN</0> är satt i den här instansens miljö, så lösenordsinloggning är tillgänglig för alla konton oavsett reglaget ovan. Ta bort variabeln och starta om för att tillämpa inställningen igen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Seen elsewhere</0> stops a title being recommended without changing taste."
-msgstr ""
+msgstr "<0>Sedd på annat håll</0> gör att titeln slutar rekommenderas utan att ändra smaken."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>Tumme ner</0> och betyg på 4 eller lägre gör att en titel slutar styra dina rekommendationer. Det de har gemensamt visas ovan när tre eller fler är överens."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
-msgstr ""
+msgstr "<0>Tumme upp</0> räknas till din smak. Liknande titlar rankas högre."
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1049,18 +1060,21 @@ msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · bäst resultat, rekommenderas"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "★ {rating} rated"
-msgstr ""
+msgstr "★ {rating} betygsatt"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👍 Liked"
-msgstr ""
+msgstr "👍 Gillad"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👎 Disliked"
-msgstr ""
+msgstr "👎 Ogillad"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -1173,8 +1187,9 @@ msgid "A refresh is already running"
 msgstr "En uppdatering körs redan"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
-msgstr ""
+msgstr "En tumme ner döljer titeln och gör att den slutar styra dina rekommendationer. Dölj tar bara bort den."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -1364,8 +1379,9 @@ msgid "Added"
 msgstr "Tillagda"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Added by you"
-msgstr ""
+msgstr "Tillagd av dig"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1657,8 +1673,9 @@ msgid "Apply replacement"
 msgstr "Tillämpa ersättning"
 
 #: src/pages/RequestsPage.tsx
+#, fuzzy
 msgid "Approval in progress"
-msgstr ""
+msgstr "Godkännande pågår"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -1828,8 +1845,9 @@ msgid "Back"
 msgstr "Tillbaka"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "back in the running"
-msgstr ""
+msgstr "tillbaka i loppet"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -2129,8 +2147,9 @@ msgid "cat {ratioValue}"
 msgstr "kat {ratioValue}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Catalogue fallback is active. Personal add weights need semantic ranking."
-msgstr ""
+msgstr "Katalogens reservläge är aktivt. Personliga tilläggsvikter kräver semantisk rankning."
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #, fuzzy
@@ -2139,8 +2158,9 @@ msgstr "Katalogflöden"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Catalogue title {id}"
-msgstr ""
+msgstr "Katalogtitel {id}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2293,8 +2313,9 @@ msgid "Change"
 msgstr "Ändra"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Change how individual titles affect recommendations."
-msgstr ""
+msgstr "Ändra hur enskilda titlar påverkar rekommendationer."
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2549,8 +2570,9 @@ msgid "Clear rating"
 msgstr "Rensa betyg"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear read or seen"
-msgstr ""
+msgstr "Rensa läst eller sedd"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -2558,8 +2580,9 @@ msgid "Clear search"
 msgstr "Rensa sökning"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear seen"
-msgstr ""
+msgstr "Rensa sedd"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2567,12 +2590,14 @@ msgid "Clear the record"
 msgstr "Rensa posten"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs down"
-msgstr ""
+msgstr "Rensa tumme ner"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs up"
-msgstr ""
+msgstr "Rensa tumme upp"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2932,8 +2957,9 @@ msgid "Could not load your progress. The server logs will say why."
 msgstr "Kunde inte läsa in ditt förlopp. Serverloggarna visar varför."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Could not load your signals: {loadError}"
-msgstr ""
+msgstr "Kunde inte läsa in dina signaler: {loadError}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -2946,8 +2972,9 @@ msgid "Counts both switches: the per-series link and the global source toggle"
 msgstr "Räknar båda reglagen: länken per serie och den globala källväxeln"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "counts toward your taste"
-msgstr ""
+msgstr "räknas till din smak"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3297,13 +3324,15 @@ msgid "Dismiss notification"
 msgstr "Avfärda avisering"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Dismissed"
-msgstr ""
+msgstr "Avfärdad"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Dismissed until {until}"
-msgstr ""
+msgstr "Avfärdad till {until}"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3722,12 +3751,14 @@ msgid "Example: {example}"
 msgstr "Exempel: {example}"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Exclude from taste"
-msgstr ""
+msgstr "Uteslut från smaken"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Excluded from taste"
-msgstr ""
+msgstr "Utesluten från smaken"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4268,12 +4299,14 @@ msgstr "Paus"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden"
-msgstr ""
+msgstr "Dold"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden from recommendations"
-msgstr ""
+msgstr "Dold från rekommendationer"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -4281,8 +4314,9 @@ msgid "hidden gems"
 msgstr "dolda pärlor"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "hidden or dismissed"
-msgstr ""
+msgstr "dold eller avfärdad"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4380,8 +4414,9 @@ msgid "How many chapters download at once from scraper sources. Higher isn't alw
 msgstr "Hur många kapitel som laddas ner samtidigt från skrapningskällor. Fler är inte alltid snabbare: varje arbetare är en aktiv anslutning till samma webbplats, och om hastighetsgränsen nås pausas alla nedladdningar. Torrentutgåvor påverkas inte. Börjar gälla efter en omstart."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "How signals work"
-msgstr ""
+msgstr "Så fungerar signaler"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5215,8 +5250,9 @@ msgstr "Hantera kö"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Manage signals"
-msgstr ""
+msgstr "Hantera signaler"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5820,8 +5856,9 @@ msgid "No indexers configured in Prowlarr."
 msgstr "Inga indexerare konfigurerade i Prowlarr."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "no longer steers your taste"
-msgstr ""
+msgstr "styr inte längre din smak"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -5967,8 +6004,9 @@ msgid "No titles match these filters. Try loosening them."
 msgstr "Inga titlar matchar dessa filter. Prova att lätta på dem."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "No titles match."
-msgstr ""
+msgstr "Inga titlar matchar."
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6073,8 +6111,9 @@ msgid "Not rated"
 msgstr "Inget betyg"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Not recommended again"
-msgstr ""
+msgstr "Rekommenderas inte igen"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6087,8 +6126,9 @@ msgid "Not scanned"
 msgstr "Inte genomsökt"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Not used to steer recommendations"
-msgstr ""
+msgstr "Används inte för att styra rekommendationer"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6341,12 +6381,14 @@ msgid "On disk"
 msgstr "På disk"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On shelf"
-msgstr ""
+msgstr "På hyllan"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On your shelf, not used for ranking"
-msgstr ""
+msgstr "På din hylla, används inte för rankning"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -6732,8 +6774,9 @@ msgid "Personal Access Token"
 msgstr "Personlig åtkomsttoken"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Personal add weighting is disabled for this instance."
-msgstr ""
+msgstr "Personlig tilläggsviktning är inaktiverad för den här instansen."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -7015,8 +7058,9 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "Hastighetsbegränsad av {source}, väntar före nästa försök"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Rated"
-msgstr ""
+msgstr "Betygsatt"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7056,8 +7100,9 @@ msgid "Reached for {ratioValue} more than owning it would predict, across {serie
 msgstr "Nådde {ratioValue} mer än vad ett ägande skulle förutsäga, för {seriesPhrase}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "read"
-msgstr ""
+msgstr "läst"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -7165,8 +7210,9 @@ msgid "Reading goals"
 msgstr "Läsmål"
 
 #: src/pages/discover/TasteTab.tsx
+#, fuzzy
 msgid "Reading history stays visible when a source is excluded from recommendations."
-msgstr ""
+msgstr "Läshistoriken förblir synlig när en källa är utesluten från rekommendationer."
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7250,8 +7296,9 @@ msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Bygger om posterbilder, {processedCount} av {totalCount}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Recent feedback"
-msgstr ""
+msgstr "Senaste feedback"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -7266,8 +7313,9 @@ msgid "Recently added"
 msgstr "Nyligen tillagda"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Recently changed"
-msgstr ""
+msgstr "Nyligen ändrad"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7704,12 +7752,14 @@ msgid "Restore staged"
 msgstr "Återställning förberedd"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Restore this title"
-msgstr ""
+msgstr "Återställ den här titeln"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Restored"
-msgstr ""
+msgstr "Återställd"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8190,8 +8240,9 @@ msgid "Search the remaining sources for this title again. Sources already linked
 msgstr "Sök igen i återstående källor efter den här titeln. Källor som redan är länkade lämnas orörda."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Search titles"
-msgstr ""
+msgstr "Sök titlar"
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
@@ -8245,13 +8296,15 @@ msgid "Seeds"
 msgstr "Utgångspunkter"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Seen cleared"
-msgstr ""
+msgstr "Sedd rensad"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen elsewhere"
-msgstr ""
+msgstr "Sedd på annat håll"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -8259,8 +8312,9 @@ msgid "Seen through to the end"
 msgstr "Lästa till slutet"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen: {media}"
-msgstr ""
+msgstr "Sedd: {media}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8480,8 +8534,9 @@ msgid "Settings › {tabName}"
 msgstr "Inställningar › {tabName}"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Shapes recommendations"
-msgstr ""
+msgstr "Formar rekommendationer"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8509,8 +8564,9 @@ msgid "Show a popup when a notification arrives"
 msgstr "Visa en popup när en avisering kommer"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Show all"
-msgstr ""
+msgstr "Visa alla"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -8559,8 +8615,9 @@ msgid "Showing {currentLocaleLabel}. Translations other than English are machine
 msgstr "Visar {currentLocaleLabel}. Översättningar till andra språk än engelska är maskinöversatta och korrigeras med tiden. Allt som ännu inte är översatt visas på engelska."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Showing {shown} of {total}"
-msgstr ""
+msgstr "Visar {shown} av {total}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -9431,8 +9488,9 @@ msgid "This takes a minute or two and only happens once per snapshot."
 msgstr "Det tar en eller två minuter och sker bara en gång per ögonblicksbild."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "this title only"
-msgstr ""
+msgstr "bara den här titeln"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -9465,20 +9523,24 @@ msgid "Thumbnails"
 msgstr "Miniatyrer"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Thumbs"
-msgstr ""
+msgstr "Tumme"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
-msgstr ""
+msgstr "Tumme ner. Titeln är ute och styr inte längre dina rekommendationer."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "thumbs up / down"
-msgstr ""
+msgstr "tumme upp/ner"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
-msgstr ""
+msgstr "Tumma, dölj eller avfärda en rekommendation så visas den här."
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -9550,8 +9612,9 @@ msgid "Title search"
 msgstr "Titelsökning"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "titles on the shelf"
-msgstr ""
+msgstr "titlar på hyllan"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9768,12 +9831,14 @@ msgid "Underscore (_)"
 msgstr "Understreck (_)"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undo"
-msgstr ""
+msgstr "Ångra"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undone"
-msgstr ""
+msgstr "Ångrad"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -9887,8 +9952,9 @@ msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "Använd minst {MIN_PASSWORD_LENGTH} tecken"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use for taste"
-msgstr ""
+msgstr "Använd för smaken"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9906,8 +9972,9 @@ msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "Använd den lokala MangaBaka-databasen (rekommenderas starkt)"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use this title for taste"
-msgstr ""
+msgstr "Använd den här titeln för smaken"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10191,8 +10258,9 @@ msgid "What readers without add or download permissions have asked for. Approvin
 msgstr "Det som läsare utan behörighet att lägga till eller ladda ner har bett om. Ett godkännande lägger till serien och köar kapitlen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "What shapes your recommendations"
-msgstr ""
+msgstr "Vad som formar dina rekommendationer"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10335,8 +10403,9 @@ msgid "With none selected this account sees an empty library: access is granted,
 msgstr "Utan något valt ser det här kontot ett tomt bibliotek: åtkomst beviljas, den antas aldrig."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "won't be recommended again"
-msgstr ""
+msgstr "kommer inte att rekommenderas igen"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
@@ -10362,8 +10431,9 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "År: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Yesterday"
-msgstr ""
+msgstr "Igår"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -10417,8 +10487,9 @@ msgid "You put down"
 msgstr "Du lägger ner"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "You seem to avoid"
-msgstr ""
+msgstr "Du verkar undvika"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10516,8 +10587,9 @@ msgid "Your request was declined"
 msgstr "Din förfrågan avslogs"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr ""
+msgstr "Din hylla, dina betyg och din läsning styr rankningen. Tumme, dölj och sedd påverkar bara en titel i taget."
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy

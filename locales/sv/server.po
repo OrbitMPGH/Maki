@@ -353,20 +353,23 @@ msgstr "Den begäran har redan avgjorts"
 #. A second admin is already approving this request, or it has been resolved since the page loaded.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: That request is already being approved or has been resolved
+#, fuzzy
 msgid "error.requests.approvalInProgress"
-msgstr ""
+msgstr "Den begäran godkänns redan eller har redan lösts"
 
 #. The request was approved into a different root folder than the one this approval names.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was already approved into a different root folder
+#, fuzzy
 msgid "error.requests.approvedElsewhere"
-msgstr ""
+msgstr "Begäran har redan godkänts till en annan rotmapp"
 
 #. The request was approved once, and the series it created has since been deleted from the library.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was approved earlier and that series has since been deleted. Reject it and ask for a new request.
+#, fuzzy
 msgid "error.requests.approvedSeriesDeleted"
-msgstr ""
+msgstr "Begäran godkändes tidigare och den serien har sedan tagits bort. Avslå den och be om en ny begäran."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: The last chapter can't be lower than the first
@@ -526,8 +529,9 @@ msgstr "Serien har en aktiv nedladdning, vänta tills den är klar innan du flyt
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
+#, fuzzy
 msgid "error.series.addResultGone"
-msgstr ""
+msgstr "Den tillagda serien slutfördes tidigare men har sedan tagits bort. Lägg till den igen för att skapa en ny."
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series already exists in library
@@ -582,8 +586,9 @@ msgstr "Metadatasökningen misslyckades, serien saknar leverantörs-id eller så
 #. The client reused a mutation id it had already sent with different add parameters.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
+#, fuzzy
 msgid "error.series.mutationIdReused"
-msgstr ""
+msgstr "Det mutations-ID:t har redan använts för ett annat tillägg"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
