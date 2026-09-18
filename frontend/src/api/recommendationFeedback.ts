@@ -48,7 +48,10 @@ export interface AvoidanceLabel {
 }
 
 export interface FeedbackLabData {
-  capabilities: { feedback: boolean; signalOverrides: boolean; labUi: boolean; personalAddWeighting: boolean }
+  capabilities: {
+    feedback: boolean; signalOverrides: boolean; labUi: boolean; personalAddWeighting: boolean
+    animeSignals: boolean
+  }
   versions: { feedbackRevision: number; signalRevision: number }
   rankingMode: 'semantic' | 'fallback'
   summary: {

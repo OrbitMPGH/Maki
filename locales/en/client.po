@@ -191,6 +191,14 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 
+#. placeholder {0}: counts.matched
+#. placeholder {1}: counts.total
+#. placeholder {2}: counts.positive
+#. placeholder {3}: counts.avoided
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0} of {1} matched, {2} positive, {3} avoided"
+msgstr "{0} of {1} matched, {2} positive, {3} avoided"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "{actionError} Refresh the page and try again."
@@ -863,6 +871,11 @@ msgstr "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · best results, recommended"
 
+#. placeholder {0}: entry.score
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "★ {0}"
+msgstr "★ {0}"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "★ {rating} rated"
 msgstr "★ {rating} rated"
@@ -972,6 +985,10 @@ msgstr "A thumbs down hides this title and pushes down titles closer to it than 
 #: src/components/NamingTokenModal.tsx
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
+msgstr "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
 
 #: src/components/RecommendationModelCards.tsx
 msgid "about {hourPhrase} {restPhrase} left"
@@ -1169,6 +1186,7 @@ msgstr "Adventure"
 msgid "Affected chapters:"
 msgstr "Affected chapters:"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -1291,6 +1309,10 @@ msgstr "Analyze new files and run daily reconciliation"
 msgid "and {remaining} more selected on other pages"
 msgstr "and {remaining} more selected on other pages"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "AniList"
+msgstr "AniList"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
@@ -1305,6 +1327,10 @@ msgstr "Anime adaptation"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Anime coverage"
 msgstr "Anime coverage"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Anime you've watched"
+msgstr "Anime you've watched"
 
 #: src/pages/DiscoverPage.tsx
 msgid "any"
@@ -1494,6 +1520,10 @@ msgstr "Automatically retry failed downloads"
 #: src/nav.ts
 msgid "Automation"
 msgstr "Automation"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Avoided"
+msgstr "Avoided"
 
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
@@ -2236,6 +2266,7 @@ msgstr "Complete"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/LibraryPanel.tsx
 msgid "Completed"
 msgstr "Completed"
@@ -2277,6 +2308,10 @@ msgstr "Confirm your password to turn it off"
 #: src/pages/ScrobblePage.tsx
 msgid "Connect"
 msgstr "Connect"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
+msgstr "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
 
 #: src/components/TrackerSyncControls.tsx
 msgid "Connect on the Scrobble page to import."
@@ -2390,6 +2425,11 @@ msgstr "Copy this now. Only its fingerprint is stored, so it cannot be shown aga
 #: src/components/TagBuckets.tsx
 msgid "Core"
 msgstr "Core"
+
+#. placeholder {0}: String(error)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Could not load anime signals: {0}"
+msgstr "Could not load anime signals: {0}"
 
 #: src/pages/SettingsPage.tsx
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
@@ -2844,6 +2884,10 @@ msgstr "Downloads"
 #: src/components/CatalogueFilters.tsx
 msgid "Drama"
 msgstr "Drama"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Dropped"
+msgstr "Dropped"
 
 #: src/pages/LibraryPage.tsx
 msgid "e.g. Ongoing & behind"
@@ -3960,6 +4004,11 @@ msgstr "Last run failed: {lastError}"
 msgid "Last sign-in"
 msgstr "Last sign-in"
 
+#. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Last synced {0}"
+msgstr "Last synced {0}"
+
 #: src/components/settings/AccountSection.tsx
 msgid "Last used"
 msgstr "Last used"
@@ -4575,6 +4624,10 @@ msgstr "My account"
 msgid "My Discord server"
 msgstr "My Discord server"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "MyAnimeList"
+msgstr "MyAnimeList"
+
 #: src/components/discover/DiscoverReviews.tsx
 msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
 msgstr "MyAnimeList didn't respond, so there are no reviews to show right now."
@@ -4620,6 +4673,10 @@ msgstr "Needs FlareSolverr"
 #: src/pages/ScrobblePage.tsx
 msgid "Needs review"
 msgstr "Needs review"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Neutral"
+msgstr "Neutral"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -4756,6 +4813,10 @@ msgstr "No indexers configured in Prowlarr."
 #: src/pages/discover/FeedbackLab.tsx
 msgid "no longer steers your taste"
 msgstr "no longer steers your taste"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "No manga match"
+msgstr "No manga match"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "No match"
@@ -4970,6 +5031,10 @@ msgstr "Not run yet"
 msgid "Not scanned"
 msgstr "Not scanned"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Not synced yet"
+msgstr "Not synced yet"
+
 #: src/components/SeriesScrobbleSection.tsx
 msgid "not yet synced"
 msgstr "not yet synced"
@@ -5134,6 +5199,7 @@ msgstr "OEL / western"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
+#: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Off"
 msgstr "Off"
 
@@ -5165,6 +5231,7 @@ msgstr "OLED black"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 msgid "On"
 msgstr "On"
 
@@ -5172,6 +5239,10 @@ msgstr "On"
 #: src/pages/LibraryPage.tsx
 msgid "On disk"
 msgstr "On disk"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "On hold"
+msgstr "On hold"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "On shelf"
@@ -5531,6 +5602,10 @@ msgstr "Plain title search. Matches from just two characters."
 msgid "Plan to read"
 msgstr "Plan to read"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Planning"
+msgstr "Planning"
+
 #: src/pages/StatsPage.tsx
 msgid "Play Rewind"
 msgstr "Play Rewind"
@@ -5569,6 +5644,10 @@ msgstr "port, setup guide, first-time setup, instance"
 #: src/pages/SettingsPage.tsx
 msgid "Portuguese (Br)"
 msgstr "Portuguese (Br)"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Positive"
+msgstr "Positive"
 
 #: src/pages/HealthPage.tsx
 msgid "Posters"
@@ -7356,6 +7435,7 @@ msgid "Sync interval (minutes)"
 msgstr "Sync interval (minutes)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/ScrobblePage.tsx
 msgid "Sync now"
 msgstr "Sync now"
@@ -7990,6 +8070,7 @@ msgid "Unlink"
 msgstr "Unlink"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Unmatched"
 msgstr "Unmatched"
 
@@ -8283,6 +8364,10 @@ msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Watched"
 msgstr "Watched"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Watching"
+msgstr "Watching"
 
 #: src/components/NotificationsSection.tsx
 msgid "Webhook"

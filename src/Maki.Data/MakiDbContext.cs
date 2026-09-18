@@ -1,4 +1,4 @@
-﻿using Maki.Core.Entities;
+using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -37,6 +37,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<RecommendationSignalOverride> RecommendationSignalOverrides => Set<RecommendationSignalOverride>();
     public DbSet<RecommendationProfileState> RecommendationProfileStates => Set<RecommendationProfileState>();
     public DbSet<RecommendationMutationReceipt> RecommendationMutationReceipts => Set<RecommendationMutationReceipt>();
+    public DbSet<AnimeSignal> AnimeSignals => Set<AnimeSignal>();
     public DbSet<AuthEvent> AuthEvents => Set<AuthEvent>();
 
     public DbSet<Series> Series => Set<Series>();
@@ -202,6 +203,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         modelBuilder.Entity<RecommendationProfileState>(e =>
         {
             e.HasKey(x => x.UserId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<AnimeSignal>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.Service, x.AnimeId }).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.MangaBakaId });
             e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });

@@ -227,6 +227,14 @@ msgstr "{0, plural, one {Volymfil för # kapitel} other {Volymfil för # kapitel
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Vill läsa # kapitel} other {Vill läsa # kapitel}}"
 
+#. placeholder {0}: counts.matched
+#. placeholder {1}: counts.total
+#. placeholder {2}: counts.positive
+#. placeholder {3}: counts.avoided
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0} of {1} matched, {2} positive, {3} avoided"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -1064,6 +1072,11 @@ msgstr "<0>Tumme upp</0> räknas till din smak. Liknande titlar rankas högre."
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · bäst resultat, rekommenderas"
 
+#. placeholder {0}: entry.score
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "★ {0}"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "★ {rating} rated"
@@ -1200,6 +1213,10 @@ msgstr "En tumme ner döljer den här titeln och trycker ner titlar som ligger n
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "En token utan värde för en viss serie visas inte, och omgivande mellanslag och tomma hakparenteser rensas bort, så {yearExampleToken} på en serie utan årtal blir bara seriens titel."
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
+msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1441,6 +1458,7 @@ msgstr "Äventyr"
 msgid "Affected chapters:"
 msgstr "Berörda kapitel:"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -1592,6 +1610,10 @@ msgstr "Analysera nya filer och kör daglig avstämning"
 msgid "and {remaining} more selected on other pages"
 msgstr "och {remaining} fler markerade på andra sidor"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "AniList"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -1609,6 +1631,10 @@ msgstr "Animeadaption"
 #, fuzzy
 msgid "Anime coverage"
 msgstr "Anime-täckning"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Anime you've watched"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1842,6 +1868,10 @@ msgstr "Försök automatiskt igen med misslyckade nedladdningar"
 #, fuzzy
 msgid "Automation"
 msgstr "Automatisering"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Avoided"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
@@ -2756,6 +2786,7 @@ msgstr "Slutförd"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -2807,6 +2838,10 @@ msgstr "Bekräfta lösenordet för att stänga av det"
 #, fuzzy
 msgid "Connect"
 msgstr "Anslut"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
+msgstr ""
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -2945,6 +2980,11 @@ msgstr "Kopiera detta nu. Endast fingeravtrycket lagras, så det kan inte visas 
 #, fuzzy
 msgid "Core"
 msgstr "Kärna"
+
+#. placeholder {0}: String(error)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Could not load anime signals: {0}"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3504,6 +3544,10 @@ msgstr "Nedladdningar"
 #, fuzzy
 msgid "Drama"
 msgstr "Drama"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Dropped"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4883,6 +4927,11 @@ msgstr "Senaste körningen misslyckades: {lastError}"
 msgid "Last sign-in"
 msgstr "Senaste inloggning"
 
+#. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Last synced {0}"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Last used"
@@ -5640,6 +5689,10 @@ msgstr "Mitt konto"
 msgid "My Discord server"
 msgstr "Min Discord-server"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "MyAnimeList"
+msgstr ""
+
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
 msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
@@ -5695,6 +5748,10 @@ msgstr "Kräver FlareSolverr"
 #, fuzzy
 msgid "Needs review"
 msgstr "Behöver granskning"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Neutral"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5864,6 +5921,10 @@ msgstr "Inga indexerare konfigurerade i Prowlarr."
 #, fuzzy
 msgid "no longer steers your taste"
 msgstr "styr inte längre din smak"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "No manga match"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6130,6 +6191,10 @@ msgstr "Har inte körts ännu"
 msgid "Not scanned"
 msgstr "Inte genomsökt"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Not synced yet"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -6332,6 +6397,7 @@ msgstr "OEL / västerländsk"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "Av"
@@ -6370,6 +6436,7 @@ msgstr "OLED-svart"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On"
 msgstr "På"
@@ -6379,6 +6446,10 @@ msgstr "På"
 #, fuzzy
 msgid "On disk"
 msgstr "På disk"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "On hold"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -6824,6 +6895,10 @@ msgstr "Enkel titelsökning. Träffar från bara två tecken."
 msgid "Plan to read"
 msgstr "Vill läsa"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Planning"
+msgstr ""
+
 #: src/pages/StatsPage.tsx
 #, fuzzy
 msgid "Play Rewind"
@@ -6871,6 +6946,10 @@ msgstr "port, installationsguide, första konfigurationen, instans"
 #, fuzzy
 msgid "Portuguese (Br)"
 msgstr "Portugisiska (BR)"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Positive"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9072,6 +9151,7 @@ msgid "Sync interval (minutes)"
 msgstr "Synkroniseringsintervall (minuter)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Sync now"
@@ -9857,6 +9937,7 @@ msgid "Unlink"
 msgstr "Koppla bort"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Unmatched"
 msgstr "Ingen matchning"
@@ -10220,6 +10301,10 @@ msgstr "Önskad för {spanLabel}: {wantedCount} av {total} kapitel"
 #, fuzzy
 msgid "Watched"
 msgstr "Sedda"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Watching"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

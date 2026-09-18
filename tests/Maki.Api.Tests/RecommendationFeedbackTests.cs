@@ -3,6 +3,7 @@ using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Recommendations;
+using Maki.Core.Scrobbling;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -318,7 +319,7 @@ public class RecommendationFeedbackTests : IDisposable
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
-            Avoidance());
+            Avoidance(), NoAnimeSources());
         var payload = JsonSerializer.SerializeToElement(
             Assert.IsType<OkObjectResult>(await controller.Lab(default)).Value);
 
@@ -352,7 +353,7 @@ public class RecommendationFeedbackTests : IDisposable
             new FakeAppSettings(),
             new SeedWeightService(
                 new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
-            Avoidance());
+            Avoidance(), NoAnimeSources());
         var payload = JsonSerializer.SerializeToElement(
             Assert.IsType<OkObjectResult>(await controller.Lab(default)).Value);
 
@@ -382,6 +383,60 @@ public class RecommendationFeedbackTests : IDisposable
         Assert.DoesNotContain(4321L, snapshot.Effective.EligibleIds);
         Assert.False(snapshot.Effective.Weights.ContainsKey(4321));
         Assert.Equal(0.75, snapshot.Avoided[4321]);
+    }
+
+    /// <summary>
+    /// A reader with no tracker connected, which is what decides whether the Lab offers the anime
+    /// panel at all. Subclassed with a null scrobbler because the override never reaches it.
+    /// </summary>
+    private sealed class NoSources() : AnimeSignalSources(null!)
+    {
+        public override Task<IReadOnlyList<IAnimeListSource>> ConnectedAsync(
+            int userId, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<IAnimeListSource>>([]);
+    }
+
+    private static AnimeSignalSources NoAnimeSources() => new NoSources();
+
+    private sealed class OneSource() : AnimeSignalSources(null!)
+    {
+        public override Task<IReadOnlyList<IAnimeListSource>> ConnectedAsync(
+            int userId, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<IAnimeListSource>>([new FakeAnimeSource()]);
+    }
+
+    private sealed class FakeAnimeSource : IAnimeListSource
+    {
+        public Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<AnimeListEntry>>([]);
+
+        public Task<AnimeRelatedManga?> RelatedMangaAsync(
+            int userId, long animeId, CancellationToken ct = default) =>
+            Task.FromResult<AnimeRelatedManga?>(null);
+    }
+
+    /// <summary>
+    /// The capability is "is this panel worth drawing", not "has this reader opted in". The client
+    /// gates the whole section on it, opt-in switch included, so folding the opt-in into it would
+    /// leave nobody able to turn it on.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public async Task Lab_offers_the_anime_panel_on_a_connected_tracker_alone(bool connected, bool expected)
+    {
+        using var db = _fixture.NewContext(1);
+        var controller = new RecommendationFeedbackController(Service(db, 1), new TestCurrentUser(1), db,
+            new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
+            new FakeAppSettings(),
+            new SeedWeightService(
+                new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
+            Avoidance(), connected ? new OneSource() : NoAnimeSources());
+
+        var payload = JsonSerializer.SerializeToElement(
+            Assert.IsType<OkObjectResult>(await controller.Lab(default)).Value);
+        Assert.Equal(expected,
+            payload.GetProperty("capabilities").GetProperty("animeSignals").GetBoolean());
     }
 
     /// <summary>

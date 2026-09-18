@@ -1,4 +1,4 @@
-﻿using Maki.Core.Naming;
+using Maki.Core.Naming;
 
 namespace Maki.Core.Configuration;
 
@@ -328,6 +328,28 @@ public static class SettingKeys
 
     public const string RecommendationsPersonalAddWeighting = "recommendations.personaladdweighting";
     public const string RecommendationsFeedbackLab = "recommendations.feedbacklab";
+
+    /// <summary>
+    /// Instance kill switch for anime-derived taste signals: whether a connected AniList or
+    /// MyAnimeList <em>anime</em> list may be matched to manga and fed to the recommender at all.
+    /// Off here means the sync never runs and the seeds never load, whatever any user opted into.
+    /// </summary>
+    public const string RecommendationsAnimeSignals = "recommendations.animesignals";
+
+    /// <summary>How often the anime-list sync walks every opted-in user. Default 24, minimum 1.</summary>
+    public const string RecommendationsAnimeSignalsIntervalHours = "recommendations.animesignals.intervalhours";
+
+    /// <summary>When the last instance-wide anime-signal pass finished, for the tick's own gate.</summary>
+    public const string RecommendationsAnimeSignalsLastSyncAt = "recommendations.animesignals.lastsyncat";
+
+    /// <summary>
+    /// Per user: opt in to anime signals. Unset means off, unlike most switches here, because this
+    /// one reads a second medium's list and puts it in somebody's recommendations without asking.
+    /// </summary>
+    public const string RecommendationsAnimeSignalsEnabled = "recommendations.animesignals.enabled";
+
+    /// <summary>Per user: when that user's list was last synced, for the panel and the manual button.</summary>
+    public const string RecommendationsAnimeSignalsLastSync = "recommendations.animesignals.lastsync";
 
     /// <summary>
     /// Kill-switch for the co-recommendation channel: whether recommendations may use the

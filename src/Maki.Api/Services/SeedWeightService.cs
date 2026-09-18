@@ -210,11 +210,59 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
                 effectiveWeights.GetValueOrDefault(id, 1), RecommendationFeedbackPolicy.LikedWeight);
         }
 
+        // Anime signals last, so every stronger kind of evidence is already in hand: a title on the
+        // shelf, a thumbs up or down, and an ignored source all win over "the adaptation was good".
+        var animeSeeds = new Dictionary<long, double>();
+        if (await AnimeSignalsEnabledAsync(db, scope.UserId, ct))
+        {
+            var libraryPopulation = libraryIds.ToHashSet();
+            var explicitOpinion = liked.Concat(disliked).ToHashSet();
+            var animeRows = await db.AnimeSignals.AsNoTracking()
+                .Where(x => x.UserId == scope.UserId && x.MangaBakaId != null)
+                .Select(x => new { Id = x.MangaBakaId!.Value, x.Status, x.Score })
+                .ToListAsync(ct);
+            foreach (var row in animeRows)
+            {
+                if (libraryPopulation.Contains(row.Id) || explicitOpinion.Contains(row.Id) ||
+                    ignored.Contains(row.Id))
+                {
+                    continue;
+                }
+
+                var strength = AnimeSignalPolicy.AvoidStrengthOf(row.Status, row.Score);
+                if (strength > 0)
+                {
+                    // Max for the same reason a rating and a thumbs down take the max: two adaptations
+                    // of one manga, both dropped, is still one complaint.
+                    avoided[row.Id] = Math.Max(avoided.GetValueOrDefault(row.Id), strength);
+                    animeSeeds.Remove(row.Id);
+                    continue;
+                }
+
+                var weight = AnimeSignalPolicy.SeedWeightOf(row.Status, row.Score);
+                if (weight > 0 && !avoided.ContainsKey(row.Id))
+                {
+                    animeSeeds[row.Id] = Math.Max(animeSeeds.GetValueOrDefault(row.Id), weight);
+                }
+            }
+
+            foreach (var (id, weight) in animeSeeds)
+            {
+                effectiveWeights[id] = Math.Max(effectiveWeights.GetValueOrDefault(id, 0), weight);
+            }
+        }
+
         var positiveIds = positiveRows.Select(r => r.Id).Distinct().ToList();
         return new SeedSnapshot(
             new SeedWeights(libraryIds, effectiveWeights,
-                positiveIds.Concat(liked.Where(id => !avoided.ContainsKey(id) && !positiveIds.Contains(id)))
-                    .Order().ToList()),
+                positiveIds
+                    .Concat(liked.Where(id => !avoided.ContainsKey(id)))
+                    // Seeds and nothing else, exactly like a liked title: not LibraryIds, which is
+                    // the owned-candidate list, and not the observed population, which describes a
+                    // shelf these are not on. Being a seed is also what keeps a matched title out of
+                    // the recommender's own output, since it excludes everything it steered by.
+                    .Concat(animeSeeds.Keys)
+                    .Distinct().Order().ToList()),
             // The shelf half keeps its low-rated rows: it describes what the reader owns, and a
             // profile chart that dropped everything they disliked would describe a different shelf.
             new SeedWeights(libraryIds, Weigh(observedRows, signals, behavioural, addWeighting, now), observedIds),
@@ -262,6 +310,28 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
     }
 
     private sealed record SeedRow(long Id, int? Rating, DateTime? AddedAt);
+
+    /// <summary>
+    /// Whether this user's watched anime may steer their recommendations: the instance switch and
+    /// their own opt-in, which is off until they say otherwise.
+    /// <para>
+    /// Read off the caller's context rather than through <c>IUserSettingsStore</c> so this service
+    /// keeps the constructor it has. Eight call sites build it by hand, and a new dependency for one
+    /// boolean would be churn in all of them.
+    /// </para>
+    /// </summary>
+    private async Task<bool> AnimeSignalsEnabledAsync(MakiDbContext db, int userId, CancellationToken ct)
+    {
+        if (await settings.GetAsync(SettingKeys.RecommendationsAnimeSignals, ct) == "false")
+        {
+            return false;
+        }
+
+        return await db.UserSettings.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Key == SettingKeys.RecommendationsAnimeSignalsEnabled)
+            .Select(x => x.Value)
+            .FirstOrDefaultAsync(ct) == "true";
+    }
 
     /// <summary>
     /// Whether behavioural seeding is on. Read per request rather than at startup so the switch takes

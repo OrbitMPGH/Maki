@@ -227,6 +227,14 @@ msgstr "{0, plural, other {챕터 #개를 담고 있는 볼륨 파일}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {원하는 챕터 #개}}"
 
+#. placeholder {0}: counts.matched
+#. placeholder {1}: counts.total
+#. placeholder {2}: counts.positive
+#. placeholder {3}: counts.avoided
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0} of {1} matched, {2} positive, {3} avoided"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -1064,6 +1072,11 @@ msgstr "<0>좋아요</0>는 취향에 반영됩니다. 비슷한 제목이 더 �
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · 최상의 결과, 권장"
 
+#. placeholder {0}: entry.score
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "★ {0}"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "★ {rating} rated"
@@ -1200,6 +1213,10 @@ msgstr "싫어요는 이 제목을 숨기고, 보관한 항목보다 이 제목�
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "특정 시리즈에 값이 없는 토큰은 아무것도 표시하지 않습니다. 주변 공백과 빈 대괄호도 정리되므로, 연도가 없는 시리즈에서는 {yearExampleToken}이(가) 제목만 표시합니다."
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
+msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1441,6 +1458,7 @@ msgstr "모험"
 msgid "Affected chapters:"
 msgstr "영향받는 챕터:"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -1592,6 +1610,10 @@ msgstr "새 파일을 분석하고 매일 조정 실행"
 msgid "and {remaining} more selected on other pages"
 msgstr "다른 페이지에서 추가로 {remaining}개 선택됨"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "AniList"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -1609,6 +1631,10 @@ msgstr "애니메이션 적용"
 #, fuzzy
 msgid "Anime coverage"
 msgstr "애니메이션 적용 범위"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Anime you've watched"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1842,6 +1868,10 @@ msgstr "실패한 다운로드 자동 재시도"
 #, fuzzy
 msgid "Automation"
 msgstr "자동화"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Avoided"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
@@ -2756,6 +2786,7 @@ msgstr "완료"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -2807,6 +2838,10 @@ msgstr "끄려면 비밀번호를 확인하세요"
 #, fuzzy
 msgid "Connect"
 msgstr "연결"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
+msgstr ""
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -2945,6 +2980,11 @@ msgstr "지금 복사하세요. 지문만 저장되므로 다시 표시할 수 �
 #, fuzzy
 msgid "Core"
 msgstr "핵심"
+
+#. placeholder {0}: String(error)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Could not load anime signals: {0}"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3504,6 +3544,10 @@ msgstr "다운로드"
 #, fuzzy
 msgid "Drama"
 msgstr "드라마"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Dropped"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4883,6 +4927,11 @@ msgstr "마지막 실행 실패: {lastError}"
 msgid "Last sign-in"
 msgstr "마지막 로그인"
 
+#. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Last synced {0}"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Last used"
@@ -5640,6 +5689,10 @@ msgstr "내 계정"
 msgid "My Discord server"
 msgstr "내 Discord 서버"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "MyAnimeList"
+msgstr ""
+
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
 msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
@@ -5695,6 +5748,10 @@ msgstr "FlareSolverr 필요"
 #, fuzzy
 msgid "Needs review"
 msgstr "검토 필요"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Neutral"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5864,6 +5921,10 @@ msgstr "Prowlarr에 설정된 인덱서가 없습니다."
 #, fuzzy
 msgid "no longer steers your taste"
 msgstr "더 이상 취향에 영향을 주지 않음"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "No manga match"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6130,6 +6191,10 @@ msgstr "아직 실행하지 않음"
 msgid "Not scanned"
 msgstr "아직 스캔하지 않음"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Not synced yet"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -6332,6 +6397,7 @@ msgstr "OEL / 서양"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "끔"
@@ -6370,6 +6436,7 @@ msgstr "OLED 블랙"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On"
 msgstr "켬"
@@ -6379,6 +6446,10 @@ msgstr "켬"
 #, fuzzy
 msgid "On disk"
 msgstr "디스크에 있음"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "On hold"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -6824,6 +6895,10 @@ msgstr "일반 제목 검색입니다. 두 글자만으로 일치 항목을 찾�
 msgid "Plan to read"
 msgstr "읽을 예정"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Planning"
+msgstr ""
+
 #: src/pages/StatsPage.tsx
 #, fuzzy
 msgid "Play Rewind"
@@ -6871,6 +6946,10 @@ msgstr "포트, 설정 안내, 최초 설정, 인스턴스"
 #, fuzzy
 msgid "Portuguese (Br)"
 msgstr "포르투갈어 (브라질)"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Positive"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9072,6 +9151,7 @@ msgid "Sync interval (minutes)"
 msgstr "동기화 간격(분)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Sync now"
@@ -9857,6 +9937,7 @@ msgid "Unlink"
 msgstr "연결 해제"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Unmatched"
 msgstr "일치하지 않음"
@@ -10220,6 +10301,10 @@ msgstr "{spanLabel}에 대해 원하는 챕터: {total}개 중 {wantedCount}개"
 #, fuzzy
 msgid "Watched"
 msgstr "시청함"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Watching"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

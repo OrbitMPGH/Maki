@@ -51,6 +51,18 @@ msgstr "Current and new password are required"
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "Two-factor authentication is already enabled"
 
+#: src/Maki.Api/Controllers/AnimeSignalsController.cs
+msgid "error.animeSignals.disabled"
+msgstr "Anime taste signals are switched off on this server"
+
+#: src/Maki.Api/Controllers/AnimeSignalsController.cs
+msgid "error.animeSignals.notEnabled"
+msgstr "Turn on anime taste signals before syncing"
+
+#: src/Maki.Api/Controllers/AnimeSignalsController.cs
+msgid "error.animeSignals.syncRunning"
+msgstr "An anime list sync is already running"
+
 #. The CSRF filter's own refusal, shown for any state-changing request missing a valid
 #. XSRF-TOKEN/antiforgery cookie pair.
 #: src/Maki.Api/Auth/AntiforgeryCookieFilter.cs

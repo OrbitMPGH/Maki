@@ -16,7 +16,7 @@ public class AniListTracker(
     IAppSettings settings,
     IScrobbleTokenStore tokens,
     ScrobbleTrackerOptions options,
-    ILogger<AniListTracker> logger) : IScrobbleTracker
+    ILogger<AniListTracker> logger) : IScrobbleTracker, IAnimeListSource
 {
     public const string HttpClientName = "scrobble";
 
@@ -360,6 +360,163 @@ public class AniListTracker(
 
     private static string? GetString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.String ? p.GetString() : null;
+
+    // ---- anime list ----
+
+    private static readonly Dictionary<string, AnimeWatchStatus> AnimeStatusToInternal = new()
+    {
+        ["CURRENT"] = AnimeWatchStatus.Watching,
+        ["REPEATING"] = AnimeWatchStatus.Watching,
+        ["COMPLETED"] = AnimeWatchStatus.Completed,
+        ["PAUSED"] = AnimeWatchStatus.OnHold,
+        ["DROPPED"] = AnimeWatchStatus.Dropped,
+        ["PLANNING"] = AnimeWatchStatus.Planning,
+    };
+
+    /// <summary>
+    /// The viewer's whole anime list, relations included, so nothing needs a second call per entry.
+    /// <para>
+    /// perPage is 25 rather than AniList's 50 because the relation sub-selection multiplies the
+    /// query's complexity budget: 50 rows each expanding their relations is rejected outright on a
+    /// large list, and a rejection costs the whole page rather than one row.
+    /// </para>
+    /// </summary>
+    public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+    {
+        var viewer = await QueryAsync(userId, "query { Viewer { id } }", new { }, auth: true, ct);
+        if (!viewer.TryGetProperty("Viewer", out var v) || GetInt(v, "id") is not { } viewerId)
+        {
+            throw new TrackerException("AniList did not return a viewer id");
+        }
+
+        // sort: [MEDIA_ID] because the default ordering is not stable across requests: without it a
+        // list edited mid-walk shifts rows between pages, and an entry can be skipped or fetched
+        // twice. Paging over a fixed key makes a page boundary mean the same thing on every call.
+        const string query = """
+            query($userId:Int,$page:Int){ Page(page:$page, perPage:25){
+              pageInfo { hasNextPage }
+              mediaList(userId:$userId, type:ANIME, sort: [MEDIA_ID]){
+                score(format: POINT_10) status
+                media { id idMal title { romaji english }
+                  relations { edges { relationType node { id idMal type format } } } } } } }
+            """;
+
+        const int maxPages = 200;
+        var entries = new List<AnimeListEntry>();
+        var seen = new HashSet<long>();
+        var truncated = false;
+        for (var page = 1; page <= maxPages; page++)
+        {
+            var data = await QueryAsync(userId, query, new { userId = viewerId, page }, auth: true, ct);
+            if (!data.TryGetProperty("Page", out var pageNode) || pageNode.ValueKind != JsonValueKind.Object)
+            {
+                break;
+            }
+
+            if (pageNode.TryGetProperty("mediaList", out var list) && list.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var row in list.EnumerateArray())
+                {
+                    var entry = ReadAnimeRow(row);
+                    if (entry is not null && seen.Add(entry.AnimeId))
+                    {
+                        entries.Add(entry);
+                    }
+                }
+            }
+
+            var more = pageNode.TryGetProperty("pageInfo", out var info) &&
+                       info.TryGetProperty("hasNextPage", out var next) &&
+                       next.ValueKind == JsonValueKind.True;
+            if (!more)
+            {
+                break;
+            }
+
+            truncated = page == maxPages;
+        }
+
+        if (truncated)
+        {
+            logger.LogWarning(
+                "AniList anime list for user {UserId} stopped at the {MaxPages}-page cap ({Count} entries); " +
+                "the rest of the list was not read",
+                userId, maxPages, entries.Count);
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// Never called in practice: <see cref="ListAnimeAsync"/> already carries the relations, and the
+    /// sync skips this whenever an entry says so. Implemented anyway so a caller holding the
+    /// interface does not have to know which provider it has.
+    /// </summary>
+    public async Task<AnimeRelatedManga?> RelatedMangaAsync(
+        int userId, long animeId, CancellationToken ct = default)
+    {
+        var data = await QueryAsync(
+            userId,
+            """
+            query($id:Int){ Media(id:$id, type:ANIME){
+              relations { edges { relationType node { id idMal type format } } } } }
+            """,
+            new { id = (int)animeId }, auth: true, ct);
+        if (!data.TryGetProperty("Media", out var media) || media.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var pick = AnimeRelationPicker.Pick(ReadRelations(media));
+        return pick is { } p ? new AnimeRelatedManga(p.Id, p.IdMal) : null;
+    }
+
+    private static AnimeListEntry? ReadAnimeRow(JsonElement row)
+    {
+        if (!row.TryGetProperty("media", out var media) || media.ValueKind != JsonValueKind.Object ||
+            GetInt(media, "id") is not { } animeId)
+        {
+            return null;
+        }
+
+        var titles = media.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.Object ? t : default;
+        var title = (titles.ValueKind == JsonValueKind.Object
+            ? GetString(titles, "english") ?? GetString(titles, "romaji")
+            : null) ?? string.Empty;
+        var status = AnimeStatusToInternal.GetValueOrDefault(
+            GetString(row, "status") ?? string.Empty, AnimeWatchStatus.Planning);
+        var pick = AnimeRelationPicker.Pick(ReadRelations(media));
+        return new AnimeListEntry(
+            animeId, title, ScoreOf(row, "score"), status,
+            AniListMangaId: pick?.Id,
+            MalMangaId: pick?.IdMal,
+            RelationsResolved: true);
+    }
+
+    private static IEnumerable<AnimeMangaRelation> ReadRelations(JsonElement media)
+    {
+        if (!media.TryGetProperty("relations", out var relations) ||
+            !relations.TryGetProperty("edges", out var edges) || edges.ValueKind != JsonValueKind.Array)
+        {
+            yield break;
+        }
+
+        foreach (var edge in edges.EnumerateArray())
+        {
+            if (!edge.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
+                GetInt(node, "id") is not { } id)
+            {
+                continue;
+            }
+
+            yield return new AnimeMangaRelation(
+                GetString(edge, "relationType") ?? string.Empty,
+                id,
+                GetInt(node, "idMal"),
+                GetString(node, "type") ?? string.Empty,
+                GetString(node, "format"));
+        }
+    }
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
 }

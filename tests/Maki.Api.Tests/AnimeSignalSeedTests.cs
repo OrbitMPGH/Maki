@@ -1,0 +1,222 @@
+using Maki.Api.Services;
+using Maki.Core.Configuration;
+using Maki.Core.Entities;
+using Maki.Core.Recommendations;
+using Maki.Data.Identity;
+
+namespace Maki.Api.Tests;
+
+/// <summary>
+/// How a watched anime reaches the recommender's seed space, and what it loses to whenever the
+/// reader has said something stronger themselves.
+/// </summary>
+public class AnimeSignalSeedTests : IDisposable
+{
+    private readonly TestDb _fixture = new();
+
+    public void Dispose() => _fixture.Dispose();
+
+    private static SeedWeightService Service(IAppSettings? settings = null) => new(
+        new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default,
+        settings ?? new FakeAppSettings());
+
+    private void OptIn(int userId = 1, bool enabled = true)
+    {
+        using var db = _fixture.NewContext();
+        db.UserSettings.Add(new UserSetting
+        {
+            UserId = userId,
+            Key = SettingKeys.RecommendationsAnimeSignalsEnabled,
+            Value = enabled ? "true" : "false",
+        });
+        db.SaveChanges();
+    }
+
+    private void Signal(long mangaBakaId, AnimeWatchStatus status, int? score,
+        long animeId = 1, string service = "anilist", int userId = 1)
+    {
+        using var db = _fixture.NewContext();
+        db.AnimeSignals.Add(new AnimeSignal
+        {
+            UserId = userId,
+            Service = service,
+            AnimeId = animeId,
+            Title = $"Anime {animeId}",
+            Score = score,
+            Status = status,
+            MangaBakaId = mangaBakaId,
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_loved_anime_becomes_a_positive_seed_at_the_discounted_weight()
+    {
+        OptIn();
+        Signal(500, AnimeWatchStatus.Completed, 9);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Contains(500L, snapshot.Effective.EligibleIds);
+        Assert.Equal(0.9 * AnimeSignalPolicy.SeedScale, snapshot.Effective.Weights[500], 8);
+        Assert.DoesNotContain(500L, snapshot.Avoided.Keys);
+        // The observed half describes the shelf, and an anime is not on it.
+        Assert.DoesNotContain(500L, snapshot.Observed.EligibleIds);
+        Assert.DoesNotContain(500L, snapshot.Effective.LibraryIds);
+    }
+
+    [Fact]
+    public async Task A_dropped_or_low_scored_anime_joins_the_avoided_set_instead()
+    {
+        OptIn();
+        Signal(600, AnimeWatchStatus.Dropped, null, animeId: 1);
+        Signal(601, AnimeWatchStatus.Completed, 2, animeId: 2);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Equal(AnimeSignalPolicy.DroppedStrength, snapshot.Avoided[600], 8);
+        Assert.Equal(AnimeSignalPolicy.AvoidStrengthOfScore(2), snapshot.Avoided[601], 8);
+        Assert.DoesNotContain(600L, snapshot.Effective.EligibleIds);
+        Assert.DoesNotContain(601L, snapshot.Effective.EligibleIds);
+    }
+
+    [Fact]
+    public async Task Planning_and_a_lukewarm_score_reach_nothing()
+    {
+        OptIn();
+        Signal(700, AnimeWatchStatus.Planning, 10, animeId: 1);
+        Signal(701, AnimeWatchStatus.Completed, 6, animeId: 2);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(700L, snapshot.Effective.EligibleIds);
+        Assert.DoesNotContain(701L, snapshot.Effective.EligibleIds);
+        Assert.Empty(snapshot.Avoided);
+    }
+
+    [Fact]
+    public async Task Nothing_loads_until_the_reader_opts_in()
+    {
+        Signal(800, AnimeWatchStatus.Completed, 10);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(800L, snapshot.Effective.EligibleIds);
+        Assert.Empty(snapshot.Effective.Weights);
+    }
+
+    [Fact]
+    public async Task The_instance_switch_overrides_the_opt_in()
+    {
+        OptIn();
+        Signal(810, AnimeWatchStatus.Completed, 10);
+        var settings = new FakeAppSettings().Set(SettingKeys.RecommendationsAnimeSignals, "false");
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service(settings).SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(810L, snapshot.Effective.EligibleIds);
+    }
+
+    /// <summary>
+    /// The reader read the manga and rated it 2. The adaptation being excellent does not overturn
+    /// that: library evidence is about the book, the anime signal is about something else.
+    /// </summary>
+    [Fact]
+    public async Task A_library_row_wins_over_the_anime_it_was_adapted_into()
+    {
+        var seriesId = _fixture.SeedSeries("Owned", configure: s => s.MangaBakaId = 900);
+        OptIn();
+        Signal(900, AnimeWatchStatus.Completed, 10);
+
+        using (var db = _fixture.NewContext(1))
+        {
+            db.UserSeriesStates.Add(new UserSeriesState { UserId = 1, SeriesId = seriesId, Rating = 2 });
+            await db.SaveChangesAsync();
+        }
+
+        using var read = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(read, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(900L, snapshot.Effective.EligibleIds);
+        Assert.False(snapshot.Effective.Weights.ContainsKey(900));
+        Assert.Equal(RecommendationFeedbackPolicy.AvoidStrength(2), snapshot.Avoided[900], 8);
+    }
+
+    [Fact]
+    public async Task An_explicit_thumbs_down_wins_over_a_loved_adaptation()
+    {
+        OptIn();
+        Signal(910, AnimeWatchStatus.Completed, 10);
+
+        using (var db = _fixture.NewContext(1))
+        {
+            db.RecommendationFeedback.Add(new RecommendationFeedback
+            { UserId = 1, ProviderId = 910, Sentiment = RecommendationSentiment.Disliked, Revision = 1 });
+            await db.SaveChangesAsync();
+        }
+
+        using var read = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(read, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(910L, snapshot.Effective.EligibleIds);
+        Assert.Equal(1.0, snapshot.Avoided[910], 8);
+    }
+
+    [Fact]
+    public async Task Ignoring_a_title_as_a_seed_also_silences_its_adaptation()
+    {
+        OptIn();
+        Signal(920, AnimeWatchStatus.Completed, 10, animeId: 1);
+        Signal(921, AnimeWatchStatus.Dropped, null, animeId: 2);
+
+        using (var db = _fixture.NewContext(1))
+        {
+            db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+            { UserId = 1, ProviderId = 920, IgnoreAsSeed = true });
+            db.RecommendationSignalOverrides.Add(new RecommendationSignalOverride
+            { UserId = 1, ProviderId = 921, IgnoreAsSeed = true });
+            await db.SaveChangesAsync();
+        }
+
+        using var read = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(read, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(920L, snapshot.Effective.EligibleIds);
+        Assert.Empty(snapshot.Avoided);
+    }
+
+    /// <summary>
+    /// The pool cache is keyed on the fingerprint, so a list that changed has to produce a different
+    /// one or a new signal sits behind a twelve-hour hit.
+    /// </summary>
+    [Fact]
+    public async Task The_fingerprint_moves_when_a_signal_appears_and_when_its_score_changes()
+    {
+        OptIn();
+        using var db = _fixture.NewContext(1);
+        var service = Service();
+        var before = (await service.SnapshotAsync(db, new TestCurrentUser(1))).Fingerprint();
+
+        Signal(930, AnimeWatchStatus.Completed, 9);
+        using var afterDb = _fixture.NewContext(1);
+        var added = (await service.SnapshotAsync(afterDb, new TestCurrentUser(1))).Fingerprint();
+        Assert.NotEqual(before, added);
+
+        using (var edit = _fixture.NewContext(1))
+        {
+            var row = edit.AnimeSignals.Single();
+            row.Score = 2;
+            await edit.SaveChangesAsync();
+        }
+
+        using var rescoredDb = _fixture.NewContext(1);
+        var rescored = (await service.SnapshotAsync(rescoredDb, new TestCurrentUser(1))).Fingerprint();
+        Assert.NotEqual(added, rescored);
+        Assert.NotEqual(before, rescored);
+    }
+}

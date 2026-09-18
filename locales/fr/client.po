@@ -227,6 +227,14 @@ msgstr "{0, plural, one {Fichier de volume correspondant à # chapitre} many {Fi
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Vouloir # chapitre} many {Vouloir # chapitres} other {Vouloir # chapitres}}"
 
+#. placeholder {0}: counts.matched
+#. placeholder {1}: counts.total
+#. placeholder {2}: counts.positive
+#. placeholder {3}: counts.avoided
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0} of {1} matched, {2} positive, {3} avoided"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -1064,6 +1072,11 @@ msgstr "<0>Pouce vers le haut</0> compte pour vos goûts. Les titres similaires 
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 Mo de RAM · meilleurs résultats, recommandé"
 
+#. placeholder {0}: entry.score
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "★ {0}"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "★ {rating} rated"
@@ -1200,6 +1213,10 @@ msgstr "Un pouce vers le bas masque ce titre et fait descendre les titres qui en
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "Un jeton sans valeur pour une série donnée ne produit rien. Les espaces environnants et les crochets vides sont nettoyés, donc {yearExampleToken} sur une série sans année se réduit à son titre."
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
+msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1441,6 +1458,7 @@ msgstr "Aventure"
 msgid "Affected chapters:"
 msgstr "Chapitres concernés :"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -1592,6 +1610,10 @@ msgstr "Analyser les nouveaux fichiers et lancer la réconciliation quotidienne"
 msgid "and {remaining} more selected on other pages"
 msgstr "et {remaining} autres sélectionnés sur d'autres pages"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "AniList"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -1609,6 +1631,10 @@ msgstr "Adaptation animée"
 #, fuzzy
 msgid "Anime coverage"
 msgstr "Couverture de l'anime"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Anime you've watched"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1842,6 +1868,10 @@ msgstr "Réessayer automatiquement les téléchargements échoués"
 #, fuzzy
 msgid "Automation"
 msgstr "Automatisation"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Avoided"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
@@ -2756,6 +2786,7 @@ msgstr "Complet"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -2807,6 +2838,10 @@ msgstr "Confirmez votre mot de passe pour le désactiver"
 #, fuzzy
 msgid "Connect"
 msgstr "Connecter"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
+msgstr ""
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -2945,6 +2980,11 @@ msgstr "Copiez ceci maintenant. Seule son empreinte est conservée, il ne pourra
 #, fuzzy
 msgid "Core"
 msgstr "Noyau"
+
+#. placeholder {0}: String(error)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Could not load anime signals: {0}"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3504,6 +3544,10 @@ msgstr "Téléchargements"
 #, fuzzy
 msgid "Drama"
 msgstr "Drame"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Dropped"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4883,6 +4927,11 @@ msgstr "Échec de la dernière exécution : {lastError}"
 msgid "Last sign-in"
 msgstr "Dernière connexion"
 
+#. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Last synced {0}"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Last used"
@@ -5640,6 +5689,10 @@ msgstr "Mon compte"
 msgid "My Discord server"
 msgstr "Mon serveur Discord"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "MyAnimeList"
+msgstr ""
+
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
 msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
@@ -5695,6 +5748,10 @@ msgstr "Nécessite FlareSolverr"
 #, fuzzy
 msgid "Needs review"
 msgstr "Nécessite une vérification"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Neutral"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5864,6 +5921,10 @@ msgstr "Aucun indexeur configuré dans Prowlarr."
 #, fuzzy
 msgid "no longer steers your taste"
 msgstr "n'oriente plus vos goûts"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "No manga match"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6130,6 +6191,10 @@ msgstr "Pas encore exécuté"
 msgid "Not scanned"
 msgstr "Pas analysé"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Not synced yet"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -6332,6 +6397,7 @@ msgstr "OEL / occidental"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Off"
 msgstr "Désactivé"
@@ -6370,6 +6436,7 @@ msgstr "Noir OLED"
 
 #: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On"
 msgstr "Activé"
@@ -6379,6 +6446,10 @@ msgstr "Activé"
 #, fuzzy
 msgid "On disk"
 msgstr "Sur le disque"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "On hold"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -6824,6 +6895,10 @@ msgstr "Recherche simple par titre. Correspondances à partir de deux caractère
 msgid "Plan to read"
 msgstr "À lire"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Planning"
+msgstr ""
+
 #: src/pages/StatsPage.tsx
 #, fuzzy
 msgid "Play Rewind"
@@ -6871,6 +6946,10 @@ msgstr "port, guide de configuration, première configuration, instance"
 #, fuzzy
 msgid "Portuguese (Br)"
 msgstr "Portugais (Br)"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Positive"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9072,6 +9151,7 @@ msgid "Sync interval (minutes)"
 msgstr "Intervalle de synchronisation (minutes)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Sync now"
@@ -9857,6 +9937,7 @@ msgid "Unlink"
 msgstr "Dissocier"
 
 #: src/components/SourceCompareModal.tsx
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Unmatched"
 msgstr "Sans correspondance"
@@ -10220,6 +10301,10 @@ msgstr "Souhaité pour {spanLabel} : {wantedCount} sur {total} chapitres"
 #, fuzzy
 msgid "Watched"
 msgstr "Regardé"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Watching"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

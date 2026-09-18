@@ -1,4 +1,4 @@
-﻿using Maki.Core.Io;
+using Maki.Core.Io;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -1416,6 +1416,123 @@ public class MangaBakaLocalStore(
                     GetString(reader, 6),
                     GetInt(reader, 7));
             }
+        }
+
+        return result;
+    }
+
+    /// <summary>Which provider's manga ids a lookup is keyed on.</summary>
+    public enum ExternalSource { AniList, MyAnimeList }
+
+    /// <summary>
+    /// External manga id -> canonical MangaBaka id, for the ids that resolve.
+    /// <para>
+    /// Chunked <c>IN (...)</c> rather than a temp table or a join, because the dump is opened
+    /// read-only and a nightly swap replaces the file: nothing here may write to it, index included.
+    /// Each chunk is one scan, so the chunk is large (500) and the callers are expected to ask once
+    /// per sync rather than once per entry.
+    /// </para>
+    /// Merged rows are followed to their canonical series the same way <see cref="GetAsync"/> does,
+    /// and novels are dropped, so a light-novel relation picked up from a provider cannot enter the
+    /// recommender as a manga seed.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, long>> GetIdsByExternalIdsAsync(
+        ExternalSource source, IReadOnlyCollection<long> externalIds, CancellationToken ct = default)
+    {
+        var wanted = externalIds.Where(id => id > 0).Distinct().ToList();
+        if (wanted.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return new Dictionary<long, long>();
+        }
+
+        var column = source == ExternalSource.AniList ? "source_anilist_id" : "source_my_anime_list_id";
+        var result = new Dictionary<long, long>(wanted.Count);
+        var pending = new List<(long External, long SeriesId)>();
+
+        using var conn = Open();
+        const int chunkSize = 500;
+        for (var offset = 0; offset < wanted.Count; offset += chunkSize)
+        {
+            var chunk = wanted.Skip(offset).Take(chunkSize).ToList();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT {column}, id, state, merged_with, type
+                FROM series
+                WHERE {column} IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                """;
+            cmd.CommandTimeout = 600;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                if (reader.IsDBNull(0))
+                {
+                    continue;
+                }
+
+                // The dump stores these as text on some rows and as integers on others.
+                var external = reader.GetFieldType(0) == typeof(string)
+                    ? long.TryParse(GetString(reader, 0), NumberStyles.Integer, CultureInfo.InvariantCulture, out var p)
+                        ? p : 0
+                    : reader.GetInt64(0);
+                if (external <= 0)
+                {
+                    continue;
+                }
+
+                var seriesId = reader.GetInt64(1);
+                if (GetString(reader, 2) == "merged" && long.TryParse(GetString(reader, 3), out var canonical))
+                {
+                    pending.Add((external, canonical));
+                    continue;
+                }
+
+                if (GetString(reader, 4) == "novel")
+                {
+                    continue;
+                }
+
+                result.TryAdd(external, seriesId);
+            }
+        }
+
+        for (var hop = 0; hop < 5 && pending.Count > 0; hop++)
+        {
+            var next = new List<(long External, long SeriesId)>();
+            var ids = pending.Select(x => x.SeriesId).Distinct().ToList();
+            var states = new Dictionary<long, (string? State, string? MergedWith, string? Type)>(ids.Count);
+            for (var offset = 0; offset < ids.Count; offset += chunkSize)
+            {
+                var chunk = ids.Skip(offset).Take(chunkSize).ToList();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"""
+                    SELECT id, state, merged_with, type FROM series
+                    WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                    """;
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    states[reader.GetInt64(0)] = (GetString(reader, 1), GetString(reader, 2), GetString(reader, 3));
+                }
+            }
+
+            foreach (var (external, seriesId) in pending)
+            {
+                if (result.ContainsKey(external) || !states.TryGetValue(seriesId, out var row))
+                {
+                    continue;
+                }
+
+                if (row.State == "merged" && long.TryParse(row.MergedWith, out var canonical))
+                {
+                    next.Add((external, canonical));
+                }
+                else if (row.Type != "novel")
+                {
+                    result.TryAdd(external, seriesId);
+                }
+            }
+
+            pending = next;
         }
 
         return result;

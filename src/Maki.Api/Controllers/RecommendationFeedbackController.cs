@@ -16,7 +16,7 @@ namespace Maki.Api.Controllers;
 public class RecommendationFeedbackController(RecommendationFeedbackService feedback, ICurrentUser user,
     MakiDbContext db, SemanticRecommender semantic, BehavioralTasteService behavioural,
     IAppSettings settings, SeedWeightService seedWeights,
-    TasteAvoidanceService avoidance) : ControllerBase
+    TasteAvoidanceService avoidance, AnimeSignalSources animeSources) : ControllerBase
 {
     [HttpGet("feedback-lab")]
     public async Task<IActionResult> Lab(CancellationToken ct)
@@ -57,10 +57,18 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
         var avoids = await avoidance.LabelsAsync(user, snapshot.Avoided, allowed, ct);
         var weightingEnabled = await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
         var labUiEnabled = await settings.GetAsync(SettingKeys.RecommendationsFeedbackLab, ct) != "false";
+        // Whether the anime panel is worth rendering at all: the instance allows it and this reader
+        // has a tracker it could actually read. Deliberately NOT their opt-in - the client gates the
+        // whole section on this, opt-in switch included, so folding that in would make the switch
+        // impossible to reach. The opt-in state is `enabled` on GET anime-signals.
+        var animeSignalsAvailable =
+            await settings.GetAsync(SettingKeys.RecommendationsAnimeSignals, ct) != "false" &&
+            (await animeSources.ConnectedAsync(user.UserId, ct)).Count > 0;
         return Ok(new
         {
             capabilities = new { feedback = true, signalOverrides = true, labUi = labUiEnabled,
-                personalAddWeighting = weightingEnabled && semantic.IsReady() },
+                personalAddWeighting = weightingEnabled && semantic.IsReady(),
+                animeSignals = animeSignalsAvailable },
             rankingMode = semantic.IsReady() ? "semantic" : "fallback",
             versions = new { versions.FeedbackRevision, versions.SignalRevision },
             summary = new

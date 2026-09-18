@@ -14,6 +14,12 @@ paths:
   - "src/Maki.Core/Recommendations/**"
   - "src/Maki.Core/Entities/RecommendationFeedback*.cs"
   - "frontend/src/api/recommendationFeedback.ts"
+  - "frontend/src/api/animeSignals.ts"
+  - "frontend/src/pages/discover/AnimeSignalsSection.tsx"
+  - "src/Maki.Api/Services/AnimeSignal*.cs"
+  - "src/Maki.Api/Jobs/AnimeSignal*.cs"
+  - "src/Maki.Api/Controllers/AnimeSignals*.cs"
+  - "src/Maki.Core/Scrobbling/IAnimeListSource.cs"
   - "frontend/src/pages/discover/FeedbackLab.tsx"
   - "frontend/src/pages/discover/ManageSignalsModal.tsx"
   - "frontend/src/components/discover/RecommendationFeedbackMenu.tsx"
@@ -69,3 +75,5 @@ Migrated out of the root CLAUDE.md so this only loads when touching recommendati
 - **The per-group blind spot ("Nothing like these on your shelf") was built and then removed, and the reason is the surface, not the idea.** It was worth a card when there were two to five broad clusters; at twelve narrow groups it is twelve of them, and a reader skimming their own shelf reads that as noise. Removing it also took out the build's most expensive step: `CosineBetween` over every scan hit × every owned series × every group, which is quadratic in library size where nothing else here is. `TasteBlindSpot`, `BlindSpotFrom` and the near-owned filter are gone rather than left computed and unrendered; restoring them means restoring that cost too.
 - **Home sections are user-ordered** (`ui.homesections`, `HomeLayoutSpec`). `Merge` runs on every read/write: unknown keys dropped, new keys appended enabled (never re-slotted) so a release adding a section doesn't scramble the user's ordering.
 - **Home's "recently added" rail reads `ChapterFile.DateAdded`**, not `StatsEvents` (which is aggregated to one row/series/day — can't name the newest chapter). Both reading rails do a bounded scan + in-memory group, not an unbounded `GROUP BY`, since after a Kavita import that'd aggregate the whole library on every page load.
+
+- **Anime signals are a third seed source, below the shelf and below explicit feedback** (`AnimeSignal` entity, `AnimeSignalSyncService`, `AnimeSignalPolicy`, `GET/PUT/POST recommendations/anime-signals`, instance switch `recommendations.animesignals`, per-user opt-in `recommendations.animesignals.enabled` default off). The MangaBaka dump has no anime ids at all (`anime` is null on every row), so an anime is matched through the provider's own relation data: AniList `relations` on the list query, MAL `related_manga` one call per anime, capped and throttled per pass and stamped `MatchAttemptedAtUtc` so re-syncs cost one list call. Novels are dropped before the dump lookup, otherwise a light-novel-sourced show resolves to nothing. In `SeedWeightService` an anime row is skipped when the manga is on the shelf, has a thumbs, or is an ignored source. Score >= 7 or unscored Completed is a positive seed at `SeedScale` 0.7, always below the neutral 1.0 a shelf title gets; score <= 4 or Dropped goes into `Avoided` on the policy's own 10-point curve, not `RecommendationFeedbackPolicy.AvoidStrength`, which is a star scale. Positives sit in `Effective.EligibleIds` only, never `Observed` or `LibraryIds`, which is also what keeps the matched manga out of the output. `capabilities.animeSignals` on the feedback-lab payload means "instance on and an anime-capable tracker is connected", not "opted in": the client gates the opt-in switch on it.

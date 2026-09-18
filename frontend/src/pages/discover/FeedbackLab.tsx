@@ -12,6 +12,7 @@ import { StatTile } from '../../components/ui/StatTile'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate, formatTime } from '../../format'
 import { ManageSignalsModal } from './ManageSignalsModal'
+import { AnimeSignalsSection } from './AnimeSignalsSection'
 
 /** Actions the undo endpoint can reverse: it replays the event's stored previous state. */
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
@@ -248,6 +249,8 @@ export function SignalsCard() {
                 </Paper>
               </Grid.Col>
             </Grid>
+
+            {lab.capabilities.animeSignals && <AnimeSignalsSection />}
           </>
         )}
       </Stack>

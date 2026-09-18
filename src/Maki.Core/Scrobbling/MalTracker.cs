@@ -12,7 +12,7 @@ public class MalTracker(
     IHttpClientFactory httpClientFactory,
     IAppSettings settings,
     IScrobbleTokenStore tokens,
-    ScrobbleTrackerOptions options) : IScrobbleTracker
+    ScrobbleTrackerOptions options) : IScrobbleTracker, IAnimeListSource
 {
     public const string HttpClientName = "scrobble";
 
@@ -324,6 +324,114 @@ public class MalTracker(
 
     private static string? GetString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.String ? p.GetString() : null;
+
+    // ---- anime list ----
+
+    private static readonly Dictionary<string, AnimeWatchStatus> AnimeStatusToInternal = new()
+    {
+        ["watching"] = AnimeWatchStatus.Watching,
+        ["completed"] = AnimeWatchStatus.Completed,
+        ["on_hold"] = AnimeWatchStatus.OnHold,
+        ["dropped"] = AnimeWatchStatus.Dropped,
+        ["plan_to_watch"] = AnimeWatchStatus.Planning,
+    };
+
+    /// <summary>
+    /// The whole anime list, paged by offset rather than by following <c>paging.next</c>: that field
+    /// is an absolute URL and everything else here goes through <see cref="RequestAsync"/>, which
+    /// takes a path. Carries no relation data, so every entry comes back unresolved and the sync
+    /// asks <see cref="RelatedMangaAsync"/> once per anime it has not asked about before.
+    /// </summary>
+    public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+    {
+        const int pageSize = 1000;
+        var entries = new List<AnimeListEntry>();
+        var seen = new HashSet<long>();
+        for (var offset = 0; offset < 20_000; offset += pageSize)
+        {
+            var data = await RequestAsync(userId, HttpMethod.Get,
+                $"/users/@me/animelist?fields=list_status&nsfw=true&limit={pageSize}&offset={offset}", null, ct);
+            if (!data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
+            {
+                break;
+            }
+
+            var count = 0;
+            foreach (var row in rows.EnumerateArray())
+            {
+                count++;
+                if (!row.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
+                    GetInt(node, "id") is not { } animeId || !seen.Add(animeId))
+                {
+                    continue;
+                }
+
+                var hasStatus = row.TryGetProperty("list_status", out var ls) &&
+                                ls.ValueKind == JsonValueKind.Object;
+                entries.Add(new AnimeListEntry(
+                    animeId,
+                    GetString(node, "title") ?? string.Empty,
+                    hasStatus ? PositiveOrNull(GetInt(ls, "score")) : null,
+                    hasStatus
+                        ? AnimeStatusToInternal.GetValueOrDefault(
+                            GetString(ls, "status") ?? string.Empty, AnimeWatchStatus.Planning)
+                        : AnimeWatchStatus.Planning));
+            }
+
+            if (count < pageSize)
+            {
+                break;
+            }
+        }
+
+        return entries;
+    }
+
+    public async Task<AnimeRelatedManga?> RelatedMangaAsync(
+        int userId, long animeId, CancellationToken ct = default)
+    {
+        JsonElement data;
+        try
+        {
+            data = await RequestAsync(userId, HttpMethod.Get, $"/anime/{animeId}?fields=related_manga", null, ct);
+        }
+        catch (TrackerException)
+        {
+            // One dead or region-locked anime is not a reason to lose the rest of the list. The
+            // caller stamps MatchAttemptedAtUtc either way, so this does not retry every sync.
+            return null;
+        }
+
+        if (!data.TryGetProperty("related_manga", out var related) || related.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var best = (Rank: int.MaxValue, Id: 0L);
+        foreach (var edge in related.EnumerateArray())
+        {
+            if (!edge.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
+                GetInt(node, "id") is not { } mangaId)
+            {
+                continue;
+            }
+
+            var rank = AnimeRelationPicker.MalRelationRank(GetString(edge, "relation_type"));
+            // Skipped, not ranked last: a spin-off or a character book is not the source work, and
+            // taking one because nothing better was listed is how a wrong seed gets in.
+            if (rank == int.MaxValue)
+            {
+                continue;
+            }
+
+            if (rank < best.Rank)
+            {
+                best = (rank, mangaId);
+            }
+        }
+
+        return best.Id > 0 ? new AnimeRelatedManga(null, best.Id) : null;
+    }
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
 }

@@ -1,4 +1,4 @@
-﻿using Jeffijoe.MessageFormat;
+using Jeffijoe.MessageFormat;
 using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
@@ -663,6 +663,8 @@ try
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
+    builder.Services.AddSingleton<AnimeSignalSources>();
+    builder.Services.AddSingleton<AnimeSignalSyncService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
@@ -762,6 +764,17 @@ try
             .WithIdentity("scrobble-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Hourly tick; AnimeSignalSyncService decides whether its own (much longer) interval has
+        // elapsed. Stable key so the opt-in endpoint can trigger it with force=true.
+        q.AddJob<Maki.Api.Jobs.AnimeSignalJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.AnimeSignalJob.Key)
+            .SetJobData(new JobDataMap { { Maki.Api.Jobs.AnimeSignalJob.ForceKey, false } }));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.AnimeSignalJob.Key)
+            .WithIdentity("anime-signal-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
 
         // Stable job key so the settings endpoint can trigger a refresh on demand.
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
