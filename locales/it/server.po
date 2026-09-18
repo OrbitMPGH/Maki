@@ -353,20 +353,23 @@ msgstr "Quella richiesta è già stata risolta"
 #. A second admin is already approving this request, or it has been resolved since the page loaded.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: That request is already being approved or has been resolved
+#, fuzzy
 msgid "error.requests.approvalInProgress"
-msgstr ""
+msgstr "Quella richiesta è già in fase di approvazione o è già stata risolta"
 
 #. The request was approved into a different root folder than the one this approval names.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was already approved into a different root folder
+#, fuzzy
 msgid "error.requests.approvedElsewhere"
-msgstr ""
+msgstr "Questa richiesta è già stata approvata in una cartella radice diversa"
 
 #. The request was approved once, and the series it created has since been deleted from the library.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: This request was approved earlier and that series has since been deleted. Reject it and ask for a new request.
+#, fuzzy
 msgid "error.requests.approvedSeriesDeleted"
-msgstr ""
+msgstr "Questa richiesta è stata approvata in precedenza e quella serie è stata eliminata da allora. Rifiutala e chiedi una nuova richiesta."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: The last chapter can't be lower than the first
@@ -526,8 +529,9 @@ msgstr "La serie ha un download attivo, attendi che finisca prima di spostarla"
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
+#, fuzzy
 msgid "error.series.addResultGone"
-msgstr ""
+msgstr "Quell'aggiunta si è completata in precedenza e la serie è stata rimossa da allora. Aggiungila di nuovo per crearne una nuova."
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series already exists in library
@@ -582,8 +586,9 @@ msgstr "Ricerca dei metadati non riuscita, la serie non ha un id del provider op
 #. The client reused a mutation id it had already sent with different add parameters.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
+#, fuzzy
 msgid "error.series.mutationIdReused"
-msgstr ""
+msgstr "Quell'ID di mutazione è già stato usato per un'altra aggiunta"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: No files selected
