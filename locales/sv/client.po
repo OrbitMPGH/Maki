@@ -813,8 +813,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, one {# serie} other {# serier}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{support} av {pushedDown} nedtryckta, {positiveSupport} av {shelfCount} på din hylla"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -1049,8 +1050,9 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Sedd på annat håll</0> gör att titeln slutar rekommenderas utan att ändra smaken."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>Tumme ner</0> och betyg på 4 eller lägre trycker ner titlar som ligger närmare det du avvisade än det du behöll. Det de har gemensamt visas ovan när tre eller fler är överens."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1190,8 +1192,9 @@ msgid "A refresh is already running"
 msgstr "En uppdatering körs redan"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "En tumme ner döljer den här titeln och trycker ner titlar som ligger närmare den än det du behöll. Dölj tar bara bort den."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -6991,8 +6994,9 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "Hämta den nya avbildningen och skapa om containern för att uppdatera."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "Trycker ner titlar som liknar den här"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9529,8 +9533,9 @@ msgid "Thumbs"
 msgstr "Tumme"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "Tumme ner. Den här titeln är ute, och titlar som ligger närmare den än det du behöll rankas lägre."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

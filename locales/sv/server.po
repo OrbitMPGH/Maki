@@ -2188,26 +2188,31 @@ msgstr "Genomsökningen hittade {count, plural, one {# nytt objekt} other {# nya
 #. Whether a title is currently allowed into recommendations at all.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title excluded
+#, fuzzy
 msgid "feedback.queue.excluded"
-msgstr ""
+msgstr "Titel utesluten"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Title eligible
+#, fuzzy
 msgid "feedback.queue.eligible"
-msgstr ""
+msgstr "Titel kvalificerad"
 
 #. What the thumbs up or down did to the inferred taste profile.
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Used as a taste signal
+#, fuzzy
 msgid "feedback.taste.liked"
-msgstr ""
+msgstr "Används som smaksignal"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Pushes down titles closer to this one
+#, fuzzy
 msgid "feedback.taste.disliked"
-msgstr ""
+msgstr "Trycker ner titlar som liknar den här"
 
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 #. English: Taste unchanged
+#, fuzzy
 msgid "feedback.taste.unchanged"
-msgstr ""
+msgstr "Smaken oförändrad"
