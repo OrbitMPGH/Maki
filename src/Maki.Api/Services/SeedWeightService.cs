@@ -183,9 +183,9 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         foreach (var r in effectiveRows)
         {
             var strength = RecommendationFeedbackPolicy.AvoidStrength(r.Rating ?? 0);
-            // Max, not overwrite. A title that is both thumbed down and rated 4 keeps the thumb's
-            // 1.0, and where the two disagree the rating is the considered action - the same
-            // argument LikedWeight's remarks make about a like sitting below an explicit 10.
+            // Max, not overwrite. Both actions say the same thing, so a title that is both thumbed
+            // down and rated 4 is pushed by the stronger of the two rather than by whichever the
+            // reader happened to do second.
             if (strength > 0)
             {
                 avoided[r.Id] = Math.Max(avoided.GetValueOrDefault(r.Id), strength);

@@ -3,6 +3,7 @@ import { notifications } from '@mantine/notifications'
 import {
   IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
 } from '@tabler/icons-react'
+import { useLingui } from '@lingui/react/macro'
 import { useFeedbackState, useMutateFeedback, useUndoFeedback } from '../../api/recommendationFeedback'
 
 type Command = {
@@ -22,6 +23,8 @@ type Command = {
  */
 export function RecommendationFeedbackMenu({ providerId, surface }: { providerId: string; surface: string }) {
   const id = Number(providerId)
+  const { t } = useLingui()
+  const describe = useDescribe()
   const { data: state, isLoading } = useFeedbackState(id)
   const mutation = useMutateFeedback()
   const undo = useUndoFeedback()
@@ -124,8 +127,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
           </Menu.Item>
           <Menu.Item onClick={() => void submit('clear-exposure')}>Clear read or seen</Menu.Item>
           <Text size="xs" c="dimmed" px="sm" py="xs">
-            A thumbs down hides this title. Neither it nor Hide marks its genres, author or related
-            works as disliked.
+            {t`A thumbs down hides this title and stops it steering your recommendations. Hide only removes it.`}
           </Text>
         </Menu.Dropdown>
       </Menu>
@@ -133,19 +135,24 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
   )
 }
 
-function describe(feedbackEffect: string, queueEffect: string): string {
-  switch (feedbackEffect) {
-    case 'positive-title':
-      return 'Thumbs up. This title now steers your recommendations, and it will not be recommended back to you.'
-    case 'negative-title':
-      return 'Removed from recommendations. Only this title: its genres and author are unaffected.'
-    case 'temporary':
-      return 'Dismissed for 30 days. It comes back on its own.'
-    case 'neutral-exposure':
-      return 'Marked as already read or seen. Your taste profile was not changed.'
-    default:
-      return queueEffect === 'suppressed'
-        ? 'Updated. This title stays out of recommendations.'
-        : 'Updated. This title can appear in recommendations again.'
+function useDescribe() {
+  const { t } = useLingui()
+  return (feedbackEffect: string, queueEffect: string): string => {
+    switch (feedbackEffect) {
+      case 'positive-title':
+        return 'Thumbs up. This title now steers your recommendations, and it will not be recommended back to you.'
+      case 'negative-taste':
+        return t`Thumbs down. This title is out, and it no longer steers your recommendations.`
+      case 'negative-title':
+        return 'Removed from recommendations. Only this title: its genres and author are unaffected.'
+      case 'temporary':
+        return 'Dismissed for 30 days. It comes back on its own.'
+      case 'neutral-exposure':
+        return 'Marked as already read or seen. Your taste profile was not changed.'
+      default:
+        return queueEffect === 'suppressed'
+          ? 'Updated. This title stays out of recommendations.'
+          : 'Updated. This title can appear in recommendations again.'
+    }
   }
 }

@@ -22,8 +22,9 @@ public static class RecommendationFeedbackPolicy
                 state.DismissedUntilUtc = null;
                 break;
             // Disliking hides, because continuing to recommend something the reader just rejected is
-            // the complaint this exists to answer. It is still only this title: no genre, author or
-            // franchise is inferred from it.
+            // the complaint this exists to answer. It also joins the avoided set, so titles that
+            // resemble this one rank lower. That resemblance is a vector neighbourhood: no genre,
+            // author or franchise is named, and nothing is excluded outright.
             case "dislike":
                 state.Sentiment = RecommendationSentiment.Disliked;
                 state.Suppression = RecommendationSuppression.Hidden;

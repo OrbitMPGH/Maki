@@ -314,7 +314,10 @@ public class RecommendationFeedbackTests : IDisposable
 
         var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), db,
             new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
-            new FakeAppSettings());
+            new FakeAppSettings(),
+            new SeedWeightService(
+                new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings()),
+            Avoidance());
         var payload = JsonSerializer.SerializeToElement(
             Assert.IsType<OkObjectResult>(await controller.Lab(default)).Value);
 
@@ -326,6 +329,10 @@ public class RecommendationFeedbackTests : IDisposable
         Assert.Equal(["Action", "Comedy"],
             source.GetProperty("genres").EnumerateArray().Select(x => x.GetString()));
         Assert.Equal(1, payload.GetProperty("summary").GetProperty("excluded").GetInt32());
+        // Nothing pushed down and nothing to name, but both shapes are always present so the client
+        // never has to branch on a missing field.
+        Assert.Equal(0, payload.GetProperty("summary").GetProperty("pushingDown").GetInt32());
+        Assert.Empty(payload.GetProperty("avoids").EnumerateArray());
         Assert.False(payload.TryGetProperty("dimensions", out _));
         Assert.NotEqual(0, seriesId);
     }
@@ -351,6 +358,21 @@ public class RecommendationFeedbackTests : IDisposable
         Assert.DoesNotContain(4321L, snapshot.Effective.EligibleIds);
         Assert.False(snapshot.Effective.Weights.ContainsKey(4321));
         Assert.Equal(0.75, snapshot.Avoided[4321]);
+    }
+
+    /// <summary>
+    /// The avoidance labeller over nothing. Its inputs are the vector index and the dump, and with
+    /// an empty avoided set it answers before reaching either.
+    /// </summary>
+    private static TasteAvoidanceService Avoidance()
+    {
+        var options = new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base);
+        var dump = new MangaBakaDumpOptions("", Path.GetTempPath());
+        return new TasteAvoidanceService(
+            new MangaBakaLocalStore(dump, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance),
+            new VectorIndexCache(options, dump, NullLogger<VectorIndexCache>.Instance),
+            new EmbeddingStore(options),
+            NullLogger<TasteAvoidanceService>.Instance);
     }
 
     /// <summary>The lab only asks the recommender whether semantic ranking is up.</summary>

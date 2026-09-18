@@ -201,8 +201,8 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, one {# download in progress} other {# downloads in progress}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "{adds} added by you"
-msgstr "{adds} added by you"
+msgid "{adds} added by you, {excluded} excluded from taste"
+msgstr "{adds} added by you, {excluded} excluded from taste"
 
 #: src/pages/HealthPage.tsx
 msgid "{alt} has no page {page}"
@@ -285,6 +285,10 @@ msgstr "{connected} connected"
 msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, one {# ch} other {# ch}}"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "{count, plural, one {# title} other {# titles}}"
+msgstr "{count, plural, one {# title} other {# titles}}"
+
 #: src/components/NotificationBell.tsx
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, one {# unread} other {# unread}}"
@@ -329,10 +333,6 @@ msgstr "{embedded, plural, one {# new} other {# new}}"
 #: src/components/MetadataDumpProgress.tsx
 msgid "{eta} left"
 msgstr "{eta} left"
-
-#: src/pages/discover/FeedbackLab.tsx
-msgid "{excluded} excluded from taste"
-msgstr "{excluded} excluded from taste"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{exposed} seen elsewhere"
@@ -505,6 +505,10 @@ msgstr "{pageCount, plural, one {# page} other {# pages}}"
 #: src/components/SeriesFilesSection.tsx
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, one {# needs attention} other {# need attention}}"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "{pushingDown} kept out of your taste"
+msgstr "{pushingDown} kept out of your taste"
 
 #: src/pages/LibraryPage.tsx
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
@@ -831,6 +835,10 @@ msgstr "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lis
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
 msgstr "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "<0>Hide and dismiss</0> only affect that one title."
+msgstr "<0>Hide and dismiss</0> only affect that one title."
+
 #: src/components/settings/SecuritySection.tsx
 msgid "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so password sign-in is available to every account regardless of the switch above. Remove the variable and restart to enforce it again."
 msgstr "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so password sign-in is available to every account regardless of the switch above. Remove the variable and restart to enforce it again."
@@ -840,8 +848,8 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr "<0>Seen elsewhere</0> stops a title being recommended without changing taste."
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "<0>Thumbs down, hide, dismiss</0> only affect that one title. Nothing is inferred about the genre."
-msgstr "<0>Thumbs down, hide, dismiss</0> only affect that one title. Nothing is inferred about the genre."
+msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
+msgstr "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
@@ -952,6 +960,10 @@ msgstr "A refresh found new chapters for a series."
 #: src/pages/SettingsPage.tsx
 msgid "A refresh is already running"
 msgstr "A refresh is already running"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
+msgstr "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
 
 #: src/components/NamingTokenModal.tsx
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
@@ -4737,6 +4749,10 @@ msgstr "No index yet, the prebuilt vectors download automatically."
 msgid "No indexers configured in Prowlarr."
 msgstr "No indexers configured in Prowlarr."
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "no longer steers your taste"
+msgstr "no longer steers your taste"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "No match"
 msgstr "No match"
@@ -4949,6 +4965,10 @@ msgstr "Not run yet"
 #: src/pages/HealthPage.tsx
 msgid "Not scanned"
 msgstr "Not scanned"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Not used to steer recommendations"
+msgstr "Not used to steer recommendations"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "not yet synced"
@@ -7675,10 +7695,6 @@ msgstr "This takes a minute or two and only happens once per snapshot."
 msgid "this title only"
 msgstr "this title only"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "This title only, no genre inferred"
-msgstr "This title only, no genre inferred"
-
 #: src/pages/stats/AchievementsPanel.tsx
 msgid "This week"
 msgstr "This week"
@@ -7706,6 +7722,10 @@ msgstr "Thumbnails"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Thumbs"
 msgstr "Thumbs"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
+msgstr "Thumbs down. This title is out, and it no longer steers your recommendations."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "thumbs up / down"
@@ -8476,6 +8496,10 @@ msgstr "You might like"
 #: src/pages/discover/TasteTab.tsx
 msgid "You put down"
 msgstr "You put down"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "You seem to avoid"
+msgstr "You seem to avoid"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "You slow down for"

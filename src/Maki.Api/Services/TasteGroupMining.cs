@@ -69,7 +69,7 @@ public static class TasteGroupMining
     /// for.
     /// </para>
     /// </summary>
-    private const double MinSingleSpecificity = 2.0;
+    internal const double MinSingleSpecificity = 2.0;
 
     /// <summary>
     /// The rarest a facet is allowed to count as, past which extra rarity buys nothing.
@@ -88,7 +88,7 @@ public static class TasteGroupMining
     /// evidence question the raw IDF was answering backwards.
     /// </para>
     /// </summary>
-    private static readonly double MaxSpecificity = Math.Log(1 / 0.005);
+    internal static readonly double MaxSpecificity = Math.Log(1 / 0.005);
 
     /// <summary>
     /// Facets per work that get to form pairs, most specific first. A work can carry thirty tags and

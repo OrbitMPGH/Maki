@@ -34,6 +34,15 @@ export interface FeedbackPage<T> {
   signalRevision: number
 }
 
+/** One thing the titles a reader pushed down have in common. Display only; see TasteAvoidanceService. */
+export interface AvoidanceLabel {
+  label: string
+  kind: 'tag' | 'genre'
+  support: number
+  share: number
+  examples: { mangaBakaId: number; title: string }[]
+}
+
 export interface FeedbackLabData {
   capabilities: { feedback: boolean; signalOverrides: boolean; labUi: boolean; personalAddWeighting: boolean }
   versions: { feedbackRevision: number; signalRevision: number }
@@ -41,7 +50,9 @@ export interface FeedbackLabData {
   summary: {
     visibleShelf: number; personalAdds: number; ratedSources: number; readSources: number
     excluded: number; hidden: number; dismissed: number; exposed: number; liked: number; disliked: number
+    pushingDown: number
   }
+  avoids: AvoidanceLabel[]
   sources: {
     mangaBakaId: number; title: string; addedAtUtc: string | null; rating: number | null
     coverUrl: string | null; genres: string[]; isRead: boolean; excluded: boolean

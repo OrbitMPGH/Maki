@@ -250,12 +250,16 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const id = row.id
   const title = row.title || t`Catalogue title ${id}`
 
+  // A rating of 4 or under is the same statement as a thumbs down, so it gets the same line. The
+  // ceiling lives in RecommendationFeedbackPolicy.AvoidRatingCeiling; 5 is neutral.
+  const keptOut = sentiment === 'disliked' || (rating !== null && rating <= 4)
+
   const why = row.excluded
     ? t`On your shelf, not used for ranking`
-    : suppression !== 'none'
-      ? t`Hidden from recommendations`
-      : sentiment === 'disliked'
-        ? t`This title only, no genre inferred`
+    : keptOut
+      ? t`Not used to steer recommendations`
+      : suppression !== 'none'
+        ? t`Hidden from recommendations`
         : exposure.length > 0
           ? t`Not recommended again`
           : t`Shapes recommendations`
@@ -287,7 +291,9 @@ function SignalRow({ row, busy, onClear, onExclude }: {
       <div style={{ width: 300, flex: 'none' }}>
         <Group gap={6} wrap="wrap">
           {rating !== null && (
-            <Badge size="sm" variant="light" color="teal">{t`★ ${rating} rated`}</Badge>
+            <Badge size="sm" variant="light" color={rating <= 4 ? 'red' : 'teal'}>
+              {t`★ ${rating} rated`}
+            </Badge>
           )}
           {sentiment === 'liked' && (
             <Pill color="teal" label={t`👍 Liked`} clear={t`Clear the thumbs up`}

@@ -102,7 +102,7 @@ public class TasteInsightsService(
     /// Which weight classes of a tag can name a group. A tag the dump marked incidental is a thing
     /// that happened in one chapter, and a group built on those is a group about nothing.
     /// </summary>
-    private const byte MinTagClass = TagMath.Defining;
+    internal const byte MinTagClass = TagMath.Defining;
 
     /// <summary>
     /// The <c>name_path</c> roots a tag may name a group from.
@@ -136,7 +136,7 @@ public class TasteInsightsService(
     /// library actually needs are in <c>Settings &gt; Game Elements</c> and <c>Themes</c> already.
     /// </para>
     /// </summary>
-    private static readonly HashSet<string> GroupCategories = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> GroupCategories = new(StringComparer.OrdinalIgnoreCase)
     {
         "Themes", "Settings", "Relationship", "Activities", "Occupations",
         "Species & Creatures", "World Building",
@@ -152,7 +152,7 @@ public class TasteInsightsService(
     /// series is the broad, useless label this whole surface exists to replace.
     /// </para>
     /// </summary>
-    private static readonly HashSet<string> DemographicGenres = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> DemographicGenres = new(StringComparer.OrdinalIgnoreCase)
     {
         "Shounen", "Shoujo", "Seinen", "Josei", "Kodomo",
     };
@@ -414,7 +414,7 @@ public class TasteInsightsService(
         var names = new Dictionary<string, (string Name, bool IsTag, long Df)>(StringComparer.Ordinal);
         var perPointNames = new List<List<string>>(points.Count);
 
-        var genreIds = GenreIdsOf(index, points);
+        var genreIds = GenreIdsOf(index, points.SelectMany(p => p.Genres));
         var genreDf = GenreDocumentFrequencies(index, genreIds);
 
         foreach (var point in points)
@@ -495,10 +495,10 @@ public class TasteInsightsService(
     }
 
     /// <summary>The library's genre names resolved against the index's vocabulary, once.</summary>
-    private static Dictionary<string, int> GenreIdsOf(VectorIndex index, List<Point> points)
+    internal static Dictionary<string, int> GenreIdsOf(VectorIndex index, IEnumerable<string> genres)
     {
         var ids = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var name in points.SelectMany(p => p.Genres).Select(g => g.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var name in genres.Select(g => g.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (name.Length > 0 && index.TryGetGenreId(name, out var id))
             {
@@ -513,7 +513,7 @@ public class TasteInsightsService(
     /// How much of the catalogue carries each genre the reader has. One pass over the index's genre
     /// column, which nothing precomputes - unlike a tag, whose count the vocabulary already carries.
     /// </summary>
-    private static Dictionary<int, long> GenreDocumentFrequencies(
+    internal static Dictionary<int, long> GenreDocumentFrequencies(
         VectorIndex index, Dictionary<string, int> genreIds)
     {
         var counts = genreIds.Values.Distinct().ToDictionary(id => id, _ => 0L);

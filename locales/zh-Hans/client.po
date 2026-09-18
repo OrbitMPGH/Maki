@@ -238,7 +238,7 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, other {# 个下载正在进行中}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "{adds} added by you"
+msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -342,6 +342,10 @@ msgstr "已连接 {connected} 个"
 msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, other {# 章}}"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "{count, plural, one {# title} other {# titles}}"
+msgstr ""
+
 #: src/components/NotificationBell.tsx
 #, fuzzy
 msgid "{count, plural, one {# unread} other {# unread}}"
@@ -397,10 +401,6 @@ msgstr "{embedded, plural, other {新增 # 个}}"
 #, fuzzy
 msgid "{eta} left"
 msgstr "剩余 {eta}"
-
-#: src/pages/discover/FeedbackLab.tsx
-msgid "{excluded} excluded from taste"
-msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{exposed} seen elsewhere"
@@ -614,6 +614,10 @@ msgstr "{pageCount, plural, other {# 页}}"
 #, fuzzy
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, other {# 个需要处理}}"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "{pushingDown} kept out of your taste"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1018,6 +1022,10 @@ msgstr "<0>{sub}</0> 列出子章节（1.1、1.2、……），<1>{whole}</1> �
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
 msgstr ""
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "<0>Hide and dismiss</0> only affect that one title."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so password sign-in is available to every account regardless of the switch above. Remove the variable and restart to enforce it again."
@@ -1028,7 +1036,7 @@ msgid "<0>Seen elsewhere</0> stops a title being recommended without changing ta
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "<0>Thumbs down, hide, dismiss</0> only affect that one title. Nothing is inferred about the genre."
+msgid "<0>Thumbs down</0> and ratings of 4 or under stop a title steering your recommendations. What they share shows up above once three or more agree."
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -1163,6 +1171,10 @@ msgstr "刷新发现了某个系列的新章节。"
 #, fuzzy
 msgid "A refresh is already running"
 msgstr "刷新已在运行"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "A thumbs down hides this title and stops it steering your recommendations. Hide only removes it."
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -5807,6 +5819,10 @@ msgstr "尚无索引，预构建向量会自动下载。"
 msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarr 中未配置索引器。"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "no longer steers your taste"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "No match"
@@ -6069,6 +6085,10 @@ msgstr "尚未运行"
 #, fuzzy
 msgid "Not scanned"
 msgstr "未扫描"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Not used to steer recommendations"
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -9414,10 +9434,6 @@ msgstr "这需要一两分钟，每个快照只会发生一次。"
 msgid "this title only"
 msgstr ""
 
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "This title only, no genre inferred"
-msgstr ""
-
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "This week"
@@ -9450,6 +9466,10 @@ msgstr "缩略图"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Thumbs"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Thumbs down. This title is out, and it no longer steers your recommendations."
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -10395,6 +10415,10 @@ msgstr "你可能喜欢"
 #, fuzzy
 msgid "You put down"
 msgstr "你放下了"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "You seem to avoid"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

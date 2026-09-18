@@ -234,6 +234,7 @@ try
     builder.Services.AddSingleton<ReaderCohortRailService>();
     builder.Services.AddSingleton<TasteProfileService>();
     builder.Services.AddSingleton<TasteInsightsService>();
+    builder.Services.AddSingleton<TasteAvoidanceService>();
     builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();

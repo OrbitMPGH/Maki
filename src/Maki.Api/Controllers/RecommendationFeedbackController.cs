@@ -15,7 +15,8 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/recommendations")]
 public class RecommendationFeedbackController(RecommendationFeedbackService feedback, ICurrentUser user,
     MakiDbContext db, SemanticRecommender semantic, BehavioralTasteService behavioural,
-    IAppSettings settings) : ControllerBase
+    IAppSettings settings, SeedWeightService seedWeights,
+    TasteAvoidanceService avoidance) : ControllerBase
 {
     [HttpGet("feedback-lab")]
     public async Task<IActionResult> Lab(CancellationToken ct)
@@ -50,6 +51,10 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
             .Where(x => x.UserId == user.UserId && x.IgnoreAsSeed)
             .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet();
         var entries = await feedback.VisibleTitlesAsync(shelfIds, ct);
+        // The same snapshot the recommender steers with, so the chips describe the set that is
+        // actually being subtracted rather than a second count of the feedback rows.
+        var snapshot = await seedWeights.SnapshotAsync(db, user, ct);
+        var avoids = await avoidance.LabelsAsync(snapshot.Avoided, allowed, ct);
         var weightingEnabled = await settings.GetAsync(SettingKeys.RecommendationsPersonalAddWeighting, ct) != "false";
         var labUiEnabled = await settings.GetAsync(SettingKeys.RecommendationsFeedbackLab, ct) != "false";
         return Ok(new
@@ -69,8 +74,12 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                 dismissed = feedbackCounts.Count(x => x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now),
                 exposed = feedbackCounts.Count(x => x.Exposure != RecommendationExposure.None),
                 liked = feedbackCounts.Count(x => x.Sentiment == RecommendationSentiment.Liked),
-                disliked = feedbackCounts.Count(x => x.Sentiment == RecommendationSentiment.Disliked)
+                disliked = feedbackCounts.Count(x => x.Sentiment == RecommendationSentiment.Disliked),
+                // Thumbs down plus low-rated shelf titles, deduplicated, because a title that is
+                // both is one push and not two. Taken off the snapshot rather than recounted here.
+                pushingDown = snapshot.Avoided.Count
             },
+            avoids,
             sources = sources.GroupBy(x => x.MangaBakaId)
                 .Select(g => new
                 {

@@ -132,7 +132,7 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
                 after.Sentiment switch
                 {
                     "liked" => "Used as a taste signal",
-                    "disliked" => "This title only, no genre inferred",
+                    "disliked" => "No longer steers your taste",
                     _ => "Taste unchanged",
                 }, entry?.CoverUrl);
         }).ToList(),
@@ -331,13 +331,16 @@ public class RecommendationFeedbackService(MakiDbContext db, MangaBakaLocalStore
         var result = new FeedbackMutation(changed, evt?.Id,
             Hydrate(State(state), permitted.GetValueOrDefault(id)), versions.FeedbackRevision,
             versions.SignalRevision, RecommendationFeedbackPolicy.Suppresses(state, now) ? "suppressed" : "eligible",
-            // "taste" says whether the inferred profile moved. Only the sentiment actions move it,
-            // and only for this one work: nothing here teaches the ranker about a genre or an author.
-            changed && action is "like" or "dislike" or "clear-sentiment" ? "title-only" : "unchanged",
+            // "taste" says whether the inferred profile moved. Only the sentiment actions move it.
+            // A like steers toward this one work; a dislike takes it out of the profile altogether,
+            // which is a different answer and needs its own value rather than sharing "title-only".
+            changed && action is "like" or "clear-sentiment" ? "title-only"
+                : changed && action == "dislike" ? "negative-taste"
+                : "unchanged",
             changed ? action switch
             {
                 "like" => "positive-title",
-                "dislike" => "negative-title",
+                "dislike" => "negative-taste",
                 "hide" => "negative-title",
                 "dismiss" => "temporary",
                 "mark-exposed" => "neutral-exposure",

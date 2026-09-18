@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Badge, Button, Card, Grid, Group, Loader, Paper, SimpleGrid, Stack, Text, Title,
+  Alert, Badge, Button, Card, Grid, Group, Loader, Paper, SimpleGrid, Stack, Text, Title, Tooltip,
 } from '@mantine/core'
 import {
   IconBooks, IconEyeOff, IconThumbUp, IconBook,
 } from '@tabler/icons-react'
-import { Trans, useLingui } from '@lingui/react/macro'
-import type { FeedbackActivity } from '../../api/recommendationFeedback'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import type { AvoidanceLabel, FeedbackActivity } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesThumb } from '../stats/SeriesLink'
@@ -57,6 +57,7 @@ export function SignalsCard() {
   const rated = summary?.ratedSources ?? 0
   const adds = summary?.personalAdds ?? 0
   const exposed = summary?.exposed ?? 0
+  const pushingDown = summary?.pushingDown ?? 0
 
   async function undoItem(item: FeedbackActivity) {
     setActionError('')
@@ -110,7 +111,7 @@ export function SignalsCard() {
                 icon={IconBooks}
                 label={t`titles on the shelf`}
                 value={summary.visibleShelf}
-                hint={t`${excluded} excluded from taste`}
+                hint={t`${adds} added by you, ${excluded} excluded from taste`}
               />
               <StatTile
                 icon={IconBook}
@@ -123,7 +124,7 @@ export function SignalsCard() {
                 icon={IconThumbUp}
                 accent="ok"
                 label={t`thumbs up / down`}
-                hint={t`${adds} added by you`}
+                hint={t`${pushingDown} kept out of your taste`}
                 value={
                   <>
                     <Text span inherit c="teal">{summary.liked}</Text>
@@ -140,6 +141,8 @@ export function SignalsCard() {
                 hint={t`${exposed} seen elsewhere`}
               />
             </SimpleGrid>
+
+            {lab.avoids.length > 0 && <AvoidRow avoids={lab.avoids} />}
 
             {lab.rankingMode === 'fallback' && (
               <Text size="xs" c="dimmed">
@@ -220,8 +223,13 @@ export function SignalsCard() {
                     </Text>
                     <Text size="xs" c="dimmed">
                       <Trans>
-                        <b>Thumbs down, hide, dismiss</b> only affect that one title. Nothing is
-                        inferred about the genre.
+                        <b>Thumbs down</b> and ratings of 4 or under stop a title steering your
+                        recommendations. What they share shows up above once three or more agree.
+                      </Trans>
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      <Trans>
+                        <b>Hide and dismiss</b> only affect that one title.
                       </Trans>
                     </Text>
                     <Text size="xs" c="dimmed">
@@ -244,6 +252,34 @@ export function SignalsCard() {
       </Stack>
       <ManageSignalsModal opened={manage} onClose={() => setManage(false)} />
     </Card>
+  )
+}
+
+/**
+ * What the titles a reader keeps out of their taste have in common, when enough of them agree.
+ *
+ * An observation about the profile, not a claim about the ranking: nothing here is fed back into
+ * scoring. A chip appears at three supporting titles, which is the threshold that stops one thumbs
+ * down claiming a genre.
+ */
+function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
+  return (
+    <Group gap={6} wrap="wrap" align="center">
+      <Text size="sm" fw={600}>
+        <Trans>You seem to avoid</Trans>
+      </Text>
+      {avoids.map((avoid) => {
+        const titles = avoid.examples.map((example) => example.title).join(', ')
+        const count = avoid.support
+        return (
+          <Tooltip key={`${avoid.kind}:${avoid.label}`} label={titles} withArrow multiline w={260}>
+            <Badge size="sm" variant="light" color="red">
+              {avoid.label} · <Plural value={count} one="# title" other="# titles" />
+            </Badge>
+          </Tooltip>
+        )
+      })}
+    </Group>
   )
 }
 
@@ -289,7 +325,7 @@ function usePhrase() {
   return (action: string): string => {
     switch (action) {
       case 'like': return t`counts toward your taste`
-      case 'dislike':
+      case 'dislike': return t`no longer steers your taste`
       case 'hide':
       case 'dismiss': return t`this title only`
       case 'mark-exposed': return t`won't be recommended again`
