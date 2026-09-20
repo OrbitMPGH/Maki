@@ -49,7 +49,6 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
-    public DbSet<NamingConfig> NamingConfigs => Set<NamingConfig>();
     public DbSet<AppConfigEntry> AppConfig => Set<AppConfigEntry>();
     public DbSet<ScrobbleToken> ScrobbleTokens => Set<ScrobbleToken>();
     public DbSet<ScrobbleMapping> ScrobbleMappings => Set<ScrobbleMapping>();

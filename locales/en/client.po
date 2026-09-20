@@ -3017,6 +3017,10 @@ msgstr "Fetching pages…"
 msgid "File"
 msgstr "File"
 
+#: src/pages/SettingsPage.tsx
+msgid "File naming on import"
+msgstr "File naming on import"
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -5961,6 +5965,10 @@ msgstr "Rename files"
 msgid "Rename folder to Maki standard"
 msgstr "Rename folder to Maki standard"
 
+#: src/pages/SettingsPage.tsx
+msgid "Rename imported files to the Chapter Format"
+msgstr "Rename imported files to the Chapter Format"
+
 #: src/components/RenameSeriesModal.tsx
 msgid "Renamed"
 msgstr "Renamed"
@@ -7830,8 +7838,8 @@ msgid "Use trackers"
 msgstr "Use trackers"
 
 #: src/pages/SettingsPage.tsx
-msgid "Used for chapters Maki downloads. Files imported from disk keep their own names"
-msgstr "Used for chapters Maki downloads. Files imported from disk keep their own names"
+msgid "Used for chapters Maki downloads, and for imported files unless you keep their original names below"
+msgstr "Used for chapters Maki downloads, and for imported files unless you keep their original names below"
 
 #: src/pages/SettingsPage.tsx
 msgid "Used when adding a series, importing one, or renaming its folder"
@@ -8103,6 +8111,10 @@ msgstr "Where the time went"
 #: src/pages/discover/TasteTab.tsx
 msgid "Where your taste has moved"
 msgstr "Where your taste has moved"
+
+#: src/pages/SettingsPage.tsx
+msgid "Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene release's own name often carries more than the format can say (the edition, the group, the year), so turning this off keeps what the release named it. Chapters Maki downloads itself are always named by the format, and renaming a series from its own page still renames everything in it."
+msgstr "Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene release's own name often carries more than the format can say (the edition, the group, the year), so turning this off keeps what the release named it. Chapters Maki downloads itself are always named by the format, and renaming a series from its own page still renames everything in it."
 
 #: src/components/SetupWizard.tsx
 msgid "Whether Maki renames an imported series' folder to its standard sanitized-title name, or leaves it as found. Changeable later in Settings."

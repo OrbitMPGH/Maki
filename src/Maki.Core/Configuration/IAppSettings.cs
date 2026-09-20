@@ -97,6 +97,20 @@ public static class SettingKeys
     public const string LibraryChapterFormat = "library.chapterformat";
 
     /// <summary>
+    /// "false" → files Maki adopts from disk (a finished torrent, a manual queue import) keep the
+    /// name they arrived with instead of being renamed to
+    /// <see cref="LibraryChapterFormat"/>. Default on.
+    /// <para>
+    /// The mirror of <see cref="LibraryFolderNamingMode"/> one level down: that one decides whether
+    /// an imported series' folder is renamed, this one whether the files inside it are. Neither
+    /// touches an explicit rename (<c>POST /series/{id}/rename</c>), where the plan is shown first,
+    /// and neither applies to chapters Maki downloads itself — those files have no original name to
+    /// keep.
+    /// </para>
+    /// </summary>
+    public const string LibraryRenameImportedFiles = "library.renameimportedfiles";
+
+    /// <summary>
     /// JSON object mapping a provider content rating to the <see cref="Entities.IncognitoMode"/> a
     /// newly added series of that rating starts at — see <see cref="IncognitoRatingRules"/>. Unset
     /// falls back to <see cref="IncognitoRatingRules.Default"/>; only the add path reads it.

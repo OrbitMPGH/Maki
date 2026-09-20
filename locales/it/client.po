@@ -3717,6 +3717,10 @@ msgstr "Recupero delle pagine…"
 msgid "File"
 msgstr "File"
 
+#: src/pages/SettingsPage.tsx
+msgid "File naming on import"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -7350,6 +7354,10 @@ msgstr "Rinomina file"
 msgid "Rename folder to Maki standard"
 msgstr "Rinomina la cartella secondo lo standard di Maki"
 
+#: src/pages/SettingsPage.tsx
+msgid "Rename imported files to the Chapter Format"
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
 msgid "Renamed"
@@ -9656,9 +9664,8 @@ msgid "Use trackers"
 msgstr "Usare i tracker"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Used for chapters Maki downloads. Files imported from disk keep their own names"
-msgstr "Usato per i capitoli scaricati da Maki. I file importati dal disco mantengono i propri nomi"
+msgid "Used for chapters Maki downloads, and for imported files unless you keep their original names below"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9995,6 +10002,10 @@ msgstr "Dove è andato il tempo"
 #, fuzzy
 msgid "Where your taste has moved"
 msgstr "Dove si sono spostati i tuoi gusti"
+
+#: src/pages/SettingsPage.tsx
+msgid "Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene release's own name often carries more than the format can say (the edition, the group, the year), so turning this off keeps what the release named it. Chapters Maki downloads itself are always named by the format, and renaming a series from its own page still renames everything in it."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
