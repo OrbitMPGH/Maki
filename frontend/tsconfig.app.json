@@ -15,6 +15,9 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    // Mirrors the `@locales` alias in vite.config.ts, which points past this package's root at the
+    // repo-root `locales/` directory the API also reads.
+    "paths": { "@locales/*": ["../locales/*"] },
 
     /* Linting */
     "noUnusedLocals": true,

@@ -1,7 +1,11 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import { lingui, linguiTransformerBabelPreset } from '@lingui/vite-plugin'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,6 +19,17 @@ export default defineConfig({
     // preset filters on the macro import, so files that never mention Lingui skip Babel entirely.
     babel({ presets: [linguiTransformerBabelPreset()] }),
   ],
+  resolve: {
+    alias: {
+      // The catalogs live at the repo root (see lingui.config.js), one directory above this
+      // package. A relative `../../locales/...` specifier resolves fine in dev and on some
+      // platforms' production builds, but Rolldown's module resolution for a path that escapes
+      // the package root was observed to fail only in the Linux/musl Docker build, not on the
+      // Windows machine building the same commit — an alias resolves to an absolute path up
+      // front and sidesteps that boundary check entirely.
+      '@locales': path.resolve(__dirname, '../locales'),
+    },
+  },
   server: {
     // Honor an externally assigned port (e.g. the preview harness); default 5173.
     port: Number(process.env.PORT) || 5173,

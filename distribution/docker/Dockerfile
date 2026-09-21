@@ -10,6 +10,10 @@ WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
+# The message catalogs live at the repo root, not under frontend/, because the API embeds the same
+# files. lingui.config.js and the client catalog imports both reach ../locales, so the build fails
+# without this.
+COPY locales/ /src/locales/
 RUN npm run build
 
 # ---- Backend build ----
@@ -19,6 +23,8 @@ COPY Directory.Build.props ./
 COPY Maki.sln ./
 COPY src/ src/
 COPY tests/ tests/
+# Maki.Api embeds locales/*/server.po as resources; see the EmbeddedResource item in Maki.Api.csproj.
+COPY locales/ locales/
 
 # .dockerignore excludes .git, so the version cannot be derived from a tag in here — CI computes it
 # from the ref and passes it down. A plain `docker build` gets the -dev default from
