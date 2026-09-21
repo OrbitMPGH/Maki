@@ -43,6 +43,7 @@ export interface AnimeSignalEntry {
   status: AnimeSignalStatus
   mangaBakaId: number | null
   mangaTitle: string | null
+  mangaCoverUrl: string | null
   role: AnimeSignalRole
   supersededBy: AnimeSupersededBy | null
 }

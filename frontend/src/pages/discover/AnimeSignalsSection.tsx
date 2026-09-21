@@ -9,6 +9,7 @@ import type {
 } from '../../api/animeSignals'
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
 import { formatDateTime } from '../../format'
+import { SeriesThumb } from '../stats/SeriesLink'
 
 export type RoleFilter = AnimeSignalRole | 'all'
 
@@ -284,6 +285,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
 
   return (
     <Group gap="sm" wrap="nowrap" align="flex-start" py={8} className="signals-row">
+      <SeriesThumb url={entry.mangaCoverUrl} alt={entry.mangaTitle ?? ''} large />
       <div style={{ flex: 1, minWidth: 0 }}>
         <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
           <Text size="sm" fw={500} truncate style={{ minWidth: 0 }}>{entry.title}</Text>

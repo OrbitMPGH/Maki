@@ -78,7 +78,7 @@ public class AnimeSignalsController(
 
         // One dump read for every matched row, rather than one per entry: the panel lists a whole
         // watch history and a point query each would be thousands of opens.
-        var mangaTitles = new Dictionary<long, string>();
+        var mangaTitles = new Dictionary<long, (string Title, string? CoverUrl)>();
         var matchedIds = rows.Where(x => x.MangaBakaId is not null)
             .Select(x => x.MangaBakaId!.Value).Distinct().ToList();
         if (matchedIds.Count > 0 && await store.IsAvailableAsync(ct))
@@ -88,7 +88,7 @@ public class AnimeSignalsController(
             {
                 if (long.TryParse(hit.ProviderId, out var id))
                 {
-                    mangaTitles[id] = hit.Title;
+                    mangaTitles[id] = (hit.Title, hit.ThumbUrl ?? hit.CoverUrl);
                 }
             }
         }
@@ -121,7 +121,8 @@ public class AnimeSignalsController(
                 score = row.Score,
                 status = row.Status.ToString(),
                 mangaBakaId = row.MangaBakaId,
-                mangaTitle = row.MangaBakaId is { } id ? mangaTitles.GetValueOrDefault(id) : null,
+                mangaTitle = row.MangaBakaId is { } id ? mangaTitles.GetValueOrDefault(id).Title : null,
+                mangaCoverUrl = row.MangaBakaId is { } cid ? mangaTitles.GetValueOrDefault(cid).CoverUrl : null,
                 role,
                 supersededBy = supersededBy switch
                 {
