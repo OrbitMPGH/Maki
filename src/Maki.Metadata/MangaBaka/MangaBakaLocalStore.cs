@@ -587,6 +587,64 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// Ids in the same work as <paramref name="id"/>, breadth-first over the dump's own same-work
+    /// relations (<see cref="FranchiseGraph.SameWorkTargets"/>), excluding <paramref name="id"/>.
+    ///
+    /// <para>
+    /// The fallback for when the vector index cannot answer: <see cref="FranchiseGraph"/>'s
+    /// components live on the index, so an instance with embeddings off or an index still building
+    /// has no component to read. A three-hop walk over the same relation types reaches the same
+    /// members for the shapes that matter here, without building the whole graph.
+    /// </para>
+    /// </summary>
+    public virtual async Task<IReadOnlyList<long>> GetSameWorkIdsAsync(
+        long id, int max = 50, CancellationToken ct = default)
+    {
+        if (max <= 0 || !await IsAvailableAsync(ct))
+        {
+            return [];
+        }
+
+        using var conn = Open();
+        var columns = FranchiseGraph.SameWorkColumns;
+        var seen = new HashSet<long> { id };
+        var found = new List<long>();
+        var frontier = new List<long> { id };
+        for (var hop = 0; hop < 3 && frontier.Count > 0 && found.Count < max; hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT relationships_v2, {string.Join(", ", columns)} " +
+                $"FROM series WHERE id IN ({string.Join(",", frontier)})";
+            var next = new List<long>();
+            using (var reader = await cmd.ExecuteReaderAsync(ct))
+            {
+                while (await reader.ReadAsync(ct))
+                {
+                    var flat = new string?[columns.Count];
+                    for (var i = 0; i < flat.Length; i++)
+                    {
+                        flat[i] = GetString(reader, i + 1);
+                    }
+
+                    foreach (var target in FranchiseGraph.SameWorkTargets(GetString(reader, 0), flat))
+                    {
+                        if (seen.Add(target) && found.Count < max)
+                        {
+                            found.Add(target);
+                            next.Add(target);
+                        }
+                    }
+                }
+            }
+
+            frontier = next;
+        }
+
+        return found;
+    }
+
+    /// <summary>
     /// Direct relations (sequels, prequels, spin-offs, side/main stories) of the given
     /// library series, excluding anything already in the library. Merged entries are
     /// followed to their canonical row; novels are always dropped, and content rating is

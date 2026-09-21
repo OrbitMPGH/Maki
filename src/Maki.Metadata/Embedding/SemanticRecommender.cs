@@ -134,6 +134,47 @@ public class SemanticRecommender(
         return map;
     }
 
+    /// <summary>
+    /// Every indexed id in the same same-work component as <paramref name="id"/>, capped at
+    /// <paramref name="max"/>. Empty when the index is unavailable or the id is in no franchise.
+    ///
+    /// <para>
+    /// The reverse of <see cref="FranchisesAsync"/>, and a linear pass over the component column
+    /// rather than a second structure, because the only caller acts on one title at a time.
+    /// </para>
+    /// </summary>
+    public virtual async Task<IReadOnlyList<long>> FranchiseMembersAsync(
+        long id, int max, CancellationToken ct = default)
+    {
+        if (max <= 0)
+        {
+            return [];
+        }
+
+        var index = await cache.GetAsync(ct);
+        if (index is null || index.Count == 0 || !index.TryGetRow(id, out var row))
+        {
+            return [];
+        }
+
+        var franchise = index.FranchiseAt(row);
+        if (franchise == VectorIndex.Unknown)
+        {
+            return [];
+        }
+
+        var members = new List<long>();
+        for (var i = 0; i < index.Count && members.Count < max; i++)
+        {
+            if (index.FranchiseAt(i) == franchise)
+            {
+                members.Add(index.IdAt(i));
+            }
+        }
+
+        return members;
+    }
+
     /// <summary>One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the centroid.</summary>
     /// <summary>
     /// One query vector, packed for the integer dot path. <see cref="SeedTitle"/> is null for the

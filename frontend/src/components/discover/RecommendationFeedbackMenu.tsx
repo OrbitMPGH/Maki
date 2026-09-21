@@ -3,8 +3,10 @@ import { notifications } from '@mantine/notifications'
 import {
   IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
 } from '@tabler/icons-react'
-import { Trans, useLingui } from '@lingui/react/macro'
-import { useFeedbackState, useMutateFeedback, useUndoFeedback } from '../../api/recommendationFeedback'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import {
+  useFeedbackState, useMutateFeedback, useMutateFranchiseFeedback, useUndoFeedback,
+} from '../../api/recommendationFeedback'
 
 type Command = {
   id: number
@@ -27,6 +29,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
   const describe = useDescribe()
   const { data: state, isLoading } = useFeedbackState(id)
   const mutation = useMutateFeedback()
+  const franchise = useMutateFranchiseFeedback()
   const undo = useUndoFeedback()
   if (!Number.isSafeInteger(id) || id <= 0) return null
 
@@ -78,7 +81,36 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
     }
   }
 
-  const busy = mutation.isPending || undo.isPending || isLoading
+  async function submitFranchise() {
+    try {
+      const result = await franchise.mutateAsync({
+        id, action: 'hide', clientMutationId: crypto.randomUUID(),
+      })
+      const count = result.changed
+      notifications.show({
+        message: count === 0
+          ? t`No change: the whole franchise was already hidden.`
+          : <Text size="sm">
+            <Plural value={count} one="Hidden # title" other="Hidden # titles" />
+            {' '}
+            <Trans>Restore any of them from Manage signals.</Trans>
+          </Text>,
+        autoClose: 8000,
+      })
+    } catch (error) {
+      const reason = String(error)
+      notifications.show({
+        color: 'red', autoClose: false, message: <Group gap="xs" wrap="wrap">
+          <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>
+          <Button size="xs" variant="subtle" onClick={() => void submitFranchise()}>
+            <Trans>Retry</Trans>
+          </Button>
+        </Group>,
+      })
+    }
+  }
+
+  const busy = mutation.isPending || franchise.isPending || undo.isPending || isLoading
 
   return (
     <Group gap="xs" wrap="nowrap" justify="center">
@@ -116,6 +148,11 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
           </Menu.Item>
           <Menu.Item leftSection={<IconClock size={16} />} disabled={suppression === 'dismissed'} onClick={() => void submit('dismiss')}>
             {t`Dismiss for 30 days`}
+          </Menu.Item>
+          <Menu.Divider />
+          <Menu.Label>{t`Whole franchise`}</Menu.Label>
+          <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void submitFranchise()}>
+            {t`Hide this and its franchise`}
           </Menu.Item>
           <Menu.Divider />
           <Menu.Label>{t`Already read or seen, taste unchanged`}</Menu.Label>

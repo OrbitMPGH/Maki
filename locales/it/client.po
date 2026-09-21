@@ -361,6 +361,10 @@ msgstr "{count, plural, one {# non letto} many {# non letti} other {# non letti}
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {Eliminare # archivio?} many {Eliminare # archivi?} other {Eliminare # archivi?}}"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
@@ -4452,6 +4456,10 @@ msgid "Hide source text"
 msgstr "Nascondi il testo della fonte"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Hide this and its franchise"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this title"
 msgstr ""
 
@@ -5955,6 +5963,10 @@ msgstr "Successivo..."
 #, fuzzy
 msgid "No activity in this period."
 msgstr "Nessuna attività in questo periodo."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "No change: the whole franchise was already hidden."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "No change: this title was already in that state."
@@ -7948,6 +7960,10 @@ msgstr "Ripristina"
 #, fuzzy
 msgid "Restore & restart"
 msgstr "Ripristina e riavvia"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Restore any of them from Manage signals."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10643,6 +10659,10 @@ msgstr "Durante la lettura"
 #, fuzzy
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Durante la lettura ti avvisa solo dei nuovi capitoli mentre sei a metà lettura."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Whole franchise"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

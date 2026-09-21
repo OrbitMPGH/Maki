@@ -144,6 +144,19 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
         catch (SqliteException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.changed"); }
     }
 
+    [HttpPost("feedback/{id:long}/franchise")]
+    public async Task<IActionResult> MutateFranchise(long id, [FromBody] FranchiseFeedbackCommand command,
+        CancellationToken ct)
+    {
+        try { return Ok(await feedback.HideFranchiseAsync(user.UserId, id, command.Action, command.ClientMutationId, ct)); }
+        catch (FeedbackConflictException ex) { return this.Conflict(localizer, ex.Key, ex.Args); }
+        catch (FeedbackNotFoundException ex) { return this.NotFoundMessage(localizer, ex.Key, ex.Args); }
+        catch (FeedbackMetadataUnavailableException ex) { return this.Unavailable(localizer, ex.Key, ex.Args); }
+        catch (FeedbackValidationException ex) { return this.Fail(localizer, ex.Key, ex.Args); }
+        catch (DbUpdateException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.changed"); }
+        catch (SqliteException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.changed"); }
+    }
+
     [HttpPost("feedback/events/{id:long}/undo")]
     public async Task<IActionResult> Undo(long id, [FromBody] FeedbackUndoCommand command, CancellationToken ct)
     {

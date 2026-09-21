@@ -302,6 +302,10 @@ msgstr "{count, plural, one {# unread} other {# unread}}"
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
+msgstr "{count, plural, one {Hidden # title} other {Hidden # titles}}"
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
@@ -3669,6 +3673,10 @@ msgid "Hide source text"
 msgstr "Hide source text"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Hide this and its franchise"
+msgstr "Hide this and its franchise"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this title"
 msgstr "Hide this title"
 
@@ -4899,6 +4907,10 @@ msgstr "Next..."
 #: src/pages/stats/OverviewPanel.tsx
 msgid "No activity in this period."
 msgstr "No activity in this period."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "No change: the whole franchise was already hidden."
+msgstr "No change: the whole franchise was already hidden."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "No change: this title was already in that state."
@@ -6532,6 +6544,10 @@ msgstr "Restore"
 #: src/pages/SettingsPage.tsx
 msgid "Restore & restart"
 msgstr "Restore & restart"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Restore any of them from Manage signals."
+msgstr "Restore any of them from Manage signals."
 
 #: src/pages/SettingsPage.tsx
 msgid "Restore backup"
@@ -8746,6 +8762,10 @@ msgstr "While reading"
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "While reading only tells you about new chapters while you are partway through."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Whole franchise"
+msgstr "Whole franchise"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Whole library"

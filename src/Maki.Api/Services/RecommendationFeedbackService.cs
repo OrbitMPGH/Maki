@@ -6,6 +6,7 @@ using Maki.Core.Entities;
 using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Data;
+using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,10 @@ public record FeedbackActivity(long Id, long MangaBakaId, string? Title, string 
 public record SignalOverrideState(long MangaBakaId, bool IgnoreAsSeed, long Revision);
 public record SignalOverrideCommand(bool IgnoreAsSeed, Guid ClientMutationId, long ExpectedRevision);
 public record SignalOverrideMutation(bool Changed, SignalOverrideState State, long SignalRevision);
+public record FranchiseFeedbackCommand(string Action, Guid ClientMutationId);
+public record FranchiseFeedbackTitle(long MangaBakaId, string? Title);
+public record FranchiseFeedbackResult(int Changed, IReadOnlyList<FranchiseFeedbackTitle> Titles,
+    long FeedbackRevision);
 /// <summary>
 /// A failure this service reports to a caller, carrying the catalogue key rather than a sentence.
 /// The service has no request locale of its own worth spending here and the controller already
@@ -47,9 +52,16 @@ public sealed class FeedbackMetadataUnavailableException(string key, object? arg
     : FeedbackException(key, args);
 
 public class RecommendationFeedbackService(
-    MakiDbContext db, MangaBakaLocalStore catalogue, ICurrentUser currentUser, ILocalizer localizer)
+    MakiDbContext db, MangaBakaLocalStore catalogue, ICurrentUser currentUser, ILocalizer localizer,
+    SemanticRecommender? semantic = null)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// How many members of one franchise a single action may touch. A catalogue anthology can carry
+    /// dozens of rows and the reader asked for one action, not an unbounded write.
+    /// </summary>
+    private const int MaxFranchiseMembers = 50;
 
     public async Task<HashSet<long>> SuppressedAsync(int userId, CancellationToken ct = default)
         => await SuppressedAsync(db, userId, ct);
@@ -377,6 +389,70 @@ public class RecommendationFeedbackService(
         await transaction.CommitAsync(ct);
         return result;
     }
+
+    /// <summary>
+    /// Applies one suppression to every member of <paramref name="id"/>'s franchise, for the reader
+    /// who is looking at four near-identical rows of one anthology and wants them all gone.
+    ///
+    /// <para>
+    /// Membership comes from the vector index's same-work component first
+    /// (<see cref="SemanticRecommender.FranchiseMembersAsync"/>, the same definition the rails space
+    /// a franchise out by) and from the dump's own relations when the index cannot answer
+    /// (<see cref="MangaBakaLocalStore.GetSameWorkIdsAsync"/>). Members the reader cannot see are
+    /// dropped before anything is written, and each member goes through
+    /// <see cref="MutateAsync"/> so it gets its own event, its own revision and its own Undo.
+    /// </para>
+    /// </summary>
+    public async Task<FranchiseFeedbackResult> HideFranchiseAsync(int userId, long id, string? action,
+        Guid clientMutationId, CancellationToken ct = default)
+    {
+        if (id <= 0) throw new FeedbackValidationException("error.feedback.titleAndRevisionRequired");
+        if (clientMutationId == Guid.Empty) throw new FeedbackValidationException("error.feedback.mutationIdRequired");
+        var verb = (action ?? string.Empty).Trim().ToLowerInvariant();
+        if (verb is not ("hide" or "dismiss"))
+            throw new FeedbackValidationException("error.feedback.unsupportedAction");
+        if (!await catalogue.IsAvailableAsync(ct))
+            throw new FeedbackMetadataUnavailableException("error.feedback.catalogueUnavailable");
+
+        IReadOnlyList<long> members = semantic is null
+            ? []
+            : await semantic.FranchiseMembersAsync(id, MaxFranchiseMembers, ct);
+        if (members.Count == 0)
+        {
+            members = await catalogue.GetSameWorkIdsAsync(id, MaxFranchiseMembers, ct);
+        }
+
+        var wanted = new List<long> { id };
+        wanted.AddRange(members.Where(x => x != id));
+        wanted = wanted.Take(MaxFranchiseMembers).ToList();
+
+        var visible = await VisibleTitlesAsync(wanted, ct);
+        if (!visible.ContainsKey(id)) throw new FeedbackNotFoundException("error.feedback.unknownTitle");
+
+        var existing = await db.RecommendationFeedback.AsNoTracking()
+            .Where(x => x.UserId == userId && wanted.Contains(x.ProviderId))
+            .ToDictionaryAsync(x => x.ProviderId, ct);
+        var changed = new List<FranchiseFeedbackTitle>();
+        var revision = (await VersionsAsync(userId, ct)).FeedbackRevision;
+        foreach (var member in wanted.Where(visible.ContainsKey))
+        {
+            var current = existing.GetValueOrDefault(member);
+            if (verb == "hide" && current?.Suppression == RecommendationSuppression.Hidden) continue;
+            var result = await MutateAsync(userId, member,
+                new FeedbackCommand(verb, Derive(clientMutationId, member), current?.Revision ?? 0), ct);
+            revision = result.FeedbackRevision;
+            if (result.Changed) changed.Add(new FranchiseFeedbackTitle(member, result.State.Title));
+        }
+
+        return new FranchiseFeedbackResult(changed.Count, changed, revision);
+    }
+
+    /// <summary>
+    /// One member's mutation id, derived from the batch's. Deterministic, so a client retrying the
+    /// whole batch replays each member's receipt rather than writing a second event for it.
+    /// </summary>
+    private static Guid Derive(Guid batch, long member) =>
+        new(SHA256.HashData(Encoding.UTF8.GetBytes($"{batch}:{member}")).AsSpan(0, 16));
 
     public async Task<FeedbackMutation> UndoAsync(int userId, long eventId, Guid mutationId, long expectedRevision,
         CancellationToken ct = default)

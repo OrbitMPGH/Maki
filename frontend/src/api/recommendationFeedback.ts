@@ -78,6 +78,12 @@ export interface FeedbackMutation {
   feedbackEffect: string
 }
 
+export interface FranchiseFeedbackResult {
+  changed: number
+  titles: { mangaBakaId: number; title: string | null }[]
+  feedbackRevision: number
+}
+
 export interface SignalOverrideState {
   mangaBakaId: number
   ignoreAsSeed: boolean
@@ -195,6 +201,23 @@ export function useMutateFeedback() {
       if (pendingOptimistic.get(command.id) === command.clientMutationId) pendingOptimistic.delete(command.id)
       refresh()
     },
+  })
+}
+
+/**
+ * One suppression applied to every member of a title's franchise. No optimistic removal: the
+ * members are not known until the server answers, and the refresh below is what takes them off the
+ * rails.
+ */
+export function useMutateFranchiseFeedback() {
+  const refresh = useRefreshRecommendations()
+  return useMutation({
+    mutationFn: ({ id, action, clientMutationId }: {
+      id: number; action: 'hide' | 'dismiss'; clientMutationId: string
+    }) => api<FranchiseFeedbackResult>(`/recommendations/feedback/${id}/franchise`, {
+      method: 'POST', body: JSON.stringify({ action, clientMutationId }),
+    }),
+    onSuccess: refresh,
   })
 }
 

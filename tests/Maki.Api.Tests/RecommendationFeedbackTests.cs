@@ -524,6 +524,60 @@ public class RecommendationFeedbackTests : IDisposable
     }
 
     /// <summary>
+    /// The franchise the fallback walks: one anthology whose flat sequel column names two more rows,
+    /// plus a fourth the reader's content ceiling puts out of reach.
+    /// </summary>
+    private RecommendationFeedbackService Franchise(Maki.Data.MakiDbContext db) =>
+        Catalogued(db, 1, dump => dump
+            .AddSeries(100, "Nagatoro", sequels: "[101,102,103]")
+            .AddSeries(101, "Nagatoro Anthology 1")
+            .AddSeries(102, "Nagatoro Anthology 2")
+            .AddSeries(103, "Nagatoro Doujin", contentRating: "pornographic"));
+
+    [Fact]
+    public async Task Hiding_a_franchise_hides_every_visible_member_and_writes_one_event_each()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Franchise(db);
+
+        var result = await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
+
+        Assert.Equal(3, result.Changed);
+        Assert.Equal([100, 101, 102], result.Titles.Select(x => x.MangaBakaId).Order());
+        var rows = await db.RecommendationFeedback.AsNoTracking()
+            .Where(x => x.UserId == 1).ToListAsync();
+        Assert.All(rows, row => Assert.Equal(RecommendationSuppression.Hidden, row.Suppression));
+        var events = await db.RecommendationFeedbackEvents.AsNoTracking().ToListAsync();
+        Assert.Equal([100, 101, 102], events.Select(x => x.ProviderId).Order());
+    }
+
+    [Fact]
+    public async Task A_franchise_member_above_the_content_ceiling_is_never_touched()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Franchise(db);
+
+        await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
+
+        Assert.False(await db.RecommendationFeedback.AnyAsync(x => x.ProviderId == 103));
+        Assert.False(await db.RecommendationFeedbackEvents.AnyAsync(x => x.ProviderId == 103));
+    }
+
+    [Fact]
+    public async Task Hiding_a_franchise_twice_changes_nothing_the_second_time()
+    {
+        using var db = _fixture.NewContext(1);
+        var service = Franchise(db);
+
+        await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
+        var again = await service.HideFranchiseAsync(1, 100, "hide", Guid.NewGuid());
+
+        Assert.Equal(0, again.Changed);
+        Assert.Empty(again.Titles);
+        Assert.Equal(3, await db.RecommendationFeedbackEvents.CountAsync());
+    }
+
+    /// <summary>
     /// The avoidance labeller over nothing. Its inputs are the vector index, the dump and the
     /// reader's own shelf profile, and with an empty avoided set it answers before reaching any of
     /// them - which is why the profile service can be null here.

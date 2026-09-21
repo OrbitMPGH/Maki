@@ -361,6 +361,10 @@ msgstr "{count, plural, one {# okunmamış} other {# okunmamış}}"
 msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {# arşiv silinsin mi?} other {# arşiv silinsin mi?}}"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
@@ -4452,6 +4456,10 @@ msgid "Hide source text"
 msgstr "Kaynak metnini gizle"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Hide this and its franchise"
+msgstr ""
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this title"
 msgstr ""
 
@@ -5955,6 +5963,10 @@ msgstr "Sonraki..."
 #, fuzzy
 msgid "No activity in this period."
 msgstr "Bu dönemde etkinlik yok."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "No change: the whole franchise was already hidden."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "No change: this title was already in that state."
@@ -7948,6 +7960,10 @@ msgstr "Geri yükle"
 #, fuzzy
 msgid "Restore & restart"
 msgstr "Geri yükle ve yeniden başlat"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Restore any of them from Manage signals."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10643,6 +10659,10 @@ msgstr "Okurken"
 #, fuzzy
 msgid "While reading only tells you about new chapters while you are partway through."
 msgstr "Okurken yalnızca, seriyi yarıda bıraktığınız sürece yeni bölümler hakkında bilgi verir."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Whole franchise"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
