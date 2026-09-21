@@ -716,6 +716,10 @@ msgstr "{total, plural, one {# chapter listed, none wanted, nothing will downloa
 msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folders}}"
 msgstr "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folders}}"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{total, plural, one {Show all #} other {Show all #}}"
+msgstr "{total, plural, one {Show all #} other {Show all #}}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{total} chapters · {downloadedCount} downloaded"
 msgstr "{total} chapters · {downloadedCount} downloaded"
@@ -7141,10 +7145,6 @@ msgstr "Show fewer"
 #: src/pages/stats/ActivityFeed.tsx
 msgid "Show less"
 msgstr "Show less"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Show list"
-msgstr "Show list"
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx

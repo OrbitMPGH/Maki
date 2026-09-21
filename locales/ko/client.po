@@ -870,6 +870,10 @@ msgstr "{total, plural, other {챕터 #개가 목록에 있으며 원하는 항�
 msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folders}}"
 msgstr "{total, plural, other {{ok}/#개 폴더 가져옴}}"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{total, plural, one {Show all #} other {Show all #}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{total} chapters · {downloadedCount} downloaded"
@@ -8710,10 +8714,6 @@ msgstr "더 적게 표시"
 #, fuzzy
 msgid "Show less"
 msgstr "덜 보기"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Show list"
-msgstr ""
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx

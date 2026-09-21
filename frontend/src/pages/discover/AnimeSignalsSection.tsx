@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Alert, Badge, Button, Card, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
 } from '@mantine/core'
@@ -91,6 +91,17 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
     }
   }
 
+  // A taste of what the list holds so the card is not two buttons on an empty band: the shows
+  // that actually steer the ranking first, then whatever else is scored highest.
+  const preview = useMemo(() => {
+    const entries = data?.entries ?? []
+    const weight = (role: AnimeSignalEntry['role']) => (role === 'positive' || role === 'avoided' ? 0 : 1)
+    return [...entries]
+      .sort((a, b) => weight(a.role) - weight(b.role) || (b.score ?? 0) - (a.score ?? 0))
+      .slice(0, 5)
+  }, [data])
+  const total = data?.entries.length ?? 0
+
   if (isLoading || !data) {
     return error ? (
       <Alert color="red"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
@@ -146,10 +157,18 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
                 <AnimeSignalsStatusLine data={data} />
               </Text>
               <Button size="xs" variant="subtle" onClick={onOpenList}>
-                <Trans>Show list</Trans>
+                <Plural value={total} one="Show all #" other="Show all #" />
               </Button>
             </Group>
           </Group>
+        )}
+
+        {data.enabled && !noTracker && preview.length > 0 && (
+          <Stack gap={0}>
+            {preview.map((entry) => (
+              <AnimeSignalRow key={entry.key} entry={entry} />
+            ))}
+          </Stack>
         )}
       </Stack>
     </Card>
