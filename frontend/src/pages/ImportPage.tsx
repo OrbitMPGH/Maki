@@ -30,7 +30,7 @@ const IMPORT_BATCH_SIZE = 50
 interface ScanCandidate {
   folderName: string
   cleanedTitle: string
-  cbzCount: number
+  comicCount: number
   recognizedCount: number
   matches: MetadataSearchResult[]
 }
@@ -287,8 +287,8 @@ export default function ImportPage() {
               const selected = selection[c.folderName] ?? ''
               const match = c.matches.find((m) => m.providerId === selected)
               const rowProgress = progress[c.folderName]
-              const { cleanedTitle, cbzCount, recognizedCount } = c
-              const unrecognizedCount = cbzCount - recognizedCount
+              const { cleanedTitle, comicCount, recognizedCount } = c
+              const unrecognizedCount = comicCount - recognizedCount
               return (
                 <Table.Tr key={c.folderName}>
                   <Table.Td>
@@ -314,8 +314,10 @@ export default function ImportPage() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">{cbzCount} CBZ</Text>
-                    {recognizedCount < cbzCount && (
+                    <Text size="sm">
+                      <Plural value={comicCount} one="# comic" other="# comics" />
+                    </Text>
+                    {recognizedCount < comicCount && (
                       <Badge size="xs" color="yellow" variant="light">
                         <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
                       </Badge>

@@ -335,6 +335,11 @@ msgstr "已阅读下载章节中的 {chaptersRead}/{seriesChapterCount}"
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "已阅读下载章节中的 {chaptersRead}/{seriesChapterCount}，系列共需 {seriesWantedCount} 个"
 
+#: src/pages/ImportPage.tsx
+#, fuzzy
+msgid "{comicCount, plural, one {# comic} other {# comics}}"
+msgstr "{comicCount, plural, other {# 个漫画}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{completed} / {total} files inspected"

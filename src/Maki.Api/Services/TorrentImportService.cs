@@ -1,8 +1,9 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
+using Maki.Core.Import;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Storage;
@@ -138,10 +139,13 @@ public class TorrentImportService(
             return Empty($"Download path not accessible from Maki: {contentPath}");
         }
 
-        var cbzFiles = CbzFilesIn(contentPath);
-        if (cbzFiles.Length == 0)
+        var sources = ComicSourceScanner.Scan(contentPath);
+        if (sources.Count == 0)
         {
-            return Empty("No CBZ files found in the completed download");
+            // Naming what was actually there: "no comics found" on its own reads exactly like a
+            // download that arrived empty, and the two want completely different things done.
+            return Empty(
+                $"No comics found in the completed download ({ComicSourceScanner.Describe(contentPath)})");
         }
 
         var chapters = await db.Chapters
@@ -152,10 +156,10 @@ public class TorrentImportService(
             .ToListAsync(ct);
 
         var files = new List<ImportPlanFile>();
-        foreach (var path in cbzFiles.OrderBy(f => f, StringComparer.Ordinal))
+        foreach (var source in sources.OrderBy(s => s.Name, StringComparer.Ordinal))
         {
-            var parsed = ReleaseNameParser.ParseFileName(path);
-            var covered = ChaptersCoveredBy(chapters, parsed, path);
+            var parsed = ReleaseNameParser.ParseFileName(source.Name);
+            var covered = ChaptersCoveredBy(chapters, parsed, source.Pages);
 
             var replaces = covered
                 .Where(c => c.ChapterFileId != null)
@@ -174,8 +178,8 @@ public class TorrentImportService(
                 .ToList();
 
             files.Add(new ImportPlanFile(
-                Path.GetFileName(path),
-                new FileInfo(path).Length,
+                source.Name,
+                source.Size,
                 ParsedLabel(parsed),
                 covered.Select(Label).ToList(),
                 covered.Where(c => c.ChapterFileId == null).Select(Label).ToList(),
@@ -225,14 +229,14 @@ public class TorrentImportService(
             return new TorrentImportOutcome(true, null, 0, 0, 0, 0, skipped, []);
         }
 
-        // Safe to key on the bare name: CbzFilesIn already returns one file per name, which is the
-        // same set PlanAsync named its rows after.
-        var byName = CbzFilesIn(contentPath!)
-            .ToDictionary(f => Path.GetFileName(f)!, f => f, StringComparer.Ordinal);
+        // Safe to key on the name: the scan already returns one comic per name, which is the same
+        // set PlanAsync named its rows after.
+        var byName = ComicSourceScanner.Scan(contentPath!)
+            .ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
         var sourceFiles = wanted
             .Select(f => byName.GetValueOrDefault(f.FileName))
-            .Where(f => f is not null)
-            .Select(f => f!)
+            .Where(s => s is not null)
+            .Select(s => s!)
             .ToList();
 
         // Never a move — qBittorrent keeps seeding from where it downloaded. A hardlink gives the
@@ -245,14 +249,18 @@ public class TorrentImportService(
         var imported = new List<string>();
         var hardlinked = 0;
         var freshCopies = 0;
-        foreach (var file in sourceFiles)
+        foreach (var source in sourceFiles)
         {
-            var target = Path.Combine(seriesDir, Path.GetFileName(file));
+            var target = Path.Combine(seriesDir, source.Name);
             if (!File.Exists(target))
             {
                 try
                 {
-                    if (FileLinker.Place(file, target, useHardlinks) == FilePlacement.Hardlinked)
+                    // A CBZ or a zip under another name is placed as it is and can still be
+                    // hardlinked; a RAR or a folder of loose pages is built into a new archive,
+                    // which is a fresh copy however the setting reads.
+                    if (ComicSourceConverter.Materialize(source, target, useHardlinks)
+                        == FilePlacement.Hardlinked)
                     {
                         hardlinked++;
                     }
@@ -261,10 +269,13 @@ public class TorrentImportService(
                         freshCopies++;
                     }
                 }
-                catch (IOException ex)
+                catch (Exception ex)
                 {
+                    // Deliberately every exception: reading somebody else's archive is the part of
+                    // an import most likely to throw something unforeseen, and a named file in the
+                    // outcome beats an unhandled failure inside the completed-download job.
                     return new TorrentImportOutcome(
-                        false, $"Could not import {Path.GetFileName(file)}: {ex.Message}", 0, 0, 0, 0, skipped, []);
+                        false, $"Could not import {source.Name}: {ex.Message}", 0, 0, 0, 0, skipped, []);
                 }
             }
 
@@ -431,7 +442,8 @@ public class TorrentImportService(
     /// for a compilation both the volume range the provider assigns and the chapter markers in its
     /// page names, which is the pair <c>CbzLinkService</c> links on.
     /// </summary>
-    private static List<Chapter> ChaptersCoveredBy(List<Chapter> chapters, ParsedReleaseFile parsed, string path)
+    private static List<Chapter> ChaptersCoveredBy(
+        List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages)
     {
         if (parsed.IsChapter)
         {
@@ -444,35 +456,12 @@ public class TorrentImportService(
         }
 
         var end = parsed.VolumeEnd ?? parsed.Volume;
-        var contained = VolumeChapterScanner.ScanCbz(path).ToHashSet();
+        var contained = VolumeChapterScanner.ChaptersInNames(pages).ToHashSet();
         return chapters
             .Where(c => (c.Volume >= parsed.Volume && c.Volume <= end) ||
                         (c.Number is { } n && contained.Contains(n)))
             .ToList();
     }
-
-    /// <summary>
-    /// The download's CBZ files, one per file name.
-    /// <para>
-    /// The walk is recursive but the import is flat: every file lands in the series folder under
-    /// its bare name, so two archives sharing a name in different subfolders can never both be
-    /// imported: the second would find the first already at the target and link the same bytes
-    /// twice. Dropping it here rather than downstream is what keeps the plan honest about that,
-    /// and what stops the name being used as a key twice over.
-    /// </para>
-    /// </summary>
-    private static string[] CbzFilesIn(string contentPath) =>
-        File.Exists(contentPath)
-            ? Path.GetExtension(contentPath).Equals(".cbz", StringComparison.OrdinalIgnoreCase)
-                ? [contentPath]
-                : []
-            : Directory.Exists(contentPath)
-                ? Directory.GetFiles(contentPath, "*.cbz", SearchOption.AllDirectories)
-                    .OrderBy(f => f, StringComparer.Ordinal)
-                    .GroupBy(Path.GetFileName, StringComparer.Ordinal)
-                    .Select(g => g.First())
-                    .ToArray()
-                : [];
 
     private static string Label(Chapter chapter) =>
         chapter.Number?.ToString("0.###", CultureInfo.InvariantCulture) ?? chapter.Title ?? "?";

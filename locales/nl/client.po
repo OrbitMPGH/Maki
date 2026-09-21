@@ -335,6 +335,11 @@ msgstr "{chaptersRead} van {seriesChapterCount} gedownloade hoofdstukken gelezen
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "{chaptersRead} van {seriesChapterCount} gedownloade hoofdstukken gelezen, waarvan {seriesWantedCount} in de serie"
 
+#: src/pages/ImportPage.tsx
+#, fuzzy
+msgid "{comicCount, plural, one {# comic} other {# comics}}"
+msgstr "{comicCount, plural, one {# stripboek} other {# stripboeken}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{completed} / {total} files inspected"

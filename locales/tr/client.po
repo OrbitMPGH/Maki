@@ -335,6 +335,11 @@ msgstr "İndirilen {seriesChapterCount} bölümden {chaptersRead} tanesi okundu"
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "İndirilen {seriesChapterCount} bölümden {chaptersRead} tanesi okundu, seride {seriesWantedCount} bölüm var"
 
+#: src/pages/ImportPage.tsx
+#, fuzzy
+msgid "{comicCount, plural, one {# comic} other {# comics}}"
+msgstr "{comicCount, plural, one {# çizgi roman} other {# çizgi roman}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{completed} / {total} files inspected"

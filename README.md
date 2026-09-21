@@ -91,7 +91,10 @@ built-in reader.
 - **Torrent acquisition.** Search releases via Prowlarr, grab to qBittorrent, and auto-import on
   completion. Completed torrents can be hardlinked into the library when possible. If an import
   would replace existing chapter files, Maki pauses it for a Replace, keep-existing, or Reject
-  decision. Torrent acquisition runs alongside direct scraper downloads in the same queue.
+  decision. Torrent acquisition runs alongside direct scraper downloads in the same queue. A
+  release that is not already CBZ is converted on the way in: `.zip` is the same container and is
+  placed as it is, `.cbr`/`.rar`/`.7z`/`.tar` are repacked, and a folder of loose page images is
+  packed one CBZ per folder. Library import does the same, leaving your originals where they are.
 - **Library health workspace.** Admins can index and verify archives, find missing, unreadable,
   duplicate, or suspicious files, review safe replacement/deletion operations, and import unlinked
   CBZs.

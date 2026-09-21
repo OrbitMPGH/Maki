@@ -335,6 +335,11 @@ msgstr "{seriesChapterCount}章中{chaptersRead}章を読了"
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "{seriesChapterCount}章中{chaptersRead}章を読了、シリーズには{seriesWantedCount}章"
 
+#: src/pages/ImportPage.tsx
+#, fuzzy
+msgid "{comicCount, plural, one {# comic} other {# comics}}"
+msgstr "{comicCount, plural, other {#件の漫画}}"
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{completed} / {total} files inspected"

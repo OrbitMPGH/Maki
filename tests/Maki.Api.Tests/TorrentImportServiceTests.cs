@@ -1,9 +1,12 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
+using Maki.Core.Reading;
 using Maki.Core.Sources;
+using SharpCompress.Common;
+using SharpCompress.Writers;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -328,5 +331,102 @@ public class TorrentImportServiceTests : IDisposable
 
         Assert.NotNull(plan.Error);
         Assert.False(plan.HasConflicts);
+    }
+
+    /// <summary>
+    /// A release that is not already a CBZ. The tar stands in for the RAR sets that actually fail
+    /// on a real instance: SharpCompress cannot write RAR, and both reach the converter through
+    /// the same autodetect. The point of the test is the import path, not the container.
+    /// </summary>
+    [Fact]
+    public async Task An_archive_that_is_not_a_cbz_is_repacked_on_the_way_in()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        WriteTar(
+            Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbt"),
+            [.. Enumerable.Range(1, 6).Select(c => $"Berserk - c{c:000} - p001 [Oak].png")]);
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+        var planned = Assert.Single(plan.Files);
+        Assert.Equal("Berserk v01 (Digital) (1r0n).cbz", planned.FileName);
+        Assert.Equal(6, planned.NewChapters.Count);
+
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied);
+        var imported = Path.Combine(_root, "Berserk", "Berserk v01 (Digital) (1r0n).cbz");
+        Assert.True(File.Exists(imported));
+        Assert.Equal(6, CbzReader.PageNames(imported).Count);
+
+        using var db = _db.NewContext();
+        var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Equal(file.Id, c.ChapterFileId));
+    }
+
+    /// <summary>A zip is already a CBZ container, so it goes in as it is under the right name.</summary>
+    [Fact]
+    public async Task A_plain_zip_is_imported_without_being_rebuilt()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        var zip = Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).zip");
+        WriteCbz(zip, [.. Enumerable.Range(1, 6).Select(c => $"Berserk - c{c:000} - p001 [Oak].png")]);
+
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied);
+        var imported = Path.Combine(_root, "Berserk", "Berserk v01 (Digital) (1r0n).cbz");
+        Assert.Equal(new FileInfo(zip).Length, new FileInfo(imported).Length);
+        Assert.Equal(6, CbzReader.PageNames(imported).Count);
+    }
+
+    [Fact]
+    public async Task A_folder_of_loose_pages_is_packed_per_folder()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        var volume = Path.Combine(_downloads, "Berserk v01");
+        Directory.CreateDirectory(volume);
+        foreach (var chapter in Enumerable.Range(1, 6))
+        {
+            File.WriteAllText(Path.Combine(volume, $"Berserk - c{chapter:000} - p001.png"), "page");
+        }
+
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied);
+        var imported = Path.Combine(_root, "Berserk", "Berserk v01.cbz");
+        Assert.True(File.Exists(imported));
+        Assert.Equal(6, CbzReader.PageNames(imported).Count);
+    }
+
+    /// <summary>
+    /// A download of something Maki cannot open used to report "No CBZ files found", which reads
+    /// exactly like a download that arrived empty and sends the user looking for the wrong problem.
+    /// </summary>
+    [Fact]
+    public async Task A_download_with_nothing_readable_in_it_says_what_was_there()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        File.WriteAllText(Path.Combine(_downloads, "volume one.pdf"), "pdf");
+        File.WriteAllText(Path.Combine(_downloads, "volume two.pdf"), "pdf");
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Assert.Equal("No comics found in the completed download (found 2 .pdf)", plan.Error);
+    }
+
+    private static void WriteTar(string path, IReadOnlyList<string> pageNames)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using var stream = File.Create(path);
+        using var writer = WriterFactory.OpenWriter(
+            stream, ArchiveType.Tar, new WriterOptions(CompressionType.None));
+        foreach (var name in pageNames)
+        {
+            writer.Write(name, new MemoryStream("page"u8.ToArray()), DateTime.UtcNow);
+        }
     }
 }
