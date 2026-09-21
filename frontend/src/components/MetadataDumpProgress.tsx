@@ -157,8 +157,10 @@ export default function MetadataDumpProgress() {
         color: 'red',
         autoClose: 10000,
         withCloseButton: true,
-        // Embeds the raw error from the download job, so left untranslated (see report).
-        message: `Metadata database download failed: ${progress.lastError}`,
+        // The sentence is Maki's own and is translated; only the download job's own error text
+        // rides along untranslated, appended rather than interpolated into the message so the
+        // catalogue entry carries no placeholder for somebody else's words.
+        message: `${now`Metadata database download failed:`} ${progress.lastError}`,
       })
       return
     }

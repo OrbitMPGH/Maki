@@ -824,7 +824,11 @@ public class SeriesController(
     {
         if (request.AddedFrom is not null and not ("library" or "recommendation"))
             return this.Fail(localizer, "error.series.unsupportedAddOrigin");
-        if (request.ClientMutationId == Guid.Empty)
+        // `is not { } id` and not `== Guid.Empty`: ClientMutationId is nullable, so the lifted
+        // comparison is false for an absent field and the guard only ever caught a client that sent
+        // all-zeros on purpose. An add with no id takes neither the receipt lookup nor the receipt
+        // write in SeriesCreationService, so a retried request is a second series.
+        if (request.ClientMutationId is not { } clientMutationId || clientMutationId == Guid.Empty)
             return this.Fail(localizer, "error.series.mutationIdRequired");
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
@@ -833,7 +837,7 @@ public class SeriesController(
             request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
             deferSourceMatching: true, incognito: request.Incognito,
             attributedUserId: currentUser.UserId, addedFrom: request.AddedFrom,
-            clientMutationId: request.ClientMutationId);
+            clientMutationId: clientMutationId);
 
         if (result.Series is null)
         {
@@ -854,7 +858,7 @@ public class SeriesController(
               {
                   Warnings = result.Warnings.Count > 0 ? result.Warnings : null,
                   Operation = new SeriesOperationDto(
-                      request.ClientMutationId ?? Guid.Empty,
+                      clientMutationId,
                       result.Warnings.Count > 0 ? "committed-with-warnings" :
                           result.Series.SourceMatchPending ? "setup-pending" : "committed",
                       result.Series.Id,

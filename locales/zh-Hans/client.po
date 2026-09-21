@@ -5664,6 +5664,10 @@ msgid "Metadata database"
 msgstr "元数据数据库"
 
 #: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database download failed:"
+msgstr ""
+
+#: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Metadata database ready."
 msgstr "元数据数据库已就绪。"

@@ -5664,6 +5664,10 @@ msgid "Metadata database"
 msgstr "메타데이터 데이터베이스"
 
 #: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database download failed:"
+msgstr ""
+
+#: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Metadata database ready."
 msgstr "메타데이터 데이터베이스 준비 완료."

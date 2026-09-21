@@ -375,22 +375,75 @@ public class SeriesRequestsController(
             await db.Entry(request).ReloadAsync(ct);
         }
 
-        var queued = request.SeriesId is int seriesId
-            ? await QueueRangeAsync(
-                seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct)
-            : 0;
+        int queued;
+        try
+        {
+            queued = request.SeriesId is int seriesId
+                ? await QueueRangeAsync(
+                    seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct)
+                : 0;
 
-        request.Status = SeriesRequestStatus.Approved;
-        request.ApprovalClaimedAtUtc = null;
-        request.QueuedCount = queued;
-        request.ResolvedAt = DateTime.UtcNow;
-        request.ResolvedByUserId = currentUser.UserId;
-        request.ResolutionNote = Trimmed(body.Note);
-        await db.SaveChangesAsync(ct);
+            request.Status = SeriesRequestStatus.Approved;
+            request.ApprovalClaimedAtUtc = null;
+            request.QueuedCount = queued;
+            request.ResolvedAt = DateTime.UtcNow;
+            request.ResolvedByUserId = currentUser.UserId;
+            request.ResolutionNote = Trimmed(body.Note);
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            // The save above is the only thing that clears the claim, so anything throwing before it
+            // would leave the request reading Processing for the whole stale window — and while it
+            // does, Reject and Delete both refuse it and a retried approval is refused too. The
+            // branches above release the claim for the failures they can name; this covers the rest.
+            //
+            // A cancellation is caught too, and deliberately: an admin closing the tab mid-approval
+            // is the ordinary way to reach this, and the claim has to go back for that as much as
+            // for a real failure.
+            logger.LogWarning(ex, "Releasing the approval claim on request {Id} after a failure", request.Id);
+            await ReleaseClaimAsync(request);
+            throw;
+        }
 
         NotifyResolved(request, approved: true, queued);
 
         return Ok((await ToDtosAsync([request], ct))[0]);
+    }
+
+    /// <summary>
+    /// Puts a claimed request back to Pending so it can be approved, rejected or withdrawn again.
+    /// <para>
+    /// Written straight to the row rather than through the change tracker: the tracked entity may be
+    /// holding a half-applied Approved state from the save that just failed, and a second
+    /// <c>SaveChangesAsync</c> on it would either write that or fail the same way. The series id and
+    /// title ride along because a NewSeries approval may have committed the series before the
+    /// failure — dropping them would orphan it from the request, and the mutation receipt keyed on
+    /// the request would refuse to create it again.
+    /// </para>
+    /// <para>
+    /// Takes no cancellation token on purpose. The commonest way to get here is the request's own
+    /// token being cancelled, and passing it on would cancel the release as well — stranding the
+    /// claim in exactly the case this exists for. Best effort otherwise: a release that cannot be
+    /// written leaves the stale window as the backstop.
+    /// </para>
+    /// </summary>
+    private async Task ReleaseClaimAsync(SeriesRequest request)
+    {
+        try
+        {
+            await db.SeriesRequests.IgnoreQueryFilters()
+                .Where(r => r.Id == request.Id && r.Status == SeriesRequestStatus.Processing)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, SeriesRequestStatus.Pending)
+                    .SetProperty(r => r.ApprovalClaimedAtUtc, (DateTime?)null)
+                    .SetProperty(r => r.SeriesId, request.SeriesId)
+                    .SetProperty(r => r.Title, request.Title), CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not release the approval claim on request {Id}", request.Id);
+        }
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -401,6 +454,13 @@ public class SeriesRequestsController(
         if (request is null)
         {
             return NotFound();
+        }
+
+        // Same split Delete makes: a request another admin is mid-approval on has not been resolved,
+        // and telling the rejecting admin it has sends them looking for a decision nobody took.
+        if (request.Status == SeriesRequestStatus.Processing)
+        {
+            return this.Conflict(localizer, "error.requests.approvalInProgress");
         }
 
         if (request.Status != SeriesRequestStatus.Pending)

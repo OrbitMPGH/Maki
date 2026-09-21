@@ -4594,6 +4594,10 @@ msgid "Metadata database"
 msgstr "Metadata database"
 
 #: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database download failed:"
+msgstr "Metadata database download failed:"
+
+#: src/components/MetadataDumpProgress.tsx
 msgid "Metadata database ready."
 msgstr "Metadata database ready."
 

@@ -5664,6 +5664,10 @@ msgid "Metadata database"
 msgstr "База данных метаданных"
 
 #: src/components/MetadataDumpProgress.tsx
+msgid "Metadata database download failed:"
+msgstr ""
+
+#: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Metadata database ready."
 msgstr "База данных метаданных готова."
