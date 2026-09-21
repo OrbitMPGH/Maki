@@ -9,7 +9,8 @@ namespace Maki.Api.Tests;
 
 /// <summary>
 /// Adopting a volume compilation for a series whose chapter rows carry no volume: the volume only
-/// exists in the file name, so the link is the last chance to record it.
+/// exists in the file name, so the link is the last chance to record it. Plus the one case where a
+/// file with no number in its name at all can still be placed.
 /// </summary>
 public class CbzLinkVolumeTests : IDisposable
 {
@@ -45,7 +46,7 @@ public class CbzLinkVolumeTests : IDisposable
     }
 
     /// <summary>Chapters 1-6 with no volume and no files, the shape a scrape source produces.</summary>
-    private Series SeedSeries()
+    private Series SeedSeries(int chapterCount = 6)
     {
         using var db = _db.NewContext();
         var rootFolder = new RootFolder { Path = _root };
@@ -63,7 +64,7 @@ public class CbzLinkVolumeTests : IDisposable
         db.SaveChanges();
         Directory.CreateDirectory(Path.Combine(_root, "Berserk"));
 
-        db.Chapters.AddRange(Enumerable.Range(1, 6).Select(n => new Chapter
+        db.Chapters.AddRange(Enumerable.Range(1, chapterCount).Select(n => new Chapter
         {
             SeriesId = series.Id,
             Number = n,
@@ -97,6 +98,44 @@ public class CbzLinkVolumeTests : IDisposable
             "torrent",
             updateComicInfo: false,
             ct: CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task A_lone_unrecognized_file_is_linked_to_a_lone_chapter()
+    {
+        var series = SeedSeries(chapterCount: 1);
+        var path = WriteVolume("Look Back.cbz");
+
+        await LinkAsync(series, path);
+
+        using var db = _db.NewContext();
+        Assert.NotNull(db.Chapters.Single(c => c.SeriesId == series.Id).ChapterFileId);
+    }
+
+    [Fact]
+    public async Task A_lone_file_whose_name_carries_a_number_is_left_alone()
+    {
+        var series = SeedSeries(chapterCount: 1);
+        var path = WriteVolume("My Series Ch.50.cbz");
+
+        await LinkAsync(series, path);
+
+        using var db = _db.NewContext();
+        Assert.Null(db.Chapters.Single(c => c.SeriesId == series.Id).ChapterFileId);
+    }
+
+    [Fact]
+    public async Task A_series_with_several_chapters_does_not_adopt_an_unrecognized_file()
+    {
+        var series = SeedSeries();
+        var path = WriteVolume("Look Back.cbz");
+
+        await LinkAsync(series, path);
+
+        using var db = _db.NewContext();
+        Assert.All(
+            db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Null(c.ChapterFileId));
     }
 
     [Fact]

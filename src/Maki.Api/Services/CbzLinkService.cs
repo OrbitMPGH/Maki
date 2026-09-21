@@ -116,6 +116,7 @@ public class CbzLinkService(
         // disagree). Link any still-missing chapter its page markers prove it contains.
         linked += FillVolumeContents(chapters, volumeFiles);
 
+        linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
         if (ordered.Count > 0)
         {
@@ -342,6 +343,33 @@ public class CbzLinkService(
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// A series with one chapter and one file is an unambiguous pairing however the file is named,
+    /// and a single-volume work or a one-shot usually has no number in its name to match on at all.
+    /// Deliberately limited to a file whose name parses to nothing: a name that does carry a number
+    /// disagrees with the chapter rather than saying nothing about it, and a series whose chapter
+    /// list has not finished syncing would otherwise adopt the wrong file. Returns 1 when it links.
+    /// </summary>
+    private async Task<int> LinkLoneFileAsync(Series series, List<Chapter> chapters, CancellationToken ct)
+    {
+        if (chapters is not [{ ChapterFileId: null } chapter])
+        {
+            return 0;
+        }
+
+        var files = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).Take(2).ToListAsync(ct);
+        if (files is not [{ } file] || ReleaseNameParser.ParseFileName(file.RelativePath).IsRecognized)
+        {
+            return 0;
+        }
+
+        chapter.ChapterFileId = file.Id;
+        logger.LogInformation(
+            "Linked the only chapter of '{Title}' to its only file {File}, which has no number in its name",
+            series.Title, file.RelativePath);
+        return 1;
     }
 
     /// <summary>
