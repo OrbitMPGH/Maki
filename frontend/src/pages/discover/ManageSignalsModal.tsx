@@ -375,7 +375,7 @@ function AnimeSignalsPanel() {
         <Text size="sm" c="dimmed" py="md"><Trans>No shows match.</Trans></Text>
       )}
 
-      <div style={{ maxHeight: 460, overflowY: 'auto', overflowX: 'hidden' }}>
+      <div style={{ overflowX: 'hidden' }}>
         <Stack gap={0}>
           {filtered.map((entry) => (
             <AnimeSignalRow key={entry.key} entry={entry} />
