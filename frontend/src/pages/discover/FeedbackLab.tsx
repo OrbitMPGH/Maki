@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Badge, Button, Collapse, Group, Loader, Paper, SimpleGrid, Stack, Text, Tooltip,
+  Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, SimpleGrid, Stack, Text, Tooltip,
 } from '@mantine/core'
 import {
   IconBooks, IconEyeOff, IconThumbUp, IconBook, IconSparkles,
@@ -32,7 +32,7 @@ export function SignalsCard() {
   const { data: lab, isLoading, error } = useFeedbackLab()
   const undo = useUndoFeedback()
   const loadError = error ? String(error) : ''
-  const [manage, setManage] = useState(false)
+  const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)
 
@@ -85,7 +85,7 @@ export function SignalsCard() {
             <Button variant="subtle" size="compact-sm" onClick={() => setHowItWorks((v) => !v)}>
               <Trans>How signals work</Trans>
             </Button>
-            <Button variant="outline" size="compact-sm" onClick={() => setManage(true)}>
+            <Button variant="outline" size="compact-sm" onClick={() => setManage('titles')}>
               <Trans>Manage signals</Trans>
             </Button>
           </Group>
@@ -202,12 +202,12 @@ export function SignalsCard() {
               </Text>
             )}
 
-            <div>
+            <Card withBorder radius="lg" padding="md">
               <Group justify="space-between" align="center" mb={4}>
                 <Text size="sm" fw={600}>
                   <Trans>Recent feedback</Trans>
                 </Text>
-                <Button size="xs" variant="subtle" onClick={() => setManage(true)}>
+                <Button size="xs" variant="subtle" onClick={() => setManage('titles')}>
                   <Trans>Show all</Trans>
                 </Button>
               </Group>
@@ -252,13 +252,17 @@ export function SignalsCard() {
                   </div>
                 ))}
               </Stack>
-            </div>
+            </Card>
 
-            {lab.capabilities.animeSignals && <AnimeSignalsSection />}
+            {lab.capabilities.animeSignals && (
+              <AnimeSignalsSection onOpenList={() => setManage('anime')} />
+            )}
           </>
         )}
       </Stack>
-      <ManageSignalsModal opened={manage} onClose={() => setManage(false)} />
+      <ManageSignalsModal
+        opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
+      />
     </>
   )
 }

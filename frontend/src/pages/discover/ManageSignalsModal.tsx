@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Text, TextInput,
+  ActionIcon, Alert, Badge, Button, Chip, Group, Modal, ScrollArea, Select, Stack, Tabs, Text,
+  TextInput,
 } from '@mantine/core'
 import { IconSearch, IconX } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -8,8 +9,11 @@ import type { FeedbackState } from '../../api/recommendationFeedback'
 import {
   useFeedbackLab, useFeedbackStates, useMutateFeedback, useMutateSignalOverride, useSignalOverrides,
 } from '../../api/recommendationFeedback'
+import { useAnimeSignals, useSyncAnimeSignals } from '../../api/animeSignals'
+import { AnimeSignalRow, useAnimeRoleFilters } from './AnimeSignalsSection'
+import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
-import { formatDate } from '../../format'
+import { formatDate, formatDateTime } from '../../format'
 
 type Filter = 'all' | 'rated' | 'thumbs' | 'hidden' | 'exposed' | 'excluded' | 'added'
 
@@ -32,10 +36,16 @@ interface Row {
  *
  * The shelf and the feedback states are separate stores, so a title can appear in either or both;
  * they are merged on the catalogue id here rather than joined on the server, which would mean
- * paging two collections against one cursor.
+ * paging two collections against one cursor. An Anime tab sits beside it when the capability is on,
+ * holding the full anime-signal list the Taste tab's panel only summarizes.
  */
-export function ManageSignalsModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
+export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
+  opened: boolean
+  onClose: () => void
+  initialTab?: 'titles' | 'anime'
+}) {
   const { t } = useLingui()
+  const [tab, setTab] = useState<'titles' | 'anime'>(initialTab)
   const [cursor, setCursor] = useState<number | undefined>()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
@@ -44,6 +54,9 @@ export function ManageSignalsModal({ opened, onClose }: { opened: boolean; onClo
   const [pending, setPending] = useState<number | null>(null)
 
   const { data: lab } = useFeedbackLab()
+  useEffect(() => {
+    if (opened) setTab(initialTab)
+  }, [opened, initialTab])
   const { data: states } = useFeedbackStates(cursor, 'recent')
   const { data: overrides } = useSignalOverrides()
   const feedback = useMutateFeedback()
@@ -175,61 +188,185 @@ export function ManageSignalsModal({ opened, onClose }: { opened: boolean; onClo
         </div>
       }
     >
-      <Stack gap="sm">
-        <Group gap="sm" align="center" wrap="wrap">
-          <TextInput
-            value={search} onChange={(event) => setSearch(event.currentTarget.value)}
-            placeholder={t`Search titles`} leftSection={<IconSearch size={16} />}
-            w={240} aria-label={t`Search titles`}
-          />
-          <Select
-            value={sort} onChange={(value) => setSort(value === 'title' ? 'title' : 'recent')}
-            aria-label={t`Sort`} w={190} allowDeselect={false}
-            data={[
-              { value: 'recent', label: t`Recently changed` },
-              { value: 'title', label: t`Title` },
-            ]}
-          />
+      <Tabs value={tab} onChange={(value) => setTab(value === 'anime' ? 'anime' : 'titles')}>
+        <Tabs.List mb="sm">
+          <Tabs.Tab value="titles"><Trans>Titles</Trans></Tabs.Tab>
+          {lab?.capabilities.animeSignals && (
+            <Tabs.Tab value="anime"><Trans>Anime</Trans></Tabs.Tab>
+          )}
+        </Tabs.List>
+
+        <Tabs.Panel value="titles">
+          <Stack gap="sm">
+            <Group gap="sm" align="center" wrap="wrap">
+              <TextInput
+                value={search} onChange={(event) => setSearch(event.currentTarget.value)}
+                placeholder={t`Search titles`} leftSection={<IconSearch size={16} />}
+                w={240} aria-label={t`Search titles`}
+              />
+              <Select
+                value={sort} onChange={(value) => setSort(value === 'title' ? 'title' : 'recent')}
+                aria-label={t`Sort`} w={190} allowDeselect={false}
+                data={[
+                  { value: 'recent', label: t`Recently changed` },
+                  { value: 'title', label: t`Title` },
+                ]}
+              />
+            </Group>
+            <Chip.Group multiple={false} value={filter} onChange={(value) => setFilter(value as Filter)}>
+              <Group gap={6} wrap="wrap">
+                {filters.map((item) => (
+                  <Chip key={item.value} value={item.value} size="xs" variant="outline">
+                    {item.label} · {item.count}
+                  </Chip>
+                ))}
+              </Group>
+            </Chip.Group>
+
+            {actionError && (
+              <Alert color="red">
+                <Trans>{actionError} Refresh the page and try again.</Trans>
+              </Alert>
+            )}
+
+            {visible.length === 0 && (
+              <Text size="sm" c="dimmed" py="md"><Trans>No titles match.</Trans></Text>
+            )}
+
+            <Stack gap={0}>
+              {visible.map((row) => (
+                <SignalRow
+                  key={row.id} row={row} busy={pending === row.id}
+                  onClear={clear} onExclude={setExcluded}
+                />
+              ))}
+            </Stack>
+
+            <Group justify="space-between">
+              <Text size="xs" c="dimmed"><Trans>Showing {shown} of {total}</Trans></Text>
+              {states?.nextCursor && (
+                <Button size="xs" variant="subtle" onClick={() => setCursor(states.nextCursor!)}>
+                  <Trans>Load more</Trans>
+                </Button>
+              )}
+            </Group>
+          </Stack>
+        </Tabs.Panel>
+
+        {lab?.capabilities.animeSignals && (
+          <Tabs.Panel value="anime">
+            <AnimeSignalsPanel />
+          </Tabs.Panel>
+        )}
+      </Tabs>
+    </Modal>
+  )
+}
+
+/**
+ * The full anime-signal list: search, role filter and every matching entry, unbounded. The Taste
+ * tab's panel only shows the dial and a summary; this is where a reader checks one specific title.
+ */
+function AnimeSignalsPanel() {
+  const { t } = useLingui()
+  const { data, isLoading, error } = useAnimeSignals()
+  const sync = useSyncAnimeSignals()
+  const [syncError, setSyncError] = useState('')
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
+
+  const roles = useAnimeRoleFilters(data?.counts)
+
+  const filtered = useMemo(() => {
+    const needle = search.trim().toLowerCase()
+    return (data?.entries ?? []).filter((entry) => {
+      if (roleFilter !== 'all' && entry.role !== roleFilter) return false
+      if (!needle) return true
+      return entry.title.toLowerCase().includes(needle) ||
+        (entry.mangaTitle?.toLowerCase().includes(needle) ?? false)
+    })
+  }, [data?.entries, search, roleFilter])
+  const shown = filtered.length
+  const total = data?.entries.length ?? 0
+
+  async function runSync() {
+    setSyncError('')
+    try { await sync.mutateAsync() } catch (cause) { setSyncError(String(cause)) }
+  }
+
+  if (isLoading || !data) {
+    return error ? (
+      <Alert color="red"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+    ) : null
+  }
+
+  const noTracker = data.services.length === 0
+  if (!data.enabled || noTracker) {
+    return (
+      <Text size="sm" c="dimmed" py="md">
+        {noTracker
+          ? <Trans>Connect an AniList or MyAnimeList tracker to use this.</Trans>
+          : <Trans>Turn on anime signals on the Taste tab to use this.</Trans>}
+      </Text>
+    )
+  }
+
+  return (
+    <Stack gap="sm">
+      <Group justify="space-between" align="center" wrap="wrap">
+        <Text size="xs" c="dimmed">
+          {data.lastSyncAtUtc
+            ? t`Last synced ${formatDateTime(data.lastSyncAtUtc)}`
+            : t`Not synced yet`}
+          {data.counts && (
+            <>
+              {' · '}
+              <Trans>
+                {data.counts.matched} of {data.counts.total} matched, {data.counts.positive} positive,{' '}
+                {data.counts.avoided} avoided, {data.counts.superseded} already yours
+              </Trans>
+            </>
+          )}
+        </Text>
+        <Button size="xs" variant="outline" loading={data.syncing} onClick={() => void runSync()}>
+          <Trans>Sync now</Trans>
+        </Button>
+      </Group>
+
+      {syncError && <Alert color="red">{syncError}</Alert>}
+
+      <TextInput
+        value={search} onChange={(event) => setSearch(event.currentTarget.value)}
+        placeholder={t`Search shows`} leftSection={<IconSearch size={16} />}
+        aria-label={t`Search shows`}
+      />
+
+      <Chip.Group multiple={false} value={roleFilter} onChange={(value) => setRoleFilter(value as RoleFilter)}>
+        <Group gap={6} wrap="wrap">
+          {roles.map((role) => (
+            <Chip key={role.value} value={role.value} size="xs" variant="outline">
+              {role.label} · {role.count}
+            </Chip>
+          ))}
         </Group>
-        <Chip.Group multiple={false} value={filter} onChange={(value) => setFilter(value as Filter)}>
-          <Group gap={6} wrap="wrap">
-            {filters.map((item) => (
-              <Chip key={item.value} value={item.value} size="xs" variant="outline">
-                {item.label} · {item.count}
-              </Chip>
-            ))}
-          </Group>
-        </Chip.Group>
+      </Chip.Group>
 
-        {actionError && (
-          <Alert color="red">
-            <Trans>{actionError} Refresh the page and try again.</Trans>
-          </Alert>
-        )}
+      {filtered.length === 0 && (
+        <Text size="sm" c="dimmed" py="md"><Trans>No shows match.</Trans></Text>
+      )}
 
-        {visible.length === 0 && (
-          <Text size="sm" c="dimmed" py="md"><Trans>No titles match.</Trans></Text>
-        )}
-
-        <Stack gap={0}>
-          {visible.map((row) => (
-            <SignalRow
-              key={row.id} row={row} busy={pending === row.id}
-              onClear={clear} onExclude={setExcluded}
-            />
+      <ScrollArea.Autosize mah={460}>
+        <Stack gap={4}>
+          {filtered.map((entry) => (
+            <AnimeSignalRow key={entry.key} entry={entry} />
           ))}
         </Stack>
+      </ScrollArea.Autosize>
 
-        <Group justify="space-between">
-          <Text size="xs" c="dimmed"><Trans>Showing {shown} of {total}</Trans></Text>
-          {states?.nextCursor && (
-            <Button size="xs" variant="subtle" onClick={() => setCursor(states.nextCursor!)}>
-              <Trans>Load more</Trans>
-            </Button>
-          )}
-        </Group>
-      </Stack>
-    </Modal>
+      <Text size="xs" c="dimmed">
+        <Trans>Showing {shown} of {total}</Trans>
+      </Text>
+    </Stack>
   )
 }
 

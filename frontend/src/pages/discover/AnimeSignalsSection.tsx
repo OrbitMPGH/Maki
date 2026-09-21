@@ -1,50 +1,51 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
-  Alert, Badge, Button, Chip, Collapse, Group, Paper, SegmentedControl, Stack, Switch, Text, Tooltip,
+  Alert, Badge, Button, Card, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import type { AnimeSignalEntry, AnimeSignalRole, AnimeSignalStrength } from '../../api/animeSignals'
-import {
-  useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength, useSyncAnimeSignals,
-} from '../../api/animeSignals'
+import type { AnimeSignalCounts, AnimeSignalEntry, AnimeSignalRole, AnimeSignalStrength } from '../../api/animeSignals'
+import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
 import { formatDateTime } from '../../format'
 
-type RoleFilter = AnimeSignalRole | 'all'
+export type RoleFilter = AnimeSignalRole | 'all'
+
+/**
+ * The roles a reader can filter the anime signal list by, with their counts, so the modal does not
+ * duplicate the labels this section already defines.
+ */
+export function useAnimeRoleFilters(counts: AnimeSignalCounts | undefined) {
+  const { t } = useLingui()
+  const roles: { value: RoleFilter; label: string; count: number }[] = [
+    { value: 'all', label: t`All`, count: counts?.total ?? 0 },
+    { value: 'positive', label: t`Positive`, count: counts?.positive ?? 0 },
+    { value: 'avoided', label: t`Avoided`, count: counts?.avoided ?? 0 },
+    { value: 'neutral', label: t`Neutral`, count: counts?.neutral ?? 0 },
+    { value: 'superseded', label: t`Already yours`, count: counts?.superseded ?? 0 },
+    { value: 'unmatched', label: t`Unmatched`, count: counts?.unmatched ?? 0 },
+  ]
+  return roles
+}
 
 /**
  * Watched anime, from a connected AniList or MyAnimeList tracker, matched to catalogue manga and
  * used as extra recommendation seeds. Shown only when the capability is on; the section itself
  * still has to tell "no tracker connected" apart from "instance switch off", since both come back
- * as `capabilities.animeSignals === false` upstream but need different copy here.
+ * as `capabilities.animeSignals === false` upstream but need different copy here. The full list
+ * lives in the Manage signals modal's Anime tab; this panel only sets the dial.
  */
-export function AnimeSignalsSection() {
+export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) {
   const { t } = useLingui()
   const { data, isLoading, error } = useAnimeSignals()
   const setEnabled = useSetAnimeSignalsEnabled()
   const setStrength = useSetAnimeSignalsStrength()
-  const sync = useSyncAnimeSignals()
   const [toggleError, setToggleError] = useState('')
-  const [syncError, setSyncError] = useState('')
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
-  const [listOpen, setListOpen] = useState(false)
 
   const counts = data?.counts
-
-  const filtered = useMemo(() => {
-    const entries = data?.entries ?? []
-    return roleFilter === 'all' ? entries : entries.filter((entry) => entry.role === roleFilter)
-  }, [data, roleFilter])
-  const entries = data?.entries ?? []
 
   async function toggle(next: boolean) {
     setToggleError('')
     try { await setEnabled.mutateAsync(next) } catch (cause) { setToggleError(String(cause)) }
-  }
-
-  async function runSync() {
-    setSyncError('')
-    try { await sync.mutateAsync() } catch (cause) { setSyncError(String(cause)) }
   }
 
   async function changeStrength(strength: AnimeSignalStrength) {
@@ -66,19 +67,8 @@ export function AnimeSignalsSection() {
 
   const noTracker = data.services.length === 0
 
-  // Straight off the payload. These used to be derived here by subtracting the roles from the
-  // matched count, which made the unmatched chip report every neutral entry as well.
-  const roles: { value: RoleFilter; label: string; count: number }[] = [
-    { value: 'all', label: t`All`, count: counts?.total ?? 0 },
-    { value: 'positive', label: t`Positive`, count: counts?.positive ?? 0 },
-    { value: 'avoided', label: t`Avoided`, count: counts?.avoided ?? 0 },
-    { value: 'neutral', label: t`Neutral`, count: counts?.neutral ?? 0 },
-    { value: 'superseded', label: t`Already yours`, count: counts?.superseded ?? 0 },
-    { value: 'unmatched', label: t`Unmatched`, count: counts?.unmatched ?? 0 },
-  ]
-
   return (
-    <Paper withBorder radius="md" p="md">
+    <Card withBorder radius="lg" padding="md">
       <Stack gap="sm">
         <Group justify="space-between" align="center" wrap="wrap">
           <div>
@@ -110,22 +100,14 @@ export function AnimeSignalsSection() {
         )}
 
         {data.enabled && !noTracker && (
-          <>
-            <Group justify="space-between" align="center" wrap="wrap">
-              <AnimeSignalStrengthControl
-                value={data.strength}
-                topSeedWeight={data.strengths.find((s) => s.value === data.strength)?.topSeedWeight}
-                pending={setStrength.isPending}
-                onChange={(next) => void changeStrength(next)}
-              />
-              <Button size="xs" variant="outline" loading={data.syncing} onClick={() => void runSync()}>
-                <Trans>Sync now</Trans>
-              </Button>
-            </Group>
-
-            {syncError && <Alert color="red">{syncError}</Alert>}
-
-            <Group justify="space-between" align="center" wrap="wrap">
+          <Group justify="space-between" align="center" wrap="wrap">
+            <AnimeSignalStrengthControl
+              value={data.strength}
+              topSeedWeight={data.strengths.find((s) => s.value === data.strength)?.topSeedWeight}
+              pending={setStrength.isPending}
+              onChange={(next) => void changeStrength(next)}
+            />
+            <Group gap="xs">
               <Text size="xs" c="dimmed">
                 {data.lastSyncAtUtc
                   ? t`Last synced ${formatDateTime(data.lastSyncAtUtc)}`
@@ -140,40 +122,14 @@ export function AnimeSignalsSection() {
                   </>
                 )}
               </Text>
-              {entries.length > 0 && (
-                <Button size="xs" variant="subtle" onClick={() => setListOpen((v) => !v)}>
-                  {listOpen
-                    ? <Trans>Hide list</Trans>
-                    : <Plural value={entries.length} one="Show # show" other="Show # shows" />}
-                </Button>
-              )}
+              <Button size="xs" variant="subtle" onClick={onOpenList}>
+                <Trans>Show list</Trans>
+              </Button>
             </Group>
-
-            {entries.length > 0 && (
-              <Collapse expanded={listOpen}>
-                <Stack gap="sm">
-                  <Chip.Group multiple={false} value={roleFilter} onChange={(value) => setRoleFilter(value as RoleFilter)}>
-                    <Group gap={6} wrap="wrap">
-                      {roles.map((role) => (
-                        <Chip key={role.value} value={role.value} size="xs" variant="outline">
-                          {role.label} · {role.count}
-                        </Chip>
-                      ))}
-                    </Group>
-                  </Chip.Group>
-
-                  <Stack gap={4}>
-                    {filtered.slice(0, 40).map((entry) => (
-                      <AnimeSignalRow key={entry.key} entry={entry} />
-                    ))}
-                  </Stack>
-                </Stack>
-              </Collapse>
-            )}
-          </>
+          </Group>
         )}
       </Stack>
-    </Paper>
+    </Card>
   )
 }
 
@@ -242,7 +198,7 @@ function AnimeSignalStrengthControl({
   )
 }
 
-function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
+export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
   const { t } = useLingui()
   const labelFor = (service: string) =>
     service === 'anilist' ? t`AniList` : service === 'mal' ? t`MyAnimeList` : service

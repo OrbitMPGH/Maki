@@ -203,11 +203,6 @@ msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsuppor
 msgstr "{0, plural, one {Removido # capítulo incompatível} many {Removidos # capítulos incompatíveis}other {Removidos # capítulos incompatíveis}}"
 
 #. placeholder {0}: entries.length
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "{0, plural, one {Show # show} other {Show # shows}}"
-msgstr ""
-
-#. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
@@ -238,11 +233,17 @@ msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Quer # capítulo} many {Quer # capítulos}other {Quer # capítulos}}"
 
 #. placeholder {0}: counts.matched
+#. placeholder {0}: data.counts.matched
 #. placeholder {1}: counts.total
+#. placeholder {1}: data.counts.total
 #. placeholder {2}: counts.positive
+#. placeholder {2}: data.counts.positive
 #. placeholder {3}: counts.avoided
+#. placeholder {3}: data.counts.avoided
 #. placeholder {4}: counts.superseded
+#. placeholder {4}: data.counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
 msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 msgstr ""
 
@@ -1634,6 +1635,10 @@ msgstr ""
 msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, id do cliente, segredo do cliente, intervalo de sincronização, planejar leitura"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Anime"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -2856,6 +2861,10 @@ msgstr "Confirme sua senha para desativá-la"
 msgid "Connect"
 msgstr "Conectar"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Connect an AniList or MyAnimeList tracker to use this."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
 msgstr ""
@@ -3000,6 +3009,7 @@ msgstr "Núcleo"
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Could not load anime signals: {0}"
 msgstr ""
 
@@ -4388,10 +4398,6 @@ msgstr "joias escondidas"
 msgid "hidden or dismissed"
 msgstr ""
 
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Hide list"
-msgstr ""
-
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Hide source names"
@@ -4958,6 +4964,7 @@ msgstr "Último login"
 
 #. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Last synced {0}"
 msgstr ""
 
@@ -6050,6 +6057,10 @@ msgstr "Nenhuma pesquisa semântica ou recomendação"
 msgid "No series match the current filter. Try clearing the search or status filter."
 msgstr "Nenhuma série corresponde ao filtro atual. Tente limpar a pesquisa ou o filtro de status."
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "No shows match."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "No snapshot downloaded yet"
@@ -6217,6 +6228,7 @@ msgid "Not scanned"
 msgstr "Não verificado"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Not synced yet"
 msgstr ""
 
@@ -8331,6 +8343,10 @@ msgstr "Pesquisar lançamentos"
 msgid "Search releases (Prowlarr)"
 msgstr "Pesquisar lançamentos (Prowlarr)"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Search shows"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Search sources and add new series to the library"
@@ -8675,6 +8691,10 @@ msgstr "Mostrar menos"
 #, fuzzy
 msgid "Show less"
 msgstr "Mostrar menos"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Show list"
+msgstr ""
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -9170,7 +9190,7 @@ msgid "Sync interval (minutes)"
 msgstr "Intervalo de sincronização (minutos)"
 
 #: src/components/SeriesScrobbleSection.tsx
-#: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Sync now"
@@ -9710,6 +9730,10 @@ msgstr "somente correspondência de título, criar o índice de recomendações 
 msgid "Title search"
 msgstr "Pesquisa por título"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Titles"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "titles on the shelf"
 msgstr ""
@@ -9857,6 +9881,10 @@ msgstr "Tente limpar os filtros."
 #, fuzzy
 msgid "Turkish"
 msgstr "Turco"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Turn on anime signals on the Taste tab to use this."
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
