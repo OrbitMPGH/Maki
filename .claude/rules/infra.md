@@ -8,6 +8,8 @@ paths:
   - "src/Maki.Api/Jobs/Artifact*.cs"
   - "src/Maki.Core/Io/**"
   - "Dockerfile"
+  - "distribution/docker/Dockerfile"
+  - ".github/workflows/*.yml"
   - "src/Maki.Api/Services/KavitaUser*.cs"
   - "src/Maki.Api/Program.cs"
   - "src/Maki.Data/Migrations/**"

@@ -11,10 +11,23 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
 # The message catalogs live at the repo root, not under frontend/, because the API embeds the same
-# files. lingui.config.js and the dynamic catalog imports both reach ../locales, so the build fails
-# without this.
+# files. lingui.config.js reaches ../locales, and src/i18n.ts imports each catalog through the
+# `@locales` alias that vite.config.ts and tsconfig.app.json both point at that same directory, so
+# the build fails without this. It has to land at /src/locales specifically: the alias resolves one
+# directory above the package, and WORKDIR here is /src/frontend.
 COPY locales/ /src/locales/
 RUN npm run build
+# Vite emits one lazily-imported client-*.js chunk per locale from those imports, so whether the
+# catalogs actually made it into the bundle is countable. Worth counting because the failure is
+# silent in the direction that matters: a bundle missing them still builds, still serves, and
+# still answers every string in English. Counted against the locale directories rather than a
+# hardcoded number so adding a language cannot leave this checking the old count.
+RUN expected="$(ls -1d /src/locales/*/ | wc -l)" \
+    && actual="$(ls -1 dist/assets/client-*.js 2>/dev/null | wc -l)" \
+    && if [ "$actual" -ne "$expected" ]; then \
+         echo "Expected $expected compiled client catalogs in the bundle, found $actual." >&2; \
+         exit 1; \
+       fi
 
 # ---- Backend build ----
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS backend
@@ -40,6 +53,15 @@ RUN dotnet restore src/Maki.Api/Maki.Api.csproj
 RUN dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -o /app/publish /p:UseAppHost=false /p:PlaywrightPlatform=all \
       ${VERSION:+/p:Version=$VERSION} \
       ${VERSION:+/p:InformationalVersion=$VERSION${SOURCE_COMMIT:++$SOURCE_COMMIT}}
+# Same check for the other half of the catalogs: the EmbeddedResource item names each one
+# Maki.Locales.<locale>.po, so the assembly manifest carries those names and a publish that
+# embedded nothing is visible here rather than as an English-only container months later.
+RUN expected="$(ls -1d locales/*/ | wc -l)" \
+    && actual="$(grep -a -o 'Maki\.Locales\.[A-Za-z-]*\.po' /app/publish/Maki.Api.dll | sort -u | wc -l)" \
+    && if [ "$actual" -ne "$expected" ]; then \
+         echo "Expected $expected server catalogs embedded in Maki.Api.dll, found $actual." >&2; \
+         exit 1; \
+       fi
 
 # ---- Trim unused native runtime assets ----
 # The backend publish above ran once on $BUILDPLATFORM with no RID, so NuGet's `runtimes/` folder

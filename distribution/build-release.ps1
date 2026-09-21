@@ -14,6 +14,13 @@
     - a git tag matching -Version must already exist and point at HEAD
   Both are overridable for a dry run, but leave them on for anything you intend to ship.
 
+  What it does NOT mirror is docker.yml's `catalogues` job, which re-extracts the message
+  catalogues and validates the translations before anything is built. release.ps1 runs the same
+  gates on the way to cutting the tag, so a tag made through it has met them; a tag made by hand
+  has not. The Dockerfile still asserts that all fourteen catalogues ended up in the image on both
+  halves (embedded server.po, bundled client.po), which is the failure that would otherwise ship
+  silently as an English-only container.
+
 .PARAMETER Version
   Release version, e.g. 0.11.0 or v0.11.0 (leading v is optional). Must be plain X.Y.Z, optionally
   with a prerelease suffix (0.11.0-rc.1) — a prerelease only pushes the full version, no

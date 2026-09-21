@@ -398,11 +398,17 @@ docker buildx build \
 
 Notes:
 - The build context is the repo root; `.dockerignore` keeps `bin/`, `obj/`, `node_modules/`,
-  `dist/` and dev config out of the context.
+  `dist/` and dev config out of the context. It has to be the repo root rather than a narrower
+  directory: the message catalogues live in `locales/` and both build stages copy them in, since
+  the API embeds `server.po` and Vite bundles `client.po`. The build asserts that all fourteen
+  languages ended up in the image on both halves, so a context or path change that loses them
+  fails the build instead of shipping an English-only container.
 - `entrypoint.sh` drops privileges to `PUID`/`PGID` (via `gosu`) after fixing ownership of
   `/config`, so files land with your user's ownership.
 - State persists in the `/config` volume; the library is a separate mount you share with Kavita.
-- An identical Dockerfile lives at `distribution/docker/Dockerfile` for CI.
+- An identical Dockerfile lives at `distribution/docker/Dockerfile` for CI. Keep the two in step:
+  `.github/workflows/docker.yml` and `distribution/build-*.ps1` build that copy, the root one is
+  what a `docker build .` from these instructions picks up.
 
 ## Development
 
