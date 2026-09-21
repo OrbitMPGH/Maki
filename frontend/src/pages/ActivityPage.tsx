@@ -47,6 +47,7 @@ import { isQueueActive, needsImportReview, queueStatusVisual } from '../componen
 import { queueErrorMessage, queueItemLabel } from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { formatDateTime, formatTime } from '../format'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const HISTORY_PAGE_SIZE = 25
 
@@ -103,7 +104,7 @@ export default function ActivityPage() {
   )
 
   return (
-    <>
+    <SurfaceFrame>
       <PageHeader
         title={t`Activity`}
         description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
@@ -446,6 +447,6 @@ export default function ActivityPage() {
           </>
         )}
       </Stack>
-    </>
+    </SurfaceFrame>
   )
 }

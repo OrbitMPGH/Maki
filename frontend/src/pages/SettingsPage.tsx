@@ -45,6 +45,7 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
 import { NamingFormatInput } from '../components/NamingFormatInput'
 import { PriorityList } from '../components/PriorityList'
@@ -2873,7 +2874,7 @@ export default function SettingsPage() {
   }, [target, setSearchParams])
 
   return (
-    <>
+    <SurfaceFrame>
       <PageHeader
         title={t`Settings`}
         description={
@@ -2912,6 +2913,6 @@ export default function SettingsPage() {
           </Tabs.Panel>
         ))}
       </Tabs>
-    </>
+    </SurfaceFrame>
   )
 }

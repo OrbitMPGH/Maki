@@ -23,6 +23,7 @@ import { useHubEvent } from '../api/signalr'
 import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */
 const IMPORT_BATCH_SIZE = 50
@@ -143,45 +144,71 @@ export default function ImportPage() {
     .map(([folderName, metadataProviderId]) => ({ folderName, metadataProviderId }))
   const selectedCount = selectedItems.length
 
+  const importStep =
+    Object.keys(progress).length > 0 || doImport.isPending
+      ? 'import'
+      : candidates === null
+        ? 'scan'
+        : 'review'
+  const importSteps = [
+    { key: 'scan', label: t`Scan`, detail: t`Choose a root folder` },
+    { key: 'review', label: t`Review`, detail: t`Confirm metadata matches` },
+    { key: 'import', label: t`Import`, detail: t`Link files and report results` },
+  ] as const
+
   return (
-    <>
+    <SurfaceFrame className="import-surface">
       <PageHeader
         title={t`Import library`}
         description={t`Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted.`}
       />
 
-      <Group mb="lg" align="flex-end">
-        <Select
-          label={t`Root folder`}
-          data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-          value={rootFolderId}
-          onChange={setRootFolderId}
-          w={380}
-        />
-        <Button
-          leftSection={<IconFolderSearch size={16} />}
-          onClick={() => rootFolderId && scan.mutate(Number(rootFolderId))}
-          loading={scan.isPending}
-          disabled={!rootFolderId}
-        >
-          <Trans>Scan</Trans>
-        </Button>
-        {candidates && candidates.length > 0 && (
+      <div className="import-workspace">
+        <ol className="import-step-rail" aria-label={t`Import progress`}>
+          {importSteps.map((step) => (
+            <li key={step.key} data-active={importStep === step.key}>
+              <span className="import-step-dot" aria-hidden="true" />
+              <span className="import-step-copy">
+                <span>{step.label}</span>
+                <small>{step.detail}</small>
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        <Group className="import-control-row" mb="lg" align="flex-end">
+          <Select
+            className="import-root-select"
+            label={t`Root folder`}
+            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+            value={rootFolderId}
+            onChange={setRootFolderId}
+          />
           <Button
-            color="teal"
-            leftSection={<IconPackageImport size={16} />}
-            loading={doImport.isPending}
-            disabled={selectedCount === 0}
-            onClick={() => {
-              // Reopen defaulting to the global "write ComicInfo" setting (still overridable here).
-              setUpdateComicInfo(librarySettings?.writeComicInfo ?? true)
-              setConfirmOpen(true)
-            }}
+            leftSection={<IconFolderSearch size={16} />}
+            onClick={() => rootFolderId && scan.mutate(Number(rootFolderId))}
+            loading={scan.isPending}
+            disabled={!rootFolderId}
           >
-            <Plural value={selectedCount} one="Import # selected" other="Import # selected" />
+            <Trans>Scan</Trans>
           </Button>
-        )}
-      </Group>
+          {candidates && candidates.length > 0 && (
+            <Button
+              color="teal"
+              leftSection={<IconPackageImport size={16} />}
+              loading={doImport.isPending}
+              disabled={selectedCount === 0}
+              onClick={() => {
+                // Reopen defaulting to the global "write ComicInfo" setting (still overridable here).
+                setUpdateComicInfo(librarySettings?.writeComicInfo ?? true)
+                setConfirmOpen(true)
+              }}
+            >
+              <Plural value={selectedCount} one="Import # selected" other="Import # selected" />
+            </Button>
+          )}
+        </Group>
+      </div>
 
       <Modal
         opened={confirmOpen}
@@ -231,7 +258,7 @@ export default function ImportPage() {
       </Modal>
 
       {results && results.length > 0 && (
-        <Stack gap={4} mb="md">
+        <Stack className="import-results" gap={4} mb="md">
           {results.map((r) => {
             const folderLabel = r.newFolderName ?? r.folderName
             const { filesLinked, filesUnrecognized } = r
@@ -268,127 +295,129 @@ export default function ImportPage() {
       )}
 
       {candidates && candidates.length > 0 && (
-        <Table striped>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th w={40} />
-              <Table.Th>
-                <Trans>Folder</Trans>
-              </Table.Th>
-              <Table.Th>
-                <Trans>Files</Trans>
-              </Table.Th>
-              <Table.Th w={420}>
-                <Trans>Match</Trans>
-              </Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {candidates.map((c) => {
-              const selected = selection[c.folderName] ?? ''
-              const match = c.matches.find((m) => m.providerId === selected)
-              const rowProgress = progress[c.folderName]
-              const { cleanedTitle, comicCount, recognizedCount } = c
-              const unrecognizedCount = comicCount - recognizedCount
-              return (
-                <Table.Tr key={c.folderName}>
-                  <Table.Td>
-                    <Checkbox
-                      checked={selected !== ''}
-                      disabled={c.matches.length === 0 || doImport.isPending}
-                      onChange={(e) => {
-                        // Capture before setState: React nulls currentTarget after the handler.
-                        const checked = e.currentTarget.checked
-                        setSelection((s) => ({
-                          ...s,
-                          [c.folderName]: checked ? c.matches[0]?.providerId ?? '' : '',
-                        }))
-                      }}
-                    />
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" fw={600}>
-                      {c.folderName}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      <Trans>searched as “{cleanedTitle}”</Trans>
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">
-                      <Plural value={comicCount} one="# comic" other="# comics" />
-                    </Text>
-                    {recognizedCount < comicCount && (
-                      <Badge size="xs" color="yellow" variant="light">
-                        <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
-                      </Badge>
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Group wrap="nowrap" gap="xs">
-                      {match?.coverUrl && (
-                        <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" />
+        <Table.ScrollContainer className="import-table-scroll" minWidth={720}>
+          <Table className="import-table" striped>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th w={40} />
+                <Table.Th>
+                  <Trans>Folder</Trans>
+                </Table.Th>
+                <Table.Th>
+                  <Trans>Files</Trans>
+                </Table.Th>
+                <Table.Th w={420}>
+                  <Trans>Match</Trans>
+                </Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {candidates.map((c) => {
+                const selected = selection[c.folderName] ?? ''
+                const match = c.matches.find((m) => m.providerId === selected)
+                const rowProgress = progress[c.folderName]
+                const { cleanedTitle, comicCount, recognizedCount } = c
+                const unrecognizedCount = comicCount - recognizedCount
+                return (
+                  <Table.Tr key={c.folderName}>
+                    <Table.Td>
+                      <Checkbox
+                        checked={selected !== ''}
+                        disabled={c.matches.length === 0 || doImport.isPending}
+                        onChange={(e) => {
+                          // Capture before setState: React nulls currentTarget after the handler.
+                          const checked = e.currentTarget.checked
+                          setSelection((s) => ({
+                            ...s,
+                            [c.folderName]: checked ? c.matches[0]?.providerId ?? '' : '',
+                          }))
+                        }}
+                      />
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" fw={600}>
+                        {c.folderName}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        <Trans>searched as “{cleanedTitle}”</Trans>
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">
+                        <Plural value={comicCount} one="# comic" other="# comics" />
+                      </Text>
+                      {recognizedCount < comicCount && (
+                        <Badge size="xs" color="yellow" variant="light">
+                          <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
+                        </Badge>
                       )}
-                      {rowProgress ? (
-                        <Stack gap={4} style={{ flex: 1 }}>
-                          <Progress
-                            size="sm"
-                            value={
-                              rowProgress.total
-                                ? (100 * (rowProgress.current ?? 0)) / rowProgress.total
-                                : rowProgress.stage === 'Queued'
-                                  ? 0
-                                  : 100
-                            }
-                            animated={!rowProgress.done && rowProgress.stage !== 'Queued'}
-                            color={
-                              rowProgress.done
-                                ? rowProgress.success
-                                  ? 'teal'
-                                  : 'red'
-                                : 'brand'
-                            }
-                          />
-                          <Text
-                            size="xs"
-                            c={rowProgress.done && !rowProgress.success ? 'red' : 'dimmed'}
-                          >
-                            {rowProgress.stage === 'Queued' ? <Trans>Queued</Trans> : rowProgress.stage}
-                            {rowProgress.total
-                              ? ` (${rowProgress.current}/${rowProgress.total})`
-                              : ''}
-                            {rowProgress.error ? ` - ${rowProgress.error}` : ''}
+                    </Table.Td>
+                    <Table.Td>
+                      <Group wrap="nowrap" gap="xs">
+                        {match?.coverUrl && (
+                          <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" />
+                        )}
+                        {rowProgress ? (
+                          <Stack gap={4} style={{ flex: 1 }}>
+                            <Progress
+                              size="sm"
+                              value={
+                                rowProgress.total
+                                  ? (100 * (rowProgress.current ?? 0)) / rowProgress.total
+                                  : rowProgress.stage === 'Queued'
+                                    ? 0
+                                    : 100
+                              }
+                              animated={!rowProgress.done && rowProgress.stage !== 'Queued'}
+                              color={
+                                rowProgress.done
+                                  ? rowProgress.success
+                                    ? 'teal'
+                                    : 'red'
+                                  : 'brand'
+                              }
+                            />
+                            <Text
+                              size="xs"
+                              c={rowProgress.done && !rowProgress.success ? 'red' : 'dimmed'}
+                            >
+                              {rowProgress.stage === 'Queued' ? <Trans>Queued</Trans> : rowProgress.stage}
+                              {rowProgress.total
+                                ? ` (${rowProgress.current}/${rowProgress.total})`
+                                : ''}
+                              {rowProgress.error ? ` - ${rowProgress.error}` : ''}
+                            </Text>
+                          </Stack>
+                        ) : c.matches.length === 0 ? (
+                          <Text size="sm" c="red">
+                            <Trans>No metadata match, rename the folder closer to the title and rescan.</Trans>
                           </Text>
-                        </Stack>
-                      ) : c.matches.length === 0 ? (
-                        <Text size="sm" c="red">
-                          <Trans>No metadata match, rename the folder closer to the title and rescan.</Trans>
-                        </Text>
-                      ) : (
-                        <Select
-                          data={[
-                            { value: '', label: t`- skip -` },
-                            ...c.matches.map((m) => ({
-                              value: m.providerId,
-                              label: `${m.title}${m.year ? ` (${m.year})` : ''}`,
-                            })),
-                          ]}
-                          value={selected}
-                          onChange={(v) =>
-                            setSelection((s) => ({ ...s, [c.folderName]: v ?? '' }))
-                          }
-                          disabled={doImport.isPending}
-                          style={{ flex: 1 }}
-                        />
-                      )}
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              )
-            })}
-          </Table.Tbody>
-        </Table>
+                        ) : (
+                          <Select
+                            data={[
+                              { value: '', label: t`- skip -` },
+                              ...c.matches.map((m) => ({
+                                value: m.providerId,
+                                label: `${m.title}${m.year ? ` (${m.year})` : ''}`,
+                              })),
+                            ]}
+                            value={selected}
+                            onChange={(v) =>
+                              setSelection((s) => ({ ...s, [c.folderName]: v ?? '' }))
+                            }
+                            disabled={doImport.isPending}
+                            style={{ flex: 1 }}
+                          />
+                        )}
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                )
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       )}
-    </>
+    </SurfaceFrame>
   )
 }

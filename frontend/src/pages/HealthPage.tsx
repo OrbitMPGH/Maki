@@ -64,6 +64,7 @@ import { StatTile } from '../components/ui/StatTile'
 import { formatDateTime, formatNumber } from '../format'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -161,7 +162,7 @@ export default function HealthPage() {
   const failedCount = deleteReport?.failures.length ?? 0
 
   return (
-    <>
+    <SurfaceFrame>
       <PageHeader
         title={t`Health`}
         description={t`System checks and reviewed library maintenance.`}
@@ -615,7 +616,7 @@ export default function HealthPage() {
           )
         }
       />
-    </>
+    </SurfaceFrame>
   )
 }
 

@@ -32,6 +32,7 @@ import {
   type ScrobbleUnmatchedItem,
 } from '../api/hooks'
 import { formatDateTime } from '../format'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 function fmtTime(iso: string | null | undefined): string {
   return iso ? formatDateTime(iso) : '-'
@@ -207,7 +208,7 @@ export default function ScrobblePage() {
   const nextSync = fmtTime(data?.nextSyncAt)
 
   return (
-    <>
+    <SurfaceFrame>
       <PageHeader
         title={t`Scrobble`}
         description={
@@ -387,6 +388,6 @@ export default function ScrobblePage() {
           )}
         </ScrollArea.Autosize>
       </Card>
-    </>
+    </SurfaceFrame>
   )
 }

@@ -46,6 +46,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { useLabel } from '../i18n-context'
 import { formatDate } from '../format'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'yellow',
@@ -171,7 +172,7 @@ export default function RequestsPage() {
   )
 
   return (
-    <>
+    <SurfaceFrame>
       <PageHeader
         title={t`Requests`}
         description={
@@ -481,6 +482,6 @@ export default function RequestsPage() {
           </Group>
         </Stack>
       </Modal>
-    </>
+    </SurfaceFrame>
   )
 }

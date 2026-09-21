@@ -32,6 +32,7 @@ import { NotificationVisual } from '../components/NotificationBell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { relativeTime } from '../components/ui/time'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /**
  * The full notification history. The bell shows the newest few; this is where somebody goes to
@@ -73,7 +74,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <>
+    <SurfaceFrame>
       <PageHeader
         title={t`Notifications`}
         description={t`What happened in your library while you were away.`}
@@ -161,7 +162,7 @@ export default function NotificationsPage() {
           </Button>
         </Group>
       )}
-    </>
+    </SurfaceFrame>
   )
 }
 
