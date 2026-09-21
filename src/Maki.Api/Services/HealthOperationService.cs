@@ -14,6 +14,14 @@ namespace Maki.Api.Services;
 /// different sources; null on journals written before automatic requests existed.</param>
 public record RepairCandidate(int ChapterId, string RelativePath, string Hash, ArchiveAnalysis Analysis,
     string? FinalPath = null, int? SourceMappingId = null);
+
+/// <summary>
+/// A PDF was placed as it is and read in place; there is nothing to rebuild it from, so it never
+/// enters the download/replace flow. Thrown from <see cref="HealthOperationService.RequestAsync"/>
+/// so the check runs once instead of once in the controller and again here.
+/// </summary>
+public sealed class PdfRepairUnsupportedException : Exception;
+
 public class HealthOperationService(MakiDbContext db, DownloadQueueService queue,
     ChapterSourceResolver resolver, ReaderArchiveCache archives, EventBroadcaster events, KavitaScanService kavita, AppPaths? paths = null)
 {
@@ -63,6 +71,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         try
         {
             var (file, _, chapters) = await ValidateAsync(fileId, version, ct);
+            if (ComicFile.IsPdf(file.RelativePath)) throw new PdfRepairUnsupportedException();
             if (chapters.Count == 0 || chapters.Select(c => c.SeriesId).Distinct().Count() != 1)
                 throw new InvalidOperationException("Import and link this archive to one series before replacement");
             if (mappingId != null && !await db.SourceMappings.AnyAsync(m => m.Id == mappingId && m.Enabled && m.SeriesId == chapters[0].SeriesId, ct))

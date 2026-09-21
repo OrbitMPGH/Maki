@@ -535,4 +535,17 @@ public class SeriesRenameServiceTests : IDisposable
         db.SaveChanges();
         return file.Id;
     }
+
+    [Fact]
+    public async Task Plan_keeps_the_pdf_extension_on_a_placed_pdf()
+    {
+        var id = SeedSeries("Look Back", "Look Back");
+        SeedChapterAt(id, 1m, null, Path.Combine("Look Back", "Look Back.pdf"));
+
+        var plan = await Service().PlanAsync(id, CancellationToken.None);
+
+        Assert.NotNull(plan);
+        var file = Assert.Single(plan!.Files);
+        Assert.EndsWith(".pdf", file.To);
+    }
 }

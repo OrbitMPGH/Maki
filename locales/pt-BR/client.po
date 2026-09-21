@@ -211,9 +211,8 @@ msgstr "{0, plural, one {Mostrar todos os #} many {Mostrar todos os #}other {Mos
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
-#, fuzzy
-msgid "{0, plural, one {This will permanently delete # CBZ file from disk.} other {This will permanently delete # CBZ files from disk.}}"
-msgstr "{0, plural, one {Isso excluirá permanentemente # arquivo CBZ do disco.} many {Isso excluirá permanentemente # arquivos CBZ do disco.}other {Isso excluirá permanentemente # arquivos CBZ do disco.}}"
+msgid "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
+msgstr ""
 
 #. placeholder {0}: r.unlinked
 #: src/pages/SeriesDetailPage.tsx
@@ -2598,9 +2597,8 @@ msgid "Chapters read in this series"
 msgstr "Capítulos lidos nesta série"
 
 #: src/components/SeriesFilesSection.tsx
-#, fuzzy
-msgid "Chapters that share a volume CBZ will also lose their file."
-msgstr "Capítulos que compartilham um CBZ de volume também perderão o arquivo."
+msgid "Chapters that share a volume archive will also lose their file."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4224,9 +4222,8 @@ msgid "Folder naming on import"
 msgstr "Nomeação de pastas na importação"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Folders are renamed to the English title and their CBZ files are linked to chapters."
-msgstr "As pastas são renomeadas para o título em inglês e seus arquivos CBZ são vinculados aos capítulos."
+msgid "Folders are renamed to the English title and their comic files are linked to chapters."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -5485,9 +5482,8 @@ msgid "Maki speaks your language"
 msgstr "O Maki fala o seu idioma"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
-msgstr "O Maki grava um <0>ComicInfo.xml</0> padronizado em cada CBZ para que o Kavita agrupe e nomeie os capítulos de modo consistente. Desative isso para deixar arquivos importados, como torrents e importações manuais, exatamente como chegaram; capítulos que o Maki baixa de uma fonte ainda recebem um ComicInfo, pois o Maki cria esses arquivos. Você sempre pode padronizar uma única série depois com a ação em massa \"Atualizar ComicInfo\" na página dela."
+msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -8234,9 +8230,8 @@ msgid "revoked"
 msgstr "revogado"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
-msgstr "Reescreve os metadados incorporados em cada CBZ, como título, resumo, autores, gêneros e números de capítulos, para o padrão do Maki, para que o Kavita agrupe esses arquivos com futuros downloads e importações. Se o Kavita já tiver indexado esta biblioteca, as entradas existentes podem mudar de posição; ignorar mantém os arquivos intocados byte a byte, mas eles podem não ser agrupados de forma consistente com capítulos adicionados pelo Maki depois."
+msgid "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports; PDFs are skipped, since there is nowhere in a PDF to put it. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -8446,9 +8441,8 @@ msgid "Scanning the MangaBaka database for matches…"
 msgstr "Verificando o banco de dados do MangaBaka para encontrar correspondências…"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
-msgstr "Verifica uma pasta raiz em busca de séries que o Maki ainda não conhece, faz a correspondência com os metadados, renomeia cada pasta para o título em inglês e vincula os arquivos CBZ existentes aos capítulos. Os arquivos mantêm seus nomes originais."
+msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -9850,9 +9844,8 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "Isto exclui permanentemente o arquivo. Os registros de capítulos e o histórico de leitura permanecem."
 
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
-msgstr "Isto remove permanentemente {selectedCount} linha(s) de capítulo, não apenas seu vínculo de arquivo, junto com qualquer arquivo CBZ correspondente no disco."
+msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy

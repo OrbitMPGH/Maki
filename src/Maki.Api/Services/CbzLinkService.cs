@@ -2,6 +2,7 @@
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Reading;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -150,7 +151,7 @@ public class CbzLinkService(
         var dbFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
 
         var onDisk = Directory.Exists(seriesDir)
-            ? Directory.GetFiles(seriesDir, "*.cbz", SearchOption.AllDirectories)
+            ? Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories).Where(ComicFile.IsComic).ToArray()
             : [];
         var diskRelPaths = onDisk
             .Select(f => Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)))

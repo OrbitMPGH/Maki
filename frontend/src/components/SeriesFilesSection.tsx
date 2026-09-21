@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ActionIcon, Badge, Button, Checkbox, Group, Loader, Modal, Paper, Stack, Table, Text, Title, Tooltip } from '@mantine/core'
 import {
+  IconFileTypePdf,
   IconFileUnknown,
   IconFileZip,
   IconLink,
@@ -17,6 +18,7 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
+import { isPdfFile } from '../lib/files'
 
 const statusVisual: Record<string, { color: string; label: MessageDescriptor; icon: typeof IconLink }> = {
   linked: { color: 'teal', label: msg`Linked`, icon: IconLink },
@@ -183,9 +185,16 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                         </Table.Td>
                       )}
                       <Table.Td>
-                        <Text size="sm" style={{ wordBreak: 'break-all' }}>
-                          {f.fileName}
-                        </Text>
+                        <Group gap={6} wrap="nowrap">
+                          {isPdfFile(f.fileName) ? (
+                            <IconFileTypePdf size={15} style={{ flexShrink: 0 }} />
+                          ) : (
+                            <IconFileZip size={15} style={{ flexShrink: 0 }} />
+                          )}
+                          <Text size="sm" style={{ wordBreak: 'break-all' }}>
+                            {f.fileName}
+                          </Text>
+                        </Group>
                       </Table.Td>
                       <Table.Td>
                         {f.parsedLabel ? (
@@ -268,10 +277,10 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               <Text size="sm" c="dimmed">
                 <Plural
                   value={selected.size}
-                  one="This will permanently delete # CBZ file from disk."
-                  other="This will permanently delete # CBZ files from disk."
+                  one="This will permanently delete # file from disk."
+                  other="This will permanently delete # files from disk."
                 />{' '}
-                <Trans>Chapters that share a volume CBZ will also lose their file.</Trans>
+                <Trans>Chapters that share a volume archive will also lose their file.</Trans>
               </Text>
               <Text size="sm" c="red">
                 <Trans>This action cannot be undone.</Trans>

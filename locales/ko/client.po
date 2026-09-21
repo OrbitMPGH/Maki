@@ -211,9 +211,8 @@ msgstr "{0, plural, other {전체 #개 표시}}"
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
-#, fuzzy
-msgid "{0, plural, one {This will permanently delete # CBZ file from disk.} other {This will permanently delete # CBZ files from disk.}}"
-msgstr "{0, plural, other {디스크에서 CBZ 파일 #개를 영구적으로 삭제합니다.}}"
+msgid "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
+msgstr ""
 
 #. placeholder {0}: r.unlinked
 #: src/pages/SeriesDetailPage.tsx
@@ -2598,9 +2597,8 @@ msgid "Chapters read in this series"
 msgstr "이 시리즈에서 읽은 챕터"
 
 #: src/components/SeriesFilesSection.tsx
-#, fuzzy
-msgid "Chapters that share a volume CBZ will also lose their file."
-msgstr "같은 볼륨 CBZ를 공유하는 챕터도 파일을 잃습니다."
+msgid "Chapters that share a volume archive will also lose their file."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4224,9 +4222,8 @@ msgid "Folder naming on import"
 msgstr "가져올 때 폴더 이름 지정"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Folders are renamed to the English title and their CBZ files are linked to chapters."
-msgstr "폴더 이름은 영어 제목으로 변경되고 해당 CBZ 파일은 챕터에 연결됩니다."
+msgid "Folders are renamed to the English title and their comic files are linked to chapters."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -5485,9 +5482,8 @@ msgid "Maki speaks your language"
 msgstr "Maki가 이제 당신의 언어를 지원합니다"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
-msgstr "Maki는 각 CBZ에 표준화된 <0>ComicInfo.xml</0>을 기록하므로 Kavita가 챕터를 일관되게 그룹화하고 이름을 지정할 수 있습니다. 이 기능을 끄면 가져온 파일(토렌트 가져오기 및 수동 가져오기)은 원래 상태 그대로 유지됩니다. Maki가 소스에서 직접 다운로드하는 챕터에는 Maki가 파일을 만들기 때문에 여전히 ComicInfo가 포함됩니다. 나중에 시리즈 페이지의 \"Update ComicInfo\" 일괄 작업으로 단일 시리즈를 표준화할 수 있습니다."
+msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -8234,9 +8230,8 @@ msgid "revoked"
 msgstr "철회됨"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
-msgstr "각 CBZ에 포함된 메타데이터(제목, 요약, 작가, 장르, 챕터 번호)를 Maki 표준으로 다시 작성하므로 Kavita가 이 파일을 이후 다운로드 및 가져오기 파일과 함께 그룹화할 수 있습니다. Kavita가 이미 이 라이브러리를 인덱싱했다면 기존 항목의 순서가 바뀔 수 있습니다. 건너뛰면 파일의 바이트를 그대로 유지하지만, 이후 Maki가 추가하는 챕터와 일관되게 그룹화되지 않을 수 있습니다."
+msgid "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports; PDFs are skipped, since there is nowhere in a PDF to put it. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -8446,9 +8441,8 @@ msgid "Scanning the MangaBaka database for matches…"
 msgstr "MangaBaka 데이터베이스에서 일치 항목 스캔 중…"
 
 #: src/pages/ImportPage.tsx
-#, fuzzy
-msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
-msgstr "아직 Maki가 알지 못하는 시리즈를 루트 폴더에서 스캔하고, 메타데이터와 일치시키고, 각 폴더 이름을 영어 제목으로 변경하며, 기존 CBZ 파일을 챕터에 연결합니다. 파일 이름은 원래대로 유지됩니다."
+msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -9850,9 +9844,8 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "보관 파일을 영구 삭제합니다. 챕터 기록과 읽기 기록은 유지됩니다."
 
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
-msgstr "파일 연결뿐 아니라 {selectedCount}개 챕터 행과 디스크의 해당 CBZ 파일을 영구적으로 제거합니다."
+msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy

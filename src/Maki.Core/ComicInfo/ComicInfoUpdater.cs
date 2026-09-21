@@ -27,6 +27,9 @@ public static class ComicInfoUpdater
     /// </summary>
     public static bool UpdateFile(string cbzPath, Series series, ParsedReleaseFile parsed, Chapter? chapter)
     {
+        // A PDF read in place is left exactly as it was found; there is no ComicInfo.xml to write.
+        if (Reading.ComicFile.IsPdf(cbzPath)) return false;
+
         string newXml;
         using (var source = ZipFile.OpenRead(cbzPath))
         {

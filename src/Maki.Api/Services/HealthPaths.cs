@@ -1,4 +1,5 @@
 using Maki.Core.Paths;
+using Maki.Core.Reading;
 
 namespace Maki.Api.Services;
 
@@ -25,7 +26,7 @@ public static class HealthPaths
         while (pending.TryPop(out var directory))
         {
             foreach (var file in Directory.EnumerateFiles(directory))
-                if (Path.GetExtension(file).Equals(".cbz", StringComparison.OrdinalIgnoreCase) &&
+                if (ComicFile.IsComic(file) &&
                     (File.GetAttributes(file) & FileAttributes.ReparsePoint) == 0) yield return file;
             foreach (var child in Directory.EnumerateDirectories(directory))
                 if (!Path.GetFileName(child).StartsWith('.') && (File.GetAttributes(child) & FileAttributes.ReparsePoint) == 0)

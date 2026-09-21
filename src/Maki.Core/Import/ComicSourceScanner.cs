@@ -30,6 +30,9 @@ public static class ComicSourceScanner
         return ZipExtensions.Contains(extension) || RepackExtensions.Contains(extension);
     }
 
+    /// <summary>An archive, or a PDF, anything the scanner can turn into (or place as) a comic.</summary>
+    private static bool IsArchiveOrPdf(string path) => IsArchive(path) || ComicFile.IsPdf(path);
+
     /// <summary>
     /// Every comic under <paramref name="contentPath"/>, one per produced file name.
     /// <para>
@@ -50,7 +53,7 @@ public static class ComicSourceScanner
         {
             foreach (var file in Directory
                          .GetFiles(contentPath, "*", SearchOption.AllDirectories)
-                         .Where(IsArchive)
+                         .Where(IsArchiveOrPdf)
                          .OrderBy(f => f, StringComparer.Ordinal))
             {
                 found.AddRange(FromArchive(file));
@@ -60,10 +63,13 @@ public static class ComicSourceScanner
         }
 
         return found
-            .GroupBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+            // Without the extension so "X.pdf" and the "X.cbz" a previous import made of it
+            // collide too, not only two archive kinds that would both produce "X.cbz".
+            .GroupBy(s => System.IO.Path.GetFileNameWithoutExtension(s.Name), StringComparer.OrdinalIgnoreCase)
             // A folder holding both "X.cbr" and the "X.cbz" a previous import made of it wants the
-            // finished one, whichever way round the two sort.
-            .Select(g => g.OrderBy(s => s.Kind == ComicSourceKind.Cbz ? 0 : 1).First())
+            // finished one, whichever way round the two sort. Ready-to-place kinds (Cbz/Zip/Pdf)
+            // outrank one that still needs repacking, and Cbz outranks the other ready kinds.
+            .Select(g => g.OrderBy(s => !s.IsReadyToPlace ? 2 : s.Kind == ComicSourceKind.Cbz ? 0 : 1).First())
             .ToList();
     }
 
@@ -92,6 +98,16 @@ public static class ComicSourceScanner
 
     private static IEnumerable<ComicSource> FromArchive(string path)
     {
+        if (ComicFile.IsPdf(path))
+        {
+            // 0 pages means unreadable (encrypted, corrupt, not really a PDF), same treatment as
+            // an archive that yields no images: silently dropped rather than imported empty.
+            var pageCount = PdfReader.PageCount(path);
+            return pageCount > 0
+                ? [new ComicSource(PdfName(path), ComicSourceKind.Pdf, path, new FileInfo(path).Length, [])]
+                : [];
+        }
+
         if (!IsArchive(path))
         {
             return [];
@@ -134,9 +150,10 @@ public static class ComicSourceScanner
                 Directory = directory,
                 Files = Directory.GetFiles(directory).OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList()
             })
-            // A folder holding an archive is that archive's, not a loose set: the images beside it
-            // are as likely to be a cover or a sample as they are to be a chapter nobody packed.
-            .Where(x => x.Files.Any(f => CbzReader.IsImage(f)) && !x.Files.Any(IsArchive))
+            // A folder holding an archive or a PDF is that comic's, not a loose set: the images
+            // beside it are as likely to be a cover or a sample as they are to be a chapter nobody
+            // packed.
+            .Where(x => x.Files.Any(f => CbzReader.IsImage(f)) && !x.Files.Any(IsArchiveOrPdf))
             .Select(x => new ComicSource(
                 new DirectoryInfo(x.Directory).Name + ".cbz",
                 ComicSourceKind.LooseImages,
@@ -172,4 +189,11 @@ public static class ComicSourceScanner
 
     private static string CbzName(string path) =>
         System.IO.Path.ChangeExtension(System.IO.Path.GetFileName(path.Replace(Backslash, '/')), ".cbz");
+
+    /// <summary>
+    /// Keeps the <c>.pdf</c> extension rather than swapping it for <c>.cbz</c>, a PDF is placed as
+    /// it is and read in place, never converted.
+    /// </summary>
+    private static string PdfName(string path) =>
+        System.IO.Path.GetFileName(path.Replace(Backslash, '/'));
 }

@@ -639,10 +639,11 @@ function LibrarySection() {
       <Text size="sm" c="dimmed" mb="md">
         <Trans>
           Maki writes a standardized <Code>ComicInfo.xml</Code> into each CBZ so Kavita groups and
-          names chapters consistently. Turn this off to leave imported files (torrent grabs and
-          manual imports) exactly as they came; chapters Maki downloads itself from a source still
-          get a ComicInfo, since Maki builds those files. You can always standardize a single
-          series later with the "Update ComicInfo" bulk action on its page.
+          names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put
+          it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as
+          they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki
+          builds those files. You can always standardize a single series later with the "Update
+          ComicInfo" bulk action on its page.
         </Trans>
       </Text>
       <Switch

@@ -227,7 +227,18 @@ public class ReaderController(
 
         Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
-        var stream = CbzReader.OpenPage(slice.ArchivePath, entry);
+        if (ComicFile.IsPdf(slice.ArchivePath))
+        {
+            var cached = await GetOrRenderFullPageAsync(slice, slice.StartPage + page, entry, ct);
+            if (cached is null)
+            {
+                return NotFound();
+            }
+
+            return PhysicalFile(cached, CbzReader.ContentType(entry), lastModified: null, entityTag: etag, enableRangeProcessing: false);
+        }
+
+        var stream = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
         if (stream is null)
         {
             return NotFound();
@@ -235,6 +246,56 @@ public class ReaderController(
 
         // Range processing stays off (the default): the zip entry stream is forward-only.
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+    }
+
+    /// <summary>
+    /// Full-size PDF page render, disk-cached alongside the thumbnail cache for the same chapter
+    /// file so a page opened twice (once by the reader, once to build its thumbnail) is only ever
+    /// rendered once. Named <c>{ArchiveSize}-{index}.full.jpg</c> so it shares the thumbnail
+    /// cache's per-directory eviction (missing ChapterFile row, stale archive size) without
+    /// colliding with the thumbnail's own <c>{ArchiveSize}-{index}.jpg</c> name.
+    /// </summary>
+    private async Task<string?> GetOrRenderFullPageAsync(ReaderService.ChapterSlice slice, int absoluteIndex, string entry, CancellationToken ct)
+    {
+        var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
+        var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.full.jpg");
+        if (System.IO.File.Exists(cached))
+        {
+            return cached;
+        }
+
+        await using var source = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
+        if (source is null)
+        {
+            return null;
+        }
+
+        Directory.CreateDirectory(dir);
+        var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (var file = System.IO.File.Create(tmp))
+            {
+                await source.CopyToAsync(file, ct);
+            }
+
+            try
+            {
+                System.IO.File.Move(tmp, cached, overwrite: true);
+            }
+            catch (IOException) when (System.IO.File.Exists(cached))
+            {
+                // Another request already finished rendering the same page and has it open for
+                // reading; the bytes are deterministic, so the loser can just use what is there.
+            }
+        }
+        catch
+        {
+            if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
+            throw;
+        }
+
+        return cached;
     }
 
     [HttpGet("chapter/{id:int}/thumb/{page:int}")]
@@ -256,11 +317,26 @@ public class ReaderController(
             var entry = slice.Pages[absoluteIndex];
             try
             {
-                await using var source = CbzReader.OpenPage(slice.ArchivePath, entry);
+                // A PDF page is resized from its own cached full render rather than re-rendered,
+                // so opening a chapter's thumbnail strip does not re-run PDFium for every page it
+                // already rendered full-size.
+                Stream? source;
+                if (ComicFile.IsPdf(slice.ArchivePath))
+                {
+                    var fullCached = await GetOrRenderFullPageAsync(slice, absoluteIndex, entry, ct);
+                    source = fullCached is null ? null : System.IO.File.OpenRead(fullCached);
+                }
+                else
+                {
+                    source = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
+                }
+
                 if (source is null)
                 {
                     return NotFound();
                 }
+
+                await using var _ = source;
 
                 // Gated. A client prefetching a chapter's whole thumbnail strip arrives as dozens
                 // of concurrent requests, each decoding a full page to produce a 200px JPEG, and

@@ -101,6 +101,7 @@ public static class ArchiveHealthAnalyzer
             if (file.Length == 0)
                 return result with { Problems = [new("empty", "error", "Archive is empty")] };
             file.Position = 0;
+            if (ComicFile.IsPdf(path)) return await AnalyzePdfAsync(path, result, verify, token);
             // Constructing this reads the central directory and nothing else, which is the whole
             // index layer. An archive that is not a zip throws here and is reported as corrupt.
             using var archive = new ZipArchive(file, ZipArchiveMode.Read, true);
@@ -238,6 +239,63 @@ public static class ArchiveHealthAnalyzer
             if (verify)
             {
                 PageCache.DropAfterScan(path);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The same two layers for a PDF read in place. Index asks PDFium for the page count and
+    /// nothing else; verify renders every page, which is what the zip path's per-entry decode
+    /// corresponds to. Zip-only checks - per-entry CRC, ambiguous names - have no counterpart:
+    /// a PDF has no entry table to disagree with itself.
+    /// </summary>
+    private static async Task<ArchiveAnalysis> AnalyzePdfAsync(string path, ArchiveAnalysis result,
+        bool verify, CancellationToken token)
+    {
+        if (!PdfReader.TryPageCount(path, out var count))
+        {
+            result.Problems.Add(new("corrupt", "error", "Document structure or page data is corrupt"));
+            return result;
+        }
+
+        if (count == 0)
+        {
+            result.Problems.Add(new("noPages", "error", "Archive contains no reader pages"));
+            return result;
+        }
+
+        if (count > MaxPages) return Partial(result, "Archive exceeds page limit");
+
+        if (!verify)
+        {
+            for (var i = 0; i < count; i++) result.Pages.Add(new(PdfReader.PageName(i, count), null, 0, 0));
+            return result;
+        }
+
+        // Serial on purpose: PDFium is single-threaded behind one lock, so fanning out would only
+        // queue the same work while holding more decoded pages at once.
+        for (var i = 0; i < count; i++)
+        {
+            token.ThrowIfCancellationRequested();
+            var name = PdfReader.PageName(i, count);
+            try
+            {
+                // FingerprintEdge, not MaxEdge: the hash only has to be stable and comparable, and
+                // the health preview renders at the same edge so the two agree. A reader-sized
+                // render would cost four times the pixels on every page of the library.
+                using var rendered = await PdfReader.RenderPageAsync(path, i, PdfReader.FingerprintEdge, token);
+                var bytes = rendered.GetBuffer().AsSpan(0, (int)rendered.Length);
+                var rawHash = Convert.ToHexString(SHA256.HashData(bytes));
+                var info = Image.Identify(rendered);
+                result.Pages.Add(new(name, rawHash, info.Width, info.Height));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch
+            {
+                result.Problems.Add(new("damagedImage", "error", $"Cannot read {name}"));
+                result.Pages.Add(new(name, null, 0, 0));
             }
         }
 

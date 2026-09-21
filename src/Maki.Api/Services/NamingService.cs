@@ -46,6 +46,16 @@ public class NamingService(IAppSettings settings)
             series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct));
 
     /// <summary>
+    /// Same as above, but keeping <paramref name="extension"/> instead of <c>.cbz</c>, for renaming
+    /// a file Maki did not build itself (a placed PDF), whose extension a rename must preserve.
+    /// </summary>
+    public async Task<string> BuildChapterFileNameAsync(
+        Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string extension,
+        CancellationToken ct = default) =>
+        FileNameBuilder.BuildChapterFileName(
+            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct), extension);
+
+    /// <summary>
     /// The chapter file's path relative to the root folder. Uses the series' existing
     /// <see cref="Series.FolderName"/>, never the folder format — see <see cref="FileNameBuilder"/>.
     /// </summary>

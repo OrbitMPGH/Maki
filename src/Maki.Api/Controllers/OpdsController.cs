@@ -221,8 +221,10 @@ public class OpdsController(
             return NotFound();
         }
 
-        var name = $"{slice.Series.Title} - {ChapterLabel.For(slice.Chapter)}.cbz";
-        return PhysicalFile(slice.ArchivePath, OpdsXml.ComicBookType, SanitizeFileName(name), enableRangeProcessing: true);
+        var name = $"{slice.Series.Title} - {ChapterLabel.For(slice.Chapter)}{Path.GetExtension(slice.ArchivePath)}";
+        return PhysicalFile(
+            slice.ArchivePath, OpdsXml.MimeType(slice.ArchivePath), SanitizeFileName(name),
+            enableRangeProcessing: true);
     }
 
     /// <summary>
@@ -273,7 +275,7 @@ public class OpdsController(
         // resume position catches up as soon as the reader moves past what it cached.
         Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
-        var stream = CbzReader.OpenPage(slice.ArchivePath, entry);
+        var stream = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
         if (stream is null)
         {
             return NotFound();

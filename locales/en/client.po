@@ -178,8 +178,8 @@ msgstr "{0, plural, one {Show all #} other {Show all #}}"
 
 #. placeholder {0}: selected.size
 #: src/components/SeriesFilesSection.tsx
-msgid "{0, plural, one {This will permanently delete # CBZ file from disk.} other {This will permanently delete # CBZ files from disk.}}"
-msgstr "{0, plural, one {This will permanently delete # CBZ file from disk.} other {This will permanently delete # CBZ files from disk.}}"
+msgid "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
+msgstr "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
 
 #. placeholder {0}: r.unlinked
 #: src/pages/SeriesDetailPage.tsx
@@ -2107,8 +2107,8 @@ msgid "Chapters read in this series"
 msgstr "Chapters read in this series"
 
 #: src/components/SeriesFilesSection.tsx
-msgid "Chapters that share a volume CBZ will also lose their file."
-msgstr "Chapters that share a volume CBZ will also lose their file."
+msgid "Chapters that share a volume archive will also lose their file."
+msgstr "Chapters that share a volume archive will also lose their file."
 
 #: src/pages/SettingsPage.tsx
 msgid "Chapters to download at once"
@@ -3427,8 +3427,8 @@ msgid "Folder naming on import"
 msgstr "Folder naming on import"
 
 #: src/pages/ImportPage.tsx
-msgid "Folders are renamed to the English title and their CBZ files are linked to chapters."
-msgstr "Folders are renamed to the English title and their CBZ files are linked to chapters."
+msgid "Folders are renamed to the English title and their comic files are linked to chapters."
+msgstr "Folders are renamed to the English title and their comic files are linked to chapters."
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Follows the default on your notification settings."
@@ -4449,8 +4449,8 @@ msgid "Maki speaks your language"
 msgstr "Maki speaks your language"
 
 #: src/pages/SettingsPage.tsx
-msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
-msgstr "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
+msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
+msgstr "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
 
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
@@ -6674,8 +6674,8 @@ msgid "revoked"
 msgstr "revoked"
 
 #: src/pages/ImportPage.tsx
-msgid "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
-msgstr "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
+msgid "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports; PDFs are skipped, since there is nowhere in a PDF to put it. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
+msgstr "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports; PDFs are skipped, since there is nowhere in a PDF to put it. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "right to left"
@@ -6848,8 +6848,8 @@ msgid "Scanning the MangaBaka database for matches…"
 msgstr "Scanning the MangaBaka database for matches…"
 
 #: src/pages/ImportPage.tsx
-msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
-msgstr "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
+msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
+msgstr "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
 
 #: src/components/CatalogueFilters.tsx
 msgid "School Life"
@@ -7986,8 +7986,8 @@ msgid "This permanently deletes the archive. Chapter records and reading history
 msgstr "This permanently deletes the archive. Chapter records and reading history remain."
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
-msgstr "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing CBZ file on disk."
+msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
+msgstr "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
 
 #: src/api/queue.ts
 msgid "This queue item has no chapter to find a source for"

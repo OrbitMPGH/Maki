@@ -1929,7 +1929,7 @@ export default function SeriesDetailPage() {
               <Stack gap="md">
                 <Text size="sm" c="dimmed">
                   <Trans>This permanently removes {selectedCount} chapter row(s), not just their file link,
-                    along with any backing CBZ file on disk.</Trans>{' '}
+                    along with any backing file on disk.</Trans>{' '}
                   <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>

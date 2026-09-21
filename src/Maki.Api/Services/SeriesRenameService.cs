@@ -1,4 +1,5 @@
 using Maki.Core.Entities;
+using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -123,8 +124,12 @@ public class SeriesRenameService(
             }
 
             var through = span.Last();
-            var to = Path.Combine(folderTo, await naming.BuildChapterFileNameAsync(
-                series, chapter, through, CoversWholeVolumes(ordered, span), ct));
+            var existingExtension = Path.GetExtension(file.RelativePath);
+            var to = Path.Combine(folderTo, ComicFile.IsPdf(existingExtension)
+                ? await naming.BuildChapterFileNameAsync(
+                    series, chapter, through, CoversWholeVolumes(ordered, span), existingExtension, ct)
+                : await naming.BuildChapterFileNameAsync(
+                    series, chapter, through, CoversWholeVolumes(ordered, span), ct));
 
             if (targets.TryGetValue(to, out var claimedBy))
             {

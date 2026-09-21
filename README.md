@@ -95,7 +95,8 @@ built-in reader.
   decision. Torrent acquisition runs alongside direct scraper downloads in the same queue. A
   release that is not already CBZ is converted on the way in: `.zip` is the same container and is
   placed as it is, `.cbr`/`.rar`/`.7z`/`.tar` are repacked, and a folder of loose page images is
-  packed one CBZ per folder. Library import does the same, leaving your originals where they are.
+  packed one CBZ per folder. A PDF is the one exception: it is kept as it is and read in place, not
+  converted. Library import does the same, leaving your originals where they are.
 - **Library health workspace.** Admins can index and verify archives, find missing, unreadable,
   duplicate, or suspicious files, review safe replacement/deletion operations, and import unlinked
   CBZs.

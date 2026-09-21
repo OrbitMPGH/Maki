@@ -1529,6 +1529,10 @@ msgstr "{check} changed to {status}"
 msgid "health.history.recovered"
 msgstr "{check} recovered"
 
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "health.repair.pdfUnsupported"
+msgstr "PDFs are read in place and can't be repaired by replacement"
+
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "health.history.repairRequested"
 msgstr "Replacement requested for {count, plural, one {# chapter} other {# chapters}}"

@@ -13,6 +13,7 @@ using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Reading;
 using Maki.Core.Scrobbling;
 using Maki.Core.Security;
 using Maki.Data;
@@ -431,7 +432,7 @@ public class SeriesController(
                     .ToList());
 
         var onDisk = Directory.Exists(seriesDir)
-            ? Directory.GetFiles(seriesDir, "*.cbz", SearchOption.AllDirectories)
+            ? Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories).Where(ComicFile.IsComic).ToArray()
             : [];
         // Case-sensitive filesystems allow two files whose paths differ only in case;
         // they collapse to one entry here, so keep the first and don't throw.

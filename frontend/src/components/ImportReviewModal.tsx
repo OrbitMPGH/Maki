@@ -9,10 +9,11 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowRight, IconBan, IconFileZip } from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowRight, IconBan, IconFileTypePdf, IconFileZip } from '@tabler/icons-react'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useImportPlan, useSettleImport } from '../api/hooks'
 import type { ImportDecision, ImportPlanFileDto } from '../api/types'
+import { isPdfFile } from '../lib/files'
 
 function formatSize(bytes: number): string {
   if (bytes <= 0) return '-'
@@ -41,7 +42,11 @@ function PlanFile({ file }: { file: ImportPlanFileDto }) {
     <Card withBorder padding="sm" radius="md">
       <Group justify="space-between" wrap="nowrap" align="flex-start">
         <Group gap={8} wrap="nowrap" align="flex-start">
-          <IconFileZip size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          {isPdfFile(fileName) ? (
+            <IconFileTypePdf size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          ) : (
+            <IconFileZip size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          )}
           <div>
             <Text size="sm" fw={600} lineClamp={1}>
               {fileName}

@@ -328,7 +328,7 @@ public class LibraryImportService(
         var files = new List<string>();
         foreach (var source in ComicSourceScanner.Scan(targetDir))
         {
-            if (source.Kind == ComicSourceKind.Cbz)
+            if (source.Kind is ComicSourceKind.Cbz or ComicSourceKind.Pdf)
             {
                 files.Add(source.Path);
                 continue;

@@ -307,7 +307,16 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     public record ApplyReview(string Version, bool Confirmed, bool ResetPositions = false);
     [HttpPost("repairs")]
     public Task<IActionResult> Repair(FileReview request, CancellationToken ct) => ConflictGuard(async () =>
-        Ok(await operations.RequestAsync(request.FileId, request.Version, request.SourceMappingId, user.UserId, ct)));
+    {
+        try
+        {
+            return Ok(await operations.RequestAsync(request.FileId, request.Version, request.SourceMappingId, user.UserId, ct));
+        }
+        catch (PdfRepairUnsupportedException)
+        {
+            return this.Fail(localizer, "health.repair.pdfUnsupported");
+        }
+    });
     public record BulkDelete(int[] FileIds, bool Confirmed);
     /// <summary>
     /// Deletes several archives under one confirmation, each through the ordinary preview-then-apply
@@ -425,6 +434,17 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     {
         await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         if (hash == null || Convert.ToHexString(await SHA256.HashDataAsync(input, ct)) != hash) return Conflict(new { message = "Preview content changed" });
+
+        if (ComicFile.IsPdf(path))
+        {
+            if (!PdfReader.TryParsePageIndex(page.Name, out var index)) return NotFound();
+            await using var rendered = await PdfReader.RenderPageAsync(path, index, PdfReader.FingerprintEdge, ct);
+            var pdfBytes = rendered.ToArray();
+            if (Convert.ToHexString(SHA256.HashData(pdfBytes)) != page.RawHash) return Conflict();
+            Response.Headers.CacheControl = "no-store";
+            return File(pdfBytes, "image/jpeg");
+        }
+
         input.Position = 0;
         using var archive = new System.IO.Compression.ZipArchive(input, System.IO.Compression.ZipArchiveMode.Read, true);
         var entry = archive.GetEntry(page.Name);

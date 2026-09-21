@@ -3,7 +3,8 @@ using System.IO.Compression;
 namespace Maki.Core.Reading;
 
 /// <summary>
-/// Reads pages out of a CBZ for display.
+/// Reads pages out of a comic file for display: a CBZ's own entries, or a PDF's pages rendered
+/// on demand.
 /// <para>
 /// <see cref="PageNames"/> is the single definition of a CBZ's page order for the whole
 /// codebase — <c>VolumeChapterScanner</c> maps chapter boundaries onto the very same list, so
@@ -11,6 +12,11 @@ namespace Maki.Core.Reading;
 /// imported archives are never renamed internally, so page names are arbitrary scanlation
 /// strings ("... - c049 (v05) - p113 [web] ...png") and nothing may assume Maki's own
 /// <c>001.jpg</c> convention.
+/// </para>
+/// <para>
+/// A PDF has no page filenames, so its names are synthesized by <see cref="PdfReader.PageName"/>
+/// from the page count and mean nothing outside this pair of methods. They still come from
+/// <see cref="PageNames(string)"/>, so the single-definition rule above holds for both formats.
 /// </para>
 /// </summary>
 public static class CbzReader
@@ -37,6 +43,12 @@ public static class CbzReader
     /// </summary>
     public static List<string> PageNames(string cbzPath)
     {
+        if (ComicFile.IsPdf(cbzPath))
+        {
+            var count = PdfReader.PageCount(cbzPath);
+            return Enumerable.Range(0, count).Select(i => PdfReader.PageName(i, count)).ToList();
+        }
+
         try
         {
             using var archive = ZipFile.OpenRead(cbzPath);
@@ -52,9 +64,27 @@ public static class CbzReader
     /// Opens one page for streaming. The returned stream owns the archive and closes it on
     /// dispose, so the caller may hand it straight to a <c>FileStreamResult</c>.
     /// Returns null when the entry is missing.
+    /// <para>
+    /// A PDF page is rendered rather than read out, and every way that can fail - a name outside
+    /// the document, an unreadable file, PDFium or ImageSharp giving up - is null here too, so the
+    /// caller maps it to the same 404 as a missing zip entry.
+    /// </para>
     /// </summary>
     public static Stream? OpenPage(string cbzPath, string entryName)
     {
+        if (ComicFile.IsPdf(cbzPath))
+        {
+            if (!PdfReader.TryParsePageIndex(entryName, out var index)) return null;
+            try
+            {
+                return PdfReader.RenderPage(cbzPath, index);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         // ZipArchive is not thread-safe, so every request gets its own instance.
         var archive = ZipFile.OpenRead(cbzPath);
         try
@@ -72,6 +102,29 @@ public static class CbzReader
         {
             archive.Dispose();
             throw;
+        }
+    }
+
+    /// <summary>
+    /// <see cref="OpenPage"/> for callers that can await. Only the PDF path is genuinely async:
+    /// it renders through <c>ImageWorkGate</c> instead of encoding ungated, and honours
+    /// <paramref name="ct"/>. A zip entry opens synchronously and streams lazily either way.
+    /// </summary>
+    public static async Task<Stream?> OpenPageAsync(string cbzPath, string entryName, CancellationToken ct = default)
+    {
+        if (!ComicFile.IsPdf(cbzPath)) return OpenPage(cbzPath, entryName);
+        if (!PdfReader.TryParsePageIndex(entryName, out var index)) return null;
+        try
+        {
+            return await PdfReader.RenderPageAsync(cbzPath, index, PdfReader.MaxEdge, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            return null;
         }
     }
 
