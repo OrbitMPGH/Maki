@@ -171,6 +171,95 @@ msgstr "La série n'a pas de dossier racine"
 msgid "error.chapter.pathOutsideRoot"
 msgstr "Le chemin est en dehors du dossier racine de la série"
 
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: A feedback action is required
+msgid "error.feedback.actionRequired"
+msgstr ""
+
+#. The catalogue dump is not installed or not readable, so a first thumbs up or hide on a title Maki has never stored cannot be checked.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Catalogue metadata is temporarily unavailable
+msgid "error.feedback.catalogueUnavailable"
+msgstr ""
+
+#. Somebody changed this title's feedback since the page loaded.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Feedback changed. Refresh and try again.
+msgid "error.feedback.changed"
+msgstr ""
+
+#. The undo is for an action that is no longer the most recent one on this title.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Feedback changed since this action
+msgid "error.feedback.changedSinceAction"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Feedback event was not found
+msgid "error.feedback.eventNotFound"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: A mutation ID is required
+msgid "error.feedback.mutationIdRequired"
+msgstr ""
+
+#. The client reused a mutation id it had already sent with a different feedback action.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: That mutation ID was already used for a different action
+msgid "error.feedback.mutationIdReused"
+msgstr ""
+
+#. The reader asked to stop seeding from a title that is not on their shelf, or that their content rating ceiling hides.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: This title is not an eligible source in your visible library
+msgid "error.feedback.notAnEligibleSource"
+msgstr ""
+
+#. Somebody changed this title's seed override since the page loaded.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Signal changed. Refresh and try again.
+msgid "error.feedback.signalChanged"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: A valid title, mutation ID, and revision are required
+msgid "error.feedback.titleAndRevisionRequired"
+msgstr ""
+
+#. The catalogue title is above the account's content rating ceiling.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Catalogue title is not available to this account
+msgid "error.feedback.titleNotAvailable"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Unknown catalogue title
+msgid "error.feedback.unknownTitle"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Unsupported feedback action
+msgid "error.feedback.unsupportedAction"
+msgstr ""
+
+#. The exposure medium names something other than manga, anime, both or unspecified.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Unsupported exposure medium
+msgid "error.feedback.unsupportedMedium"
+msgstr ""
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Unsupported feedback sort
+msgid "error.feedback.unsupportedSort"
+msgstr ""
+
+#. The state filter on the Manage signals list names something other than hidden, dismissed or exposed.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+#. English: Unsupported feedback state
+msgid "error.feedback.unsupportedState"
+msgstr ""
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
 #, fuzzy
@@ -599,6 +688,12 @@ msgid "error.series.metadataRefreshFailed"
 msgstr "La recherche de métadonnées a échoué : la série n'a pas d'identifiant fournisseur ou le fournisseur n'a rien renvoyé"
 
 #. The client reused a mutation id it had already sent with different add parameters.
+#. The add request carried an empty mutation id, which the retry-safe add path needs.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: A valid mutation ID is required
+msgid "error.series.mutationIdRequired"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
 #, fuzzy
@@ -650,6 +745,12 @@ msgstr "Mode inconnu : {mode}"
 #, fuzzy
 msgid "error.series.unknownNotificationMode"
 msgstr "Mode de notification inconnu : {mode}"
+
+#. The add names where it was started from, and the only two answers are the library and a recommendation.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Unsupported add origin
+msgid "error.series.unsupportedAddOrigin"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: One or more tag ids do not exist

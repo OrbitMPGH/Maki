@@ -279,7 +279,12 @@ public class SeriesRequestsControllerTests : IDisposable
         await AsAdmin().Reject(created.Id, new RejectSeriesRequestBody("No."), default);
         var second = await AsAdmin().Approve(created.Id, new ApproveSeriesRequestBody(RootFolderId: 1), default);
 
-        Assert.IsType<ConflictObjectResult>(second);
+        // The claim is what refuses this now, and it has to say which of the two happened: a
+        // resolved request is not a second admin holding the request, and the reader can act on
+        // one and not the other.
+        var body = Assert.IsType<ConflictObjectResult>(second).Value;
+        Assert.Equal("error.requests.alreadyResolved",
+            body!.GetType().GetProperty("code")!.GetValue(body));
     }
 
     [Fact]

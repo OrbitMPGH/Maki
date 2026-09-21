@@ -29,10 +29,22 @@ public record FeedbackActivity(long Id, long MangaBakaId, string? Title, string 
 public record SignalOverrideState(long MangaBakaId, bool IgnoreAsSeed, long Revision);
 public record SignalOverrideCommand(bool IgnoreAsSeed, Guid ClientMutationId, long ExpectedRevision);
 public record SignalOverrideMutation(bool Changed, SignalOverrideState State, long SignalRevision);
-public sealed class FeedbackConflictException(string message) : Exception(message);
-public sealed class FeedbackValidationException(string message) : Exception(message);
-public sealed class FeedbackNotFoundException(string message) : Exception(message);
-public sealed class FeedbackMetadataUnavailableException(string message) : Exception(message);
+/// <summary>
+/// A failure this service reports to a caller, carrying the catalogue key rather than a sentence.
+/// The service has no request locale of its own worth spending here and the controller already
+/// localizes, so the message stays the key: greppable in a log, worded once on the way out.
+/// </summary>
+public abstract class FeedbackException(string key, object? args = null) : Exception(key)
+{
+    public string Key { get; } = key;
+    public object? Args { get; } = args;
+}
+
+public sealed class FeedbackConflictException(string key, object? args = null) : FeedbackException(key, args);
+public sealed class FeedbackValidationException(string key, object? args = null) : FeedbackException(key, args);
+public sealed class FeedbackNotFoundException(string key, object? args = null) : FeedbackException(key, args);
+public sealed class FeedbackMetadataUnavailableException(string key, object? args = null)
+    : FeedbackException(key, args);
 
 public class RecommendationFeedbackService(
     MakiDbContext db, MangaBakaLocalStore catalogue, ICurrentUser currentUser, ILocalizer localizer)
@@ -64,16 +76,23 @@ public class RecommendationFeedbackService(
         var hiddenIds = await HiddenLocalIdsAsync(await db.RecommendationFeedback.AsNoTracking()
             .Where(x => x.UserId == userId).Select(x => x.ProviderId).Distinct().ToListAsync(ct), ct);
         var recent = sort == "recent";
+        var now = DateTime.UtcNow;
+        // A dismissal whose window has passed is no suppression at all: RecommendationFeedbackPolicy
+        // stopped honouring it the moment it expired, so listing it as dismissed would describe a
+        // rule that is no longer being applied. The projection below reports it as "none" for the
+        // same reason, which is what the client counts its suppressed chip from.
         var query = db.RecommendationFeedback.AsNoTracking()
             .Where(x => x.UserId == userId && (recent || x.Id > (cursor ?? 0)) &&
-                (x.Suppression != RecommendationSuppression.None ||
+                (x.Suppression == RecommendationSuppression.Hidden ||
+                 x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now ||
                  x.Exposure != RecommendationExposure.None ||
                  x.Sentiment != RecommendationSentiment.None) &&
                 !hiddenIds.Contains(x.ProviderId));
         query = filter switch
         {
             "hidden" => query.Where(x => x.Suppression == RecommendationSuppression.Hidden),
-            "dismissed" => query.Where(x => x.Suppression == RecommendationSuppression.Dismissed),
+            "dismissed" => query.Where(x => x.Suppression == RecommendationSuppression.Dismissed &&
+                x.DismissedUntilUtc > now),
             "exposed" => query.Where(x => x.Exposure != RecommendationExposure.None),
             "liked" => query.Where(x => x.Sentiment == RecommendationSentiment.Liked),
             "disliked" => query.Where(x => x.Sentiment == RecommendationSentiment.Disliked),
@@ -89,7 +108,7 @@ public class RecommendationFeedbackService(
         var entries = await VisibleTitlesAsync(page.Select(x => x.ProviderId), ct);
         var next = rows.Count > page.Count ? recent ? offset + page.Count : page[^1].Id : (long?)null;
         return new FeedbackPage<FeedbackState>(
-            page.Select(x => Hydrate(State(x), entries.GetValueOrDefault(x.ProviderId))).ToList(), next,
+            page.Select(x => Hydrate(Live(State(x), now), entries.GetValueOrDefault(x.ProviderId))).ToList(), next,
             versions.FeedbackRevision, versions.SignalRevision);
     }
 
@@ -100,7 +119,7 @@ public class RecommendationFeedbackService(
             .FirstOrDefaultAsync(x => x.UserId == userId && x.ProviderId == id, ct);
         if (state is null) return null;
         var entries = await VisibleTitlesAsync([id], ct);
-        return Hydrate(State(state), entries.GetValueOrDefault(id));
+        return Hydrate(Live(State(state), DateTime.UtcNow), entries.GetValueOrDefault(id));
     }
 
     public async Task<FeedbackPage<FeedbackActivity>> ActivityAsync(int userId, long? cursor, int limit,
@@ -215,7 +234,7 @@ public class RecommendationFeedbackService(
         SignalOverrideCommand command, CancellationToken ct = default)
     {
         if (id <= 0 || command.ClientMutationId == Guid.Empty || command.ExpectedRevision < 0)
-            throw new FeedbackValidationException("A valid title, mutation ID, and revision are required.");
+            throw new FeedbackValidationException("error.feedback.titleAndRevisionRequired");
         var hash = Hash($"{id}|{command.IgnoreAsSeed}|{command.ExpectedRevision}");
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var receipt = await db.RecommendationMutationReceipts.FirstOrDefaultAsync(
@@ -223,24 +242,24 @@ public class RecommendationFeedbackService(
         if (receipt is not null)
         {
             if (receipt.Operation != "signal" || receipt.PayloadHash != hash)
-                throw new FeedbackConflictException("Mutation ID was used for a different action.");
+                throw new FeedbackConflictException("error.feedback.mutationIdReused");
             return JsonSerializer.Deserialize<SignalOverrideMutation>(receipt.ResultJson, Json)!;
         }
         var state = await db.RecommendationSignalOverrides.FirstOrDefaultAsync(
             x => x.UserId == userId && x.Provider == "mangabaka" && x.ProviderId == id, ct);
         if (state is null)
         {
-            if (command.ExpectedRevision != 0) throw new FeedbackConflictException("Signal changed. Refresh and try again.");
+            if (command.ExpectedRevision != 0) throw new FeedbackConflictException("error.feedback.signalChanged");
             var allowed = ContentRating.Allowed(currentUser.MaxContentRating);
             if (command.IgnoreAsSeed && !await db.Series.AnyAsync(s =>
                     s.MangaBakaId == id && s.Incognito != IncognitoMode.Full &&
                     (s.ContentRating == null || allowed.Contains(s.ContentRating)), ct))
-                throw new FeedbackNotFoundException("This title is not an eligible source in your visible library.");
+                throw new FeedbackNotFoundException("error.feedback.notAnEligibleSource");
             state = new RecommendationSignalOverride { UserId = userId, ProviderId = id };
             db.RecommendationSignalOverrides.Add(state);
         }
         if (state.Revision != command.ExpectedRevision)
-            throw new FeedbackConflictException("Signal changed. Refresh and try again.");
+            throw new FeedbackConflictException("error.feedback.signalChanged");
         var changed = state.IgnoreAsSeed != command.IgnoreAsSeed;
         if (changed)
         {
@@ -269,18 +288,18 @@ public class RecommendationFeedbackService(
         CancellationToken ct = default)
     {
         if (id <= 0 || command.ClientMutationId == Guid.Empty || command.ExpectedRevision < 0)
-            throw new FeedbackValidationException("A valid title, mutation ID, and revision are required.");
+            throw new FeedbackValidationException("error.feedback.titleAndRevisionRequired");
         if (string.IsNullOrWhiteSpace(command.Action))
-            throw new FeedbackValidationException("A feedback action is required.");
+            throw new FeedbackValidationException("error.feedback.actionRequired");
         var action = command.Action.Trim().ToLowerInvariant();
         if (action is not ("hide" or "dismiss" or "mark-exposed" or "clear-suppression" or
             "clear-exposure" or "like" or "dislike" or "clear-sentiment"))
-            throw new FeedbackValidationException("Unsupported feedback action.");
+            throw new FeedbackValidationException("error.feedback.unsupportedAction");
         var medium = ParseMedium(command.Medium);
         if (action == "mark-exposed" && command.Medium is not null &&
             medium == RecommendationExposure.None &&
             !string.Equals(command.Medium, "unspecified", StringComparison.OrdinalIgnoreCase))
-            throw new FeedbackValidationException("Unsupported exposure medium.");
+            throw new FeedbackValidationException("error.feedback.unsupportedMedium");
         var hash = Hash($"{id}|{action}|{medium}|{command.ExpectedRevision}");
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var receipt = await db.RecommendationMutationReceipts
@@ -288,27 +307,27 @@ public class RecommendationFeedbackService(
         if (receipt is not null)
         {
             if (receipt.PayloadHash != hash || receipt.Operation != "feedback")
-                throw new FeedbackConflictException("Mutation ID was used for a different action.");
+                throw new FeedbackConflictException("error.feedback.mutationIdReused");
             return await CurrentVisibilityAsync(receipt.ResultJson, ct);
         }
         var state = await db.RecommendationFeedback
             .FirstOrDefaultAsync(x => x.UserId == userId && x.Provider == "mangabaka" && x.ProviderId == id, ct);
         if (state is null)
         {
-            if (command.ExpectedRevision != 0) throw new FeedbackConflictException("Feedback changed. Refresh and try again.");
+            if (command.ExpectedRevision != 0) throw new FeedbackConflictException("error.feedback.changed");
             if (!await catalogue.IsAvailableAsync(ct))
-                throw new FeedbackMetadataUnavailableException("Catalogue metadata is temporarily unavailable.");
+                throw new FeedbackMetadataUnavailableException("error.feedback.catalogueUnavailable");
             var detail = await catalogue.GetDetailAsync(id, ct)
-                ?? throw new FeedbackNotFoundException("Unknown catalogue title.");
+                ?? throw new FeedbackNotFoundException("error.feedback.unknownTitle");
             if (detail.ProviderId != id.ToString() ||
                 detail.ContentRating is not null &&
                 !ContentRating.Allowed(currentUser.MaxContentRating).Contains(detail.ContentRating))
-                throw new FeedbackValidationException("Catalogue title is not available to this account.");
+                throw new FeedbackValidationException("error.feedback.titleNotAvailable");
             state = new RecommendationFeedback { UserId = userId, ProviderId = id, Title = detail.Title };
             db.RecommendationFeedback.Add(state);
         }
         if (state.Revision != command.ExpectedRevision)
-            throw new FeedbackConflictException("Feedback changed. Refresh and try again.");
+            throw new FeedbackConflictException("error.feedback.changed");
         var before = JsonSerializer.Serialize(State(state), Json);
         var now = DateTime.UtcNow;
         var changed = RecommendationFeedbackPolicy.Apply(state, action, medium, now);
@@ -362,7 +381,7 @@ public class RecommendationFeedbackService(
     public async Task<FeedbackMutation> UndoAsync(int userId, long eventId, Guid mutationId, long expectedRevision,
         CancellationToken ct = default)
     {
-        if (mutationId == Guid.Empty) throw new FeedbackValidationException("A mutation ID is required.");
+        if (mutationId == Guid.Empty) throw new FeedbackValidationException("error.feedback.mutationIdRequired");
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var hash = Hash($"undo|{eventId}|{expectedRevision}");
         var receipt = await db.RecommendationMutationReceipts.FirstOrDefaultAsync(
@@ -370,17 +389,17 @@ public class RecommendationFeedbackService(
         if (receipt is not null)
         {
             if (receipt.Operation != "undo" || receipt.PayloadHash != hash)
-                throw new FeedbackConflictException("Mutation ID was used for a different action.");
+                throw new FeedbackConflictException("error.feedback.mutationIdReused");
             return await CurrentVisibilityAsync(receipt.ResultJson, ct);
         }
         var evt = await db.RecommendationFeedbackEvents.AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId && x.Id == eventId, ct)
-            ?? throw new FeedbackNotFoundException("Feedback event was not found.");
+            ?? throw new FeedbackNotFoundException("error.feedback.eventNotFound");
         var previous = JsonSerializer.Deserialize<FeedbackState>(evt.PreviousState, Json)!;
         var current = await db.RecommendationFeedback
             .FirstAsync(x => x.UserId == userId && x.ProviderId == evt.ProviderId, ct);
         if (current.Revision != expectedRevision || current.Revision != evt.StateRevision)
-            throw new FeedbackConflictException("Feedback changed since this action.");
+            throw new FeedbackConflictException("error.feedback.changedSinceAction");
         var before = JsonSerializer.Serialize(State(current), Json);
         current.Suppression = Enum.Parse<RecommendationSuppression>(previous.Suppression, true);
         current.Sentiment = Enum.Parse<RecommendationSentiment>(previous.Sentiment, true);
@@ -471,6 +490,16 @@ public class RecommendationFeedbackService(
             .Select(flag => flag.ToString().ToLowerInvariant()).ToArray(),
         x.DismissedUntilUtc, x.Revision, x.Title, x.Sentiment.ToString().ToLowerInvariant(),
         UpdatedAtUtc: x.UpdatedAtUtc);
+
+    /// <summary>
+    /// A state as the reader should read it now. An expired dismissal is not a suppression any more,
+    /// and the row keeps saying "dismissed" until something writes to it, so the projection is where
+    /// the window is applied. Manage signals counts its suppressed chip off this field.
+    /// </summary>
+    private static FeedbackState Live(FeedbackState state, DateTime now) =>
+        state.Suppression == "dismissed" && state.DismissedUntilUtc <= now
+            ? state with { Suppression = "none", DismissedUntilUtc = null }
+            : state;
 
     private static FeedbackState Hydrate(FeedbackState state, CatalogueEntry? entry) =>
         state with { Title = entry?.Title, CoverUrl = entry?.CoverUrl, Genres = entry?.Genres };

@@ -3,6 +3,9 @@ using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Recommendations;
 using Maki.Data.Identity;
+using Maki.Metadata.MangaBaka;
+using Maki.Metadata.Tests;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
@@ -14,7 +17,25 @@ public class AnimeSignalSeedTests : IDisposable
 {
     private readonly TestDb _fixture = new();
 
-    public void Dispose() => _fixture.Dispose();
+    private DumpDbBuilder? _dump;
+
+    public void Dispose()
+    {
+        _dump?.Dispose();
+        _fixture.Dispose();
+    }
+
+    /// <summary>A seed builder reading ratings off a fake dump, for the content-rating ceiling.</summary>
+    private SeedWeightService Catalogued(Action<DumpDbBuilder> seed)
+    {
+        _dump = new DumpDbBuilder();
+        seed(_dump);
+        return new SeedWeightService(
+            new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default, new FakeAppSettings(),
+            new MangaBakaLocalStore(
+                new MangaBakaDumpOptions(_dump.Path, Path.GetTempPath()), new FakeAppSettings(),
+                NullLogger<MangaBakaLocalStore>.Instance));
+    }
 
     private static SeedWeightService Service(IAppSettings? settings = null) => new(
         new BehavioralTasteService(TasteTuning.Default), TasteTuning.Default,
@@ -231,6 +252,32 @@ public class AnimeSignalSeedTests : IDisposable
         Assert.DoesNotContain(700L, snapshot.Effective.EligibleIds);
         Assert.DoesNotContain(701L, snapshot.Effective.EligibleIds);
         Assert.Empty(snapshot.Avoided);
+    }
+
+    /// <summary>
+    /// The ceiling is a parental control, and an anime-matched manga is the one seed population
+    /// with no shelf row to read a rating off. Without the dump lookup a reader capped at safe
+    /// seeds their profile from a pornographic title their library would never have shown them.
+    /// </summary>
+    [Fact]
+    public async Task A_matched_manga_above_the_ceiling_never_becomes_a_seed()
+    {
+        OptIn();
+        Signal(1000, AnimeWatchStatus.Completed, 9, animeId: 1);
+        Signal(1001, AnimeWatchStatus.Completed, 9, animeId: 2);
+        Signal(1002, AnimeWatchStatus.Completed, 1, animeId: 3);
+        var service = Catalogued(dump => dump
+            .AddSeries(1000, "Allowed", contentRating: "safe")
+            .AddSeries(1001, "Over the ceiling", contentRating: "pornographic")
+            .AddSeries(1002, "Also over it", contentRating: "pornographic"));
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await service.SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Contains(1000L, snapshot.Effective.EligibleIds);
+        Assert.DoesNotContain(1001L, snapshot.Effective.EligibleIds);
+        // The avoid half too: it is the same row reaching the same profile from the other side.
+        Assert.DoesNotContain(1002L, snapshot.Avoided.Keys);
     }
 
     [Fact]

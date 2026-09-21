@@ -336,7 +336,7 @@ public class RecommendationFeedbackTests : IDisposable
         var service = Catalogued(db, 1, dump => dump.AddSeries(1234, "Dandadan",
             genresJson: """["Action","Comedy"]""", coverUrl: "https://covers.example/dandadan.jpg"));
 
-        var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), db,
+        var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), new TestLocalizer(), db,
             new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
             new FakeAppSettings(),
             new SeedWeightService(
@@ -370,7 +370,7 @@ public class RecommendationFeedbackTests : IDisposable
         await db.SaveChangesAsync();
         var service = Catalogued(db, 1, dump => dump.AddSeries(5548, "Landmine"));
 
-        var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), db,
+        var controller = new RecommendationFeedbackController(service, new TestCurrentUser(1), new TestLocalizer(), db,
             new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
             new FakeAppSettings(),
             new SeedWeightService(
@@ -405,6 +405,67 @@ public class RecommendationFeedbackTests : IDisposable
         Assert.DoesNotContain(4321L, snapshot.Effective.EligibleIds);
         Assert.False(snapshot.Effective.Weights.ContainsKey(4321));
         Assert.Equal(0.75, snapshot.Avoided[4321]);
+    }
+
+    /// <summary>
+    /// The other half of the same rule. A thumbs down is a whole-catalogue statement, so a shelf
+    /// title carrying one has to leave the positive population exactly as a low rating does:
+    /// without that it steers the profile and is subtracted from the scan in the same pass.
+    /// </summary>
+    [Fact]
+    public async Task A_thumbed_down_shelf_title_leaves_the_effective_seeds()
+    {
+        _fixture.SeedSeries("Rejected", configure: s => s.MangaBakaId = 4400);
+        using var db = _fixture.NewContext(1);
+        db.RecommendationFeedback.Add(new RecommendationFeedback
+        { UserId = 1, ProviderId = 4400, Sentiment = RecommendationSentiment.Disliked, Revision = 1 });
+        await db.SaveChangesAsync();
+
+        var tuning = TasteTuning.Default;
+        var snapshot = await new SeedWeightService(
+                new BehavioralTasteService(tuning), tuning, new FakeAppSettings())
+            .SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Equal(1.0, snapshot.Avoided[4400]);
+        Assert.DoesNotContain(4400L, snapshot.Effective.EligibleIds);
+        Assert.False(snapshot.Effective.Weights.ContainsKey(4400));
+        // The shelf half keeps it, the same way it keeps a low-rated row.
+        Assert.Contains(4400L, snapshot.Observed.EligibleIds);
+    }
+
+    /// <summary>
+    /// A dismissal is a cooldown, so the row still says "dismissed" long after the window closed.
+    /// Manage signals counts its suppressed chip off this list, and the recommender stopped
+    /// honouring the row the moment it expired.
+    /// </summary>
+    [Fact]
+    public async Task An_expired_dismissal_no_longer_reads_as_a_suppression()
+    {
+        using var db = _fixture.NewContext(1);
+        db.RecommendationFeedback.Add(new RecommendationFeedback
+        {
+            UserId = 1, ProviderId = 4500, Suppression = RecommendationSuppression.Dismissed,
+            DismissedUntilUtc = DateTime.UtcNow.AddDays(-1)
+        });
+        db.RecommendationFeedback.Add(new RecommendationFeedback
+        {
+            UserId = 1, ProviderId = 4501, Suppression = RecommendationSuppression.Dismissed,
+            DismissedUntilUtc = DateTime.UtcNow.AddDays(1)
+        });
+        await db.SaveChangesAsync();
+        var service = Service(db, 1);
+
+        var all = await service.StatesAsync(1, null, 40);
+        Assert.DoesNotContain(all.Items, x => x.MangaBakaId == 4500);
+        Assert.Contains(all.Items, x => x.MangaBakaId == 4501 && x.Suppression == "dismissed");
+
+        var dismissed = await service.StatesAsync(1, null, 40, default, "dismissed");
+        Assert.Single(dismissed.Items, x => x.MangaBakaId == 4501);
+
+        // The single-state read is the same answer: no suppression rather than a stale one.
+        var state = await service.CurrentStateAsync(1, 4500);
+        Assert.Equal("none", state!.Suppression);
+        Assert.Null(state.DismissedUntilUtc);
     }
 
     /// <summary>
@@ -449,7 +510,7 @@ public class RecommendationFeedbackTests : IDisposable
     public async Task Lab_offers_the_anime_panel_on_a_connected_tracker_alone(bool connected, bool expected)
     {
         using var db = _fixture.NewContext(1);
-        var controller = new RecommendationFeedbackController(Service(db, 1), new TestCurrentUser(1), db,
+        var controller = new RecommendationFeedbackController(Service(db, 1), new TestCurrentUser(1), new TestLocalizer(), db,
             new NotReadyRecommender(), new BehavioralTasteService(TasteTuning.Default),
             new FakeAppSettings(),
             new SeedWeightService(

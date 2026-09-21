@@ -29,20 +29,27 @@ export function AnimeSignalsStatusLine({ data }: { data: AnimeSignalsData }) {
     return <Trans>Syncing…</Trans>
   }
 
+  const synced = data.lastSyncAtUtc ? formatDateTime(data.lastSyncAtUtc) : ''
+
   return (
     <>
-      {data.lastSyncAtUtc
-        ? t`Last synced ${formatDateTime(data.lastSyncAtUtc)}`
-        : t`Not synced yet`}
-      {data.counts && (
-        <>
-          {' · '}
-          <Trans>
-            {data.counts.matched} of {data.counts.total} matched, {data.counts.positive} positive,{' '}
-            {data.counts.avoided} avoided, {data.counts.superseded} already yours
-          </Trans>
-        </>
-      )}
+      {data.lastSyncAtUtc ? t`Last synced ${synced}` : t`Not synced yet`}
+      {data.counts && (() => {
+        const matched = data.counts.matched
+        const total = data.counts.total
+        const positive = data.counts.positive
+        const avoided = data.counts.avoided
+        const superseded = data.counts.superseded
+        return (
+          <>
+            {' · '}
+            <Trans>
+              {matched} of {total} matched, {positive} positive,{' '}
+              {avoided} avoided, {superseded} already yours
+            </Trans>
+          </>
+        )
+      })()}
     </>
   )
 }
@@ -209,13 +216,15 @@ function AnimeSignalStrengthControl({
     }
   })()
 
+  const topSeed = topSeedWeight !== undefined ? topSeedWeight.toFixed(2) : ''
+
   const tooltipLabel = (
     <>
       {hint}
       {topSeedWeight !== undefined && (
         <>
           {' '}
-          <Trans>A 10/10 anime seeds at {topSeedWeight.toFixed(2)}, against 1.00 for an unrated book on your shelf.</Trans>
+          <Trans>A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf.</Trans>
         </>
       )}
     </>

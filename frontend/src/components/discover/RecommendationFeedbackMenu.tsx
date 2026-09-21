@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications'
 import {
   IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
 } from '@tabler/icons-react'
-import { useLingui } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useFeedbackState, useMutateFeedback, useUndoFeedback } from '../../api/recommendationFeedback'
 
 type Command = {
@@ -19,7 +19,7 @@ type Command = {
  *
  * Renders nothing for an item with no usable catalogue id, which is the only case where feedback is
  * meaningless: a synthetic activity row has nothing to record feedback against. Every other card is
- * fair game, including the browse rails — hiding a title there is the same fact about the same work.
+ * fair game, including the browse rails: hiding a title there is the same fact about the same work.
  */
 export function RecommendationFeedbackMenu({ providerId, surface }: { providerId: string; surface: string }) {
   const id = Number(providerId)
@@ -46,26 +46,31 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
       // Previously a no-op returned silently, so pressing Hide on an already-hidden title looked
       // like a dead button. Say that nothing changed instead.
       if (!result.changed) {
-        notifications.show({ message: 'No change: this title was already in that state.' })
+        notifications.show({ message: t`No change: this title was already in that state.` })
         return
       }
+      const eventId = result.eventId
+      const revision = result.state.revision
       notifications.show({
         message: <Group gap="xs" wrap="wrap">
           <Text size="sm">{describe(result.feedbackEffect, result.queueEffect)}</Text>
-          {result.eventId && <Button size="xs" variant="subtle" onClick={() => {
+          {eventId && <Button size="xs" variant="subtle" onClick={() => {
             void undo.mutateAsync({
-              eventId: result.eventId!, expectedRevision: result.state.revision,
+              eventId, expectedRevision: revision,
               clientMutationId: crypto.randomUUID(),
             })
-          }}>Undo</Button>}
+          }}><Trans>Undo</Trans></Button>}
         </Group>,
         autoClose: 8000,
       })
     } catch (error) {
+      const reason = String(error)
       notifications.show({
         color: 'red', autoClose: false, message: <Group gap="xs" wrap="wrap">
-          <Text size="sm">Could not update {surface} feedback: {String(error)}</Text>
-          <Button size="xs" variant="subtle" onClick={() => void submit(action, medium, command)}>Retry</Button>
+          <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>
+          <Button size="xs" variant="subtle" onClick={() => void submit(action, medium, command)}>
+            <Trans>Retry</Trans>
+          </Button>
         </Group>,
       })
     }
@@ -75,19 +80,19 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
 
   return (
     <Group gap="xs" wrap="nowrap" justify="center">
-      <Tooltip label={sentiment === 'liked' ? 'Remove your thumbs up' : 'More like this'} withArrow zIndex={2001}>
+      <Tooltip label={sentiment === 'liked' ? t`Remove your thumbs up` : t`More like this`} withArrow zIndex={2001}>
         <ActionIcon
           size="lg" variant={sentiment === 'liked' ? 'filled' : 'default'} color="teal"
-          loading={busy} aria-pressed={sentiment === 'liked'} aria-label="Thumbs up"
+          loading={busy} aria-pressed={sentiment === 'liked'} aria-label={t`Thumbs up`}
           onClick={() => void submit(sentiment === 'liked' ? 'clear-sentiment' : 'like')}
         >
           <IconThumbUp size={18} />
         </ActionIcon>
       </Tooltip>
-      <Tooltip label={sentiment === 'disliked' ? 'Remove your thumbs down' : 'Not for me'} withArrow zIndex={2001}>
+      <Tooltip label={sentiment === 'disliked' ? t`Remove your thumbs down` : t`Not for me`} withArrow zIndex={2001}>
         <ActionIcon
           size="lg" variant={sentiment === 'disliked' ? 'filled' : 'default'} color="red"
-          loading={busy} aria-pressed={sentiment === 'disliked'} aria-label="Thumbs down"
+          loading={busy} aria-pressed={sentiment === 'disliked'} aria-label={t`Thumbs down`}
           onClick={() => void submit(sentiment === 'disliked' ? 'clear-sentiment' : 'dislike')}
         >
           <IconThumbDown size={18} />
@@ -96,36 +101,36 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
 
       <Menu withinPortal position="bottom-end" width={260} zIndex={2000} shadow="md">
         <Menu.Target>
-          <Tooltip label="More feedback options" withArrow zIndex={2001}>
-            <ActionIcon size="lg" variant="default" aria-label="More recommendation feedback actions">
+          <Tooltip label={t`More feedback options`} withArrow zIndex={2001}>
+            <ActionIcon size="lg" variant="default" aria-label={t`More recommendation feedback actions`}>
               <IconDots size={18} />
             </ActionIcon>
           </Tooltip>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Label>Change this title only</Menu.Label>
+          <Menu.Label>{t`Change this title only`}</Menu.Label>
           <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void submit('hide')}>
-            Hide this title
+            {t`Hide this title`}
           </Menu.Item>
           <Menu.Item leftSection={<IconClock size={16} />} onClick={() => void submit('dismiss')}>
-            Dismiss for 30 days
+            {t`Dismiss for 30 days`}
           </Menu.Item>
           <Menu.Divider />
-          <Menu.Label>Already read or seen, taste unchanged</Menu.Label>
+          <Menu.Label>{t`Already read or seen, taste unchanged`}</Menu.Label>
           <Menu.Item leftSection={<IconEye size={16} />} onClick={() => void submit('mark-exposed', 'manga')}>
-            Read manga elsewhere
+            {t`Read manga elsewhere`}
           </Menu.Item>
           <Menu.Item leftSection={<IconEye size={16} />} onClick={() => void submit('mark-exposed', 'anime')}>
-            Seen anime
+            {t`Seen anime`}
           </Menu.Item>
           <Menu.Item leftSection={<IconEye size={16} />} onClick={() => void submit('mark-exposed', 'both')}>
-            Both
+            {t`Both`}
           </Menu.Item>
           <Menu.Divider />
           <Menu.Item disabled={!suppressed} onClick={() => void submit('clear-suppression')}>
-            Restore hidden or dismissed title
+            {t`Restore hidden or dismissed title`}
           </Menu.Item>
-          <Menu.Item onClick={() => void submit('clear-exposure')}>Clear read or seen</Menu.Item>
+          <Menu.Item onClick={() => void submit('clear-exposure')}>{t`Clear read or seen`}</Menu.Item>
           <Text size="xs" c="dimmed" px="sm" py="xs">
             {t`A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it.`}
           </Text>
@@ -140,19 +145,19 @@ function useDescribe() {
   return (feedbackEffect: string, queueEffect: string): string => {
     switch (feedbackEffect) {
       case 'positive-title':
-        return 'Thumbs up. This title now steers your recommendations, and it will not be recommended back to you.'
+        return t`Thumbs up. This title now steers your recommendations, and it will not be recommended back to you.`
       case 'negative-taste':
         return t`Thumbs down. This title is out, and titles closer to it than to what you kept rank lower.`
       case 'negative-title':
-        return 'Removed from recommendations. Only this title: its genres and author are unaffected.'
+        return t`Removed from recommendations. Only this title: its genres and author are unaffected.`
       case 'temporary':
-        return 'Dismissed for 30 days. It comes back on its own.'
+        return t`Dismissed for 30 days. It comes back on its own.`
       case 'neutral-exposure':
-        return 'Marked as already read or seen. Your taste profile was not changed.'
+        return t`Marked as already read or seen. Your taste profile was not changed.`
       default:
         return queueEffect === 'suppressed'
-          ? 'Updated. This title stays out of recommendations.'
-          : 'Updated. This title can appear in recommendations again.'
+          ? t`Updated. This title stays out of recommendations.`
+          : t`Updated. This title can appear in recommendations again.`
     }
   }
 }

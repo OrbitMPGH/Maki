@@ -124,6 +124,79 @@ msgstr "Series has no root folder"
 msgid "error.chapter.pathOutsideRoot"
 msgstr "Path is outside the series' root folder"
 
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.actionRequired"
+msgstr "A feedback action is required"
+
+#. The catalogue dump is not installed or not readable, so a first thumbs up or hide on a title Maki has never stored cannot be checked.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.catalogueUnavailable"
+msgstr "Catalogue metadata is temporarily unavailable"
+
+#. Somebody changed this title's feedback since the page loaded.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.changed"
+msgstr "Feedback changed. Refresh and try again."
+
+#. The undo is for an action that is no longer the most recent one on this title.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.changedSinceAction"
+msgstr "Feedback changed since this action"
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.eventNotFound"
+msgstr "Feedback event was not found"
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.mutationIdRequired"
+msgstr "A mutation ID is required"
+
+#. The client reused a mutation id it had already sent with a different feedback action.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.mutationIdReused"
+msgstr "That mutation ID was already used for a different action"
+
+#. The reader asked to stop seeding from a title that is not on their shelf, or that their content rating ceiling hides.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.notAnEligibleSource"
+msgstr "This title is not an eligible source in your visible library"
+
+#. Somebody changed this title's seed override since the page loaded.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.signalChanged"
+msgstr "Signal changed. Refresh and try again."
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.titleAndRevisionRequired"
+msgstr "A valid title, mutation ID, and revision are required"
+
+#. The catalogue title is above the account's content rating ceiling.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.titleNotAvailable"
+msgstr "Catalogue title is not available to this account"
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.unknownTitle"
+msgstr "Unknown catalogue title"
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.unsupportedAction"
+msgstr "Unsupported feedback action"
+
+#. The exposure medium names something other than manga, anime, both or unspecified.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.unsupportedMedium"
+msgstr "Unsupported exposure medium"
+
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.unsupportedSort"
+msgstr "Unsupported feedback sort"
+
+#. The state filter on the Manage signals list names something other than hidden, dismissed or exposed.
+#: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
+msgid "error.feedback.unsupportedState"
+msgstr "Unsupported feedback state"
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
@@ -414,6 +487,11 @@ msgid "error.series.metadataRefreshFailed"
 msgstr "Metadata lookup failed - series has no provider id or the provider returned nothing"
 
 #. The client reused a mutation id it had already sent with different add parameters.
+#. The add request carried an empty mutation id, which the retry-safe add path needs.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.mutationIdRequired"
+msgstr "A valid mutation ID is required"
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.mutationIdReused"
 msgstr "That mutation ID was already used for a different add"
@@ -451,6 +529,11 @@ msgstr "Unknown mode: {mode}"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.unknownNotificationMode"
 msgstr "Unknown mode: {mode}"
+
+#. The add names where it was started from, and the only two answers are the library and a recommendation.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unsupportedAddOrigin"
+msgstr "Unsupported add origin"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.unknownTagIds"

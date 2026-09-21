@@ -823,9 +823,9 @@ public class SeriesController(
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
         if (request.AddedFrom is not null and not ("library" or "recommendation"))
-            return BadRequest(new { error = "Unsupported add origin" });
+            return this.Fail(localizer, "error.series.unsupportedAddOrigin");
         if (request.ClientMutationId == Guid.Empty)
-            return BadRequest(new { error = "A valid mutation ID is required" });
+            return this.Fail(localizer, "error.series.mutationIdRequired");
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
         // the Sources card shows a spinner until the background worker is done.

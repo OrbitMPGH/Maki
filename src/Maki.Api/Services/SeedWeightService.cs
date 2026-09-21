@@ -91,7 +91,15 @@ public record SeedSnapshot(
 /// time either side was tuned.
 /// </para>
 /// </summary>
-public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning, IAppSettings settings)
+/// <param name="catalogue">
+/// The dump, for the one population whose content rating is not already on a library row: a manga
+/// matched from an anime signal is usually not on the shelf at all, so its rating has to be read
+/// from the catalogue before the ceiling can be applied to it. Optional because the seed builder
+/// runs in tests and on instances with no dump, where there is nothing to read and the anime rows
+/// are left as they were.
+/// </param>
+public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning, IAppSettings settings,
+    MangaBakaLocalStore? catalogue = null)
 {
     /// <param name="db">
     /// The caller's context, already narrowed with <c>db.Scope.SetUser</c>. Passed in rather than
@@ -156,14 +164,6 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         var effectiveRows = observedRows.Where(r => !ignored.Contains(r.Id)).ToList();
         var observedIds = observedRows.Select(r => r.Id).Distinct().ToList();
 
-        // A low rating leaves the positive population entirely rather than being filtered out of
-        // the weights afterwards. Behavioural and personal-add weighting both fill in rows that
-        // carry no rating, so a row still present here would come back as a positive seed on read
-        // depth alone, which is the opposite of what the reader said.
-        var positiveRows = effectiveRows
-            .Where(r => RecommendationFeedbackPolicy.AvoidStrength(r.Rating ?? 0) <= 0)
-            .ToList();
-
         // Liked titles are mostly NOT library rows, which is the point of them: a rating can only
         // describe something already on the shelf. They join the effective seeds and nothing else —
         // not LibraryIds, which is the owned-candidate list, and not the observed population, which
@@ -191,6 +191,16 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
                 avoided[r.Id] = Math.Max(avoided.GetValueOrDefault(r.Id), strength);
             }
         }
+
+        // A low rating leaves the positive population entirely rather than being filtered out of
+        // the weights afterwards. Behavioural and personal-add weighting both fill in rows that
+        // carry no rating, so a row still present here would come back as a positive seed on read
+        // depth alone, which is the opposite of what the reader said. A thumbs down on a shelf title
+        // says exactly the same thing, so it leaves the same way rather than steering and being
+        // subtracted at once. The observed half keeps both, because it describes the shelf.
+        var positiveRows = effectiveRows
+            .Where(r => !avoided.ContainsKey(r.Id))
+            .ToList();
 
         // Read over the wider population and narrow in memory: the effective ids are a subset, so a
         // second query would fetch the same progress rows only to throw some away.
@@ -232,9 +242,19 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             // scrobbles to and one franchise once per season, so a per-row loop would read a single
             // opinion as several and let the best-liked season speak for a work the reader was
             // lukewarm on overall. One group is one manga, with the seasons' scores averaged.
-            foreach (var group in AnimeSignalGrouping.Group(animeRows))
+            var groups = AnimeSignalGrouping.Group(animeRows).ToList();
+            // The ceiling applies to a matched manga exactly as it applies to a shelf row, and the
+            // only place a matched row's rating lives is the dump: nothing here is on the shelf, so
+            // there is no ContentRating column to read it off. One batched read for every matched
+            // id rather than a point query per group.
+            var withinCeiling = await WithinCeilingAsync(
+                groups.Where(g => g.MangaBakaId is not null).Select(g => g.MangaBakaId!.Value)
+                    .Distinct().ToList(), allowed, ct);
+
+            foreach (var group in groups)
             {
-                if (group.MangaBakaId is not { } id || precedence.Supersedes(id))
+                if (group.MangaBakaId is not { } id || precedence.Supersedes(id) ||
+                    withinCeiling is not null && !withinCeiling.Contains(id))
                 {
                     continue;
                 }
@@ -318,6 +338,25 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
     }
 
     private sealed record SeedRow(long Id, int? Rating, DateTime? AddedAt);
+
+    /// <summary>
+    /// The subset of <paramref name="ids"/> the dump rates at or below the reader's ceiling, or null
+    /// when there is no dump to ask. Null rather than an empty set so a missing catalogue leaves the
+    /// anime rows alone instead of silently dropping every one of them.
+    /// </summary>
+    private async Task<HashSet<long>?> WithinCeilingAsync(
+        IReadOnlyList<long> ids, IReadOnlyList<string> allowed, CancellationToken ct)
+    {
+        if (catalogue is null || ids.Count == 0 || !await catalogue.IsAvailableAsync(ct))
+        {
+            return null;
+        }
+
+        return (await catalogue.GetByIdsAsync(ids, allowed, ct))
+            .Select(hit => long.TryParse(hit.ProviderId, out var id) ? id : -1)
+            .Where(id => id > 0)
+            .ToHashSet();
+    }
 
     /// <summary>
     /// Whether this user's watched anime may steer their recommendations: the instance switch and

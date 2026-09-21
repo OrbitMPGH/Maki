@@ -55,6 +55,13 @@ public static class ApiResults
         this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
         controller.StatusCode(StatusCodes.Status410Gone, Body(localizer, key, args));
 
+    /// <summary>
+    /// 503, for a dependency that is briefly missing rather than anything wrong with the request.
+    /// </summary>
+    public static IActionResult Unavailable(
+        this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
+        controller.StatusCode(StatusCodes.Status503ServiceUnavailable, Body(localizer, key, args));
+
     private static object Body(ILocalizer localizer, string key, object? args) =>
         new { code = key, error = localizer.Get(key, args) };
 }

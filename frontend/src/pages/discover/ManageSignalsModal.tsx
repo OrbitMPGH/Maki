@@ -6,6 +6,8 @@ import {
 } from '@mantine/core'
 import { IconSearch, IconX } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import type { FeedbackState } from '../../api/recommendationFeedback'
 import {
   useFeedbackLab, useFeedbackStates, useMutateFeedback, useMutateSignalOverride, useSignalOverrides,
@@ -15,6 +17,14 @@ import { AnimeSignalRow, AnimeSignalsStatusLine, useAnimeRoleFilters } from './A
 import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate } from '../../format'
+import { useLabel } from '../../i18n-context'
+
+/** Wire values of a feedback state's `exposure` field, labeled for display. */
+const EXPOSURE_LABELS: Record<string, MessageDescriptor> = {
+  manga: msg`manga`,
+  anime: msg`anime`,
+  unspecified: msg`unspecified`,
+}
 
 type Filter = 'all' | 'rated' | 'thumbs' | 'hidden' | 'exposed' | 'excluded' | 'added'
 
@@ -387,12 +397,13 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   onExclude: (row: Row, ignoreAsSeed: boolean) => void
 }) {
   const { t } = useLingui()
+  const label = useLabel()
   const state = row.state
   const sentiment = state?.sentiment ?? 'none'
   const suppression = state?.suppression ?? 'none'
   const exposure = state?.exposure ?? []
   const rating = row.rating
-  const media = exposure.join(', ')
+  const media = exposure.map((value) => label(EXPOSURE_LABELS[value] ?? value)).join(', ')
   const until = state?.dismissedUntilUtc ? formatDate(state.dismissedUntilUtc) : ''
   const id = row.id
   const title = row.title || t`Catalogue title ${id}`

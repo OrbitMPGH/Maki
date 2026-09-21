@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
@@ -14,6 +15,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/recommendations")]
 public class RecommendationFeedbackController(RecommendationFeedbackService feedback, ICurrentUser user,
+    ILocalizer localizer,
     MakiDbContext db, SemanticRecommender semantic, BehavioralTasteService behavioural,
     IAppSettings settings, SeedWeightService seedWeights,
     TasteAvoidanceService avoidance, AnimeSignalSources animeSources) : ControllerBase
@@ -109,9 +111,9 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
         [FromQuery] string? state, [FromQuery] string? sort, CancellationToken ct)
     {
         if (state is not null and not ("hidden" or "dismissed" or "exposed"))
-            return BadRequest(new { error = "Unsupported feedback state" });
+            return this.Fail(localizer, "error.feedback.unsupportedState");
         if (sort is not null and not ("recent" or "title"))
-            return BadRequest(new { error = "Unsupported feedback sort" });
+            return this.Fail(localizer, "error.feedback.unsupportedSort");
         return Ok(await feedback.StatesAsync(user.UserId, cursor, limit <= 0 ? 40 : limit, ct, state, sort));
     }
 
@@ -130,24 +132,27 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
     public async Task<IActionResult> Mutate(long id, [FromBody] FeedbackCommand command, CancellationToken ct)
     {
         try { return Ok(await feedback.MutateAsync(user.UserId, id, command, ct)); }
-        catch (FeedbackConflictException ex) { return Conflict(new { error = ex.Message,
+        // The conflict body carries the current state beside the message, so it is built here rather
+        // than through ApiResults; the two fields it shares with every other failure keep their names.
+        catch (FeedbackConflictException ex) { return Conflict(new { code = ex.Key,
+            error = localizer.Get(ex.Key, ex.Args),
             current = await feedback.CurrentStateAsync(user.UserId, id, ct) }); }
-        catch (FeedbackNotFoundException ex) { return NotFound(new { error = ex.Message }); }
-        catch (FeedbackMetadataUnavailableException ex) { return StatusCode(503, new { error = ex.Message }); }
-        catch (FeedbackValidationException ex) { return BadRequest(new { error = ex.Message }); }
-        catch (DbUpdateException ex) when (IsWriteConflict(ex)) { return Conflict(new { error = "Feedback changed. Refresh and try again." }); }
-        catch (SqliteException ex) when (IsWriteConflict(ex)) { return Conflict(new { error = "Feedback changed. Refresh and try again." }); }
+        catch (FeedbackNotFoundException ex) { return this.NotFoundMessage(localizer, ex.Key, ex.Args); }
+        catch (FeedbackMetadataUnavailableException ex) { return this.Unavailable(localizer, ex.Key, ex.Args); }
+        catch (FeedbackValidationException ex) { return this.Fail(localizer, ex.Key, ex.Args); }
+        catch (DbUpdateException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.changed"); }
+        catch (SqliteException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.changed"); }
     }
 
     [HttpPost("feedback/events/{id:long}/undo")]
     public async Task<IActionResult> Undo(long id, [FromBody] FeedbackUndoCommand command, CancellationToken ct)
     {
         try { return Ok(await feedback.UndoAsync(user.UserId, id, command.ClientMutationId, command.ExpectedRevision, ct)); }
-        catch (FeedbackConflictException ex) { return Conflict(new { error = ex.Message }); }
-        catch (FeedbackNotFoundException ex) { return NotFound(new { error = ex.Message }); }
-        catch (FeedbackValidationException ex) { return BadRequest(new { error = ex.Message }); }
-        catch (DbUpdateException ex) when (IsWriteConflict(ex)) { return Conflict(new { error = "Feedback changed. Refresh and try again." }); }
-        catch (SqliteException ex) when (IsWriteConflict(ex)) { return Conflict(new { error = "Feedback changed. Refresh and try again." }); }
+        catch (FeedbackConflictException ex) { return this.Conflict(localizer, ex.Key, ex.Args); }
+        catch (FeedbackNotFoundException ex) { return this.NotFoundMessage(localizer, ex.Key, ex.Args); }
+        catch (FeedbackValidationException ex) { return this.Fail(localizer, ex.Key, ex.Args); }
+        catch (DbUpdateException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.changed"); }
+        catch (SqliteException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.changed"); }
     }
 
     [HttpGet("signal-overrides")]
@@ -158,11 +163,11 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
     public async Task<IActionResult> SetSignalOverride(long id, [FromBody] SignalOverrideCommand command, CancellationToken ct)
     {
         try { return Ok(await feedback.SetSignalOverrideAsync(user.UserId, id, command, ct)); }
-        catch (FeedbackConflictException ex) { return Conflict(new { error = ex.Message }); }
-        catch (FeedbackNotFoundException ex) { return NotFound(new { error = ex.Message }); }
-        catch (FeedbackValidationException ex) { return BadRequest(new { error = ex.Message }); }
-        catch (DbUpdateException ex) when (IsWriteConflict(ex)) { return Conflict(new { error = "Signal changed. Refresh and try again." }); }
-        catch (SqliteException ex) when (IsWriteConflict(ex)) { return Conflict(new { error = "Signal changed. Refresh and try again." }); }
+        catch (FeedbackConflictException ex) { return this.Conflict(localizer, ex.Key, ex.Args); }
+        catch (FeedbackNotFoundException ex) { return this.NotFoundMessage(localizer, ex.Key, ex.Args); }
+        catch (FeedbackValidationException ex) { return this.Fail(localizer, ex.Key, ex.Args); }
+        catch (DbUpdateException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.signalChanged"); }
+        catch (SqliteException ex) when (IsWriteConflict(ex)) { return this.Conflict(localizer, "error.feedback.signalChanged"); }
     }
 
     [HttpDelete("signal-overrides/{id:long}")]

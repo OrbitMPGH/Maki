@@ -291,7 +291,18 @@ public class SeriesRequestsController(
                     .SetProperty(r => r.Status, SeriesRequestStatus.Processing)
                     .SetProperty(r => r.ApprovalClaimedAtUtc, claimedAt), ct);
             if (claimed != 1)
-                return this.Conflict(localizer, "error.requests.approvalInProgress");
+            {
+                // The claim is the guard now, so it has to answer both questions the old
+                // Status != Pending check answered: a request somebody already resolved reads as
+                // resolved, and only one that is still Pending and held by another admin reads as
+                // in progress.
+                var status = await db.SeriesRequests.IgnoreQueryFilters().AsNoTracking()
+                    .Where(r => r.Id == id).Select(r => (SeriesRequestStatus?)r.Status)
+                    .FirstOrDefaultAsync(ct);
+                return status is null or SeriesRequestStatus.Pending or SeriesRequestStatus.Processing
+                    ? this.Conflict(localizer, "error.requests.approvalInProgress")
+                    : this.Conflict(localizer, "error.requests.alreadyResolved");
+            }
             // The claim went through ExecuteUpdate, which the change tracker never sees, so this
             // entity still holds its pre-claim values. Assigning them by hand instead of reloading
             // leaves the tracker thinking Processing was always the original: setting Status back to
@@ -426,7 +437,7 @@ public class SeriesRequestsController(
 
         if (request.Status == SeriesRequestStatus.Processing)
         {
-            return Conflict(new { error = "Approval is in progress" });
+            return this.Conflict(localizer, "error.requests.approvalInProgress");
         }
 
         if (!IsAdmin && request.Status != SeriesRequestStatus.Pending)

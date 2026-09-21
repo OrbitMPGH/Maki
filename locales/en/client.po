@@ -196,15 +196,6 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 
-#. placeholder {0}: data.counts.matched
-#. placeholder {1}: data.counts.total
-#. placeholder {2}: data.counts.positive
-#. placeholder {3}: data.counts.avoided
-#. placeholder {4}: data.counts.superseded
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
-msgstr "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
-
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "{actionError} Refresh the page and try again."
@@ -449,6 +440,10 @@ msgstr "{markerLabel} Anime adaptation starts here · click to collapse"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{markerLabel} Anime adaptation starts here · click to expand"
 msgstr "{markerLabel} Anime adaptation starts here · click to expand"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
+msgstr "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 
 #: src/components/RecommendationModelCards.tsx
 msgid "{minutes, plural, one {about # min left} other {about # min left}}"
@@ -940,10 +935,9 @@ msgstr "75 / page"
 msgid "90 days"
 msgstr "90 days"
 
-#. placeholder {0}: topSeedWeight.toFixed(2)
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "A 10/10 anime seeds at {0}, against 1.00 for an unrated book on your shelf."
-msgstr "A 10/10 anime seeds at {0}, against 1.00 for an unrated book on your shelf."
+msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
+msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 
 #: src/pages/SettingsPage.tsx
 msgid "A backup is a zip of your database and <0>config.json</0>, your whole library and all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left out. One is taken automatically right before any upgrade migration runs. Restoring replaces the current data and restarts Maki."
@@ -1293,6 +1287,10 @@ msgstr "All time"
 msgid "Already on your shelf, so your own reading counts instead"
 msgstr "Already on your shelf, so your own reading counts instead"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Already read or seen, taste unchanged"
+msgstr "Already read or seen, taste unchanged"
+
 #: src/pages/SettingsPage.tsx
 msgid "Already running"
 msgstr "Already running"
@@ -1353,6 +1351,10 @@ msgstr "AniList"
 #: src/pages/settings/registry.ts
 msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "anime"
+msgstr "anime"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Anime"
@@ -1716,6 +1718,10 @@ msgstr "Blocks sign-in and kills existing sessions. Keeps the account and its hi
 msgid "Bookmark this page"
 msgstr "Bookmark this page"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Both"
+msgstr "Both"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Boys Love"
 msgstr "Boys Love"
@@ -1973,6 +1979,10 @@ msgstr "Change own content rating"
 msgid "Change the chapter range"
 msgstr "Change the chapter range"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Change this title only"
+msgstr "Change this title only"
+
 #: src/pages/LibraryPage.tsx
 msgid "Changes apply straight to the grid behind this panel."
 msgstr "Changes apply straight to the grid behind this panel."
@@ -2170,6 +2180,7 @@ msgstr "Clear queue"
 msgid "Clear rating"
 msgstr "Clear rating"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Clear read or seen"
 msgstr "Clear read or seen"
@@ -2508,6 +2519,10 @@ msgstr "Could not load your signals: {loadError}"
 msgid "Could not read your profile"
 msgstr "Could not read your profile"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Could not update {surface} feedback: {reason}"
+msgstr "Could not update {surface} feedback: {reason}"
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "counts a little more than the rest"
 msgstr "counts a little more than the rest"
@@ -2798,6 +2813,10 @@ msgstr "Disk used"
 msgid "Dismiss"
 msgstr "Dismiss"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Dismiss for 30 days"
+msgstr "Dismiss for 30 days"
+
 #: src/pages/NotificationsPage.tsx
 msgid "Dismiss notification"
 msgstr "Dismiss notification"
@@ -2805,6 +2824,10 @@ msgstr "Dismiss notification"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Dismissed"
 msgstr "Dismissed"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Dismissed for 30 days. It comes back on its own."
+msgstr "Dismissed for 30 days. It comes back on its own."
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -3637,6 +3660,10 @@ msgstr "Hide source names"
 msgid "Hide source text"
 msgstr "Hide source text"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Hide this title"
+msgstr "Hide this title"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "Higher for readers like you"
 msgstr "Higher for readers like you"
@@ -4087,10 +4114,9 @@ msgstr "Last run failed: {lastError}"
 msgid "Last sign-in"
 msgstr "Last sign-in"
 
-#. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "Last synced {0}"
-msgstr "Last synced {0}"
+msgid "Last synced {synced}"
+msgstr "Last synced {synced}"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Last used"
@@ -4411,6 +4437,10 @@ msgstr "Manage sources"
 msgid "Manage tags"
 msgstr "Manage tags"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "manga"
+msgstr "manga"
+
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
 msgid "Manga"
@@ -4463,6 +4493,10 @@ msgstr "Mark unread"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark watched"
 msgstr "Mark watched"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Marked as already read or seen. Your taste profile was not changed."
+msgstr "Marked as already read or seen. Your taste profile was not changed."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Marked watched, not read. Doesn't count toward reading stats"
@@ -4617,7 +4651,12 @@ msgstr "More actions"
 msgid "More download options"
 msgstr "More download options"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "More feedback options"
+msgstr "More feedback options"
+
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
 #: src/pages/SettingsPage.tsx
 msgid "More like this"
@@ -4626,6 +4665,10 @@ msgstr "More like this"
 #: src/pages/discover/TasteTab.tsx
 msgid "More of this"
 msgstr "More of this"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "More recommendation feedback actions"
+msgstr "More recommendation feedback actions"
 
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
@@ -4844,6 +4887,10 @@ msgstr "Next..."
 #: src/pages/stats/OverviewPanel.tsx
 msgid "No activity in this period."
 msgstr "No activity in this period."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "No change: this title was already in that state."
+msgstr "No change: this title was already in that state."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "No chapter here carries a reading time, so there is no pace to report."
@@ -5088,6 +5135,10 @@ msgstr "Not enough timed chapters yet."
 #: src/components/SourceCompareModal.tsx
 msgid "Not every source carries chapter {chapterNumber}, so some columns are showing their own first chapter instead. Each column says which one it got."
 msgstr "Not every source carries chapter {chapterNumber}, so some columns are showing their own first chapter instead. Each column says which one it got."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Not for me"
+msgstr "Not for me"
 
 #: src/pages/HealthPage.tsx
 msgid "Not imported"
@@ -5970,6 +6021,10 @@ msgstr "Read in Kavita"
 msgid "Read in Maki"
 msgstr "Read in Maki"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Read manga elsewhere"
+msgstr "Read manga elsewhere"
+
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "Read next chapter"
 msgstr "Read next chapter"
@@ -6298,9 +6353,21 @@ msgstr "Remove the record"
 msgid "Remove without cleanup"
 msgstr "Remove without cleanup"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Remove your thumbs down"
+msgstr "Remove your thumbs down"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Remove your thumbs up"
+msgstr "Remove your thumbs up"
+
 #: src/pages/stats/ActivityFeed.tsx
 msgid "Removed"
 msgstr "Removed"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Removed from recommendations. Only this title: its genres and author are unaffected."
+msgstr "Removed from recommendations. Only this title: its genres and author are unaffected."
 
 #: src/components/RenameSeriesModal.tsx
 msgid "Rename"
@@ -6466,6 +6533,10 @@ msgstr "Restore failed"
 msgid "Restore from file…"
 msgstr "Restore from file…"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Restore hidden or dismissed title"
+msgstr "Restore hidden or dismissed title"
+
 #: src/pages/SettingsPage.tsx
 msgid "Restore staged"
 msgstr "Restore staged"
@@ -6490,6 +6561,7 @@ msgstr "Retried {retryCount}x"
 msgid "Retried {retryCount}x - next attempt {nextAttemptTime}"
 msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Retry"
 msgstr "Retry"
@@ -6914,6 +6986,10 @@ msgstr "Seed from"
 #: src/components/ReleaseSearchModal.tsx
 msgid "Seeds"
 msgstr "Seeds"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Seen anime"
+msgstr "Seen anime"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Seen cleared"
@@ -7928,12 +8004,24 @@ msgid "Thumbs"
 msgstr "Thumbs"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Thumbs down"
+msgstr "Thumbs down"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
 msgstr "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Thumbs up"
+msgstr "Thumbs up"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "thumbs up / down"
 msgstr "thumbs up / down"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Thumbs up. This title now steers your recommendations, and it will not be recommended back to you."
+msgstr "Thumbs up. This title now steers your recommendations, and it will not be recommended back to you."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
@@ -8180,6 +8268,7 @@ msgstr "Unavailable"
 msgid "Underscore (_)"
 msgstr "Underscore (_)"
 
+#: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Undo"
 msgstr "Undo"
@@ -8226,6 +8315,10 @@ msgstr "Unread only"
 msgid "Unrecognized"
 msgstr "Unrecognized"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "unspecified"
+msgstr "unspecified"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Until it is built, the badges compare against your own library only."
 msgstr "Until it is built, the badges compare against your own library only."
@@ -8254,6 +8347,14 @@ msgstr "Update available"
 #: src/pages/SettingsPage.tsx
 msgid "Update available: {latestVersion}"
 msgstr "Update available: {latestVersion}"
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Updated. This title can appear in recommendations again."
+msgstr "Updated. This title can appear in recommendations again."
+
+#: src/components/discover/RecommendationFeedbackMenu.tsx
+msgid "Updated. This title stays out of recommendations."
+msgstr "Updated. This title stays out of recommendations."
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
