@@ -1066,6 +1066,11 @@ msgstr ""
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 МБ ОЗУ · лучшие результаты, рекомендуется"
 
+#. placeholder {0}: formatRating(item.rating)
+#: src/pages/discover/FeedbackLab.tsx
+msgid "★ {0} rated"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "★ {rating} rated"
 msgstr ""
@@ -1402,6 +1407,7 @@ msgstr "Добавить пользователя"
 msgid "Added"
 msgstr "Добавлено"
 
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Added by you"
 msgstr ""
@@ -3031,6 +3037,10 @@ msgstr ""
 msgid "Could not read your profile"
 msgstr "Не удалось прочитать ваш профиль"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "counts a little more than the rest"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Counts both switches: the per-series link and the global source toggle"
@@ -4167,6 +4177,10 @@ msgstr "От поставщика метаданных, а не от ваших 
 #, fuzzy
 msgid "From your library"
 msgstr "Из вашей библиотеки"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "From your shelf"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -5785,6 +5799,10 @@ msgstr "Требует проверки"
 msgid "Neutral"
 msgstr ""
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "neutral, seeds at shelf weight"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -7102,6 +7120,10 @@ msgstr "Получите последний код и пересоберите �
 msgid "Pull the new image and recreate the container to update."
 msgstr "Получите новый образ и пересоздайте контейнер для обновления."
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "pushes down titles close to it"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Pushes down titles close to this one"
 msgstr ""
@@ -7217,6 +7239,7 @@ msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -10355,6 +10378,10 @@ msgstr "Webhook"
 #, fuzzy
 msgid "Webhook URL"
 msgstr "URL webhook"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "weighted by how far you got"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

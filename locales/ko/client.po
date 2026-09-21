@@ -1066,6 +1066,11 @@ msgstr ""
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · 최상의 결과, 권장"
 
+#. placeholder {0}: formatRating(item.rating)
+#: src/pages/discover/FeedbackLab.tsx
+msgid "★ {0} rated"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "★ {rating} rated"
 msgstr ""
@@ -1402,6 +1407,7 @@ msgstr "사용자 추가"
 msgid "Added"
 msgstr "추가됨"
 
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Added by you"
 msgstr ""
@@ -3031,6 +3037,10 @@ msgstr ""
 msgid "Could not read your profile"
 msgstr "프로필을 읽을 수 없습니다"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "counts a little more than the rest"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Counts both switches: the per-series link and the global source toggle"
@@ -4167,6 +4177,10 @@ msgstr "메타데이터 제공자에서 가져온 태그, 내 태그 아님"
 #, fuzzy
 msgid "From your library"
 msgstr "내 라이브러리에서"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "From your shelf"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -5785,6 +5799,10 @@ msgstr "검토 필요"
 msgid "Neutral"
 msgstr ""
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "neutral, seeds at shelf weight"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -7102,6 +7120,10 @@ msgstr "최신 코드를 가져와 다시 빌드하여 업데이트하세요."
 msgid "Pull the new image and recreate the container to update."
 msgstr "새 이미지를 가져와 컨테이너를 다시 만들어 업데이트하세요."
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "pushes down titles close to it"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Pushes down titles close to this one"
 msgstr ""
@@ -7217,6 +7239,7 @@ msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -10355,6 +10378,10 @@ msgstr "웹훅"
 #, fuzzy
 msgid "Webhook URL"
 msgstr "웹훅 URL"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "weighted by how far you got"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

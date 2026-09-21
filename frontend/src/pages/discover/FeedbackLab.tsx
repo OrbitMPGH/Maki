@@ -6,7 +6,7 @@ import {
   IconBooks, IconEyeOff, IconThumbUp, IconBook, IconSparkles,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import type { AvoidanceLabel, FeedbackActivity } from '../../api/recommendationFeedback'
+import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
@@ -37,6 +37,42 @@ export function SignalsCard() {
   const [howItWorks, setHowItWorks] = useState(false)
 
   const recent = useMemo(() => (lab?.activity.items ?? []).slice(0, 5), [lab])
+  // A reader who has never thumbed anything still has a shelf: pad the card with those signals
+  // so it isn't empty, ranked rated > read > added and never duplicating a real feedback event.
+  const padded = useMemo(() => {
+    const need = 5 - recent.length
+    if (need <= 0) return []
+    const seen = new Set(recent.map((item) => item.mangaBakaId))
+    const sources = lab?.sources ?? []
+    const chosen: (typeof sources[number] & { kind: 'rated' | 'read' | 'added' })[] = []
+
+    const rated = sources
+      .filter((s) => !s.excluded && s.rating != null && !seen.has(s.mangaBakaId))
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    for (const s of rated) {
+      if (chosen.length >= need) break
+      chosen.push({ ...s, kind: 'rated' })
+      seen.add(s.mangaBakaId)
+    }
+
+    const read = sources.filter((s) => !s.excluded && s.isRead && !seen.has(s.mangaBakaId))
+    for (const s of read) {
+      if (chosen.length >= need) break
+      chosen.push({ ...s, kind: 'read' })
+      seen.add(s.mangaBakaId)
+    }
+
+    const added = sources
+      .filter((s) => !s.excluded && s.addedAtUtc != null && !seen.has(s.mangaBakaId))
+      .sort((a, b) => new Date(b.addedAtUtc ?? 0).getTime() - new Date(a.addedAtUtc ?? 0).getTime())
+    for (const s of added) {
+      if (chosen.length >= need) break
+      chosen.push({ ...s, kind: 'added' })
+      seen.add(s.mangaBakaId)
+    }
+
+    return chosen
+  }, [lab, recent])
   // Only the newest event for a title can be undone; the endpoint rejects a stale revision anyway,
   // so showing the button on an older row would only ever produce an error.
   const newestPerTitle = useMemo(() => {
@@ -211,7 +247,7 @@ export function SignalsCard() {
                   <Trans>Show all</Trans>
                 </Button>
               </Group>
-              {recent.length === 0 && (
+              {recent.length === 0 && padded.length === 0 && (
                 <Text size="sm" c="dimmed">
                   <Trans>
                     Thumbs, hide or dismiss a recommendation and it shows up here.
@@ -250,6 +286,25 @@ export function SignalsCard() {
                       )}
                     </Group>
                   </div>
+                ))}
+                {padded.length > 0 && (
+                  <Text size="xs" fw={600} c="dimmed" tt="uppercase" mt={recent.length === 0 ? 0 : 10}>
+                    <Trans>From your shelf</Trans>
+                  </Text>
+                )}
+                {padded.map((item) => (
+                  <Group key={item.mangaBakaId} gap="sm" wrap="nowrap" py={6}>
+                    <SeriesThumb url={item.coverUrl} alt={item.title ?? ''} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Text size="sm" fw={500} truncate>
+                        {item.title ?? untitled(item.mangaBakaId)}
+                      </Text>
+                      <Group gap={6} wrap="nowrap" mt={2}>
+                        <ShelfPill item={item} />
+                        <ShelfPhrase item={item} />
+                      </Group>
+                    </div>
+                  </Group>
                 ))}
               </Stack>
             </Card>
@@ -348,6 +403,35 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
     }
   })()
   return <Badge size="sm" variant="light" color={color} style={{ flexShrink: 0 }}>{label}</Badge>
+}
+
+type ShelfPadItem = FeedbackLabData['sources'][number] & { kind: 'rated' | 'read' | 'added' }
+
+function formatRating(rating: number): string {
+  return Number.isInteger(rating) ? String(rating) : rating.toFixed(1)
+}
+
+/** Pill + dimmed label for a shelf-derived row padding the recent-feedback card. */
+function useShelfPillInfo(item: ShelfPadItem) {
+  const { t } = useLingui()
+  if (item.kind === 'rated' && item.rating != null) {
+    const label = t`★ ${formatRating(item.rating)} rated`
+    if (item.rating >= 4.5) return { label, color: 'teal', phrase: t`counts toward your taste` }
+    if (item.rating <= 2) return { label, color: 'red', phrase: t`pushes down titles close to it` }
+    return { label, color: 'gray', phrase: t`neutral, seeds at shelf weight` }
+  }
+  if (item.kind === 'read') return { label: t`Read`, color: 'blue', phrase: t`weighted by how far you got` }
+  return { label: t`Added by you`, color: 'grape', phrase: t`counts a little more than the rest` }
+}
+
+function ShelfPill({ item }: { item: ShelfPadItem }) {
+  const { label, color } = useShelfPillInfo(item)
+  return <Badge size="sm" variant="light" color={color} style={{ flexShrink: 0 }}>{label}</Badge>
+}
+
+function ShelfPhrase({ item }: { item: ShelfPadItem }) {
+  const { phrase } = useShelfPillInfo(item)
+  return <Text size="xs" c="dimmed" truncate>{phrase}</Text>
 }
 
 /** The short "what it did" phrase beside an action's badge. */

@@ -877,6 +877,11 @@ msgstr "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · best results, recommended"
 
+#. placeholder {0}: formatRating(item.rating)
+#: src/pages/discover/FeedbackLab.tsx
+msgid "★ {0} rated"
+msgstr "★ {0} rated"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "★ {rating} rated"
 msgstr "★ {rating} rated"
@@ -1157,6 +1162,7 @@ msgstr "Add user"
 msgid "Added"
 msgstr "Added"
 
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Added by you"
 msgstr "Added by you"
@@ -2498,6 +2504,10 @@ msgstr "Could not load your signals: {loadError}"
 msgid "Could not read your profile"
 msgstr "Could not read your profile"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "counts a little more than the rest"
+msgstr "counts a little more than the rest"
+
 #: src/pages/LibraryPage.tsx
 msgid "Counts both switches: the per-series link and the global source toggle"
 msgstr "Counts both switches: the per-series link and the global source toggle"
@@ -3425,6 +3435,10 @@ msgstr "From the metadata provider, not your own tags"
 #: src/pages/DiscoverPage.tsx
 msgid "From your library"
 msgstr "From your library"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "From your shelf"
+msgstr "From your shelf"
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "From: {start}"
@@ -4747,6 +4761,10 @@ msgstr "Needs review"
 msgid "Neutral"
 msgstr "Neutral"
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "neutral, seeds at shelf weight"
+msgstr "neutral, seeds at shelf weight"
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -5820,6 +5838,10 @@ msgstr "Pull the latest code and rebuild to update."
 msgid "Pull the new image and recreate the container to update."
 msgstr "Pull the new image and recreate the container to update."
 
+#: src/pages/discover/FeedbackLab.tsx
+msgid "pushes down titles close to it"
+msgstr "pushes down titles close to it"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Pushes down titles close to this one"
 msgstr "Pushes down titles close to this one"
@@ -5916,6 +5938,7 @@ msgstr "read"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8485,6 +8508,10 @@ msgstr "Webhook"
 #: src/components/NotificationsSection.tsx
 msgid "Webhook URL"
 msgstr "Webhook URL"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "weighted by how far you got"
+msgstr "weighted by how far you got"
 
 #: src/components/SetupWizard.tsx
 msgid "Welcome"
