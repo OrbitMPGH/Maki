@@ -572,20 +572,6 @@ export function TasteTab() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="center" wrap="wrap">
-        <SegmentedControl
-          value={view}
-          onChange={(v) => setView(v as TasteView)}
-          data={[
-            { value: 'read', label: t`What you've read` },
-            { value: 'shelf', label: t`Everything you own` },
-          ]}
-        />
-        <Text c="dimmed" size="sm">
-          {summaryText}
-        </Text>
-      </Group>
-
       <SignalsCard />
 
       {behaviour && behaviour.chaptersRead > 0 && (
@@ -599,7 +585,21 @@ export function TasteTab() {
         icon={IconCompass}
         title={t`What you read, grouped`}
         count={insights?.groups.length ? insights.groups.length : undefined}
+        action={
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(v) => setView(v as TasteView)}
+            data={[
+              { value: 'read', label: t`What you've read` },
+              { value: 'shelf', label: t`Everything you own` },
+            ]}
+          />
+        }
       />
+      <Text c="dimmed" size="xs">
+        {summaryText}
+      </Text>
       {insights?.unavailable || insights?.groupsUnavailable ? (
         <Alert color="gray" icon={<IconAlertCircle size={16} />}>
           {insights.unavailable ?? insights.groupsUnavailable}

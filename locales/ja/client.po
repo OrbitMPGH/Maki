@@ -203,6 +203,11 @@ msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsuppor
 msgstr "{0, plural, other {サポート対象外の章を#件削除}}"
 
 #. placeholder {0}: entries.length
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0, plural, one {Show # show} other {Show # shows}}"
+msgstr ""
+
+#. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
@@ -1199,6 +1204,10 @@ msgstr "更新でシリーズに新しい章が見つかりました。"
 msgid "A refresh is already running"
 msgstr "更新はすでに実行中です"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
 msgstr ""
@@ -1214,10 +1223,6 @@ msgstr "シリーズに値のないトークンは何も表示せず、前後の
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A watched anime counts for as much as a manga you rated yourself."
-msgstr ""
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
 msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
@@ -4381,6 +4386,10 @@ msgstr "隠れた名作"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "hidden or dismissed"
+msgstr ""
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Hide list"
 msgstr ""
 
 #: src/components/SourceCompareModal.tsx

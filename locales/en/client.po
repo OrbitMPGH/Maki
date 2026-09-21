@@ -172,6 +172,11 @@ msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsuppor
 msgstr "{0, plural, one {Removed # unsupported chapter} other {Removed # unsupported chapters}}"
 
 #. placeholder {0}: entries.length
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0, plural, one {Show # show} other {Show # shows}}"
+msgstr "{0, plural, one {Show # show} other {Show # shows}}"
+
+#. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Show all #} other {Show all #}}"
@@ -988,6 +993,10 @@ msgstr "A refresh found new chapters for a series."
 msgid "A refresh is already running"
 msgstr "A refresh is already running"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
+msgstr "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
+
 #: src/pages/SettingsPage.tsx
 msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
 msgstr "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
@@ -1003,10 +1012,6 @@ msgstr "A token with no value for a given series renders as nothing, and the sur
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "A watched anime counts for as much as a manga you rated yourself."
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
-msgstr "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
 
 #: src/components/RecommendationModelCards.tsx
 msgid "about {hourPhrase} {restPhrase} left"
@@ -3601,6 +3606,10 @@ msgstr "hidden gems"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "hidden or dismissed"
 msgstr "hidden or dismissed"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Hide list"
+msgstr "Hide list"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Hide source names"

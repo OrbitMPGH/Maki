@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Badge, Button, Card, Grid, Group, Loader, Paper, SimpleGrid, Stack, Text, Title, Tooltip,
+  Alert, Badge, Button, Collapse, Group, Loader, Paper, SimpleGrid, Stack, Text, Tooltip,
 } from '@mantine/core'
 import {
-  IconBooks, IconEyeOff, IconThumbUp, IconBook,
+  IconBooks, IconEyeOff, IconThumbUp, IconBook, IconSparkles,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
+import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate, formatTime } from '../../format'
@@ -33,6 +34,7 @@ export function SignalsCard() {
   const loadError = error ? String(error) : ''
   const [manage, setManage] = useState(false)
   const [actionError, setActionError] = useState('')
+  const [howItWorks, setHowItWorks] = useState(false)
 
   const recent = useMemo(() => (lab?.activity.items ?? []).slice(0, 5), [lab])
   // Only the newest event for a title can be undone; the endpoint rejects a stale revision anyway,
@@ -74,24 +76,66 @@ export function SignalsCard() {
   }
 
   return (
-    <Card withBorder radius="lg" padding="lg">
+    <>
+      <SectionHeader
+        icon={IconSparkles}
+        title={t`What shapes your recommendations`}
+        action={
+          <Group gap="xs">
+            <Button variant="subtle" size="compact-sm" onClick={() => setHowItWorks((v) => !v)}>
+              <Trans>How signals work</Trans>
+            </Button>
+            <Button variant="outline" size="compact-sm" onClick={() => setManage(true)}>
+              <Trans>Manage signals</Trans>
+            </Button>
+          </Group>
+        }
+      />
       <Stack gap="md">
-        <Group justify="space-between" align="flex-start" wrap="wrap">
-          <div style={{ minWidth: 0 }}>
-            <Title order={3}>
-              <Trans>What shapes your recommendations</Trans>
-            </Title>
-            <Text size="sm" c="dimmed">
-              <Trans>
-                Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch
-                one title each.
-              </Trans>
-            </Text>
-          </div>
-          <Button variant="outline" onClick={() => setManage(true)}>
-            <Trans>Manage signals</Trans>
-          </Button>
-        </Group>
+        <Text size="sm" c="dimmed">
+          <Trans>
+            Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch
+            one title each.
+          </Trans>
+        </Text>
+
+        <Collapse expanded={howItWorks}>
+          <Paper withBorder radius="md" p="md">
+            <Stack gap="sm">
+              <Text size="sm" fw={600}>
+                <Trans>How signals work</Trans>
+              </Text>
+              <Text size="xs" c="dimmed">
+                <Trans>
+                  <b>Thumbs up</b> counts toward your taste. Similar titles rank higher.
+                </Trans>
+              </Text>
+              <Text size="xs" c="dimmed">
+                <Trans>
+                  <b>Thumbs down</b> and ratings of 4 or under push down titles that are
+                  closer to what you rejected than to what you kept. What they share shows up
+                  above once three or more agree.
+                </Trans>
+              </Text>
+              <Text size="xs" c="dimmed">
+                <Trans>
+                  <b>Hide and dismiss</b> only affect that one title.
+                </Trans>
+              </Text>
+              <Text size="xs" c="dimmed">
+                <Trans>
+                  <b>Seen elsewhere</b> stops a title being recommended without changing taste.
+                </Trans>
+              </Text>
+              <Text size="xs" c="dimmed">
+                <Trans>
+                  <b>Excluded from taste</b> keeps a shelf title out of the ranking. Reading
+                  history is untouched.
+                </Trans>
+              </Text>
+            </Stack>
+          </Paper>
+        </Collapse>
 
         {isLoading && <Loader size="sm" />}
         {error && (
@@ -158,104 +202,64 @@ export function SignalsCard() {
               </Text>
             )}
 
-            <Grid gap="md">
-              <Grid.Col span={{ base: 12, md: 7 }}>
-                <Group justify="space-between" align="center" mb={4}>
-                  <Text size="sm" fw={600}>
-                    <Trans>Recent feedback</Trans>
-                  </Text>
-                  <Button size="xs" variant="subtle" onClick={() => setManage(true)}>
-                    <Trans>Show all</Trans>
-                  </Button>
-                </Group>
-                {recent.length === 0 && (
-                  <Text size="sm" c="dimmed">
-                    <Trans>
-                      Thumbs, hide or dismiss a recommendation and it shows up here.
-                    </Trans>
-                  </Text>
-                )}
-                <Stack gap={2}>
-                  {recent.map((item, index) => (
-                    <div key={item.id}>
-                      {dayOf(item) !== dayOf(recent[index - 1]) && (
-                        <Text size="xs" fw={600} c="dimmed" tt="uppercase" mt={index === 0 ? 0 : 10}>
-                          <DayLabel value={item.occurredAtUtc} />
+            <div>
+              <Group justify="space-between" align="center" mb={4}>
+                <Text size="sm" fw={600}>
+                  <Trans>Recent feedback</Trans>
+                </Text>
+                <Button size="xs" variant="subtle" onClick={() => setManage(true)}>
+                  <Trans>Show all</Trans>
+                </Button>
+              </Group>
+              {recent.length === 0 && (
+                <Text size="sm" c="dimmed">
+                  <Trans>
+                    Thumbs, hide or dismiss a recommendation and it shows up here.
+                  </Trans>
+                </Text>
+              )}
+              <Stack gap={2}>
+                {recent.map((item, index) => (
+                  <div key={item.id}>
+                    {dayOf(item) !== dayOf(recent[index - 1]) && (
+                      <Text size="xs" fw={600} c="dimmed" tt="uppercase" mt={index === 0 ? 0 : 10}>
+                        <DayLabel value={item.occurredAtUtc} />
+                      </Text>
+                    )}
+                    <Group gap="sm" wrap="nowrap" py={6}>
+                      <SeriesThumb url={item.coverUrl} alt={item.title ?? ''} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Text size="sm" fw={500} truncate>
+                          {item.title ?? untitled(item.mangaBakaId)}
                         </Text>
-                      )}
-                      <Group gap="sm" wrap="nowrap" py={6}>
-                        <SeriesThumb url={item.coverUrl} alt={item.title ?? ''} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <Text size="sm" fw={500} truncate>
-                            {item.title ?? untitled(item.mangaBakaId)}
+                        <Group gap={6} wrap="nowrap" mt={2}>
+                          <ActionPill item={item} />
+                          <Text size="xs" c="dimmed" truncate>
+                            {[phrase(item.action), formatTime(item.occurredAtUtc)]
+                              .filter(Boolean).join(' · ')}
                           </Text>
-                          <Group gap={6} wrap="nowrap" mt={2}>
-                            <ActionPill item={item} />
-                            <Text size="xs" c="dimmed" truncate>
-                              {[phrase(item.action), formatTime(item.occurredAtUtc)]
-                                .filter(Boolean).join(' · ')}
-                            </Text>
-                          </Group>
-                        </div>
-                        {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && (
-                          <Button
-                            size="xs" variant="subtle" loading={undo.isPending}
-                            onClick={() => void undoItem(item)}
-                          >
-                            <Trans>Undo</Trans>
-                          </Button>
-                        )}
-                      </Group>
-                    </div>
-                  ))}
-                </Stack>
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, md: 5 }}>
-                <Paper withBorder radius="md" p="md" h="100%">
-                  <Stack gap="sm">
-                    <Text size="sm" fw={600}>
-                      <Trans>How signals work</Trans>
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      <Trans>
-                        <b>Thumbs up</b> counts toward your taste. Similar titles rank higher.
-                      </Trans>
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      <Trans>
-                        <b>Thumbs down</b> and ratings of 4 or under push down titles that are
-                        closer to what you rejected than to what you kept. What they share shows up
-                        above once three or more agree.
-                      </Trans>
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      <Trans>
-                        <b>Hide and dismiss</b> only affect that one title.
-                      </Trans>
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      <Trans>
-                        <b>Seen elsewhere</b> stops a title being recommended without changing taste.
-                      </Trans>
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      <Trans>
-                        <b>Excluded from taste</b> keeps a shelf title out of the ranking. Reading
-                        history is untouched.
-                      </Trans>
-                    </Text>
-                  </Stack>
-                </Paper>
-              </Grid.Col>
-            </Grid>
+                        </Group>
+                      </div>
+                      {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && (
+                        <Button
+                          size="xs" variant="subtle" loading={undo.isPending}
+                          onClick={() => void undoItem(item)}
+                        >
+                          <Trans>Undo</Trans>
+                        </Button>
+                      )}
+                    </Group>
+                  </div>
+                ))}
+              </Stack>
+            </div>
 
             {lab.capabilities.animeSignals && <AnimeSignalsSection />}
           </>
         )}
       </Stack>
       <ManageSignalsModal opened={manage} onClose={() => setManage(false)} />
-    </Card>
+    </>
   )
 }
 

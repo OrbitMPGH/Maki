@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Badge, Button, Chip, Group, Paper, SegmentedControl, Stack, Switch, Text,
+  Alert, Badge, Button, Chip, Collapse, Group, Paper, SegmentedControl, Stack, Switch, Text, Tooltip,
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -27,6 +27,7 @@ export function AnimeSignalsSection() {
   const [toggleError, setToggleError] = useState('')
   const [syncError, setSyncError] = useState('')
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
+  const [listOpen, setListOpen] = useState(false)
 
   const counts = data?.counts
 
@@ -79,15 +80,13 @@ export function AnimeSignalsSection() {
   return (
     <Paper withBorder radius="md" p="md">
       <Stack gap="sm">
-        <Group justify="space-between" align="flex-start" wrap="wrap">
+        <Group justify="space-between" align="center" wrap="wrap">
           <div>
             <Text fw={600}><Trans>Anime you've watched</Trans></Text>
             <Text size="xs" c="dimmed" maw={520}>
               <Trans>
-                A watched anime with a good score gently steers recommendations toward similar
-                manga. A low score or a dropped show pushes down titles close to it, the same way a
-                thumbs down does. A show listed on both your trackers counts once, and a
-                franchise's seasons are averaged into one score.
+                A show you scored well nudges recommendations toward similar manga. A low score or
+                a dropped show pushes them away.
               </Trans>
             </Text>
           </div>
@@ -112,12 +111,19 @@ export function AnimeSignalsSection() {
 
         {data.enabled && !noTracker && (
           <>
-            <AnimeSignalStrengthControl
-              value={data.strength}
-              topSeedWeight={data.strengths.find((s) => s.value === data.strength)?.topSeedWeight}
-              pending={setStrength.isPending}
-              onChange={(next) => void changeStrength(next)}
-            />
+            <Group justify="space-between" align="center" wrap="wrap">
+              <AnimeSignalStrengthControl
+                value={data.strength}
+                topSeedWeight={data.strengths.find((s) => s.value === data.strength)?.topSeedWeight}
+                pending={setStrength.isPending}
+                onChange={(next) => void changeStrength(next)}
+              />
+              <Button size="xs" variant="outline" loading={data.syncing} onClick={() => void runSync()}>
+                <Trans>Sync now</Trans>
+              </Button>
+            </Group>
+
+            {syncError && <Alert color="red">{syncError}</Alert>}
 
             <Group justify="space-between" align="center" wrap="wrap">
               <Text size="xs" c="dimmed">
@@ -134,31 +140,35 @@ export function AnimeSignalsSection() {
                   </>
                 )}
               </Text>
-              <Button size="xs" variant="outline" loading={data.syncing} onClick={() => void runSync()}>
-                <Trans>Sync now</Trans>
-              </Button>
+              {entries.length > 0 && (
+                <Button size="xs" variant="subtle" onClick={() => setListOpen((v) => !v)}>
+                  {listOpen
+                    ? <Trans>Hide list</Trans>
+                    : <Plural value={entries.length} one="Show # show" other="Show # shows" />}
+                </Button>
+              )}
             </Group>
 
-            {syncError && <Alert color="red">{syncError}</Alert>}
-
             {entries.length > 0 && (
-              <>
-                <Chip.Group multiple={false} value={roleFilter} onChange={(value) => setRoleFilter(value as RoleFilter)}>
-                  <Group gap={6} wrap="wrap">
-                    {roles.map((role) => (
-                      <Chip key={role.value} value={role.value} size="xs" variant="outline">
-                        {role.label} · {role.count}
-                      </Chip>
-                    ))}
-                  </Group>
-                </Chip.Group>
+              <Collapse expanded={listOpen}>
+                <Stack gap="sm">
+                  <Chip.Group multiple={false} value={roleFilter} onChange={(value) => setRoleFilter(value as RoleFilter)}>
+                    <Group gap={6} wrap="wrap">
+                      {roles.map((role) => (
+                        <Chip key={role.value} value={role.value} size="xs" variant="outline">
+                          {role.label} · {role.count}
+                        </Chip>
+                      ))}
+                    </Group>
+                  </Chip.Group>
 
-                <Stack gap={4}>
-                  {filtered.slice(0, 40).map((entry) => (
-                    <AnimeSignalRow key={entry.key} entry={entry} />
-                  ))}
+                  <Stack gap={4}>
+                    {filtered.slice(0, 40).map((entry) => (
+                      <AnimeSignalRow key={entry.key} entry={entry} />
+                    ))}
+                  </Stack>
                 </Stack>
-              </>
+              </Collapse>
             )}
           </>
         )}
@@ -200,10 +210,22 @@ function AnimeSignalStrengthControl({
     }
   })()
 
+  const tooltipLabel = (
+    <>
+      {hint}
+      {topSeedWeight !== undefined && (
+        <>
+          {' '}
+          <Trans>A 10/10 anime seeds at {topSeedWeight.toFixed(2)}, against 1.00 for an unrated book on your shelf.</Trans>
+        </>
+      )}
+    </>
+  )
+
   return (
-    <Stack gap={4}>
-      <Group gap="sm" wrap="wrap" align="center">
-        <Text size="xs" fw={500}><Trans>How much they count</Trans></Text>
+    <Group gap="sm" wrap="wrap" align="center">
+      <Text size="xs" fw={500}><Trans>How much they count</Trans></Text>
+      <Tooltip label={tooltipLabel} multiline w={300}>
         <SegmentedControl
           size="xs"
           value={value}
@@ -215,17 +237,8 @@ function AnimeSignalStrengthControl({
             { value: 'full', label: t`Full` },
           ]}
         />
-      </Group>
-      <Text size="xs" c="dimmed" maw={560}>
-        {hint}
-        {topSeedWeight !== undefined && (
-          <>
-            {' '}
-            <Trans>A 10/10 anime seeds at {topSeedWeight.toFixed(2)}, against 1.00 for an unrated book on your shelf.</Trans>
-          </>
-        )}
-      </Text>
-    </Stack>
+      </Tooltip>
+    </Group>
   )
 }
 
