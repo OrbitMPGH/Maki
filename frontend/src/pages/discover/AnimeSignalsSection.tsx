@@ -29,7 +29,6 @@ export function AnimeSignalsSection() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
 
   const counts = data?.counts
-  const unmatched = counts ? counts.total - counts.matched : 0
 
   const filtered = useMemo(() => {
     const entries = data?.entries ?? []
@@ -66,12 +65,15 @@ export function AnimeSignalsSection() {
 
   const noTracker = data.services.length === 0
 
+  // Straight off the payload. These used to be derived here by subtracting the roles from the
+  // matched count, which made the unmatched chip report every neutral entry as well.
   const roles: { value: RoleFilter; label: string; count: number }[] = [
     { value: 'all', label: t`All`, count: counts?.total ?? 0 },
     { value: 'positive', label: t`Positive`, count: counts?.positive ?? 0 },
     { value: 'avoided', label: t`Avoided`, count: counts?.avoided ?? 0 },
-    { value: 'neutral', label: t`Neutral`, count: (counts?.matched ?? 0) - (counts?.positive ?? 0) - (counts?.avoided ?? 0) },
-    { value: 'unmatched', label: t`Unmatched`, count: counts?.ignored ?? unmatched },
+    { value: 'neutral', label: t`Neutral`, count: counts?.neutral ?? 0 },
+    { value: 'superseded', label: t`Already yours`, count: counts?.superseded ?? 0 },
+    { value: 'unmatched', label: t`Unmatched`, count: counts?.unmatched ?? 0 },
   ]
 
   return (
@@ -127,7 +129,7 @@ export function AnimeSignalsSection() {
                     {' · '}
                     <Trans>
                       {counts.matched} of {counts.total} matched, {counts.positive} positive,{' '}
-                      {counts.avoided} avoided
+                      {counts.avoided} avoided, {counts.superseded} already yours
                     </Trans>
                   </>
                 )}
@@ -248,7 +250,19 @@ function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
       case 'positive': return { label: t`Positive`, color: 'teal' }
       case 'avoided': return { label: t`Avoided`, color: 'red' }
       case 'neutral': return { label: t`Neutral`, color: 'gray' }
+      case 'superseded': return { label: t`Already yours`, color: 'gray' }
       default: return { label: t`Unmatched`, color: 'gray' }
+    }
+  })()
+
+  // Why this row counts for nothing, said plainly. Without it a manga the reader rated themselves
+  // sits in the list looking exactly like one that is steering recommendations.
+  const supersededNote = ((): string | null => {
+    switch (entry.supersededBy) {
+      case 'library': return t`Already on your shelf, so your own reading counts instead`
+      case 'feedback': return t`You rated this one yourself, so the anime is not counted again`
+      case 'ignored': return t`You excluded this title from recommendations`
+      default: return null
     }
   })()
 
@@ -269,7 +283,7 @@ function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
           )}
         </Group>
         <Text size="xs" c="dimmed" truncate>
-          {entry.mangaTitle ?? t`No manga match`}
+          {supersededNote ?? entry.mangaTitle ?? t`No manga match`}
         </Text>
       </div>
       {entry.services.map((service) => (

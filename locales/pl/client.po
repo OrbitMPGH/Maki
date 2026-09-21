@@ -236,8 +236,9 @@ msgstr "{0, plural, one {Oznaczono jako chciane: # rozdział} few {Oznaczono jak
 #. placeholder {1}: counts.total
 #. placeholder {2}: counts.positive
 #. placeholder {3}: counts.avoided
+#. placeholder {4}: counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "{0} of {1} matched, {2} positive, {3} avoided"
+msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -1550,6 +1551,10 @@ msgstr "cały czas"
 msgid "All time"
 msgstr "Cały czas"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already on your shelf, so your own reading counts instead"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Already running"
@@ -1559,6 +1564,10 @@ msgstr "Już uruchomione"
 #, fuzzy
 msgid "Already up to date"
 msgstr "Już aktualne"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already yours"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -10026,7 +10035,7 @@ msgid "Use"
 msgstr "Użyj"
 
 #: src/components/TrackerSyncControls.tsx
-msgid "Use anime for taste"
+msgid "Use anime for recommendation taste"
 msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
@@ -10296,10 +10305,6 @@ msgstr "Chciane dla {spanLabel}: {wantedCount} z {total} rozdziałów"
 msgid "Watched"
 msgstr "Obejrzane"
 
-#: src/components/TrackerSyncControls.tsx
-msgid "Watched anime from this tracker seeds recommendations"
-msgstr ""
-
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"
 msgstr ""
@@ -10548,6 +10553,10 @@ msgstr "Rezygnujesz przy"
 msgid "You cannot remove your own administrator permission. Promote another account first, then edit this one from there."
 msgstr "Nie możesz usunąć własnego uprawnienia administratora. Najpierw awansuj inne konto, a następnie edytuj to stamtąd."
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You excluded this title from recommendations"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "You finish"
@@ -10578,6 +10587,10 @@ msgstr "Może Ci się spodobać"
 #, fuzzy
 msgid "You put down"
 msgstr "Odkładasz"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You rated this one yourself, so the anime is not counted again"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "You seem to avoid"

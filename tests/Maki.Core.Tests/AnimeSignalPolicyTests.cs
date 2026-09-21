@@ -136,6 +136,31 @@ public class AnimeSignalPolicyTests
         }
     }
 
+    /// <summary>
+    /// The rule that stops one series counting twice, and the order it reports reasons in. A title
+    /// can easily be on the shelf and thumbed and excluded at once; the reason shown has to be a
+    /// stable one rather than whichever set happened to be checked first.
+    /// </summary>
+    [Fact]
+    public void A_readers_own_evidence_replaces_their_watch_history()
+    {
+        var precedence = new AnimeSignalPrecedence(
+            Library: new HashSet<long> { 1, 9 },
+            Opinion: new HashSet<long> { 2, 9 },
+            Ignored: new HashSet<long> { 3, 9 });
+
+        Assert.Equal(AnimeSupersededBy.Library, precedence.Reason(1));
+        Assert.Equal(AnimeSupersededBy.Feedback, precedence.Reason(2));
+        Assert.Equal(AnimeSupersededBy.Ignored, precedence.Reason(3));
+        // On the shelf and thumbed and excluded: the shelf is the one to say, since it is the
+        // reader's own reading rather than a note they left about recommendations.
+        Assert.Equal(AnimeSupersededBy.Library, precedence.Reason(9));
+
+        Assert.All(new long[] { 1, 2, 3, 9 }, id => Assert.True(precedence.Supersedes(id)));
+        Assert.Equal(AnimeSupersededBy.None, precedence.Reason(4));
+        Assert.False(precedence.Supersedes(4));
+    }
+
     [Theory]
     [InlineData("subtle", AnimeSignalStrength.Subtle)]
     [InlineData("Balanced", AnimeSignalStrength.Balanced)]

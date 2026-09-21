@@ -61,6 +61,21 @@ public class AnimeSignalsController(
             .ThenBy(x => x.Title, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
+        // The reader's own evidence, which replaces a signal rather than adding to it. Asked here
+        // with its own queries rather than by building a whole SeedSnapshot, which would read the
+        // library, the overrides and every progress row to answer a question about three id sets -
+        // but through the same type the seed builder applies, so the badge cannot claim a title is
+        // steering recommendations while the recommender is skipping it.
+        var precedence = new AnimeSignalPrecedence(
+            (await db.Series.AsNoTracking().Where(s => s.MangaBakaId != null)
+                .Select(s => (long)s.MangaBakaId!.Value).Distinct().ToListAsync(ct)).ToHashSet(),
+            new HashSet<long>(
+                (await RecommendationFeedbackService.LikedAsync(db, user.UserId, ct))
+                .Concat(await RecommendationFeedbackService.DislikedAsync(db, user.UserId, ct))),
+            (await db.RecommendationSignalOverrides.AsNoTracking()
+                .Where(x => x.UserId == user.UserId && x.IgnoreAsSeed)
+                .Select(x => x.ProviderId).ToListAsync(ct)).ToHashSet());
+
         // One dump read for every matched row, rather than one per entry: the panel lists a whole
         // watch history and a point query each would be thousands of opens.
         var mangaTitles = new Dictionary<long, string>();
@@ -80,14 +95,23 @@ public class AnimeSignalsController(
 
         var entries = rows.Select(row =>
         {
+            var supersededBy = row.MangaBakaId is { } matched
+                ? precedence.Reason(matched)
+                : AnimeSupersededBy.None;
+            // Superseded outranks the signal's own role, because it is the one the reader can act
+            // on: "this says nothing, you already told us about the book yourself" is the answer to
+            // the question a duplicate-looking row raises. The role underneath is still sent, so
+            // the row can say what it would have counted as.
             var role = row.MangaBakaId is null
                 ? "unmatched"
-                : row.Role switch
-                {
-                    AnimeSignalRole.Positive => "positive",
-                    AnimeSignalRole.Avoided => "avoided",
-                    _ => "neutral",
-                };
+                : supersededBy != AnimeSupersededBy.None
+                    ? "superseded"
+                    : row.Role switch
+                    {
+                        AnimeSignalRole.Positive => "positive",
+                        AnimeSignalRole.Avoided => "avoided",
+                        _ => "neutral",
+                    };
             return new
             {
                 key = row.Key,
@@ -99,6 +123,13 @@ public class AnimeSignalsController(
                 mangaBakaId = row.MangaBakaId,
                 mangaTitle = row.MangaBakaId is { } id ? mangaTitles.GetValueOrDefault(id) : null,
                 role,
+                supersededBy = supersededBy switch
+                {
+                    AnimeSupersededBy.Library => "library",
+                    AnimeSupersededBy.Feedback => "feedback",
+                    AnimeSupersededBy.Ignored => "ignored",
+                    _ => null,
+                },
             };
         }).ToList();
 
@@ -118,13 +149,18 @@ public class AnimeSignalsController(
                 ratingShare = AnimeSignalPolicy.RatingShareOf(level),
                 topSeedWeight = AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10, level),
             }),
+            // One count per role and nothing derived, so the client never has to subtract its way
+            // to a number. It used to send `ignored` for neutral-plus-unmatched and the panel read
+            // it as the unmatched chip, which over-counted that chip by every neutral entry.
             counts = new
             {
                 total = entries.Count,
                 matched = entries.Count(x => x.role != "unmatched"),
                 positive = entries.Count(x => x.role == "positive"),
                 avoided = entries.Count(x => x.role == "avoided"),
-                ignored = entries.Count(x => x.role is "neutral" or "unmatched"),
+                neutral = entries.Count(x => x.role == "neutral"),
+                superseded = entries.Count(x => x.role == "superseded"),
+                unmatched = entries.Count(x => x.role == "unmatched"),
             },
             entries,
         });

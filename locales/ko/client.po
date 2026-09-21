@@ -236,8 +236,9 @@ msgstr "{0, plural, other {원하는 챕터 #개}}"
 #. placeholder {1}: counts.total
 #. placeholder {2}: counts.positive
 #. placeholder {3}: counts.avoided
+#. placeholder {4}: counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "{0} of {1} matched, {2} positive, {3} avoided"
+msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -1550,6 +1551,10 @@ msgstr "전체 기간"
 msgid "All time"
 msgstr "전체 기간"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already on your shelf, so your own reading counts instead"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Already running"
@@ -1559,6 +1564,10 @@ msgstr "이미 실행 중"
 #, fuzzy
 msgid "Already up to date"
 msgstr "이미 최신 상태"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already yours"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -10026,7 +10035,7 @@ msgid "Use"
 msgstr "사용"
 
 #: src/components/TrackerSyncControls.tsx
-msgid "Use anime for taste"
+msgid "Use anime for recommendation taste"
 msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
@@ -10296,10 +10305,6 @@ msgstr "{spanLabel}에 대해 원하는 챕터: {total}개 중 {wantedCount}개"
 msgid "Watched"
 msgstr "시청함"
 
-#: src/components/TrackerSyncControls.tsx
-msgid "Watched anime from this tracker seeds recommendations"
-msgstr ""
-
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"
 msgstr ""
@@ -10548,6 +10553,10 @@ msgstr "중단하는 시점은 대략"
 msgid "You cannot remove your own administrator permission. Promote another account first, then edit this one from there."
 msgstr "자신의 관리자 권한은 제거할 수 없습니다. 먼저 다른 계정을 관리자로 승격한 다음 그 계정에서 이 계정을 편집하세요."
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You excluded this title from recommendations"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "You finish"
@@ -10578,6 +10587,10 @@ msgstr "추천 작품"
 #, fuzzy
 msgid "You put down"
 msgstr "내려놓은 항목"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You rated this one yourself, so the anime is not counted again"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "You seem to avoid"

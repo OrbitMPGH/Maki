@@ -200,9 +200,10 @@ msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 #. placeholder {1}: counts.total
 #. placeholder {2}: counts.positive
 #. placeholder {3}: counts.avoided
+#. placeholder {4}: counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "{0} of {1} matched, {2} positive, {3} avoided"
-msgstr "{0} of {1} matched, {2} positive, {3} avoided"
+msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
+msgstr "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -1278,6 +1279,10 @@ msgstr "all time"
 msgid "All time"
 msgstr "All time"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already on your shelf, so your own reading counts instead"
+msgstr "Already on your shelf, so your own reading counts instead"
+
 #: src/pages/SettingsPage.tsx
 msgid "Already running"
 msgstr "Already running"
@@ -1285,6 +1290,10 @@ msgstr "Already running"
 #: src/pages/SettingsPage.tsx
 msgid "Already up to date"
 msgstr "Already up to date"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already yours"
+msgstr "Already yours"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Also delete detached files from disk"
@@ -8207,8 +8216,8 @@ msgid "Use"
 msgstr "Use"
 
 #: src/components/TrackerSyncControls.tsx
-msgid "Use anime for taste"
-msgstr "Use anime for taste"
+msgid "Use anime for recommendation taste"
+msgstr "Use anime for recommendation taste"
 
 #: src/pages/SetupAccountPage.tsx
 msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
@@ -8428,10 +8437,6 @@ msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgid "Watched"
 msgstr "Watched"
 
-#: src/components/TrackerSyncControls.tsx
-msgid "Watched anime from this tracker seeds recommendations"
-msgstr "Watched anime from this tracker seeds recommendations"
-
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"
 msgstr "Watching"
@@ -8636,6 +8641,10 @@ msgstr "You bail around"
 msgid "You cannot remove your own administrator permission. Promote another account first, then edit this one from there."
 msgstr "You cannot remove your own administrator permission. Promote another account first, then edit this one from there."
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You excluded this title from recommendations"
+msgstr "You excluded this title from recommendations"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "You finish"
 msgstr "You finish"
@@ -8660,6 +8669,10 @@ msgstr "You might like"
 #: src/pages/discover/TasteTab.tsx
 msgid "You put down"
 msgstr "You put down"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You rated this one yourself, so the anime is not counted again"
+msgstr "You rated this one yourself, so the anime is not counted again"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "You seem to avoid"

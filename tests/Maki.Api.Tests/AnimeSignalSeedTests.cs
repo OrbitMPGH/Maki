@@ -283,6 +283,84 @@ public class AnimeSignalSeedTests : IDisposable
         Assert.Equal(RecommendationFeedbackPolicy.AvoidStrength(2), snapshot.Avoided[900], 8);
     }
 
+    /// <summary>
+    /// The double-count the exclusion exists to prevent, on the side the test above cannot show:
+    /// there the rating was low, so the title left the seeds through the avoid channel and would
+    /// have looked excluded either way. A rated series and its adaptation both agreeing is where a
+    /// missing exclusion would actually inflate something, and the weight has to come out at
+    /// exactly what the rating alone says.
+    /// </summary>
+    [Theory]
+    [InlineData(AnimeSignalStrength.Balanced)]
+    [InlineData(AnimeSignalStrength.Full)]
+    public async Task A_rated_manga_takes_nothing_from_its_own_adaptation(AnimeSignalStrength level)
+    {
+        var seriesId = _fixture.SeedSeries("Rated", configure: s => s.MangaBakaId = 930);
+        OptIn();
+        SetStrength(level);
+        Signal(930, AnimeWatchStatus.Completed, 10);
+
+        using (var db = _fixture.NewContext(1))
+        {
+            db.UserSeriesStates.Add(new UserSeriesState { UserId = 1, SeriesId = seriesId, Rating = 9 });
+            await db.SaveChangesAsync();
+        }
+
+        using var read = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(read, new TestCurrentUser(1));
+
+        // 9 / 5.0, the rating on its own. At Full a 10/10 anime would seed 2.0 by itself, so an
+        // anime signal leaking through would move this whatever way the two were combined.
+        Assert.Equal(1.8, snapshot.Effective.Weights[930], 8);
+        Assert.DoesNotContain(930L, snapshot.Avoided.Keys);
+        // One entry, not the title twice: EligibleIds is a list, and the anime path appends to it.
+        Assert.Single(snapshot.Effective.EligibleIds.Where(id => id == 930));
+    }
+
+    /// <summary>
+    /// Owning it is enough on its own. A shelf row the reader never rated still carries their
+    /// reading history, which is better evidence about the book than an adaptation of it.
+    /// </summary>
+    [Fact]
+    public async Task An_unrated_shelf_row_also_shuts_its_adaptation_out()
+    {
+        _fixture.SeedSeries("Owned", configure: s => s.MangaBakaId = 940);
+        OptIn();
+        Signal(940, AnimeWatchStatus.Completed, 10);
+
+        using var read = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(read, new TestCurrentUser(1));
+
+        Assert.False(snapshot.Effective.Weights.ContainsKey(940));
+        Assert.DoesNotContain(940L, snapshot.Avoided.Keys);
+    }
+
+    /// <summary>
+    /// The same guard on the negative side. A reader who rated the manga 9 and dropped the anime
+    /// has said two different things about two different works, and only the one about the book
+    /// counts: without the exclusion the drop would push down everything resembling a series they
+    /// told us they liked.
+    /// </summary>
+    [Fact]
+    public async Task A_dropped_adaptation_cannot_push_down_a_manga_the_reader_rated_highly()
+    {
+        var seriesId = _fixture.SeedSeries("Loved book", configure: s => s.MangaBakaId = 950);
+        OptIn();
+        Signal(950, AnimeWatchStatus.Dropped, 2);
+
+        using (var db = _fixture.NewContext(1))
+        {
+            db.UserSeriesStates.Add(new UserSeriesState { UserId = 1, SeriesId = seriesId, Rating = 9 });
+            await db.SaveChangesAsync();
+        }
+
+        using var read = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(read, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(950L, snapshot.Avoided.Keys);
+        Assert.Equal(1.8, snapshot.Effective.Weights[950], 8);
+    }
+
     [Fact]
     public async Task An_explicit_thumbs_down_wins_over_a_loved_adaptation()
     {

@@ -236,8 +236,9 @@ msgstr "{0, plural, one {# hoofdstuk gewenst} other {# hoofdstukken gewenst}}"
 #. placeholder {1}: counts.total
 #. placeholder {2}: counts.positive
 #. placeholder {3}: counts.avoided
+#. placeholder {4}: counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "{0} of {1} matched, {2} positive, {3} avoided"
+msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -1550,6 +1551,10 @@ msgstr "altijd"
 msgid "All time"
 msgstr "Alle tijd"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already on your shelf, so your own reading counts instead"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Already running"
@@ -1559,6 +1564,10 @@ msgstr "Draait al"
 #, fuzzy
 msgid "Already up to date"
 msgstr "Al up-to-date"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Already yours"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -10026,7 +10035,7 @@ msgid "Use"
 msgstr "Gebruiken"
 
 #: src/components/TrackerSyncControls.tsx
-msgid "Use anime for taste"
+msgid "Use anime for recommendation taste"
 msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
@@ -10296,10 +10305,6 @@ msgstr "Gewenst voor {spanLabel}: {wantedCount} van {total} hoofdstukken"
 msgid "Watched"
 msgstr "Bekeken"
 
-#: src/components/TrackerSyncControls.tsx
-msgid "Watched anime from this tracker seeds recommendations"
-msgstr ""
-
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"
 msgstr ""
@@ -10548,6 +10553,10 @@ msgstr "Je haakt af bij"
 msgid "You cannot remove your own administrator permission. Promote another account first, then edit this one from there."
 msgstr "Je kunt je eigen beheerdersmachtiging niet verwijderen. Promoveer eerst een ander account en bewerk dit account daarna vanaf daar."
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You excluded this title from recommendations"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "You finish"
@@ -10578,6 +10587,10 @@ msgstr "Misschien vind je dit leuk"
 #, fuzzy
 msgid "You put down"
 msgstr "Je legt neer"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "You rated this one yourself, so the anime is not counted again"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "You seem to avoid"

@@ -63,8 +63,7 @@ export function TrackerSyncControls({
         {animeList && (
           <Switch
             size="xs"
-            label={t`Use anime for taste`}
-            description={t`Watched anime from this tracker seeds recommendations`}
+            label={t`Use anime for recommendation taste`}
             checked={anime}
             disabled={prefs.isPending || !connection}
             onChange={(e) => setPref({ anime: e.currentTarget.checked })}

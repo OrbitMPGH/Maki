@@ -216,8 +216,12 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         if (await AnimeSignalsEnabledAsync(db, scope.UserId, ct))
         {
             var strength = await AnimeSignalStrengthAsync(db, scope.UserId, ct);
-            var libraryPopulation = libraryIds.ToHashSet();
-            var explicitOpinion = liked.Concat(disliked).ToHashSet();
+            // The reader's own evidence, which replaces an anime signal rather than adding to it.
+            // Built from what this pass already has in hand; AnimeSignalsController asks the same
+            // question with its own queries, against the same type, so the panel cannot describe a
+            // rule the recommender is not applying.
+            var precedence = new AnimeSignalPrecedence(
+                libraryIds.ToHashSet(), liked.Concat(disliked).ToHashSet(), ignored);
             var animeRows = await db.AnimeSignals.AsNoTracking()
                 .Where(x => x.UserId == scope.UserId && x.MangaBakaId != null)
                 .Select(x => new AnimeSignalRow(
@@ -230,8 +234,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             // lukewarm on overall. One group is one manga, with the seasons' scores averaged.
             foreach (var group in AnimeSignalGrouping.Group(animeRows))
             {
-                if (group.MangaBakaId is not { } id || libraryPopulation.Contains(id) ||
-                    explicitOpinion.Contains(id) || ignored.Contains(id))
+                if (group.MangaBakaId is not { } id || precedence.Supersedes(id))
                 {
                     continue;
                 }

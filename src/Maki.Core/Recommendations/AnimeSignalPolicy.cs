@@ -25,6 +25,49 @@ public enum AnimeSignalStrength
     Full,
 }
 
+/// <summary>Why a matched anime signal reaches nothing, or <see cref="None"/> when it does.</summary>
+public enum AnimeSupersededBy
+{
+    None,
+
+    /// <summary>The manga is on the reader's shelf, rated or not.</summary>
+    Library,
+
+    /// <summary>They thumbed the manga up or down themselves.</summary>
+    Feedback,
+
+    /// <summary>They asked the recommender to stop steering by this title.</summary>
+    Ignored,
+}
+
+/// <summary>
+/// Which of a reader's own evidence outranks their watch history, in one place.
+/// <para>
+/// This is the whole of "do not count the same series twice". An anime signal is second-hand
+/// evidence about a book, so anything first-hand replaces it outright rather than adding to it: a
+/// reader who rated the manga 9 and the adaptation 10 has one opinion about the book, and a reader
+/// who rated the manga 9 and dropped the adaptation has not complained about it at all.
+/// </para>
+/// <para>
+/// Owning it is enough on its own, rated or not, because a shelf row carries reading history and
+/// that is better evidence about the book than an adaptation of it. Defined here rather than inline
+/// in the seed builder because the panel has to describe the same rule it applies: an entry the
+/// recommender quietly skips while the screen calls it "positive" is how somebody concludes the
+/// feature is double counting.
+/// </para>
+/// </summary>
+public readonly record struct AnimeSignalPrecedence(
+    IReadOnlySet<long> Library, IReadOnlySet<long> Opinion, IReadOnlySet<long> Ignored)
+{
+    public AnimeSupersededBy Reason(long mangaBakaId) =>
+        Library.Contains(mangaBakaId) ? AnimeSupersededBy.Library
+        : Opinion.Contains(mangaBakaId) ? AnimeSupersededBy.Feedback
+        : Ignored.Contains(mangaBakaId) ? AnimeSupersededBy.Ignored
+        : AnimeSupersededBy.None;
+
+    public bool Supersedes(long mangaBakaId) => Reason(mangaBakaId) != AnimeSupersededBy.None;
+}
+
 /// <summary>
 /// What a watched anime says about the manga it was adapted from, on the same scales the library
 /// and the feedback rows already use.

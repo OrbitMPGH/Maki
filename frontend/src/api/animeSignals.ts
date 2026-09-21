@@ -2,7 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import { affectedKeys } from './recommendationFeedback'
 
-export type AnimeSignalRole = 'positive' | 'avoided' | 'neutral' | 'unmatched'
+/**
+ * `superseded` means the reader's own evidence already covers this manga - it is on their shelf,
+ * they thumbed it, or they excluded it as a seed - so the signal reaches nothing. It outranks the
+ * other roles rather than sitting beside them, because it is the answer to "why is this here
+ * twice".
+ */
+export type AnimeSignalRole = 'positive' | 'avoided' | 'neutral' | 'superseded' | 'unmatched'
+
+/** Which of the reader's own actions replaced a signal. Null unless the role is `superseded`. */
+export type AnimeSupersededBy = 'library' | 'feedback' | 'ignored'
 export type AnimeSignalStatus = 'Watching' | 'Completed' | 'OnHold' | 'Dropped' | 'Planning'
 
 /** How much authority watched anime carry over recommendations. */
@@ -35,14 +44,18 @@ export interface AnimeSignalEntry {
   mangaBakaId: number | null
   mangaTitle: string | null
   role: AnimeSignalRole
+  supersededBy: AnimeSupersededBy | null
 }
 
+/** One count per role, so nothing here has to be derived by subtraction. */
 export interface AnimeSignalCounts {
   total: number
   matched: number
   positive: number
   avoided: number
-  ignored: number
+  neutral: number
+  superseded: number
+  unmatched: number
 }
 
 export interface AnimeSignalsData {
