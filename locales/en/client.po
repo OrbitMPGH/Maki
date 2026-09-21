@@ -4399,6 +4399,10 @@ msgid "Lowest-numbered admin"
 msgstr "Lowest-numbered admin"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Main ({mainFilterCount})"
+msgstr "Main ({mainFilterCount})"
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "Main ({visibleMainCount})"
 msgstr "Main ({visibleMainCount})"
 

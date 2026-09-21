@@ -203,6 +203,8 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   missing: (c) => !c.hasFile,
   downloaded: (c) => c.hasFile,
   specials: isSpecial,
+  // A one-shot has no number and counts as main, matching NewChapterMonitorMode.MainOnly.
+  main: (c) => !isSpecial(c),
 }
 
 interface ReadState {
@@ -1082,6 +1084,7 @@ export default function SeriesDetailPage() {
   const downloadedFilterCount = chapters?.filter(chapterFilters.downloaded).length ?? 0
   const unreadFilterCount = chapters?.filter(filters.unread).length ?? 0
   const specialsFilterCount = chapters?.filter(chapterFilters.specials).length ?? 0
+  const mainFilterCount = chapters?.filter(chapterFilters.main).length ?? 0
   const readFilterCount = chapters?.filter(filters.read).length ?? 0
   const selectedCount = selected.size
   const visibleAllCount = visibleChapters.length
@@ -1097,6 +1100,8 @@ export default function SeriesDetailPage() {
         ...(readTracking && progress.have > 0
             ? [{ value: 'unread', label: t`Unread (${unreadFilterCount})` }]
             : []),
+        // Without a special to hide, "Main" is "All" under a second name.
+        ...(specialsFilterCount > 0 ? [{ value: 'main', label: t`Main (${mainFilterCount})` }] : []),
         { value: 'specials', label: t`Specials (${specialsFilterCount})` },
       ]
       : []

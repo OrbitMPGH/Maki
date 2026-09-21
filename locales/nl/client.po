@@ -5424,9 +5424,13 @@ msgid "Lowest-numbered admin"
 msgstr "Beheerder met het laagste nummer"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Main ({mainFilterCount})"
+msgstr "Regulier ({mainFilterCount})"
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Main ({visibleMainCount})"
-msgstr "Main ({visibleMainCount})"
+msgstr "Regulier ({visibleMainCount})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

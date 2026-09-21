@@ -5424,9 +5424,13 @@ msgid "Lowest-numbered admin"
 msgstr "番号が最も小さい管理者"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "Main ({mainFilterCount})"
+msgstr "本編（{mainFilterCount}）"
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Main ({visibleMainCount})"
-msgstr "Main（{visibleMainCount}）"
+msgstr "本編（{visibleMainCount}）"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
