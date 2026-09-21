@@ -4,13 +4,32 @@ export interface MetadataLink {
   url: string
 }
 
+/** A series title plus the language it is written in. A null `language` means the provider didn't say. */
+export interface LocalizedTitle {
+  title: string
+  /** Lowercase code as the provider spelled it: "en", "ja", sometimes regional ("pt-br"). */
+  language: string | null
+}
+
 export interface SeriesDto {
   id: number
+  /**
+   * The canonical title — what the folder on disk, the file names and `sortTitle` are built from.
+   * Always the provider's English title when there is one. Render `displayTitle` instead.
+   */
   title: string
+  /**
+   * `title` resolved against this user's title-language preference, falling back to `title`. Never
+   * null, so it can be rendered unconditionally; equal to `title` in the default configuration.
+   */
+  displayTitle: string
   sortTitle: string
   originalTitle: string | null
-  /** Other primary titles from the provider, for a "show more" expander next to `originalTitle`. */
-  altTitles: string[]
+  /**
+   * Other primary titles from the provider with the language each is written in, for the
+   * "show more" expander next to `originalTitle` and as the pool `displayTitle` comes from.
+   */
+  altTitles: LocalizedTitle[]
   status: string
   /**
    * manga | manhwa | manhua | oel | other, or null on a series whose metadata hasn't been refreshed
@@ -258,18 +277,33 @@ export interface SeriesScrobbleDto {
   services: SeriesScrobbleServiceDto[]
 }
 
+/**
+ * Nothing here is a sentence in a language. The label and the failure reason arrive as their parts,
+ * because one queue update is broadcast to every connected client at once and they do not share a
+ * language. `api/queue.ts` words both.
+ */
 export interface QueueItemDto {
   id: number
   chapterId: number
   seriesId: number
   seriesTitle: string
-  chapterLabel: string
+  /** The release title, for a series-level torrent grab. Null for a per-chapter scraper item. */
+  releaseTitle: string | null
+  /** The chapter's own title, for a one-shot or an unnumbered chapter. */
+  chapterTitle: string | null
+  chapterVolume: number | null
+  /** A string, not a number: an identifier that has to match the one on disk exactly. */
+  chapterNumber: string | null
   sourceName: string
   status: string
   pagesTotal: number
   pagesDone: number
   retryCount: number
   nextAttempt: string | null
+  /** An `error.download.*` catalogue key, or null when the reason is not Maki's own words. */
+  errorKey: string | null
+  errorParams: Record<string, unknown> | null
+  /** Text from outside Maki, or English from before the queue was keyed. Shown when `errorKey` is null. */
   errorMessage: string | null
   queuedAt: string
   completedAt: string | null
@@ -282,12 +316,56 @@ export interface QueueHistoryDto {
   pageSize: number
 }
 
+/** An existing library file a downloaded file would leave backing nothing. */
+export interface ImportPlanExistingDto {
+  chapterFileId: number
+  relativePath: string
+  size: number
+  chapters: string[]
+}
+
+export interface ImportPlanFileDto {
+  fileName: string
+  size: number
+  label: string | null
+  chapters: string[]
+  newChapters: string[]
+  replaces: ImportPlanExistingDto[]
+}
+
+export interface TorrentImportPlanDto {
+  queueItemId: number
+  seriesId: number
+  seriesTitle: string
+  releaseName: string
+  files: ImportPlanFileDto[]
+  error: string | null
+  hasConflicts: boolean
+  newChapterCount: number
+  replacedFileCount: number
+}
+
+/** Matches the server's `ImportDecision`; sent verbatim. */
+export type ImportDecision = 'Replace' | 'SkipExisting' | 'Reject'
+
+export interface ImportDecisionResultDto {
+  imported: number
+  linked: number
+  skipped: number
+  deleted: number
+}
+
 export interface SourceMappingDto {
   id: number
   seriesId: number
   sourceName: string
   sourceSeriesId: string
   url: string
+  /**
+   * Ordered comma-separated language codes ("en,es"), or null for the source default (English).
+   * Only honoured by sources whose `supportsLanguageFilter` is true. Each extra language adds its
+   * own chapter row per number, because chapter identity is (number, language).
+   */
   languageFilter: string | null
   priority: number
   enabled: boolean
@@ -352,6 +430,8 @@ export interface AddSeriesRequest {
    * (Settings → Library incognito rules), which is what happens on any add form that doesn't ask.
    */
   incognito?: string
+  addedFrom?: string
+  clientMutationId?: string
 }
 
 export type NotificationType = 'Discord' | 'Webhook'

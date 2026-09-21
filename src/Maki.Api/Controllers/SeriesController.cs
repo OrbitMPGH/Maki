@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using Maki.Api.Dtos;
 using Maki.Api.Jobs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -25,6 +26,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/series")]
 public class SeriesController(
+    ILocalizer localizer,
     MakiDbContext db,
     CoverService coverService,
     ChapterSyncService chapterSyncService,
@@ -40,13 +42,34 @@ public class SeriesController(
     StatsEventService stats,
     MangaBakaLocalStore mangaBakaStore,
     SimilarSeriesService similarSeries,
+    RecommendationFeedbackService recommendationFeedback,
     ReaderArchiveCache archives,
     ReadingProfileService readingProfiles,
     ReadingTimeEstimateService readingTimeEstimates,
     SourceAvailability sourceAvailability,
     ICurrentUser currentUser,
+    IUserSettings userSettings,
     ILogger<SeriesController> logger) : ControllerBase
 {
+    private string? _titleLanguage;
+    private bool _titleLanguageRead;
+
+    /// <summary>
+    /// The caller's preferred title language(s), read once per request. The library grid builds one
+    /// <see cref="SeriesDto"/> per series and every one of them wants this, so reading it per DTO
+    /// would be a settings query per row.
+    /// </summary>
+    private async Task<string?> TitleLanguageAsync(CancellationToken ct)
+    {
+        if (!_titleLanguageRead)
+        {
+            _titleLanguage = await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
+            _titleLanguageRead = true;
+        }
+
+        return _titleLanguage;
+    }
+
     /// <summary>
     /// How many cards the "More like this" rail gets. A horizontal rail is scrolled, not paged, so
     /// this is the whole list — there is no "show more" behind it.
@@ -66,7 +89,7 @@ public class SeriesController(
 
         if (!await metadataRefresh.RefreshAsync(series, includeCover: true, ct))
         {
-            return BadRequest(new { error = "Metadata lookup failed — series has no provider id or the provider returned nothing" });
+            return this.Fail(localizer, "error.series.metadataRefreshFailed");
         }
 
         await db.SaveChangesAsync(ct);
@@ -77,7 +100,8 @@ public class SeriesController(
 
         var refreshed = await UserStateForAsync(id, ct);
         return Ok(SeriesDto.FromEntity(
-            series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode));
+            series, rating: refreshed.Rating, notificationMode: refreshed.NotificationMode,
+            titleLanguage: await TitleLanguageAsync(ct)));
     }
 
     /// <summary>Re-standardizes the ComicInfo.xml inside every CBZ the series owns.</summary>
@@ -93,7 +117,7 @@ public class SeriesController(
 
         if (series.RootFolder is null)
         {
-            return BadRequest(new { error = "Series has no root folder" });
+            return this.Fail(localizer, "error.series.noRootFolder");
         }
 
         var (updated, total) = await cbzLinkService.UpdateComicInfoAsync(series, ct);
@@ -117,7 +141,7 @@ public class SeriesController(
     [HttpPost("{id:int}/download/next")]
     public Task<IActionResult> DownloadNext(int id, [FromBody] DownloadNextRequest request, CancellationToken ct) =>
         request.Count < 1
-            ? Task.FromResult<IActionResult>(BadRequest(new { error = "Count must be at least 1." }))
+            ? Task.FromResult<IActionResult>(this.Fail(localizer, "error.series.invalidDownloadCount"))
             : QueueNextWantedAsync(id, request.Count, ct);
 
     /// <summary>
@@ -163,12 +187,12 @@ public class SeriesController(
             }
             catch (InvalidOperationException ex)
             {
-                downloadBatches.Queued(seriesId, title, queuedItemIds);
+                await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
                 return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
             }
         }
 
-        downloadBatches.Queued(seriesId, title, queuedItemIds);
+        await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
         return Ok(new { queued = queuedItemIds.Count });
     }
 
@@ -203,7 +227,7 @@ public class SeriesController(
 
         if (series.RootFolder is null)
         {
-            return BadRequest(new { error = "Series has no root folder" });
+            return this.Fail(localizer, "error.series.noRootFolder");
         }
 
         try
@@ -276,6 +300,8 @@ public class SeriesController(
             .GroupBy(f => f.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(f => f.SourceName).Order().ToList());
 
+        var titleLanguage = await TitleLanguageAsync(ct);
+
         return Ok(series.Select(s =>
         {
             chapterCounts.TryGetValue(s.Id, out var counts);
@@ -291,7 +317,8 @@ public class SeriesController(
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
                 tagIdsBySeries.GetValueOrDefault(s.Id) ?? [],
                 userState?.Rating,
-                notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default) with
+                notificationMode: userState?.NotificationMode ?? SeriesNotificationMode.Default,
+                titleLanguage: titleLanguage) with
             {
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
@@ -383,7 +410,7 @@ public class SeriesController(
 
         if (series.RootFolder is null)
         {
-            return BadRequest(new { error = "Series has no root folder" });
+            return this.Fail(localizer, "error.series.noRootFolder");
         }
 
         var seriesDir = Path.Combine(series.RootFolder.Path, series.FolderName);
@@ -406,10 +433,13 @@ public class SeriesController(
         var onDisk = Directory.Exists(seriesDir)
             ? Directory.GetFiles(seriesDir, "*.cbz", SearchOption.AllDirectories)
             : [];
-        var diskByRelPath = onDisk.ToDictionary(
-            f => Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)),
-            f => f,
-            StringComparer.OrdinalIgnoreCase);
+        // Case-sensitive filesystems allow two files whose paths differ only in case;
+        // they collapse to one entry here, so keep the first and don't throw.
+        var diskByRelPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var f in onDisk.OrderBy(f => f, StringComparer.Ordinal))
+        {
+            diskByRelPath.TryAdd(Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)), f);
+        }
 
         var files = new List<SeriesFileDto>();
         var seenRelPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -436,7 +466,8 @@ public class SeriesController(
                 status,
                 ParsedLabel(parsed),
                 parsed.IsVolume,
-                mapped));
+                mapped,
+                parsed.Number ?? (decimal?)parsed.Volume));
         }
 
         // 2. Files on disk with no record yet (never imported — a rescan would adopt them).
@@ -457,10 +488,14 @@ public class SeriesController(
                 parsed.IsRecognized ? "unlinked" : "unrecognized",
                 ParsedLabel(parsed),
                 parsed.IsVolume,
-                []));
+                [],
+                parsed.Number ?? (decimal?)parsed.Volume));
         }
 
-        return Ok(files.OrderBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
+        return Ok(files
+            .OrderBy(f => f.SortKey is null)
+            .ThenBy(f => f.SortKey)
+            .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -472,14 +507,14 @@ public class SeriesController(
     public async Task<IActionResult> DeleteFiles(int id, [FromBody] string[] relativePaths, CancellationToken ct)
     {
         if (relativePaths.Length == 0)
-            return BadRequest(new { error = "No files selected" });
+            return this.Fail(localizer, "error.series.noFilesSelected");
 
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
             return NotFound();
 
         if (series.RootFolder is null)
-            return BadRequest(new { error = "Series has no root folder" });
+            return this.Fail(localizer, "error.series.noRootFolder");
 
         var files = await db.ChapterFiles
             .Where(f => f.SeriesId == id && relativePaths.Contains(f.RelativePath))
@@ -676,7 +711,8 @@ public class SeriesController(
             .ToListAsync(ct);
         var related = await mangaBakaStore.GetRelatedAsync(
             [mangaBakaId], new HashSet<long>(libraryIds), ContentRating.Allowed(currentUser.MaxContentRating), ct);
-        return Ok(related);
+        var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
+        return Ok(related.Where(r => !long.TryParse(r.ProviderId, out var providerId) || !suppressed.Contains(providerId)).ToList());
     }
 
     /// <summary>
@@ -719,8 +755,10 @@ public class SeriesController(
             .Select(s => (long)s.MangaBakaId!.Value)
             .ToListAsync(ct);
         var ownedSet = new HashSet<long>(owned);
+        var suppressed = await recommendationFeedback.SuppressedAsync(currentUser.UserId, ct);
         return Ok(pool
-            .Where(r => !long.TryParse(r.ProviderId, out var providerId) || !ownedSet.Contains(providerId))
+            .Where(r => !long.TryParse(r.ProviderId, out var providerId) ||
+                !ownedSet.Contains(providerId) && !suppressed.Contains(providerId))
             .Take(RailSize)
             .ToList());
     }
@@ -765,7 +803,8 @@ public class SeriesController(
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
             rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
-            notificationMode: userState.NotificationMode) with
+            notificationMode: userState.NotificationMode,
+            titleLanguage: await TitleLanguageAsync(ct)) with
         {
             ReadTimeEstimate = estimate is null
                 ? null
@@ -783,30 +822,53 @@ public class SeriesController(
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] AddSeriesRequest request, CancellationToken ct)
     {
+        if (request.AddedFrom is not null and not ("library" or "recommendation"))
+            return this.Fail(localizer, "error.series.unsupportedAddOrigin");
+        // `is not { } id` and not `== Guid.Empty`: ClientMutationId is nullable, so the lifted
+        // comparison is false for an absent field and the guard only ever caught a client that sent
+        // all-zeros on purpose. An add with no id takes neither the receipt lookup nor the receipt
+        // write in SeriesCreationService, so a retried request is a second series.
+        if (request.ClientMutationId is not { } clientMutationId || clientMutationId == Guid.Empty)
+            return this.Fail(localizer, "error.series.mutationIdRequired");
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
         // the Sources card shows a spinner until the background worker is done.
         var result = await seriesCreation.CreateAsync(
             request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
-            deferSourceMatching: true, incognito: request.Incognito);
+            deferSourceMatching: true, incognito: request.Incognito,
+            attributedUserId: currentUser.UserId, addedFrom: request.AddedFrom,
+            clientMutationId: clientMutationId);
 
         if (result.Series is null)
         {
             return result.Error switch
             {
-                SeriesCreationError.RootFolderNotFound => BadRequest(new { error = "Root folder not found" }),
-                SeriesCreationError.MetadataNotFound => BadRequest(new { error = "Series not found on metadata provider" }),
-                _ => Conflict(new { error = "Series already exists in library" }),
+                SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.series.rootFolderNotFound"),
+                SeriesCreationError.MetadataNotFound => this.Fail(localizer, "error.series.metadataNotFound"),
+                SeriesCreationError.MutationIdReused => this.Conflict(localizer, "error.series.mutationIdReused"),
+                // 410, not 409: the operation really did happen, and its result is the thing that is
+                // gone. Answering "already in library" would send the caller looking for a series
+                // that is not there.
+                SeriesCreationError.OperationResultGone => this.Gone(localizer, "error.series.addResultGone"),
+                _ => this.Conflict(localizer, "error.series.alreadyExists"),
             };
         }
 
-        return CreatedAtAction(
-            nameof(Get),
-            new { id = result.Series.Id },
-            SeriesDto.FromEntity(result.Series) with
-            {
-                Warnings = result.Warnings.Count > 0 ? result.Warnings : null
-            });
+        var response = SeriesDto.FromEntity(result.Series, titleLanguage: await TitleLanguageAsync(ct)) with
+              {
+                  Warnings = result.Warnings.Count > 0 ? result.Warnings : null,
+                  Operation = new SeriesOperationDto(
+                      clientMutationId,
+                      result.Warnings.Count > 0 ? "committed-with-warnings" :
+                          result.Series.SourceMatchPending ? "setup-pending" : "committed",
+                      result.Series.Id,
+                      await db.RecommendationProfileStates
+                          .Where(x => x.UserId == currentUser.UserId)
+                          .Select(x => x.SignalRevision).FirstOrDefaultAsync(ct))
+              };
+        return result.Replayed && result.Series.SourceMatchPending
+            ? AcceptedAtAction(nameof(Get), new { id = result.Series.Id }, response)
+            : CreatedAtAction(nameof(Get), new { id = result.Series.Id }, response);
     }
 
     [Authorize(Policy = Policies.DeleteSeries)]
@@ -837,12 +899,41 @@ public class SeriesController(
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed
         // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
-        // the durable identity — without that last one the removal event would land under a
-        // title-only key while the reads before it kept the provider key, splitting one history.
-        var payload = JsonSerializer.Serialize(new { genres = series.Genres, tags = series.Tags });
+        // enough provider metadata for the stats feed to reopen it in Discover.
+        string? coverUrl = null;
+        if (series.MangaBakaId is int mangaBakaId && await mangaBakaStore.IsAvailableAsync(ct))
+        {
+            try
+            {
+                coverUrl = (await mangaBakaStore.GetDetailAsync(mangaBakaId, ct))?.CoverUrl;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Could not snapshot the provider cover for removed series {SeriesId}", id);
+            }
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            genres = series.Genres,
+            tags = series.Tags,
+            providerId = series.MangaBakaId?.ToString(CultureInfo.InvariantCulture),
+            coverUrl
+        });
         var title = series.Title;
         var seriesKey = SeriesIdentity.For(series);
 
+        // Before the delete cascades the provenance rows away, while they can still say whose
+        // recommendation inputs this series was part of. Incremented in the database rather than on
+        // tracked entities: these are other people's counters, and another request of theirs may be
+        // advancing them at the same time.
+        var provenanceOwners = await db.UserSeriesStates.IgnoreQueryFilters()
+            .Where(x => x.SeriesId == id && x.AddedToLibraryAtUtc != null)
+            .Select(x => x.UserId).Distinct().ToListAsync(ct);
+        foreach (var owner in provenanceOwners)
+        {
+            await RecommendationFeedbackService.BumpAsync(db, owner, feedback: false, signal: true, ct);
+        }
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
         coverService.DeleteCover(id);
@@ -878,18 +969,18 @@ public class SeriesController(
 
         if (series.RootFolder is null)
         {
-            return BadRequest(new { error = "Series has no root folder" });
+            return this.Fail(localizer, "error.series.noRootFolder");
         }
 
         if (request.RootFolderId == series.RootFolderId)
         {
-            return BadRequest(new { error = "Series is already in that root folder" });
+            return this.Fail(localizer, "error.series.alreadyInRootFolder");
         }
 
         var destination = await db.RootFolders.FindAsync([request.RootFolderId], ct);
         if (destination is null)
         {
-            return BadRequest(new { error = "Root folder not found" });
+            return this.Fail(localizer, "error.series.rootFolderNotFound");
         }
 
         var oldFolder = Path.Combine(series.RootFolder.Path, series.FolderName);
@@ -902,12 +993,12 @@ public class SeriesController(
                 q.Status != QueueStatus.Cancelled, ct);
             if (active)
             {
-                return Conflict(new { error = "Series has an active download — wait for it to finish before moving" });
+                return this.Conflict(localizer, "error.series.activeDownloadMove");
             }
 
             if (Directory.Exists(newFolder))
             {
-                return Conflict(new { error = $"Destination folder already exists: {newFolder}" });
+                return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
             }
 
             if (Directory.Exists(oldFolder))
@@ -926,10 +1017,7 @@ public class SeriesController(
         }
         else if (!Directory.Exists(newFolder))
         {
-            return BadRequest(new
-            {
-                error = $"Files not moved: {newFolder} doesn't exist. Move the files there first, or let Maki move them."
-            });
+            return this.Fail(localizer, "error.series.filesNotMoved", new { folder = newFolder });
         }
 
         var oldRootFolderPath = series.RootFolder.Path;
@@ -941,7 +1029,8 @@ public class SeriesController(
 
         var moved = await UserStateForAsync(series.Id, ct);
         return Ok(SeriesDto.FromEntity(
-            series, rating: moved.Rating, notificationMode: moved.NotificationMode) with
+            series, rating: moved.Rating, notificationMode: moved.NotificationMode,
+            titleLanguage: await TitleLanguageAsync(ct)) with
         {
             Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
         });
@@ -1046,7 +1135,7 @@ public class SeriesController(
     {
         if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode))
         {
-            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+            return this.Fail(localizer, "error.series.unknownMonitorMode", new { mode = request.Mode });
         }
 
         var series = await db.Series.FindAsync([id], ct);
@@ -1074,7 +1163,7 @@ public class SeriesController(
     {
         if (!Enum.TryParse<IncognitoMode>(request.Mode, true, out var mode))
         {
-            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+            return this.Fail(localizer, "error.series.unknownIncognitoMode", new { mode = request.Mode });
         }
 
         var series = await db.Series.FindAsync([id], ct);
@@ -1102,7 +1191,7 @@ public class SeriesController(
     {
         if (request.Rating is { } r && r is < 1 or > 10)
         {
-            return BadRequest(new { error = "Rating must be between 1 and 10, or null to clear" });
+            return this.Fail(localizer, "error.series.invalidRating");
         }
 
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
@@ -1148,7 +1237,7 @@ public class SeriesController(
     {
         if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
         {
-            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+            return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
 
         if (!await db.Series.AnyAsync(s => s.Id == id, ct))
@@ -1180,7 +1269,7 @@ public class SeriesController(
     {
         if (!Enum.TryParse<SeriesNotificationMode>(request.Mode, true, out var mode))
         {
-            return BadRequest(new { error = $"Unknown mode: {request.Mode}" });
+            return this.Fail(localizer, "error.series.unknownNotificationMode", new { mode = request.Mode });
         }
 
         var wanted = (request.SeriesIds ?? []).Distinct().ToList();
@@ -1245,7 +1334,7 @@ public class SeriesController(
         var tags = await db.Tags.Where(t => wanted.Contains(t.Id)).ToListAsync(ct);
         if (tags.Count != wanted.Count)
         {
-            return BadRequest(new { error = "One or more tag ids do not exist" });
+            return this.Fail(localizer, "error.series.unknownTagIds");
         }
 
         series.UserTags.Clear();

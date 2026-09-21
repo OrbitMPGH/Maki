@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using Maki.Core;
 using Maki.Core.Http;
 using Maki.Sources.Common;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,7 @@ namespace Maki.Sources.TopManhua;
 /// </summary>
 public sealed class TopManhuaImageBrowser(
     ChallengeAwareFetcher fetcher,
-    ILogger<TopManhuaImageBrowser> logger) : IAsyncDisposable
+    ILogger<TopManhuaImageBrowser> logger) : IAsyncDisposable, IIdleBrowser
 {
     private const string BaseUrl = "https://www.topmanhua.fan";
     private const string Host = "www.topmanhua.fan";
@@ -34,6 +35,72 @@ public sealed class TopManhuaImageBrowser(
     private IPlaywright? _playwright;
     private IBrowser? _browser;
     private IBrowserContext? _context;
+    private readonly IdleStamp _idle = new();
+
+    public string BrowserName => "TopManhua";
+
+    public bool IsRunning => _playwright is not null;
+
+    /// <summary>
+    /// Closes the browser and the driver process behind it once nothing has scraped for
+    /// <paramref name="idleFor"/>. See <see cref="IIdleBrowser"/> for what that is worth.
+    /// </summary>
+    public async Task<bool> ReleaseIfIdleAsync(TimeSpan idleFor)
+    {
+        if (_playwright is null || _idle.Idle < idleFor)
+        {
+            return false;
+        }
+
+        // Zero timeout on purpose. The gate is held for the whole of a scrape, so failing to take
+        // it means one is running and this is not an idle browser after all; there is nothing to
+        // wait for, the next pass will find it idle.
+        if (!await _gate.WaitAsync(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (_playwright is null || _idle.Idle < idleFor)
+            {
+                return false;
+            }
+
+            var idle = _idle.Idle;
+            await ShutdownAsync();
+            logger.LogInformation(
+                "Closed the TopManhua browser after {Minutes:F0} idle minute(s); it relaunches on next use",
+                idle.TotalMinutes);
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Tears the whole stack down, in order. Disposing the driver is the part that matters most:
+    /// it is what ends the Node process, which is the larger half of what a parked browser costs.
+    /// </summary>
+    private async Task ShutdownAsync()
+    {
+        if (_context != null)
+        {
+            await _context.CloseAsync();
+            _context = null;
+        }
+
+        if (_browser != null)
+        {
+            await _browser.CloseAsync();
+            _browser = null;
+        }
+
+        _playwright?.Dispose();
+        _playwright = null;
+    }
 
     /// <summary>
     /// Navigates to <paramref name="chapterUrl"/>, forces every lazy-loaded reading-content image
@@ -45,6 +112,7 @@ public sealed class TopManhuaImageBrowser(
         string chapterUrl, IReadOnlyList<string> imageUrls, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
+        _idle.Touch();
         try
         {
             for (var attempt = 0; ; attempt++)
@@ -64,6 +132,7 @@ public sealed class TopManhuaImageBrowser(
                 finally
                 {
                     await page.CloseAsync();
+                    _idle.Touch();
                 }
             }
         }
@@ -209,17 +278,7 @@ public sealed class TopManhuaImageBrowser(
 
     public async ValueTask DisposeAsync()
     {
-        if (_context != null)
-        {
-            await _context.CloseAsync();
-        }
-
-        if (_browser != null)
-        {
-            await _browser.CloseAsync();
-        }
-
-        _playwright?.Dispose();
+        await ShutdownAsync();
         _gate.Dispose();
     }
 }

@@ -26,8 +26,12 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { t as now, plural, msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { useRootFolders } from '../api/hooks'
 import {
+  chapterRangeInline,
   chapterRangeLabel,
   useApproveSeriesRequest,
   useDeleteSeriesRequest,
@@ -40,16 +44,29 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { useLabel } from '../i18n-context'
+import { formatDate } from '../format'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'yellow',
+  Processing: 'blue',
   Approved: 'green',
   Rejected: 'red',
+}
+
+/** Descriptors, not strings: this table is built once, when the module loads. */
+const STATUS_LABEL: Record<SeriesRequest['status'], MessageDescriptor> = {
+  Pending: msg`Pending`,
+  Processing: msg`Approval in progress`,
+  Approved: msg`Approved`,
+  Rejected: msg`Rejected`,
 }
 
 export default function RequestsPage() {
   const { can } = useAuth()
   const isAdmin = can('Admin')
+  const { t } = useLingui()
+  const renderLabel = useLabel()
 
   const [filter, setFilter] = useState<RequestFilter>('pending')
   const { data: requests, isPending } = useSeriesRequests(filter)
@@ -89,8 +106,9 @@ export default function RequestsPage() {
       {
         onSuccess: (result) => {
           setEditing(null)
+          const range = chapterRangeInline(result.chapterStart, result.chapterEnd)
           notifications.show({
-            message: `Now ${chapterRangeLabel(result.chapterStart, result.chapterEnd).toLowerCase()}`,
+            message: now`Now ${range}`,
             color: 'green',
           })
         },
@@ -121,8 +139,11 @@ export default function RequestsPage() {
           notifications.show({
             message:
               result.queuedCount && result.queuedCount > 0
-                ? `Approved, queued ${result.queuedCount} chapter(s)`
-                : 'Approved',
+                ? plural(result.queuedCount, {
+                    one: 'Approved, queued # chapter',
+                    other: 'Approved, queued # chapters',
+                  })
+                : now`Approved`,
             color: 'green',
           })
         },
@@ -137,20 +158,26 @@ export default function RequestsPage() {
       {
         onSuccess: () => {
           setRejecting(null)
-          notifications.show({ message: 'Request rejected', color: 'gray' })
+          notifications.show({ message: now`Request rejected`, color: 'gray' })
         },
       },
     )
   }
 
+  const editingTitle = editing?.title
+  const editingAskedFor = chapterRangeInline(
+    editing?.originalChapterStart ?? editing?.chapterStart ?? null,
+    editing?.originalChapterEnd ?? editing?.chapterEnd ?? null,
+  )
+
   return (
     <>
       <PageHeader
-        title="Requests"
+        title={t`Requests`}
         description={
           isAdmin
-            ? 'What readers without add or download permissions have asked for. Approving adds the series and queues the chapters.'
-            : 'Series and chapters you have asked an admin for.'
+            ? t`What readers without add or download permissions have asked for. Approving adds the series and queues the chapters.`
+            : t`Series and chapters you have asked an admin for.`
         }
       />
 
@@ -159,9 +186,9 @@ export default function RequestsPage() {
           value={filter}
           onChange={(v) => setFilter(v as RequestFilter)}
           data={[
-            { value: 'pending', label: 'Pending' },
-            { value: 'resolved', label: 'Resolved' },
-            { value: 'all', label: 'All' },
+            { value: 'pending', label: t`Pending` },
+            { value: 'resolved', label: t`Resolved` },
+            { value: 'all', label: t`All` },
           ]}
         />
       </Group>
@@ -175,159 +202,179 @@ export default function RequestsPage() {
       {!isPending && (requests?.length ?? 0) === 0 ? (
         <EmptyState
           icon={IconInbox}
-          title={filter === 'pending' ? 'No pending requests' : 'Nothing here'}
+          title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={
             isAdmin
-              ? 'Requests filed from the Request series page and from series pages show up here.'
-              : 'Search for a series and request it - it will show up here once you do.'
+              ? t`Requests filed from the Request series page and from series pages show up here.`
+              : t`Search for a series and request it - it will show up here once you do.`
           }
         />
       ) : (
         <Stack gap="xs">
-          {requests?.map((r) => (
-            <Paper key={r.id} withBorder radius="lg" p="sm">
-              <Group wrap="nowrap" align="flex-start">
-                <div
-                  style={{
-                    width: 48,
-                    height: 72,
-                    flexShrink: 0,
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    background: 'var(--surface-2)',
-                  }}
-                >
-                  {r.coverUrl && <Image src={r.coverUrl} w={48} h={72} fit="cover" alt="" />}
-                </div>
+          {requests?.map((r) => {
+            // Named locals, because a placeholder Lingui numbers `{0}` tells a translator nothing.
+            const askedFor = chapterRangeInline(r.originalChapterStart, r.originalChapterEnd)
+            const { title, editedBy, resolvedBy } = r
+            return (
+              <Paper key={r.id} withBorder radius="lg" p="sm">
+                <Group wrap="nowrap" align="flex-start">
+                  <div
+                    style={{
+                      width: 48,
+                      height: 72,
+                      flexShrink: 0,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      background: 'var(--surface-2)',
+                    }}
+                  >
+                    {r.coverUrl && <Image src={r.coverUrl} w={48} h={72} fit="cover" alt="" />}
+                  </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Group gap="xs" wrap="nowrap">
-                    <Text fw={650} lineClamp={1}>
-                      {r.title}
-                    </Text>
-                    {r.year && (
-                      <Text size="sm" c="dimmed" className="tnum">
-                        {r.year}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Group gap="xs" wrap="nowrap">
+                      <Text fw={650} lineClamp={1}>
+                        {r.title}
+                      </Text>
+                      {r.year && (
+                        <Text size="sm" c="dimmed" className="tnum">
+                          {r.year}
+                        </Text>
+                      )}
+                      <Badge size="sm" variant="light" color={STATUS_COLOR[r.status]}>
+                        {renderLabel(STATUS_LABEL[r.status])}
+                      </Badge>
+                      <Badge size="sm" variant="outline" color="gray">
+                        {r.kind === 'NewSeries' ? t`New series` : t`Chapters`}
+                      </Badge>
+                    </Group>
+
+                    <Group gap="xs" mt={4}>
+                      <Text size="sm" c={r.editedAt ? undefined : 'dimmed'} fw={r.editedAt ? 600 : undefined}>
+                        {chapterRangeLabel(r.chapterStart, r.chapterEnd)}
+                      </Text>
+                      <Text size="sm" c="dimmed">
+                        ·
+                      </Text>
+                      <Text size="sm" c="dimmed">
+                        {r.requestedBy}, {formatDate(r.created)}
+                      </Text>
+                    </Group>
+
+                    {/* The admin's range is what will be queued, so it leads, but what was actually
+                        asked for has to stay visible, or a trimmed request reads as the requester's
+                        own. */}
+                    {r.editedAt && (
+                      <Text size="xs" c="dimmed" mt={2}>
+                        {editedBy ? (
+                          <Trans>
+                            Adjusted by {editedBy}, asked for {askedFor}
+                          </Trans>
+                        ) : (
+                          <Trans>Adjusted, asked for {askedFor}</Trans>
+                        )}
                       </Text>
                     )}
-                    <Badge size="sm" variant="light" color={STATUS_COLOR[r.status]}>
-                      {r.status}
-                    </Badge>
-                    <Badge size="sm" variant="outline" color="gray">
-                      {r.kind === 'NewSeries' ? 'New series' : 'Chapters'}
-                    </Badge>
-                  </Group>
 
-                  <Group gap="xs" mt={4}>
-                    <Text size="sm" c={r.editedAt ? undefined : 'dimmed'} fw={r.editedAt ? 600 : undefined}>
-                      {chapterRangeLabel(r.chapterStart, r.chapterEnd)}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      ·
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {r.requestedBy}, {new Date(r.created).toLocaleDateString()}
-                    </Text>
-                  </Group>
+                    {r.note && (
+                      <Text size="sm" mt={4} style={{ whiteSpace: 'pre-line' }}>
+                        {r.note}
+                      </Text>
+                    )}
 
-                  {/* The admin's range is what will be queued, so it leads, but what was actually
-                      asked for has to stay visible, or a trimmed request reads as the requester's
-                      own. */}
-                  {r.editedAt && (
-                    <Text size="xs" c="dimmed" mt={2}>
-                      Adjusted{r.editedBy ? ` by ${r.editedBy}` : ''}, asked for{' '}
-                      {chapterRangeLabel(r.originalChapterStart, r.originalChapterEnd).toLowerCase()}
-                    </Text>
-                  )}
+                    {r.status !== 'Pending' && (
+                      <Text size="xs" c="dimmed" mt={4}>
+                        {resolvedBy && r.status !== 'Processing' ? (
+                          r.status === 'Approved' ? (
+                            <Trans>Approved by {resolvedBy}</Trans>
+                          ) : (
+                            <Trans>Rejected by {resolvedBy}</Trans>
+                          )
+                        ) : (
+                          renderLabel(STATUS_LABEL[r.status])
+                        )}
+                        {r.queuedCount != null && r.status === 'Approved' && (
+                          <>
+                            {', '}
+                            <Plural value={r.queuedCount} one="queued # chapter" other="queued # chapters" />
+                          </>
+                        )}
+                        {r.resolutionNote ? ` · ${r.resolutionNote}` : ''}
+                      </Text>
+                    )}
+                  </div>
 
-                  {r.note && (
-                    <Text size="sm" mt={4} style={{ whiteSpace: 'pre-line' }}>
-                      {r.note}
-                    </Text>
-                  )}
-
-                  {r.status !== 'Pending' && (
-                    <Text size="xs" c="dimmed" mt={4}>
-                      {r.status === 'Approved' ? 'Approved' : 'Rejected'}
-                      {r.resolvedBy ? ` by ${r.resolvedBy}` : ''}
-                      {r.queuedCount != null && r.status === 'Approved'
-                        ? `, queued ${r.queuedCount} chapter(s)`
-                        : ''}
-                      {r.resolutionNote ? ` · ${r.resolutionNote}` : ''}
-                    </Text>
-                  )}
-                </div>
-
-                <Group gap="xs" wrap="nowrap">
-                  {r.seriesId != null && (
-                    <Tooltip label="Open series" withArrow>
-                      <ActionIcon
-                        component={Link}
-                        to={`/series/${r.seriesId}`}
-                        variant="subtle"
-                        color="gray"
-                        aria-label={`Open ${r.title}`}
-                      >
-                        <IconExternalLink size={17} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                  {isAdmin && r.status === 'Pending' && (
-                    <>
-                      <Tooltip label="Change the chapter range" withArrow>
+                  <Group gap="xs" wrap="nowrap">
+                    {r.seriesId != null && (
+                      <Tooltip label={t`Open series`} withArrow>
                         <ActionIcon
+                          component={Link}
+                          to={`/series/${r.seriesId}`}
                           variant="subtle"
                           color="gray"
-                          aria-label={`Edit request for ${r.title}`}
-                          onClick={() => openEdit(r)}
+                          aria-label={t`Open ${title}`}
                         >
-                          <IconPencil size={17} />
+                          <IconExternalLink size={17} />
                         </ActionIcon>
                       </Tooltip>
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="green"
-                        leftSection={<IconCheck size={15} />}
-                        onClick={() => openApprove(r)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="subtle"
-                        color="red"
-                        leftSection={<IconX size={15} />}
-                        onClick={() => {
-                          setRejecting(r)
-                          setRejectNote('')
-                        }}
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                  {(isAdmin || r.status === 'Pending') && (
-                    <Tooltip label={isAdmin ? 'Delete request' : 'Cancel request'} withArrow>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        aria-label="Remove request"
-                        onClick={() => remove.mutate(r.id)}
-                        loading={remove.isPending && remove.variables === r.id}
-                      >
-                        <IconTrash size={17} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
+                    )}
+                    {isAdmin && r.status === 'Pending' && (
+                      <>
+                        <Tooltip label={t`Change the chapter range`} withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            aria-label={t`Edit request for ${title}`}
+                            onClick={() => openEdit(r)}
+                          >
+                            <IconPencil size={17} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color="green"
+                          leftSection={<IconCheck size={15} />}
+                          onClick={() => openApprove(r)}
+                        >
+                          <Trans>Approve</Trans>
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="subtle"
+                          color="red"
+                          leftSection={<IconX size={15} />}
+                          onClick={() => {
+                            setRejecting(r)
+                            setRejectNote('')
+                          }}
+                        >
+                          <Trans>Reject</Trans>
+                        </Button>
+                      </>
+                    )}
+                    {((isAdmin && r.status !== 'Processing') || r.status === 'Pending') && (
+                      <Tooltip label={isAdmin ? t`Delete request` : t`Cancel request`} withArrow>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          aria-label={t`Remove request`}
+                          onClick={() => remove.mutate(r.id)}
+                          loading={remove.isPending && remove.variables === r.id}
+                        >
+                          <IconTrash size={17} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                  </Group>
                 </Group>
-              </Group>
-            </Paper>
-          ))}
+              </Paper>
+            )
+          })}
         </Stack>
       )}
 
-      <Modal opened={approving !== null} onClose={() => setApproving(null)} title="Approve request">
+      <Modal opened={approving !== null} onClose={() => setApproving(null)} title={t`Approve request`}>
         <Stack gap="sm">
           <Text size="sm">
             {approving?.title}: {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
@@ -335,8 +382,8 @@ export default function RequestsPage() {
 
           {needsRootFolder && (
             <Select
-              label="Root folder"
-              description="Where the series will live. The requester doesn't choose this."
+              label={t`Root folder`}
+              description={t`Where the series will live. The requester doesn't choose this.`}
               data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
               value={rootFolderId}
               onChange={setRootFolderId}
@@ -344,8 +391,8 @@ export default function RequestsPage() {
           )}
 
           <Textarea
-            label="Note (optional)"
-            placeholder="Shown to whoever asked"
+            label={t`Note (optional)`}
+            placeholder={t`Shown to whoever asked`}
             value={approveNote}
             onChange={(e) => setApproveNote(e.currentTarget.value)}
             autosize
@@ -354,7 +401,7 @@ export default function RequestsPage() {
 
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setApproving(null)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button
               color="green"
@@ -362,26 +409,24 @@ export default function RequestsPage() {
               loading={approve.isPending}
               disabled={needsRootFolder && !rootFolderId}
             >
-              Approve and queue
+              <Trans>Approve and queue</Trans>
             </Button>
           </Group>
         </Stack>
       </Modal>
 
-      <Modal opened={editing !== null} onClose={() => setEditing(null)} title="Edit request">
+      <Modal opened={editing !== null} onClose={() => setEditing(null)} title={t`Edit request`}>
         <Stack gap="sm">
           <Text size="sm">
-            {editing?.title}, asked for{' '}
-            {chapterRangeLabel(
-              editing?.originalChapterStart ?? editing?.chapterStart ?? null,
-              editing?.originalChapterEnd ?? editing?.chapterEnd ?? null,
-            ).toLowerCase()}
+            <Trans>
+              {editingTitle}, asked for {editingAskedFor}
+            </Trans>
           </Text>
 
           <Group gap="sm" align="flex-end" wrap="nowrap">
             <NumberInput
-              label="From"
-              placeholder="first"
+              label={t`From`}
+              placeholder={t`first`}
               value={editStart}
               onChange={(v) => setEditStart(typeof v === 'number' ? v : '')}
               min={0}
@@ -390,8 +435,8 @@ export default function RequestsPage() {
               w={130}
             />
             <NumberInput
-              label="To"
-              placeholder="latest"
+              label={t`To`}
+              placeholder={t`latest`}
               value={editEnd}
               onChange={(v) => setEditEnd(typeof v === 'number' ? v : '')}
               min={0}
@@ -401,26 +446,26 @@ export default function RequestsPage() {
             />
           </Group>
           <Text size="xs" c="dimmed">
-            Leave a field blank for no bound. Approving queues exactly this range.
+            <Trans>Leave a field blank for no bound. Approving queues exactly this range.</Trans>
           </Text>
 
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setEditing(null)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button onClick={submitEdit} loading={edit.isPending}>
-              Save range
+              <Trans>Save range</Trans>
             </Button>
           </Group>
         </Stack>
       </Modal>
 
-      <Modal opened={rejecting !== null} onClose={() => setRejecting(null)} title="Reject request">
+      <Modal opened={rejecting !== null} onClose={() => setRejecting(null)} title={t`Reject request`}>
         <Stack gap="sm">
           <Text size="sm">{rejecting?.title}</Text>
           <Textarea
-            label="Reason (optional)"
-            placeholder="Shown to whoever asked"
+            label={t`Reason (optional)`}
+            placeholder={t`Shown to whoever asked`}
             value={rejectNote}
             onChange={(e) => setRejectNote(e.currentTarget.value)}
             autosize
@@ -428,10 +473,10 @@ export default function RequestsPage() {
           />
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setRejecting(null)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button color="red" onClick={submitReject} loading={reject.isPending}>
-              Reject
+              <Trans>Reject</Trans>
             </Button>
           </Group>
         </Stack>

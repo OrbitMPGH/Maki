@@ -27,7 +27,6 @@ namespace Maki.Api.Services;
 public class ReaderCohortService(
     IServiceScopeFactory scopeFactory,
     SeedWeightService seedWeights,
-    BehavioralTasteService taste,
     ReaderCohortCache cohorts,
     ReaderCohortTuning tuning,
     IAppSettings settings,
@@ -43,7 +42,7 @@ public class ReaderCohortService(
     private const int CacheSlots = 40;
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<int, (IReadOnlyDictionary<int, double> Weights, int ReadCount, DateTime At)>
+    private readonly Dictionary<int, (IReadOnlyDictionary<int, double> Weights, string InputKey, DateTime At)>
         _placements = [];
 
     /// <summary>
@@ -323,6 +322,7 @@ public class ReaderCohortService(
         ICurrentUser scope, ReaderCohortIndex index, CancellationToken ct)
     {
         var readIds = await ReadPopulationAsync(scope, ct);
+        var inputKey = $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{string.Join(',', readIds.Order())}";
 
         await _lock.WaitAsync(ct);
         try
@@ -330,14 +330,14 @@ public class ReaderCohortService(
             // Keyed on the size of the read set as well as on age, so finishing something places
             // again rather than waiting out the half hour.
             if (_placements.TryGetValue(scope.UserId, out var cached)
-                && cached.ReadCount == readIds.Count
+                && cached.InputKey == inputKey
                 && DateTime.UtcNow - cached.At < CacheFor)
             {
                 return cached.Weights;
             }
 
             var weights = Place(index, readIds, tuning.TopCohorts);
-            _placements[scope.UserId] = (weights, readIds.Count, DateTime.UtcNow);
+            _placements[scope.UserId] = (weights, inputKey, DateTime.UtcNow);
 
             while (_placements.Count > CacheSlots)
             {
@@ -363,16 +363,18 @@ public class ReaderCohortService(
         // reader using root folders they were never granted.
         db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
 
-        var seeded = await seedWeights.BuildAsync(db, scope, ct);
-        if (seeded.LibraryIds.Count == 0)
+        var snapshot = await seedWeights.SnapshotAsync(db, scope, ct);
+        if (snapshot.Effective.LibraryIds.Count == 0)
         {
             return [];
         }
 
         // The raw read set, not the weights: a series whose reading implies a neutral weight was
-        // still read, and it still says which cohorts this reader belongs with.
-        var signals = await taste.ReadSignalsAsync(db, scope.UserId, seeded.LibraryIds, ct);
-        return signals.Keys.ToList();
+        // still read, and it still says which cohorts this reader belongs with. Ignored sources are
+        // dropped here rather than in the snapshot's own read: placement is automatic seeding, and
+        // a source the reader excluded should not decide which cohorts they belong with.
+        var eligible = snapshot.Effective.EligibleIds.ToHashSet();
+        return snapshot.Signals.Keys.Where(eligible.Contains).ToList();
     }
 
     /// <summary>

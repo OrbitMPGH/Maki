@@ -268,6 +268,7 @@ public partial class SourceMatchService(
         IReadOnlyCollection<string> disabledSources,
         List<string> alreadyMapped,
         IReadOnlyDictionary<string, string> crossRefs,
+        SourceLanguagePreference languages,
         CancellationToken ct)
     {
         var seeded = new List<string>();
@@ -304,6 +305,7 @@ public partial class SourceMatchService(
                     SourceName = source.Name,
                     SourceSeriesId = detail.SourceSeriesId,
                     Url = detail.Url,
+                    LanguageFilter = SourceLanguagePreference.SeedFilter(source, languages),
                     Priority = priority,
                     Enabled = true,
                     Origin = SourceMappingOrigin.CrossId
@@ -417,8 +419,13 @@ public partial class SourceMatchService(
         // Cross-site ids gathered from confirmed matches, spent on the sources nothing matched.
         var crossRefs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        var orderedSources = OrderSources(
+        var baseOrder = OrderSources(
             sourceRegistry.All, await settings.GetAsync(Maki.Core.Configuration.SettingKeys.SourcePriorityOrder, ct));
+
+        // Sources publishing none of the enabled languages are dropped here rather than filtered
+        // later: a mapping for one could only ever list chapters in a language nobody asked for.
+        var languages = await SourceLanguagePreference.LoadAsync(settings, ct);
+        var orderedSources = SourceLanguagePreference.Rank(baseOrder, languages);
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
 
         // One read for every source instead of one each: the searches below run in parallel and are
@@ -495,6 +502,7 @@ public partial class SourceMatchService(
                 SourceName = outcome.Source.Name,
                 SourceSeriesId = outcome.Match.SourceSeriesId,
                 Url = outcome.Match.Url,
+                LanguageFilter = SourceLanguagePreference.SeedFilter(outcome.Source, languages),
                 Priority = outcome.Priority,
                 Enabled = true,
                 Origin = outcome.Origin
@@ -502,7 +510,8 @@ public partial class SourceMatchService(
             mapped.Add(outcome.Source.Name);
         }
 
-        mapped.AddRange(await SeedFromCrossRefsAsync(series, orderedSources, disabledSources, mapped, crossRefs, ct));
+        mapped.AddRange(await SeedFromCrossRefsAsync(
+            series, orderedSources, disabledSources, mapped, crossRefs, languages, ct));
 
         if (mapped.Count == 0)
         {

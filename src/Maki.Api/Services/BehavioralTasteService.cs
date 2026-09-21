@@ -126,12 +126,35 @@ public class BehavioralTasteService(TasteTuning tuning)
             return new Dictionary<long, double>();
         }
 
-        var signals = await ReadSignalsAsync(db, userId, visibleIds, ct);
+        return Weights(await ReadSignalsAsync(db, userId, visibleIds, ct));
+    }
+
+    /// <summary>
+    /// The same weights from signals already in hand, optionally narrowed to <paramref name="population"/>.
+    /// <para>
+    /// Callers that need two populations off one library — the observed shelf and the seeds left
+    /// after ignored sources are dropped — read the signals once and narrow here. The second
+    /// population is a subset of the first, so re-querying would fetch the same rows to discard some.
+    /// </para>
+    /// </summary>
+    public IReadOnlyDictionary<long, double> Weights(
+        IReadOnlyDictionary<long, SeriesReadSignal> signals, IReadOnlySet<long>? population = null)
+    {
+        if (tuning.IsUniform)
+        {
+            return new Dictionary<long, double>();
+        }
+
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var weights = new Dictionary<long, double>();
 
         foreach (var (id, signal) in signals)
         {
+            if (population is not null && !population.Contains(id))
+            {
+                continue;
+            }
+
             var weight = TasteWeights.Weight(signal, today, tuning);
             if (Math.Abs(weight - TasteWeights.Neutral) < 1e-9)
             {

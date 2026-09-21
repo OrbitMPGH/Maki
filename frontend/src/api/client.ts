@@ -1,3 +1,5 @@
+import { i18n } from '@lingui/core'
+
 interface InitializeInfo {
   apiRoot: string
   version: string
@@ -77,9 +79,22 @@ function readCookie(name: string): string | null {
 export function authHeaders(extra?: HeadersInit): HeadersInit {
   return {
     'Content-Type': 'application/json',
+    ...languageHeader(),
     ...xsrfHeader(),
     ...(extra as Record<string, string> | undefined),
   }
+}
+
+/**
+ * Tells the API which language to answer in. Error messages, notification bodies and queue labels
+ * are all rendered server-side, so without this they would come back in whatever the server guessed.
+ *
+ * Every request goes through `authHeaders`, which is why one line here is enough. It matters most
+ * before sign-in, where there is no stored preference for the server to read and this is the only
+ * thing that says what the browser resolved.
+ */
+function languageHeader(): Record<string, string> {
+  return i18n.locale ? { 'X-Maki-Language': i18n.locale } : {}
 }
 
 /**
@@ -114,7 +129,12 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   return JSON.parse(body) as T
 }
 
-/** Controllers answer failures as `{ "error": "..." }`; fall back to the raw body when they don't. */
+/**
+ * Controllers answer failures as `{ "error": "...", "code": "..." }`; fall back to the raw body when
+ * they don't. `error` is already localized by the server, so it is displayed as-is. `code` is the
+ * stable dotted key behind it, for a caller that wants to branch on a specific failure rather than
+ * show it; nothing reads it yet.
+ */
 function errorMessage(body: string): string | null {
   if (!body) return null
   try {

@@ -1,4 +1,4 @@
-using Maki.Api.Services;
+﻿using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -208,8 +208,11 @@ public sealed class ProgressTests : IDisposable
         var unlocks = _inbox.Raised.Where(r => r.Type == InboxEventType.AchievementUnlocked).ToList();
 
         Assert.NotEmpty(unlocks);
-        Assert.Equal(unlocks.Count, unlocks.Select(u => u.Message.Body).Distinct().Count());
-        Assert.Single(unlocks, u => u.Message.Body.StartsWith("Reader", StringComparison.Ordinal));
+        // One notification per achievement, identified by which achievement it names rather than by
+        // its wording: the sentence is assembled in the reader's language at read time now.
+        var named = unlocks.Select(u => u.Message.Params?["achievement"]).ToList();
+        Assert.Equal(unlocks.Count, named.Distinct().Count());
+        Assert.Contains("reader", named);
     }
 
     [Fact]

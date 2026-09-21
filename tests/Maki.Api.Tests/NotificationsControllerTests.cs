@@ -25,7 +25,7 @@ public class NotificationsControllerTests : IDisposable
     private NotificationsController Controller(params INotificationProvider[] providers)
     {
         var service = new NotificationService(_db.ScopeFactory(), providers, NullLogger<NotificationService>.Instance);
-        return new NotificationsController(_db.NewContext(), service);
+        return new NotificationsController(new TestLocalizer(), _db.NewContext(), service);
     }
 
     private static NotificationsController.NotificationRequest DiscordRequest(

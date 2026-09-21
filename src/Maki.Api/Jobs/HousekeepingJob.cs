@@ -6,7 +6,7 @@ using Quartz;
 
 namespace Maki.Api.Jobs;
 
-/// <summary>Daily cleanup: orphaned page caches, old finished queue rows, WAL checkpoint.</summary>
+/// <summary>Daily cleanup: orphaned page caches, old finished queue rows, WAL checkpoint, SQLite pool.</summary>
 [DisallowConcurrentExecution]
 public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<HousekeepingJob> logger) : IJob
 {
@@ -135,6 +135,15 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
         await PruneInboxAsync(ct);
 
         await db.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);", ct);
+
+        // Microsoft.Data.Sqlite pools native handles per connection string with no upper bound, and
+        // each one keeps SQLite's own page cache (~2 MB by default) alive behind it. The pool
+        // therefore grows to the highest concurrency the process ever saw - a scan overlapping a
+        // download burst overlapping a request - and never gives any of it back. Clearing it daily
+        // makes that a sawtooth instead of a ratchet. Connections currently in use are untouched;
+        // they return to an empty pool. Nothing else in the app is affected: every other SQLite
+        // consumer here opens with Pooling=False so the nightly artifact swaps can replace a file.
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         logger.LogDebug("Housekeeping complete");
     }
 

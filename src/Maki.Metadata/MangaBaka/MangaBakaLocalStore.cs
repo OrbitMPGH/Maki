@@ -1,3 +1,4 @@
+using Maki.Core.Io;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -43,6 +44,13 @@ public class MangaBakaLocalStore(
 {
     /// <summary>Rows a title search returns when the caller does not ask for a different depth.</summary>
     public const int DefaultSearchLimit = 20;
+
+    /// <summary>
+    /// Asks the kernel to forget the dump's pages. For a caller that has just finished a batch of
+    /// browse scans and knows it will not read the file again soon; see <see cref="PageCache"/> for
+    /// why a point query must never do this.
+    /// </summary>
+    public void DropScanCache() => PageCache.DropAfterScan(options.DatabasePath);
 
     /// <summary>
     /// Backstop on how many ids a credit restriction will inline. Callers holding a
@@ -579,6 +587,64 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>
+    /// Ids in the same work as <paramref name="id"/>, breadth-first over the dump's own same-work
+    /// relations (<see cref="FranchiseGraph.SameWorkTargets"/>), excluding <paramref name="id"/>.
+    ///
+    /// <para>
+    /// The fallback for when the vector index cannot answer: <see cref="FranchiseGraph"/>'s
+    /// components live on the index, so an instance with embeddings off or an index still building
+    /// has no component to read. A three-hop walk over the same relation types reaches the same
+    /// members for the shapes that matter here, without building the whole graph.
+    /// </para>
+    /// </summary>
+    public virtual async Task<IReadOnlyList<long>> GetSameWorkIdsAsync(
+        long id, int max = 50, CancellationToken ct = default)
+    {
+        if (max <= 0 || !await IsAvailableAsync(ct))
+        {
+            return [];
+        }
+
+        using var conn = Open();
+        var columns = FranchiseGraph.SameWorkColumns;
+        var seen = new HashSet<long> { id };
+        var found = new List<long>();
+        var frontier = new List<long> { id };
+        for (var hop = 0; hop < 3 && frontier.Count > 0 && found.Count < max; hop++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT relationships_v2, {string.Join(", ", columns)} " +
+                $"FROM series WHERE id IN ({string.Join(",", frontier)})";
+            var next = new List<long>();
+            using (var reader = await cmd.ExecuteReaderAsync(ct))
+            {
+                while (await reader.ReadAsync(ct))
+                {
+                    var flat = new string?[columns.Count];
+                    for (var i = 0; i < flat.Length; i++)
+                    {
+                        flat[i] = GetString(reader, i + 1);
+                    }
+
+                    foreach (var target in FranchiseGraph.SameWorkTargets(GetString(reader, 0), flat))
+                    {
+                        if (seen.Add(target) && found.Count < max)
+                        {
+                            found.Add(target);
+                            next.Add(target);
+                        }
+                    }
+                }
+            }
+
+            frontier = next;
+        }
+
+        return found;
+    }
+
+    /// <summary>
     /// Direct relations (sequels, prequels, spin-offs, side/main stories) of the given
     /// library series, excluding anything already in the library. Merged entries are
     /// followed to their canonical row; novels are always dropped, and content rating is
@@ -877,7 +943,7 @@ public class MangaBakaLocalStore(
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $"""
             SELECT id, {DisplayTitleSql("series")}, cover_raw_url, year, status, rating, total_chapters,
-                   description, cover_x250_x1, cover_x250_x2
+                   description, cover_x250_x1, cover_x250_x2, genres
             FROM series
             WHERE id IN ({string.Join(",", ids.Take(MaxInlineIds).Select(id => id.ToString(CultureInfo.InvariantCulture)))})
               AND {(allowed is null ? "1=1" : $"content_rating IN ({string.Join(",", allowed.Select((_, i) => $"$allow{i}"))})")}
@@ -902,7 +968,7 @@ public class MangaBakaLocalStore(
                 MangaBakaProvider.MapStatus(GetString(reader, 4)),
                 reader.IsDBNull(5) ? null : reader.GetDouble(5),
                 ParseCount(GetString(reader, 6)),
-                [], [], false,
+                ParseStringArray(GetString(reader, 10)), [], false,
                 null, null,
                 ThumbUrl: GetString(reader, 8),
                 ThumbUrlHiDpi: GetString(reader, 9));
@@ -1413,6 +1479,123 @@ public class MangaBakaLocalStore(
         return result;
     }
 
+    /// <summary>Which provider's manga ids a lookup is keyed on.</summary>
+    public enum ExternalSource { AniList, MyAnimeList }
+
+    /// <summary>
+    /// External manga id -> canonical MangaBaka id, for the ids that resolve.
+    /// <para>
+    /// Chunked <c>IN (...)</c> rather than a temp table or a join, because the dump is opened
+    /// read-only and a nightly swap replaces the file: nothing here may write to it, index included.
+    /// Each chunk is one scan, so the chunk is large (500) and the callers are expected to ask once
+    /// per sync rather than once per entry.
+    /// </para>
+    /// Merged rows are followed to their canonical series the same way <see cref="GetAsync"/> does,
+    /// and novels are dropped, so a light-novel relation picked up from a provider cannot enter the
+    /// recommender as a manga seed.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, long>> GetIdsByExternalIdsAsync(
+        ExternalSource source, IReadOnlyCollection<long> externalIds, CancellationToken ct = default)
+    {
+        var wanted = externalIds.Where(id => id > 0).Distinct().ToList();
+        if (wanted.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return new Dictionary<long, long>();
+        }
+
+        var column = source == ExternalSource.AniList ? "source_anilist_id" : "source_my_anime_list_id";
+        var result = new Dictionary<long, long>(wanted.Count);
+        var pending = new List<(long External, long SeriesId)>();
+
+        using var conn = Open();
+        const int chunkSize = 500;
+        for (var offset = 0; offset < wanted.Count; offset += chunkSize)
+        {
+            var chunk = wanted.Skip(offset).Take(chunkSize).ToList();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT {column}, id, state, merged_with, type
+                FROM series
+                WHERE {column} IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                """;
+            cmd.CommandTimeout = 600;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                if (reader.IsDBNull(0))
+                {
+                    continue;
+                }
+
+                // The dump stores these as text on some rows and as integers on others.
+                var external = reader.GetFieldType(0) == typeof(string)
+                    ? long.TryParse(GetString(reader, 0), NumberStyles.Integer, CultureInfo.InvariantCulture, out var p)
+                        ? p : 0
+                    : reader.GetInt64(0);
+                if (external <= 0)
+                {
+                    continue;
+                }
+
+                var seriesId = reader.GetInt64(1);
+                if (GetString(reader, 2) == "merged" && long.TryParse(GetString(reader, 3), out var canonical))
+                {
+                    pending.Add((external, canonical));
+                    continue;
+                }
+
+                if (GetString(reader, 4) == "novel")
+                {
+                    continue;
+                }
+
+                result.TryAdd(external, seriesId);
+            }
+        }
+
+        for (var hop = 0; hop < 5 && pending.Count > 0; hop++)
+        {
+            var next = new List<(long External, long SeriesId)>();
+            var ids = pending.Select(x => x.SeriesId).Distinct().ToList();
+            var states = new Dictionary<long, (string? State, string? MergedWith, string? Type)>(ids.Count);
+            for (var offset = 0; offset < ids.Count; offset += chunkSize)
+            {
+                var chunk = ids.Skip(offset).Take(chunkSize).ToList();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"""
+                    SELECT id, state, merged_with, type FROM series
+                    WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                    """;
+                using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    states[reader.GetInt64(0)] = (GetString(reader, 1), GetString(reader, 2), GetString(reader, 3));
+                }
+            }
+
+            foreach (var (external, seriesId) in pending)
+            {
+                if (result.ContainsKey(external) || !states.TryGetValue(seriesId, out var row))
+                {
+                    continue;
+                }
+
+                if (row.State == "merged" && long.TryParse(row.MergedWith, out var canonical))
+                {
+                    next.Add((external, canonical));
+                }
+                else if (row.Type != "novel")
+                {
+                    result.TryAdd(external, seriesId);
+                }
+            }
+
+            pending = next;
+        }
+
+        return result;
+    }
+
     private SqliteConnection Open()
     {
         // Pooling=False keeps handles off the file so the nightly swap can replace it.
@@ -1567,12 +1750,20 @@ public class MangaBakaLocalStore(
             .ToList();
 
     /// <summary>
-    /// <c>titles</c> is JSON: <c>[{"title","note","traits":[],"language","is_primary"}, …]</c>. Only
-    /// <c>is_primary</c> entries are kept — the dump also carries non-primary alt spellings that
-    /// aren't worth surfacing. The "en" entry becomes the display title, the one tagged "native"
-    /// becomes the original-script title, and everything else primary is kept for "show more".
+    /// <c>titles</c> is JSON: <c>[{"title","note","traits":[],"language","is_primary"}, …]</c>, and
+    /// every entry carries the language it is written in. The primary <c>en</c> entry becomes the
+    /// display title, the primary entry tagged <c>native</c> becomes the original-script title, and
+    /// <em>everything else</em> is kept with its language code — primary entries first, then the
+    /// non-primary alternate spellings, which is the order they are worth reading in.
+    /// <para>
+    /// The languages are the point. This used to drop every entry that was neither English nor
+    /// native before even looking at <c>is_primary</c>, so a row's Vietnamese, Spanish and Russian
+    /// primary titles never reached a <c>Series</c> at all and the only alt titles that survived
+    /// were untagged English respellings. They are what a display-language preference and
+    /// ComicInfo's <c>LocalizedSeries</c> select from.
+    /// </para>
     /// </summary>
-    private static (string? EnglishTitle, string? NativeTitle, IReadOnlyList<string> OtherTitles)
+    private static (string? EnglishTitle, string? NativeTitle, IReadOnlyList<LocalizedTitle> OtherTitles)
         ParsePrimaryTitles(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -1583,10 +1774,12 @@ public class MangaBakaLocalStore(
         try
         {
             using var doc = JsonDocument.Parse(json);
-            string? english = null;
-            string? native = null;
-            var others = new List<string>();
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return (null, null, []);
+            }
 
+            var entries = new List<(string Title, string? Language, bool IsPrimary, bool IsNative)>();
             foreach (var entry in doc.RootElement.EnumerateArray())
             {
                 var title = entry.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
@@ -1595,28 +1788,43 @@ public class MangaBakaLocalStore(
                     continue;
                 }
 
-                var isEnglish = entry.TryGetProperty("language", out var langEl) && string.Equals(langEl.GetString(), "en", StringComparison.OrdinalIgnoreCase);
-                var isNative = entry.TryGetProperty("traits", out var traitsEl)
-                    && traitsEl.ValueKind == JsonValueKind.Array
-                    && traitsEl.EnumerateArray().Any(t => string.Equals(t.GetString(), "native", StringComparison.OrdinalIgnoreCase));
-                
-                if (!isEnglish && !isNative)
+                var language = entry.TryGetProperty("language", out var langEl) && langEl.ValueKind == JsonValueKind.String
+                    ? langEl.GetString()?.Trim().ToLowerInvariant()
+                    : null;
+
+                entries.Add((
+                    title,
+                    string.IsNullOrEmpty(language) ? null : language,
+                    entry.TryGetProperty("is_primary", out var primaryEl) && primaryEl.ValueKind == JsonValueKind.True,
+                    entry.TryGetProperty("traits", out var traitsEl)
+                        && traitsEl.ValueKind == JsonValueKind.Array
+                        && traitsEl.EnumerateArray().Any(t =>
+                            string.Equals(t.GetString(), "native", StringComparison.OrdinalIgnoreCase))));
+            }
+
+            var english = entries
+                .FirstOrDefault(e => e.IsPrimary && e.Language == "en")
+                .Title;
+
+            // A romanization is tagged native too ("ja-Latn"), and it is listed before the real
+            // Japanese entry often enough that taking the first native one put a romanization in
+            // OriginalTitle — which is the one field that is supposed to be the original script.
+            var natives = entries.Where(e => e.IsPrimary && e.IsNative).ToList();
+            var native = (natives.FirstOrDefault(e => !IsRomanization(e.Language)).Title
+                ?? natives.FirstOrDefault().Title);
+
+            var others = new List<LocalizedTitle>();
+            var seen = new HashSet<(string, string?)>();
+            foreach (var entry in entries.Where(e => e.IsPrimary).Concat(entries.Where(e => !e.IsPrimary)))
+            {
+                if (entry.Title == english || entry.Title == native)
+                {
                     continue;
-                
-                if (entry.TryGetProperty("is_primary", out var primaryEl) && primaryEl.ValueKind == JsonValueKind.True)
-                {
-                    if (english is null && isEnglish)
-                    {
-                        english = title;
-                    }
-                    else if (native is null && isNative)
-                    {
-                        native = title;
-                    }
                 }
-                else
+
+                if (seen.Add((entry.Title, entry.Language)))
                 {
-                    others.Add(title);
+                    others.Add(new LocalizedTitle(entry.Title, entry.Language));
                 }
             }
 
@@ -1627,6 +1835,10 @@ public class MangaBakaLocalStore(
             return (null, null, []);
         }
     }
+
+    /// <summary>A BCP-47 code whose script subtag is Latin — MangaBaka's romanizations ("ja-Latn").</summary>
+    private static bool IsRomanization(string? language) =>
+        language is not null && language.EndsWith("-latn", StringComparison.OrdinalIgnoreCase);
 
     private static IReadOnlyList<string> ParseStringArray(string? json)
     {

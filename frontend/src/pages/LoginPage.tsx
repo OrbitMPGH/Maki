@@ -14,6 +14,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { IconBrandMark } from '../components/IconBrandMark'
 import { useLogin, useVerifyTwoFactor } from '../api/auth'
 import { getInitialize } from '../api/client'
@@ -26,6 +27,7 @@ import { getInitialize } from '../api/client'
  * enumerator on an instance reachable from the internet.
  */
 export function LoginPage() {
+  const { t } = useLingui()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
@@ -62,6 +64,7 @@ export function LoginPage() {
   const error = login.error ?? verify.error
   const busy = login.isPending || verify.isPending
   const passwordHidden = sso.enabled && sso.restricted && !showPassword
+  const { displayName } = sso
 
   function submitPassword(event: React.FormEvent) {
     event.preventDefault()
@@ -97,7 +100,7 @@ export function LoginPage() {
             Maki
           </Title>
           <Text c="dimmed" fz="sm">
-            {needsCode ? 'Enter your authenticator code' : 'Sign in to continue'}
+            {needsCode ? <Trans>Enter your authenticator code</Trans> : <Trans>Sign in to continue</Trans>}
           </Text>
         </Stack>
 
@@ -117,7 +120,7 @@ export function LoginPage() {
                   />
                 </Center>
                 <Checkbox
-                  label="Trust this device for 30 days"
+                  label={t`Trust this device for 30 days`}
                   checked={rememberMachine}
                   onChange={(e) => setRememberMachine(e.currentTarget.checked)}
                 />
@@ -127,7 +130,7 @@ export function LoginPage() {
                   </Alert>
                 )}
                 <Button type="submit" loading={busy} disabled={code.length < 6} fullWidth>
-                  Verify
+                  <Trans>Verify</Trans>
                 </Button>
                 <Anchor
                   fz="sm"
@@ -138,7 +141,7 @@ export function LoginPage() {
                     verify.reset()
                   }}
                 >
-                  Start over
+                  <Trans>Start over</Trans>
                 </Anchor>
               </Stack>
             </form>
@@ -161,7 +164,7 @@ export function LoginPage() {
                     variant="light"
                     fullWidth
                   >
-                    Continue with {sso.displayName}
+                    <Trans>Continue with {displayName}</Trans>
                   </Button>
                   {!passwordHidden && <Divider label="or" labelPosition="center" />}
                 </>
@@ -169,18 +172,18 @@ export function LoginPage() {
 
               {passwordHidden ? (
                 <Anchor fz="sm" ta="center" onClick={() => setShowPassword(true)}>
-                  Sign in with a password
+                  <Trans>Sign in with a password</Trans>
                 </Anchor>
               ) : (
                 <form onSubmit={submitPassword}>
                   <Stack>
                     {sso.enabled && sso.restricted && (
                       <Text fz="xs" c="dimmed">
-                        Password sign-in is limited to administrators on this instance.
+                        <Trans>Password sign-in is limited to administrators on this instance.</Trans>
                       </Text>
                     )}
                     <TextInput
-                      label="Username"
+                      label={t`Username`}
                       autoComplete="username"
                       autoFocus
                       required
@@ -188,7 +191,7 @@ export function LoginPage() {
                       onChange={(e) => setUsername(e.currentTarget.value)}
                     />
                     <PasswordInput
-                      label="Password"
+                      label={t`Password`}
                       autoComplete="current-password"
                       required
                       value={password}
@@ -200,7 +203,7 @@ export function LoginPage() {
                       </Alert>
                     )}
                     <Button type="submit" loading={busy} fullWidth>
-                      Sign in
+                      <Trans>Sign in</Trans>
                     </Button>
                   </Stack>
                 </form>

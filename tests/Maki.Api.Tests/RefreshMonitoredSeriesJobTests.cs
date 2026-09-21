@@ -111,7 +111,7 @@ public class RefreshSmartGateTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly DownloadBatchNotifier _batches = new(
-        new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+        new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(), new TestUserLocaleResolver(), TimeProvider.System,
         NullLogger<DownloadBatchNotifier>.Instance);
 
     public void Dispose()
@@ -158,7 +158,8 @@ public class RefreshSmartGateTests : IDisposable
 
         var job = new RefreshMonitoredSeriesJob(
             ScopeFactoryWith(source), queue, new RecordingNotifications(), new RecordingInbox(),
-            _batches, Sources.AllEnabled, NullLogger<RefreshMonitoredSeriesJob>.Instance);
+            _batches, Sources.AllEnabled, new TestLocalizer(), new TestUserLocaleResolver(),
+            NullLogger<RefreshMonitoredSeriesJob>.Instance);
 
         await job.RefreshSeriesAsync(seriesId, CancellationToken.None);
 

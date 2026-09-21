@@ -305,7 +305,7 @@ public class AuthorizationTests
             ? new AlwaysValidAntiforgery()
             : provider.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
 
-        await new AntiforgeryCookieFilter(antiforgery).OnAuthorizationAsync(context);
+        await new AntiforgeryCookieFilter(new TestLocalizer(), antiforgery).OnAuthorizationAsync(context);
         return context.Result;
     }
 

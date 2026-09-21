@@ -1,4 +1,4 @@
-using Maki.Api.Controllers;
+﻿using Maki.Api.Controllers;
 using Maki.Core.Entities;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -24,8 +24,8 @@ public sealed class SeriesNotificationsControllerTests : IDisposable
     /// quietly running against a stub that does nothing.
     /// </summary>
     private static SeriesController Controller(Maki.Data.MakiDbContext db) =>
-        new(db, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
-            null!, null!, null!, null!, null!, null!, null!, null!);
+        new(new TestLocalizer(), db, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
 
     [Fact]
     public async Task Setting_a_mode_creates_the_row_and_stamps_it_with_the_caller()

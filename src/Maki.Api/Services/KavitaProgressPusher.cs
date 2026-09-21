@@ -34,7 +34,7 @@ public class KavitaProgressPusher(
     /// zero, which is the only reason the round trip is harmless. Pushing somebody else's read would
     /// land the echo in a different row and count every chapter into Rewind twice.
     /// </param>
-    public void QueuePush(int userId, int seriesId, decimal? chapterNumber)
+    public virtual void QueuePush(int userId, int seriesId, decimal? chapterNumber)
     {
         if (chapterNumber is null)
         {

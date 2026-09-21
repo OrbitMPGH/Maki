@@ -15,6 +15,8 @@ public class MangaBakaDumpServiceTests : IDisposable
 
     private readonly FakeAppSettings _settings = new();
 
+    private readonly MangaBakaDumpStatus _status = new();
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
@@ -31,6 +33,7 @@ public class MangaBakaDumpServiceTests : IDisposable
         new FakeDumpHttpClientFactory(responses),
         new MangaBakaDumpOptions(Path.Combine(_workDir, "mangabaka.db"), _workDir),
         _settings,
+        _status,
         NullLogger<MangaBakaDumpService>.Instance);
 
     private static (byte[] Compressed, string Sha1) CompressDb(string dbPath)
@@ -91,6 +94,13 @@ public class MangaBakaDumpServiceTests : IDisposable
             NullLogger<MangaBakaLocalStore>.Instance);
         var results = await store.SearchAsync("one piece", ContentRating.Pornographic);
         Assert.Equal("377", Assert.Single(results).ProviderId);
+
+        var progress = _status.Snapshot();
+        Assert.False(progress.Running);
+        Assert.Equal("idle", progress.Phase);
+        Assert.True(progress.LastInstalled);
+        Assert.Null(progress.LastError);
+        Assert.Equal(compressed.LongLength, progress.DownloadedBytes);
     }
 
     [Fact]
@@ -111,6 +121,13 @@ public class MangaBakaDumpServiceTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_workDir, "mangabaka.db")));
         Assert.False(File.Exists(Path.Combine(_workDir, "mangabaka.db.partial")));
         Assert.False(_settings.Values.ContainsKey(SettingKeys.MangaBakaDumpSha1));
+
+        // The failure has to reach the status object, or the toast sits on its last download frame
+        // and the settings card never explains why nothing arrived.
+        var progress = _status.Snapshot();
+        Assert.False(progress.Running);
+        Assert.False(progress.LastInstalled);
+        Assert.Contains("checksum mismatch", progress.LastError);
     }
 }
 

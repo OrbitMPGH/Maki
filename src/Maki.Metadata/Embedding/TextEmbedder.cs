@@ -34,6 +34,15 @@ public sealed class TextEmbedder(
     private const string HiddenStateOutput = "last_hidden_state";
 
     private readonly SemaphoreSlim _initLock = new(1, 1);
+
+    /// <summary>
+    /// Held for reading by every pass and for writing by an idle unload, so a session can never be
+    /// disposed out from under a native <c>Run</c>. Writing is always attempted without blocking:
+    /// a busy embedder simply keeps its session until the next tick.
+    /// </summary>
+    private readonly ReaderWriterLockSlim _sessionLock = new();
+
+    private long _lastUsedTicks = DateTime.UtcNow.Ticks;
     private InferenceSession? _session;
     private Tokenizer? _tokenizer;
     private bool _usesTokenTypeIds;
@@ -59,6 +68,7 @@ public sealed class TextEmbedder(
 
         if (_session is not null)
         {
+            Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             return true;
         }
 
@@ -67,6 +77,7 @@ public sealed class TextEmbedder(
         {
             if (_session is not null)
             {
+                Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
                 return true;
             }
 
@@ -80,6 +91,7 @@ public sealed class TextEmbedder(
             // input the graph never asked for just as hard as one that omits a required input.
             _usesTokenTypeIds = _session.InputMetadata.ContainsKey(TokenTypeIdsInput);
             ActiveProvider = provider;
+            Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             logger.LogInformation(
                 "Text embedder ready ({Dim}-dim, model {Version}, {Precision} on {Provider})",
                 Dimensions, options.ModelVersion, options.Precision, provider);
@@ -107,10 +119,89 @@ public sealed class TextEmbedder(
         _initLock.Wait();
         try
         {
-            _session?.Dispose();
-            _session = null;
-            _tokenizer = null;
-            logger.LogInformation("Text embedder reset; will reload on next use");
+            // Blocking, unlike the idle unload: a model switch has to take effect, so it waits for
+            // an in-flight pass rather than giving up and leaving the old weights loaded.
+            _sessionLock.EnterWriteLock();
+            try
+            {
+                _session?.Dispose();
+                _session = null;
+                _tokenizer = null;
+                logger.LogInformation("Text embedder reset; will reload on next use");
+            }
+            finally
+            {
+                _sessionLock.ExitWriteLock();
+            }
+        }
+        finally
+        {
+            _initLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Drops the session when nothing has embedded anything for <paramref name="idleFor"/>, and
+    /// reports whether it did.
+    ///
+    /// <para>
+    /// The default model is ~240 MB resident and was held for the life of the process once anything
+    /// touched it — a single natural-language search, or one local indexing pass — even though a
+    /// self-hosted instance spends nearly all its time embedding nothing. Recommendations do not
+    /// need it at all: they score seed vectors that already sit in the index, so only a typed query
+    /// or a re-index pays the reload.
+    /// </para>
+    ///
+    /// <para>
+    /// Both locks are taken without blocking. An in-flight pass or a concurrent load means the
+    /// session is in use, and the caller ticks again later rather than waiting on it.
+    /// </para>
+    /// </summary>
+    public bool ReleaseIfIdle(TimeSpan idleFor)
+    {
+        if (_session is null)
+        {
+            return false;
+        }
+
+        var idle = DateTime.UtcNow - new DateTime(Interlocked.Read(ref _lastUsedTicks), DateTimeKind.Utc);
+        if (idle < idleFor)
+        {
+            return false;
+        }
+
+        if (!_initLock.Wait(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (!_sessionLock.TryEnterWriteLock(0))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (_session is null)
+                {
+                    return false;
+                }
+
+                _session.Dispose();
+                _session = null;
+                _tokenizer = null;
+                ActiveProvider = null;
+                logger.LogInformation(
+                    "Unloaded the text embedder after {Minutes:F0} idle minute(s); it reloads on next use",
+                    idle.TotalMinutes);
+                return true;
+            }
+            finally
+            {
+                _sessionLock.ExitWriteLock();
+            }
         }
         finally
         {
@@ -246,6 +337,39 @@ public sealed class TextEmbedder(
 
     /// <summary>Embeds a batch in one forward pass; sequences are padded to the batch's longest.</summary>
     public float[][] EmbedBatch(IReadOnlyList<string> texts)
+    {
+        // The read lock is what makes ReleaseIfIdle safe: the session cannot be disposed while any
+        // pass holds it. Stamping on the way out rather than the way in means a long indexing pass
+        // is measured from when it finished, not from when it started.
+        //
+        // A miss reloads once rather than throwing. Callers call EnsureReadyAsync first, but the
+        // idle unload can land in the gap between that returning true and this taking the read lock,
+        // and an indexing pass can spend longer than the idle window on DB work before its first
+        // batch. Both would otherwise surface as a failed search on an embedder that is merely cold.
+        for (var attempt = 0; ; attempt++)
+        {
+            _sessionLock.EnterReadLock();
+            try
+            {
+                if (_session is not null && _tokenizer is not null)
+                {
+                    return EmbedBatchCore(texts);
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
+                _sessionLock.ExitReadLock();
+            }
+
+            if (attempt > 0 || !EnsureReadyAsync().GetAwaiter().GetResult())
+            {
+                throw new InvalidOperationException("Embedder not initialized; call EnsureReadyAsync first");
+            }
+        }
+    }
+
+    private float[][] EmbedBatchCore(IReadOnlyList<string> texts)
     {
         if (_session is null || _tokenizer is null)
         {
@@ -469,5 +593,10 @@ public sealed class TextEmbedder(
         return tokens;
     }
 
+    /// <summary>
+    /// Disposes the session only. <c>_sessionLock</c> is deliberately left alone: disposing a
+    /// ReaderWriterLockSlim another thread still holds throws, and this runs at shutdown, where a
+    /// pass may still be unwinding. It owns nothing the process exit does not already reclaim.
+    /// </summary>
     public void Dispose() => _session?.Dispose();
 }

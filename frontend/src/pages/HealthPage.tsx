@@ -42,7 +42,7 @@ import {
   IconTrash,
   type Icon,
 } from '@tabler/icons-react'
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useImageCache, useRebuildImageCache } from '../api/hooks'
 import {
@@ -61,6 +61,9 @@ import {
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
+import { formatDateTime, formatNumber } from '../format'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -91,7 +94,8 @@ const color = (status: string) =>
         ? 'green'
         : 'gray'
 
-const bytes = (size: number) => (size < 0 ? 'Missing' : `${(size / 1024 / 1024).toFixed(1)} MiB`)
+const bytes = (size: number, missing: string) =>
+  size < 0 ? missing : `${(size / 1024 / 1024).toFixed(1)} MiB`
 
 function Status({ value }: { value: string }) {
   return (
@@ -102,6 +106,7 @@ function Status({ value }: { value: string }) {
 }
 
 export default function HealthPage() {
+  const { t } = useLingui()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') ?? 'overview'
   const overview = useHealthData<HealthOverview>()
@@ -150,12 +155,16 @@ export default function HealthPage() {
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
   // so they do not belong in a number whose job is to say "something needs you".
   const issues = overview.data?.checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged).length ?? 0
+  const partialScanError = overview.data?.scans.find((s) => s.error)?.error
+  const selectedCount = selected.size
+  const deletedCount = deleteReport?.deleted ?? 0
+  const failedCount = deleteReport?.failures.length ?? 0
 
   return (
     <>
       <PageHeader
-        title="Health"
-        description="System checks and reviewed library maintenance."
+        title={t`Health`}
+        description={t`System checks and reviewed library maintenance.`}
         actions={
           <>
             <Button
@@ -164,34 +173,38 @@ export default function HealthPage() {
               loading={action.isPending}
               onClick={() => run('/refresh')}
             >
-              Check now
+              <Trans>Check now</Trans>
             </Button>
             <Menu position="bottom-end" withinPortal width={320}>
               <Menu.Target>
                 <Button leftSection={<IconScan size={16} />} rightSection={<IconChevronDown size={14} />}>
-                  Scan files
+                  <Trans>Scan files</Trans>
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null })}>
                   <Text size="sm" fw={600}>
-                    Index
+                    <Trans>Index</Trans>
                   </Text>
                   <Text size="xs" c="var(--ink-4)">
-                    Reads each archive's table of contents, not its contents. Seconds for a whole
-                    library. Finds files that went missing, arrived on their own, changed size, or
-                    stopped being a readable archive.
+                    <Trans>
+                      Reads each archive's table of contents, not its contents. Seconds for a whole library.
+                      Finds files that went missing, arrived on their own, changed size, or stopped being a
+                      readable archive.
+                    </Trans>
                   </Text>
                 </Menu.Item>
                 <Menu.Item onClick={() => run('/scans', { rootFolderId: root ? Number(root) : null, verify: true })}>
                   <Text size="sm" fw={600}>
-                    Verify
+                    <Trans>Verify</Trans>
                   </Text>
                   <Text size="xs" c="var(--ink-4)">
-                    Reads every byte and checks it against the archive's own checksums, which is
-                    what catches a file that has rotted on disk. A full read of the library: around
-                    half an hour per 100 GB on a hard disk. Files are verified as they arrive, so
-                    this is for re-checking what is already there.
+                    <Trans>
+                      Reads every byte and checks it against the archive's own checksums, which is what catches
+                      a file that has rotted on disk. A full read of the library: around half an hour per 100 GB
+                      on a hard disk. Files are verified as they arrive, so this is for re-checking what is
+                      already there.
+                    </Trans>
                   </Text>
                 </Menu.Item>
               </Menu.Dropdown>
@@ -209,46 +222,62 @@ export default function HealthPage() {
 
       <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mb="lg">
         <StatTile
-          label="System issues"
+          label={t`System issues`}
           value={issues}
           icon={IconAlertTriangle}
           accent={issues > 0 ? 'danger' : 'ok'}
         />
         <StatTile
-          label="Open file findings"
+          label={t`Open file findings`}
           value={overview.data?.openFindings ?? 0}
           icon={IconFileAlert}
           accent={(overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok'}
         />
-        <StatTile label="Archives inventoried" value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
+        <StatTile label={t`Archives inventoried`} value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
       </SimpleGrid>
 
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
-        .map((scan) => (
-          <Alert key={scan.id} title={`${scan.verify ? 'Verify' : 'Index'} scan ${scan.id}: ${scan.status}`} mb="lg">
-            <Group justify="space-between">
-              <Text>
-                {scan.completed} / {scan.total} files inspected
-              </Text>
-              <Button size="xs" variant="default" onClick={() => run(`/scans/${scan.id}/cancel`)}>
-                Cancel scan
-              </Button>
-            </Group>
-          </Alert>
-        ))}
-      {overview.data?.scans.find((s) => s.error) && (
+        .map((scan) => {
+          const { id: scanId, status: scanStatus, completed, total } = scan
+          const scanTitle = scan.verify
+            ? t`Verify scan ${scanId}: ${scanStatus}`
+            : t`Index scan ${scanId}: ${scanStatus}`
+          return (
+            <Alert key={scan.id} title={scanTitle} mb="lg">
+              <Group justify="space-between">
+                <Text>
+                  <Trans>
+                    {completed} / {total} files inspected
+                  </Trans>
+                </Text>
+                <Button size="xs" variant="default" onClick={() => run(`/scans/${scan.id}/cancel`)}>
+                  <Trans>Cancel scan</Trans>
+                </Button>
+              </Group>
+            </Alert>
+          )
+        })}
+      {partialScanError && (
         <Alert color="yellow" mb="lg">
-          Last partial scan: {overview.data.scans.find((s) => s.error)?.error}
+          <Trans>Last partial scan: {partialScanError}</Trans>
         </Alert>
       )}
 
       <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
         <Tabs.List>
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="files">Files</Tabs.Tab>
-          <Tabs.Tab value="repairs">Repairs</Tabs.Tab>
-          <Tabs.Tab value="history">History</Tabs.Tab>
+          <Tabs.Tab value="overview">
+            <Trans>Overview</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="files">
+            <Trans>Files</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="repairs">
+            <Trans>Repairs</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="history">
+            <Trans>History</Trans>
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="overview" pt="lg">
@@ -263,20 +292,20 @@ export default function HealthPage() {
           <Stack>
             <Group>
               <TextInput
-                placeholder="Search file paths"
-                aria-label="Search file paths"
+                placeholder={t`Search file paths`}
+                aria-label={t`Search file paths`}
                 value={search}
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
               <Select
-                placeholder="All roots"
+                placeholder={t`All roots`}
                 clearable
                 value={root}
                 onChange={(v) => refilter(() => setRoot(v))}
                 data={overview.data?.roots.map((r) => ({ value: String(r.id), label: r.path })) ?? []}
               />
               <Select
-                placeholder="All findings"
+                placeholder={t`All findings`}
                 clearable
                 value={kind}
                 onChange={(v) => refilter(() => setKind(v))}
@@ -293,7 +322,7 @@ export default function HealthPage() {
                 ]}
               />
               <Select
-                placeholder="All states"
+                placeholder={t`All states`}
                 clearable
                 value={state}
                 onChange={(v) => refilter(() => setState(v))}
@@ -301,10 +330,10 @@ export default function HealthPage() {
               />
             </Group>
 
-            {selected.size > 0 && (
+            {selectedCount > 0 && (
               <Paper withBorder radius="md" p="xs" className="health-bulk-bar">
                 <Text size="sm" fw={600} className="tnum">
-                  {selected.size} selected
+                  <Trans>{selectedCount} selected</Trans>
                 </Text>
                 <Group gap="xs" wrap="wrap">
                   <Button
@@ -313,7 +342,7 @@ export default function HealthPage() {
                     loading={action.isPending}
                     onClick={() => bulk('/scans', { fileIds: ids, force: true })}
                   >
-                    Rescan
+                    <Trans>Rescan</Trans>
                   </Button>
                   <Button
                     size="xs"
@@ -321,7 +350,7 @@ export default function HealthPage() {
                     loading={action.isPending}
                     onClick={() => bulk('/scans', { fileIds: ids, force: true, verify: true })}
                   >
-                    Verify
+                    <Trans>Verify</Trans>
                   </Button>
                   <Button
                     size="xs"
@@ -329,7 +358,7 @@ export default function HealthPage() {
                     loading={action.isPending}
                     onClick={() => bulk('/imports', { fileIds: ids })}
                   >
-                    Import unlinked
+                    <Trans>Import unlinked</Trans>
                   </Button>
                   {(['acknowledged', 'ignored', 'open'] as const).map((next) => (
                     <Button
@@ -339,7 +368,13 @@ export default function HealthPage() {
                       loading={action.isPending}
                       onClick={() => bulk('/findings/review', { fileIds: ids, state: next })}
                     >
-                      {next === 'open' ? 'Reopen' : next === 'ignored' ? 'Ignore' : 'Acknowledge'}
+                      {next === 'open' ? (
+                        <Trans>Reopen</Trans>
+                      ) : next === 'ignored' ? (
+                        <Trans>Ignore</Trans>
+                      ) : (
+                        <Trans>Acknowledge</Trans>
+                      )}
                     </Button>
                   ))}
                   <Button
@@ -349,19 +384,21 @@ export default function HealthPage() {
                     leftSection={<IconTrash size={14} />}
                     onClick={() => setDeleteOpen(true)}
                   >
-                    Delete
+                    <Trans>Delete</Trans>
                   </Button>
                   <Button size="xs" variant="subtle" onClick={() => setSelected(new Set())}>
-                    Clear
+                    <Trans>Clear</Trans>
                   </Button>
                 </Group>
               </Paper>
             )}
 
-            {deleteReport && deleteReport.failures.length > 0 && (
+            {deleteReport && failedCount > 0 && (
               <Alert color="red" withCloseButton onClose={() => setDeleteReport(null)}>
                 <Text size="sm" mb="xs">
-                  {deleteReport.deleted} deleted, {deleteReport.failures.length} refused:
+                  <Trans>
+                    {deletedCount} deleted, {failedCount} refused:
+                  </Trans>
                 </Text>
                 {deleteReport.failures.map((failure) => (
                   <Text key={failure.id} size="xs" style={{ overflowWrap: 'anywhere' }}>
@@ -381,7 +418,7 @@ export default function HealthPage() {
                       <Table.Tr>
                         <Table.Th w={40}>
                           <Checkbox
-                            aria-label="Select every file on this page"
+                            aria-label={t`Select every file on this page`}
                             checked={pageIds.length > 0 && pageIds.every((i) => selected.has(i))}
                             indeterminate={
                               pageIds.some((i) => selected.has(i)) && !pageIds.every((i) => selected.has(i))
@@ -397,19 +434,29 @@ export default function HealthPage() {
                             }}
                           />
                         </Table.Th>
-                        <Table.Th>Archive</Table.Th>
-                        <Table.Th>Size</Table.Th>
-                        <Table.Th>Analysis</Table.Th>
-                        <Table.Th>Findings</Table.Th>
+                        <Table.Th>
+                          <Trans>Archive</Trans>
+                        </Table.Th>
+                        <Table.Th>
+                          <Trans>Size</Trans>
+                        </Table.Th>
+                        <Table.Th>
+                          <Trans>Analysis</Trans>
+                        </Table.Th>
+                        <Table.Th>
+                          <Trans>Findings</Trans>
+                        </Table.Th>
                         <Table.Th />
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {files.data?.items.map((file) => (
+                      {files.data?.items.map((file) => {
+                        const { relativePath } = file
+                        return (
                         <Table.Tr key={file.id} data-selected={selected.has(file.id) || undefined}>
                           <Table.Td>
                             <Checkbox
-                              aria-label={`Select ${file.relativePath}`}
+                              aria-label={t`Select ${relativePath}`}
                               checked={selected.has(file.id)}
                               onChange={(e) => {
                                 const checked = e.currentTarget.checked
@@ -425,10 +472,10 @@ export default function HealthPage() {
                               {file.relativePath}
                             </Text>
                             <Text size="xs" c="dimmed">
-                              {file.analyzedAt ? new Date(file.analyzedAt).toLocaleString() : 'Not analyzed'}
+                              {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
                             </Text>
                           </Table.Td>
-                          <Table.Td>{bytes(file.size)}</Table.Td>
+                          <Table.Td>{bytes(file.size, t`Missing`)}</Table.Td>
                           <Table.Td>
                             <Status value={file.status} />
                           </Table.Td>
@@ -443,16 +490,19 @@ export default function HealthPage() {
                           </Table.Td>
                           <Table.Td>
                             <Button size="xs" variant="default" onClick={() => setFileId(file.id)}>
-                              Review
+                              <Trans>Review</Trans>
                             </Button>
                           </Table.Td>
                         </Table.Tr>
-                      ))}
+                        )
+                      })}
                     </Table.Tbody>
                   </Table>
                 </Table.ScrollContainer>
                 {files.data?.items.length === 0 && (
-                  <Text c="dimmed">No files match these filters. Run a scan to inventory the library.</Text>
+                  <Text c="dimmed">
+                    <Trans>No files match these filters. Run a scan to inventory the library.</Trans>
+                  </Text>
                 )}
                 <Pagination
                   value={page}
@@ -466,27 +516,38 @@ export default function HealthPage() {
 
         <Tabs.Panel value="repairs" pt="lg">
           <Stack>
-            {operations.data?.items.map((op) => (
-              <Paper withBorder radius="lg" p="md" key={op.id}>
-                <Group justify="space-between">
-                  <div>
-                    <Group>
-                      <Text fw={600}>
-                        {op.kind === 'delete' ? 'Deletion review' : 'Replacement'} #{op.id}
+            {operations.data?.items.map((op) => {
+              const { id: opId, kind: opKind } = op
+              return (
+                <Paper withBorder radius="lg" p="md" key={op.id}>
+                  <Group justify="space-between">
+                    <div>
+                      <Group>
+                        <Text fw={600}>
+                          {opKind === 'delete' ? (
+                            <Trans>Deletion review #{opId}</Trans>
+                          ) : (
+                            <Trans>Replacement #{opId}</Trans>
+                          )}
+                        </Text>
+                        <Status value={op.status} />
+                      </Group>
+                      <Text size="sm" c="dimmed">
+                        {op.error ?? formatDateTime(op.createdAt)}
                       </Text>
-                      <Status value={op.status} />
-                    </Group>
-                    <Text size="sm" c="dimmed">
-                      {op.error ?? new Date(op.createdAt).toLocaleString()}
-                    </Text>
-                  </div>
-                  <Button variant="default" onClick={() => setOperationId(op.id)}>
-                    Review
-                  </Button>
-                </Group>
-              </Paper>
-            ))}
-            {operations.data?.items.length === 0 && <Text c="dimmed">No repairs or deletions requested.</Text>}
+                    </div>
+                    <Button variant="default" onClick={() => setOperationId(op.id)}>
+                      <Trans>Review</Trans>
+                    </Button>
+                  </Group>
+                </Paper>
+              )
+            })}
+            {operations.data?.items.length === 0 && (
+              <Text c="dimmed">
+                <Trans>No repairs or deletions requested.</Trans>
+              </Text>
+            )}
             <Pagination
               value={repairPage}
               onChange={setRepairPage}
@@ -503,7 +564,7 @@ export default function HealthPage() {
                 <div>
                   <Text size="sm">{entry.message}</Text>
                   <Text size="xs" c="dimmed">
-                    {new Date(entry.createdAt).toLocaleString()}
+                    {formatDateTime(entry.createdAt)}
                   </Text>
                 </div>
               </Group>
@@ -585,23 +646,41 @@ function BulkDeleteModal({
   pending: boolean
   onConfirm: () => void
 }) {
+  const { i18n } = useLingui()
   const [confirmed, setConfirmed] = useState(false)
+  const count = ids.length
+  const remaining = ids.length - named.length
+
+  // `plural` is the core macro, which reads the catalogue when it runs rather than subscribing.
+  // `i18n.locale` in the deps is what makes these follow a language switch.
+  const [title, confirmLabel] = useMemo(
+    () => [
+      plural(count, { one: 'Delete # archive?', other: 'Delete # archives?' }),
+      plural(count, {
+        one: 'I confirm permanent deletion of # archive.',
+        other: 'I confirm permanent deletion of # archives.',
+      }),
+    ],
+    [count, i18n.locale],
+  )
 
   return (
     <Modal
       opened={opened}
       onClose={close}
-      title={`Delete ${ids.length} ${ids.length === 1 ? 'archive' : 'archives'}?`}
+      title={title}
       centered
       size="lg"
       scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="md">
         <Alert color="red">
-          This permanently deletes {ids.length === 1 ? 'the file' : 'these files'} from disk. Chapter records,
-          Wanted flags and reading history are kept, so anything still wanted can be downloaded again.
-          Archives already missing from disk have nothing to delete: for those this only clears the record
-          that still says their chapters are downloaded.
+          <Trans>
+            This permanently deletes <Plural value={count} one="the file" other="these files" /> from disk.
+            Chapter records, Wanted flags and reading history are kept, so anything still wanted can be
+            downloaded again. Archives already missing from disk have nothing to delete: for those this only
+            clears the record that still says their chapters are downloaded.
+          </Trans>
         </Alert>
         <Paper withBorder radius="md" p="sm">
           <Stack gap={4}>
@@ -610,9 +689,9 @@ function BulkDeleteModal({
                 {path}
               </Text>
             ))}
-            {ids.length > named.length && (
+            {remaining > 0 && (
               <Text size="xs" c="var(--ink-4)">
-                and {ids.length - named.length} more selected on other pages
+                <Trans>and {remaining} more selected on other pages</Trans>
               </Text>
             )}
           </Stack>
@@ -620,14 +699,14 @@ function BulkDeleteModal({
         <Checkbox
           checked={confirmed}
           onChange={(e) => setConfirmed(e.currentTarget.checked)}
-          label={`I confirm permanent deletion of ${ids.length} ${ids.length === 1 ? 'archive' : 'archives'}.`}
+          label={confirmLabel}
         />
         <Group justify="flex-end">
           <Button variant="default" onClick={close}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
           <Button color="red" disabled={!confirmed} loading={pending} onClick={onConfirm}>
-            Delete permanently
+            <Trans>Delete permanently</Trans>
           </Button>
         </Group>
       </Stack>
@@ -643,28 +722,37 @@ function BulkDeleteModal({
  * and the two that matter are lost in them.
  */
 function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+  const { t } = useLingui()
   const [showPassing, setShowPassing] = useState(false)
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
+  const totalChecks = checks.length
 
   return (
     <Paper className="health-area-checks" withBorder radius="lg" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
         <Title order={3} fz={17}>
-          System checks
+          <Trans>System checks</Trans>
         </Title>
         <Switch
           size="xs"
-          label="Show passing"
+          label={t`Show passing`}
           checked={showPassing}
           onChange={(e) => setShowPassing(e.currentTarget.checked)}
         />
       </Group>
 
-      {checks.length === 0 && <Alert>No checks have run yet. Use Check now.</Alert>}
+      {checks.length === 0 && (
+        <Alert>
+          <Trans>No checks have run yet. Use Check now.</Trans>
+        </Alert>
+      )}
       {checks.length > 0 && visible.length === 0 && (
         <Text size="sm" c="dimmed">
-          Everything is passing. Turn on Show passing to see all {checks.length} checks.
+          <Trans>
+            Everything is passing. Turn on Show passing to see all{' '}
+            <Plural value={totalChecks} one="# check" other="# checks" />.
+          </Trans>
         </Text>
       )}
 
@@ -692,14 +780,14 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
                     {check.message}
                   </Text>
                   <Text size="xs" c="var(--ink-4)" mt={2}>
-                    {new Date(check.checkedAt).toLocaleString()}
-                    {check.acknowledged ? ' · Acknowledged, hidden from the header badge' : ''}
+                    {formatDateTime(check.checkedAt)}
+                    {check.acknowledged && <Trans> · Acknowledged, hidden from the header badge</Trans>}
                   </Text>
                 </div>
                 <div className="health-check-actions">
                   {check.url && (
                     <Button component={Link} to={check.url} size="xs" variant="subtle">
-                      Open
+                      <Trans>Open</Trans>
                     </Button>
                   )}
                   {ISSUE.includes(check.status) && (
@@ -708,7 +796,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
                       variant="subtle"
                       onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
                     >
-                      {check.acknowledged ? 'Reopen' : 'Acknowledge'}
+                      {check.acknowledged ? <Trans>Reopen</Trans> : <Trans>Acknowledge</Trans>}
                     </Button>
                   )}
                 </div>
@@ -732,6 +820,7 @@ function FileReview({
   openFile: (id: number) => void
   openOperation: (id: number) => void
 }) {
+  const { t } = useLingui()
   const { data, error } = useHealthData<FileDetail>(`/files/${id}`)
   const action = useHealthAction()
   // Automatic by default: the reviewer usually wants "get me a good copy", and picking a source by
@@ -739,12 +828,14 @@ function FileReview({
   const [mapping, setMapping] = useState<string>(AUTOMATIC)
   // A negative size is how the scanner records "the file was not there".
   const gone = (data?.file.size ?? 0) < 0
+  const pageCount = data?.analysis.pages.length ?? 0
+  const sourceNames = data?.mappings.map((m) => m.sourceName).join(', ') || t`the series' sources`
 
   return (
     <Modal
       opened
       onClose={close}
-      title="Review archive"
+      title={t`Review archive`}
       size="min(1060px, 94vw)"
       centered
       scrollAreaComponent={ScrollArea.Autosize}
@@ -771,25 +862,27 @@ function FileReview({
                   {data.file.relativePath}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
-                  {bytes(data.file.size)} · {data.analysis.pages.length} pages · {data.analysis.status} ·{' '}
-                  {data.analysis.verified ? 'contents read' : 'indexed only'}
+                  {bytes(data.file.size, t`Missing`)} · <Plural value={pageCount} one="# page" other="# pages" /> ·{' '}
+                  {data.analysis.status} ·{' '}
+                  {data.analysis.verified ? <Trans>contents read</Trans> : <Trans>indexed only</Trans>}
                 </Text>
                 <Text size="xs" c="var(--ink-4)" mt={4} style={{ overflowWrap: 'anywhere' }}>
-                  SHA-256: {data.file.contentHash ?? 'Unavailable'}
+                  SHA-256: {data.file.contentHash ?? <Trans>Unavailable</Trans>}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt="sm">
-                  Affected chapters: {data.chapters.map((c) => c.number ?? c.title ?? c.id).join(', ') || 'None linked'}
+                  <Trans>Affected chapters:</Trans>{' '}
+                  {data.chapters.map((c) => c.number ?? c.title ?? c.id).join(', ') || <Trans>None linked</Trans>}
                 </Text>
                 <Divider my="md" color="var(--hairline)" />
                 <Group gap="xs">
                   {data.file.seriesId && (
                     <Button component={Link} to={`/series/${data.file.seriesId}`} size="xs" variant="default">
-                      Open series
+                      <Trans>Open series</Trans>
                     </Button>
                   )}
                   {!data.file.chapterFileId && (
                     <Button component={Link} to="/import" size="xs" variant="default">
-                      Import archive
+                      <Trans>Import archive</Trans>
                     </Button>
                   )}
                   <Button
@@ -797,7 +890,7 @@ function FileReview({
                     variant="default"
                     onClick={() => action.mutate({ path: '/scans', body: { fileIds: [id], force: true } })}
                   >
-                    Rescan
+                    <Trans>Rescan</Trans>
                   </Button>
                   {!data.analysis.verified && (
                     <Button
@@ -808,7 +901,7 @@ function FileReview({
                         action.mutate({ path: '/scans', body: { fileIds: [id], force: true, verify: true } })
                       }
                     >
-                      Verify this file
+                      <Trans>Verify this file</Trans>
                     </Button>
                   )}
                 </Group>
@@ -835,7 +928,13 @@ function FileReview({
                             action.mutate({ path: `/findings/${f.id}`, method: 'PUT', body: { version: f.version, state } })
                           }
                         >
-                          {state === 'open' ? 'Reopen' : state === 'ignored' ? 'Ignore this version' : 'Acknowledge'}
+                          {state === 'open' ? (
+                            <Trans>Reopen</Trans>
+                          ) : state === 'ignored' ? (
+                            <Trans>Ignore this version</Trans>
+                          ) : (
+                            <Trans>Acknowledge</Trans>
+                          )}
                         </Button>
                       ))}
                   </Group>
@@ -844,10 +943,12 @@ function FileReview({
 
               {!data.analysis.verified && (
                 <Alert color="gray">
-                  This archive has only been indexed: what it says it holds is known, whether it
-                  still holds it is not. Verifying reads every byte and checks it against the
-                  archive's own checksums. It is also what produces the content hash that replacing
-                  or deleting this file checks against, so those need it first.
+                  <Trans>
+                    This archive has only been indexed: what it says it holds is known, whether it still holds
+                    it is not. Verifying reads every byte and checks it against the archive's own checksums. It
+                    is also what produces the content hash that replacing or deleting this file checks against,
+                    so those need it first.
+                  </Trans>
                 </Alert>
               )}
             </div>
@@ -855,15 +956,18 @@ function FileReview({
             <div className="health-review-column">
               <Paper withBorder radius="md" p="md">
                 <Title order={4} fz={15} mb="sm">
-                  Request replacement
+                  <Trans>Request replacement</Trans>
                 </Title>
                 <Select
                   allowDeselect={false}
                   value={mapping}
                   onChange={(value) => setMapping(value ?? AUTOMATIC)}
                   data={[
-                    { value: AUTOMATIC, label: 'Automatic (source priority)' },
-                    ...data.mappings.map((m) => ({ value: String(m.id), label: `${m.sourceName} · priority ${m.priority}` })),
+                    { value: AUTOMATIC, label: t`Automatic (source priority)` },
+                    ...data.mappings.map((m) => {
+                      const { sourceName, priority } = m
+                      return { value: String(m.id), label: t`${sourceName} · priority ${priority}` }
+                    }),
                   ]}
                 />
                 <Button
@@ -885,27 +989,43 @@ function FileReview({
                     )
                   }
                 >
-                  Download candidate for review
+                  <Trans>Download candidate for review</Trans>
                 </Button>
                 <Text size="xs" c="var(--ink-4)" mt="sm">
-                  {mapping === AUTOMATIC
-                    ? `Tries ${data.mappings.map((m) => m.sourceName).join(', ') || 'the series\u2019 sources'} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose.`
-                    : 'Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick.'}
+                  {mapping === AUTOMATIC ? (
+                    <Trans>
+                      Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a
+                      source instead pins it: no fallback, so you only ever get a candidate from where you
+                      chose.
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      Only this source is tried. Nothing falls back to another one, so the request fails rather
+                      than fetching from somewhere you did not pick.
+                    </Trans>
+                  )}
                 </Text>
                 <Text size="xs" c="var(--ink-4)" mt="xs">
-                  All chapters sharing this archive must have a candidate. The original stays in place until you
-                  approve application.
+                  <Trans>
+                    All chapters sharing this archive must have a candidate. The original stays in place until
+                    you approve application.
+                  </Trans>
                 </Text>
               </Paper>
 
               <Paper withBorder radius="md" p="md">
                 <Title order={4} fz={15} mb="sm">
-                  {gone ? 'Clear the record' : 'Remove archive'}
+                  {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
                 <Text size="xs" c="var(--ink-4)" mb="sm">
-                  {gone
-                    ? 'The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page.'
-                    : 'Opens a deletion review. Nothing is removed until you confirm it there.'}
+                  {gone ? (
+                    <Trans>
+                      The file is already off the disk, so nothing is deleted. This drops the record that still
+                      says the chapters are downloaded, which is why they read as available on the series page.
+                    </Trans>
+                  ) : (
+                    <Trans>Opens a deletion review. Nothing is removed until you confirm it there.</Trans>
+                  )}
                 </Text>
                 <Button
                   color="red"
@@ -919,7 +1039,7 @@ function FileReview({
                     )
                   }
                 >
-                  {gone ? 'Review record removal' : 'Review permanent deletion'}
+                  {gone ? <Trans>Review record removal</Trans> : <Trans>Review permanent deletion</Trans>}
                 </Button>
               </Paper>
             </div>
@@ -952,64 +1072,78 @@ function UnlinkedPanel({
   action: ReturnType<typeof useHealthAction>
   openFile: (id: number) => void
 }) {
-  const importable = match.seriesId != null && match.chapters.length > 0 && match.counterparts.length === 0
+  const { seriesId, seriesTitle, chapters, counterparts, label, recognized } = match
+  const chapterCount = chapters.length
+  const lowerLabel = label.toLowerCase()
+  const importable = seriesId != null && chapterCount > 0 && counterparts.length === 0
 
   return (
     <Paper withBorder radius="md" p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
         <Title order={4} fz={15}>
-          Not linked to any chapter
+          <Trans>Not linked to any chapter</Trans>
         </Title>
         <Badge variant="light" color="gray">
-          {match.label}
+          {label}
         </Badge>
       </Group>
 
-      {match.seriesId != null && (
+      {seriesId != null && (
         <Text size="sm" c="var(--ink-3)" mb="sm">
-          Sits in{' '}
-          <Anchor component={Link} to={`/series/${match.seriesId}`}>
-            {match.seriesTitle}
-          </Anchor>
-          {match.chapters.length > 0 && (
-            <>
-              {' '}
-              and parses to{' '}
-              {match.chapters.length === 1
-                ? '1 chapter'
-                : `${match.chapters.length} chapters`}{' '}
-              in it.
-            </>
+          {chapterCount > 0 ? (
+            <Trans>
+              Sits in{' '}
+              <Anchor component={Link} to={`/series/${seriesId}`}>
+                {seriesTitle}
+              </Anchor>{' '}
+              and parses to <Plural value={chapterCount} one="1 chapter" other="# chapters" /> in it.
+            </Trans>
+          ) : (
+            <Trans>
+              Sits in{' '}
+              <Anchor component={Link} to={`/series/${seriesId}`}>
+                {seriesTitle}
+              </Anchor>
+              .
+            </Trans>
           )}
         </Text>
       )}
 
-      {!match.recognized && (
+      {!recognized && (
         <Alert color="yellow">
-          The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to the
-          library's naming format and rescan, or link it by hand from the series' Files tab.
+          <Trans>
+            The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to
+            the library's naming format and rescan, or link it by hand from the series' Files tab.
+          </Trans>
         </Alert>
       )}
 
-      {match.recognized && match.seriesId == null && (
+      {recognized && seriesId == null && (
         <Alert color="yellow">
-          This archive is not inside any series folder in its root, so there is no series to import it into. Move
-          it into the right folder and rescan, or use the Import page to bring in the folder it lives in.
+          <Trans>
+            This archive is not inside any series folder in its root, so there is no series to import it into.
+            Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in.
+          </Trans>
         </Alert>
       )}
 
-      {match.recognized && match.seriesId != null && match.chapters.length === 0 && (
+      {recognized && seriesId != null && chapterCount === 0 && (
         <Alert color="yellow">
-          {match.seriesTitle} has no {match.label.toLowerCase()}. Refresh the series so the chapter exists, then
-          import this archive.
+          <Trans>
+            {seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this
+            archive.
+          </Trans>
         </Alert>
       )}
 
       {importable && (
         <Stack gap="sm">
           <Alert color="blue">
-            No other file backs {match.label.toLowerCase()}. Nothing has to be compared: importing adopts this
-            archive and links it to the chapter.
+            <Trans>
+              No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and
+              links it to the chapter.
+            </Trans>
           </Alert>
           <Group gap="xs">
             <Button
@@ -1017,27 +1151,31 @@ function UnlinkedPanel({
               loading={action.isPending}
               onClick={() => action.mutate({ path: '/imports', body: { fileIds: [file.id] } })}
             >
-              Import this archive
+              <Trans>Import this archive</Trans>
             </Button>
             <Button component={Link} to="/import" variant="subtle">
-              Import page
+              <Trans>Import page</Trans>
             </Button>
           </Group>
           <Text size="xs" c="var(--ink-4)">
-            Import runs the ordinary rescan on {match.seriesTitle}, so any other new archive in that folder is
-            adopted at the same time.
+            <Trans>
+              Import runs the ordinary rescan on {seriesTitle}, so any other new archive in that folder is
+              adopted at the same time.
+            </Trans>
           </Text>
         </Stack>
       )}
 
-      {match.counterparts.length > 0 && (
+      {counterparts.length > 0 && (
         <Stack gap="md">
           <Alert color="yellow">
-            {match.label} already has a file. Compare the two before deciding: importing this archive links it
-            alongside the existing one, it does not replace it. To swap them, delete the file you do not want
-            first.
+            <Trans>
+              {label} already has a file. Compare the two before deciding: importing this archive links it
+              alongside the existing one, it does not replace it. To swap them, delete the file you do not want
+              first.
+            </Trans>
           </Alert>
-          {match.counterparts.map((counterpart) => (
+          {counterparts.map((counterpart) => (
             <CompareArchives
               key={counterpart.chapterFileId}
               file={file}
@@ -1064,6 +1202,7 @@ function CompareArchives({
   counterpart: MatchCounterpart
   openFile: (id: number) => void
 }) {
+  const { t } = useLingui()
   const [page, setPage] = useState(1)
   const pages = Math.max(analysis.pages.length, counterpart.pages)
   // Page previews are served per inventoried archive and verified against its recorded hash, so a
@@ -1076,15 +1215,38 @@ function CompareArchives({
   const strip = analysis.pages.some((p) => p.height > p.width * 2)
   const heights = height > 0 && counterpart.pixelHeight > 0
   const drift = heights ? Math.abs(height - counterpart.pixelHeight) / Math.max(height, counterpart.pixelHeight) : 1
+  const driftPercent = Math.round(drift * 100)
 
-  const rows: [string, string, string][] = [
-    ['Path', file.relativePath, counterpart.relativePath],
-    ['Size', bytes(file.size), bytes(counterpart.size)],
-    ['Pages', String(analysis.pages.length), counterpart.healthFileId == null ? 'Not scanned' : String(counterpart.pages)],
-    ['Stacked height', height > 0 ? `${height.toLocaleString()} px` : 'Unknown', counterpart.pixelHeight > 0 ? `${counterpart.pixelHeight.toLocaleString()} px` : 'Unknown'],
-    ['Analysis', analysis.status, counterpart.status ?? 'Not scanned'],
-    ['Source', 'Not imported', counterpart.sourceName || 'Unknown'],
-    ['SHA-256', file.contentHash?.slice(0, 16) ?? 'Unavailable', counterpart.contentHash?.slice(0, 16) ?? 'Unavailable'],
+  // `id` is what React keys off. The label beside it is translated, and a language switch would
+  // otherwise change every key and remount the whole table.
+  const rows: { id: string; label: string; mine: string; theirs: string }[] = [
+    { id: 'path', label: t`Path`, mine: file.relativePath, theirs: counterpart.relativePath },
+    {
+      id: 'size',
+      label: t`Size`,
+      mine: bytes(file.size, t`Missing`),
+      theirs: bytes(counterpart.size, t`Missing`),
+    },
+    {
+      id: 'pages',
+      label: t`Pages`,
+      mine: String(analysis.pages.length),
+      theirs: counterpart.healthFileId == null ? t`Not scanned` : String(counterpart.pages),
+    },
+    {
+      id: 'height',
+      label: t`Stacked height`,
+      mine: height > 0 ? `${formatNumber(height)} px` : t`Unknown`,
+      theirs: counterpart.pixelHeight > 0 ? `${formatNumber(counterpart.pixelHeight)} px` : t`Unknown`,
+    },
+    { id: 'analysis', label: t`Analysis`, mine: analysis.status, theirs: counterpart.status ?? t`Not scanned` },
+    { id: 'source', label: t`Source`, mine: t`Not imported`, theirs: counterpart.sourceName || t`Unknown` },
+    {
+      id: 'hash',
+      label: 'SHA-256',
+      mine: file.contentHash?.slice(0, 16) ?? t`Unavailable`,
+      theirs: counterpart.contentHash?.slice(0, 16) ?? t`Unavailable`,
+    },
   ]
 
   return (
@@ -1092,13 +1254,13 @@ function CompareArchives({
       <div className="health-compare">
         <div />
         <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
-          This archive
+          <Trans>This archive</Trans>
         </Text>
         <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
-          Linked file
+          <Trans>Linked file</Trans>
         </Text>
-        {rows.map(([label, mine, theirs]) => (
-          <Fragment key={label}>
+        {rows.map(({ id, label, mine, theirs }) => (
+          <Fragment key={id}>
             <Text size="xs" c="var(--ink-4)">
               {label}
             </Text>
@@ -1114,20 +1276,33 @@ function CompareArchives({
 
       {counterpart.contentHash != null && counterpart.contentHash === file.contentHash && (
         <Alert color="yellow" mt="md">
-          Byte-identical to the linked file. Importing gains nothing; delete one of them.
+          <Trans>Byte-identical to the linked file. Importing gains nothing; delete one of them.</Trans>
         </Alert>
       )}
 
       {strip && analysis.pages.length !== counterpart.pages && (
         <Alert color="gray" mt="md">
-          These are long-strip pages and the two releases cut them at different points, so page{' '}
-          {'{n}'} on the left is not page {'{n}'} on the right. Stacked height is the comparable
-          number:{' '}
-          {heights
-            ? drift <= 0.02
-              ? 'the two are within 2% of each other, so they almost certainly hold the same content.'
-              : `they differ by ${Math.round(drift * 100)}%, so one of them is missing or gaining content.`
-            : 'one of them has not been scanned, so it cannot be measured yet.'}
+          {heights ? (
+            drift <= 0.02 ? (
+              <Trans>
+                These are long-strip pages and the two releases cut them at different points, so page {page} on
+                the left is not page {page} on the right. Stacked height is the comparable number: the two are
+                within 2% of each other, so they almost certainly hold the same content.
+              </Trans>
+            ) : (
+              <Trans>
+                These are long-strip pages and the two releases cut them at different points, so page {page} on
+                the left is not page {page} on the right. Stacked height is the comparable number: they differ
+                by {driftPercent}%, so one of them is missing or gaining content.
+              </Trans>
+            )
+          ) : (
+            <Trans>
+              These are long-strip pages and the two releases cut them at different points, so page {page} on
+              the left is not page {page} on the right. Stacked height is the comparable number: one of them
+              has not been scanned, so it cannot be measured yet.
+            </Trans>
+          )}
         </Alert>
       )}
 
@@ -1135,37 +1310,47 @@ function CompareArchives({
         <>
           <SimpleGrid cols={2} mt="md">
             {[
-              { id: file.id, version: file.version, total: analysis.pages.length, alt: 'This archive' },
-              { id: counterpart.healthFileId!, version: counterpart.version!, total: counterpart.pages, alt: 'Linked file' },
-            ].map((side) =>
-              page <= side.total ? (
+              { id: file.id, version: file.version, total: analysis.pages.length, alt: t`This archive` },
+              {
+                id: counterpart.healthFileId!,
+                version: counterpart.version!,
+                total: counterpart.pages,
+                alt: t`Linked file`,
+              },
+            ].map((side) => {
+              const { id: sideId, version: sideVersion, total, alt } = side
+              return page <= total ? (
                 <Image
-                  key={side.alt}
-                  src={`/api/v1/health/files/${side.id}/pages/${page - 1}?version=${side.version}`}
-                  alt={`${side.alt}, page ${page}`}
+                  key={sideId}
+                  src={`/api/v1/health/files/${sideId}/pages/${page - 1}?version=${sideVersion}`}
+                  alt={t`${alt}, page ${page}`}
                   h={300}
                   fit="contain"
                 />
               ) : (
-                <Text key={side.alt} size="sm" c="var(--ink-4)" ta="center">
-                  {side.alt} has no page {page}
+                <Text key={sideId} size="sm" c="var(--ink-4)" ta="center">
+                  <Trans>
+                    {alt} has no page {page}
+                  </Trans>
                 </Text>
-              ),
-            )}
+              )
+            })}
           </SimpleGrid>
           <Group justify="space-between" mt="md">
             <Pagination value={page} onChange={setPage} total={pages} siblings={1} size="sm" />
             {counterpart.healthFileId != null && (
               <Button size="xs" variant="subtle" onClick={() => openFile(counterpart.healthFileId!)}>
-                Review linked file
+                <Trans>Review linked file</Trans>
               </Button>
             )}
           </Group>
         </>
       ) : (
         <Alert color="gray" mt="md">
-          The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come
-          back to compare them.
+          <Trans>
+            The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then
+            come back to compare them.
+          </Trans>
         </Alert>
       )}
     </Paper>
@@ -1173,16 +1358,19 @@ function CompareArchives({
 }
 
 function OperationReview({ id, close }: { id: number; close: () => void }) {
+  const { t } = useLingui()
   const { data, error } = useHealthData<OperationDetail>(`/operations/${id}`)
   const action = useHealthAction()
   const [confirm, setConfirm] = useState(false)
   const [reset, setReset] = useState(false)
+  const chaptersCount = data?.chapters.length ?? 0
+  const opStatus = data?.operation.status
 
   return (
     <Modal
       opened
       onClose={close}
-      title={`Operation #${id}`}
+      title={t`Operation #${id}`}
       size="min(1060px, 94vw)"
       centered
       scrollAreaComponent={ScrollArea.Autosize}
@@ -1197,44 +1385,55 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
               {data.operation.error && <Alert color="red">{data.operation.error}</Alert>}
               {data.operation.kind === 'delete' ? (
                 <Alert color={data.file.size < 0 ? 'yellow' : 'red'}>
-                  {data.file.size < 0
-                    ? 'This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded. '
-                    : 'This permanently deletes the archive. Chapter records and reading history remain. '}
-                  {data.chapters.some((c) => c.wanted)
-                    ? 'Wanted chapters may be downloaded again by existing automation.'
-                    : ''}
+                  {data.file.size < 0 ? (
+                    <Trans>
+                      This file is already gone from disk, so nothing is deleted. It drops the record that
+                      still links these chapters to it, so they stop reading as downloaded.
+                    </Trans>
+                  ) : (
+                    <Trans>This permanently deletes the archive. Chapter records and reading history remain.</Trans>
+                  )}{' '}
+                  {data.chapters.some((c) => c.wanted) && (
+                    <Trans>Wanted chapters may be downloaded again by existing automation.</Trans>
+                  )}
                 </Alert>
               ) : (
                 <>
                   <Text size="sm" c="var(--ink-3)">
-                    Review every candidate before applying. Originals remain unchanged until approval.
+                    <Trans>Review every candidate before applying. Originals remain unchanged until approval.</Trans>
                   </Text>
-                  {data.candidates.map((candidate) => (
-                    <Paper key={candidate.chapterId} withBorder radius="md" p="md">
-                      <Group justify="space-between" wrap="nowrap" mb="sm">
-                        <Text fw={600}>
-                          Chapter {candidate.chapterId}: {candidate.analysis.pages.length} pages
-                        </Text>
-                        <Status value={candidate.analysis.status} />
-                      </Group>
-                      {candidate.analysis.problems.map((p, i) => (
-                        <Text key={i} c={color(p.severity)} size="sm">
-                          {p.message}
-                        </Text>
-                      ))}
-                      <SimpleGrid cols={2}>
-                        {candidate.analysis.pages.slice(0, 4).map((p, index) => (
-                          <Image
-                            key={p.name}
-                            h={200}
-                            fit="contain"
-                            src={`/api/v1/health/operations/${id}/candidates/${candidate.chapterId}/pages/${index}`}
-                            alt={`Candidate page ${index + 1}`}
-                          />
+                  {data.candidates.map((candidate) => {
+                    const { chapterId } = candidate
+                    const pageCount = candidate.analysis.pages.length
+                    return (
+                      <Paper key={candidate.chapterId} withBorder radius="md" p="md">
+                        <Group justify="space-between" wrap="nowrap" mb="sm">
+                          <Text fw={600}>
+                            <Trans>
+                              Chapter {chapterId}: <Plural value={pageCount} one="# page" other="# pages" />
+                            </Trans>
+                          </Text>
+                          <Status value={candidate.analysis.status} />
+                        </Group>
+                        {candidate.analysis.problems.map((p, i) => (
+                          <Text key={i} c={color(p.severity)} size="sm">
+                            {p.message}
+                          </Text>
                         ))}
-                      </SimpleGrid>
-                    </Paper>
-                  ))}
+                        <SimpleGrid cols={2}>
+                          {candidate.analysis.pages.slice(0, 4).map((p, index) => (
+                            <Image
+                              key={p.name}
+                              h={200}
+                              fit="contain"
+                              src={`/api/v1/health/operations/${id}/candidates/${candidate.chapterId}/pages/${index}`}
+                              alt={`Candidate page ${index + 1}`}
+                            />
+                          ))}
+                        </SimpleGrid>
+                      </Paper>
+                    )
+                  })}
                 </>
               )}
             </div>
@@ -1246,7 +1445,8 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                   {data.file.relativePath}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
-                  {bytes(data.file.size)} · {data.chapters.length} affected chapters
+                  {bytes(data.file.size, t`Missing`)} ·{' '}
+                  <Plural value={chaptersCount} one="# affected chapter" other="# affected chapters" />
                 </Text>
               </Paper>
 
@@ -1256,7 +1456,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                     <Checkbox
                       checked={reset}
                       onChange={(e) => setReset(e.currentTarget.checked)}
-                      label="Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
+                      label={t`Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved.`}
                     />
                   )}
                   {data.operation.status === 'review' && (
@@ -1266,10 +1466,10 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                         onChange={(e) => setConfirm(e.currentTarget.checked)}
                         label={
                           data.operation.kind !== 'delete'
-                            ? 'I approve applying these replacement files.'
+                            ? t`I approve applying these replacement files.`
                             : data.file.size < 0
-                              ? 'I confirm removing the file links for this missing archive.'
-                              : 'I confirm permanent deletion of this archive and all its file links.'
+                              ? t`I confirm removing the file links for this missing archive.`
+                              : t`I confirm permanent deletion of this archive and all its file links.`
                         }
                       />
                       <Button
@@ -1286,11 +1486,13 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                           )
                         }
                       >
-                        {data.operation.kind !== 'delete'
-                          ? 'Apply replacement'
-                          : data.file.size < 0
-                            ? 'Remove the record'
-                            : 'Permanently delete'}
+                        {data.operation.kind !== 'delete' ? (
+                          <Trans>Apply replacement</Trans>
+                        ) : data.file.size < 0 ? (
+                          <Trans>Remove the record</Trans>
+                        ) : (
+                          <Trans>Permanently delete</Trans>
+                        )}
                       </Button>
                     </>
                   )}
@@ -1299,13 +1501,13 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                       variant="default"
                       onClick={() => action.mutate({ path: `/operations/${id}/cancel` }, { onSuccess: close })}
                     >
-                      Cancel operation
+                      <Trans>Cancel operation</Trans>
                     </Button>
                   )}
                   {['completed', 'cancelled', 'failed'].includes(data.operation.status) &&
                     data.operation.status !== 'review' && (
                       <Text size="sm" c="var(--ink-4)">
-                        This operation is {data.operation.status} and needs no further action.
+                        <Trans>This operation is {opStatus} and needs no further action.</Trans>
                       </Text>
                     )}
                 </Stack>
@@ -1319,6 +1521,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
 }
 
 function OptionsPanel() {
+  const { t } = useLingui()
   const { data } = useHealthData<HealthOptions>('/options')
   const [draft, setDraft] = useState<HealthOptions | null>(null)
   const action = useHealthAction()
@@ -1330,30 +1533,30 @@ function OptionsPanel() {
     <Paper className="health-area-options" withBorder radius="lg" p="lg">
       <Stack>
         <Title order={3} fz={17}>
-          Health settings
+          <Trans>Health settings</Trans>
         </Title>
         {action.error && <Alert color="red">{action.error.message}</Alert>}
         <Switch
-          label="Analyze new files and run daily reconciliation"
+          label={t`Analyze new files and run daily reconciliation`}
           checked={value.automaticScanning}
           onChange={(e) => update({ automaticScanning: e.currentTarget.checked })}
         />
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <NumberInput
-            label="Daily scan hour (0-23)"
+            label={t`Daily scan hour (0-23)`}
             min={0}
             max={23}
             value={value.scanHour}
             onChange={(v) => update({ scanHour: Number(v) })}
           />
           <TextInput
-            label="Timezone (empty uses server timezone)"
+            label={t`Timezone (empty uses server timezone)`}
             value={value.timeZone ?? ''}
             onChange={(e) => update({ timeZone: e.currentTarget.value || null })}
           />
           <NumberInput
-            label="Pages decoded at once (0 = automatic)"
-            description="Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
+            label={t`Pages decoded at once (0 = automatic)`}
+            description={t`Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone.`}
             min={0}
             max={32}
             value={value.scanWorkers}
@@ -1364,11 +1567,11 @@ function OptionsPanel() {
               key={key}
               label={
                 {
-                  warningPercent: 'Low disk warning (%)',
-                  errorPercent: 'Low disk error (%)',
-                  warningGiB: 'Low disk warning (GiB)',
-                  errorGiB: 'Low disk error (GiB)',
-                  backupDays: 'Backup freshness (days)',
+                  warningPercent: t`Low disk warning (%)`,
+                  errorPercent: t`Low disk error (%)`,
+                  warningGiB: t`Low disk warning (GiB)`,
+                  errorGiB: t`Low disk error (GiB)`,
+                  backupDays: t`Backup freshness (days)`,
                 }[key]
               }
               min={0}
@@ -1384,7 +1587,7 @@ function OptionsPanel() {
             action.mutate({ path: '/options', method: 'PUT', body: value }, { onSuccess: () => setDraft(null) })
           }
         >
-          Save health settings
+          <Trans>Save health settings</Trans>
         </Button>
       </Stack>
     </Paper>
@@ -1392,6 +1595,7 @@ function OptionsPanel() {
 }
 
 function CachePanel() {
+  const { t } = useLingui()
   const cache = useImageCache()
   const rebuild = useRebuildImageCache()
 
@@ -1399,15 +1603,15 @@ function CachePanel() {
     <Paper className="health-area-cache" withBorder radius="lg" p="lg">
       <Stack>
         <Title order={3} fz={17}>
-          Image cache and backups
+          <Trans>Image cache and backups</Trans>
         </Title>
         {cache.data && (
           <div className="health-facts">
             {(
               [
-                ['Posters', bytes(cache.data.usage.coverBytes)],
-                ['Thumbnails', bytes(cache.data.usage.thumbnailBytes)],
-                ['Missing posters', cache.data.usage.coversMissing],
+                [t`Posters`, bytes(cache.data.usage.coverBytes, t`Missing`)],
+                [t`Thumbnails`, bytes(cache.data.usage.thumbnailBytes, t`Missing`)],
+                [t`Missing posters`, cache.data.usage.coversMissing],
               ] as const
             ).map(([label, fact]) => (
               <div key={label}>
@@ -1428,10 +1632,10 @@ function CachePanel() {
             loading={rebuild.isPending || cache.data?.status.running}
             onClick={() => rebuild.mutate(false)}
           >
-            Rebuild missing images
+            <Trans>Rebuild missing images</Trans>
           </Button>
           <Button component={Link} to="/settings?tab=system" variant="subtle">
-            Backup and cache tools
+            <Trans>Backup and cache tools</Trans>
           </Button>
         </Group>
       </Stack>

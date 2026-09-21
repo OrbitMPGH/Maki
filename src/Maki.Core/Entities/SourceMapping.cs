@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Maki.Core.Entities;
 
@@ -17,7 +17,16 @@ public class SourceMapping
 
     public string Url { get; set; } = string.Empty;
 
-    /// <summary>Restrict chapters to this language; null = source default.</summary>
+    /// <summary>
+    /// Which languages to list chapters in: an ordered comma-separated list of codes ("en,es"), or
+    /// null for the source default (English). Read it through <c>SourceLanguages.Parse</c> — it was
+    /// a single code before, and a single code is still the usual value.
+    /// <para>
+    /// Only honoured by sources declaring <see cref="Maki.Core.Sources.SourceCapabilities.SupportsLanguageFilter"/>.
+    /// Naming several languages is not free: chapter identity is <c>(Number, Language)</c>, so each
+    /// one adds its own row per chapter number and its own wanted/missing count.
+    /// </para>
+    /// </summary>
     public string? LanguageFilter { get; set; }
 
     /// <summary>Lower wins when the same chapter is available from multiple mappings.</summary>

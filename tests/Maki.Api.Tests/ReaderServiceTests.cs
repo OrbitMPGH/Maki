@@ -42,16 +42,10 @@ public sealed class ReaderServiceTests : IDisposable
     {
         // Narrowed the way a request is: ReaderService reads its owner off the scope.
         var context = _db.NewContext(TestUser);
-        // The Kavita pusher no-ops without the reader.pushtokavita setting, so a real one with an
-        // empty settings store is inert here.
+        // A real pusher would query the database from its fire-and-forget task and race Dispose;
+        // see InertKavitaPusher.
         var scopeFactory = _db.ScopeFactory();
-        var pusher = new KavitaProgressPusher(
-            scopeFactory,
-            new SettingsService(scopeFactory),
-            new UserSettingsStoreService(scopeFactory),
-            new KavitaUserResolver(scopeFactory, new SettingsService(scopeFactory)),
-            null!,
-            NullLogger<KavitaProgressPusher>.Instance);
+        var pusher = InertKavitaPusher.For(scopeFactory);
         return new ReaderService(context, _archives,
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
             pusher, NullLogger<ReaderService>.Instance);

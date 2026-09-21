@@ -37,6 +37,7 @@ public class ChapterControllerTests : IDisposable
     }
 
     private ChapterController Controller(MakiDbContext db) => new(
+        new TestLocalizer(),
         db,
         new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
         new StatsEventService(db),
@@ -45,7 +46,8 @@ public class ChapterControllerTests : IDisposable
         new SourceRegistry([]),
         new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
         new DownloadBatchNotifier(
-            new RecordingNotifications(), new RecordingInbox(), TimeProvider.System,
+            new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
+            new TestUserLocaleResolver(), TimeProvider.System,
             NullLogger<DownloadBatchNotifier>.Instance),
         new TestCurrentUser(1),
         NullLogger<ChapterController>.Instance);

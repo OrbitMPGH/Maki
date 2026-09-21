@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { IconAffiliate } from '@tabler/icons-react'
+import { useLingui } from '@lingui/react/macro'
 import {
   useRootFolders,
   useSeriesIdLookup,
@@ -28,16 +29,18 @@ export function RelatedSeriesSection({ seriesId }: { seriesId: number }) {
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const { t } = useLingui()
 
   if (!enabled || !related || related.length === 0) return null
 
   return (
     <>
-      <SectionHeader icon={IconAffiliate} title="Related series" />
+      <SectionHeader icon={IconAffiliate} title={t`Related series`} />
       <DiscoverRailRow items={related} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
 
       <DiscoverDetailModal
         item={detailItem}
+        feedbackContext={{ surface: 'related' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}

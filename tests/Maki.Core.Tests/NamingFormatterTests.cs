@@ -174,4 +174,77 @@ public class NamingFormatterTests
         // Can't be saved, but a format stored before a token was removed still has to name a file.
         Assert.Equal("Berserk", NamingFormatter.Format("{Series Title} {Gone Away}", Context()));
     }
+
+    /// <summary>
+    /// A volume compilation backs several chapters. Naming it after the first alone gives it the
+    /// name that chapter's own file wants, which is how a library ends up with two files a case
+    /// apart.
+    /// </summary>
+    [Fact]
+    public void Whole_volume_compilation_is_named_after_the_volume()
+    {
+        var context = new NamingContext(
+            new Series { Title = "Berserk" },
+            new Chapter { Number = 1m, Volume = 1 },
+            new Chapter { Number = 6m, Volume = 1 },
+            WholeVolumes: true);
+
+        Assert.Equal("Berserk Vol.1", NamingFormatter.Format(NamingDefaults.ChapterFormat, context));
+    }
+
+    [Fact]
+    public void Compilation_spanning_volumes_names_the_volume_range()
+    {
+        var context = new NamingContext(
+            new Series { Title = "Berserk" },
+            new Chapter { Number = 1m, Volume = 1 },
+            new Chapter { Number = 12m, Volume = 2 },
+            WholeVolumes: true);
+
+        Assert.Equal("Berserk Vol.1-2", NamingFormatter.Format(NamingDefaults.ChapterFormat, context));
+    }
+
+    [Fact]
+    public void Part_of_a_volume_keeps_its_chapter_range()
+    {
+        // Two files splitting one volume would otherwise both want "Vol.1".
+        var context = new NamingContext(
+            new Series { Title = "Berserk" },
+            new Chapter { Number = 1m, Volume = 1 },
+            new Chapter { Number = 3m, Volume = 1 });
+
+        Assert.Equal("Berserk Vol.1 Ch.1-3", NamingFormatter.Format(NamingDefaults.ChapterFormat, context));
+    }
+
+    [Fact]
+    public void Compilation_without_volumes_falls_back_to_the_chapter_range()
+    {
+        var context = new NamingContext(
+            new Series { Title = "Berserk" },
+            new Chapter { Number = 1m },
+            new Chapter { Number = 6m });
+
+        Assert.Equal("Berserk Ch.1-6", NamingFormatter.Format(NamingDefaults.ChapterFormat, context));
+    }
+
+    [Fact]
+    public void Chapter_number_and_volume_tokens_render_the_span_too()
+    {
+        var context = new NamingContext(
+            new Series { Title = "Berserk" },
+            new Chapter { Number = 1m, Volume = 1 },
+            new Chapter { Number = 6m, Volume = 2 });
+
+        Assert.Equal("Berserk 001-006 v1-2",
+            NamingFormatter.Format("{Series Title} {Chapter Number:000} v{Chapter Volume}", context));
+    }
+
+    [Fact]
+    public void A_span_of_one_chapter_is_named_like_any_other_chapter()
+    {
+        var chapter = new Chapter { Number = 24m, Volume = 3 };
+        var context = new NamingContext(new Series { Title = "Berserk" }, chapter, chapter);
+
+        Assert.Equal("Berserk Vol.3 Ch.24", NamingFormatter.Format(NamingDefaults.ChapterFormat, context));
+    }
 }

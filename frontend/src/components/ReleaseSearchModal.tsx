@@ -1,6 +1,8 @@
 import { Alert, Badge, Button, Center, Group, Loader, Modal, Table, Text, TextInput } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import { useGrabRelease, useReleaseSearch } from '../api/hooks'
 
 function formatSize(bytes: number): string {
@@ -23,6 +25,7 @@ export function ReleaseSearchModal({
   opened: boolean
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const [input, setInput] = useState('')
   const [manualQuery, setManualQuery] = useState<string | undefined>(undefined)
   const { data, isFetching, error } = useReleaseSearch(seriesId, opened, manualQuery)
@@ -51,11 +54,11 @@ export function ReleaseSearchModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Search releases (Prowlarr)" size="90%">
+    <Modal opened={opened} onClose={onClose} title={t`Search releases (Prowlarr)`} size="90%">
       <Group gap="xs" mb="md" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
-          placeholder="Search query"
+          placeholder={t`Search query`}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -66,14 +69,14 @@ export function ReleaseSearchModal({
           disabled={isFetching}
         />
         <Button variant="light" onClick={search} disabled={isFetching || !input.trim()}>
-          Search
+          <Trans>Search</Trans>
         </Button>
       </Group>
       {isFetching && (
         <Center py="lg">
           <Loader />
           <Text ml="sm" c="dimmed" size="sm">
-            Searching indexers…
+            <Trans>Searching indexers…</Trans>
           </Text>
         </Center>
       )}
@@ -83,71 +86,76 @@ export function ReleaseSearchModal({
         </Alert>
       )}
       {releases && releases.length === 0 && !isFetching && (
-        <Text c="dimmed">No releases found. Try a shorter or alternative query.</Text>
+        <Text c="dimmed">
+          <Trans>No releases found.</Trans> <Trans>Try a shorter or alternative query.</Trans>
+        </Text>
       )}
       {releases && releases.length > 0 && (
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Title</Table.Th>
-              <Table.Th>Indexer</Table.Th>
-              <Table.Th>Size</Table.Th>
-              <Table.Th>Seeds</Table.Th>
+              <Table.Th><Trans>Title</Trans></Table.Th>
+              <Table.Th><Trans>Indexer</Trans></Table.Th>
+              <Table.Th><Trans>Size</Trans></Table.Th>
+              <Table.Th><Trans>Seeds</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {releases.map((r) => (
-              <Table.Tr key={r.guid}>
-                <Table.Td>
-                  <Text size="sm" style={{ wordBreak: 'break-word' }}>
-                    {r.infoUrl ? (
-                      <a href={r.infoUrl} target="_blank" rel="noreferrer">
-                        {r.title}
-                      </a>
-                    ) : (
-                      r.title
-                    )}
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge size="sm" variant="light">
-                    {r.indexer}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm">{formatSize(r.size)}</Text>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="sm" c={(r.seeders ?? 0) > 0 ? 'green' : 'red'}>
-                    {r.seeders ?? '?'}
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Button
-                    size="compact-xs"
-                    variant="light"
-                    loading={grab.isPending}
-                    onClick={() =>
-                      grab.mutate(
-                        { seriesId, release: r },
-                        {
-                          onSuccess: () => {
-                            notifications.show({
-                              message: `Sent to qBittorrent: ${r.title}`,
-                              color: 'green',
-                            })
-                            onClose()
+            {releases.map((r) => {
+              const { title, indexer, infoUrl, size, seeders } = r
+              return (
+                <Table.Tr key={r.guid}>
+                  <Table.Td>
+                    <Text size="sm" style={{ wordBreak: 'break-word' }}>
+                      {infoUrl ? (
+                        <a href={infoUrl} target="_blank" rel="noreferrer">
+                          {title}
+                        </a>
+                      ) : (
+                        title
+                      )}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge size="sm" variant="light">
+                      {indexer}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">{formatSize(size)}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c={(seeders ?? 0) > 0 ? 'green' : 'red'}>
+                      {seeders ?? '?'}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Button
+                      size="compact-xs"
+                      variant="light"
+                      loading={grab.isPending}
+                      onClick={() =>
+                        grab.mutate(
+                          { seriesId, release: r },
+                          {
+                            onSuccess: () => {
+                              notifications.show({
+                                message: now`Sent to qBittorrent: ${title}`,
+                                color: 'green',
+                              })
+                              onClose()
+                            },
                           },
-                        },
-                      )
-                    }
-                  >
-                    Grab
-                  </Button>
-                </Table.Td>
-              </Table.Tr>
-            ))}
+                        )
+                      }
+                    >
+                      <Trans>Grab</Trans>
+                    </Button>
+                  </Table.Td>
+                </Table.Tr>
+              )
+            })}
           </Table.Tbody>
         </Table>
       )}

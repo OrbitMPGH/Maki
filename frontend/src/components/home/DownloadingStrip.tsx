@@ -3,6 +3,9 @@ import { Badge, Button, Group, Paper, Progress, Stack, Text } from '@mantine/cor
 import { IconChevronRight } from '@tabler/icons-react'
 import { queueStatusVisual } from '../ui/status'
 import type { QueueItemDto } from '../../api/types'
+import { queueItemLabel } from '../../api/queue'
+import { useLabel } from '../../i18n-context'
+import { Plural, Trans } from '@lingui/react/macro'
 
 const MAX_ROWS = 5
 
@@ -12,7 +15,10 @@ const MAX_ROWS = 5
  * empty, so an idle library doesn't carry a permanently blank panel.
  */
 export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
+  const renderLabel = useLabel()
   const shown = items.slice(0, MAX_ROWS)
+  const remaining = items.length - MAX_ROWS
+  const { length: totalQueued } = items
 
   return (
     <Paper withBorder radius="lg" p="lg">
@@ -33,7 +39,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
                 {q.seriesTitle}
               </Text>
               <Text size="sm" c="var(--ink-4)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
-                {q.chapterLabel}
+                {queueItemLabel(q)}
               </Text>
               {q.pagesTotal > 0 && (
                 <Progress
@@ -51,7 +57,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
                 size="sm"
                 leftSection={<visual.Icon size={11} />}
               >
-                {visual.label}
+                {renderLabel(visual.label)}
               </Badge>
             </Group>
           )
@@ -59,9 +65,11 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
 
         <Group justify="space-between" wrap="nowrap">
           <Text size="xs" c="var(--ink-4)" className="tnum">
-            {items.length > MAX_ROWS
-              ? `${items.length - MAX_ROWS} more in the queue`
-              : `${items.length} in the queue`}
+            {items.length > MAX_ROWS ? (
+              <Plural value={remaining} one="# more in the queue" other="# more in the queue" />
+            ) : (
+              <Plural value={totalQueued} one="# in the queue" other="# in the queue" />
+            )}
           </Text>
           <Button
             component={Link}
@@ -70,7 +78,7 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
             size="compact-sm"
             rightSection={<IconChevronRight size={14} />}
           >
-            View activity
+            <Trans>View activity</Trans>
           </Button>
         </Group>
       </Stack>

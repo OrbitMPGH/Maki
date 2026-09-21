@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Card, Group, Text } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
 
@@ -26,9 +27,10 @@ export function StatTile({
   delta,
   deltaLabel,
   invertDelta = false,
+  hint,
 }: {
   label: string
-  value: string | number
+  value: ReactNode
   icon: Icon
   accent?: keyof typeof ACCENT
   /** Fractional change vs the previous period. Null means "compared, but the baseline was zero". */
@@ -37,6 +39,8 @@ export function StatTile({
   deltaLabel?: string
   /** For metrics where up is bad (series dropped, removed). */
   invertDelta?: boolean
+  /** A dimmed second line under the value, for a related count the tile does not headline. */
+  hint?: string
 }) {
   const color = ACCENT[accent] ?? ACCENT.brand
   const hasDelta = delta !== undefined
@@ -57,6 +61,11 @@ export function StatTile({
           <Text fz={26} fw={750} lh={1.1} mt={6} className="tnum">
             {value}
           </Text>
+          {hint && (
+            <Text size="xs" c="dimmed" mt={4}>
+              {hint}
+            </Text>
+          )}
           {hasDelta && (
             <Text size="xs" fw={600} mt={4} className="tnum" style={{ color: deltaColor }} title={deltaLabel}>
               {delta === null

@@ -12,6 +12,9 @@ import {
   Text,
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal, IconUser } from '@tabler/icons-react'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import {
   BROWSE_SORTS,
   useCreator,
@@ -33,14 +36,19 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
+import { useLabel } from '../i18n-context'
 
 const PAGE_SIZE = 60
 const MAX_WORKS = 600
 
-const ROLE_LABELS: Record<string, string> = {
-  author: 'Story',
-  artist: 'Art',
-  studio: 'Studio',
+/**
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+const ROLE_LABELS: Record<string, MessageDescriptor> = {
+  author: msg`Story`,
+  artist: msg`Art`,
+  studio: msg`Studio`,
 }
 
 /**
@@ -52,6 +60,8 @@ const ROLE_LABELS: Record<string, string> = {
  * stacking keeps that at two layers, and makes the page linkable.
  */
 export default function CreatorPage() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const { name = '' } = useParams()
   const [searchParams] = useSearchParams()
   const role = searchParams.get('role')
@@ -116,9 +126,9 @@ export default function CreatorPage() {
         <PageHeader title={decoded} />
         <EmptyState
           icon={IconUser}
-          title="No such creator"
-          description="Nobody by that name is credited in the local MangaBaka database."
-          actionLabel="Back to Discover"
+          title={t`No such creator`}
+          description={t`Nobody by that name is credited in the local MangaBaka database.`}
+          actionLabel={t`Back to Discover`}
           actionTo="/discover"
         />
       </>
@@ -136,7 +146,7 @@ export default function CreatorPage() {
           <Group gap="xs">
             {(data?.roles ?? []).map((r) => (
               <Badge key={r} variant="light" size="sm">
-                {ROLE_LABELS[r] ?? r}
+                {renderLabel(ROLE_LABELS[r] ?? r)}
               </Badge>
             ))}
           </Group>
@@ -159,7 +169,7 @@ export default function CreatorPage() {
             onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
             data={BROWSE_SORTS}
             allowDeselect={false}
-            aria-label="Sort"
+            aria-label={t`Sort`}
           />
           <ViewPrefsControls prefs={prefs} />
         </Group>
@@ -191,11 +201,11 @@ export default function CreatorPage() {
       {data && items.length === 0 && (
         <EmptyState
           icon={IconUser}
-          title="Nothing to show"
+          title={t`Nothing to show`}
           description={
             appliedCount > 0
-              ? 'None of their titles match these filters. Try loosening one of them.'
-              : 'Nothing of theirs is in the searchable part of the catalogue.'
+              ? t`None of their titles match these filters. Try loosening one of them.`
+              : t`Nothing of theirs is in the searchable part of the catalogue.`
           }
         />
       )}

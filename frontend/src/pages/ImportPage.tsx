@@ -14,6 +14,8 @@ import {
 } from '@mantine/core'
 import { IconFolderSearch, IconPackageImport } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { plural } from '@lingui/core/macro'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLibrarySettings, useRootFolders } from '../api/hooks'
@@ -28,7 +30,7 @@ const IMPORT_BATCH_SIZE = 50
 interface ScanCandidate {
   folderName: string
   cleanedTitle: string
-  cbzCount: number
+  comicCount: number
   recognizedCount: number
   matches: MetadataSearchResult[]
 }
@@ -54,6 +56,7 @@ interface ImportProgressEvent {
 }
 
 export default function ImportPage() {
+  const { t } = useLingui()
   const { data: rootFolders } = useRootFolders()
   const { data: librarySettings } = useLibrarySettings()
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
@@ -120,8 +123,12 @@ export default function ImportPage() {
     onSuccess: (data) => {
       setResults(data)
       const ok = data.filter((r) => r.success).length
+      const total = data.length
       notifications.show({
-        message: `Imported ${ok}/${data.length} folder(s)`,
+        message: plural(total, {
+          one: `Imported ${ok}/# folder`,
+          other: `Imported ${ok}/# folders`,
+        }),
         color: ok === data.length ? 'green' : 'yellow',
       })
       setProgress({})
@@ -134,17 +141,18 @@ export default function ImportPage() {
   const selectedItems = Object.entries(selection)
     .filter(([, providerId]) => providerId !== '')
     .map(([folderName, metadataProviderId]) => ({ folderName, metadataProviderId }))
+  const selectedCount = selectedItems.length
 
   return (
     <>
       <PageHeader
-        title="Import library"
-        description="Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names."
+        title={t`Import library`}
+        description={t`Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing CBZ files to chapters. Files keep their original names.`}
       />
 
       <Group mb="lg" align="flex-end">
         <Select
-          label="Root folder"
+          label={t`Root folder`}
           data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
           value={rootFolderId}
           onChange={setRootFolderId}
@@ -156,21 +164,21 @@ export default function ImportPage() {
           loading={scan.isPending}
           disabled={!rootFolderId}
         >
-          Scan
+          <Trans>Scan</Trans>
         </Button>
         {candidates && candidates.length > 0 && (
           <Button
             color="teal"
             leftSection={<IconPackageImport size={16} />}
             loading={doImport.isPending}
-            disabled={selectedItems.length === 0}
+            disabled={selectedCount === 0}
             onClick={() => {
               // Reopen defaulting to the global "write ComicInfo" setting (still overridable here).
               setUpdateComicInfo(librarySettings?.writeComicInfo ?? true)
               setConfirmOpen(true)
             }}
           >
-            Import {selectedItems.length} selected
+            <Plural value={selectedCount} one="Import # selected" other="Import # selected" />
           </Button>
         )}
       </Group>
@@ -178,28 +186,30 @@ export default function ImportPage() {
       <Modal
         opened={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title={`Import ${selectedItems.length} folder(s)?`}
+        title={<Plural value={selectedCount} one="Import # folder?" other="Import # folders?" />}
         size="lg"
       >
         <Text size="sm" mb="xs">
-          Folders are renamed to the English title and their CBZ files are linked to chapters.
+          <Trans>Folders are renamed to the English title and their CBZ files are linked to chapters.</Trans>
         </Text>
         <Checkbox
-          label="Standardize ComicInfo.xml inside the imported files (recommended)"
+          label={t`Standardize ComicInfo.xml inside the imported files (recommended)`}
           checked={updateComicInfo}
           onChange={(e) => setUpdateComicInfo(e.currentTarget.checked)}
           mb="xs"
         />
         <Text size="xs" c="dimmed" mb="lg">
-          Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter
-          numbers) to Maki's standard so Kavita groups these files with future downloads and
-          imports. If Kavita already indexed this library, its existing entries may reshuffle;
-          skipping keeps the files byte-for-byte untouched, but they may not group consistently
-          with chapters Maki adds later.
+          <Trans>
+            Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter
+            numbers) to Maki's standard so Kavita groups these files with future downloads and
+            imports. If Kavita already indexed this library, its existing entries may reshuffle;
+            skipping keeps the files byte-for-byte untouched, but they may not group consistently
+            with chapters Maki adds later.
+          </Trans>
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setConfirmOpen(false)}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
           <Button
             color="teal"
@@ -214,35 +224,45 @@ export default function ImportPage() {
               }
             }}
           >
-            Import
+            <Trans>Import</Trans>
           </Button>
         </Group>
       </Modal>
 
       {results && results.length > 0 && (
         <Stack gap={4} mb="md">
-          {results.map((r) => (
-            <Text key={r.folderName} c={r.success ? 'teal' : 'red'} size="sm">
-              {r.success ? (
-                <>
-                  {r.newFolderName ?? r.folderName}: linked {r.filesLinked} file(s)
-                  {r.filesUnrecognized > 0 ? `, ${r.filesUnrecognized} unrecognized` : ''}
-                </>
-              ) : (
-                <>
-                  {r.folderName}: {r.error}
-                </>
-              )}
-            </Text>
-          ))}
+          {results.map((r) => {
+            const folderLabel = r.newFolderName ?? r.folderName
+            const { filesLinked, filesUnrecognized } = r
+            return (
+              <Text key={r.folderName} c={r.success ? 'teal' : 'red'} size="sm">
+                {r.success ? (
+                  filesUnrecognized > 0 ? (
+                    <Trans>
+                      {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}
+                      <Plural value={filesUnrecognized} one="# unrecognized" other="# unrecognized" />
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />
+                    </Trans>
+                  )
+                ) : (
+                  <>
+                    {r.folderName}: {r.error}
+                  </>
+                )}
+              </Text>
+            )
+          })}
         </Stack>
       )}
 
       {candidates && candidates.length === 0 && (
         <EmptyState
           icon={IconFolderSearch}
-          title="Nothing to import"
-          description="Every folder in this root is already claimed by a series in the library."
+          title={t`Nothing to import`}
+          description={t`Every folder in this root is already claimed by a series in the library.`}
         />
       )}
 
@@ -251,9 +271,15 @@ export default function ImportPage() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th w={40} />
-              <Table.Th>Folder</Table.Th>
-              <Table.Th>Files</Table.Th>
-              <Table.Th w={420}>Match</Table.Th>
+              <Table.Th>
+                <Trans>Folder</Trans>
+              </Table.Th>
+              <Table.Th>
+                <Trans>Files</Trans>
+              </Table.Th>
+              <Table.Th w={420}>
+                <Trans>Match</Trans>
+              </Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -261,6 +287,8 @@ export default function ImportPage() {
               const selected = selection[c.folderName] ?? ''
               const match = c.matches.find((m) => m.providerId === selected)
               const rowProgress = progress[c.folderName]
+              const { cleanedTitle, comicCount, recognizedCount } = c
+              const unrecognizedCount = comicCount - recognizedCount
               return (
                 <Table.Tr key={c.folderName}>
                   <Table.Td>
@@ -282,14 +310,16 @@ export default function ImportPage() {
                       {c.folderName}
                     </Text>
                     <Text size="xs" c="dimmed">
-                      searched as “{c.cleanedTitle}”
+                      <Trans>searched as “{cleanedTitle}”</Trans>
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm">{c.cbzCount} CBZ</Text>
-                    {c.recognizedCount < c.cbzCount && (
+                    <Text size="sm">
+                      <Plural value={comicCount} one="# comic" other="# comics" />
+                    </Text>
+                    {recognizedCount < comicCount && (
                       <Badge size="xs" color="yellow" variant="light">
-                        {c.cbzCount - c.recognizedCount} unrecognized
+                        <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
                       </Badge>
                     )}
                   </Table.Td>
@@ -322,7 +352,7 @@ export default function ImportPage() {
                             size="xs"
                             c={rowProgress.done && !rowProgress.success ? 'red' : 'dimmed'}
                           >
-                            {rowProgress.stage}
+                            {rowProgress.stage === 'Queued' ? <Trans>Queued</Trans> : rowProgress.stage}
                             {rowProgress.total
                               ? ` (${rowProgress.current}/${rowProgress.total})`
                               : ''}
@@ -331,12 +361,12 @@ export default function ImportPage() {
                         </Stack>
                       ) : c.matches.length === 0 ? (
                         <Text size="sm" c="red">
-                          No metadata match, rename the folder closer to the title and rescan.
+                          <Trans>No metadata match, rename the folder closer to the title and rescan.</Trans>
                         </Text>
                       ) : (
                         <Select
                           data={[
-                            { value: '', label: '- skip -' },
+                            { value: '', label: t`- skip -` },
                             ...c.matches.map((m) => ({
                               value: m.providerId,
                               label: `${m.title}${m.year ? ` (${m.year})` : ''}`,

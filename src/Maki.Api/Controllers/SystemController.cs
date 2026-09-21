@@ -17,11 +17,13 @@ public class SystemController(
     HealthCheckService healthCheck,
     BackupService backups,
     UpdateCheckService updateCheck,
+    MemoryDiagnostics memory,
     ImageCacheRebuildService imageCache,
     ImageCacheRebuildStatus imageCacheStatus,
     ISchedulerFactory schedulerFactory,
     ICurrentUser currentUser,
     IHostApplicationLifetime lifetime,
+    Maki.Api.Localization.ILocalizer localizer,
     ILogger<SystemController> logger) : ControllerBase
 {
     /// <summary>
@@ -36,10 +38,20 @@ public class SystemController(
     /// </remarks>
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("health")]
-    public async Task<IActionResult> Health(CancellationToken ct) =>
-        Ok(await HttpContext.RequestServices.GetRequiredService<Maki.Data.MakiDbContext>().HealthChecks
+    public async Task<IActionResult> Health(CancellationToken ct)
+    {
+        var rows = await HttpContext.RequestServices.GetRequiredService<Maki.Data.MakiDbContext>().HealthChecks
             .Where(HealthTransitions.Unattended)
-            .Select(i => new { type = i.Category, severity = i.Status, message = i.Message }).ToListAsync(ct));
+            .Select(i => new { i.Category, i.Status, i.MessageKey, i.ParamsJson, i.Message }).ToListAsync(ct);
+        return Ok(rows.Select(i => new
+        {
+            type = i.Category,
+            severity = i.Status,
+            message = i.MessageKey is { Length: > 0 } key
+                ? localizer.Get(key, HealthMonitor.HealthParams(i.ParamsJson))
+                : i.Message,
+        }));
+    }
 
     [HttpGet("status")]
     public IActionResult Status()
@@ -60,6 +72,24 @@ public class SystemController(
 
     [HttpGet("update")]
     public IActionResult UpdateStatus() => Ok(updateCheck.GetStatus());
+
+    /// <summary>
+    /// Where the process's memory is, split into managed heap, native, and the kernel's own
+    /// accounting, plus which discovery artifacts are currently loaded.
+    /// </summary>
+    /// <remarks>
+    /// Admin-only: it describes the host rather than the caller's library, and the cgroup limit
+    /// tells a reader account how the deployment is provisioned.
+    /// <para>
+    /// <c>collect=true</c> forces a blocking compacting collection first and reports the managed
+    /// total from both before and after it, which is the only way to tell a genuinely retained
+    /// hundred megabytes from a hundred megabytes of garbage nothing has needed to reclaim yet.
+    /// It stalls every request for the length of the collection, so it is opt-in.
+    /// </para>
+    /// </remarks>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("memory")]
+    public IActionResult Memory([FromQuery] bool collect = false) => Ok(memory.Snapshot(collect));
 
     /// <summary>
     /// Live rebuild status plus what the image caches occupy on disk. Admin-only: the byte counts

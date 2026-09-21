@@ -19,6 +19,7 @@ import {
   IconArrowBarToUp,
   IconArrowDown,
   IconArrowUp,
+  IconAlertTriangle,
   IconClock,
   IconHistory,
   IconInbox,
@@ -28,6 +29,7 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   useClearQueue,
   useQueue,
@@ -37,14 +39,20 @@ import {
   useRetryQueueItem,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
+import { ImportReviewModal } from '../components/ImportReviewModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
-import { isQueueActive, queueStatusVisual } from '../components/ui/status'
+import { isQueueActive, needsImportReview, queueStatusVisual } from '../components/ui/status'
+import { queueErrorMessage, queueItemLabel } from '../api/queue'
+import { useLabel } from '../i18n-context'
+import { formatDateTime, formatTime } from '../format'
 
 const HISTORY_PAGE_SIZE = 25
 
 export default function ActivityPage() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data: queue } = useQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
@@ -55,11 +63,14 @@ export default function ActivityPage() {
 
   const [historyPage, setHistoryPage] = useState(1)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
+  const [reviewing, setReviewing] = useState<number | null>(null)
   const { data: history } = useQueueHistory(historyPage, HISTORY_PAGE_SIZE)
   const historyPageCount = history ? Math.ceil(history.total / HISTORY_PAGE_SIZE) : 0
 
   const queueItems = useMemo(() => queue?.items ?? [], [queue])
   const truncated = queue ? queue.total > queueItems.length : false
+  const shownQueueCount = queueItems.length
+  const totalQueueCount = queue?.total ?? 0
 
   const moveItem = (index: number, direction: -1 | 1) => {
     const target = index + direction
@@ -85,6 +96,7 @@ export default function ActivityPage() {
     () => ({
       active: queueItems.filter((q) => isQueueActive(q.status)).length,
       queued: queueItems.filter((q) => q.status === 'Queued').length,
+      review: queueItems.filter((q) => needsImportReview(q.status)).length,
       failed: queueItems.filter((q) => q.status === 'Failed').length,
     }),
     [queueItems],
@@ -93,39 +105,50 @@ export default function ActivityPage() {
   return (
     <>
       <PageHeader
-        title="Activity"
-        description="Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
+        title={t`Activity`}
+        description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
           canManageQueue && queue && queue.total > 0 ? (
             <Button color="red" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
-              Clear queue
+              <Trans>Clear queue</Trans>
             </Button>
           ) : undefined
         }
       />
 
-      <SimpleGrid cols={{ base: 3 }} spacing="sm" mb="lg" maw={560}>
-        <StatTile label="In progress" value={stats.active} icon={IconLoader2} accent="info" />
-        <StatTile label="Queued" value={stats.queued} icon={IconClock} accent="gray" />
-        <StatTile label="Failed" value={stats.failed} icon={IconX} accent="danger" />
+      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg" maw={740}>
+        <StatTile label={t`In progress`} value={stats.active} icon={IconLoader2} accent="info" />
+        <StatTile label={t`Queued`} value={stats.queued} icon={IconClock} accent="gray" />
+        <StatTile label={t`Needs review`} value={stats.review} icon={IconAlertTriangle} accent="warn" />
+        <StatTile label={t`Failed`} value={stats.failed} icon={IconX} accent="danger" />
       </SimpleGrid>
 
       {queueItems.length === 0 ? (
         <EmptyState
           icon={IconInbox}
-          title="Nothing in the queue"
-          description="Queued and downloading chapters show up here. Trigger a search from a series page or the library."
+          title={t`Nothing in the queue`}
+          description={t`Queued and downloading chapters show up here. Trigger a search from a series page or the library.`}
         />
       ) : (
         <Table.ScrollContainer minWidth={720}>
           <Table verticalSpacing="sm">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Series</Table.Th>
-                <Table.Th>Chapter</Table.Th>
-                <Table.Th>Source</Table.Th>
-                <Table.Th w={240}>Progress</Table.Th>
-                <Table.Th w={150}>Status</Table.Th>
+                <Table.Th>
+                  <Trans>Series</Trans>
+                </Table.Th>
+                <Table.Th>
+                  <Trans>Chapter</Trans>
+                </Table.Th>
+                <Table.Th>
+                  <Trans>Source</Trans>
+                </Table.Th>
+                <Table.Th w={240}>
+                  <Trans>Progress</Trans>
+                </Table.Th>
+                <Table.Th w={150}>
+                  <Trans>Status</Trans>
+                </Table.Th>
                 <Table.Th w={190} />
               </Table.Tr>
             </Table.Thead>
@@ -133,18 +156,17 @@ export default function ActivityPage() {
               {queueItems.map((q, index) => {
                 const visual = queueStatusVisual(q.status)
                 const reorderable = q.status === 'Queued' || q.status === 'RateLimited'
+                const { retryCount, nextAttempt } = q
+                const nextAttemptTime = nextAttempt ? formatTime(nextAttempt) : null
                 const retryInfo =
-                  q.status === 'Failed' && q.retryCount > 0
-                    ? `Retried ${q.retryCount}x${
-                        q.nextAttempt
-                          ? ` - next attempt ${new Date(q.nextAttempt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}`
-                          : ''
-                      }`
+                  q.status === 'Failed' && retryCount > 0
+                    ? nextAttemptTime
+                      ? t`Retried ${retryCount}x - next attempt ${nextAttemptTime}`
+                      : t`Retried ${retryCount}x`
                     : null
-                const tooltipLabel = [q.errorMessage, retryInfo].filter(Boolean).join(' - ') || visual.label
+                const failure = queueErrorMessage(q, renderLabel)
+                const tooltipLabel =
+                  [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
                 return (
                   <Table.Tr key={q.id}>
                     <Table.Td>
@@ -161,7 +183,7 @@ export default function ActivityPage() {
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" className="tnum">
-                        {q.chapterLabel}
+                        {queueItemLabel(q)}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -169,7 +191,7 @@ export default function ActivityPage() {
                         <Group gap={6} wrap="nowrap">
                           <Loader size="xs" />
                           <Text size="sm" c="dimmed">
-                            Finding source
+                            <Trans>Finding source</Trans>
                           </Text>
                         </Group>
                       ) : (
@@ -199,14 +221,14 @@ export default function ActivityPage() {
                       )}
                     </Table.Td>
                     <Table.Td>
-                      <Tooltip label={tooltipLabel} withArrow disabled={!q.errorMessage && !retryInfo}>
+                      <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo}>
                         <Badge
                           size="sm"
                           color={visual.color}
                           variant="light"
                           leftSection={<visual.Icon size={12} />}
                         >
-                          {visual.label}
+                          {renderLabel(visual.label)}
                         </Badge>
                       </Tooltip>
                     </Table.Td>
@@ -214,59 +236,64 @@ export default function ActivityPage() {
                       <Group gap={4} wrap="nowrap" justify="flex-end">
                         {reorderable && (
                           <>
-                            <Tooltip label="Move to top" withArrow>
+                            <Tooltip label={t`Move to top`} withArrow>
                               <ActionIcon
                                 variant="subtle"
                                 color="gray"
                                 disabled={index === 0}
                                 onClick={() => moveToTop(index)}
-                                aria-label="Move to top of queue"
+                                aria-label={t`Move to top of queue`}
                               >
                                 <IconArrowBarToUp size={16} />
                               </ActionIcon>
                             </Tooltip>
-                            <Tooltip label="Move up" withArrow>
+                            <Tooltip label={t`Move up`} withArrow>
                               <ActionIcon
                                 variant="subtle"
                                 color="gray"
                                 disabled={index === 0}
                                 onClick={() => moveItem(index, -1)}
-                                aria-label="Move up in queue"
+                                aria-label={t`Move up in queue`}
                               >
                                 <IconArrowUp size={16} />
                               </ActionIcon>
                             </Tooltip>
-                            <Tooltip label="Move down" withArrow>
+                            <Tooltip label={t`Move down`} withArrow>
                               <ActionIcon
                                 variant="subtle"
                                 color="gray"
                                 disabled={index === queueItems.length - 1}
                                 onClick={() => moveItem(index, 1)}
-                                aria-label="Move down in queue"
+                                aria-label={t`Move down in queue`}
                               >
                                 <IconArrowDown size={16} />
                               </ActionIcon>
                             </Tooltip>
                           </>
                         )}
+                        {needsImportReview(q.status) && canManageQueue && (
+                          <Button size="compact-sm" variant="light" color="yellow" onClick={() => setReviewing(q.id)}>
+                            <Trans>Review</Trans>
+                          </Button>
+                        )}
                         {q.status === 'Failed' && (
-                          <Tooltip label="Retry" withArrow>
+                          <Tooltip label={t`Retry`} withArrow>
                             <ActionIcon
                               variant="subtle"
                               color="gray"
                               onClick={() => retry.mutate(q.id)}
-                              aria-label="Retry download"
+                              aria-label={t`Retry download`}
                             >
                               <IconRefresh size={16} />
                             </ActionIcon>
                           </Tooltip>
                         )}
-                        <Tooltip label="Remove" withArrow>
+                        <Tooltip label={t`Remove`} withArrow>
                           <ActionIcon
                             variant="subtle"
                             color="red"
                             onClick={() => remove.mutate(q.id)}
-                            aria-label="Remove from queue"
+                            aria-label={t`Remove from queue`}
                           >
                             <IconX size={16} />
                           </ActionIcon>
@@ -283,24 +310,34 @@ export default function ActivityPage() {
 
       {truncated && (
         <Text size="xs" c="dimmed" mt="xs">
-          Showing {queueItems.length} of {queue?.total} queued items. The rest are still queued and
-          will download, they're just not listed here.
+          <Trans>
+            Showing {shownQueueCount} of {totalQueueCount} queued items. The rest are still queued
+            and will download, they're just not listed here.
+          </Trans>
         </Text>
       )}
+
+      <ImportReviewModal queueItemId={reviewing} onClose={() => setReviewing(null)} />
 
       <Modal
         opened={clearConfirmOpen}
         onClose={() => setClearConfirmOpen(false)}
-        title={`Clear ${queue?.total ?? 0} queued downloads?`}
+        title={
+          <Plural
+            value={queue?.total ?? 0}
+            one="Clear # queued download?"
+            other="Clear # queued downloads?"
+          />
+        }
         centered
       >
         <Stack gap="sm">
           <Text size="sm">
-            Pending downloads will be removed. Downloads already in progress will be cancelled.
+            <Trans>Pending downloads will be removed. Downloads already in progress will be cancelled.</Trans>
           </Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setClearConfirmOpen(false)}>
-              Cancel
+              <Trans>Cancel</Trans>
             </Button>
             <Button
               color="red"
@@ -309,7 +346,7 @@ export default function ActivityPage() {
                 clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
               }}
             >
-              Clear queue
+              <Trans>Clear queue</Trans>
             </Button>
           </Group>
         </Stack>
@@ -318,14 +355,16 @@ export default function ActivityPage() {
       <Stack gap="sm" mt="xl">
         <Group gap="xs">
           <IconHistory size={18} />
-          <Title order={4}>History</Title>
+          <Title order={4}>
+            <Trans>History</Trans>
+          </Title>
         </Group>
 
         {!history || history.items.length === 0 ? (
           <EmptyState
             icon={IconHistory}
-            title="No history yet"
-            description="Completed and cancelled downloads show up here."
+            title={t`No history yet`}
+            description={t`Completed and cancelled downloads show up here.`}
           />
         ) : (
           <>
@@ -333,11 +372,21 @@ export default function ActivityPage() {
               <Table verticalSpacing="sm">
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>Series</Table.Th>
-                    <Table.Th>Chapter</Table.Th>
-                    <Table.Th>Source</Table.Th>
-                    <Table.Th w={150}>Status</Table.Th>
-                    <Table.Th w={160}>Completed</Table.Th>
+                    <Table.Th>
+                      <Trans>Series</Trans>
+                    </Table.Th>
+                    <Table.Th>
+                      <Trans>Chapter</Trans>
+                    </Table.Th>
+                    <Table.Th>
+                      <Trans>Source</Trans>
+                    </Table.Th>
+                    <Table.Th w={150}>
+                      <Trans>Status</Trans>
+                    </Table.Th>
+                    <Table.Th w={160}>
+                      <Trans>Completed</Trans>
+                    </Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -359,7 +408,7 @@ export default function ActivityPage() {
                         </Table.Td>
                         <Table.Td>
                           <Text size="sm" className="tnum">
-                            {q.chapterLabel}
+                            {queueItemLabel(q)}
                           </Text>
                         </Table.Td>
                         <Table.Td>
@@ -374,12 +423,12 @@ export default function ActivityPage() {
                             variant="light"
                             leftSection={<visual.Icon size={12} />}
                           >
-                            {visual.label}
+                            {renderLabel(visual.label)}
                           </Badge>
                         </Table.Td>
                         <Table.Td>
                           <Text size="xs" c="dimmed" className="tnum">
-                            {q.completedAt ? new Date(q.completedAt).toLocaleString() : '-'}
+                            {q.completedAt ? formatDateTime(q.completedAt) : '-'}
                           </Text>
                         </Table.Td>
                       </Table.Tr>

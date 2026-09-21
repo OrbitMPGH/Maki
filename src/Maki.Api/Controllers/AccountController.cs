@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
+using Maki.Api.Localization;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -20,6 +21,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/account")]
 public class AccountController(
+    ILocalizer localizer,
     MakiDbContext db,
     UserManager<MakiUser> userManager,
     SignInManager<MakiUser> signInManager,
@@ -56,7 +58,7 @@ public class AccountController(
     {
         if (string.IsNullOrEmpty(request.CurrentPassword) || string.IsNullOrEmpty(request.NewPassword))
         {
-            return BadRequest(new { error = "Current and new password are required" });
+            return this.Fail(localizer, "error.account.passwordsRequired");
         }
 
         var user = await LoadAsync();
@@ -104,12 +106,12 @@ public class AccountController(
 
         if (user.TwoFactorEnabled)
         {
-            return Conflict(new { error = "Two-factor authentication is already enabled" });
+            return this.Conflict(localizer, "error.account.twoFactorAlreadyEnabled");
         }
 
         if (!await PasswordLoginAvailableAsync(user))
         {
-            return Conflict(new { error = "This account has no password login for two-factor to protect" });
+            return this.Conflict(localizer, "error.account.noPasswordLogin");
         }
 
         // Always a fresh secret: reusing one across abandoned enrolment attempts means an old QR
@@ -118,8 +120,12 @@ public class AccountController(
         var key = await userManager.GetAuthenticatorKeyAsync(user);
         if (string.IsNullOrEmpty(key))
         {
+            // No ApiResults helper answers 500 with a message body — nothing else in the API does
+            // that today — so the { code, error } shape is built by hand here, the same as
+            // ApiResults.Body would for any other status.
+            const string failureKey = "error.account.authenticatorKeyFailed";
             return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "Could not generate an authenticator key" });
+                new { code = failureKey, error = localizer.Get(failureKey) });
         }
 
         var label = UrlEncoder.Default.Encode(user.UserName ?? "user");
@@ -136,20 +142,20 @@ public class AccountController(
 
         if (!await PasswordLoginAvailableAsync(user))
         {
-            return Conflict(new { error = "This account has no password login for two-factor to protect" });
+            return this.Conflict(localizer, "error.account.noPasswordLogin");
         }
 
         var code = request.Code?.Replace(" ", string.Empty).Replace("-", string.Empty);
         if (string.IsNullOrEmpty(code))
         {
-            return BadRequest(new { error = "A code from your authenticator app is required" });
+            return this.Fail(localizer, "error.account.codeRequired");
         }
 
         var valid = await userManager.VerifyTwoFactorTokenAsync(
             user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
         if (!valid)
         {
-            return BadRequest(new { error = "That code is not valid" });
+            return this.Fail(localizer, "error.account.invalidCode");
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, true);
@@ -173,7 +179,7 @@ public class AccountController(
         if (string.IsNullOrEmpty(request.Password) ||
             !await userManager.CheckPasswordAsync(user, request.Password))
         {
-            return BadRequest(new { error = "Password is incorrect" });
+            return this.Fail(localizer, "error.account.incorrectPassword");
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, false);
@@ -203,7 +209,7 @@ public class AccountController(
         var name = request.Name?.Trim();
         if (string.IsNullOrEmpty(name))
         {
-            return BadRequest(new { error = "Name is required" });
+            return this.Fail(localizer, "error.account.nameRequired");
         }
 
         // An OPDS token hands out the whole library to a third-party app, so it is gated on the same
@@ -290,7 +296,8 @@ public class AccountController(
 
         if (!ContentRating.IsValid(rating))
         {
-            return BadRequest(new { error = $"Rating must be one of: {string.Join(", ", ContentRating.All)}" });
+            return this.Fail(localizer, "error.account.invalidContentRating",
+                new { ratings = string.Join(", ", ContentRating.All) });
         }
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == currentUser.UserId, ct);

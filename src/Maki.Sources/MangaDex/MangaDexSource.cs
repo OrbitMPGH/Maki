@@ -18,6 +18,31 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public string DisplayName => "MangaDex";
     public string BaseUrl => "https://mangadex.org";
     public SourceCapabilities Capabilities => SourceCapabilities.SupportsLanguageFilter;
+    // Every scanlation group posts in whatever language it works in; there's no fixed catalogue,
+    // so this stands in for "essentially all of them" against Maki's own 14-language UI set.
+    public IReadOnlyList<string> SupportedLanguages => Core.Localization.SupportedLanguages.All;
+
+    /// <summary>
+    /// A stored <c>LanguageFilter</c> code as MangaDex spells it.
+    /// <para>
+    /// The filter is seeded from Maki's own UI locales (<c>SourceLanguagePreference.SeedFilter</c>)
+    /// and MangaDex tags chapters with plain ISO 639-1, so the two agree on thirteen of the fourteen
+    /// by luck rather than by design. Simplified Chinese is the exception: Maki writes
+    /// <c>zh-Hans</c>, MangaDex files it under <c>zh</c> (<c>zh-hk</c> being the traditional one),
+    /// and a feed asked for <c>zh-hans</c> matches nothing at all, so the mapping listed zero
+    /// chapters while every screen reported it enabled and matched.
+    /// </para>
+    /// <para>
+    /// Anything not named here is passed through as it was stored. An unknown code is answered with
+    /// an empty feed rather than an error either way, and inventing a translation for a code no
+    /// picker can produce would only hide the next mismatch.
+    /// </para>
+    /// </summary>
+    private static string ToMangaDex(string code) => code switch
+    {
+        "zh-hans" => "zh",
+        _ => code,
+    };
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
@@ -63,7 +88,13 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var language = string.IsNullOrWhiteSpace(languageFilter) ? "en" : languageFilter;
+        var languages = SourceLanguages.Parse(languageFilter).Select(ToMangaDex).Distinct().ToList();
+        // translatedLanguage[] is a repeated parameter, so several languages cost one request per
+        // page rather than one pass per language — and the feed stays ordered by chapter across all
+        // of them, which is what SourceChapterList.Normalize's per-(Number, Volume, Language) group
+        // expects.
+        var languageQuery = string.Concat(
+            languages.Select(l => $"&translatedLanguage[]={Uri.EscapeDataString(l)}"));
         var chapters = new List<SourceChapter>();
         var offset = 0;
 
@@ -71,7 +102,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
         {
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
                 $"manga/{sourceSeriesId}/feed?limit=500&offset={offset}" +
-                $"&translatedLanguage[]={Uri.EscapeDataString(language)}" +
+                languageQuery +
                 "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
                 ct);
 
@@ -98,7 +129,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
                     parsed.Number,
                     parsed.Volume,
                     c.Attributes.Title,
-                    c.Attributes.TranslatedLanguage ?? language,
+                    c.Attributes.TranslatedLanguage ?? languages[0],
                     c.Attributes.PublishAt,
                     $"{BaseUrl}/chapter/{c.Id}"));
             }

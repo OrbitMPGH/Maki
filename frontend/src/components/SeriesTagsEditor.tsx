@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react'
 import { TagsInput, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useCreateTag, useSetSeriesTags, useTags } from '../api/hooks'
+import { Trans, useLingui } from '@lingui/react/macro'
 
 /**
  * Tag assignment for a single series. Works in labels rather than ids because the input has to
@@ -9,6 +10,7 @@ import { useCreateTag, useSetSeriesTags, useTags } from '../api/hooks'
  * label that already exists just comes back), then the whole set is written in one PUT.
  */
 export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagIds: number[] }) {
+  const { t } = useLingui()
   const { data: tags } = useTags()
   const createTag = useCreateTag()
   const setSeriesTags = useSetSeriesTags()
@@ -31,6 +33,7 @@ export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagId
       }
       await setSeriesTags.mutateAsync({ seriesId, tagIds: [...new Set(ids)] })
     } catch (err) {
+      // Embeds the raw exception, so left untranslated (see report).
       notifications.show({ color: 'red', message: `Failed to update tags: ${String(err)}` })
     }
   }
@@ -41,21 +44,21 @@ export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagId
     return (
       <div>
         <Title order={4} fz={14} mb={10}>
-          Your tags
+          <Trans>Your tags</Trans>
         </Title>
         <div className="tag-chips">
-          {assigned.map((t) => (
+          {assigned.map((tag) => (
             <span
-              key={t.id}
+              key={tag.id}
               className="tag-chip"
-              style={{ '--bucket': `var(--mantine-color-${t.color}-6)` } as CSSProperties}
+              style={{ '--bucket': `var(--mantine-color-${tag.color}-6)` } as CSSProperties}
             >
               <i className="tag-dot" />
-              <span>{t.label}</span>
+              <span>{tag.label}</span>
             </span>
           ))}
           <button type="button" className="tag-more" onClick={() => setEditing(true)}>
-            {assigned.length > 0 ? 'Edit' : '+ Add tags'}
+            {assigned.length > 0 ? <Trans>Edit</Trans> : <Trans>+ Add tags</Trans>}
           </button>
         </div>
       </div>
@@ -64,10 +67,10 @@ export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagId
 
   return (
     <TagsInput
-      label="Your tags"
-      description="Press Enter to create a new tag"
-      data={(tags ?? []).map((t) => t.label)}
-      value={assigned.map((t) => t.label)}
+      label={t`Your tags`}
+      description={t`Press Enter to create a new tag`}
+      data={(tags ?? []).map((tag) => tag.label)}
+      value={assigned.map((tag) => tag.label)}
       onChange={(labels) => void apply(labels)}
       onBlur={() => setEditing(false)}
       disabled={setSeriesTags.isPending || createTag.isPending}

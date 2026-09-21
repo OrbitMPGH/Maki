@@ -1,3 +1,4 @@
+using Maki.Core.Images;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
@@ -16,23 +17,27 @@ public static class MangaFireDescrambler
     private const int PieceSize = 200;
     private const int MinSplitCount = 5;
 
-    /// <summary>Descrambles the image file in place.</summary>
-    public static async Task DescrambleFileAsync(string filePath, int offset, CancellationToken ct = default)
-    {
-        using var source = await Image.LoadAsync(filePath, ct);
-        using var result = Descramble(source, offset);
+    /// <summary>
+    /// Descrambles the image file in place. Gated: this holds the source and the destination
+    /// decoded at once, which is the largest per-page allocation anywhere in the download path.
+    /// </summary>
+    public static Task DescrambleFileAsync(string filePath, int offset, CancellationToken ct = default) =>
+        ImageWorkGate.RunAsync(async () =>
+        {
+            using var source = await Image.LoadAsync(filePath, ct);
+            using var result = Descramble(source, offset);
 
-        var extension = Path.GetExtension(filePath);
-        if (extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
-            extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
-        {
-            await result.SaveAsJpegAsync(filePath, new JpegEncoder { Quality = 90 }, ct);
-        }
-        else
-        {
-            await result.SaveAsync(filePath, ct); // encoder chosen by file extension
-        }
-    }
+            var extension = Path.GetExtension(filePath);
+            if (extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
+            {
+                await result.SaveAsJpegAsync(filePath, new JpegEncoder { Quality = 90 }, ct);
+            }
+            else
+            {
+                await result.SaveAsync(filePath, ct); // encoder chosen by file extension
+            }
+        }, ct);
 
     public static Image Descramble(Image source, int offset)
     {

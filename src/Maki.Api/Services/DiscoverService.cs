@@ -1,4 +1,4 @@
-﻿using Maki.Core.Metadata;
+using Maki.Core.Metadata;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -139,7 +139,20 @@ public class DiscoverService(
     CatalogueIndexCache catalogueIndex,
     ILogger<DiscoverService> logger)
 {
-    private const int RailSize = 40;
+    public const int RailSize = 40;
+
+    /// <summary>
+    /// What a rail is built to when the caller has recommendation feedback to filter out of it.
+    /// <para>
+    /// Headroom so a reader who hid a few titles still gets a full rail back rather than a short
+    /// one. Asked for per call rather than always, and folded into the cache key, because these
+    /// rails are shared instance-wide: building every rail to twice its length would make every
+    /// reader pay a doubled scan and a doubled cache so that the ones with feedback have something
+    /// to spare. Two depths at most, and the deep one only exists once somebody needs it.
+    /// </para>
+    /// </summary>
+    public const int RefillRailSize = RailSize * 2;
+
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
     /// <summary>
@@ -201,11 +214,16 @@ public class DiscoverService(
     /// The viewer's ceiling (<c>ICurrentUser.MaxContentRating</c>). Absent or unrecognised resolves
     /// to Safe, not to the default: see <see cref="Ceiling"/>.
     /// </param>
+    /// <param name="depth">
+    /// How long to build each rail. <see cref="RefillRailSize"/> when the caller will filter the
+    /// result and wants something left over; <see cref="RailSize"/> otherwise.
+    /// </param>
     public async Task<IReadOnlyList<DiscoverRail>> GetFeedsAsync(
-        bool refresh, string? maxContentRating, CancellationToken ct = default)
+        bool refresh, string? maxContentRating, CancellationToken ct = default, int depth = RailSize)
     {
         await EnsureAvailableAsync(ct);
-        var (key, filters) = Ceiling(maxContentRating);
+        var (ceiling, filters) = Ceiling(maxContentRating);
+        var key = $"{ceiling}:{depth}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -226,7 +244,7 @@ public class DiscoverService(
                 try
                 {
                     var items = await store.GetBrowseAsync(
-                        feed, RailSize, filters: filters, ct: ct);
+                        feed, depth, filters: filters, ct: ct);
                     return items.Count > 0
                         ? new DiscoverRail(key, title, feed.ToString(), null, items)
                         : null;
@@ -241,10 +259,11 @@ public class DiscoverService(
             var rails = (await Task.WhenAll(tasks)).Where(r => r is not null).Cast<DiscoverRail>().ToList();
 
             logger.LogInformation(
-                "Computed {Count} Discover rail(s) for ceiling {Ceiling} in {Elapsed:F1}s",
-                rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
+                "Computed {Count} Discover rail(s) for ceiling {Ceiling} at depth {Depth} in {Elapsed:F1}s",
+                rails.Count, ceiling, depth, (DateTime.UtcNow - started).TotalSeconds);
 
             _cached[key] = new CachedRails(rails, DateTime.UtcNow);
+            ScheduleScanCacheDrop();
             return rails;
         }
         finally
@@ -253,13 +272,89 @@ public class DiscoverService(
         }
     }
 
+    /// <summary>
+    /// How long the dump stays cached after the last rail batch. Long enough to cover a whole visit
+    /// to Discover - the main rails, the genre rails, and clicking into a series or two - since all
+    /// of those read the same file and the point is to drop it once at the end rather than between
+    /// two halves of one page view.
+    /// </summary>
+    private static readonly TimeSpan DropQuietPeriod = TimeSpan.FromMinutes(2);
+
+    private readonly object _dropLock = new();
+    private CancellationTokenSource? _dropPending;
+
+    /// <summary>
+    /// Arms a drop of the dump's page cache, replacing any drop already armed.
+    ///
+    /// <para>
+    /// Every rail is a scan of a multi-gigabyte file and there are six of them plus one per genre.
+    /// Measured on a NAS: opening Discover took the container's page cache from 183 MB to 626 MB
+    /// while the process itself did not grow at all, which is how a page that adds nothing to the
+    /// heap still reads as half a gigabyte on the dashboard.
+    /// </para>
+    ///
+    /// <para>
+    /// Deferred rather than immediate, because the first version of this dropped the cache the
+    /// moment the main rails were built and the genre rails then rebuilt against a cold file in the
+    /// same page view. Each batch pushes the drop out again, so it happens once the visit is over.
+    /// </para>
+    ///
+    /// <para>
+    /// Safe at all only because the rails are cached for twelve hours, so the scans that filled the
+    /// cache are not about to run again. It would be the wrong thing to do after a single lookup.
+    /// </para>
+    /// </summary>
+    private void ScheduleScanCacheDrop()
+    {
+        var armed = new CancellationTokenSource();
+        CancellationTokenSource? previous;
+        lock (_dropLock)
+        {
+            previous = _dropPending;
+            _dropPending = armed;
+        }
+
+        try
+        {
+            previous?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // It fired and cleaned itself up between the swap above and here.
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(DropQuietPeriod, armed.Token);
+                store.DropScanCache();
+            }
+            catch (OperationCanceledException)
+            {
+                // Another batch arrived; that one owns the drop now.
+            }
+            catch (Exception ex)
+            {
+                // The rails are built and cached either way; this only hints the kernel.
+                logger.LogDebug(ex, "Could not drop the dump from the page cache");
+            }
+            finally
+            {
+                armed.Dispose();
+            }
+        });
+    }
+
     /// <summary>One "Popular in {genre}" rail per genre, for the Genres tab.</summary>
     /// <param name="maxContentRating">The viewer's ceiling; see <see cref="Ceiling"/>.</param>
+    /// <param name="depth">See <see cref="GetFeedsAsync"/>.</param>
     public async Task<IReadOnlyList<DiscoverRail>> GetGenreFeedsAsync(
-        bool refresh, string? maxContentRating, CancellationToken ct = default)
+        bool refresh, string? maxContentRating, CancellationToken ct = default, int depth = RailSize)
     {
         await EnsureAvailableAsync(ct);
-        var (key, filters) = Ceiling(maxContentRating);
+        var (ceiling, filters) = Ceiling(maxContentRating);
+        var key = $"{ceiling}:{depth}";
         await _genreLock.WaitAsync(ct);
         try
         {
@@ -277,7 +372,7 @@ public class DiscoverService(
                 try
                 {
                     var items = await store.GetBrowseAsync(
-                        BrowseFeed.GenreSpotlight, RailSize, genre, filters, ct);
+                        BrowseFeed.GenreSpotlight, depth, genre, filters, ct);
                     return items.Count > 0
                         ? new DiscoverRail(
                             $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", $"Popular in {genre}",
@@ -294,10 +389,11 @@ public class DiscoverService(
             var rails = (await Task.WhenAll(tasks)).Where(r => r is not null).Cast<DiscoverRail>().ToList();
 
             logger.LogInformation(
-                "Computed {Count} Discover genre rail(s) for ceiling {Ceiling} in {Elapsed:F1}s",
-                rails.Count, key, (DateTime.UtcNow - started).TotalSeconds);
+                "Computed {Count} Discover genre rail(s) for ceiling {Ceiling} at depth {Depth} in {Elapsed:F1}s",
+                rails.Count, ceiling, depth, (DateTime.UtcNow - started).TotalSeconds);
 
             _cachedGenres[key] = new CachedRails(rails, DateTime.UtcNow);
+            ScheduleScanCacheDrop();
             return rails;
         }
         finally

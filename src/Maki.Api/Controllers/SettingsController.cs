@@ -10,6 +10,8 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Api.Localization;
+using Maki.Core.Localization;
 using Maki.Core.Sources;
 using Maki.Metadata.CoRead;
 using Maki.Metadata.Embedding;
@@ -38,6 +40,8 @@ namespace Maki.Api.Controllers;
 // Prowlarr/qBittorrent/Kavita connections, source priority, updates) or an app registration shared by
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
+    ILocalizer localizer,
+    IUserLocaleResolver userLocales,
     SettingsService settings,
     NamingService naming,
     FlareSolverrClient flareSolverr,
@@ -96,7 +100,8 @@ public class SettingsController(
         Dictionary<string, string>? IncognitoByRating = null,
         bool WriteCoverToFolder = false,
         string? SeriesFolderFormat = null,
-        string? ChapterFormat = null);
+        string? ChapterFormat = null,
+        bool? RenameImportedFiles = null);
 
     /// <param name="Example">The token rendered against the sample series and chapter.</param>
     public record NamingTokenDto(string Token, string Category, string Description, string Example);
@@ -141,8 +146,28 @@ public class SettingsController(
     /// a two-field body, and turning that into "both rails on" is the safe failure — the same
     /// direction <see cref="HomeLayoutSpec"/> already takes when its field is absent.
     /// </param>
+    /// <param name="TitleLanguage">
+    /// Ordered comma-separated language codes for series titles ("ja,en"), or null/empty for the
+    /// provider's English title. <c>native</c> selects the original-script title. Nullable for the
+    /// same reason <paramref name="SeriesSections"/> is: an older client PUTs a body without it, and
+    /// treating that as "no preference" is the safe reading.
+    /// </param>
+    /// <param name="Language">
+    /// Which language the interface is drawn in, as one supported BCP 47 code, or null/empty to
+    /// follow the browser. Note that this is <em>not</em> <paramref name="TitleLanguage"/>: that one
+    /// is about the language of the metadata, this one is about the language of the app, and reading
+    /// Japanese-titled manga in a Swedish interface is the ordinary case. Nullable for the same
+    /// reason the two above it are.
+    /// </param>
     public record UiSettings(
-        string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null);
+        string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
+        string? TitleLanguage = null, string? Language = null);
+
+    /// <param name="Language">
+    /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
+    /// </param>
+    public record AnnouncementsResponse(bool Language);
+
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
     public record SecuritySettings(
@@ -197,8 +222,13 @@ public class SettingsController(
         (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
          (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
 
-    private static string UrlError(string service) =>
-        $"{service} URL must be a full http:// or https:// address (e.g. http://localhost:8080), or blank to clear it";
+    /// <summary>
+    /// The same complaint for every service whose URL is a plain setting. <paramref name="service"/>
+    /// is a product name and is never translated, which is why it is a placeholder rather than part
+    /// of the sentence: German and Japanese put it somewhere else in the line.
+    /// </summary>
+    private IActionResult UrlError(string service) =>
+        this.Fail(localizer, "error.settings.urlInvalid", new { service });
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("monitoring")]
@@ -364,12 +394,20 @@ public class SettingsController(
     public async Task<IActionResult> GetUi(CancellationToken ct)
     {
         var rows = await userSettings.GetManyAsync(
-            [SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections], ct);
+            [
+                SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections,
+                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage
+            ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
         var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
         var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
+        // An unsupported stored language reads as "no preference" rather than erroring, the same way
+        // an unrecognised start page does: a row written by a build that shipped a catalogue this one
+        // does not must not leave the settings page unable to load.
         return Ok(new UiSettings(
-            StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections));
+            StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections,
+            rows.GetValueOrDefault(SettingKeys.UiTitleLanguage),
+            SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage))));
     }
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
@@ -378,7 +416,7 @@ public class SettingsController(
     {
         if (!StartPage.IsValid(request.StartPage))
         {
-            return BadRequest(new { error = $"Unknown start page: {request.StartPage}" });
+            return this.Fail(localizer, "error.settings.unknownStartPage", new { page = request.StartPage });
         }
 
         // Turning Home off while it is the start page would leave "/" pointing at a page the client
@@ -391,11 +429,53 @@ public class SettingsController(
 
         var seriesSections = request.SeriesSections ?? SeriesSectionsSpec.Default;
 
+        // Normalized rather than validated: any code the metadata provider might tag a title with is
+        // legal, so there is no list to check against, and an unknown one simply matches nothing.
+        // A blank value deletes the row (IUserSettings.SetAsync), which is what "no preference" is.
+        var titleLanguage = string.Join(',', LocalizedTitle.ParsePreference(request.TitleLanguage)
+            .Select(c => c.ToLowerInvariant()));
+
+        // Validated rather than normalized, the opposite of the line above: a title-language code
+        // Maki does not know simply matches no title, but a UI language with no catalogue behind it
+        // renders every string in the app as an internal hash. Anything unsupported is refused
+        // outright instead of being quietly stored; blank deletes the row, which is "follow the
+        // browser".
+        // Resolved rather than exact-matched, so a client sending a regional tag gets the nearest
+        // catalogue ("de-AT" stores as "de") instead of a 400. Only a code that resolves to nothing
+        // is refused. The picker itself only ever sends codes straight off the list.
+        var language = SupportedLanguages.Match(request.Language);
+        if (!string.IsNullOrWhiteSpace(request.Language) && language is null)
+        {
+            return this.Fail(localizer, "error.settings.unsupportedLanguage", new { language = request.Language });
+        }
+
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
         await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
         await userSettings.SetAsync(
             SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
-        return Ok(new UiSettings(startPage, layout, seriesSections));
+        await userSettings.SetAsync(SettingKeys.UiTitleLanguage, titleLanguage, ct);
+        await userSettings.SetAsync(SettingKeys.UiLanguage, language, ct);
+        // Anything rendered outside a request (a webhook, a pushed notification) reads this through a
+        // short cache, so without this a language change would not reach it for up to five minutes.
+        userLocales.Forget(currentUser.UserId);
+        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language));
+    }
+
+    /// <summary>
+    /// The one-off notices this user has not been shown yet. Read on every app load, so it is one
+    /// key read and nothing more.
+    /// </summary>
+    [HttpGet("announcements")]
+    public async Task<IActionResult> GetAnnouncements(CancellationToken ct) =>
+        Ok(new AnnouncementsResponse(
+            await userSettings.GetAsync(SettingKeys.UiLanguageAnnouncement, ct) == "pending"));
+
+    /// <summary>Marks the language notice as shown. Idempotent, and only ever for the caller.</summary>
+    [HttpPost("announcements/language/seen")]
+    public async Task<IActionResult> SeenLanguageAnnouncement(CancellationToken ct)
+    {
+        await userSettings.SetAsync(SettingKeys.UiLanguageAnnouncement, "seen", ct);
+        return NoContent();
     }
 
     [HttpGet("library")]
@@ -416,7 +496,8 @@ public class SettingsController(
                 r => IncognitoRatingRules.Resolve(incognito, r).ToString()),
             await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true",
             await naming.SeriesFolderFormatAsync(ct),
-            await naming.ChapterFormatAsync(ct)));
+            await naming.ChapterFormatAsync(ct),
+            await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) != "false"));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -475,6 +556,11 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.LibraryFolderNamingMode, request.FolderNamingMode, ct);
         await settings.SetAsync(
             SettingKeys.LibraryWriteCoverToFolder, request.WriteCoverToFolder ? "true" : "false", ct);
+        if (request.RenameImportedFiles is { } renameImportedFiles)
+        {
+            await settings.SetAsync(
+                SettingKeys.LibraryRenameImportedFiles, renameImportedFiles ? "true" : "false", ct);
+        }
 
         if (request.SeriesFolderFormat is { } seriesFolderFormat)
         {
@@ -579,11 +665,28 @@ public class SettingsController(
         return Ok(new SetupStatus(hasRootFolder));
     }
 
+    /// <summary>
+    /// Marks the guide finished (or re-opens it). Finishing it also kicks the MangaBaka dump
+    /// download when there is nothing on disk yet: Discover, search and library imports are all
+    /// waiting on that ~350 MB transfer, and the scheduled trigger fires two minutes after startup
+    /// and then only every six hours — so an instance whose first minutes went on creating the
+    /// admin account and picking a root folder would otherwise sit idle with no metadata. The job
+    /// disallows concurrent execution, but a trigger while one is already running still queues a
+    /// second pass, hence the guard rather than an unconditional trigger.
+    /// </summary>
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("setup")]
     public async Task<IActionResult> SetSetup([FromBody] SetupStatus request, CancellationToken ct)
     {
         await settings.SetAsync(SettingKeys.SetupCompleted, request.Completed ? "true" : "false", ct);
+
+        if (request.Completed && !mangaBakaDump.Progress().Running &&
+            !(await mangaBakaDump.GetStatusAsync(ct)).Present)
+        {
+            var scheduler = await schedulerFactory.GetScheduler(ct);
+            await scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key, ct);
+        }
+
         return Ok(request);
     }
 
@@ -635,12 +738,12 @@ public class SettingsController(
     {
         if (request.ConcurrentChapters is < 1 or > 8)
         {
-            return BadRequest(new { error = "Concurrent chapter downloads must be between 1 and 8" });
+            return this.Fail(localizer, "error.settings.concurrentDownloadsRange", new { min = 1, max = 8 });
         }
 
         if (request.RetryMaxAttempts is < 1 or > 20)
         {
-            return BadRequest(new { error = "Retry attempts must be between 1 and 20" });
+            return this.Fail(localizer, "error.settings.retryAttemptsRange", new { min = 1, max = 20 });
         }
 
         // 0 is "no cap", the escape hatch for a source slower than any number worth defaulting to.
@@ -648,7 +751,7 @@ public class SettingsController(
         // downloads on a rate-limited source, which looks exactly like the stall it exists to end.
         if (request.ItemTimeoutMinutes != 0 && request.ItemTimeoutMinutes is < 10 or > 1440)
         {
-            return BadRequest(new { error = "Download timeout must be 0 (no limit) or between 10 and 1440 minutes" });
+            return this.Fail(localizer, "error.settings.downloadTimeoutRange", new { min = 10, max = 1440 });
         }
 
         await settings.SetAsync(
@@ -681,7 +784,7 @@ public class SettingsController(
     {
         if (request.Retention is < 1 or > 50)
         {
-            return BadRequest(new { error = "Backups to keep must be between 1 and 50" });
+            return this.Fail(localizer, "error.settings.backupsToKeepRange", new { min = 1, max = 50 });
         }
 
         await settings.SetAsync(
@@ -734,6 +837,73 @@ public class SettingsController(
         return await GetSourcePriority(ct);
     }
 
+    /// <summary>
+    /// <paramref name="Order"/> is every language any registered source publishes, most preferred
+    /// first. <paramref name="Disabled"/> is the subset switched off, kept *inside* the order so a
+    /// language holds its rank across an off/on cycle. <paramref name="Available"/> is the same set
+    /// unordered, so the client never has to guess which codes exist.
+    /// </summary>
+    public record SourceLanguageSettings(List<string> Order, List<string> Disabled, List<string> Available);
+
+    /// <summary>
+    /// The language ranking auto-matching applies on top of the source priority list. A language a
+    /// source added since the last save appears at the bottom, switched off, so a new source never
+    /// silently starts downloading a language nobody chose.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("sources/languages")]
+    public async Task<IActionResult> GetSourceLanguages(CancellationToken ct)
+    {
+        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var stored = SourceLanguagePreference.Parse(
+            await settings.GetAsync(SettingKeys.SourceLanguageOrder, ct),
+            await settings.GetAsync(SettingKeys.SourceLanguagesDisabled, ct));
+
+        var order = stored.Order
+            .Select(code => offered.FirstOrDefault(o => o.Equals(code, StringComparison.OrdinalIgnoreCase)))
+            .Where(code => code is not null)
+            .Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var undecided = offered.Where(code => !order.Contains(code, StringComparer.OrdinalIgnoreCase)).ToList();
+        order.AddRange(undecided);
+
+        var disabled = stored.Disabled
+            .Where(code => order.Contains(code, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        disabled.AddRange(undecided.Where(code =>
+            !disabled.Contains(code, StringComparer.OrdinalIgnoreCase) &&
+            !(stored.Order.Count == 0 && code.Equals(Core.Sources.SourceLanguages.Default, StringComparison.OrdinalIgnoreCase))));
+
+        return Ok(new SourceLanguageSettings(order, disabled, [.. offered]));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("sources/languages")]
+    public async Task<IActionResult> SetSourceLanguages(
+        [FromBody] SourceLanguageSettings request, CancellationToken ct)
+    {
+        var offered = SourceLanguagePreference.Offered(sourceRegistry.All);
+        var unknown = request.Order.Concat(request.Disabled)
+            .Where(code => !offered.Contains(code, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (unknown.Count > 0)
+        {
+            return this.Fail(localizer, "error.settings.unknownSourceLanguage",
+                new { codes = string.Join(", ", unknown) });
+        }
+
+        if (!request.Order.Any(code => !request.Disabled.Contains(code, StringComparer.OrdinalIgnoreCase)))
+        {
+            return this.Fail(localizer, "error.settings.noSourceLanguageEnabled");
+        }
+
+        await settings.SetAsync(SettingKeys.SourceLanguageOrder, string.Join(',', request.Order), ct);
+        await settings.SetAsync(SettingKeys.SourceLanguagesDisabled, string.Join(',', request.Disabled), ct);
+        return await GetSourceLanguages(ct);
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("prowlarr")]
     public async Task<IActionResult> GetProwlarr(CancellationToken ct) => Ok(new ProwlarrSettings(
@@ -746,7 +916,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("Prowlarr") });
+            return UrlError("Prowlarr");
         }
 
         await settings.SetAsync(SettingKeys.ProwlarrUrl, request.Url, ct);
@@ -780,7 +950,7 @@ public class SettingsController(
         var apiKey = await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            return BadRequest(new { error = "Prowlarr is not configured" });
+            return this.Fail(localizer, "error.settings.prowlarrNotConfigured");
         }
 
         var indexers = await prowlarr.GetIndexersAsync(url, apiKey, ct);
@@ -810,12 +980,13 @@ public class SettingsController(
         var apiKey = request.ApiKey ?? await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            return BadRequest(new { error = "URL and API key are required" });
+            return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
         return await prowlarr.PingAsync(url, apiKey, ct)
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "Prowlarr did not respond (check URL/API key)" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.prowlarrNoResponse", error = localizer.Get("error.settings.prowlarrNoResponse") });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -834,7 +1005,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("qBittorrent") });
+            return UrlError("qBittorrent");
         }
 
         await settings.SetAsync(SettingKeys.QBittorrentUrl, request.Url, ct);
@@ -853,7 +1024,7 @@ public class SettingsController(
         var url = request.Url ?? await settings.GetAsync(SettingKeys.QBittorrentUrl, ct);
         if (string.IsNullOrWhiteSpace(url))
         {
-            return BadRequest(new { error = "URL is required" });
+            return this.Fail(localizer, "error.settings.urlRequired");
         }
 
         var username = request.Username ?? await settings.GetAsync(SettingKeys.QBittorrentUsername, ct) ?? string.Empty;
@@ -861,7 +1032,8 @@ public class SettingsController(
 
         return await qbittorrent.PingAsync(url, username, password, ct)
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "qBittorrent login failed" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.qbittorrentLoginFailed", error = localizer.Get("error.settings.qbittorrentLoginFailed") });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -882,7 +1054,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("Kavita") });
+            return UrlError("Kavita");
         }
 
         await settings.SetAsync(SettingKeys.KavitaUrl, request.Url, ct);
@@ -893,7 +1065,7 @@ public class SettingsController(
         if (request.UserId is { } bound &&
             !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
         {
-            return BadRequest(new { error = "That user does not exist, or cannot sign in" });
+            return this.Fail(localizer, "error.settings.userCannotSignIn");
         }
 
         await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
@@ -917,7 +1089,7 @@ public class SettingsController(
         if (request.UserId is { } bound &&
             !await db.Users.AnyAsync(u => u.Id == bound && !u.Disabled && !u.PendingSetup, ct))
         {
-            return BadRequest(new { error = "That user does not exist, or cannot sign in" });
+            return this.Fail(localizer, "error.settings.userCannotSignIn");
         }
 
         await settings.SetAsync(SettingKeys.KavitaUserId, request.UserId?.ToString(), ct);
@@ -935,12 +1107,13 @@ public class SettingsController(
         var apiKey = request.ApiKey ?? await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            return BadRequest(new { error = "URL and API key are required" });
+            return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
         return await kavita.PingAsync(url, apiKey, ct)
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "Kavita did not respond (check URL/API key)" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.kavitaNoResponse", error = localizer.Get("error.settings.kavitaNoResponse") });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -957,7 +1130,7 @@ public class SettingsController(
     {
         if (!IsValidServiceUrl(request.Url))
         {
-            return BadRequest(new { error = UrlError("FlareSolverr") });
+            return UrlError("FlareSolverr");
         }
 
         await settings.SetAsync(SettingKeys.FlareSolverrUrl, request.Url, ct);
@@ -971,13 +1144,14 @@ public class SettingsController(
         var url = request.Url ?? await settings.GetAsync(SettingKeys.FlareSolverrUrl, ct);
         if (string.IsNullOrWhiteSpace(url))
         {
-            return BadRequest(new { error = "No FlareSolverr URL configured" });
+            return this.Fail(localizer, "error.settings.flaresolverrNotConfigured");
         }
 
         var ok = await flareSolverr.PingAsync(url, ct);
         return ok
             ? Ok(new { success = true })
-            : StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = "FlareSolverr did not respond" });
+            : StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = "error.settings.flaresolverrNoResponse", error = localizer.Get("error.settings.flaresolverrNoResponse") });
     }
 
     [HttpGet("metadata")]
@@ -1000,10 +1174,26 @@ public class SettingsController(
     [HttpPost("metadata/refresh")]
     public async Task<IActionResult> RefreshMetadataDump(CancellationToken ct)
     {
+        // A trigger landing on a run in flight queues a whole second pass behind it rather than
+        // being dropped, so an impatient click would re-download the dump it is already watching.
+        if (mangaBakaDump.Progress().Running)
+        {
+            return Ok(new { started = false, alreadyRunning = true });
+        }
+
         var scheduler = await schedulerFactory.GetScheduler(ct);
         await scheduler.TriggerJob(MangaBakaDumpRefreshJob.Key, ct);
-        return Ok(new { started = true });
+        return Ok(new { started = true, alreadyRunning = false });
     }
+
+    /// <summary>
+    /// Live progress of the dump refresh. The UI otherwise learns about it from the hub's
+    /// <c>dumpProgress</c> push; this is what a page opened mid-download reads to catch up, and
+    /// the fallback for a client whose hub connection dropped during one.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("metadata/dump-progress")]
+    public IActionResult GetMetadataDumpProgress() => Ok(mangaBakaDump.Progress());
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("updates")]
@@ -1618,12 +1808,12 @@ public class SettingsController(
             !(Uri.TryCreate(authority, UriKind.Absolute, out var issuer) &&
               (issuer.Scheme == Uri.UriSchemeHttp || issuer.Scheme == Uri.UriSchemeHttps)))
         {
-            return BadRequest(new { error = UrlError("The identity provider's issuer") });
+            return this.Fail(localizer, "error.settings.issuerUrlInvalid");
         }
 
         if (request.Enabled && (authority.Length == 0 || string.IsNullOrWhiteSpace(request.ClientId)))
         {
-            return BadRequest(new { error = "An issuer URL and a client id are required to enable single sign-on" });
+            return this.Fail(localizer, "error.settings.ssoNeedsIssuerAndClientId");
         }
 
         await settings.SetAsync(SettingKeys.AuthOidcEnabled, request.Enabled ? "true" : "false", ct);

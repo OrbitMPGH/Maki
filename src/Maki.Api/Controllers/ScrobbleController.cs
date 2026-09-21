@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using System.Text.Json;
 using Maki.Api.Jobs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Scrobbling;
@@ -20,7 +21,9 @@ namespace Maki.Api.Controllers;
 // and it is authenticated by the random state instead.
 [Authorize(Policy = Policies.UseTrackers)]
 public class ScrobbleController(
+    ILocalizer localizer,
     ScrobbleService scrobbler,
+    AnimeSignalSources animeSources,
     IScrobbleTokenStore tokens,
     SettingsService settings,
     IUserSettings userSettings,
@@ -35,13 +38,23 @@ public class ScrobbleController(
     /// </summary>
     private int UserId => currentUser.UserId;
 
+    /// <param name="AnimeList">
+    /// Whether this tracker can hand over an anime list at all, which is what decides if the client
+    /// draws the anime-taste switch. AniList and MyAnimeList can; Kitsu, MangaBaka and Kavita
+    /// cannot, and a switch on those would be a control with nothing behind it.
+    /// </param>
+    /// <param name="AnimeSignals">The per-tracker anime-taste toggle. Meaningless when <paramref name="AnimeList"/> is false.</param>
     public record ConnectionDto(
         string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
-        bool SyncReading, bool SyncRatings);
+        bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals);
 
     public record MatchRequest(int KavitaSeriesId, string Service, string RemoteId);
     public record IgnoreRequest(int KavitaSeriesId, string Service);
-    public record PreferencesRequest(bool Reading, bool Ratings);
+    /// <param name="Anime">
+    /// Nullable and written only when present: the switch shows on two of the five tracker blocks,
+    /// so a client saving the other three sends no opinion about it rather than an accidental off.
+    /// </param>
+    public record PreferencesRequest(bool Reading, bool Ratings, bool? Anime = null);
     public record ApplyRatingImportRequest(int[] SeriesIds);
 
     [HttpGet("status")]
@@ -55,7 +68,7 @@ public class ScrobbleController(
             new("kavita", "Kavita", kavitaConfigured,
                 kavitaConfigured && await scrobbler.KavitaConnectedAsync(ct),
                 await settings.GetAsync(SettingKeys.KavitaUrl, ct), OAuth: false,
-                SyncReading: true, SyncRatings: false),
+                SyncReading: true, SyncRatings: false, AnimeList: false, AnimeSignals: false),
         };
 
         foreach (var tracker in scrobbler.Trackers)
@@ -66,7 +79,9 @@ public class ScrobbleController(
                 tracker.Name, tracker.Label, configured, connected,
                 connected ? await tracker.UsernameAsync(UserId, ct) : null, tracker.UsesOAuth,
                 await scrobbler.SyncReadingEnabledAsync(UserId, tracker.Name, ct),
-                await scrobbler.SyncRatingsEnabledAsync(UserId, tracker.Name, ct)));
+                await scrobbler.SyncRatingsEnabledAsync(UserId, tracker.Name, ct),
+                AnimeList: tracker is IAnimeListSource,
+                AnimeSignals: await animeSources.EnabledForAsync(UserId, tracker.Name, ct)));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
@@ -98,11 +113,24 @@ public class ScrobbleController(
             .ToListAsync(ct);
         recent = recent.Concat(recentNative).OrderByDescending(s => s.At).Take(40).ToList();
 
-        var log = await db.ScrobbleLog.AsNoTracking()
+        // Rendered here rather than at the raise site: this log is one person's own, and they may
+        // have changed language since the line was written. A row with no key is somebody else's
+        // words (a tracker's, Kavita's) or predates the keys, and is served as it was stored.
+        var logRows = await db.ScrobbleLog.AsNoTracking()
             .OrderByDescending(l => l.Id)
             .Take(60)
-            .Select(l => new { l.Timestamp, l.Level, l.Service, l.Title, l.Message })
+            .Select(l => new { l.Timestamp, l.Level, l.Service, l.Title, l.MessageKey, l.ParamsJson, l.Message })
             .ToListAsync(ct);
+        var log = logRows.Select(l => new
+        {
+            l.Timestamp,
+            l.Level,
+            l.Service,
+            l.Title,
+            Message = l.MessageKey is { Length: > 0 } key
+                ? localizer.Get(key, WithRenderedStatus(ScrobbleLogParams(l.ParamsJson)))
+                : l.Message,
+        }).ToList();
 
         return Ok(new
         {
@@ -116,6 +144,52 @@ public class ScrobbleController(
             Unmatched = unmatched,
             Log = log,
         });
+    }
+
+    /// <summary>
+    /// A status arrives as the bare word the tracker's API uses ("plan_to_read"), which is a wire
+    /// value, not something to show somebody. Swapped for its own message before the line renders.
+    /// </summary>
+    private Dictionary<string, object?> WithRenderedStatus(Dictionary<string, object?> args)
+    {
+        if (args.TryGetValue("status", out var status) && status is string name
+            && ScrobbleService.StatusKeys.TryGetValue(name, out var key))
+        {
+            args["status"] = localizer.Get(key);
+        }
+
+        return args;
+    }
+
+    /// <summary>
+    /// Values for a keyed log line. Never throws: a row whose parameters cannot be read still has a
+    /// message worth showing, with its placeholders unfilled, and losing the whole log is worse.
+    /// </summary>
+    private static Dictionary<string, object?> ScrobbleLogParams(string? json)
+    {
+        var into = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (string.IsNullOrEmpty(json)) return into;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            foreach (var property in doc.RootElement.EnumerateObject())
+            {
+                into[property.Name] = property.Value.ValueKind switch
+                {
+                    JsonValueKind.Number => property.Value.TryGetInt64(out var l) ? l : property.Value.GetDouble(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    JsonValueKind.Null => null,
+                    _ => property.Value.GetString(),
+                };
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return into;
     }
 
     [HttpPost("sync")]
@@ -137,7 +211,7 @@ public class ScrobbleController(
     {
         if (scrobbler.FindTracker(request.Service) is null)
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         var remoteId = request.RemoteId.Trim();
@@ -146,7 +220,7 @@ public class ScrobbleController(
             var ids = ScrobbleMatching.ParseWebLinks([remoteId]);
             if (!ids.TryGetValue(request.Service, out remoteId!))
             {
-                return BadRequest(new { error = "expected a numeric id or a series URL for that service" });
+                return this.Fail(localizer, "error.scrobble.invalidRemoteId");
             }
         }
 
@@ -176,7 +250,7 @@ public class ScrobbleController(
     {
         if (scrobbler.FindTracker(service) is null)
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         // Per-user: one reader turning off AniList pushes must not silence everyone else's.
@@ -184,7 +258,33 @@ public class ScrobbleController(
             SettingKeys.ScrobbleReadingKey(service), request.Reading ? "true" : "false", ct);
         await userSettings.SetAsync(
             SettingKeys.ScrobbleRatingsKey(service), request.Ratings ? "true" : "false", ct);
-        return Ok(new { service, reading = request.Reading, ratings = request.Ratings });
+
+        if (request.Anime is { } anime)
+        {
+            await userSettings.SetAsync(
+                SettingKeys.RecommendationsAnimeSignalsSourceKey(service), anime ? "true" : "false", ct);
+            if (!anime)
+            {
+                // Now rather than at the next sync. The stored rows are what the recommender reads,
+                // so leaving them would keep this tracker's list in somebody's taste for up to a
+                // day after they switched it off, which is not what a switch means.
+                var stale = await db.AnimeSignals
+                    .Where(x => x.UserId == UserId && x.Service == service).ToListAsync(ct);
+                if (stale.Count > 0)
+                {
+                    db.AnimeSignals.RemoveRange(stale);
+                    await db.SaveChangesAsync(ct);
+                }
+            }
+        }
+
+        return Ok(new
+        {
+            service,
+            reading = request.Reading,
+            ratings = request.Ratings,
+            anime = request.Anime,
+        });
     }
 
     // ---- rating import (preview → apply) ----
@@ -195,7 +295,7 @@ public class ScrobbleController(
     {
         if (scrobbler.FindTracker(service) is null)
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         scrobbler.QueueRatingImportPreview(UserId, service);
@@ -242,7 +342,7 @@ public class ScrobbleController(
             case "anilist":
                 if (!await scrobbler.AniList.ConfiguredAsync(ct))
                 {
-                    return BadRequest(new { error = "Set the AniList client id/secret in Settings first" });
+                    return this.Fail(localizer, "error.scrobble.aniListNotConfigured");
                 }
 
                 {
@@ -253,7 +353,7 @@ public class ScrobbleController(
             case "mal":
                 if (!await scrobbler.Mal.ConfiguredAsync(ct))
                 {
-                    return BadRequest(new { error = "Set the MyAnimeList client id/secret in Settings first" });
+                    return this.Fail(localizer, "error.scrobble.malNotConfigured");
                 }
 
                 {
@@ -265,7 +365,7 @@ public class ScrobbleController(
                 }
 
             default:
-                return BadRequest(new { error = "unknown service" });
+                return this.Fail(localizer, "error.scrobble.unknownService");
         }
     }
 
@@ -298,14 +398,15 @@ public class ScrobbleController(
     {
         if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
         {
-            return Redirect("/scrobble?error=" + Uri.EscapeDataString("OAuth was cancelled or returned no code"));
+            return Redirect("/scrobble?error=" + Uri.EscapeDataString(
+                localizer.Get("error.scrobble.oauthCancelled")));
         }
 
         var session = scrobbler.TakeOAuthSession(service, state);
         if (session is null)
         {
             return Redirect("/scrobble?error=" + Uri.EscapeDataString(
-                "OAuth state mismatch or session expired — retry the connection"));
+                localizer.Get("error.scrobble.oauthStateMismatch")));
         }
 
         try
@@ -322,7 +423,8 @@ public class ScrobbleController(
                         session.UserId, code, session.CodeVerifier, session.RedirectUri, ct);
                     break;
                 default:
-                    return Redirect("/scrobble?error=" + Uri.EscapeDataString("unknown service"));
+                    return Redirect("/scrobble?error=" + Uri.EscapeDataString(
+                        localizer.Get("error.scrobble.unknownService")));
             }
         }
         catch (TrackerException e)
@@ -338,7 +440,7 @@ public class ScrobbleController(
     {
         if (service is not ("anilist" or "mal" or "kitsu"))
         {
-            return BadRequest(new { error = "unknown service" });
+            return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
         await tokens.DeleteAsync(UserId, service, ct);

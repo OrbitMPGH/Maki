@@ -19,7 +19,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class ReaderCohortJob(
-    ReaderCohortInstaller installer, ILogger<ReaderCohortJob> logger) : IJob
+    ReaderCohortInstaller installer, ArtifactBuildGate gate, ILogger<ReaderCohortJob> logger) : IJob
 {
     public static readonly JobKey Key = new("reader-cohorts");
 
@@ -32,6 +32,9 @@ public class ReaderCohortJob(
 
         try
         {
+            // One heavy build at a time across every job here; see ArtifactBuildGate.
+            using var build = await gate.EnterAsync(nameof(ReaderCohortJob), context.CancellationToken);
+
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {

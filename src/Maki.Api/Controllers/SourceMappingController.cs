@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -15,6 +16,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/sourcemapping")]
 [Authorize(Policy = Policies.ManageSources)]
 public class SourceMappingController(
+    ILocalizer localizer,
     MakiDbContext db,
     SourceRegistry sourceRegistry,
     IAppSettings settings,
@@ -51,20 +53,20 @@ public class SourceMappingController(
     {
         if (sourceRegistry.Find(request.SourceName) is null)
         {
-            return BadRequest(new { error = $"Unknown source: {request.SourceName}" });
+            return this.Fail(localizer, "error.sourceMapping.unknownSource", new { name = request.SourceName });
         }
 
         // Linking a globally switched-off source would create a mapping that never runs;
         // say so rather than storing something inert.
         if (!await sourceAvailability.IsEnabledAsync(request.SourceName, ct))
         {
-            return BadRequest(new { error = $"{request.SourceName} is switched off in Settings → Source priority" });
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = request.SourceName });
         }
 
         if (await db.SourceMappings.AnyAsync(
                 m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct))
         {
-            return Conflict(new { error = "Series already has a mapping for this source" });
+            return this.Conflict(localizer, "error.sourceMapping.alreadyMapped");
         }
 
         var mapping = new SourceMapping
@@ -73,7 +75,11 @@ public class SourceMappingController(
             SourceName = request.SourceName,
             SourceSeriesId = request.SourceSeriesId,
             Url = request.Url,
-            LanguageFilter = request.LanguageFilter,
+            LanguageFilter = string.IsNullOrWhiteSpace(request.LanguageFilter)
+                ? SourceLanguagePreference.SeedFilter(
+                    sourceRegistry.GetRequired(request.SourceName),
+                    await SourceLanguagePreference.LoadAsync(settings, ct))
+                : SourceLanguages.Serialize(SourceLanguages.Parse(request.LanguageFilter)),
             Priority = request.Priority ?? await PriorityForAsync(request.SourceName, ct),
             Enabled = true,
             Origin = SourceMappingOrigin.Manual
@@ -99,7 +105,7 @@ public class SourceMappingController(
         var ids = (request.SeriesIds ?? []).Distinct().ToList();
         if (ids.Count == 0)
         {
-            return BadRequest(new { error = "No series given" });
+            return this.Fail(localizer, "error.sourceMapping.noSeriesGiven");
         }
 
         // Query filters apply, so ids outside the caller's root folders simply don't come back.
@@ -159,7 +165,8 @@ public class SourceMappingController(
         {
             return Conflict(new
             {
-                error = "Some chapter snapshots could not be refreshed",
+                code = "error.sourceMapping.snapshotRefreshFailed",
+                error = localizer.Get("error.sourceMapping.snapshotRefreshFailed"),
                 missingSnapshots = failed
             });
         }
@@ -194,7 +201,7 @@ public class SourceMappingController(
 
         if (candidates.Count < 2)
         {
-            return BadRequest(new { error = "Comparing needs at least two enabled sources for this series" });
+            return this.Fail(localizer, "error.sourceMapping.needsTwoSources");
         }
 
         try
@@ -263,7 +270,7 @@ public class SourceMappingController(
         var ids = request.OrderedMappingIds ?? [];
         if (ids.Count == 0)
         {
-            return BadRequest(new { error = "No mappings given" });
+            return this.Fail(localizer, "error.sourceMapping.noMappingsGiven");
         }
 
         // The whole series, not just the submitted ids: a caller only ever ranks what it could
@@ -281,7 +288,7 @@ public class SourceMappingController(
         var rankedIds = ranked.ToHashSet();
         if (ranked.Any(id => !byId.ContainsKey(id)))
         {
-            return BadRequest(new { error = "Mapping list does not match this series" });
+            return this.Fail(localizer, "error.sourceMapping.mappingMismatch");
         }
 
         // Position in the submitted list, 1-based — the same convention PriorityForAsync and
@@ -308,15 +315,27 @@ public class SourceMappingController(
     /// <summary>
     /// 1-based position of the source in the configured priority order, matching
     /// what <see cref="SourceMatchService.AutoMatchAsync"/> assigns on auto-match.
-    /// Unknown sources fall to the end of the list.
+    /// A source publishing none of the enabled languages is never auto-matched at all, so it ranks
+    /// after every source that is, keeping base order among its own kind.
     /// </summary>
     private async Task<int> PriorityForAsync(string sourceName, CancellationToken ct)
     {
-        var ordered = SourceMatchService.OrderSources(
+        var baseOrder = SourceMatchService.OrderSources(
             sourceRegistry.All, await settings.GetAsync(SettingKeys.SourcePriorityOrder, ct));
-        var index = ordered.FindIndex(
-            s => string.Equals(s.Name, sourceName, StringComparison.OrdinalIgnoreCase));
-        return (index < 0 ? ordered.Count : index) + 1;
+        var languages = await SourceLanguagePreference.LoadAsync(settings, ct);
+
+        bool IsWanted(ISource s) => string.Equals(s.Name, sourceName, StringComparison.OrdinalIgnoreCase);
+
+        var ranked = SourceLanguagePreference.Rank(baseOrder, languages);
+        var index = ranked.FindIndex(IsWanted);
+        if (index >= 0)
+        {
+            return index + 1;
+        }
+
+        var unranked = SourceLanguagePreference.Unranked(baseOrder, languages);
+        var tail = unranked.FindIndex(IsWanted);
+        return ranked.Count + (tail < 0 ? unranked.Count : tail) + 1;
     }
 
     [HttpPut("{id:int}")]
@@ -330,13 +349,17 @@ public class SourceMappingController(
 
         mapping.Priority = update.Priority;
         mapping.Enabled = update.Enabled;
-        if (!string.Equals(mapping.LanguageFilter, update.LanguageFilter, StringComparison.OrdinalIgnoreCase))
+
+        // Normalized before comparing, so "en" and "EN, en" — and the null the default serializes
+        // back to — don't read as a change and needlessly void the snapshot.
+        var languageFilter = SourceLanguages.Serialize(SourceLanguages.Parse(update.LanguageFilter));
+        if (!string.Equals(mapping.LanguageFilter, languageFilter, StringComparison.OrdinalIgnoreCase))
         {
             // The stored links describe the old filter and cannot safely support source cleanup
             // until the mapping has produced a fresh listing.
             mapping.ChapterSnapshotAt = null;
         }
-        mapping.LanguageFilter = update.LanguageFilter;
+        mapping.LanguageFilter = languageFilter;
         await db.SaveChangesAsync(ct);
         return Ok(mapping);
     }
@@ -363,7 +386,8 @@ public class SourceMappingController(
         {
             return Conflict(new
             {
-                error = "Refresh chapters once before removing this source",
+                code = "error.sourceMapping.refreshBeforeRemove",
+                error = localizer.Get("error.sourceMapping.refreshBeforeRemove"),
                 missingSnapshots = ex.Mappings
             });
         }

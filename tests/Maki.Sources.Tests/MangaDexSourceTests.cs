@@ -1,4 +1,4 @@
-using Maki.Core.Sources;
+﻿using Maki.Core.Sources;
 using Maki.Sources.MangaDex;
 
 namespace Maki.Sources.Tests;
@@ -47,6 +47,51 @@ public class MangaDexSourceTests
 
         Assert.DoesNotContain(ExternalIdService.Kitsu, ids.Keys);
         Assert.Equal(4, ids.Count);
+    }
+
+    [Fact]
+    public async Task The_feed_is_asked_for_english_when_the_mapping_names_no_language()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-multilingual.json")
+        });
+
+        await new MangaDexSource(factory).ListChaptersAsync("a1c7c817");
+
+        // The default is English, not "every language": an untouched mapping has to keep listing
+        // what it listed before, or every existing series grows a chapter row per translation.
+        var feed = Assert.Single(factory.Requests);
+        Assert.Contains("translatedLanguage[]=en", feed);
+        Assert.Equal(1, feed.Split("translatedLanguage[]=").Length - 1);
+    }
+
+    [Fact]
+    public async Task Several_languages_are_repeated_into_one_request_and_tagged_individually()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-multilingual.json")
+        });
+
+        var chapters = await new MangaDexSource(factory).ListChaptersAsync("a1c7c817", "en,es-la");
+
+        // translatedLanguage[] is repeated, so several languages cost one paged walk rather than
+        // one per language.
+        var feed = Assert.Single(factory.Requests);
+        Assert.Contains("translatedLanguage[]=en", feed);
+        Assert.Contains("translatedLanguage[]=es-la", feed);
+
+        // Chapter identity is (Number, Language), so chapter 1 survives in both languages instead of
+        // one of them winning the dedupe — and each carries the language MangaDex published it in,
+        // not the one that happened to be asked for first.
+        Assert.Equal(
+            [("1", "en"), ("1", "es-la"), ("2", "en")],
+            chapters
+                .Select(c => (c.NumberRaw!, c.Language))
+                .OrderBy(c => c.Item1)
+                .ThenBy(c => c.Item2)
+                .ToArray());
     }
 
     [Fact]

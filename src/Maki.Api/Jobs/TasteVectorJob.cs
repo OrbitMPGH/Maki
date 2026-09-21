@@ -20,7 +20,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class TasteVectorJob(
-    TasteVectorInstaller installer, ILogger<TasteVectorJob> logger) : IJob
+    TasteVectorInstaller installer, ArtifactBuildGate gate, ILogger<TasteVectorJob> logger) : IJob
 {
     public static readonly JobKey Key = new("taste-vectors");
 
@@ -33,6 +33,9 @@ public class TasteVectorJob(
 
         try
         {
+            // One heavy build at a time across every job here; see ArtifactBuildGate.
+            using var build = await gate.EnterAsync(nameof(TasteVectorJob), context.CancellationToken);
+
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {

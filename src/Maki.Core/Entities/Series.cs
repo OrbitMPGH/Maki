@@ -6,8 +6,14 @@ public class Series
     public string Title { get; set; } = string.Empty;
     public string SortTitle { get; set; } = string.Empty;
     public string? OriginalTitle { get; set; }
-    /// <summary>Other primary titles from the provider besides <see cref="Title"/> and <see cref="OriginalTitle"/>.</summary>
-    public List<string> AltTitles { get; set; } = [];
+    /// <summary>
+    /// Other primary titles from the provider besides <see cref="Title"/> and <see cref="OriginalTitle"/>,
+    /// each tagged with the language it is written in. The tag is what makes a non-English title
+    /// selectable as a display title (see <c>SettingKeys.UiTitleLanguage</c>) and what fills
+    /// ComicInfo's <c>LocalizedSeries</c>; before it existed these were bare strings and a Spanish
+    /// title in here was indistinguishable from a romanization.
+    /// </summary>
+    public List<LocalizedTitle> AltTitles { get; set; } = [];
     public SeriesStatus Status { get; set; }
 
     /// <summary>

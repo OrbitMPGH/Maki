@@ -9,7 +9,18 @@ namespace Maki.Core.Naming;
 /// The chapter being named, or null when a series folder is being built — chapter tokens then
 /// resolve to empty rather than erroring, so one catalogue serves both formats.
 /// </param>
-public sealed record NamingContext(Series Series, Chapter? Chapter = null);
+/// <param name="Through">
+/// The last chapter of the span when one file backs several (a volume compilation), so the
+/// chapter tokens can render "Ch.1-6" instead of naming the file after its first chapter and
+/// colliding with the real Ch.1. Null for the ordinary one-chapter-one-file case.
+/// </param>
+/// <param name="WholeVolumes">
+/// Whether that span is every chapter Maki knows of in the volumes it covers. Only then is
+/// "Vol.1" an honest name for it; a partial volume keeps its chapter range, which is also what
+/// stops two halves of one volume wanting the same name.
+/// </param>
+public sealed record NamingContext(
+    Series Series, Chapter? Chapter = null, Chapter? Through = null, bool WholeVolumes = false);
 
 public static class NamingTokenCategory
 {
@@ -76,15 +87,13 @@ public static class NamingTokens
         // ---- Chapter ------------------------------------------------------------------------
         Token("{Chapter VolChap}", NamingTokenCategory.Chapter,
             "Vol.3 Ch.24, or Ch.24 when the source has no volumes. Blank for a one-shot",
-            (c, _) => VolChap(c.Chapter)),
+            (c, _) => VolChap(c)),
         Token("{Chapter Number}", NamingTokenCategory.Chapter,
             "24, or 10.5 for a sub-chapter. Blank when the chapter has no number",
-            (c, pad) => Number(c.Chapter?.Number, pad), padding: true),
+            (c, pad) => NumberSpan(c, pad), padding: true),
         Token("{Chapter Volume}", NamingTokenCategory.Chapter,
             "3; blank when the source doesn't group into volumes",
-            (c, pad) => c.Chapter?.Volume is int v
-                ? v.ToString(pad ?? "0", CultureInfo.InvariantCulture)
-                : null, padding: true),
+            (c, pad) => VolumeSpan(c, pad), padding: true),
         Token("{Chapter Title}", NamingTokenCategory.Chapter,
             "The chapter's own title; blank when it just repeats the series title",
             (c, _) => ChapterTitle(c)),
@@ -145,15 +154,63 @@ public static class NamingTokens
         return number.Value.ToString($"{pad ?? "0"}.###", CultureInfo.InvariantCulture);
     }
 
-    private static string VolChap(Chapter? chapter)
+    private static string VolChap(NamingContext c)
     {
-        if (chapter is null || IsOneShot(chapter))
+        if (c.Chapter is not { } chapter || IsOneShot(chapter))
         {
             return string.Empty;
         }
 
-        var number = Number(chapter.Number, null);
-        return chapter.Volume is int volume ? $"Vol.{volume} Ch.{number}" : $"Ch.{number}";
+        var volumes = VolumeSpan(c, null);
+        if (Through(c) is null)
+        {
+            var number = Number(chapter.Number, null);
+            return volumes is null ? $"Ch.{number}" : $"Vol.{volumes} Ch.{number}";
+        }
+
+        // A compilation covering entire volumes says so and stops there: "Vol.1 Ch.1-6" would
+        // parse back as plain chapter 1, and "Vol.1" is what the file actually is.
+        if (volumes is not null && c.WholeVolumes)
+        {
+            return $"Vol.{volumes}";
+        }
+
+        var chapters = $"Ch.{NumberSpan(c, null)}";
+        return volumes is null ? chapters : $"Vol.{volumes} {chapters}";
+    }
+
+    /// <summary>The end of the span, or null when this file backs a single chapter.</summary>
+    private static Chapter? Through(NamingContext c) =>
+        c.Through is { } through && c.Chapter is { } chapter && through.Number != chapter.Number
+            ? through
+            : null;
+
+    private static string? NumberSpan(NamingContext c, string? pad)
+    {
+        var from = Number(c.Chapter?.Number, pad);
+        var to = Number(Through(c)?.Number, pad);
+        return to is null || from is null ? from : $"{from}-{to}";
+    }
+
+    private static string? VolumeSpan(NamingContext c, string? pad)
+    {
+        if (c.Chapter?.Volume is not int from)
+        {
+            return null;
+        }
+
+        var formatted = from.ToString(pad ?? "0", CultureInfo.InvariantCulture);
+
+        // A span whose far end carries no volume is not a volume range — the chapter tokens
+        // carry it instead, rather than claiming a volume the file only partly covers.
+        if (Through(c) is not { } through)
+        {
+            return formatted;
+        }
+
+        return through.Volume is int to && to != from
+            ? $"{formatted}-{to.ToString(pad ?? "0", CultureInfo.InvariantCulture)}"
+            : through.Volume is null ? null : formatted;
     }
 
     /// <summary>

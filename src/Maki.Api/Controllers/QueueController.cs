@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
+using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Data;
@@ -11,7 +13,13 @@ namespace Maki.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/queue")]
-public class QueueController(MakiDbContext db, DownloadQueueService queue, DownloadBatchNotifier batches)
+public class QueueController(
+    ILocalizer localizer,
+    MakiDbContext db,
+    DownloadQueueService queue,
+    DownloadBatchNotifier batches,
+    TorrentImportService importer,
+    EventBroadcaster events)
     : ControllerBase
 {
     /// <summary>
@@ -107,7 +115,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
 
         if (item.Status != QueueStatus.Failed)
         {
-            return Conflict(new { error = "Only failed items can be retried" });
+            return this.Conflict(localizer, "error.queue.onlyFailedCanRetry");
         }
 
         // Scraper item that never had a mapping resolved (e.g. it failed before
@@ -118,11 +126,11 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
         {
             if (item.ChapterId is not { } unresolvedChapterId)
             {
-                return Conflict(new { error = "Item has no chapter to resolve" });
+                return this.Conflict(localizer, "error.queue.noChapterToResolve");
             }
 
             item.Status = QueueStatus.Resolving;
-            item.ErrorMessage = null;
+            item.ClearError();
             item.NextAttempt = null;
             await db.SaveChangesAsync(ct);
             _ = queue.ResolveAndActivateAsync(item.Id, unresolvedChapterId, CancellationToken.None);
@@ -138,13 +146,131 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
 
         item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
         item.NextAttempt = cooldownUntil;
-        item.ErrorMessage = cooldownUntil is { } until
-            ? $"Rate limited by {sourceName} — retrying after {until.ToLocalTime():HH:mm:ss}"
-            : null;
+        if (cooldownUntil is null)
+        {
+            item.ClearError();
+        }
+        else
+        {
+            item.SetError("error.download.rateLimited", new { source = sourceName });
+        }
         await db.SaveChangesAsync(ct);
         await queue.SignalAsync(item.Id, ct);
         return NoContent();
     }
+
+    /// <summary>
+    /// What importing a finished torrent would do to the library: per downloaded file, the chapters
+    /// it covers, which of those are missing today, and which existing files it would leave backing
+    /// nothing. Read by the activity list's import review.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpGet("{id:int}/import-plan")]
+    public async Task<IActionResult> ImportPlan(int id, CancellationToken ct)
+    {
+        var item = await db.DownloadQueue
+            .Include(q => q.Series)
+            .FirstOrDefaultAsync(q => q.Id == id, ct);
+        if (item?.Series is null)
+        {
+            return NotFound();
+        }
+
+        if (item.Protocol != AcquisitionProtocol.Torrent)
+        {
+            return this.Conflict(localizer, "error.queue.onlyTorrentImportable");
+        }
+
+        var contentPath = await importer.ResolveContentPathAsync(item, ct);
+        return Ok(await importer.PlanAsync(item, item.Series, contentPath, ct));
+    }
+
+    /// <summary>
+    /// Settles a download parked as <see cref="QueueStatus.AwaitingImport"/>: import everything and
+    /// delete what it supersedes, import only the chapters the library is missing, or reject the
+    /// download and leave the library alone. Nothing else may advance such an item — the whole
+    /// point of parking it is that a person decides.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPost("{id:int}/import")]
+    public async Task<IActionResult> Import(int id, [FromBody] ImportDecisionDto request, CancellationToken ct)
+    {
+        var item = await db.DownloadQueue
+            .Include(q => q.Series)!.ThenInclude(s => s!.RootFolder)
+            .FirstOrDefaultAsync(q => q.Id == id, ct);
+        if (item?.Series is null)
+        {
+            return NotFound();
+        }
+
+        if (item.Status != QueueStatus.AwaitingImport)
+        {
+            return this.Conflict(localizer, "error.queue.notAwaitingImport");
+        }
+
+        if (request.Mode == ImportDecision.Reject)
+        {
+            item.Status = QueueStatus.Cancelled;
+            item.CompletedAt = DateTime.UtcNow;
+            item.SetError("error.download.importRejected");
+            await db.SaveChangesAsync(ct);
+            await batches.DiscardAsync(item.SeriesId, item.Id);
+            await Broadcast(item);
+            return NoContent();
+        }
+
+        var mode = request.Mode == ImportDecision.Replace
+            ? TorrentImportMode.Replace
+            : TorrentImportMode.SkipExisting;
+
+        item.Status = QueueStatus.Importing;
+        await db.SaveChangesAsync(ct);
+        await Broadcast(item);
+
+        TorrentImportOutcome outcome;
+        try
+        {
+            var contentPath = await importer.ResolveContentPathAsync(item, ct);
+            outcome = await importer.ImportAsync(item, item.Series, contentPath, mode, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Back to AwaitingImport, not Failed. The guard at the top of this method is the only
+            // way in, so a row left reading Importing could never be retried from here, and the
+            // poll job skips it too, since parked items are the user's to settle. Restoring the
+            // state it arrived in is what keeps a failed attempt retryable.
+            item.Status = QueueStatus.AwaitingImport;
+            item.SetRawError(ex.Message);
+            await db.SaveChangesAsync(ct);
+            await Broadcast(item);
+            throw;
+        }
+
+        if (!outcome.Applied)
+        {
+            item.Status = QueueStatus.Failed;
+            item.SetRawError(outcome.Error);
+            await db.SaveChangesAsync(ct);
+            await Broadcast(item);
+            return Conflict(new { error = outcome.Error });
+        }
+
+        item.Status = QueueStatus.Completed;
+        item.CompletedAt = DateTime.UtcNow;
+        item.PagesDone = item.PagesTotal;
+
+        // Saved before the rename: its active-download check re-queries this row, and an item still
+        // reading as in-flight makes it refuse to name the files it just imported.
+        await db.SaveChangesAsync(ct);
+        await importer.ApplyNamingAsync(item.Series, outcome.ImportedPaths, ct);
+        await Broadcast(item);
+
+        return Ok(new ImportDecisionResultDto(
+            outcome.Imported, outcome.Linked, outcome.Skipped, outcome.Deleted));
+    }
+
+    private Task Broadcast(DownloadQueueItem item) =>
+        events.QueueUpdated(QueueItemDto.FromEntity(item, chapter: null, item.Series!, "torrent"));
 
     [Authorize(Policy = Policies.ManageDownloadQueue)]
     [HttpDelete("{id:int}")]
@@ -171,7 +297,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
 
         // The item will never report an outcome now, so let go of it — otherwise it holds its
         // series' download batch open and the batch's summary never fires.
-        batches.Discard(item.SeriesId, item.Id);
+        await batches.DiscardAsync(item.SeriesId, item.Id);
         return NoContent();
     }
 
@@ -205,7 +331,7 @@ public class QueueController(MakiDbContext db, DownloadQueueService queue, Downl
 
         foreach (var item in items)
         {
-            batches.Discard(item.SeriesId, item.Id);
+            await batches.DiscardAsync(item.SeriesId, item.Id);
         }
 
         return Ok(new QueueClearDto(items.Count));

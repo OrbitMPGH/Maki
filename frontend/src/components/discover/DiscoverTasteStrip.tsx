@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Skeleton, Text } from '@mantine/core'
+import { Trans } from '@lingui/react/macro'
 import { useTasteProfile } from '../../api/hooks'
 
 /** Facets named on the strip. Past five it stops being a summary and starts being the Taste tab. */
@@ -34,7 +35,9 @@ export function DiscoverTasteStrip() {
 
   return (
     <div className="discover-taste-strip">
-      <Text className="discover-taste-lead">Steering these picks</Text>
+      <Text className="discover-taste-lead">
+        <Trans>Steering these picks</Trans>
+      </Text>
       {facets.map((facet) => {
         const percent = seriesCount > 0 ? Math.round((facet.support / seriesCount) * 100) : 0
         return (
@@ -46,7 +49,7 @@ export function DiscoverTasteStrip() {
         )
       })}
       <Link to="/discover/taste" className="discover-taste-more">
-        Your taste
+        <Trans>Your taste</Trans>
       </Link>
     </div>
   )

@@ -1,7 +1,9 @@
-﻿using Maki.Api;
+using Jeffijoe.MessageFormat;
+using Maki.Api;
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Logging;
 using Maki.Api.Services;
 using Maki.Core.Download;
@@ -21,8 +23,12 @@ using Maki.Metadata.RecoGraph;
 using Maki.Metadata.ReaderCohorts;
 using Maki.Core.Configuration;
 using Maki.Sources.Asura;
+using Maki.Sources.BaoziManhua;
+using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
+using Maki.Sources.MangaLivre;
+using Maki.Sources.SenManga;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
@@ -55,6 +61,16 @@ var loggingOptions = LoggingOptions.From(configFile.Config);
 MakiLogging.Configure(paths, loggingOptions);
 
 var startupLog = MakiLogging.CreateLogger("Startup");
+
+// ImageSharp's default allocator pools every buffer it hands out and never gives one back to the
+// OS, so RSS ratcheted to the high-water mark of whatever burst of concurrent decodes happened
+// last - a download night or a health scan - and stayed there for the life of the process. Capping
+// the pool means anything above it is an ordinary managed allocation the GC can reclaim. This is a
+// retention limit, not an allocation limit: a page larger than the pool still decodes, it just is
+// not kept afterwards.
+SixLabors.ImageSharp.Configuration.Default.MemoryAllocator =
+    SixLabors.ImageSharp.Memory.MemoryAllocator.Create(
+        new SixLabors.ImageSharp.Memory.MemoryAllocatorOptions { MaximumPoolSizeMegabytes = 48 });
 
 try
 {
@@ -127,6 +143,7 @@ try
     builder.Services.AddSingleton<MalReviewClient>();
 
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
+    builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
@@ -208,6 +225,8 @@ try
     builder.Services.AddSingleton<ReaderCohortInstaller>();
 
     builder.Services.AddSingleton<SeedWeightService>();
+    builder.Services.AddScoped<RecommendationFeedbackService>();
+    builder.Services.AddHostedService<RecommendationFeedbackPruneService>();
     builder.Services.AddSingleton<RecommendationService>();
     builder.Services.AddSingleton<RecentActivityRailService>();
     builder.Services.AddSingleton<SideInterestRailService>();
@@ -215,6 +234,7 @@ try
     builder.Services.AddSingleton<ReaderCohortRailService>();
     builder.Services.AddSingleton<TasteProfileService>();
     builder.Services.AddSingleton<TasteInsightsService>();
+    builder.Services.AddSingleton<TasteAvoidanceService>();
     builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
@@ -256,6 +276,10 @@ try
     // background job, so it holds the index in memory (int8-quantized) instead of re-reading the
     // BLOBs. Built lazily on the first search; dropped after each indexing pass.
     builder.Services.AddSingleton<VectorIndexCache>();
+    // Reads the GC, the process and the kernel's cgroup accounting for GET system/memory. Holds
+    // no state of its own; a singleton only because everything it inspects is one.
+    builder.Services.AddSingleton<MemoryDiagnostics>();
+    builder.Services.AddSingleton<Maki.Api.Jobs.ArtifactBuildGate>();
     // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
     // against the labelled query set; nothing changes them at runtime.
     builder.Services.AddSingleton(SearchTuning.Default);
@@ -368,6 +392,42 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(asuraLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Sen Manga — Japanese raw scans; a client-rendered SPA whose own JSON API is called directly.
+    var senMangaLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(SenMangaSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://raw.senmanga.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://raw.senmanga.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(senMangaLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Baozi Manhua — Simplified Chinese manhua, plain SSR/AMP HTML, no Cloudflare.
+    var baoziLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(BaoziManhuaSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://cn.baozimh.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://cn.baozimh.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(baoziLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Manga Livre — Brazilian Portuguese, standard Madara/WordPress theme, no Cloudflare.
+    var mangaLivreLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(MangaLivreSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://mangalivre.to/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://mangalivre.to/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLivreLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     // Atsumaru — JSON API behind the site's own origin (/api), no challenge to solve. Its
     // search index is Typesense and answers straight from this client too.
     var atsumaruLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
@@ -422,6 +482,25 @@ try
     builder.Services.AddScoped<IUserSettings, UserSettingsService>();
     builder.Services.AddSingleton<IUserSettingsStore, UserSettingsStoreService>();
 
+    // Localization. Catalogs and the ICU formatter are immutable and shared; only the per-request
+    // language and the localizer that reads it are scoped.
+    //
+    // Note what is NOT here: UseRequestLocalization, and any call that sets CurrentUICulture or
+    // CurrentCulture. That middleware sets both, and about thirty places in this codebase parse
+    // chapter numbers, file sizes and dates with InvariantCulture on purpose. An ambient German or
+    // Turkish culture reinterpreting "12.5" would not fail a build and would reach the filesystem.
+    // The language travels as ordinary scoped state that only the localizer reads. See IRequestLocale.
+    builder.Services.AddSingleton<ServerCatalogs>();
+    builder.Services.AddSingleton<IMessageFormatter>(_ => new MessageFormatter(useCache: true));
+    builder.Services.AddSingleton<IUserLocaleResolver, UserLocaleResolver>();
+    builder.Services.AddScoped<RequestLocaleContext>();
+    builder.Services.AddScoped<IRequestLocale>(sp => sp.GetRequiredService<RequestLocaleContext>());
+    builder.Services.AddSingleton<IMessageCatalog, MessageCatalog>();
+    builder.Services.AddScoped<ILocalizer, Localizer>();
+    // Scoped rather than singleton because it renders through the scoped ILocalizer. Both the read
+    // path and the raise path resolve it from whatever scope they are already holding.
+    builder.Services.AddScoped<InboxRenderer>();
+
     builder.Services.AddSingleton<KavitaUserResolver>();
     builder.Services.AddSingleton<FlareSolverrClient>();
     builder.Services.AddSingleton<ChallengeAwareFetcher>();
@@ -431,6 +510,11 @@ try
 
     builder.Services.AddSingleton<MangaFireBrowser>();
     builder.Services.AddSingleton<TopManhuaImageBrowser>();
+    // Both of the above, again, as the seam BrowserIdleShutdownJob closes them through. Resolved
+    // from the concrete singletons rather than registered twice, or the job would be shutting down
+    // a second browser nobody scrapes with.
+    builder.Services.AddSingleton<IIdleBrowser>(sp => sp.GetRequiredService<MangaFireBrowser>());
+    builder.Services.AddSingleton<IIdleBrowser>(sp => sp.GetRequiredService<TopManhuaImageBrowser>());
     builder.Services.AddSingleton<ISource, MangaDexSource>();
     builder.Services.AddSingleton<ISource, TCBScansSource>();
     builder.Services.AddSingleton<ISource, AsuraSource>();
@@ -444,6 +528,9 @@ try
     builder.Services.AddSingleton<ISource, MangakakalotSource>();
     builder.Services.AddSingleton<ISource, TopManhuaSource>();
     builder.Services.AddSingleton<ISource, AtsumaruSource>();
+    builder.Services.AddSingleton<ISource, SenMangaSource>();
+    builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
+    builder.Services.AddSingleton<ISource, MangaLivreSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
@@ -505,6 +592,7 @@ try
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
+    builder.Services.AddScoped<TorrentImportService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
     builder.Services.AddScoped<ImageCacheRebuildService>();
     // Singleton: it is the single-flight claim and the live progress a rebuild reports through,
@@ -575,6 +663,8 @@ try
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
+    builder.Services.AddSingleton<AnimeSignalSources>();
+    builder.Services.AddSingleton<AnimeSignalSyncService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
@@ -611,10 +701,18 @@ try
     builder.Services.AddSwaggerGen();
     builder.Services.AddQuartz(q =>
     {
+        // Well above the default ten. The artifact builds serialise on ArtifactBuildGate rather
+        // than on the pool, so a queue of them waiting their turn each occupies a slot, and the
+        // download workers and the fifteen-second completed-download poll must not be behind them.
+        q.UseDefaultThreadPool(tp => tp.MaxConcurrency = 20);
         q.AddJobListener<HealthJobListener>();
+        // Twenty minutes rather than five, to keep the first source sync out of the window where
+        // every index is being built. It is the one startup job that launches a headless browser
+        // (MangaFire), so it used to add ~120 MB of native memory at exactly the minute the builds
+        // were at their peak. Nothing needs it sooner: it repeats every half hour regardless.
         q.ScheduleJob<Maki.Api.Jobs.RefreshMonitoredSeriesJob>(t => t
             .WithIdentity("refresh-monitored")
-            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
 
         q.ScheduleJob<Maki.Api.Jobs.MetadataRefreshJob>(t => t
@@ -666,6 +764,17 @@ try
             .WithIdentity("scrobble-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Hourly tick; AnimeSignalSyncService decides whether its own (much longer) interval has
+        // elapsed. Stable key so the opt-in endpoint can trigger it with force=true.
+        q.AddJob<Maki.Api.Jobs.AnimeSignalJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.AnimeSignalJob.Key)
+            .SetJobData(new JobDataMap { { Maki.Api.Jobs.AnimeSignalJob.ForceKey, false } }));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.AnimeSignalJob.Key)
+            .WithIdentity("anime-signal-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(1).RepeatForever()));
 
         // Stable job key so the settings endpoint can trigger a refresh on demand.
         q.AddJob<Maki.Api.Jobs.MangaBakaDumpRefreshJob>(j => j
@@ -739,7 +848,43 @@ try
             .ForJob(Maki.Api.Jobs.DiscoverCacheWarmJob.Key)
             .WithIdentity("discover-cache-warm-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(5))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+            // Twelve hours, matching DiscoverService's rail cache rather than doubling it. At
+            // twenty-four one of every two expiries landed on whoever opened Discover next, and
+            // they paid for a cold rebuild of every rail. It is gated behind ArtifactBuildGate, so
+            // a second one cannot overlap an index build.
+            .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever()));
+
+        // Frees the embedding session when nothing has used it. Five minutes is the tick, not the
+        // idle window - the job reads that itself - so the window can change without rescheduling.
+        q.AddJob<Maki.Api.Jobs.EmbedderIdleUnloadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key)
+            .WithIdentity("embedder-idle-unload-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
+        // The same for the discovery artifacts, which are ~72 MB between them. Started well after
+        // the warm-up job so a fresh instance is not unloading what it is still building, and the
+        // tick is the same five minutes for the same reason.
+        q.AddJob<Maki.Api.Jobs.ArtifactIdleUnloadJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
+            .WithIdentity("artifact-idle-unload-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+
+        // And the headless browsers, which are ~160 MB of native memory between the Playwright
+        // driver and the shell's processes. Nothing launches one at startup, so this can start
+        // early; it does nothing until a scrape has actually happened.
+        q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.BrowserIdleShutdownJob.Key)
+            .WithIdentity("browser-idle-shutdown-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(6))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
 
         // Image cache rebuild. Registered with no trigger at all: it re-downloads a poster per
         // series, so it only ever runs when an admin asks for it from System settings.
@@ -811,8 +956,8 @@ try
         {
             scope.ServiceProvider.GetRequiredService<InboxService>()
                 .RaiseAsync(InboxEventType.BackupFinished, new InboxMessage(
-                        Title: "Pre-upgrade backup taken",
-                        Body: $"{backup.Name} — saved before applying {pending.Count} migration(s)",
+                        Key: "inbox.backup.preUpgrade",
+                        Params: InboxMessage.Args(new { name = backup.Name, count = pending.Count }),
                         Url: "/settings?tab=system&s=backup"),
                     InboxAudience.Admins)
                 .GetAwaiter().GetResult();
@@ -929,6 +1074,11 @@ try
     app.UseRateLimiter();
 
     app.UseAuthentication();
+    // Before CurrentUserMiddleware, so the 401 that middleware answers with is localized too. It
+    // reads nothing but the request itself (a query parameter, two headers), and the stored
+    // preference that does need a user is resolved lazily on first read, by which point
+    // CurrentUserMiddleware has run for every request that gets that far.
+    app.UseMiddleware<RequestLocaleMiddleware>();
     // Between authentication and authorization on purpose: this resolves the principal into the
     // database-backed CurrentUserContext that the permission handler reads, and rejects a session
     // whose account has since been disabled or deleted.

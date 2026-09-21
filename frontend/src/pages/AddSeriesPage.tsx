@@ -1,9 +1,11 @@
 import { useSearchParams } from 'react-router-dom'
+import { useLingui } from '@lingui/react/macro'
 import { useAuth } from '../auth/AuthProvider'
 import { CatalogueBrowser } from '../components/CatalogueBrowser'
 import { PageHeader } from '../components/ui/PageHeader'
 
 export default function AddSeriesPage() {
+  const { t } = useLingui()
   // The command palette sends the text you typed there here as ?q= when the library holds no match.
   const [searchParams] = useSearchParams()
   const { can } = useAuth()
@@ -15,11 +17,11 @@ export default function AddSeriesPage() {
   return (
     <>
       <PageHeader
-        title={canAdd ? 'Add series' : 'Request series'}
+        title={canAdd ? t`Add series` : t`Request series`}
         description={
           canAdd
-            ? 'Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest.'
-            : 'Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too.'
+            ? t`Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest.`
+            : t`Browse or search MangaBaka and ask an admin for a title. You can ask for a chapter range too.`
         }
       />
 
@@ -30,7 +32,7 @@ export default function AddSeriesPage() {
       <CatalogueBrowser
         scope="discover"
         seededQuery={searchParams.get('q')}
-        placeholder="Search by title, description, or by feel"
+        placeholder={t`Search by title, description, or by feel`}
       />
     </>
   )

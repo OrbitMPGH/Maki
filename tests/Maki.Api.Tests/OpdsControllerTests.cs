@@ -18,6 +18,7 @@ namespace Maki.Api.Tests;
 /// straight off disk would hand every cover on the instance to a token whose owner holds one root
 /// folder — and turn 404-vs-200 into an oracle for which series ids exist.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public sealed class OpdsControllerTests : IDisposable
 {
     private readonly TestDb _db = new();
@@ -120,6 +121,7 @@ public sealed class OpdsControllerTests : IDisposable
             reader: null!,
             db: db,
             paths: _paths,
+            localizer: new TestLocalizer(),
             logger: NullLogger<OpdsController>.Instance)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }

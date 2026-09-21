@@ -1,4 +1,4 @@
-using Maki.Core.ComicInfo;
+﻿using Maki.Core.ComicInfo;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
@@ -26,10 +26,15 @@ public class CbzLinkService(
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
     /// <param name="progress">Invoked before each file with (1-based index, total file count).</param>
     /// <param name="updateComicInfo">When false, adopted files keep their ComicInfo.xml untouched.</param>
+    /// <param name="replaceExisting">
+    /// Whether a chapter that already has a file may be re-pointed at one of these. False links
+    /// only chapters nothing backs yet, so an adopted archive can never quietly orphan the file a
+    /// chapter is being read from today.
+    /// </param>
     public async Task<(int Linked, int Unrecognized)> LinkFilesAsync(
         Series series, string seriesDir, IEnumerable<string> files, string sourceName,
         Func<int, int, Task>? progress = null, bool updateComicInfo = true, string? releaseName = null,
-        CancellationToken ct = default)
+        bool replaceExisting = true, CancellationToken ct = default)
     {
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var linked = 0;
@@ -68,12 +73,12 @@ public class CbzLinkService(
             }
             else
             {
-                matched = LinkChapters(chapters, parsed, chapterFile.Id);
+                matched = LinkChapters(chapters, parsed, chapterFile.Id, replaceExisting);
                 if (matched.Count == 0 && parsed.IsVolume)
                 {
                     // No volume metadata to range-match against — read the chapters the
                     // compilation actually contains from its page file names.
-                    matched = LinkVolumeByContents(chapters, file, chapterFile.Id);
+                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, replaceExisting);
                 }
 
                 if (parsed.IsVolume)
@@ -102,7 +107,8 @@ public class CbzLinkService(
         // from a volume-capable source and retry those files with exact ranges.
         if (unlinkedVolumeFiles.Count > 0 && await TryBackfillChapterVolumesAsync(series, chapters, ct))
         {
-            linked += unlinkedVolumeFiles.Count(x => LinkChapters(chapters, x.Parsed, x.Record.Id).Count > 0);
+            linked += unlinkedVolumeFiles.Count(
+                x => LinkChapters(chapters, x.Parsed, x.Record.Id, replaceExisting).Count > 0);
         }
 
         // A volume file that range-matched some chapters can still contain others the
@@ -110,6 +116,7 @@ public class CbzLinkService(
         // disagree). Link any still-missing chapter its page markers prove it contains.
         linked += FillVolumeContents(chapters, volumeFiles);
 
+        linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
         if (ordered.Count > 0)
         {
@@ -196,7 +203,7 @@ public class CbzLinkService(
                 var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
                 if (absolutePath is not null)
                 {
-                    matched = LinkVolumeByContents(chapters, absolutePath, dbFile.Id);
+                    matched = LinkVolumeByContents(chapters, parsed, absolutePath, dbFile.Id);
                 }
             }
 
@@ -339,6 +346,33 @@ public class CbzLinkService(
     }
 
     /// <summary>
+    /// A series with one chapter and one file is an unambiguous pairing however the file is named,
+    /// and a single-volume work or a one-shot usually has no number in its name to match on at all.
+    /// Deliberately limited to a file whose name parses to nothing: a name that does carry a number
+    /// disagrees with the chapter rather than saying nothing about it, and a series whose chapter
+    /// list has not finished syncing would otherwise adopt the wrong file. Returns 1 when it links.
+    /// </summary>
+    private async Task<int> LinkLoneFileAsync(Series series, List<Chapter> chapters, CancellationToken ct)
+    {
+        if (chapters is not [{ ChapterFileId: null } chapter])
+        {
+            return 0;
+        }
+
+        var files = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).Take(2).ToListAsync(ct);
+        if (files is not [{ } file] || ReleaseNameParser.ParseFileName(file.RelativePath).IsRecognized)
+        {
+            return 0;
+        }
+
+        chapter.ChapterFileId = file.Id;
+        logger.LogInformation(
+            "Linked the only chapter of '{Title}' to its only file {File}, which has no number in its name",
+            series.Title, file.RelativePath);
+        return 1;
+    }
+
+    /// <summary>
     /// Fallback for series where no source maps chapters to volumes: if the series
     /// is finished (completed or cancelled) and the volume CBZs on disk cover every
     /// volume the metadata provider knows about, every chapter is provably present.
@@ -412,7 +446,9 @@ public class CbzLinkService(
     /// rows carry no volume info to range-match against (scrape sources) or the compilation's
     /// boundaries disagree with the metadata provider's. Returns the chapters that were linked.
     /// </summary>
-    private List<Chapter> LinkVolumeByContents(List<Chapter> chapters, string cbzPath, int chapterFileId)
+    private List<Chapter> LinkVolumeByContents(
+        List<Chapter> chapters, ParsedReleaseFile parsed, string cbzPath, int chapterFileId,
+        bool replaceExisting = true)
     {
         var numbers = VolumeChapterScanner.ScanCbz(cbzPath);
         if (numbers.Count == 0)
@@ -424,7 +460,7 @@ public class CbzLinkService(
         foreach (var number in numbers)
         {
             var match = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
-                        ?? chapters.FirstOrDefault(c => c.Number == number);
+                        ?? (replaceExisting ? chapters.FirstOrDefault(c => c.Number == number) : null);
             if (match != null && !targets.Contains(match))
             {
                 targets.Add(match);
@@ -434,6 +470,7 @@ public class CbzLinkService(
         foreach (var chapter in targets)
         {
             chapter.ChapterFileId = chapterFileId;
+            AdoptParsedVolume(chapter, parsed);
         }
 
         if (targets.Count > 0)
@@ -473,6 +510,7 @@ public class CbzLinkService(
                 if (chapter != null)
                 {
                     chapter.ChapterFileId = fileId;
+                    AdoptParsedVolume(chapter, parsed);
                     filled++;
                 }
             }
@@ -490,13 +528,18 @@ public class CbzLinkService(
     }
 
     /// <summary>Points matching chapters at the file; returns the chapters that were linked.</summary>
-    private static List<Chapter> LinkChapters(List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId)
+    /// <param name="replaceExisting">
+    /// False leaves a chapter that already has a file alone, so this file links only what nothing
+    /// backs yet.
+    /// </param>
+    private static List<Chapter> LinkChapters(
+        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, bool replaceExisting = true)
     {
         List<Chapter> targets = [];
         if (parsed.IsChapter)
         {
             var match = chapters.FirstOrDefault(c => c.Number == parsed.Number && c.ChapterFileId == null)
-                        ?? chapters.FirstOrDefault(c => c.Number == parsed.Number);
+                        ?? (replaceExisting ? chapters.FirstOrDefault(c => c.Number == parsed.Number) : null);
             if (match != null)
             {
                 targets.Add(match);
@@ -513,8 +556,24 @@ public class CbzLinkService(
         foreach (var chapter in targets)
         {
             chapter.ChapterFileId = chapterFileId;
+            AdoptParsedVolume(chapter, parsed);
         }
 
         return targets;
+    }
+
+    /// <summary>
+    /// Copies the volume the file name carries onto a chapter that has none, so the naming tokens
+    /// and the volume column can see it for a series no source maps to volumes. A chapter that
+    /// already has one keeps it: the provider's assignment outranks a scene release's. A
+    /// multi-volume compilation is skipped, since it says nothing about which of its volumes any
+    /// one chapter belongs to.
+    /// </summary>
+    private static void AdoptParsedVolume(Chapter chapter, ParsedReleaseFile parsed)
+    {
+        if (parsed.VolumeEnd is null && parsed.Volume is int volume)
+        {
+            chapter.Volume ??= volume;
+        }
     }
 }

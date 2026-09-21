@@ -1,5 +1,6 @@
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Security;
 using Maki.Data;
@@ -25,6 +26,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/users")]
 [Authorize(Policy = Policies.Admin)]
 public class UsersController(
+    ILocalizer localizer,
     MakiDbContext db,
     UserManager<MakiUser> userManager,
     AdminGuard adminGuard,
@@ -53,18 +55,19 @@ public class UsersController(
         var username = request.Username?.Trim();
         if (string.IsNullOrEmpty(username))
         {
-            return BadRequest(new { error = "Username is required" });
+            return this.Fail(localizer, "error.users.usernameRequired");
         }
 
         if (string.IsNullOrEmpty(request.Password))
         {
-            return BadRequest(new { error = "Password is required" });
+            return this.Fail(localizer, "error.users.passwordRequired");
         }
 
         var rating = request.MaxContentRating;
         if (rating is not null && !ContentRating.IsValid(rating))
         {
-            return BadRequest(new { error = $"Rating must be one of: {string.Join(", ", ContentRating.All)}" });
+            return this.Fail(localizer, "error.users.invalidContentRating",
+                new { ratings = string.Join(", ", ContentRating.All) });
         }
 
         var user = new MakiUser
@@ -118,12 +121,12 @@ public class UsersController(
 
             if (losingAdmin && user.Id == currentUser.UserId)
             {
-                return BadRequest(new { error = "You cannot remove your own administrator permission" });
+                return this.Fail(localizer, "error.users.cannotRemoveOwnAdmin");
             }
 
             if (losingAdmin && await IsLastAdminAsync(user.Id, ct))
             {
-                return BadRequest(new { error = "This is the only administrator; promote another account first" });
+                return this.Fail(localizer, "error.users.lastAdministrator");
             }
 
             user.Permissions = permissions;
@@ -133,12 +136,12 @@ public class UsersController(
         {
             if (disabled && user.Id == currentUser.UserId)
             {
-                return BadRequest(new { error = "You cannot disable your own account" });
+                return this.Fail(localizer, "error.users.cannotDisableSelf");
             }
 
             if (disabled && user.Permissions.Grants(MakiPermission.Admin) && await IsLastAdminAsync(user.Id, ct))
             {
-                return BadRequest(new { error = "This is the only administrator; promote another account first" });
+                return this.Fail(localizer, "error.users.lastAdministrator");
             }
 
             user.Disabled = disabled;
@@ -163,7 +166,8 @@ public class UsersController(
         {
             if (!ContentRating.IsValid(rating))
             {
-                return BadRequest(new { error = $"Rating must be one of: {string.Join(", ", ContentRating.All)}" });
+                return this.Fail(localizer, "error.users.invalidContentRating",
+                    new { ratings = string.Join(", ", ContentRating.All) });
             }
             user.MaxContentRating = rating;
         }
@@ -221,12 +225,12 @@ public class UsersController(
 
         if (user.Id == currentUser.UserId)
         {
-            return BadRequest(new { error = "You cannot delete your own account" });
+            return this.Fail(localizer, "error.users.cannotDeleteSelf");
         }
 
         if (user.Permissions.Grants(MakiPermission.Admin) && await IsLastAdminAsync(user.Id, ct))
         {
-            return BadRequest(new { error = "This is the only administrator; promote another account first" });
+            return this.Fail(localizer, "error.users.lastAdministrator");
         }
 
         var name = user.UserName ?? string.Empty;

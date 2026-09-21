@@ -13,9 +13,15 @@ public class FakeHttpClientFactory(
     Dictionary<string, string> responsesByUrlSubstring,
     Dictionary<string, byte[]>? binaryResponsesByUrlSubstring = null) : IHttpClientFactory
 {
+    /// <summary>
+    /// Every URL requested through a client this factory made, in order — for a test that cares how
+    /// the request was built rather than what came back (which languages a feed was asked for, say).
+    /// </summary>
+    public List<string> Requests { get; } = [];
+
     public HttpClient CreateClient(string name)
     {
-        return new HttpClient(new FakeHandler(responsesByUrlSubstring, binaryResponsesByUrlSubstring))
+        return new HttpClient(new FakeHandler(responsesByUrlSubstring, binaryResponsesByUrlSubstring, Requests))
         {
             BaseAddress = new Uri("https://fixture.test/")
         };
@@ -32,7 +38,8 @@ public class FakeHttpClientFactory(
 
     private class FakeHandler(
         Dictionary<string, string> responses,
-        Dictionary<string, byte[]>? binaryResponses) : HttpMessageHandler
+        Dictionary<string, byte[]>? binaryResponses,
+        List<string> requests) : HttpMessageHandler
     {
         /// <summary>
         /// A JSON fixture is served as application/json: HttpClient's JSON extensions refuse a body
@@ -47,6 +54,7 @@ public class FakeHttpClientFactory(
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             var url = request.RequestUri!.ToString();
+            requests.Add(url);
             foreach (var (substring, body) in responses)
             {
                 if (url.Contains(substring, StringComparison.OrdinalIgnoreCase))

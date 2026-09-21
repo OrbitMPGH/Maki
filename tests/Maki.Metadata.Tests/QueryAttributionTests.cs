@@ -24,7 +24,7 @@ public class QueryAttributionTests
             new[] { 0.2f, float.NegativeInfinity, 0.4f, 0.6f, float.NegativeInfinity },
         };
 
-        var scale = SemanticRecommender.MeasureQueries(cosines)[0];
+        var scale = SemanticRecommender.MeasureQueries(cosines, cosines[0].Length)[0];
 
         Assert.Equal(0.4, scale.Mean, 6);
         Assert.Equal(Math.Sqrt(((0.2 - 0.4) * (0.2 - 0.4)) + ((0.6 - 0.4) * (0.6 - 0.4))) / Math.Sqrt(3),
@@ -37,9 +37,9 @@ public class QueryAttributionTests
         // A channel with no spread ranks every row identically, so it distinguishes nothing and must
         // not become a division. The scoring loop reads a zero deviation as "every row sits at the
         // mean" and credits the channel zero rather than infinity.
-        var flat = SemanticRecommender.MeasureQueries([[0.5f, 0.5f, 0.5f]])[0];
+        var flat = SemanticRecommender.MeasureQueries([[0.5f, 0.5f, 0.5f]], 3)[0];
         var empty = SemanticRecommender.MeasureQueries(
-            [[float.NegativeInfinity, float.NegativeInfinity]])[0];
+            [[float.NegativeInfinity, float.NegativeInfinity]], 2)[0];
 
         Assert.Equal(0.5, flat.Mean, 6);
         Assert.Equal(0, flat.Deviation);
@@ -77,7 +77,7 @@ public class QueryAttributionTests
             }
         }
 
-        var scales = SemanticRecommender.MeasureQueries(cosines);
+        var scales = SemanticRecommender.MeasureQueries(cosines, candidates.Length);
 
         Assert.All(scales.Skip(1), seed => Assert.True(
             scales[0].Mean > seed.Mean,

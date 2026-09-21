@@ -1,4 +1,5 @@
 import { Paper, Title } from '@mantine/core'
+import { Trans } from '@lingui/react/macro'
 import type { MangaBakaTag } from '../../api/hooks'
 import { TagBuckets } from '../TagBuckets'
 
@@ -7,7 +8,7 @@ export function DiscoverTags({ tags }: { tags: MangaBakaTag[] }) {
   return (
     <Paper withBorder radius="lg" p="lg">
       <Title order={3} fz={17}>
-        Tags
+        <Trans>Tags</Trans>
       </Title>
       <TagBuckets tags={tags} />
     </Paper>

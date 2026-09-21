@@ -6,6 +6,8 @@
 //   dotnet run distribution/eval-reco.cs
 //   dotnet run distribution/eval-reco.cs -- spread uniform default
 //   dotnet run distribution/eval-reco.cs -- loo uniform default
+//   dotnet run distribution/eval-reco.cs -- dial-pick 0.05 default
+//   dotnet run distribution/eval-reco.cs -- dial Harem 5 default "p6:avoidblend=product,avoidweight=6"
 //   dotnet run distribution/eval-reco.cs -- spread "deep:depthweight=0.7,ratioweight=0.3"
 //   dotnet run distribution/eval-reco.cs -- spread nocoread default "hot:coreadmininjectedscore=0.5"
 //
@@ -21,6 +23,18 @@
 //     genres, authors and tags across the picks, and the mean pairwise cosine between them. That is
 //     the over-fit risk stated head-on — a weighting that collapses a narrow library into near-copies
 //     of itself shows up as cohesion rising and distinct-genre count falling against `uniform`.
+//
+//   dial — what the AVOID channel actually does to a page, which neither of the others can say.
+//     It is not a quality measurement and must not be read as one: `eval-reco-labels.cs --negatives`
+//     is where quality is decided. This answers the narrower question the feature makes a promise
+//     about, "push less of this at me", by injecting N dislikes carrying a named tag and reporting
+//     how much of that tag is left in the top 40, how much of everything ELSE moved with it, and how
+//     much of the page changed at all. The dislikes are the most POPULAR catalogue titles carrying
+//     the tag on purpose, because real dislikes skew famous and that is the hard case.
+//
+//   dial-pick — which tags `dial` can be run on at all: those whose share of the default top 40 is
+//     at or above a floor. A tag the page never carried cannot halve, and reading that as a pass is
+//     the mistake v5.1's table made on its narrow tag. Run this first and choose from its output.
 //
 //   loo — leave-one-out over the INSTALLED reading history in maki.db. Hold out one series the user
 //     finished, seed from the rest, report where the held-out series lands. It measures the thing we
@@ -84,6 +98,9 @@ var minChapters = 5;
 var rngSeed = 20260824;
 var useRealProfile = false;
 var userId = (int?)null;
+var dialTag = string.Empty;
+var dialCount = 5;
+var dialMinShare = 0.05;
 var variantArgs = new List<string>();
 
 for (var i = 0; i < args.Length; i++)
@@ -92,6 +109,19 @@ for (var i = 0; i < args.Length; i++)
     {
         case "spread" or "loo":
             mode = args[i];
+            break;
+        // Two positionals, because a tag name and a dislike count are what the mode IS rather than
+        // options on it, and a run with either missing measures nothing.
+        case "dial":
+            mode = args[i];
+            dialTag = args[++i];
+            dialCount = int.Parse(args[++i], CultureInfo.InvariantCulture);
+            break;
+        // Which tags `dial` can be run on at all. A tag with no share of the default page has
+        // nothing to halve, and v5.1 spent a row of its table discovering that after the fact.
+        case "dial-pick":
+            mode = args[i];
+            dialMinShare = double.Parse(args[++i], CultureInfo.InvariantCulture);
             break;
         case "--limit":
             limit = int.Parse(args[++i], CultureInfo.InvariantCulture);
@@ -171,21 +201,23 @@ var coReadOptions = new CoReadOptions(Path.Combine(configDir, "coread-edges.db")
 var coReadCache = new CoReadCache(coReadOptions, new ConsoleLogger<CoReadCache>());
 // A recommender per distinct pair of graph tunings. They are near-free to construct — the expensive
 // state (the vector index, both graphs) lives in the caches and is shared across all of them.
-var recommenders = new Dictionary<(RecoGraphTuning, CoReadTuning), SemanticRecommender>();
-SemanticRecommender RecommenderFor(RecoGraphTuning graphTuning, CoReadTuning coReadTuning)
+var recommenders = new Dictionary<(RecoGraphTuning, CoReadTuning, RecommenderTuning), SemanticRecommender>();
+SemanticRecommender RecommenderFor(
+    RecoGraphTuning graphTuning, CoReadTuning coReadTuning, RecommenderTuning tuning)
 {
-    if (!recommenders.TryGetValue((graphTuning, coReadTuning), out var found))
+    if (!recommenders.TryGetValue((graphTuning, coReadTuning, tuning), out var found))
     {
         found = new SemanticRecommender(
             options, dumpOptions, store, cache, graphCache, graphTuning, coReadCache, coReadTuning,
-            new ConsoleLogger<SemanticRecommender>());
-        recommenders[(graphTuning, coReadTuning)] = found;
+            new ConsoleLogger<SemanticRecommender>(), tuning);
+        recommenders[(graphTuning, coReadTuning, tuning)] = found;
     }
 
     return found;
 }
 
-var recommender = RecommenderFor(RecoGraphTuning.Default, CoReadTuning.Default);
+var recommender = RecommenderFor(
+    RecoGraphTuning.Default, CoReadTuning.Default, RecommenderTuning.Default);
 
 var warm = Stopwatch.StartNew();
 if (await cache.GetAsync() is not { } index)
@@ -202,6 +234,8 @@ var today = DateOnly.FromDateTime(DateTime.UtcNow);
 return mode switch
 {
     "loo" => await RunLeaveOneOut(),
+    "dial" => await RunDial(),
+    "dial-pick" => await RunDialPick(),
     _ => await RunSpread(),
 };
 
@@ -491,6 +525,289 @@ async Task<int> RunLeaveOneOut()
     return 0;
 }
 
+// ---------------------------------------------------------------------------------------------
+// dial-pick: which tags the default page carries enough of for `dial` to measure anything.
+// ---------------------------------------------------------------------------------------------
+async Task<int> RunDialPick()
+{
+    if (!File.Exists(dbPath))
+    {
+        Console.WriteLine($"error: no database at {dbPath} - dial-pick needs an installed library.");
+        return 2;
+    }
+
+    var chosenUser = userId ?? History.BusiestUser(dbPath);
+    if (chosenUser is null)
+    {
+        Console.WriteLine("error: no user in the database has any completed reading.");
+        return 1;
+    }
+
+    var profile = History.Load(dbPath, chosenUser.Value);
+    var seeded = new Profile(
+        profile.Name,
+        profile.Entries.Where(e => index.TryGetRow(e.MangaBakaId, out _)).ToList());
+    if (seeded.Entries.Count == 0)
+    {
+        Console.WriteLine("error: none of this library is in the vector index.");
+        return 1;
+    }
+
+    var owned = seeded.Entries.Select(e => e.MangaBakaId).ToHashSet();
+    // The first variant, so a run can pick against the same configuration it is about to dial.
+    var picks = await Recommend(seeded, variants[0], owned.ToHashSet(), null);
+    var pickRows = new List<int>();
+    foreach (var pick in picks)
+    {
+        if (index.TryGetRow(long.Parse(pick.ProviderId, CultureInfo.InvariantCulture), out var row))
+        {
+            pickRows.Add(row);
+        }
+    }
+
+    if (pickRows.Count == 0)
+    {
+        Console.WriteLine("error: the baseline page is empty, so no tag has a share of it.");
+        return 1;
+    }
+
+    var vocab = store.GetVocab();
+    var counts = new Dictionary<int, int>();
+    foreach (var row in pickRows)
+    {
+        foreach (var (tagId, cls) in TagMath.Unpack(index.TagsAt(row)))
+        {
+            if (cls >= TagMath.Defining)
+            {
+                counts[tagId] = counts.GetValueOrDefault(tagId) + 1;
+            }
+        }
+    }
+
+    Console.WriteLine($"user     : {chosenUser} ({seeded.Entries.Count} seeds in the index)");
+    Console.WriteLine($"variant  : {variants[0].Name}, top {pickRows.Count}");
+    Console.WriteLine($"min share: {dialMinShare:P1}");
+    Console.WriteLine();
+    Console.WriteLine("  Tags the default page carries enough of that `dial` has something to halve.");
+    Console.WriteLine("  A tag at 0% is not a pass and not a fail: it was never on the page.");
+    Console.WriteLine();
+
+    var eligible = counts
+        .Where(kv => kv.Value / (double)pickRows.Count >= dialMinShare && vocab.ContainsKey(kv.Key))
+        .Select(kv => (Name: vocab[kv.Key].Name, Df: vocab[kv.Key].SeriesCount,
+            Share: kv.Value / (double)pickRows.Count, Picks: kv.Value))
+        .OrderByDescending(t => t.Df)
+        .ToList();
+
+    Console.WriteLine($"{"tag",-40} {"df",8} {"picks",6} {"share",8}");
+    Console.WriteLine(new string('-', 66));
+    foreach (var tag in eligible)
+    {
+        Console.WriteLine($"{tag.Name,-40} {tag.Df,8:N0} {tag.Picks,6} {tag.Share,8:P1}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"  {eligible.Count} tag(s) at or above the floor. Pick across df bands:");
+    Console.WriteLine("  a narrow tag and a catalogue-wide one answer different questions.");
+    return 0;
+}
+
+// ---------------------------------------------------------------------------------------------
+// dial: inject N dislikes carrying one tag and report what leaves the page with it.
+// ---------------------------------------------------------------------------------------------
+async Task<int> RunDial()
+{
+    if (!File.Exists(dbPath))
+    {
+        Console.WriteLine($"error: no database at {dbPath} - dial needs an installed library.");
+        return 2;
+    }
+
+    var chosenUser = userId ?? History.BusiestUser(dbPath);
+    if (chosenUser is null)
+    {
+        Console.WriteLine("error: no user in the database has any completed reading.");
+        return 1;
+    }
+
+    // The same seeds `loo` builds, minus the holding-out: this is the page that library actually
+    // gets, and the question is what an injected dislike does to it.
+    var profile = History.Load(dbPath, chosenUser.Value);
+    var seeded = new Profile(
+        profile.Name,
+        profile.Entries.Where(e => index.TryGetRow(e.MangaBakaId, out _)).ToList());
+    if (seeded.Entries.Count == 0)
+    {
+        Console.WriteLine("error: none of this library is in the vector index.");
+        return 1;
+    }
+
+    var vocab = store.GetVocab();
+    var tagIds = vocab
+        .Where(kv => string.Equals(kv.Value.Name, dialTag, StringComparison.OrdinalIgnoreCase))
+        .Select(kv => kv.Key)
+        .ToHashSet();
+    if (tagIds.Count == 0)
+    {
+        Console.WriteLine($"error: no tag named '{dialTag}' in the vocabulary.");
+        return 1;
+    }
+
+    var df = tagIds.Sum(id => vocab[id].SeriesCount);
+    var owned = seeded.Entries.Select(e => e.MangaBakaId).ToHashSet();
+
+    // Every catalogue row carrying the tag at Defining or above, most popular first. Popularity is
+    // a rank, so 1 is the most famous and Unknown sorts last.
+    var carriers = new List<(long Id, long Rank)>();
+    for (var row = 0; row < index.Count; row++)
+    {
+        if (!CarriesTag(row, tagIds))
+        {
+            continue;
+        }
+
+        var id = index.IdAt(row);
+        if (owned.Contains(id))
+        {
+            continue;
+        }
+
+        var rank = index.PopularityAt(row);
+        carriers.Add((id, rank == VectorIndex.Unknown ? long.MaxValue : rank));
+    }
+
+    var injected = carriers.OrderBy(c => c.Rank).Take(dialCount).Select(c => c.Id).ToList();
+    if (injected.Count == 0)
+    {
+        Console.WriteLine($"error: nothing outside the library carries '{dialTag}'.");
+        return 1;
+    }
+
+    var avoidWeights = injected.ToDictionary(id => id, _ => 1.0);
+
+    Console.WriteLine($"user     : {chosenUser} ({seeded.Entries.Count} seeds in the index)");
+    Console.WriteLine($"tag      : {dialTag} (df {df}, {carriers.Count} carriers outside the library)");
+    Console.WriteLine(
+        $"dislikes : {injected.Count} injected, the most popular carriers - real dislikes skew famous,");
+    Console.WriteLine("           so this is the hard case rather than a convenient one.");
+    Console.WriteLine();
+    Console.WriteLine("  NOT A QUALITY MEASUREMENT. It says what the dial does, not whether the page");
+    Console.WriteLine("  got better. eval-reco-labels.cs --negatives is where that is decided.");
+    Console.WriteLine();
+
+    var rows = new List<DialRow>();
+    HashSet<long>? baseline = null;
+    Dictionary<int, double>? baselineTags = null;
+
+    foreach (var variant in variants)
+    {
+        var picks = await Recommend(seeded, variant, owned.ToHashSet(), avoidWeights);
+        var ids = picks
+            .Select(p => long.Parse(p.ProviderId, CultureInfo.InvariantCulture))
+            .ToList();
+        var pickRows = new List<int>();
+        foreach (var id in ids)
+        {
+            if (index.TryGetRow(id, out var row))
+            {
+                pickRows.Add(row);
+            }
+        }
+
+        var named = pickRows.Count == 0
+            ? 0
+            : pickRows.Count(r => CarriesTag(r, tagIds)) / (double)pickRows.Count;
+
+        // Every other tag's share of this page, so the next column can ask how much of the rest of
+        // the mix moved while the named tag was being removed.
+        var shares = new Dictionary<int, double>();
+        foreach (var row in pickRows)
+        {
+            foreach (var (tagId, cls) in TagMath.Unpack(index.TagsAt(row)))
+            {
+                if (cls >= TagMath.Defining && !tagIds.Contains(tagId))
+                {
+                    shares[tagId] = shares.GetValueOrDefault(tagId) + (1.0 / Math.Max(1, pickRows.Count));
+                }
+            }
+        }
+
+        var popularity = Median(pickRows
+            .Select(r => index.PopularityAt(r))
+            .Where(r => r != VectorIndex.Unknown)
+            .Select(r => (double)r)
+            .ToList());
+
+        var set = ids.ToHashSet();
+        double collateral = 0;
+        double jaccard = 1;
+        if (baseline is not null && baselineTags is not null)
+        {
+            // Mean absolute change over the tags either page carried. Restricted to those rather
+            // than to the whole vocabulary, where thousands of shared zeros would divide any real
+            // movement down to nothing.
+            var keys = shares.Keys.Union(baselineTags.Keys).ToList();
+            collateral = keys.Count == 0
+                ? 0
+                : keys.Average(k => Math.Abs(
+                    shares.GetValueOrDefault(k) - baselineTags.GetValueOrDefault(k)));
+            var union = set.Union(baseline).Count();
+            jaccard = union == 0 ? 1 : set.Intersect(baseline).Count() / (double)union;
+        }
+        else
+        {
+            baseline = set;
+            baselineTags = shares;
+        }
+
+        rows.Add(new DialRow(variant.Name, named, collateral, popularity, jaccard));
+    }
+
+    Console.WriteLine($"{"variant",-28} {"tag@40",8} {"collat",8} {"pop",10} {"jaccard",8}");
+    Console.WriteLine(new string('-', 68));
+    foreach (var row in rows)
+    {
+        Console.WriteLine(
+            $"{row.Name,-28} {row.TagShare,8:P1} {row.Collateral,8:F4} {row.Popularity,10:N0} {row.Jaccard,8:F3}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("  tag@40  : share of the top 40 carrying the named tag at Defining or above.");
+    Console.WriteLine("  collat  : mean absolute change in every OTHER tag's share of the page,");
+    Console.WriteLine("            against the first variant. The dial is doing what it claims only");
+    Console.WriteLine("            when this is small beside the drop in tag@40.");
+    Console.WriteLine("  pop     : median popularity rank of the picks; LOWER means more famous.");
+    Console.WriteLine("  jaccard : overlap of the top 40 with the first variant's, so a run can see");
+    Console.WriteLine("            how much of the page moved at all.");
+    return 0;
+}
+
+bool CarriesTag(int row, HashSet<int> tagIds)
+{
+    foreach (var (tagId, cls) in TagMath.Unpack(index.TagsAt(row)))
+    {
+        if (cls >= TagMath.Defining && tagIds.Contains(tagId))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static double Median(List<double> values)
+{
+    if (values.Count == 0)
+    {
+        return 0;
+    }
+
+    values.Sort();
+    return values.Count % 2 == 1
+        ? values[values.Count / 2]
+        : (values[(values.Count / 2) - 1] + values[values.Count / 2]) / 2.0;
+}
+
 Dictionary<long, double> SeedWeights(Profile profile, TasteTuning tuning)
 {
     var weights = new Dictionary<long, double>();
@@ -507,19 +824,22 @@ Dictionary<long, double> SeedWeights(Profile profile, TasteTuning tuning)
 }
 
 async Task<IReadOnlyList<MangaBakaRecommendation>> Recommend(
-    Profile profile, Variant variant, HashSet<long>? exclude)
+    Profile profile, Variant variant, HashSet<long>? exclude,
+    IReadOnlyDictionary<long, double>? avoidWeights = null)
 {
     var seeds = profile.Entries.Select(e => e.MangaBakaId).ToList();
     var weights = SeedWeights(profile, variant.Tuning);
 
-    return await RecommenderFor(variant.Graph, variant.CoReadTuning).GetSimilarAsync(
+    return await RecommenderFor(variant.Graph, variant.CoReadTuning, variant.Recommender).GetSimilarAsync(
         seeds,
         exclude ?? seeds.ToHashSet(),
         limit,
         RecommendationFilters.None,
         obscurity: 0,
         seedWeights: weights.Count > 0 ? weights : null,
+        avoidWeights: avoidWeights,
         diversity: diversity,
+        weights: variant.Weights,
         coGraph: variant.CoGraph,
         coRead: variant.CoRead,
         taste: variant.Taste);
@@ -534,6 +854,9 @@ file record Profile(string Name, IReadOnlyList<ProfileEntry> Entries);
 file record SpreadRow(string Name, double Genres, double Authors, double Tags, double Cohesion, double Overlap, int Weighted, double MinWeight, double MaxWeight, double CoRec, double CoRead, double Popularity);
 
 file record LooRow(string Name, double Mrr, double RecallAt10, double RecallAtLimit);
+
+file record DialRow(
+    string Name, double TagShare, double Collateral, double Popularity, double Jaccard);
 
 /// <summary>
 /// Builds the profile shape this feature is most likely to be wrong about: a handful of series read
@@ -648,8 +971,17 @@ file static class Spread
         var tags = new HashSet<int>();
         foreach (var row in rows)
         {
-            genres.UnionWith(index.GenresAt(row));
-            authors.UnionWith(index.AuthorsAt(row));
+            // Spans, so a loop rather than UnionWith: the index hands these out without copying.
+            foreach (var genre in index.GenresAt(row))
+            {
+                genres.Add(genre);
+            }
+
+            foreach (var author in index.AuthorsAt(row))
+            {
+                authors.Add(author);
+            }
+
             foreach (var (tagId, _) in TagMath.Unpack(index.TagsAt(row)))
             {
                 tags.Add(tagId);
@@ -844,6 +1176,8 @@ file static class Variants
 
         var graph = RecoGraphTuning.Default;
         var coReadTuning = CoReadTuning.Default;
+        var recommender = RecommenderTuning.Default;
+        var weights = (EmbeddingMath.Weights?)null;
         var noCrowd = string.Equals(name, "nocrowd", StringComparison.OrdinalIgnoreCase);
         var coGraph = !noCrowd && !string.Equals(name, "nograph", StringComparison.OrdinalIgnoreCase);
         var coRead = !noCrowd && !string.Equals(name, "nocoread", StringComparison.OrdinalIgnoreCase);
@@ -864,7 +1198,91 @@ file static class Variants
 
             var key = parts[0].Trim();
             var value = parts[1].Trim();
-            if (key.StartsWith("coread", StringComparison.OrdinalIgnoreCase) && key.Length > 6)
+            // The avoid keys are spelled the same way as in eval-reco-labels.cs, so one sweep
+            // string can be pasted between the two tools without being re-read.
+            if (key.Equals("avoidblend", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with { AvoidBlend = Enum.Parse<AvoidBlend>(value, true) };
+            }
+            else if (key.Equals("avoidweight", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("wavoid", StringComparison.OrdinalIgnoreCase))
+            {
+                weights = (weights ?? new EmbeddingMath.Weights()) with
+                {
+                    Avoid = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidfloor", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidtagfloor", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidTagFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidtagmargin", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidTagMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidtagminsupport", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidTagMinSupport = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidneutralize", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidNeutralize = Enum.Parse<AvoidNeutralize>(value, ignoreCase: true),
+                };
+            }
+            else if (key.Equals("avoidrelmargin", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidRelativeMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidpopbuckets", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidPopBuckets = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidpopminbucket", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidPopMinBucket = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidzfloor", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidZFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.Equals("avoidzspan", StringComparison.OrdinalIgnoreCase))
+            {
+                recommender = recommender with
+                {
+                    AvoidZSpan = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key.StartsWith("coread", StringComparison.OrdinalIgnoreCase) && key.Length > 6)
             {
                 coReadTuning = ApplyCoRead(coReadTuning, key[6..], value);
             }
@@ -878,7 +1296,8 @@ file static class Variants
             }
         }
 
-        return new Variant(name, taste, tuning, graph, coGraph, coReadTuning, coRead);
+        return new Variant(
+            name, taste, tuning, graph, coGraph, coReadTuning, coRead, recommender, weights);
     }
 
     private static CoReadTuning ApplyCoRead(CoReadTuning coRead, string key, string value)
@@ -943,7 +1362,9 @@ file sealed record Variant(
     RecoGraphTuning Graph,
     bool CoGraph,
     CoReadTuning CoReadTuning,
-    bool CoRead);
+    bool CoRead,
+    RecommenderTuning Recommender,
+    EmbeddingMath.Weights? Weights);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings

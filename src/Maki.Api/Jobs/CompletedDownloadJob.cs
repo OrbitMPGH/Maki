@@ -3,12 +3,10 @@ using System.Text.RegularExpressions;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
-using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Indexers;
 using Maki.Core.Paths;
-using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -16,22 +14,23 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Tracks torrent queue items against qBittorrent: updates progress, claims
-/// hashes for .torrent grabs (magnets carry theirs), and imports finished
-/// downloads: CBZ files are hardlinked (or copied) into the series folder under their
-/// names, linked to chapters via the shared CBZ linker, then given the configured chapter
-/// name via <see cref="SeriesRenameService.RenameFilesAsync"/>. The series folder is left
-/// alone — see <c>ApplyNamingAsync</c>.
+/// Tracks torrent queue items against qBittorrent: updates progress, claims hashes for .torrent
+/// grabs (magnets carry theirs), and hands finished downloads to <see cref="TorrentImportService"/>.
+/// <para>
+/// It imports on its own only when nothing is at stake. A download whose files cover chapters the
+/// library already has is parked as <see cref="QueueStatus.AwaitingImport"/> instead: replacing
+/// files is a decision, and an unattended job is the worst possible place to take it. The user
+/// makes the call from the activity list (<c>POST queue/{id}/import</c>), and this job must never
+/// advance such an item by itself — hence the explicit skip below.
+/// </para>
 /// </summary>
 [DisallowConcurrentExecution]
 public class CompletedDownloadJob(
     MakiDbContext db,
     ReleaseService releaseService,
     QBittorrentClient qbittorrent,
-    CbzLinkService cbzLinkService,
-    SeriesRenameService seriesRenameService,
+    TorrentImportService importer,
     EventBroadcaster events,
-    Maki.Core.Configuration.IAppSettings settings,
     ILogger<CompletedDownloadJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
@@ -96,7 +95,7 @@ public class CompletedDownloadJob(
                 if (DateTime.UtcNow - item.QueuedAt > TimeSpan.FromHours(2) && info.TorrentHash is null)
                 {
                     item.Status = QueueStatus.Failed;
-                    item.ErrorMessage = "Torrent never appeared in qBittorrent";
+                    item.SetError("error.download.torrentMissing");
                 }
 
                 continue;
@@ -110,15 +109,33 @@ public class CompletedDownloadJob(
             }
 
             var previousPagesDone = item.PagesDone;
+            var previousStatus = item.Status;
             item.PagesTotal = 100;
             item.PagesDone = (int)(torrent.Progress * 100);
 
-            if (torrent.IsComplete)
+            if (torrent.IsComplete && item.Status != QueueStatus.AwaitingImport)
             {
-                await ImportAsync(item, torrent, pathMap, ct);
+                try
+                {
+                    await ImportAsync(item, torrent, pathMap, ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // One unimportable download must not take the pass with it. Everything above
+                    // this (progress, claimed hashes, the other items' statuses) is only written
+                    // by the single SaveChangesAsync below, so letting this escape would discard
+                    // the whole poll and then do it again every fifteen seconds, for as long as
+                    // the offending torrent sits in the queue.
+                    logger.LogError(ex, "Could not import torrent '{Title}'", item.Title);
+                    item.Status = QueueStatus.Failed;
+                    item.SetRawError(ex.Message);
+                }
             }
 
-            if (item.PagesDone != previousPagesDone || torrent.IsComplete)
+            // Only on a real change. A finished torrent stays finished, so keying this on
+            // IsComplete pushed the same row to every client on every poll for as long as it sat
+            // there — which an item parked for an import decision does indefinitely.
+            if (item.PagesDone != previousPagesDone || item.Status != previousStatus)
             {
                 await BroadcastAsync(item);
             }
@@ -186,146 +203,53 @@ public class CompletedDownloadJob(
         DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
     {
         var series = item.Series!;
-        var rootFolder = series.RootFolder!;
 
         // qBittorrent reports the path as it sees it; rewrite it to how Maki does
         // when the two run under different mounts (e.g. qBittorrent in Docker).
         var contentPath = PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
 
-        if (!Directory.Exists(contentPath) && !File.Exists(contentPath))
+        var plan = await importer.PlanAsync(item, series, contentPath, ct);
+        if (plan.Error is not null)
         {
             item.Status = QueueStatus.Failed;
-            item.ErrorMessage = $"Download path not accessible from Maki: {contentPath}";
+            item.SetRawError(plan.Error);
             return;
         }
 
-        var cbzFiles = File.Exists(contentPath)
-            ? (Path.GetExtension(contentPath).Equals(".cbz", StringComparison.OrdinalIgnoreCase)
-                ? new[] { contentPath }
-                : [])
-            : Directory.GetFiles(contentPath, "*.cbz", SearchOption.AllDirectories);
-
-        if (cbzFiles.Length == 0)
+        if (plan.HasConflicts)
         {
-            item.Status = QueueStatus.Failed;
-            item.ErrorMessage = "No CBZ files found in the completed download";
+            item.Status = QueueStatus.AwaitingImport;
+            item.ClearError();
+            item.PagesDone = item.PagesTotal;
+            logger.LogInformation(
+                "Torrent '{Title}' is waiting for an import decision: it covers {Files} file(s) " +
+                "'{Series}' already has and brings {New} new chapter(s)",
+                item.Title, plan.ReplacedFileCount, series.Title, plan.NewChapterCount);
             return;
         }
 
         item.Status = QueueStatus.Importing;
-
-        // Never a move — qBittorrent keeps seeding from where it downloaded. A hardlink gives the
-        // library its own name for the same bytes; the copy is the fallback when the two folders
-        // can't share an inode (different volumes, a share, a filesystem without hardlinks).
-        var seriesDir = Path.Combine(rootFolder.Path, series.FolderName);
-        Directory.CreateDirectory(seriesDir);
-
-        var useHardlinks = await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false";
-        var imported = new List<string>();
-        var hardlinked = 0;
-        var freshCopies = 0;
-        foreach (var file in cbzFiles)
+        // The plan just built, handed over rather than left to be rebuilt: PlanAsync reads the page
+        // names out of every volume archive in the download, and the answer cannot have changed
+        // between the conflict check above and this line.
+        var outcome = await importer.ImportAsync(
+            item, series, contentPath, TorrentImportMode.Replace, ct, plan);
+        if (!outcome.Applied)
         {
-            var target = Path.Combine(seriesDir, Path.GetFileName(file));
-            if (!File.Exists(target))
-            {
-                try
-                {
-                    if (FileLinker.Place(file, target, useHardlinks) == FilePlacement.Hardlinked)
-                    {
-                        hardlinked++;
-                    }
-                    else
-                    {
-                        freshCopies++;
-                    }
-                }
-                catch (IOException ex)
-                {
-                    item.Status = QueueStatus.Failed;
-                    item.ErrorMessage = $"Could not import {Path.GetFileName(file)}: {ex.Message}";
-                    return;
-                }
-            }
-
-            imported.Add(target);
+            item.Status = QueueStatus.Failed;
+            item.SetRawError(outcome.Error);
+            return;
         }
-
-        // Honor the global "don't modify my files" setting for adopted torrent files. Chapters Maki
-        // downloads itself still get ComicInfo — those CBZs are built by Maki, not existing files.
-        //
-        // Only a file this import copied byte-for-byte is rewritten at all. Standardizing ComicInfo
-        // builds a new archive and swaps it over the library's name: the seeded data survives, but
-        // the sharing does not, so a hardlinked import would silently turn into the second full copy
-        // hardlinking exists to avoid. Kavita grouping is what the space saving costs, and turning
-        // hardlinks off is how a user picks the other side of that. A file already in the folder is
-        // skipped for the same reason — it may be a hardlink from an earlier run, and whatever
-        // imported it already decided about its ComicInfo.
-        var writeComicInfo = await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false"
-                             && freshCopies == imported.Count;
-        var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
-            series, seriesDir, imported, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
-            updateComicInfo: writeComicInfo, releaseName: torrent.Name, ct: ct);
 
         item.Status = QueueStatus.Completed;
         item.CompletedAt = DateTime.UtcNow;
         item.PagesDone = item.PagesTotal;
-        logger.LogInformation(
-            "Imported torrent '{Title}': {Files} file(s) ({Hardlinked} hardlinked), {Linked} linked to chapters, {Unrecognized} unrecognized",
-            item.Title, imported.Count, hardlinked, linked, unrecognized);
-        if (hardlinked > 0)
-        {
-            logger.LogInformation(
-                "Left ComicInfo.xml untouched in '{Title}': the imported file(s) are hardlinks and still seeding",
-                item.Title);
-        }
 
         // Torrent files keep their release name until this runs; save now so the rename's
         // active-download check (which re-queries the row) sees this item as Completed rather
         // than still in-flight and refuses to rename the series it just finished importing into.
         await db.SaveChangesAsync(ct);
-        await ApplyNamingAsync(series, imported, ct);
-    }
-
-    /// <summary>
-    /// Names the files this import just added, and only those.
-    /// <para>
-    /// Deliberately not a whole-series rename. That would move the series folder too, off the back
-    /// of one grabbed release and with nobody watching: the default folder format carries a release
-    /// year that folders created before it do not, so the first torrent for a series would rewrite
-    /// every path in it — and it would do so whatever <see cref="SettingKeys.LibraryFolderNamingMode"/>
-    /// says, including for a user who asked Maki to leave their folder names alone. Renaming a
-    /// series is what <c>POST /series/{id}/rename</c> is for, where the plan is shown first.
-    /// </para>
-    /// </summary>
-    private async Task ApplyNamingAsync(Series series, List<string> imported, CancellationToken ct)
-    {
-        // Resolved by path rather than returned by the linker: LinkFilesAsync answers with counts,
-        // and these files sit directly in the series folder, which is exactly how it stored them.
-        var relativePaths = imported
-            .Select(path => Path.Combine(series.FolderName, Path.GetFileName(path)))
-            .ToList();
-        var fileIds = await db.ChapterFiles
-            .Where(f => f.SeriesId == series.Id && relativePaths.Contains(f.RelativePath))
-            .Select(f => f.Id)
-            .ToListAsync(ct);
-
-        var result = await seriesRenameService.RenameFilesAsync(series.Id, fileIds, ct);
-        if (!result.Applied)
-        {
-            logger.LogWarning(
-                "Could not apply the chapter naming format to '{Title}' after torrent import: {Error}",
-                series.Title, result.Error);
-            return;
-        }
-
-        // Applied with warnings is the case that used to vanish: a skipped collision or a file that
-        // was not where its row said still leaves the library half-named, and this job is the only
-        // thing watching.
-        foreach (var warning in result.Warnings)
-        {
-            logger.LogWarning("Naming '{Title}' after torrent import: {Warning}", series.Title, warning);
-        }
+        await importer.ApplyNamingAsync(series, outcome.ImportedPaths, ct);
     }
 
     private static ReleaseInfo? ReleaseInfoOf(DownloadQueueItem item) =>

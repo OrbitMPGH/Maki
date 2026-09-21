@@ -1,13 +1,17 @@
 import { useState, type CSSProperties } from 'react'
 import { Tooltip } from '@mantine/core'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import type { MangaBakaTag } from '../api/hooks'
+import { useLabel } from '../i18n-context'
 
 /** MangaBaka's own relevance buckets, most-relevant first, each with the token it is drawn in. */
-const TAG_BUCKETS: { key: string; label: string; token: string }[] = [
-  { key: 'core', label: 'Core', token: 'danger' },
-  { key: 'defining', label: 'Defining', token: 'watched' },
-  { key: 'recurrent', label: 'Recurrent', token: 'ok' },
-  { key: 'incidental', label: 'Incidental', token: 'neutral' },
+const TAG_BUCKETS: { key: string; label: MessageDescriptor; token: string }[] = [
+  { key: 'core', label: msg`Core`, token: 'danger' },
+  { key: 'defining', label: msg`Defining`, token: 'watched' },
+  { key: 'recurrent', label: msg`Recurrent`, token: 'ok' },
+  { key: 'incidental', label: msg`Incidental`, token: 'neutral' },
 ]
 
 const KNOWN_WEIGHTS = new Set(TAG_BUCKETS.map((b) => b.key))
@@ -29,18 +33,21 @@ const MAX_TAGS_PER_BUCKET = 18
  */
 export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
   const [expanded, setExpanded] = useState<string[]>([])
+  const { t } = useLingui()
+  const label = useLabel()
 
   // Anything MangaBaka weighted outside the four known buckets still gets shown, in a plain
   // trailing group. Rare, but dropping tags on the floor is worse than an unlabelled colour.
-  const otherCount = tags.filter((t) => !KNOWN_WEIGHTS.has(t.weight)).length
-  const buckets = otherCount > 0 ? [...TAG_BUCKETS, { key: '', label: 'Other', token: 'neutral' }] : TAG_BUCKETS
+  const otherCount = tags.filter((tag) => !KNOWN_WEIGHTS.has(tag.weight)).length
+  const buckets =
+    otherCount > 0 ? [...TAG_BUCKETS, { key: '', label: msg`Other`, token: 'neutral' }] : TAG_BUCKETS
 
   return (
     <>
       {buckets.map((bucket) => {
         const inBucket = bucket.key
-          ? tags.filter((t) => t.weight === bucket.key)
-          : tags.filter((t) => !KNOWN_WEIGHTS.has(t.weight))
+          ? tags.filter((tag) => tag.weight === bucket.key)
+          : tags.filter((tag) => !KNOWN_WEIGHTS.has(tag.weight))
         if (inBucket.length === 0) return null
 
         const open = expanded.includes(bucket.key)
@@ -54,31 +61,32 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
             style={{ '--bucket': `var(--${bucket.token})` } as CSSProperties}
           >
             <div className="tag-bucket-head">
-              <span className="tag-bucket-name">{bucket.label}</span>
+              <span className="tag-bucket-name">{label(bucket.label)}</span>
               <span className="tag-bucket-rule" />
               <span className="tag-bucket-count tnum">{inBucket.length}</span>
             </div>
 
             <div className="tag-chips">
-              {shown.map((t) => {
+              {shown.map((tag) => {
+                const { description, isSpoiler, name } = tag
                 const chip = (
                   <span
-                    className={t.isSpoiler ? 'tag-chip spoiler-tag' : 'tag-chip'}
-                    tabIndex={t.isSpoiler ? 0 : undefined}
+                    className={isSpoiler ? 'tag-chip spoiler-tag' : 'tag-chip'}
+                    tabIndex={isSpoiler ? 0 : undefined}
                   >
                     <i className="tag-dot" />
-                    <span>{t.name}</span>
+                    <span>{name}</span>
                   </span>
                 )
                 // Spoiler tags always get a tooltip hint; others only when described.
-                const tip = t.isSpoiler
-                  ? t.description
-                    ? `Spoiler · ${t.description}`
-                    : 'Spoiler - hover to reveal'
-                  : t.description
+                const tip = isSpoiler
+                  ? description
+                    ? t`Spoiler · ${description}`
+                    : t`Spoiler - hover to reveal`
+                  : description
                 return tip ? (
                   <Tooltip
-                    key={t.name}
+                    key={name}
                     label={tip}
                     withArrow
                     multiline
@@ -89,13 +97,13 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
                     {chip}
                   </Tooltip>
                 ) : (
-                  <span key={t.name}>{chip}</span>
+                  <span key={name}>{chip}</span>
                 )
               })}
 
               {overflow > 0 && (
                 <button type="button" className="tag-more" onClick={() => setExpanded((e) => [...e, bucket.key])}>
-                  +{overflow} more
+                  <Plural value={overflow} one="+# more" other="+# more" />
                 </button>
               )}
               {open && inBucket.length > MAX_TAGS_PER_BUCKET && (
@@ -104,7 +112,7 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
                   className="tag-more"
                   onClick={() => setExpanded((e) => e.filter((k) => k !== bucket.key))}
                 >
-                  Show fewer
+                  <Trans>Show fewer</Trans>
                 </button>
               )}
             </div>

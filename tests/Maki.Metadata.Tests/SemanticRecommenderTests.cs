@@ -847,6 +847,496 @@ public class SemanticRecommenderTests : IDisposable
     /// the co-recommendation channel contributes nothing and every pre-existing assertion here is
     /// still testing the behaviour it was written for.
     /// </summary>
+    [Fact]
+    public async Task ACandidateThatLooksLikeAnAvoidedTitle_RanksBelowOneThatDoesNot()
+    {
+        // Ten is the better match on feel, so it leads by default. It is also a near-clone of a
+        // title the reader said they wanted less of, which is the whole complaint the channel
+        // answers: the flip is the measurement, not the absolute scores.
+        //
+        // Pinned to the Semantic blend, which is v1. It is the row the measurement reproduces, and
+        // pinning it here proves the harness did not move underneath that comparison: this fixture
+        // carries no tags at all, so the shipped Product blend correctly penalizes nothing.
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislike");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            // Only in the embedding store, never in the dump: an avoided title is usually not a
+            // candidate and does not have to be one.
+            (900L, "h", resented),
+        ]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        // Pinned to None as well as to Semantic. The shipped neutralization is Relative, and this
+        // fixture's near-clone of the dislike is also the reader's best match, which is the case
+        // Relative is built to cancel. The v1 numbers are what this test is for.
+        var semantic = RecommenderTuning.Default with
+        {
+            AvoidBlend = AvoidBlend.Semantic,
+            AvoidNeutralize = AvoidNeutralize.None,
+        };
+        var baseline = await Recommender(tuning: semantic).GetSimilarAsync(
+            [1], [], limit: 10, weights: penalizing);
+        var avoided = await Recommender(tuning: semantic).GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [900] = 1.0 },
+            weights: penalizing);
+
+        Assert.Equal(["10", "11"], baseline.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10"], avoided.Select(p => p.ProviderId));
+
+        // The same fixture under the shipped blend: no tags anywhere means no contrast, so the
+        // agreement the penalty needs is absent and nothing moves.
+        var product = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [900] = 1.0 },
+            weights: penalizing);
+        Assert.Equal(["10", "11"], product.Select(p => p.ProviderId));
+    }
+
+    /// <summary>
+    /// The harem-lover case, which is the failure a tag-only penalty has and the reason the tag side
+    /// is contrastive. Two avoided titles carry nothing the seed does not also carry, so however
+    /// close a candidate sits to them there is no contrast to penalize it on.
+    /// </summary>
+    [Fact]
+    public async Task ProductBlend_DoesNotPenalizeACloneThatSharesNoContrastiveTag()
+    {
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislikes");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+        });
+        // Every title in play, avoided and kept, is a harem title. The reader reads the genre.
+        var harem = TagMath.Pack([(1, TagMath.Core)]);
+        store.UpsertTagsBatch([(1L, harem), (10L, harem), (11L, harem), (900L, harem), (901L, harem)]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        var baseline = await Recommender().GetSimilarAsync([1], [], limit: 10, weights: penalizing);
+        var avoided = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+
+        Assert.Equal(baseline.Select(p => p.ProviderId), avoided.Select(p => p.ProviderId));
+
+        // The Semantic blend is what v1 did here, and it demotes the harem title the reader would
+        // have liked. That difference is the whole change.
+        var v1 = await Recommender(
+                tuning: RecommenderTuning.Default with
+                {
+                    AvoidBlend = AvoidBlend.Semantic,
+                    AvoidNeutralize = AvoidNeutralize.None,
+                })
+            .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+        Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task ProductBlend_PenalizesACloneThatDoesCarryAContrastiveTag()
+    {
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislikes");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+            [2] = new("Tournament", 1, false, "Themes"),
+            [3] = new("Drama", 1, false, "Themes"),
+        });
+        // Both candidates carry the seed tag plus one the seed does not, so their tag cosines to
+        // the profile are identical and the baseline order is the semantic one. The difference is
+        // which second tag: Tournament is on both dislikes, Drama is on neither.
+        store.UpsertTagsBatch([
+            (1L, TagMath.Pack([(1, TagMath.Core)])),
+            (10L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (11L, TagMath.Pack([(1, TagMath.Core), (3, TagMath.Core)])),
+            (900L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (901L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+        ]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        // v2's numbers, so the semantic half is pinned to the raw cosine v2 used. Relative has its
+        // own test below; here the candidate that carries the contrastive tag is also the reader's
+        // closest match, so a mode that cancels for that would be measuring something else.
+        var v2 = RecommenderTuning.Default with { AvoidNeutralize = AvoidNeutralize.None };
+        var baseline = await Recommender(tuning: v2)
+            .GetSimilarAsync([1], [], limit: 10, weights: penalizing);
+        var avoided = await Recommender(tuning: v2).GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+
+        Assert.Equal(["10", "11"], baseline.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10"], avoided.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task PoolMembershipIsIdenticalAcrossEveryBlendAndNeutralization()
+    {
+        // The avoid channel is a scan-side buffer and never enters the pool, so whatever it scores
+        // and however the two halves combine, the SET of candidates is the one the text queries
+        // found. Ordering is a different claim and the shipped-configuration test above makes it.
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislikes");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+            [2] = new("Tournament", 1, false, "Themes"),
+        });
+        store.UpsertTagsBatch([
+            (1L, TagMath.Pack([(1, TagMath.Core)])),
+            (10L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (11L, TagMath.Pack([(1, TagMath.Core)])),
+            (900L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+            (901L, TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)])),
+        ]);
+
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        var expected = (await Recommender().GetSimilarAsync([1], [], limit: 10))
+            .Select(p => p.ProviderId).OrderBy(x => x).ToList();
+
+        foreach (var blend in Enum.GetValues<AvoidBlend>())
+        {
+            foreach (var neutralize in Enum.GetValues<AvoidNeutralize>())
+            {
+                var picks = await Recommender(
+                        tuning: RecommenderTuning.Default with
+                        {
+                            AvoidBlend = blend,
+                            AvoidNeutralize = neutralize,
+                        })
+                    .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights);
+                Assert.Equal(expected, picks.Select(p => p.ProviderId).OrderBy(x => x));
+            }
+        }
+    }
+
+    [Fact]
+    public void BlendAvoid_CombinesTheTwoHalvesAndClampsTheTagSide()
+    {
+        var product = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Product };
+        var gate = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Gate, AvoidTagFloor = 0.25 };
+        var semantic = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Semantic };
+        var tag = RecommenderTuning.Default with { AvoidBlend = AvoidBlend.Tag };
+
+        Assert.Equal(0.4, SemanticRecommender.BlendAvoid(0.8, 0.5, product), 6);
+        // Either side at zero is no penalty, which is the agreement the blend exists to require.
+        Assert.Equal(0, SemanticRecommender.BlendAvoid(0.9, 0.0, product));
+        Assert.Equal(0, SemanticRecommender.BlendAvoid(0.0, 0.9, product));
+        Assert.Equal(0.8, SemanticRecommender.BlendAvoid(0.8, 0.3, gate), 6);
+        Assert.Equal(0, SemanticRecommender.BlendAvoid(0.8, 0.2, gate));
+        Assert.Equal(0.8, SemanticRecommender.BlendAvoid(0.8, 0.0, semantic), 6);
+        Assert.Equal(0.5, SemanticRecommender.BlendAvoid(0.0, 0.5, tag), 6);
+        // TagCandidateNormPower ships below 1, so the tag score is not bounded by 1 on its own.
+        Assert.Equal(0.8, SemanticRecommender.BlendAvoid(0.8, 1.9, product), 6);
+        Assert.Equal(1.0, SemanticRecommender.BlendAvoid(0.0, 1.9, tag), 6);
+    }
+
+    /// <summary>
+    /// The shipped configuration end to end: `Weights.Avoid` 12, `AvoidNeutralize.Relative`,
+    /// `AvoidBlend.Product`. A candidate that sits closer to a dislike than to anything the reader
+    /// kept, and carries the tag that made it a dislike, is pushed down. One closer to the seed is
+    /// not, even carrying the same tag, which is the semantic half of the agreement doing its job.
+    /// </summary>
+    [Fact]
+    public async Task TheShippedConfiguration_PushesDownWhatIsCloserToADislikeThanToASeed()
+    {
+        Add(1, "Seed");
+        Add(10, "Closer to the dislikes than to the seed");
+        Add(11, "Closest to the seed");
+        Add(12, "Same tags as the dislikes, nowhere near them");
+        WriteDump();
+        var resented = Axis(5);
+        var store = Store();
+        store.UpsertBatch([
+            (1L, "h", Axis(0)),
+            // Cosine 0.45 to the seed and 0.89 to the avoided pair.
+            (10L, "h", Nudge(resented, 0, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            // Cosine 0.41 to the seed and 0 to the avoided pair, so only the tag half fires.
+            (12L, "h", Nudge(Axis(6), 0, 0.45f)),
+            (900L, "h", resented),
+            (901L, "h", resented),
+        ]);
+        store.UpsertVocab(new Dictionary<int, TagInfo>
+        {
+            [1] = new("Harem", 1, false, "Themes"),
+            [2] = new("Tournament", 1, false, "Themes"),
+        });
+        // Harem is on everything including the seed, so the contrast drops it. Tournament is on
+        // both dislikes and on neither the seed nor 11, so it is what the avoided set is made of.
+        var haremOnly = TagMath.Pack([(1, TagMath.Core)]);
+        var both = TagMath.Pack([(1, TagMath.Core), (2, TagMath.Core)]);
+        store.UpsertTagsBatch([
+            (1L, haremOnly), (10L, both), (11L, haremOnly), (12L, both),
+            (900L, both), (901L, both),
+        ]);
+
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0, [901] = 1.0 };
+        var without = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        var with = await Recommender().GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights);
+
+        Assert.Equal(["11", "10", "12"], without.Select(p => p.ProviderId));
+        Assert.Equal(["11", "12", "10"], with.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task TheShippedBlendIsSilentWithoutAContrastiveTag()
+    {
+        // The shipped weight is 12, and it still costs nothing where the two halves do not agree.
+        // This fixture carries no tags at all, so there is no contrast and no penalty however close
+        // a candidate sits to the avoided title.
+        Add(1, "Seed");
+        Add(10, "Close to the seed and to the dislike");
+        Add(11, "Close to the seed only");
+        WriteDump();
+        var resented = Nudge(Axis(0), 2, 0.30f);
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", resented),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", resented),
+        ]);
+
+        var without = await Recommender().GetSimilarAsync([1], [], limit: 10);
+        var with = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [900] = 1.0 });
+
+        Assert.Equal(
+            without.Select(p => p.ProviderId), with.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public async Task AnAvoidedIdWithNoVector_IsANoOp()
+    {
+        Add(1, "Seed");
+        Add(10, "Candidate");
+        WriteDump();
+        Store().UpsertBatch([(1L, "h", Axis(0)), (10L, "h", Nudge(Axis(0), 2, 0.30f))]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var without = await Recommender().GetSimilarAsync([1], [], limit: 10, weights: penalizing);
+        var with = await Recommender().GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: new Dictionary<long, double> { [424242] = 1.0 },
+            weights: penalizing);
+
+        Assert.Equal(without.Select(p => p.ProviderId), with.Select(p => p.ProviderId));
+    }
+
+    [Fact]
+    public void AnAvoidedSetPastTheCap_IsRepresentedByASpreadRatherThanByTheStrongestFew()
+    {
+        // 32 near-identical clones at full strength and 8 outliers at a quarter of it. Taking the
+        // strongest 32 would spend every query on one book; the representative walk has to reach
+        // the outliers, which is the case a long low-rated shelf actually produces.
+        var store = Store();
+        var vectors = new List<(long, string, float[])>();
+        var weights = new Dictionary<long, double>();
+        for (var i = 0; i < 32; i++)
+        {
+            vectors.Add((100 + i, "h", Nudge(Axis(0), 1, 0.001f * (i + 1))));
+            weights[100 + i] = 1.0;
+        }
+
+        for (var i = 0; i < 8; i++)
+        {
+            vectors.Add((200 + i, "h", Axis(2 + i)));
+            weights[200 + i] = 0.25;
+        }
+
+        store.UpsertBatch(vectors);
+
+        var (queries, strengths) = SemanticRecommender.BuildAvoidQueries(
+            store, weights, RecommenderTuning.Default);
+
+        Assert.Equal(RecommenderTuning.Default.MaxAvoidQueries, queries.Count);
+        Assert.Equal(queries.Count, strengths.Length);
+        Assert.True(strengths.Count(s => s == 0.25) >= 4,
+            "the walk should reach the outliers rather than 32 copies of one title");
+    }
+
+    [Fact]
+    public void AvoidScore_IsZeroBelowTheFloorAndScaledAbove()
+    {
+        var avoid = new[]
+        {
+            new[] { 1.0f, 0.70f, 0.40f, float.NegativeInfinity },
+            new[] { 0.50f, 0.50f, 0.50f, float.NegativeInfinity },
+        };
+        var strengths = new[] { 1.0, 0.5 };
+
+        // An exact clone of a fully-avoided title is 1.0; 0.70 is halfway up the band above 0.45;
+        // 0.40 is under the floor on the first channel, so only the weaker one contributes.
+        Assert.Equal(1.0, SemanticRecommender.AvoidScore(avoid, strengths, 0, 0.45), 6);
+        Assert.Equal((0.70 - 0.45) / 0.55, SemanticRecommender.AvoidScore(avoid, strengths, 1, 0.45), 4);
+        Assert.Equal(0.5 * (0.50 - 0.45) / 0.55, SemanticRecommender.AvoidScore(avoid, strengths, 2, 0.45), 4);
+        // A filtered row is negative infinity in every channel and must never become a penalty.
+        Assert.Equal(0, SemanticRecommender.AvoidScore(avoid, strengths, 3, 0.45));
+        Assert.Equal(0, SemanticRecommender.AvoidScore([], [], 0, 0.45));
+    }
+
+    [Fact]
+    public void RelativeAvoid_CancelsWhatTheReadersOwnSeedsAlreadyExplain()
+    {
+        var tuning = RecommenderTuning.Default with { AvoidNeutralize = AvoidNeutralize.Relative };
+        // The v1 value for a row sitting at cosine 0.9 to something the reader rejected.
+        var raw = (0.9 - 0.45) / 0.55;
+
+        // A hub: as close to the reader's shelf as it is to the dislike, so it pays nothing.
+        Assert.Equal(0, SemanticRecommender.RelativeAvoid(raw, 0.9, tuning), 6);
+        // Close to the dislike and to nothing the reader kept, so it pays the whole v1 penalty.
+        Assert.Equal(raw, SemanticRecommender.RelativeAvoid(raw, 0.3, tuning), 6);
+        // Halfway: the positive side is half the band, so half the margin comes off.
+        Assert.Equal(
+            raw - (0.675 - 0.45) / 0.55,
+            SemanticRecommender.RelativeAvoid(raw, 0.675, tuning),
+            6);
+        // Margin 0 is None by arithmetic, which is what makes the mode a superset of v1.
+        Assert.Equal(
+            raw,
+            SemanticRecommender.RelativeAvoid(raw, 0.9, tuning with { AvoidRelativeMargin = 0 }),
+            6);
+    }
+
+    [Fact]
+    public void PopResidualAvoid_PenalizesOnlyWhatStandsOutInItsOwnFameBand()
+    {
+        var tuning = RecommenderTuning.Default with
+        {
+            AvoidNeutralize = AvoidNeutralize.PopResidual,
+            AvoidPopBuckets = 10,
+            AvoidPopMinBucket = 10,
+        };
+
+        // Twelve rows in the same famous bucket, all equally close to the avoided set. Every one of
+        // them is near a dislike because every famous row is near everything, which is the failure
+        // this mode exists for, so none of them may pay.
+        var flat = Enumerable.Repeat(0.6, 12).ToList();
+        var famous = Enumerable.Repeat(0.05, 12).ToList();
+        Assert.All(
+            SemanticRecommender.PopResidualAvoid(flat, famous, tuning),
+            v => Assert.Equal(0, v, 6));
+
+        // One of them is closer than its band. It pays the gap, less the pull it has on its own
+        // bucket's mean: the residual is against the bucket it is in, outlier included.
+        var withOutlier = new List<double>(flat) { 0.9 };
+        var ranks = new List<double>(famous) { 0.05 };
+        var residual = SemanticRecommender.PopResidualAvoid(withOutlier, ranks, tuning);
+        var bucketMean = withOutlier.Average();
+        Assert.Equal(0.9 - bucketMean, residual[^1], 6);
+        Assert.All(residual[..12], v => Assert.Equal(0, v, 6));
+
+        // A bucket under the minimum is not a fame band, it is a handful of rows, so the pool mean
+        // is what gets subtracted instead. Here the lone obscure row is the pool's high scorer.
+        var mixed = Enumerable.Repeat(0.2, 20).Append(0.9).ToList();
+        var spread = Enumerable.Repeat(0.05, 20).Append(0.95).ToList();
+        var fallback = SemanticRecommender.PopResidualAvoid(mixed, spread, tuning);
+        Assert.Equal(0.9 - mixed.Average(), fallback[^1], 6);
+    }
+
+    [Fact]
+    public void StandardizedAvoid_PricesHowUnusualTheResemblanceIsForThatQuery()
+    {
+        var tuning = RecommenderTuning.Default with
+        {
+            AvoidNeutralize = AvoidNeutralize.Standardized,
+            AvoidZFloor = 1.0,
+            AvoidZSpan = 2.0,
+        };
+        // One query whose cosines over the scan average 0.20 with a deviation of 0.10.
+        var scales = new[] { new SemanticRecommender.QueryScale(0.20, 0.10) };
+        var avoid = new[] { new[] { 0.40f, 0.20f, 0.50f, float.NegativeInfinity } };
+        var strengths = new[] { 1.0 };
+
+        // Two deviations up: one past the floor, out of a two-deviation span.
+        Assert.Equal(0.5, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 0, tuning), 6);
+        // At the mean the row is ordinary for this query and pays nothing.
+        Assert.Equal(0, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 1, tuning), 6);
+        // Three deviations up is the full penalty, and further up stays there.
+        Assert.Equal(1.0, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 2, tuning), 6);
+        // A filtered row, and a query with no spread, are both silent rather than a division.
+        Assert.Equal(0, SemanticRecommender.StandardizedAvoid(avoid, strengths, scales, 3, tuning), 6);
+        Assert.Equal(
+            0,
+            SemanticRecommender.StandardizedAvoid(
+                avoid, strengths, [new SemanticRecommender.QueryScale(0.20, 0)], 0, tuning),
+            6);
+    }
+
+    /// <summary>
+    /// The Relative mode end to end. The dislike sits exactly where the reader's own shelf sits, so
+    /// every candidate's resemblance to it is resemblance to the shelf and nothing may be penalized
+    /// for it. v1 penalized the closest match hardest and reordered the page, which is the fame
+    /// failure in miniature: near a famous dislike is near everything the reader liked.
+    /// </summary>
+    [Fact]
+    public async Task RelativeNeutralization_LeavesAHubAloneWhereV1DemotedIt()
+    {
+        Add(1, "Seed");
+        Add(10, "Closest to the seed");
+        Add(11, "Next closest");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.30f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.34f)),
+            (900L, "h", Axis(0)),
+        ]);
+
+        var penalizing = new EmbeddingMath.Weights(Avoid: 6.0);
+        var avoidWeights = new Dictionary<long, double> { [900] = 1.0 };
+        var relative = RecommenderTuning.Default with
+        {
+            AvoidBlend = AvoidBlend.Semantic,
+            AvoidNeutralize = AvoidNeutralize.Relative,
+        };
+
+        var picks = await Recommender(tuning: relative).GetSimilarAsync(
+            [1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+        Assert.Equal(["10", "11"], picks.Select(p => p.ProviderId));
+
+        // And the same fixture under v1, which is the row the comparison is against.
+        var v1 = await Recommender(
+                tuning: relative with { AvoidNeutralize = AvoidNeutralize.None })
+            .GetSimilarAsync([1], [], limit: 10, avoidWeights: avoidWeights, weights: penalizing);
+        Assert.Equal(["11", "10"], v1.Select(p => p.ProviderId));
+    }
+
     private SemanticRecommender Recommender(
         string? graphPath = null,
         RecoGraphTuning? graphTuning = null,

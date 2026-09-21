@@ -1,4 +1,5 @@
 using Maki.Api.Dtos;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -22,6 +23,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/progress")]
 public class ProgressController(
+    ILocalizer localizer,
     MakiDbContext db,
     UserMetricsService metrics,
     AchievementService achievements,
@@ -74,7 +76,7 @@ public class ProgressController(
         var timeZone = (request.TimeZone ?? string.Empty).Trim();
         if (timeZone.Length > 0 && !IsKnownTimeZone(timeZone))
         {
-            return BadRequest(new { error = "Unknown time zone" });
+            return this.Fail(localizer, "error.progress.unknownTimeZone");
         }
 
         await userSettings.SetAsync(SettingKeys.UserGamification, ProgressSpec.Serialize(
@@ -249,7 +251,7 @@ public class ProgressController(
         if (!Enum.TryParse<GoalPeriod>(request.Period, true, out var period) ||
             !Enum.TryParse<GoalMetric>(request.Metric, true, out var metric))
         {
-            return BadRequest(new { error = "Unknown period or metric" });
+            return this.Fail(localizer, "error.progress.unknownPeriodOrMetric");
         }
 
         var existing = await db.ReadingGoals

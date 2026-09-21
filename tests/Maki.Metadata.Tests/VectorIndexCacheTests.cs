@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
@@ -64,12 +64,12 @@ public class VectorIndexCacheTests : IDisposable
         // Scoring columns: authors are interned and shared across rows, popularity is the raw
         // rank, and a null one reads as Unknown rather than 0 (which would be "most popular").
         Assert.True(index.TryGetAuthorId("Miura", out var miura));
-        Assert.Contains(miura, index.AuthorsAt(actionRow));
-        Assert.Contains(miura, index.AuthorsAt(manhwaRow));
+        Assert.Contains(miura, index.AuthorsAt(actionRow).ToArray());
+        Assert.Contains(miura, index.AuthorsAt(manhwaRow).ToArray());
         Assert.Equal(3, index.PopularityAt(actionRow));
         Assert.True(index.TryGetRow(3, out var sparseRow));
         Assert.Equal(VectorIndex.Unknown, index.PopularityAt(sparseRow));
-        Assert.Empty(index.AuthorsAt(sparseRow));
+        Assert.Empty(index.AuthorsAt(sparseRow).ToArray());
     }
 
     [Fact]

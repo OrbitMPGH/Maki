@@ -1,11 +1,14 @@
 name: Docker
 
 on:
+  # Tags only. A push to main is not a release, and the version below is derived from a tag — a
+  # branch push has none, so it could only build something unversioned. Multi-arch buildx (arm64
+  # under qemu) is also slow enough that it has no business running on ordinary commits.
   push:
-    branches:
-      - main
     tags:
       - 'v*'
+  # Escape hatch for rebuilding an existing tag (a transient registry failure, a base image rebuilt
+  # under the same digest).
   workflow_dispatch:
     inputs:
       tag:
@@ -18,8 +21,46 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ci.yml runs on branch pushes and pull requests, so a tag push reaches the publish job below
+  # with nothing having checked the catalogues. The image embeds them — locales/*/server.po as
+  # resources in Maki.Api, locales/*/client.po bundled by Vite — so a catalogue that is stale or
+  # structurally broken at tag time ships to every user as silent English or a literal {count}.
+  # This is the same set of gates ci.yml runs, minus the built-bundle one, which needs a full
+  # frontend build and is not worth the minutes here. It is about the catalogues being in step
+  # with the source; whether they reached the image is asserted inside the Dockerfile itself, so
+  # that half covers a local build-release.ps1 run too.
+  catalogues:
+    name: Catalogues are in step
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Extraction and server keys are committed
+        run: |
+          npx lingui extract --clean
+          npm run i18n:check
+          git diff --exit-code ../locales
+
+      - name: Translations are structurally sound
+        run: npm run i18n:validate
+
   publish:
     name: Build and publish image
+    needs: catalogues
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production

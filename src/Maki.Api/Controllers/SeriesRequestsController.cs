@@ -1,6 +1,7 @@
-using Maki.Api.Auth;
+﻿using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
@@ -30,6 +31,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/requests")]
 public class SeriesRequestsController(
+    ILocalizer localizer,
     MakiDbContext db,
     IEnumerable<IMetadataProvider> metadataProviders,
     SeriesCreationService seriesCreation,
@@ -87,13 +89,13 @@ public class SeriesRequestsController(
     {
         if (!Enum.TryParse<SeriesRequestKind>(body.Kind, true, out var kind))
         {
-            return BadRequest(new { error = "Unknown request kind" });
+            return this.Fail(localizer, "error.requests.unknownKind");
         }
 
         var (start, end) = NormalizeRange(body.ChapterStart, body.ChapterEnd);
         if (start is not null && end is not null && end < start)
         {
-            return BadRequest(new { error = "The last chapter can't be lower than the first" });
+            return this.Fail(localizer, "error.requests.chapterRangeInvalid");
         }
 
         var request = new SeriesRequest
@@ -111,7 +113,7 @@ public class SeriesRequestsController(
         {
             if (string.IsNullOrWhiteSpace(body.MetadataProviderId))
             {
-                return BadRequest(new { error = "A series to request is required" });
+                return this.Fail(localizer, "error.requests.seriesRequired");
             }
 
             // Resolved from the provider rather than taken from the request body: the admin reviewing
@@ -120,7 +122,7 @@ public class SeriesRequestsController(
             var metadata = await metadataProviders.First().GetAsync(body.MetadataProviderId, ct);
             if (metadata is null)
             {
-                return BadRequest(new { error = "Series not found on metadata provider" });
+                return this.Fail(localizer, "error.requests.metadataNotFound");
             }
 
             if (metadata.MangaBakaId is int mangaBakaId)
@@ -136,7 +138,8 @@ public class SeriesRequestsController(
 
                 if (existing is not null)
                 {
-                    return Conflict(new { error = "Series already exists in library", seriesId = existing });
+                    const string key = "error.requests.seriesAlreadyExists";
+                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = existing });
                 }
             }
 
@@ -149,7 +152,7 @@ public class SeriesRequestsController(
         {
             if (body.SeriesId is not int seriesId)
             {
-                return BadRequest(new { error = "A series is required" });
+                return this.Fail(localizer, "error.requests.seriesIdRequired");
             }
 
             // Through the filter on purpose: a user may only request chapters of a series they can
@@ -180,7 +183,7 @@ public class SeriesRequestsController(
 
         if (duplicate)
         {
-            return Conflict(new { error = "You already have that request pending" });
+            return this.Conflict(localizer, "error.requests.alreadyPending");
         }
 
         db.SeriesRequests.Add(request);
@@ -191,8 +194,8 @@ public class SeriesRequestsController(
 
         await events.SeriesRequested(request.Id, request.Title, currentUser.UserName);
         inbox.Raise(InboxEventType.RequestSubmitted, new InboxMessage(
-                Title: "New request",
-                Body: $"{currentUser.UserName} requested {request.Title}",
+                Key: "inbox.request.submitted",
+                Params: InboxMessage.Args(new { user = currentUser.UserName, title = request.Title }),
                 Url: "/requests"),
             InboxAudience.Admins);
 
@@ -221,13 +224,13 @@ public class SeriesRequestsController(
 
         if (request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         var (start, end) = NormalizeRange(body.ChapterStart, body.ChapterEnd);
         if (start is not null && end is not null && end < start)
         {
-            return BadRequest(new { error = "The last chapter can't be lower than the first" });
+            return this.Fail(localizer, "error.requests.chapterRangeInvalid");
         }
 
         if (start == request.ChapterStart && end == request.ChapterEnd)
@@ -254,8 +257,8 @@ public class SeriesRequestsController(
             currentUser.UserName, request.Id, start, end);
 
         inbox.Raise(InboxEventType.RequestEdited, new InboxMessage(
-                Title: "Your request was adjusted",
-                Body: $"{request.Title}: now {RangeLabel(start, end)}",
+                Key: "inbox.request.edited",
+                Params: InboxMessage.Args(new { title = request.Title, range = RangeLabel(start, end) }),
                 Url: "/requests"),
             InboxAudience.User(request.UserId));
 
@@ -272,27 +275,68 @@ public class SeriesRequestsController(
             return NotFound();
         }
 
-        if (request.Status != SeriesRequestStatus.Pending)
-        {
-            return Conflict(new { error = "That request has already been resolved" });
-        }
-
         if (request.Kind == SeriesRequestKind.NewSeries && request.SeriesId is null)
         {
             if (body.RootFolderId is not int rootFolderId)
             {
-                return BadRequest(new { error = "Pick a root folder to add the series to" });
+                return this.Fail(localizer, "error.requests.rootFolderRequired");
             }
 
+            var claimedAt = DateTime.UtcNow;
+            var staleBefore = claimedAt.AddMinutes(-30);
+            var claimed = await db.SeriesRequests.IgnoreQueryFilters()
+                .Where(r => r.Id == id && (r.Status == SeriesRequestStatus.Pending ||
+                    r.Status == SeriesRequestStatus.Processing && r.ApprovalClaimedAtUtc < staleBefore))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, SeriesRequestStatus.Processing)
+                    .SetProperty(r => r.ApprovalClaimedAtUtc, claimedAt), ct);
+            if (claimed != 1)
+            {
+                // The claim is the guard now, so it has to answer both questions the old
+                // Status != Pending check answered: a request somebody already resolved reads as
+                // resolved, and only one that is still Pending and held by another admin reads as
+                // in progress.
+                var status = await db.SeriesRequests.IgnoreQueryFilters().AsNoTracking()
+                    .Where(r => r.Id == id).Select(r => (SeriesRequestStatus?)r.Status)
+                    .FirstOrDefaultAsync(ct);
+                return status is null or SeriesRequestStatus.Pending or SeriesRequestStatus.Processing
+                    ? this.Conflict(localizer, "error.requests.approvalInProgress")
+                    : this.Conflict(localizer, "error.requests.alreadyResolved");
+            }
+            // The claim went through ExecuteUpdate, which the change tracker never sees, so this
+            // entity still holds its pre-claim values. Assigning them by hand instead of reloading
+            // leaves the tracker thinking Processing was always the original: setting Status back to
+            // Pending on a failure then looks like no change at all and the release writes nothing,
+            // stranding the request until the stale window expires.
+            await db.Entry(request).ReloadAsync(ct);
+
             var result = await seriesCreation.CreateAsync(
-                request.MetadataProviderId!, rootFolderId, monitored: true, body.MonitorNewItems, ct);
+                request.MetadataProviderId!, rootFolderId, monitored: true, body.MonitorNewItems, ct,
+                attributedUserId: request.UserId, addedFrom: "request", originatingRequest: request,
+                clientMutationId: SeriesCreationResult.MutationIdFor(request));
 
             if (result.Series is null)
             {
+                // Everything except "somebody already added it" leaves the request unresolved, so
+                // the claim has to go back or it sits in Processing until the stale window expires.
+                if (result.Error is not SeriesCreationError.AlreadyInLibrary)
+                {
+                    request.Status = SeriesRequestStatus.Pending;
+                    request.ApprovalClaimedAtUtc = null;
+                    await db.SaveChangesAsync(ct);
+                }
                 return result.Error switch
                 {
-                    SeriesCreationError.RootFolderNotFound => BadRequest(new { error = "Root folder not found" }),
-                    SeriesCreationError.MetadataNotFound => BadRequest(new { error = "Series not found on metadata provider" }),
+                    SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.requests.rootFolderNotFound"),
+                    SeriesCreationError.MetadataNotFound => this.Fail(localizer, "error.requests.metadataNotFound"),
+                    // An earlier approval of this request committed a series that has since been
+                    // deleted. Not "already in library" and not a fresh add either: the receipt that
+                    // makes approval retry-safe is keyed on the request, so creating again here would
+                    // mean honouring it after its result was thrown away.
+                    SeriesCreationError.OperationResultGone =>
+                        this.Conflict(localizer, "error.requests.approvedSeriesDeleted"),
+                    SeriesCreationError.MutationIdReused =>
+                        this.Conflict(localizer, "error.requests.approvedElsewhere"),
                     // Somebody added it between the request and the approval. Nothing to do, but the
                     // request is genuinely satisfied — resolve it rather than making the admin reject
                     // a request whose outcome already happened.
@@ -311,22 +355,95 @@ public class SeriesRequestsController(
                     request.Id, result.Series.Title, string.Join(" ", result.Warnings));
             }
         }
+        else
+        {
+            var claimedAt = DateTime.UtcNow;
+            var staleBefore = claimedAt.AddMinutes(-30);
+            var claimed = await db.SeriesRequests.IgnoreQueryFilters()
+                .Where(r => r.Id == id && (r.Status == SeriesRequestStatus.Pending ||
+                    r.Status == SeriesRequestStatus.Processing && r.ApprovalClaimedAtUtc < staleBefore))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, SeriesRequestStatus.Processing)
+                    .SetProperty(r => r.ApprovalClaimedAtUtc, claimedAt), ct);
+            if (claimed != 1)
+                return this.Conflict(localizer, "error.requests.approvalInProgress");
+            // The claim went through ExecuteUpdate, which the change tracker never sees, so this
+            // entity still holds its pre-claim values. Assigning them by hand instead of reloading
+            // leaves the tracker thinking Processing was always the original: setting Status back to
+            // Pending on a failure then looks like no change at all and the release writes nothing,
+            // stranding the request until the stale window expires.
+            await db.Entry(request).ReloadAsync(ct);
+        }
 
-        var queued = request.SeriesId is int seriesId
-            ? await QueueRangeAsync(
-                seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct)
-            : 0;
+        int queued;
+        try
+        {
+            queued = request.SeriesId is int seriesId
+                ? await QueueRangeAsync(
+                    seriesId, request.Title, request.ChapterStart, request.ChapterEnd, request.UserId, ct)
+                : 0;
 
-        request.Status = SeriesRequestStatus.Approved;
-        request.QueuedCount = queued;
-        request.ResolvedAt = DateTime.UtcNow;
-        request.ResolvedByUserId = currentUser.UserId;
-        request.ResolutionNote = Trimmed(body.Note);
-        await db.SaveChangesAsync(ct);
+            request.Status = SeriesRequestStatus.Approved;
+            request.ApprovalClaimedAtUtc = null;
+            request.QueuedCount = queued;
+            request.ResolvedAt = DateTime.UtcNow;
+            request.ResolvedByUserId = currentUser.UserId;
+            request.ResolutionNote = Trimmed(body.Note);
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            // The save above is the only thing that clears the claim, so anything throwing before it
+            // would leave the request reading Processing for the whole stale window — and while it
+            // does, Reject and Delete both refuse it and a retried approval is refused too. The
+            // branches above release the claim for the failures they can name; this covers the rest.
+            //
+            // A cancellation is caught too, and deliberately: an admin closing the tab mid-approval
+            // is the ordinary way to reach this, and the claim has to go back for that as much as
+            // for a real failure.
+            logger.LogWarning(ex, "Releasing the approval claim on request {Id} after a failure", request.Id);
+            await ReleaseClaimAsync(request);
+            throw;
+        }
 
         NotifyResolved(request, approved: true, queued);
 
         return Ok((await ToDtosAsync([request], ct))[0]);
+    }
+
+    /// <summary>
+    /// Puts a claimed request back to Pending so it can be approved, rejected or withdrawn again.
+    /// <para>
+    /// Written straight to the row rather than through the change tracker: the tracked entity may be
+    /// holding a half-applied Approved state from the save that just failed, and a second
+    /// <c>SaveChangesAsync</c> on it would either write that or fail the same way. The series id and
+    /// title ride along because a NewSeries approval may have committed the series before the
+    /// failure — dropping them would orphan it from the request, and the mutation receipt keyed on
+    /// the request would refuse to create it again.
+    /// </para>
+    /// <para>
+    /// Takes no cancellation token on purpose. The commonest way to get here is the request's own
+    /// token being cancelled, and passing it on would cancel the release as well — stranding the
+    /// claim in exactly the case this exists for. Best effort otherwise: a release that cannot be
+    /// written leaves the stale window as the backstop.
+    /// </para>
+    /// </summary>
+    private async Task ReleaseClaimAsync(SeriesRequest request)
+    {
+        try
+        {
+            await db.SeriesRequests.IgnoreQueryFilters()
+                .Where(r => r.Id == request.Id && r.Status == SeriesRequestStatus.Processing)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, SeriesRequestStatus.Pending)
+                    .SetProperty(r => r.ApprovalClaimedAtUtc, (DateTime?)null)
+                    .SetProperty(r => r.SeriesId, request.SeriesId)
+                    .SetProperty(r => r.Title, request.Title), CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not release the approval claim on request {Id}", request.Id);
+        }
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -339,9 +456,16 @@ public class SeriesRequestsController(
             return NotFound();
         }
 
+        // Same split Delete makes: a request another admin is mid-approval on has not been resolved,
+        // and telling the rejecting admin it has sends them looking for a decision nobody took.
+        if (request.Status == SeriesRequestStatus.Processing)
+        {
+            return this.Conflict(localizer, "error.requests.approvalInProgress");
+        }
+
         if (request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         request.Status = SeriesRequestStatus.Rejected;
@@ -371,9 +495,14 @@ public class SeriesRequestsController(
             return NotFound();
         }
 
+        if (request.Status == SeriesRequestStatus.Processing)
+        {
+            return this.Conflict(localizer, "error.requests.approvalInProgress");
+        }
+
         if (!IsAdmin && request.Status != SeriesRequestStatus.Pending)
         {
-            return Conflict(new { error = "That request has already been resolved" });
+            return this.Conflict(localizer, "error.requests.alreadyResolved");
         }
 
         db.SeriesRequests.Remove(request);
@@ -428,7 +557,7 @@ public class SeriesRequestsController(
             }
         }
 
-        downloadBatches.Queued(seriesId, title, queuedItemIds, DownloadOrigin.RequestApproval);
+        await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds, DownloadOrigin.RequestApproval);
         return queuedItemIds.Count;
     }
 
@@ -452,6 +581,7 @@ public class SeriesRequestsController(
     private async Task<IActionResult> ResolveAsAlreadyPresentAsync(SeriesRequest request, CancellationToken ct)
     {
         request.Status = SeriesRequestStatus.Approved;
+        request.ApprovalClaimedAtUtc = null;
         request.QueuedCount = 0;
         request.ResolvedAt = DateTime.UtcNow;
         request.ResolvedByUserId = currentUser.UserId;
@@ -471,22 +601,24 @@ public class SeriesRequestsController(
     /// </summary>
     private void NotifyResolved(SeriesRequest request, bool approved, int queued)
     {
-        var body = approved
-            ? queued > 0
-                ? $"{request.Title}: {queued} chapter(s) queued for download"
-                : $"{request.Title} is in the library"
-            : request.Title;
-
-        if (request.ResolutionNote is { Length: > 0 } note)
-        {
-            body += $". {note}";
-        }
+        // Three sentences rather than one built by concatenation: "approved and queued", "approved,
+        // already here" and "declined" are different statements, and a language that reorders them
+        // cannot do so if they arrive as fragments. The resolution note rides along as `note`, which
+        // the renderer appends verbatim: it is the admin's own words and is not ours to translate.
+        var key = approved
+            ? queued > 0 ? "inbox.request.approvedQueued" : "inbox.request.approvedInLibrary"
+            : "inbox.request.declined";
 
         inbox.Raise(
             approved ? InboxEventType.RequestApproved : InboxEventType.RequestRejected,
             new InboxMessage(
-                Title: approved ? "Your request was approved" : "Your request was declined",
-                Body: body,
+                Key: key,
+                Params: InboxMessage.Args(new
+                {
+                    title = request.Title,
+                    queued,
+                    note = request.ResolutionNote is { Length: > 0 } n ? n : null,
+                }),
                 Level: approved ? NotificationLevel.Info : NotificationLevel.Warning,
                 SeriesId: approved ? request.SeriesId : null,
                 Url: approved && request.SeriesId is { } sid ? $"/series/{sid}" : "/requests"),

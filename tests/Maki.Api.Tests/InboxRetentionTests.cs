@@ -16,6 +16,7 @@ namespace Maki.Api.Tests;
 /// <see cref="HousekeepingJob"/> applies two rules and needs both: an age rule alone never touches
 /// somebody who has not opened the bell, and a cap alone keeps a year of acknowledged noise.
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class InboxRetentionTests : IDisposable
 {
     private readonly TestDb _db = new();

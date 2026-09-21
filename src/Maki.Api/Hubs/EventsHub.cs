@@ -164,6 +164,13 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("seriesRequested",
             new { requestId, title, requestedBy });
 
+    /// <summary>
+    /// Progress of the MangaBaka dump refresh. Admins only, like the rest of the instance
+    /// machinery: it is a 350 MB transfer nobody else can start, stop or act on.
+    /// </summary>
+    public Task DumpProgress(object progress) =>
+        hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("dumpProgress", progress);
+
     public Task UpdateAvailable(string latestVersion, string? releaseUrl) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("updateAvailable", new { latestVersion, releaseUrl });
 

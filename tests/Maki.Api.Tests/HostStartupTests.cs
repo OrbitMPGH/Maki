@@ -24,6 +24,7 @@ namespace Maki.Api.Tests;
 /// nothing scheduled runs inside the lifetime of the test.
 /// </para>
 /// </summary>
+[Collection(ConfigDirCollection.Name)]
 public class HostStartupTests : IDisposable
 {
     [Fact]

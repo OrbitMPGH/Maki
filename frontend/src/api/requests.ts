@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { t } from '@lingui/core/macro'
 import { api } from './client'
 
 export type SeriesRequestKind = 'NewSeries' | 'Chapters'
-export type SeriesRequestStatus = 'Pending' | 'Approved' | 'Rejected'
+export type SeriesRequestStatus = 'Pending' | 'Processing' | 'Approved' | 'Rejected'
 
 export interface SeriesRequest {
   id: number
@@ -127,10 +128,29 @@ export function useDeleteSeriesRequest() {
   })
 }
 
-/** "Ch. 12–40", "Ch. 12 onwards", "All chapters": one label for every combination of bounds. */
+/**
+ * "Ch. 12–40", "Ch. 12 onwards", "All chapters": one label for every combination of bounds.
+ *
+ * Called from a render path, so it relies on the calling page subscribing with `useLingui()`. This
+ * `t` reads the active catalogue when it runs; it does not make the caller re-render on its own.
+ */
 export function chapterRangeLabel(start: number | null, end: number | null): string {
-  if (start == null && end == null) return 'All chapters'
-  if (start != null && end != null) return start === end ? `Ch. ${start}` : `Ch. ${start}–${end}`
-  if (start != null) return `Ch. ${start} onwards`
-  return `Up to ch. ${end}`
+  if (start == null && end == null) return t`All chapters`
+  if (start != null && end != null) return start === end ? t`Ch. ${start}` : t`Ch. ${start}–${end}`
+  if (start != null) return t`Ch. ${start} onwards`
+  return t`Up to ch. ${end!}`
+}
+
+/**
+ * The same label mid-sentence: "asked for all chapters".
+ *
+ * Its own messages rather than `.toLowerCase()` on the one above, because case is not something you
+ * can apply to a translation. German capitalizes every noun, so lowercasing "Alle Kapitel" spells it
+ * wrong. Each language writes its own inline form.
+ */
+export function chapterRangeInline(start: number | null, end: number | null): string {
+  if (start == null && end == null) return t`all chapters`
+  if (start != null && end != null) return start === end ? t`ch. ${start}` : t`ch. ${start}–${end}`
+  if (start != null) return t`ch. ${start} onwards`
+  return t`up to ch. ${end!}`
 }

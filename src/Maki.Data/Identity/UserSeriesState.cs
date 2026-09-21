@@ -18,6 +18,9 @@ public class UserSeriesState : IUserOwned
     public int Id { get; set; }
     public int UserId { get; set; }
     public int SeriesId { get; set; }
+    public Series? Series { get; set; }
+    public DateTime? AddedToLibraryAtUtc { get; set; }
+    public string? AddedFrom { get; set; }
 
     /// <summary>
     /// The user's own rating on a 1–10 scale (null = unrated). Pushed as a score to <em>their</em>

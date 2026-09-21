@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Storage;
 using Maki.Data;
@@ -13,7 +14,7 @@ namespace Maki.Api.Controllers;
 // Admin-only: a root folder is a filesystem path the server will read and write, and listing them
 // discloses the host's directory layout.
 [Authorize(Policy = Policies.Admin)]
-public class RootFolderController(MakiDbContext db) : ControllerBase
+public class RootFolderController(ILocalizer localizer, MakiDbContext db) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -27,17 +28,17 @@ public class RootFolderController(MakiDbContext db) : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(folder.Path))
         {
-            return BadRequest(new { error = "path is required" });
+            return this.Fail(localizer, "error.rootFolder.pathRequired");
         }
 
         if (!Directory.Exists(folder.Path))
         {
-            return BadRequest(new { error = $"Folder does not exist: {folder.Path}" });
+            return this.Fail(localizer, "error.rootFolder.doesNotExist", new { path = folder.Path });
         }
 
         if (await db.RootFolders.AnyAsync(f => f.Path == folder.Path, ct))
         {
-            return Conflict(new { error = "Root folder already exists" });
+            return this.Conflict(localizer, "error.rootFolder.alreadyExists");
         }
 
         db.RootFolders.Add(folder);
@@ -56,7 +57,7 @@ public class RootFolderController(MakiDbContext db) : ControllerBase
 
         if (await db.Series.AnyAsync(s => s.RootFolderId == id, ct))
         {
-            return Conflict(new { error = "Root folder is in use by one or more series" });
+            return this.Conflict(localizer, "error.rootFolder.inUse");
         }
 
         db.RootFolders.Remove(folder);

@@ -4,6 +4,20 @@
     <InternalsVisibleTo Include="Maki.Api.Tests" />
   </ItemGroup>
 
+  <!--
+    The message catalogs live at the repo root rather than under this project, because the frontend
+    reads the same tree: one catalog means a term cannot be translated two different ways on the two
+    sides of the wire. Embedded rather than copied so `dotnet publish` needs no path juggling and an
+    operator has no half-editable copy sitting beside the binary. Only server.po is taken; the client
+    catalogs are Vite's business. Dockerfile copies locales/ into both build stages for this.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\locales\*\server.po">
+      <!-- The locale is the folder name, so lift it into the resource name: Maki.Locales.pt-BR.po. -->
+      <LogicalName>Maki.Locales.$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(FullPath)')))).po</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Maki.Core\Maki.Core.csproj" />
     <ProjectReference Include="..\Maki.Data\Maki.Data.csproj" />
@@ -12,6 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Karambolo.PO" Version="1.13.0" />
+    <PackageReference Include="MessageFormat" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

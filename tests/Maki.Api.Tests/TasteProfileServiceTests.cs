@@ -53,7 +53,6 @@ public class TasteProfileServiceTests : IDisposable
         return new TasteProfileService(
             _db.ScopeFactory(),
             new SeedWeightService(behavioural, effective, settings),
-            behavioural,
             new FakeStore(_rows),
             NoIndex(),
             // Same reasoning as NoIndex(): pointed at nothing, so GetAsync hands back null and the
@@ -162,9 +161,9 @@ public class TasteProfileServiceTests : IDisposable
         // The ChapterProgress rows exist for incognito reading, so this gate has to hold here too.
         Assert.Empty((await ProfileAsync(TasteView.Read)).Genres);
 
-        // The shelf view still owns the series, it just cannot claim it was read.
+        // Full-incognito titles remain owned for candidate exclusion but do not shape either profile.
         var shelf = await ProfileAsync(TasteView.Shelf);
-        Assert.Equal(1, shelf.SeriesCount);
+        Assert.Equal(0, shelf.SeriesCount);
     }
 
     [Fact]

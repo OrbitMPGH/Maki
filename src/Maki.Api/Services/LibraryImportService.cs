@@ -1,6 +1,7 @@
 ﻿using Maki.Api.Hubs;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Import;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
@@ -10,10 +11,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
+/// <param name="ComicCount">
+/// Comics in the folder, not CBZ files: a RAR volume, a plain zip and a folder of loose pages all
+/// count, because the import builds a CBZ out of each of them.
+/// </param>
 public record ImportScanCandidate(
     string FolderName,
     string CleanedTitle,
-    int CbzCount,
+    int ComicCount,
     int RecognizedCount,
     IReadOnlyList<MetadataSearchResult> Matches);
 
@@ -31,8 +36,10 @@ public record ImportResult(
 /// <summary>
 /// Imports an existing on-disk library: scans unclaimed folders in a root,
 /// matches them to metadata, applies the configured folder naming mode
-/// (<see cref="SettingKeys.LibraryFolderNamingMode"/>), and links existing
-/// CBZ files (kept under their original names) to synced chapters.
+/// (<see cref="SettingKeys.LibraryFolderNamingMode"/>), and links the comics it finds (kept under
+/// their original names) to synced chapters. A shelf that predates Maki is not all CBZ, so a RAR
+/// volume, a plain zip or a folder of loose pages becomes one too — see
+/// <see cref="MaterializeComics"/>, which never removes what it read.
 /// </summary>
 public class LibraryImportService(
     MakiDbContext db,
@@ -83,8 +90,8 @@ public class LibraryImportService(
                 continue;
             }
 
-            var cbzFiles = Directory.GetFiles(dir, "*.cbz", SearchOption.AllDirectories);
-            var recognized = cbzFiles.Count(f => ReleaseNameParser.ParseFileName(f).IsRecognized);
+            var comics = ComicSourceScanner.Scan(dir);
+            var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
             var cleanedTitle = ReleaseNameParser.CleanFolderTitle(folderName);
 
             IReadOnlyList<MetadataSearchResult> matches = [];
@@ -103,7 +110,7 @@ public class LibraryImportService(
                 logger.LogWarning(ex, "Metadata search failed for {Title}", cleanedTitle);
             }
 
-            candidates.Add(new ImportScanCandidate(folderName, cleanedTitle, cbzFiles.Length, recognized, matches));
+            candidates.Add(new ImportScanCandidate(folderName, cleanedTitle, comics.Count, recognized, matches));
         }
 
         return candidates;
@@ -217,7 +224,7 @@ public class LibraryImportService(
             logger.LogWarning(ex, "Source matching failed during import of {Title}", series.Title);
         }
 
-        var cbzFiles = Directory.GetFiles(targetDir, "*.cbz", SearchOption.AllDirectories);
+        var cbzFiles = MaterializeComics(targetDir);
         var linkStage = updateComicInfo ? "Updating ComicInfo" : "Linking files";
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
@@ -296,7 +303,7 @@ public class LibraryImportService(
             }
         }
 
-        var cbzFiles = Directory.GetFiles(targetDir, "*.cbz", SearchOption.AllDirectories);
+        var cbzFiles = MaterializeComics(targetDir);
         var linkStage = updateComicInfo ? "Updating ComicInfo" : "Linking files";
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
@@ -304,6 +311,51 @@ public class LibraryImportService(
             updateComicInfo, ct: ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
+    }
+
+    /// <summary>
+    /// The folder's CBZ files, building one for anything that is not a CBZ yet. A shelf that
+    /// predates Maki is full of RAR volumes, plain zips and folders of loose pages, and every one
+    /// of them was invisible here — indistinguishable, from the outside, from an empty folder.
+    /// <para>
+    /// The original is always left where it is. This is the user's own library rather than a
+    /// download, so nothing here may be the reason a file they still want disappears; a zip is
+    /// hardlinked under its new name, so the common case costs no disk either.
+    /// </para>
+    /// </summary>
+    private List<string> MaterializeComics(string targetDir)
+    {
+        var files = new List<string>();
+        foreach (var source in ComicSourceScanner.Scan(targetDir))
+        {
+            if (source.Kind == ComicSourceKind.Cbz)
+            {
+                files.Add(source.Path);
+                continue;
+            }
+
+            var target = Path.Combine(targetDir, source.Name);
+            if (File.Exists(target))
+            {
+                files.Add(target);
+                continue;
+            }
+
+            try
+            {
+                ComicSourceConverter.Materialize(source, target);
+                logger.LogInformation(
+                    "Built {Target} from {Source}", source.Name, Path.GetFileName(source.Path));
+                files.Add(target);
+            }
+            catch (Exception ex)
+            {
+                // One unreadable archive must not cost the folder its other files.
+                logger.LogWarning(ex, "Could not build a CBZ from {Source}", source.Path);
+            }
+        }
+
+        return files;
     }
 
     private async Task<string> GetFolderNamingModeAsync(CancellationToken ct)

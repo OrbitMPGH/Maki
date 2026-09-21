@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using System.Numerics.Tensors;
 using System.Runtime.InteropServices;
 
@@ -166,6 +166,123 @@ public static class EmbeddingMath
         var packed = new sbyte[query.Length];
         scale = Quantize(query, packed);
         return packed;
+    }
+
+    /// <summary>
+    /// Levels either side of zero in a packed element. Four bits hold -8..7; the codec is symmetric
+    /// like <see cref="Quantize"/>, so -8 is left unused rather than giving the negative side a
+    /// step the positive side has no answer for.
+    /// </summary>
+    public const int PackedLevels = 7;
+
+    /// <summary>
+    /// Narrowest vector that is packed. Below it rows are stored one int8 per byte, unchanged.
+    ///
+    /// <para>
+    /// Packing is only free because the per-element error averages out across the dot product, so
+    /// it gets safer as vectors get wider and the floor is the honest expression of that. Measured:
+    /// free at 768 (the only width that ships), and at 128 — the behavioural layer — the same
+    /// change cost -0.0015 nDCG@40, 95% [-0.0032, +0.0001], which is not a result but is not
+    /// nothing either. Nothing between those two widths has been measured, so this sits well above
+    /// the one that looked borderline rather than splitting the difference.
+    /// </para>
+    /// </summary>
+    public const int PackMinimumDimensions = 512;
+
+    /// <summary>Whether a row this wide is stored as 4-bit levels rather than int8.</summary>
+    public static bool ShouldPack(int dimensions) => dimensions >= PackMinimumDimensions;
+
+    /// <summary>Bytes a stored row of <paramref name="dimensions"/> elements occupies.</summary>
+    public static int PackedStride(int dimensions) =>
+        ShouldPack(dimensions) ? (dimensions + 1) / 2 : dimensions;
+
+    /// <summary>
+    /// Packs an int8 row into 4-bit levels, two to a byte, and returns the factor the row's scale
+    /// has to be multiplied by for a level to still stand for the same number.
+    ///
+    /// <para>
+    /// Halves what the index holds — the packed vectors are the single largest allocation in the
+    /// process, 93 MB against 46 MB at catalogue scale — and measured free: over 500 held-out
+    /// reader libraries with the behavioural channel off, nDCG@40 moved +0.0010, bootstrap 95%
+    /// [-0.0009, +0.0030], and over 400 requests on the independent MangaUpdates grader -0.0003,
+    /// 95% [-0.0011, +0.0004]. Opposite signs and tight intervals, which is what no effect looks
+    /// like. 768 dimensions is what makes it free: the per-element error averages out of a dot
+    /// product that wide. Do NOT extend this to the behavioural vectors, which are 128 and where
+    /// the same change measured -0.0015, 95% [-0.0032, +0.0001].
+    /// </para>
+    ///
+    /// <para>
+    /// An odd final element packs into the low nibble of the last byte and leaves the high one
+    /// zero, which unpacks as a zero contribution rather than reading past the row.
+    /// </para>
+    /// </summary>
+    public static float PackQuantized(ReadOnlySpan<sbyte> row, Span<byte> dest)
+    {
+        if (!ShouldPack(row.Length))
+        {
+            MemoryMarshal.AsBytes(row).CopyTo(dest);
+            return 1f;
+        }
+
+        // Byte i holds element i in the low nibble and element i + dest.Length in the high one,
+        // rather than the adjacent pair. Both halves of an unpacked row are then contiguous runs of
+        // one nibble each, which is what lets UnpackQuantized do it in vector lanes instead of
+        // interleaved scalar writes.
+        var step = 127f / PackedLevels;
+        for (var i = 0; i < dest.Length; i++)
+        {
+            var low = Level(row[i], step);
+            var high = i + dest.Length < row.Length ? Level(row[i + dest.Length], step) : 0;
+            dest[i] = (byte)((low & 0x0F) | (high << 4));
+        }
+
+        return step;
+
+        static int Level(sbyte value, float step) =>
+            Math.Clamp((int)MathF.Round(value / step), -PackedLevels, PackedLevels);
+    }
+
+    /// <summary>
+    /// Expands a packed row into one sbyte per dimension. The values are LEVELS, not the int8s they
+    /// came from, so they are only meaningful against a scale that has been through
+    /// <see cref="PackQuantized"/>.
+    /// </summary>
+    public static void UnpackQuantized(ReadOnlySpan<byte> packed, Span<sbyte> dest)
+    {
+        if (!ShouldPack(dest.Length))
+        {
+            packed.CopyTo(MemoryMarshal.AsBytes(dest));
+            return;
+        }
+
+        var half = packed.Length;
+        var signed = MemoryMarshal.Cast<byte, sbyte>(packed);
+        var i = 0;
+        var width = Vector<sbyte>.Count;
+        if (Vector.IsHardwareAccelerated && packed.Length >= width)
+        {
+            // Shifting left then arithmetic-right is what sign-extends a nibble; the high half only
+            // needs the arithmetic shift. Both halves are whole lanes because of the layout
+            // PackQuantized writes.
+            for (; i <= packed.Length - width && i + half + width <= dest.Length; i += width)
+            {
+                var v = new Vector<sbyte>(signed.Slice(i, width));
+                Vector.ShiftRightArithmetic(Vector.ShiftLeft(v, 4), 4).CopyTo(dest.Slice(i, width));
+                Vector.ShiftRightArithmetic(v, 4).CopyTo(dest.Slice(i + half, width));
+            }
+        }
+
+        for (; i < packed.Length; i++)
+        {
+            var b = packed[i];
+            // Through sbyte in both halves: an int shift would not sign-extend a nibble, and every
+            // negative level would read back as a large positive one.
+            dest[i] = (sbyte)((sbyte)(b << 4) >> 4);
+            if (i + half < dest.Length)
+            {
+                dest[i + half] = (sbyte)((sbyte)b >> 4);
+            }
+        }
     }
 
     /// <summary>
@@ -352,6 +469,13 @@ public static class EmbeddingMath
     /// <c>distribution/fit-weights.cs</c>: fitting the coefficients needs the terms unblended, and
     /// recomputing them outside the scorer would be a second copy of every channel.
     /// </summary>
+    /// <param name="Avoid">
+    /// The BLENDED avoid score, which is what the scorer subtracts.
+    /// </param>
+    /// <param name="AvoidTag">
+    /// The contrastive tag half on its own, carried beside the blend so a fit can see which of the
+    /// two halves a coefficient it likes is really following.
+    /// </param>
     /// <param name="Percentile">
     /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
     /// likes is really just fame, which is the failure every table in this codebase is read against.
@@ -367,7 +491,9 @@ public static class EmbeddingMath
         double CoRead,
         double Taste,
         double Distinct,
-        double Percentile);
+        double Percentile,
+        double Avoid,
+        double AvoidTag = 0);
 
     public sealed record Weights(
         double Semantic = 3.0,
@@ -379,7 +505,16 @@ public static class EmbeddingMath
         double Graph = 0.0,
         double CoRead = 0.0,
         double Distinct = 0.0,
-        double Taste = 0.0);
+        double Taste = 0.0,
+        // 12, the `rel-p12` configuration: RecommenderTuning.AvoidNeutralize Relative,
+        // AvoidBlend Product, AvoidRelativeMargin 1.0, AvoidFloor 0.45, AvoidTagMinSupport 2,
+        // AvoidTagMargin 1.0. A large coefficient on a penalty that is almost always zero: the
+        // Product blend fires only where a neutralized semantic score and a contrastive tag score
+        // are both positive, which on a real page is a handful of rows. Measured at nDCG@40 +0.0003
+        // [+0.0001, +0.0006] and median pick popularity 1,522 against the default's 1,448, the
+        // first configuration in three phases inside that band. See distribution/CLAUDE.md,
+        // "v5.2: negative signals, neutralized", including what it does NOT do.
+        double Avoid = 12.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
@@ -406,12 +541,18 @@ public static class EmbeddingMath
     /// appear in both. Agreement is therefore genuine corroboration and worth paying for twice;
     /// folding them into one term would throw that away.
     /// </para>
+    /// <paramref name="avoidScore"/> ∈ [0,1] is how much this candidate resembles the titles the
+    /// reader said they wanted less of, and it is the only term here that SUBTRACTS. It is a
+    /// separate channel rather than a negative seed weight because the seed queries are built from a
+    /// weighted centroid: a negative weight there moves the centroid to a point on the sphere that
+    /// stands for nothing, and every candidate is then scored against that point. 0 means no
+    /// resemblance to anything avoided, which is the common case and must cost nothing.
     /// </summary>
     public static double HybridScore(
         double cosine, double genreSum, double tagScore, bool authorMatch, double rating0To100,
         double obscuritySlider, double percentile, Weights w,
         double graphScore = 0, double coReadScore = 0, double distinctiveness = 0,
-        double tasteCosine = 0) =>
+        double tasteCosine = 0, double avoidScore = 0) =>
         (w.Semantic * cosine)
         + (w.Taste * tasteCosine)
         + (w.Genre * genreSum)
@@ -421,5 +562,6 @@ public static class EmbeddingMath
         + (w.CoRead * coReadScore)
         + (w.Obscurity * obscuritySlider * (percentile - 0.5))
         + (w.Graph * graphScore)
-        + (w.Distinct * distinctiveness);
+        + (w.Distinct * distinctiveness)
+        - (w.Avoid * avoidScore);
 }

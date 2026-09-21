@@ -21,9 +21,14 @@ public class SourceMappingControllerTests : IDisposable
 
     private SourceMappingController BuildController(
         SourceAvailability? availability = null, params ISource[] sources) =>
-        new(_db.NewContext(),
+        BuildController(new FakeAppSettings(), availability, sources);
+
+    private SourceMappingController BuildController(
+        FakeAppSettings appSettings, SourceAvailability? availability, params ISource[] sources) =>
+        new(new TestLocalizer(),
+            _db.NewContext(),
             new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]),
-            new FakeAppSettings(), availability ?? Sources.AllEnabled, _queue,
+            appSettings, availability ?? Sources.AllEnabled, _queue,
             // Every compare path exercised here is rejected before the preview service is reached.
             null!, null!, null!, new TestCurrentUser(1));
 
@@ -47,6 +52,25 @@ public class SourceMappingControllerTests : IDisposable
     private static int QueuedCount(IActionResult result) =>
         (int)Assert.IsType<OkObjectResult>(result).Value!.GetType()
             .GetProperty("queued")!.GetValue(Assert.IsType<OkObjectResult>(result).Value)!;
+
+    [Fact]
+    public async Task A_source_publishing_no_enabled_language_ranks_after_every_ranked_one()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var appSettings = new FakeAppSettings()
+            .Set(Core.Configuration.SettingKeys.SourcePriorityOrder, "senmanga,english");
+        var controller = BuildController(
+            appSettings,
+            null,
+            new FakeSource { Name = "senmanga", SupportedLanguages = ["ja"] },
+            new FakeSource { Name = "english" });
+
+        var result = await controller.Create(
+            new(seriesId, "senmanga", "sid", "https://senmanga.test/s"), default);
+
+        var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(2, mapping.Priority);
+    }
 
     [Fact]
     public async Task Flags_the_series_and_hands_it_to_the_worker()
@@ -145,6 +169,7 @@ public class SourceMappingControllerTests : IDisposable
     public async Task Deleting_files_during_cleanup_requires_delete_series_permission()
     {
         var controller = new SourceMappingController(
+            new TestLocalizer(),
             _db.NewContext(),
             new SourceRegistry([new FakeSource { Name = "fake" }]),
             new FakeAppSettings(),
@@ -184,6 +209,7 @@ public class SourceMappingControllerTests : IDisposable
             settings,
             NullLogger<ChapterSyncService>.Instance);
         var controller = new SourceMappingController(
+            new TestLocalizer(),
             db,
             registry,
             settings,
@@ -238,6 +264,7 @@ public class SourceMappingControllerTests : IDisposable
             settings,
             NullLogger<ChapterSyncService>.Instance);
         var controller = new SourceMappingController(
+            new TestLocalizer(),
             db,
             registry,
             settings,

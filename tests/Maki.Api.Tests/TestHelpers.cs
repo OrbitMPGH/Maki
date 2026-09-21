@@ -62,9 +62,14 @@ internal sealed class RecordingInbox() : InboxService(
 /// own private copy of this; new tests should use this one.
 /// </summary>
 internal sealed class TestCurrentUser(
-    int userId, string userName = "test", MakiPermission permissions = MakiPermission.Admin) : ICurrentUser
+    int userId,
+    string userName = "test",
+    MakiPermission permissions = MakiPermission.Admin,
+    bool authenticated = true) : ICurrentUser
 {
-    public bool IsAuthenticated => true;
+    // Defaults to true because almost every test wants a signed-in caller. Settable for the few
+    // that care what happens to an anonymous request.
+    public bool IsAuthenticated { get; } = authenticated;
     public int UserId { get; } = userId;
     public string UserName { get; } = userName;
     public MakiPermission Permissions { get; } = permissions;
@@ -87,10 +92,15 @@ internal sealed class StoppedClock(DateTimeOffset now) : TimeProvider
 /// </summary>
 internal static class Sources
 {
-    public static SourceAvailability AllEnabled => new(new FakeAppSettings());
+    // Empty registry: the language-default pass in SourceAvailability only iterates registered
+    // sources, so an empty one leaves these two helpers exactly as advertised — nothing gets
+    // disabled by the pass that a test didn't ask for.
+    public static SourceAvailability AllEnabled => new(new FakeAppSettings(), new SourceRegistry([]));
 
     public static SourceAvailability Disabled(params string[] names) =>
-        new(new FakeAppSettings().Set(SettingKeys.SourcesDisabled, string.Join(',', names)));
+        new(
+            new FakeAppSettings().Set(SettingKeys.SourcesDisabled, string.Join(',', names)),
+            new SourceRegistry([]));
 
     /// <summary>
     /// A resolver whose named sources all report a single chapter numbered 1 — enough for tests that

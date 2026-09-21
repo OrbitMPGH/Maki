@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react'
 import { useLocation, useNavigate, useNavigationType, type Location } from 'react-router-dom'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { pageTitle } from '../nav'
 
 /**
@@ -22,8 +24,15 @@ interface HistoryEntry {
   key: string
   pathname: string
   search: string
-  /** What a link pointing back here should read. Pages can override it, see {@link usePageLabel}. */
-  label: string
+  /**
+   * What a link pointing back here should read. Pages can override it, see {@link usePageLabel}.
+   *
+   * Either a descriptor, for the names this app gives its own pages, or a plain string, for the
+   * ones a page takes from its data (a series title, a creator's name). Kept unrendered because
+   * this stack outlives a language change: rendering here would leave the back link naming the
+   * page in whatever language was active when you walked past it.
+   */
+  label: string | MessageDescriptor
 }
 
 interface NavHistory {
@@ -34,14 +43,13 @@ interface NavHistory {
 const NavHistoryContext = createContext<NavHistory>({ entries: [], setLabel: () => {} })
 
 function entryFor(location: Location): HistoryEntry {
-  const label = pageTitle(location.pathname)
-  // `pageTitle` answers "Maki" for anything it does not recognise, which is a window title, not a
-  // back link. Those pages either register a real label or get the generic word.
   return {
     key: location.key,
     pathname: location.pathname,
     search: location.search,
-    label: label === 'Maki' ? 'Back' : label,
+    // `pageTitle` answers null for anything it does not recognise. Those pages either register a
+    // real label of their own or get the generic word.
+    label: pageTitle(location.pathname) ?? msg`Back`,
   }
 }
 
@@ -115,7 +123,7 @@ interface BackClick {
 
 export interface BackTarget {
   /** Link text: "Discover", "Add series", the title of the series you came from. */
-  label: string
+  label: string | MessageDescriptor
   /** Real href, so middle-click and ctrl-click still open the origin in a tab. */
   to: string
   /** Walks the history back to the origin. Falls through to the plain link when there is none. */
@@ -131,7 +139,7 @@ export interface BackTarget {
  * button steps through them). Those all share a pathname, so skipping them takes one comparison
  * and no per-page knowledge, and the distance covers them in a single jump.
  */
-export function useBackTarget(fallback: { to: string; label: string }): BackTarget {
+export function useBackTarget(fallback: { to: string; label: string | MessageDescriptor }): BackTarget {
   const { entries } = useContext(NavHistoryContext)
   const location = useLocation()
   const navigate = useNavigate()

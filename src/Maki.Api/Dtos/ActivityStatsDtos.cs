@@ -41,10 +41,11 @@ public record ActivitySeriesTimeDto(int? SeriesId, string Title, int Seconds, st
 public record ActivityWeightedNameDto(string Name, int Weight);
 
 /// <summary>
-/// CoverUrl is null for a series that has since been removed: the title is denormalized onto the
-/// event and survives, the cover file does not.
+/// CoverUrl is null for a series that has since been removed unless its removal snapshot preserved
+/// the provider cover. ProviderId is populated for removed series that can open in Discover.
 /// </summary>
-public record ActivitySeriesEventDto(int? SeriesId, string Title, DateTime At, string? CoverUrl);
+public record ActivitySeriesEventDto(
+    int? SeriesId, string Title, DateTime At, string? CoverUrl, string? ProviderId);
 
 public record ActivityDroppedSeriesDto(
     int? SeriesId, string Title, DateTime LastProgressAt, double MaxChapter, string? CoverUrl);

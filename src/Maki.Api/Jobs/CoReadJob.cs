@@ -19,7 +19,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class CoReadJob(
-    CoReadInstaller installer, ILogger<CoReadJob> logger) : IJob
+    CoReadInstaller installer, ArtifactBuildGate gate, ILogger<CoReadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("coread-graph");
 
@@ -32,6 +32,9 @@ public class CoReadJob(
 
         try
         {
+            // One heavy build at a time across every job here; see ArtifactBuildGate.
+            using var build = await gate.EnterAsync(nameof(CoReadJob), context.CancellationToken);
+
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {

@@ -79,8 +79,14 @@ if (!File.Exists(path))
 
 // Column order is the header eval-reco-labels.cs writes. Popularity is last and is held out of the
 // shipped fit.
-string[] names = ["semantic", "genre", "tag", "author", "quality", "graph", "coread", "taste", "distinct"];
-const int PopColumn = 9;
+// `avoid` is the one column the score SUBTRACTS, so a fit that likes the channel returns a
+// NEGATIVE coefficient here and the variant string below negates it back into wavoid.
+// `avoidtag` is the contrastive tag half of that column on its own. It is held out of every fit the
+// way popularity is, and for the same reason: the scorer has no coefficient for it, so a number
+// fitted against it could not be expressed as a variant. It is read to be reported.
+string[] names = ["semantic", "genre", "tag", "author", "quality", "graph", "coread", "taste", "distinct", "avoid"];
+const int AvoidTagColumn = 10;
+const int PopColumn = 11;
 var featureCount = names.Length;
 
 var byRequest = new Dictionary<int, (List<double[]> Positive, List<double[]> Negative)>();
@@ -91,15 +97,15 @@ using (var reader = new StreamReader(path))
     while (reader.ReadLine() is { } line)
     {
         var parts = line.Split(',');
-        if (parts.Length < featureCount + 3)
+        if (parts.Length < featureCount + 4)
         {
             continue;
         }
 
         var request = int.Parse(parts[0], CultureInfo.InvariantCulture);
         var label = parts[1] == "1";
-        var vector = new double[featureCount + 1];
-        for (var f = 0; f <= featureCount; f++)
+        var vector = new double[featureCount + 2];
+        for (var f = 0; f <= featureCount + 1; f++)
         {
             vector[f] = double.Parse(parts[f + 2], CultureInfo.InvariantCulture);
         }
@@ -169,6 +175,7 @@ var shipped = new Dictionary<string, double>
     ["coread"] = 0.15,
     ["taste"] = 1.5,
     ["distinct"] = 0.0,
+    ["avoid"] = 0.0,
 };
 
 var baseline = names.Select(n => shipped[n]).ToArray();
@@ -183,6 +190,17 @@ Console.WriteLine();
 Report("DIAGNOSTIC (popularity available to the fit)", withPop, includePop: true);
 Console.WriteLine();
 
+// Not a coefficient, a sanity check on the contrastive profile: if the tag half never fires then
+// every blend that multiplies by it is inert, and a sweep over the weight is measuring nothing.
+var avoidTagRelevant = usable.SelectMany(r => r.Value.Positive).Select(v => v[AvoidTagColumn]).ToList();
+var avoidTagRest = usable.SelectMany(r => r.Value.Negative).Select(v => v[AvoidTagColumn]).ToList();
+Console.WriteLine(
+    $"avoidtag : {avoidTagRelevant.Count(v => v > 0) + avoidTagRest.Count(v => v > 0):N0} of " +
+    $"{avoidTagRelevant.Count + avoidTagRest.Count:N0} candidates carry a contrastive avoided tag " +
+    $"(mean {avoidTagRelevant.DefaultIfEmpty(0).Average():F4} on relevant, " +
+    $"{avoidTagRest.DefaultIfEmpty(0).Average():F4} on the rest)");
+Console.WriteLine();
+
 // The score is linear, so its ranking is invariant to a global scale. Rescaling to the shipped
 // semantic coefficient is what makes the fitted numbers readable next to the ones already written
 // down, rather than a vector of unfamiliar magnitudes that says nothing at a glance.
@@ -195,6 +213,12 @@ var overrides = new List<string>();
 for (var f = 0; f < featureCount; f++)
 {
     var value = Math.Round(scaled[f], 2);
+    // The scorer subtracts the avoid term, so a fitted coefficient of -2 means wavoid=2.
+    if (names[f] == "avoid")
+    {
+        value = -value;
+    }
+
     var key = names[f] == "taste" ? "tasteweight" : $"w{names[f]}";
     overrides.Add($"{key}={value.ToString("0.##", CultureInfo.InvariantCulture)}");
     Console.WriteLine(

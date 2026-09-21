@@ -1,4 +1,4 @@
-using Maki.Core.Entities;
+﻿using Maki.Core.Entities;
 
 namespace Maki.Core.Metadata;
 
@@ -38,9 +38,10 @@ public record SeriesMetadata
     public string? OriginalTitle { get; init; }
     /// <summary>
     /// Other primary titles besides <see cref="Title"/> (English) and <see cref="OriginalTitle"/>
-    /// (native script) — e.g. romanized or other-language primary titles.
+    /// (native script), each tagged with the language it is written in — romanizations and the
+    /// provider's primary titles in every other language it carries.
     /// </summary>
-    public IReadOnlyList<string> AltTitles { get; init; } = [];
+    public IReadOnlyList<LocalizedTitle> AltTitles { get; init; } = [];
     public string? Description { get; init; }
     public string? CoverUrl { get; init; }
     public int? Year { get; init; }

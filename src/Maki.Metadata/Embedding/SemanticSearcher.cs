@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Metadata.Catalogue;
@@ -376,23 +377,33 @@ public class SemanticSearcher(
         }
 
         // Tag blobs live in the in-memory index, so this is a scan over packed bytes rather than
-        // a keyed read per candidate.
-        var scores = new double[index.Count];
-        Parallel.For(
-            0,
-            index.Count,
-            new ParallelOptions { CancellationToken = ct },
-            row => scores[row] = index.Matches(row, plan)
-                ? ScoreAgainstQueryTags(index.TagsAt(row), profile, Idf)
-                : 0);
-
+        // a keyed read per candidate. Rented: a double per catalogue row is a megabyte, and a
+        // Large Object Heap allocation of it per query never comes back to the OS.
+        var scores = ArrayPool<double>.Shared.Rent(index.Count);
         var scored = new List<(int Row, double Score)>();
-        for (var row = 0; row < scores.Length; row++)
+        try
         {
-            if (scores[row] > 0)
+            Parallel.For(
+                0,
+                index.Count,
+                new ParallelOptions { CancellationToken = ct },
+                row => scores[row] = index.Matches(row, plan)
+                    ? ScoreAgainstQueryTags(index.TagsAt(row), profile, Idf)
+                    : 0);
+
+            // Bounded on the index, not on the buffer: a rented array is longer than the rows it
+            // was asked for and the tail holds the previous caller's scores.
+            for (var row = 0; row < index.Count; row++)
             {
-                scored.Add((row, scores[row]));
+                if (scores[row] > 0)
+                {
+                    scored.Add((row, scores[row]));
+                }
             }
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(scores);
         }
 
         scored.Sort((a, b) => b.Score.CompareTo(a.Score));

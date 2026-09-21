@@ -17,6 +17,8 @@ import {
 } from '@mantine/core'
 import { IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
 import {
@@ -29,9 +31,10 @@ import {
   type ScrobbleConnection,
   type ScrobbleUnmatchedItem,
 } from '../api/hooks'
+import { formatDateTime } from '../format'
 
 function fmtTime(iso: string | null | undefined): string {
-  return iso ? new Date(iso).toLocaleString() : '-'
+  return iso ? formatDateTime(iso) : '-'
 }
 
 function statusColor(status: string | null): string {
@@ -52,11 +55,13 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const disconnect = useScrobbleDisconnect()
 
   const dotColor = connection.connected ? 'green' : connection.configured ? 'red' : 'gray'
-  const state = connection.connected
-    ? (connection.username ?? 'connected')
-    : connection.configured
-      ? 'configured, not connected'
-      : 'not configured (see Settings)'
+  const state = connection.connected ? (
+    (connection.username ?? <Trans>connected</Trans>)
+  ) : connection.configured ? (
+    <Trans>configured, not connected</Trans>
+  ) : (
+    <Trans>not configured (see Settings)</Trans>
+  )
 
   const connect = () => {
     authStart.mutate(connection.service, {
@@ -87,11 +92,11 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
                 })
               }
             >
-              Disconnect
+              <Trans>Disconnect</Trans>
             </Button>
           ) : (
             <Button size="compact-sm" loading={authStart.isPending} onClick={connect}>
-              Connect
+              <Trans>Connect</Trans>
             </Button>
           )}
         </Group>
@@ -101,6 +106,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
 }
 
 function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
+  const { t } = useLingui()
   const match = useScrobbleMatch()
   const ignore = useScrobbleIgnore()
   const [input, setInput] = useState('')
@@ -134,7 +140,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           {item.candidates.map((c) => (
             <Group key={c.id} gap="xs">
               <Button size="compact-xs" variant="light" onClick={() => assign(c.id)}>
-                Use
+                <Trans>Use</Trans>
               </Button>
               <Text size="sm" component="a" href={c.url} target="_blank" rel="noopener" c="brand.4">
                 {c.title}
@@ -147,13 +153,13 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
         <TextInput
           size="xs"
           style={{ flex: 1 }}
-          placeholder="Paste series URL or numeric id…"
+          placeholder={t`Paste series URL or numeric id…`}
           value={input}
           onChange={(e) => setInput(e.currentTarget.value)}
           onKeyDown={(e) => e.key === 'Enter' && assign(input)}
         />
         <Button size="compact-sm" onClick={() => assign(input)} loading={match.isPending}>
-          Assign
+          <Trans>Assign</Trans>
         </Button>
         <Button
           size="compact-sm"
@@ -167,7 +173,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
             )
           }
         >
-          Ignore
+          <Trans>Ignore</Trans>
         </Button>
       </Group>
     </Card>
@@ -175,6 +181,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
 }
 
 export default function ScrobblePage() {
+  const { t } = useLingui()
   const { data, error } = useScrobbleStatus()
   const syncNow = useScrobbleSyncNow()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -184,7 +191,7 @@ export default function ScrobblePage() {
     const connected = searchParams.get('connected')
     const oauthError = searchParams.get('error')
     if (connected) {
-      notifications.show({ message: `${connected} connected`, color: 'green' })
+      notifications.show({ message: now`${connected} connected`, color: 'green' })
     }
     if (oauthError) {
       notifications.show({ message: oauthError, color: 'red', autoClose: 10000 })
@@ -195,17 +202,33 @@ export default function ScrobblePage() {
   }, [searchParams, setSearchParams])
 
   const anyTrackerConnected = data?.connections.some((c) => c.service !== 'kavita' && c.connected)
+  const intervalMinutes = data?.intervalMinutes ?? 30
+  const lastSync = fmtTime(data?.lastSyncAt)
+  const nextSync = fmtTime(data?.nextSyncAt)
 
   return (
     <>
       <PageHeader
-        title="Scrobble"
-        description={`Reads reading progress from Kavita and pushes forward-only updates to your trackers every ${data?.intervalMinutes ?? 30} minutes. Remote progress is never lowered and completed entries are never demoted. Configure credentials in Settings.`}
+        title={t`Scrobble`}
+        description={
+          <Trans>
+            Reads reading progress from Kavita and pushes forward-only updates to your trackers every{' '}
+            <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Remote progress is never
+            lowered and completed entries are never demoted. Configure credentials in Settings.
+          </Trans>
+        }
         actions={
           <Group gap="sm">
             <Text size="xs" c="dimmed" ta="right" className="tnum">
-              {data?.running ? 'sync running… · ' : ''}
-              last {fmtTime(data?.lastSyncAt)} · next {fmtTime(data?.nextSyncAt)}
+              {data?.running ? (
+                <Trans>
+                  sync running… · last {lastSync} · next {nextSync}
+                </Trans>
+              ) : (
+                <Trans>
+                  last {lastSync} · next {nextSync}
+                </Trans>
+              )}
             </Text>
             <Button
               leftSection={<IconRefresh size={16} />}
@@ -217,7 +240,7 @@ export default function ScrobblePage() {
                 })
               }
             >
-              Sync now
+              <Trans>Sync now</Trans>
             </Button>
           </Group>
         }
@@ -230,14 +253,16 @@ export default function ScrobblePage() {
       )}
 
       <Title order={4} mb="sm">
-        Connections
+        <Trans>Connections</Trans>
       </Title>
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} mb="lg">
         {data?.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)}
       </SimpleGrid>
 
       <Group gap="xs" mb="sm">
-        <Title order={4}>Needs review</Title>
+        <Title order={4}>
+          <Trans>Needs review</Trans>
+        </Title>
         {data && data.unmatched.length > 0 && (
           <Badge variant="light" color="yellow">
             {data.unmatched.length}
@@ -252,68 +277,85 @@ export default function ScrobblePage() {
         </Stack>
       ) : (
         <Text size="sm" c="dimmed" mb="lg">
-          Nothing needs review.
+          <Trans>Nothing needs review.</Trans>
         </Text>
       )}
 
       <Title order={4} mb="sm">
-        Recent syncs
+        <Trans>Recent syncs</Trans>
       </Title>
       {data && data.recent.length > 0 ? (
         <Table.ScrollContainer minWidth={600} mb="lg">
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>Series</Table.Th>
-                <Table.Th>Service</Table.Th>
-                <Table.Th>Progress</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>When</Table.Th>
+                <Table.Th>
+                  <Trans>Series</Trans>
+                </Table.Th>
+                <Table.Th>
+                  <Trans>Service</Trans>
+                </Table.Th>
+                <Table.Th>
+                  <Trans>Progress</Trans>
+                </Table.Th>
+                <Table.Th>
+                  <Trans>Status</Trans>
+                </Table.Th>
+                <Table.Th>
+                  <Trans>When</Trans>
+                </Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {data.recent.map((r, i) => (
-                <Table.Tr key={i}>
-                  <Table.Td>{r.title || '#'}</Table.Td>
-                  <Table.Td>{r.service}</Table.Td>
-                  <Table.Td>
-                    {r.error ? (
-                      <Tooltip label={r.error} multiline maw={400}>
-                        <Text size="sm" c="red" lineClamp={1} style={{ maxWidth: 320 }}>
-                          {r.error}
-                        </Text>
-                      </Tooltip>
-                    ) : (
-                      `ch ${r.chapter}${r.volume ? ` · vol ${r.volume}` : ''}`
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    {r.status ? (
-                      <Badge size="sm" variant="light" color={statusColor(r.status)}>
-                        {r.status}
-                      </Badge>
-                    ) : (
-                      '-'
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c="dimmed">
-                      {fmtTime(r.at)}
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
+              {data.recent.map((r, i) => {
+                const { title, service, error, chapter, volume, status, at } = r
+                return (
+                  <Table.Tr key={i}>
+                    <Table.Td>{title || '#'}</Table.Td>
+                    <Table.Td>{service}</Table.Td>
+                    <Table.Td>
+                      {error ? (
+                        <Tooltip label={error} multiline maw={400}>
+                          <Text size="sm" c="red" lineClamp={1} style={{ maxWidth: 320 }}>
+                            {error}
+                          </Text>
+                        </Tooltip>
+                      ) : volume ? (
+                        <Trans>
+                          ch {chapter} · vol {volume}
+                        </Trans>
+                      ) : (
+                        <Trans>ch {chapter}</Trans>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      {status ? (
+                        <Badge size="sm" variant="light" color={statusColor(status)}>
+                          {status}
+                        </Badge>
+                      ) : (
+                        '-'
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {fmtTime(at)}
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                )
+              })}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
       ) : (
         <Text size="sm" c="dimmed" mb="lg">
-          No syncs yet.
+          <Trans>No syncs yet.</Trans>
         </Text>
       )}
 
       <Title order={4} mb="sm">
-        Activity log
+        <Trans>Activity log</Trans>
       </Title>
       <Card withBorder radius="md" padding="sm">
         <ScrollArea.Autosize mah={320}>
@@ -340,7 +382,7 @@ export default function ScrobblePage() {
             </Stack>
           ) : (
             <Text size="sm" c="dimmed">
-              Empty.
+              <Trans>Empty.</Trans>
             </Text>
           )}
         </ScrollArea.Autosize>

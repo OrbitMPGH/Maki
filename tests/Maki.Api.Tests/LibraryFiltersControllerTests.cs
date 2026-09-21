@@ -17,7 +17,7 @@ public class LibraryFiltersControllerTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     private LibraryFiltersController Controller() =>
-        new(_db.NewContext(TestUser), NullLogger<LibraryFiltersController>.Instance);
+        new(new TestLocalizer(), _db.NewContext(TestUser), NullLogger<LibraryFiltersController>.Instance);
 
     private static T Body<T>(IActionResult result) => (T)((OkObjectResult)result).Value!;
 

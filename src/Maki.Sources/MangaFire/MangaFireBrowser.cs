@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Maki.Core;
 using Maki.Core.Configuration;
 using Maki.Core.Http;
 using Maki.Sources.Common;
@@ -28,7 +29,7 @@ namespace Maki.Sources.MangaFire;
 public sealed class MangaFireBrowser(
     ChallengeAwareFetcher fetcher,
     IAppSettings settings,
-    ILogger<MangaFireBrowser> logger) : IAsyncDisposable
+    ILogger<MangaFireBrowser> logger) : IAsyncDisposable, IIdleBrowser
 {
     private const string BaseUrl = "https://mangafire.to";
     private const string Host = "mangafire.to";
@@ -41,6 +42,72 @@ public sealed class MangaFireBrowser(
     private IPlaywright? _playwright;
     private IBrowser? _browser;
     private IBrowserContext? _context;
+    private readonly IdleStamp _idle = new();
+
+    public string BrowserName => "MangaFire";
+
+    public bool IsRunning => _playwright is not null;
+
+    /// <summary>
+    /// Closes the browser and the driver process behind it once nothing has scraped for
+    /// <paramref name="idleFor"/>. See <see cref="IIdleBrowser"/> for what that is worth.
+    /// </summary>
+    public async Task<bool> ReleaseIfIdleAsync(TimeSpan idleFor)
+    {
+        if (_playwright is null || _idle.Idle < idleFor)
+        {
+            return false;
+        }
+
+        // Zero timeout on purpose. The gate is held for the whole of a scrape, so failing to take
+        // it means one is running and this is not an idle browser after all; there is nothing to
+        // wait for, the next pass will find it idle.
+        if (!await _gate.WaitAsync(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (_playwright is null || _idle.Idle < idleFor)
+            {
+                return false;
+            }
+
+            var idle = _idle.Idle;
+            await ShutdownAsync();
+            logger.LogInformation(
+                "Closed the MangaFire browser after {Minutes:F0} idle minute(s); it relaunches on next use",
+                idle.TotalMinutes);
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Tears the whole stack down, in order. Disposing the driver is the part that matters most:
+    /// it is what ends the Node process, which is the larger half of what a parked browser costs.
+    /// </summary>
+    private async Task ShutdownAsync()
+    {
+        if (_context != null)
+        {
+            await _context.CloseAsync();
+            _context = null;
+        }
+
+        if (_browser != null)
+        {
+            await _browser.CloseAsync();
+            _browser = null;
+        }
+
+        _playwright?.Dispose();
+        _playwright = null;
+    }
 
     /// <summary>Search-results JSON for a keyword (the <c>/api/titles?keyword=…</c> payload).</summary>
     public Task<string> SearchAsync(string keyword, CancellationToken ct) =>
@@ -85,6 +152,14 @@ public sealed class MangaFireBrowser(
     /// code for the caller to filter on). A title with no chapters in the requested language simply
     /// yields nothing.
     /// </summary>
+    /// <summary>
+    /// Pass as <c>language</c> to drive the dropdown to "All" — the mixed view where every item
+    /// carries its own <c>language</c> field. It is not a MangaFire language code, which is why it
+    /// is absent from <see cref="LanguageLabels"/>: the lookup missing is exactly what routes it to
+    /// the "All" item that <see cref="SwitchLanguageAsync"/> already falls back to.
+    /// </summary>
+    public const string AllLanguages = "all";
+
     public async Task<IReadOnlyList<string>> ChaptersAsync(string seriesId, string language, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
@@ -143,8 +218,11 @@ public sealed class MangaFireBrowser(
                 await page.WaitForTimeoutAsync(500);
 
                 var loadedLanguage = QueryParam(firstResponse.Url, "language") ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(language) &&
-                    !language.Equals(loadedLanguage, StringComparison.OrdinalIgnoreCase))
+                // An empty language on the loaded list already *is* the "All" view, so asking to
+                // switch to it would wait for a response that never comes and time out.
+                var alreadyLoaded = language.Equals(loadedLanguage, StringComparison.OrdinalIgnoreCase) ||
+                    (language.Equals(AllLanguages, StringComparison.OrdinalIgnoreCase) && loadedLanguage.Length == 0);
+                if (!string.IsNullOrWhiteSpace(language) && !alreadyLoaded)
                 {
                     var switched = await SwitchLanguageAsync(page, language, loadedLanguage);
                     if (switched == null)
@@ -253,6 +331,7 @@ public sealed class MangaFireBrowser(
     /// <summary>Runs <paramref name="action"/> on a fresh page; on a 403/challenge, re-solves once and retries.</summary>
     private async Task<T> WithPageAsync<T>(Func<IPage, Task<T>> action, CancellationToken ct)
     {
+        _idle.Touch();
         for (var attempt = 0; ; attempt++)
         {
             var context = await EnsureContextAsync(ct);
@@ -270,6 +349,7 @@ public sealed class MangaFireBrowser(
             finally
             {
                 await page.CloseAsync();
+                _idle.Touch();
             }
         }
     }
@@ -555,17 +635,7 @@ public sealed class MangaFireBrowser(
 
     public async ValueTask DisposeAsync()
     {
-        if (_context != null)
-        {
-            await _context.CloseAsync();
-        }
-
-        if (_browser != null)
-        {
-            await _browser.CloseAsync();
-        }
-
-        _playwright?.Dispose();
+        await ShutdownAsync();
         _gate.Dispose();
     }
 

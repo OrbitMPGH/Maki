@@ -1,4 +1,4 @@
-﻿using Maki.Core.Naming;
+using Maki.Core.Naming;
 
 namespace Maki.Core.Configuration;
 
@@ -97,6 +97,20 @@ public static class SettingKeys
     public const string LibraryChapterFormat = "library.chapterformat";
 
     /// <summary>
+    /// "false" → files Maki adopts from disk (a finished torrent, a manual queue import) keep the
+    /// name they arrived with instead of being renamed to
+    /// <see cref="LibraryChapterFormat"/>. Default on.
+    /// <para>
+    /// The mirror of <see cref="LibraryFolderNamingMode"/> one level down: that one decides whether
+    /// an imported series' folder is renamed, this one whether the files inside it are. Neither
+    /// touches an explicit rename (<c>POST /series/{id}/rename</c>), where the plan is shown first,
+    /// and neither applies to chapters Maki downloads itself — those files have no original name to
+    /// keep.
+    /// </para>
+    /// </summary>
+    public const string LibraryRenameImportedFiles = "library.renameimportedfiles";
+
+    /// <summary>
     /// JSON object mapping a provider content rating to the <see cref="Entities.IncognitoMode"/> a
     /// newly added series of that rating starts at — see <see cref="IncognitoRatingRules"/>. Unset
     /// falls back to <see cref="IncognitoRatingRules.Default"/>; only the add path reads it.
@@ -157,6 +171,63 @@ public static class SettingKeys
     /// </para>
     /// </summary>
     public const string UiSeriesSections = "ui.seriessections";
+
+    /// <summary>
+    /// Which language the UI prefers series titles in: an ordered comma-separated list of codes
+    /// ("ja,en"), matched against <see cref="Maki.Core.Entities.Series.AltTitles"/>. The pseudo-code
+    /// <c>native</c> selects <see cref="Maki.Core.Entities.Series.OriginalTitle"/>, which has no
+    /// language tag of its own. Unset = the provider's English title, which is the old behaviour.
+    /// <para>
+    /// Applied when building <c>SeriesDto</c> only. <see cref="Maki.Core.Entities.Series.Title"/>
+    /// and <c>SortTitle</c> stay canonical, because the folder on disk and every file in it are
+    /// named from them — one person's display preference must not rename another's library. The
+    /// visible consequence is that a reader preferring Japanese sees Japanese titles sorted by the
+    /// English sort key.
+    /// </para>
+    /// </summary>
+    public const string UiTitleLanguage = "ui.titlelanguage";
+
+    /// <summary>
+    /// Per user: which language the interface itself is drawn in, as one BCP 47 code ("sv",
+    /// "pt-BR"). Unset = follow the browser, which is what a fresh account gets.
+    /// <para>
+    /// The exact opposite of <see cref="UiTitleLanguage"/> sitting directly above, and the two are
+    /// confused easily enough that it is worth saying here. That one is normalized but never
+    /// validated, because any code a metadata provider might tag a title with is legal and an
+    /// unknown one simply matches nothing. This one is validated against
+    /// <see cref="Maki.Core.Localization.SupportedLanguages.All"/>, because a code with no message
+    /// catalogue behind it renders every string in the app as an internal hash.
+    /// </para>
+    /// <para>
+    /// They are also independent settings, not one preference: reading Japanese-titled manga in a
+    /// Swedish interface is the ordinary case, not an edge one.
+    /// </para>
+    /// </summary>
+    public const string UiLanguage = "ui.language";
+
+    /// <summary>
+    /// Instance-wide: the language to use when there is no user to ask. Three cases need it, and
+    /// none of them has a reader attached — outbound Discord/webhook messages, whose recipient is a
+    /// chat channel; requests from a caller who is not signed in; and an OPDS client that sends no
+    /// <c>Accept-Language</c>. Unset = "en".
+    /// <para>
+    /// Not a default for <see cref="UiLanguage"/>. A user who has never chosen follows their own
+    /// browser, which is a better guess about a person than an admin's choice about a deployment.
+    /// </para>
+    /// </summary>
+    public const string UiDefaultLanguage = "ui.defaultlanguage";
+
+    /// <summary>
+    /// Per user: the state of the one-off notice telling someone Maki now ships translations.
+    /// "pending" → show it, anything else (or unset) → don't.
+    /// <para>
+    /// Written as "pending" by the <c>LanguageAnnouncement</c> migration for every account that
+    /// already existed when translations shipped, and never written again. A row is what makes the
+    /// notice appear, so an account created afterwards has none and never sees it — which is the
+    /// point, since somebody whose first Maki already spoke their language has nothing to be told.
+    /// </para>
+    /// </summary>
+    public const string UiLanguageAnnouncement = "ui.languageannouncement";
 
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
@@ -280,6 +351,57 @@ public static class SettingKeys
     /// </para>
     /// </summary>
     public const string RecommendationsTasteWeighting = "recommendations.tasteweighting";
+
+    public const string RecommendationsPersonalAddWeighting = "recommendations.personaladdweighting";
+    public const string RecommendationsFeedbackLab = "recommendations.feedbacklab";
+
+    /// <summary>
+    /// Instance kill switch for anime-derived taste signals: whether a connected AniList or
+    /// MyAnimeList <em>anime</em> list may be matched to manga and fed to the recommender at all.
+    /// Off here means the sync never runs and the seeds never load, whatever any user opted into.
+    /// </summary>
+    public const string RecommendationsAnimeSignals = "recommendations.animesignals";
+
+    /// <summary>How often the anime-list sync walks every opted-in user. Default 24, minimum 1.</summary>
+    public const string RecommendationsAnimeSignalsIntervalHours = "recommendations.animesignals.intervalhours";
+
+    /// <summary>When the last instance-wide anime-signal pass finished, for the tick's own gate.</summary>
+    public const string RecommendationsAnimeSignalsLastSyncAt = "recommendations.animesignals.lastsyncat";
+
+    /// <summary>
+    /// Per user: opt in to anime signals. Unset means off, unlike most switches here, because this
+    /// one reads a second medium's list and puts it in somebody's recommendations without asking.
+    /// </summary>
+    public const string RecommendationsAnimeSignalsEnabled = "recommendations.animesignals.enabled";
+
+    /// <summary>Per user: when that user's list was last synced, for the panel and the manual button.</summary>
+    public const string RecommendationsAnimeSignalsLastSync = "recommendations.animesignals.lastsync";
+
+    /// <summary>
+    /// Per user: how much authority watched anime carry, as an <c>AnimeSignalStrength</c> name
+    /// ("subtle", "balanced", "full"). Unset means balanced, which is half a manga rating.
+    /// <para>
+    /// Per user rather than instance-wide, unlike most of the recommender's dials: how far an
+    /// adaptation's score tracks its source is a fact about one person's watching, not about the
+    /// deployment. Somebody who only watches shows they already trust wants Full; somebody who
+    /// rates adaptations on whether the studio did the book justice wants Subtle.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsAnimeSignalsStrength = "recommendations.animesignals.strength";
+
+    /// <summary>
+    /// Per user, per tracker: may this service's anime list feed the reader's taste? Unset = on, so
+    /// the account-level opt-in stays the only decision somebody has to make, and this is the
+    /// escape hatch for a reader whose two trackers hold the same list twice or disagree.
+    /// <para>
+    /// Under the anime-signals prefix rather than <c>scrobble.{service}.*</c>, even though the
+    /// switch sits beside those in Settings: those three push manga <em>to</em> a tracker, and this
+    /// reads a different medium's list <em>from</em> one. A reader can reasonably want AniList
+    /// scrobbled and its anime list ignored.
+    /// </para>
+    /// </summary>
+    public static string RecommendationsAnimeSignalsSourceKey(string service) =>
+        $"recommendations.animesignals.source.{service}";
 
     /// <summary>
     /// Kill-switch for the co-recommendation channel: whether recommendations may use the
@@ -424,6 +546,15 @@ public static class SettingKeys
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";
 
+    /// <summary>The health page's scan options, as a serialized <c>HealthOptions</c>.</summary>
+    public const string HealthOptions = "health.options";
+
+    /// <summary>Watermark for the incremental file scan: everything modified after it is unscanned.</summary>
+    public const string HealthIncrementalSince = "health.incrementalSince";
+
+    /// <summary>The last date the nightly scan ran, so a restart does not run it twice.</summary>
+    public const string HealthLastScheduled = "health.lastscheduled";
+
     /// <summary>
     /// CSV of source names in preferred order (e.g. "mangadex,mangafire,mangapill"), applied when
     /// auto-matching sets each mapping's Priority. Sources not listed rank after listed ones, in
@@ -438,6 +569,22 @@ public static class SettingKeys
     /// Read through <c>SourceAvailability</c>, never parsed at the call site.
     /// </summary>
     public const string SourcesDisabled = "sources.disabled";
+
+    /// <summary>
+    /// CSV of language codes in preferred order (e.g. "ja,en"), applied when auto-matching ranks the
+    /// sources: each source is bucketed by the highest-ranked enabled language it publishes, and the
+    /// buckets are concatenated with <see cref="SourcePriorityOrder"/> preserved inside each.
+    /// Empty/unset = English alone, which is the behaviour this setting replaced.
+    /// Read through <c>SourceLanguagePreference</c>, never parsed at the call site.
+    /// </summary>
+    public const string SourceLanguageOrder = "sources.languageorder";
+
+    /// <summary>
+    /// CSV of language codes named in <see cref="SourceLanguageOrder"/> that are switched off. Same
+    /// shape as <see cref="SourcesDisabled"/> is to <see cref="SourcePriorityOrder"/>: a language
+    /// stays inside the order while off, so it keeps its rank across an off/on cycle.
+    /// </summary>
+    public const string SourceLanguagesDisabled = "sources.languagesdisabled";
 
     /// <summary>"false" → the automatic sweep that re-queues Failed scraper downloads is disabled. Default on.</summary>
     public const string DownloadRetryEnabled = "download.retryenabled";

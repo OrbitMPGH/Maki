@@ -1,4 +1,4 @@
-using Maki.Api.Services;
+﻿using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
@@ -190,36 +190,68 @@ public class SeriesRenameServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Rename_keeps_the_two_languages_of_one_chapter_apart()
+    {
+        // The same chapter in two languages, under a format with no {Chapter Language} in it.
+        // FileNameBuilder appends the code for anything that isn't English, so these resolve to two
+        // names rather than one — before it did, the second download overwrote the first.
+        var id = SeedSeries("Berserk", "Berserk (1989)", chapters: (24m, 3, "en"));
+        SeedExtraChapterWithFile(id, 24m, 3, "es", "Berserk Vol.3 Ch.24 (spanish).cbz");
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        using var db = _db.NewContext();
+        Assert.Equal(
+            [
+                Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24 [es].cbz"),
+                Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24.cbz"),
+            ],
+            db.ChapterFiles.Select(f => f.RelativePath).OrderBy(p => p).ToList());
+    }
+
+    [Fact]
     public async Task Rename_is_refused_when_two_chapters_want_one_name()
     {
-        // Same chapter in two languages, and a format with no {Chapter Language} to tell them apart.
+        // Two rows for the same chapter in the same language — a duplicate sync leaves these, and
+        // nothing in the format can tell them apart.
         var id = SeedSeries("Berserk", "Berserk (1989)", chapters: (24m, 3, "en"));
-
-        using (var db = _db.NewContext())
-        {
-            var chapter = new Chapter { SeriesId = id, Number = 24m, Volume = 3, Language = "es" };
-            db.Chapters.Add(chapter);
-            db.SaveChanges();
-
-            var file = new ChapterFile
-            {
-                SeriesId = id,
-                RelativePath = Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24 [es].cbz"),
-                Size = 3,
-                SourceName = "test",
-                DateAdded = DateTime.UtcNow
-            };
-            db.ChapterFiles.Add(file);
-            db.SaveChanges();
-            chapter.ChapterFileId = file.Id;
-            db.SaveChanges();
-        }
+        SeedExtraChapterWithFile(id, 24m, 3, "en", "Berserk Vol.3 Ch.24 (copy).cbz");
 
         var result = await Service().RenameAsync(id, CancellationToken.None);
 
         Assert.False(result.Applied);
         Assert.Contains("same file name", result.Error);
         Assert.NotEmpty(result.Warnings);
+    }
+
+    /// <summary>A second chapter row for a number the series already has, with a file of its own.</summary>
+    private void SeedExtraChapterWithFile(
+        int seriesId, decimal number, int? volume, string language, string fileName)
+    {
+        using var db = _db.NewContext();
+        var chapter = new Chapter
+        {
+            SeriesId = seriesId, Number = number, Volume = volume, Language = language
+        };
+        db.Chapters.Add(chapter);
+        db.SaveChanges();
+
+        var relativePath = Path.Combine("Berserk (1989)", fileName);
+        File.WriteAllText(Path.Combine(_root, relativePath), "x");
+
+        var file = new ChapterFile
+        {
+            SeriesId = seriesId,
+            RelativePath = relativePath,
+            Size = 3,
+            SourceName = "test",
+            DateAdded = DateTime.UtcNow
+        };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+        chapter.ChapterFileId = file.Id;
+        db.SaveChanges();
     }
 
     [Fact]
@@ -342,6 +374,132 @@ public class SeriesRenameServiceTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Equal("Berserk", db.Series.Single(s => s.Id == id).FolderName);
+    }
+
+    /// <summary>
+    /// A volume compilation is one file backing several chapters. Named after its first chapter it
+    /// asks for the name that chapter's own file wants, and a case-sensitive filesystem answers by
+    /// writing a second file beside it rather than refusing.
+    /// </summary>
+    [Fact]
+    public async Task Compilation_is_named_after_its_volume_not_its_first_chapter()
+    {
+        var id = SeedSeries("Berserk", "Berserk (1989)");
+        var compilation = SeedCompilationAt(
+            id, Path.Combine("Berserk (1989)", "Berserk v01 (Digital) (1r0n).cbz"),
+            (1m, 1), (2m, 1), (3m, 1));
+
+        var result = await Service().RenameFilesAsync(id, [compilation], CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Empty(result.Warnings);
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.1.cbz")));
+
+        using var db = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk Vol.1.cbz"),
+            db.ChapterFiles.Single(f => f.Id == compilation).RelativePath);
+    }
+
+    /// <summary>Half a volume can't claim the volume's name: the other half wants it too.</summary>
+    [Fact]
+    public async Task Compilation_covering_part_of_a_volume_keeps_its_chapter_range()
+    {
+        var id = SeedSeries("Berserk", "Berserk (1989)");
+        var first = SeedCompilationAt(
+            id, Path.Combine("Berserk (1989)", "first half.cbz"), (1m, 1), (2m, 1));
+        SeedCompilationAt(id, Path.Combine("Berserk (1989)", "second half.cbz"), (3m, 1), (4m, 1));
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Empty(result.Warnings);
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.1 Ch.1-2.cbz")));
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.1 Ch.3-4.cbz")));
+
+        using var db = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk Vol.1 Ch.1-2.cbz"),
+            db.ChapterFiles.Single(f => f.Id == first).RelativePath);
+    }
+
+    /// <summary>
+    /// File.Exists asks the filesystem, and a case-sensitive one calls a name that differs from an
+    /// existing file only in case free — the move then leaves two files the rest of the library
+    /// reads as one. (On a case-insensitive host this is what File.Exists already did.)
+    /// </summary>
+    [Fact]
+    public async Task Rename_refuses_a_target_an_existing_file_holds_in_another_case()
+    {
+        var id = SeedSeries("Berserk", "Berserk (1989)");
+        var imported = SeedChapterAt(id, 25m, 3, Path.Combine("Berserk (1989)", "Berserk.v03.c25.cbz"));
+        File.WriteAllText(Path.Combine(_root, "Berserk (1989)", "berserk vol.3 ch.25.cbz"), "cbz");
+
+        var result = await Service().RenameFilesAsync(id, [imported], CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Contains(result.Warnings, w => w.Contains("already exists"));
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk.v03.c25.cbz")));
+
+        using var db = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk.v03.c25.cbz"),
+            db.ChapterFiles.Single(f => f.Id == imported).RelativePath);
+    }
+
+    /// <summary>
+    /// A row with nothing on disk still follows the folder rename, but not onto a name another
+    /// file answers to — that leaves two rows describing one archive.
+    /// </summary>
+    [Fact]
+    public async Task Missing_file_is_not_repointed_onto_a_name_something_else_holds()
+    {
+        var id = SeedSeries("Berserk", "Berserk (1989)");
+        var missing = SeedChapterAt(id, 25m, 3, Path.Combine("Berserk (1989)", "Berserk.v03.c25.cbz"));
+        File.Delete(Path.Combine(_root, "Berserk (1989)", "Berserk.v03.c25.cbz"));
+        File.WriteAllText(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.3 Ch.25.cbz"), "someone else");
+
+        var result = await Service().RenameFilesAsync(id, [missing], CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Contains(result.Warnings, w => w.Contains("already exists"));
+
+        using var db = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk.v03.c25.cbz"),
+            db.ChapterFiles.Single(f => f.Id == missing).RelativePath);
+    }
+
+    /// <summary>Adds one file at an exact path, backing every chapter listed.</summary>
+    private int SeedCompilationAt(
+        int seriesId, string relativePath, params (decimal Number, int? Volume)[] chapters)
+    {
+        using var db = _db.NewContext();
+        var absolute = Path.Combine(_root, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
+        File.WriteAllText(absolute, "cbz");
+
+        var file = new ChapterFile
+        {
+            SeriesId = seriesId,
+            RelativePath = relativePath,
+            Size = 3,
+            SourceName = "test",
+            DateAdded = DateTime.UtcNow
+        };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+
+        foreach (var (number, volume) in chapters)
+        {
+            db.Chapters.Add(new Chapter
+            {
+                SeriesId = seriesId,
+                Number = number,
+                Volume = volume,
+                Language = "en",
+                ChapterFileId = file.Id
+            });
+        }
+
+        db.SaveChanges();
+        return file.Id;
     }
 
     /// <summary>Adds one chapter backed by a file at an exact path, sub-folders and all.</summary>

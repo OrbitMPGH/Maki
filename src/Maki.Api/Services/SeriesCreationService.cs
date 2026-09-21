@@ -3,6 +3,9 @@ using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Data;
+using Maki.Data.Identity;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -18,11 +21,41 @@ public enum SeriesCreationError
     RootFolderNotFound,
     MetadataNotFound,
     AlreadyInLibrary,
+
+    /// <summary>
+    /// This mutation id belongs to an add that committed and whose series has since been removed.
+    /// <para>
+    /// Distinct from <see cref="AlreadyInLibrary"/> because it is not: replaying the id cannot hand
+    /// back a row that no longer exists, and answering "already in library" sends the caller looking
+    /// for a series nobody can find. Creating a fresh one instead is also wrong — the id is the only
+    /// thing standing between a retried request and a second copy, and honouring it once the first
+    /// result is gone means honouring it for a delete that raced the retry too. Adding the title
+    /// again is a new decision, so it takes a new id.
+    /// </para>
+    /// </summary>
+    OperationResultGone,
+
+    /// <summary>This mutation id was already used for a different add.</summary>
+    MutationIdReused,
 }
 
-public record SeriesCreationResult(Series? Series, SeriesCreationError? Error, List<string> Warnings)
+public record SeriesCreationResult(Series? Series, SeriesCreationError? Error, List<string> Warnings,
+    bool Replayed = false)
 {
     public static SeriesCreationResult Failed(SeriesCreationError error) => new(null, error, []);
+
+    /// <summary>
+    /// The mutation id an approved request's add operates under.
+    /// <para>
+    /// Derived from the request rather than supplied by the approving client, because there is no
+    /// client-side operation to derive one from: approval is one admin action and its retry is
+    /// another admin pressing the same button. A stable id gives that path the same receipt and the
+    /// same creation transaction an ordinary add gets, so a crash between committing the series and
+    /// resolving the request cannot end with two series or two credited adds.
+    /// </para>
+    /// </summary>
+    public static Guid MutationIdFor(SeriesRequest request) =>
+        new(SHA256.HashData(Encoding.UTF8.GetBytes($"series-request:{request.Id}")).AsSpan(0, 16));
 }
 
 /// <summary>
@@ -66,8 +99,33 @@ public class SeriesCreationService(
         string monitorNewItems,
         CancellationToken ct,
         bool deferSourceMatching = false,
-        string? incognito = null)
+        string? incognito = null,
+        int? attributedUserId = null,
+        string? addedFrom = null,
+        Guid? clientMutationId = null,
+        SeriesRequest? originatingRequest = null)
     {
+        var payloadHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            $"{metadataProviderId}|{rootFolderId}|{monitored}|{monitorNewItems}|{incognito}|{addedFrom}")));
+        if (clientMutationId is { } priorId && attributedUserId is > 0)
+        {
+            var prior = await db.RecommendationMutationReceipts.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.UserId == attributedUserId && x.ClientMutationId == priorId, ct);
+            if (prior is not null)
+            {
+                if (prior.Operation != "add" || prior.PayloadHash != payloadHash)
+                    return SeriesCreationResult.Failed(SeriesCreationError.MutationIdReused);
+                if (int.TryParse(prior.ResultJson, out var priorSeriesId))
+                {
+                    // Scoped, not IgnoreQueryFilters. The receipt proves this caller made the add; it
+                    // does not prove they can still reach where it landed, and replaying a series
+                    // out of a root folder their access was since revoked would hand it back anyway.
+                    var priorSeries = await db.Series.FirstOrDefaultAsync(x => x.Id == priorSeriesId, ct);
+                    if (priorSeries is not null) return new SeriesCreationResult(priorSeries, null, [], Replayed: true);
+                }
+                return SeriesCreationResult.Failed(SeriesCreationError.OperationResultGone);
+            }
+        }
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct);
         if (rootFolder is null)
         {
@@ -108,17 +166,62 @@ public class SeriesCreationService(
         series.FolderName = await naming.BuildSeriesFolderNameAsync(series, ct);
         series.SourceMatchPending = deferSourceMatching;
 
+        await using var creationTransaction = clientMutationId is not null && attributedUserId is > 0
+            ? await db.Database.BeginTransactionAsync(ct) : null;
+        int? bumpSignalFor = null;
         db.Series.Add(series);
+        if (originatingRequest is not null)
+        {
+            originatingRequest.Series = series;
+            originatingRequest.Title = series.Title;
+        }
+        if (attributedUserId is > 0 && series.Incognito != IncognitoMode.Full && series.MangaBakaId is not null)
+        {
+            var now = DateTime.UtcNow;
+            db.UserSeriesStates.Add(new UserSeriesState
+            {
+                UserId = attributedUserId.Value, Series = series,
+                AddedToLibraryAtUtc = now,
+                AddedFrom = addedFrom is "recommendation" or "request" ? addedFrom : "library",
+                UpdatedAt = now
+            });
+            bumpSignalFor = attributedUserId.Value;
+        }
         await db.SaveChangesAsync(ct);
-
-        // Before the add event, so a series removed and put back reads as one continuous history
-        // rather than a fresh one starting today.
-        await identity.AdoptOrphansAsync(series, ct);
-        await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
+        // After the save, so the provenance row the revision announces is already there. Inside the
+        // creation transaction when there is one, so a retry cannot see one without the other.
+        if (bumpSignalFor is { } provenanceOwner)
+        {
+            await RecommendationFeedbackService.BumpAsync(
+                db, provenanceOwner, feedback: false, signal: true, ct);
+        }
+        if (creationTransaction is not null && clientMutationId is { } mutationId)
+        {
+            db.RecommendationMutationReceipts.Add(new RecommendationMutationReceipt
+            {
+                UserId = attributedUserId!.Value, ClientMutationId = mutationId, Operation = "add",
+                ProviderId = series.MangaBakaId ?? 0, PayloadHash = payloadHash,
+                ResultJson = series.Id.ToString(), ExpiresAtUtc = DateTime.UtcNow.AddDays(90)
+            });
+            await db.SaveChangesAsync(ct);
+            await creationTransaction.CommitAsync(ct);
+        }
 
         // The series row is already committed, so these steps can't fail the request — but they
         // can't be swallowed either. Collect what went wrong and hand it back with the result.
         var warnings = new List<string>();
+
+        try
+        {
+            // Before the add event, so a series removed and put back reads as one continuous history.
+            await identity.AdoptOrphansAsync(series, ct);
+            await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Post-creation history setup failed for {Title}", series.Title);
+            warnings.Add($"Could not finish library history setup: {ex.Message}");
+        }
 
         var seriesFolder = Path.Combine(rootFolder.Path, series.FolderName);
         try
@@ -133,12 +236,20 @@ public class SeriesCreationService(
 
         if (metadata.CoverUrl != null)
         {
-            var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
-            if (coverPath != null)
+            try
             {
-                series.CoverPath = coverPath;
-                await db.SaveChangesAsync(ct);
-                await coverService.WriteLibraryCoverAsync(series.Id, seriesFolder, ct);
+                var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
+                if (coverPath != null)
+                {
+                    series.CoverPath = coverPath;
+                    await db.SaveChangesAsync(ct);
+                    await coverService.WriteLibraryCoverAsync(series.Id, seriesFolder, ct);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Cover setup failed for {Title}", series.Title);
+                warnings.Add($"Could not finish cover setup: {ex.Message}");
             }
         }
 
@@ -148,7 +259,12 @@ public class SeriesCreationService(
         // only starts running after a restart.
         if (deferSourceMatching)
         {
-            sourceMatchQueue.Enqueue(series.Id);
+            try { sourceMatchQueue.Enqueue(series.Id); }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not schedule source matching for {Title}", series.Title);
+                warnings.Add($"Could not schedule source matching: {ex.Message}");
+            }
         }
         else
         {

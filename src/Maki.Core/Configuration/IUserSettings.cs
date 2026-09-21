@@ -1,4 +1,4 @@
-namespace Maki.Core.Configuration;
+﻿namespace Maki.Core.Configuration;
 
 /// <summary>
 /// The key/value settings of <em>one</em> user, over the <c>UserSettings</c> table. Scoped, bound to
@@ -70,6 +70,9 @@ public static class UserSettingKeys
         SettingKeys.UiStartPage,
         SettingKeys.UiHomeSections,
         SettingKeys.UiSeriesSections,
+        SettingKeys.UiTitleLanguage,
+        SettingKeys.UiLanguage,
+        SettingKeys.UiLanguageAnnouncement,
         SettingKeys.RecommendationsDefaults,
         SettingKeys.DiscoverSearchDefaults,
         SettingKeys.OpdsEnabled,

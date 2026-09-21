@@ -1,4 +1,4 @@
-using Maki.Metadata.MangaBaka;
+﻿using Maki.Metadata.MangaBaka;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -79,7 +79,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
         var before = version.ExecuteScalar();
         var service = new MangaBakaDumpService(null!,
             new MangaBakaDumpOptions(conn.DataSource, _dir), new FakeAppSettings(),
-            NullLogger<MangaBakaDumpService>.Instance);
+            new MangaBakaDumpStatus(), NullLogger<MangaBakaDumpService>.Instance);
         await service.EnsureBrowseIndexesAsync();
         await service.EnsureBrowseIndexesAsync();
 
@@ -99,7 +99,7 @@ public class MangaBakaBrowseIndexTests : IDisposable
 
         var service = new MangaBakaDumpService(null!,
             new MangaBakaDumpOptions(conn.DataSource, _dir), new FakeAppSettings(),
-            NullLogger<MangaBakaDumpService>.Instance);
+            new MangaBakaDumpStatus(), NullLogger<MangaBakaDumpService>.Instance);
         await service.EnsureBrowseIndexesAsync();
         using var check = conn.CreateCommand();
         check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'ix_title_nocase'";

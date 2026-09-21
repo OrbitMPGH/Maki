@@ -1,14 +1,18 @@
 <#
 .SYNOPSIS
-  Interactive release flow: run the tests and frontend build, merge dev -> main (real merge, no
-  squash), tag, generate release notes from git-cliff, and publish a GitHub release.
+  Interactive release flow: run the tests, frontend build and catalogue gates, merge dev -> main
+  (real merge, no squash), tag, generate release notes from git-cliff, and publish a GitHub
+  release.
 
 .DESCRIPTION
   Walks through a release step by step, pausing for confirmation before anything that touches
   origin or GitHub:
-    1. Run the full test suite (dotnet test on Maki.sln, Release) and the frontend build
+    1. Run the full test suite (dotnet test on Maki.sln, Release), the frontend build
        (npm run build, which is tsc -b then vite build - the frontend has no test runner, so the
-       build is the type-check gate). Either one failing aborts the release before a tag is
+       build is the type-check gate), and the four i18n gates ci.yml runs (extraction committed,
+       server keys synced, translations structurally sound, only English eager in the bundle).
+       ci.yml only fires on pull requests and pushes to main, so a commit that went straight to
+       dev has met none of them before here. Any one failing aborts the release before a tag is
        picked or anything is merged.
     2. Ask which tag this release is (shows the previous tag on main for reference).
     3. Check dev is clean, in sync with origin/dev, and show what's about to ship.
@@ -61,7 +65,7 @@ if (git status --porcelain) {
   throw "Working tree has uncommitted changes. Commit or stash first."
 }
 
-Write-Host "`n== Step 1: tests and frontend build ==" -ForegroundColor Cyan
+Write-Host "`n== Step 1: tests, frontend build and catalogues ==" -ForegroundColor Cyan
 
 Write-Host "dotnet test Maki.sln -c Release (this builds first, give it a minute)"
 dotnet test "$repoRoot\Maki.sln" -c Release --nologo
@@ -88,10 +92,47 @@ try {
   if ($LASTEXITCODE -ne 0) {
     throw "Frontend build failed (npm run build exited $LASTEXITCODE). Fix it before releasing - nothing was merged, tagged or pushed."
   }
+
+  # The same catalogue gates ci.yml runs. They matter more here than there: ci.yml only fires on
+  # pull requests and pushes to main, so commits that went straight to dev have never met them,
+  # and this is the last point before the tag that ships fourteen languages to everyone.
+  #
+  # `lingui extract --clean` rewrites locales/ in place, so a stale catalogue shows up as a dirty
+  # working tree rather than as a message. The tree was clean on entry (checked above), which is
+  # what makes the diff readable as "this should have been committed".
+  Write-Host "npx lingui extract --clean (catalogues must already be committed)"
+  npx lingui extract --clean
+  if ($LASTEXITCODE -ne 0) {
+    throw "lingui extract failed (exit $LASTEXITCODE). Nothing was merged, tagged or pushed."
+  }
+  npm run i18n:check
+  if ($LASTEXITCODE -ne 0) {
+    throw "Server keys are out of sync (npm run i18n:check exited $LASTEXITCODE). Run 'npm run i18n:sync' in frontend/, commit locales/, then re-run. Nothing was merged, tagged or pushed."
+  }
+  $staleCatalogues = git diff --name-only -- "$repoRoot\locales"
+  if ($staleCatalogues) {
+    throw "Extraction changed locales/ - the catalogues in git are stale:`n  " +
+          ($staleCatalogues -join "`n  ") +
+          "`nReview and commit what extract produced (then translate it, see " +
+          "scripts/i18n/TRANSLATING-AGENT.md) and re-run. Nothing was merged, tagged or pushed."
+  }
+
+  Write-Host "npm run i18n:validate (placeholders, ICU syntax, plural categories)"
+  npm run i18n:validate
+  if ($LASTEXITCODE -ne 0) {
+    throw "Translations are structurally broken (npm run i18n:validate exited $LASTEXITCODE). Nothing was merged, tagged or pushed."
+  }
+
+  # Reads the build produced above, so it has to stay after it.
+  Write-Host "npm run i18n:bundle (only English may load eagerly)"
+  npm run i18n:bundle
+  if ($LASTEXITCODE -ne 0) {
+    throw "A non-English catalogue is in the eager bundle (npm run i18n:bundle exited $LASTEXITCODE). Nothing was merged, tagged or pushed."
+  }
 } finally {
   Pop-Location
 }
-Write-Host "Frontend build passed." -ForegroundColor Green
+Write-Host "Frontend build and catalogue gates passed." -ForegroundColor Green
 
 Write-Host "`n== Step 2: which release ==" -ForegroundColor Cyan
 git fetch origin --quiet --tags

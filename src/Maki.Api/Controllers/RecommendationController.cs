@@ -1,4 +1,5 @@
-﻿using Maki.Api.Services;
+﻿using Maki.Api.Localization;
+using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Metadata.Catalogue;
@@ -11,7 +12,9 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/recommendations")]
 public class RecommendationController(
+    ILocalizer localizer,
     RecommendationService recommendations,
+    RecommendationFeedbackService feedback,
     ICurrentUser currentUser,
     DiscoverService discover,
     RecentActivityRailService recentActivity,
@@ -58,10 +61,7 @@ public class RecommendationController(
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            return BadRequest(new
-            {
-                error = "Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)",
-            });
+            return this.Fail(localizer, "error.recommendation.tasteProfileNeedsLocalDb");
         }
 
         var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
@@ -71,7 +71,7 @@ public class RecommendationController(
     }
 
     /// <summary>
-    /// What the vectors say about the caller: the distinct things they read, which of their series
+    /// What the vectors say about the caller: the specific things they read, which of their series
     /// is the odd one out, how their taste has moved, and what sits next to them untouched.
     ///
     /// <para>
@@ -88,7 +88,7 @@ public class RecommendationController(
             return Ok(new
             {
                 unavailable = "Needs the local MangaBaka database (Settings → Metadata → local DB)",
-                clusters = Array.Empty<object>(),
+                groups = Array.Empty<object>(),
                 drift = Array.Empty<object>(),
             });
         }
@@ -117,7 +117,10 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await discover.GetFeedsAsync(refresh, currentUser.MaxContentRating, ct));
+            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var rails = await discover.GetFeedsAsync(
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
+            return Ok(FilterRails(rails, suppressed));
         }
         catch (InvalidOperationException ex)
         {
@@ -191,7 +194,10 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await discover.GetGenreFeedsAsync(refresh, currentUser.MaxContentRating, ct));
+            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var rails = await discover.GetGenreFeedsAsync(
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
+            return Ok(FilterRails(rails, suppressed));
         }
         catch (InvalidOperationException ex)
         {
@@ -214,7 +220,9 @@ public class RecommendationController(
                     ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
                     : ContentRating.Allowed(currentUser.MaxContentRating)
             };
-            return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct));
+            var items = await discover.GetFeedAsync(request with { Filters = clamped }, ct);
+            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            return Ok(items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id)).ToList());
         }
         catch (InvalidOperationException ex)
         {
@@ -256,7 +264,7 @@ public class RecommendationController(
     {
         if (string.IsNullOrWhiteSpace(request.Name))
         {
-            return BadRequest(new { error = "name is required" });
+            return this.Fail(localizer, "error.recommendation.nameRequired");
         }
 
         try
@@ -269,7 +277,7 @@ public class RecommendationController(
             };
 
             var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
-            return profile is null ? NotFound(new { error = "No such creator" }) : Ok(profile);
+            return profile is null ? this.NotFoundMessage(localizer, "error.recommendation.creatorNotFound") : Ok(profile);
         }
         catch (InvalidOperationException ex)
         {
@@ -403,13 +411,41 @@ public class RecommendationController(
 
     public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
 
+    /// <summary>
+    /// Deeper rails only for a caller who has something to filter out of them. The Discover caches
+    /// are shared instance-wide, so a reader with no feedback asking for refill headroom would make
+    /// every reader pay a doubled catalogue scan for slack none of them use.
+    /// </summary>
+    private static int RailDepth(HashSet<long> suppressed) =>
+        suppressed.Count > 0 ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+
+    /// <summary>
+    /// The viewer's suppression over a shared rail. Returns a new list every time: the cached rail
+    /// is one object handed to every reader, and filtering it in place would hide one reader's
+    /// titles from all of them.
+    /// </summary>
+    private static IReadOnlyList<DiscoverRail> FilterRails(
+        IReadOnlyList<DiscoverRail> rails, HashSet<long> suppressed)
+    {
+        if (suppressed.Count == 0)
+        {
+            return rails;
+        }
+
+        return rails.Select(rail => rail with
+        {
+            Items = rail.Items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id))
+                .Take(DiscoverService.RailSize).ToList()
+        }).ToList();
+    }
+
     /// <summary>Rich detail for one MangaBaka series (for the Discover detail card).</summary>
     [HttpGet("detail/{id:long}")]
     public async Task<IActionResult> Detail(long id, CancellationToken ct)
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            return BadRequest(new { error = "The local MangaBaka database is not available." });
+            return this.Fail(localizer, "error.recommendation.localDbUnavailable");
         }
 
         var detail = await store.GetDetailAsync(id, ct);

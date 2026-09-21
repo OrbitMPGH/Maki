@@ -6,19 +6,26 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { msg } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
+import { affectedKeys } from './recommendationFeedback'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
   ChapterDto,
+  LocalizedTitle,
   CompareSnapshot,
   MetadataLink,
   MetadataSearchResult,
   NotificationDto,
   NotificationRequest,
   LibraryFilterSpec,
+  ImportDecision,
+  ImportDecisionResultDto,
   QueueHistoryDto,
+  TorrentImportPlanDto,
   RootFolder,
   SavedFilterDto,
   SeriesDto,
@@ -125,8 +132,8 @@ export interface RecommendationItem {
   title: string
   /** Full-size cover art (~460x690). For the detail card only — poster cards use `thumbUrl`. */
   coverUrl: string | null
-  /** 167x250 cover for poster cards, with `thumbUrlHiDpi` (334x500) as its 2x candidate. Null on
-   *  the title-search fallback path, which has no thumbnail; fall back to `coverUrl` there. */
+  /** 167x250 cover for poster cards, with `thumbUrlHiDpi` (334x500) as the preferred card source.
+   * Null on the title-search fallback path, which has no thumbnail; fall back to `coverUrl` there. */
   thumbUrl: string | null
   thumbUrlHiDpi: string | null
   year: number | null
@@ -152,6 +159,13 @@ export interface RecommendationItem {
   coRecommended?: boolean
   coRead?: boolean
   tasteMatch?: boolean
+  /**
+   * The same-work component this pick belongs to, or null when it is in no franchise, which is
+   * most of the catalogue. Two nulls are unrelated, not siblings. The server already spaces a
+   * franchise out so it cannot own a run of a rail; this is here for a surface that wants to say
+   * so on the card.
+   */
+  franchiseId?: number | null
 }
 
 export interface RecommendationsResult {
@@ -160,6 +174,8 @@ export interface RecommendationsResult {
   generatedAt: string
   page: number
   hasMore: boolean
+  poolVersion?: string | null
+  restartRequired?: boolean
 }
 
 export interface RecommendationFilters {
@@ -204,30 +220,30 @@ export interface RecommendationApplyState {
   source: 'taste-profile' | 'discover-hero'
 }
 
-/** One of the reader's own series, as a cluster or a drift bucket shows it. */
+/** One of the reader's own series, as a group or a drift bucket shows it. */
 export interface TasteMember {
   seriesId: number
   title: string
   coverUrl: string | null
 }
 
-/** A neighbourhood beside one of the reader's groups that they own nothing in. */
-export interface TasteBlindSpot {
+/**
+ * One of the specific, recurring things a reader reads. Groups overlap: a book can be in
+ * "Fake Relationship" and in "Romance + Comedy" at once, so these never add up to the library.
+ */
+export interface TasteGroup {
+  /** The facets joined, which is the card's name. */
+  label: string
+  /** The same facets unjoined, for a caller that needs them apart from the label. */
   tags: string[]
-  examples: RecommendationItem[]
-}
-
-/** One of the distinct things a reader reads. */
-export interface TasteCluster {
-  /** What separates this group from the reader's OTHER groups, not from the catalogue. */
-  distinctiveTags: string[]
   size: number
   share: number
   /** Mean cosine of members to the group's centre. Tight vs sprawling. */
   coherence: number
   examples: TasteMember[]
   seedIds: number[]
-  blindSpot: TasteBlindSpot | null
+  /** What the catalogue has in this group that the reader does not own. */
+  picks: RecommendationItem[]
 }
 
 export interface TasteDriftPoint {
@@ -240,9 +256,9 @@ export interface TasteDriftPoint {
 }
 
 export interface TasteInsights {
-  clusters: TasteCluster[]
-  /** Why the library did not divide, when it did not. Drift is still populated in that case. */
-  clustersUnavailable: string | null
+  groups: TasteGroup[]
+  /** Why nothing recurred often enough to name, when nothing did. Drift is still populated then. */
+  groupsUnavailable: string | null
   oddOneOut: TasteMember | null
   oddOneOutSimilarity: number | null
   drift: TasteDriftPoint[]
@@ -398,12 +414,25 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
         // deeper pages read from the pool that page 0 just rebuilt.
         body: JSON.stringify({
           ...request,
-          page: pageParam,
-          refresh: pageParam === 0 ? request.refresh : false,
+          page: pageParam.page,
+          poolVersion: pageParam.poolVersion,
+          refresh: pageParam.page === 0 ? request.refresh : false,
         }),
       }),
-    initialPageParam: 0,
-    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
+    getNextPageParam: (last) => (last.hasMore
+      ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }
+      : undefined),
+    // A restart page is the server saying the pool changed under us and handing back the new one
+    // from the top. Everything loaded before it came from a pool that no longer exists, so keeping
+    // it would show titles this reader hid or repeat ones the new pool ordered differently. Drop
+    // those pages here rather than stopping at the restart: paging carries on from the new page 0.
+    select: (data) => {
+      const restart = data.pages.findLastIndex((page) => page.restartRequired)
+      return restart <= 0
+        ? data
+        : { pages: data.pages.slice(restart), pageParams: data.pageParams.slice(restart) }
+    },
     enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
@@ -572,8 +601,15 @@ export function useDiscoverGenres(refreshNonce = 0) {
   })
 }
 
-/** Expanded, filtered view of one rail. Disabled while `request` is null (modal closed). */
-export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
+/**
+ * Expanded, filtered view of one rail. Disabled while `request` is null (modal closed).
+ *
+ * `keepPrevious` is for callers that page by raising `limit`: without it the wider request is a
+ * new key with no data, the grid unmounts back to skeletons, and the document collapses far enough
+ * that the browser clamps the scroll position to the top. Callers that swap between unrelated
+ * feeds leave it off, since holding the previous feed's rows would flash the wrong rail.
+ */
+export function useDiscoverFeed(request: DiscoverFeedRequest | null, keepPrevious = false) {
   return useQuery({
     queryKey: ['discover-feed', request],
     queryFn: () =>
@@ -584,6 +620,7 @@ export function useDiscoverFeed(request: DiscoverFeedRequest | null) {
     enabled: request != null,
     staleTime: 5 * 60 * 1000,
     retry: false,
+    ...(keepPrevious ? { placeholderData: keepPreviousData } : {}),
   })
 }
 
@@ -770,17 +807,22 @@ export const HOME_SECTIONS = [
 
 export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
 
-/** Human labels for the settings list. Home renders its own headings from its own icons. */
-export const HOME_SECTION_LABELS: Record<HomeSectionKey, string> = {
-  continue: 'Continue reading',
-  downloading: 'Downloading now',
-  recent: 'Recently added',
-  jumpback: 'Jump back in',
-  recommended: 'You might like',
-  popular: 'Currently popular',
-  stats: 'Library at a glance',
-  progress: 'Your progress',
-  toread: 'Waiting to read',
+/**
+ * Human labels for the settings list. Home renders its own headings from its own icons.
+ *
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
+  continue: msg`Continue reading`,
+  downloading: msg`Downloading now`,
+  recent: msg`Recently added`,
+  jumpback: msg`Jump back in`,
+  recommended: msg`You might like`,
+  popular: msg`Currently popular`,
+  stats: msg`Library at a glance`,
+  progress: msg`Your progress`,
+  toread: msg`Waiting to read`,
 }
 
 export interface HomeSection {
@@ -805,6 +847,19 @@ export interface UiSettings {
   startPage: 'home' | 'library' | 'discover'
   homeLayout: HomeLayout
   seriesSections: SeriesSections
+  /**
+   * Ordered comma-separated language codes for series titles ("ja,en"), or "" for the provider's
+   * English title. "native" selects the original-script title. Resolved server-side into
+   * `SeriesDto.displayTitle`; `SeriesDto.title` stays the canonical name the files are named after.
+   */
+  titleLanguage: string
+  /**
+   * Which language the interface itself is drawn in, as one supported code, or "" to follow the
+   * browser. Not the same question as `titleLanguage` above: that one is the language of the
+   * metadata, this one is the language of the app, and wanting Japanese titles in a Swedish
+   * interface is ordinary rather than an edge case.
+   */
+  language: string
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -823,7 +878,41 @@ export function useSaveUiSettings() {
       api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'ui'] })
+      // Titles are resolved server-side, so a language change only shows up on the next fetch.
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+  })
+}
+
+/** The one-off notices this user has not been shown yet. */
+export interface Announcements {
+  /**
+   * The notice telling someone Maki ships translations now. True only for an account that existed
+   * before they did, and only until it is dismissed.
+   */
+  language: boolean
+}
+
+export function useAnnouncements() {
+  return useQuery({
+    queryKey: ['settings', 'announcements'],
+    queryFn: () => api<Announcements>('/settings/announcements'),
+    // Nothing but this client ever flips one of these, and it writes the answer into the cache
+    // itself. Refetching would only risk re-opening a modal somebody has already closed.
+    staleTime: Infinity,
+  })
+}
+
+export function useSeenLanguageAnnouncement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<void>('/settings/announcements/language/seen', { method: 'POST' }),
+    // Written straight into the cache rather than invalidated: the modal closes on the click, and
+    // a refetch that lost the race would put it back.
+    onSuccess: () =>
+      queryClient.setQueryData(['settings', 'announcements'], (old?: Announcements) =>
+        old ? { ...old, language: false } : old,
+      ),
   })
 }
 
@@ -949,7 +1038,7 @@ export interface MangaBakaDetail {
   title: string
   nativeTitle: string | null
   romanizedTitle: string | null
-  altTitles: string[]
+  altTitles: LocalizedTitle[]
   description: string | null
   coverUrl: string | null
   year: number | null
@@ -1131,6 +1220,7 @@ export function useAddSeries() {
       api<SeriesDto>('/series', { method: 'POST', body: JSON.stringify(request) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -1142,6 +1232,7 @@ export function useDeleteSeries() {
       api<void>(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -1450,6 +1541,34 @@ export function useRetryQueueItem() {
   })
 }
 
+/**
+ * What a finished torrent would do to the library. Only fetched when the review modal opens: it
+ * reads the download folder and every archive's page names on the server.
+ */
+export function useImportPlan(id: number | null) {
+  return useQuery({
+    queryKey: ['queue', 'import-plan', id],
+    queryFn: () => api<TorrentImportPlanDto>(`/queue/${id}/import-plan`),
+    enabled: id !== null,
+  })
+}
+
+export function useSettleImport() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, mode }: { id: number; mode: ImportDecision }) =>
+      api<ImportDecisionResultDto | void>(`/queue/${id}/import`, {
+        method: 'POST',
+        body: JSON.stringify({ mode }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export function useRemoveQueueItem() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -1582,7 +1701,9 @@ export function useSetRating() {
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
-      void queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+      // Every recommendation surface, not just the Recommended tab: a rating of 4 or under now
+      // moves the avoided set, which changes Home's rail and the taste surfaces too.
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -1818,6 +1939,14 @@ export interface SourceInfo {
   displayName: string
   baseUrl: string
   needsFlareSolverr: boolean
+  /**
+   * Whether this source honours a mapping's `languageFilter`, so the mappings card offers a
+   * language picker. Not the same as "has more than one language": MANGA Plus publishes nine and
+   * answers false, because each is a separate series id rather than a filter over one list.
+   */
+  supportsLanguageFilter: boolean
+  /** Language codes this source publishes content in (`ISource.SupportedLanguages`). */
+  supportedLanguages: string[]
   /** Global switch. False = can't be linked, and none of its existing mappings run. */
   enabled: boolean
 }
@@ -2216,6 +2345,39 @@ export function useMetadataSettings() {
   })
 }
 
+/** Live progress of the MangaBaka dump refresh. Mirrors `MangaBakaDumpProgress` on the server. */
+export interface DumpProgress {
+  running: boolean
+  /** 'idle' | 'checking' | 'downloading' | 'indexing' | 'installing' */
+  phase: string
+  /** Compressed bytes received, the same unit `totalBytes` is in. */
+  downloadedBytes: number
+  /** Null when the server withheld Content-Length, which leaves bytes but no percentage. */
+  totalBytes: number | null
+  bytesPerSecond: number | null
+  estimatedSecondsRemaining: number | null
+  startedAt: string | null
+  finishedAt: string | null
+  lastInstalled: boolean
+  lastError: string | null
+}
+
+export const DUMP_PROGRESS_KEY = ['settings', 'metadata', 'dump-progress']
+
+/**
+ * Admin-only. Fetched once so a page opened mid-download starts from the real state; after that the
+ * hub's `dumpProgress` push keeps it current (see MetadataDumpProgress). The slow poll while running
+ * is the fallback for a hub connection that dropped during the transfer.
+ */
+export function useDumpProgress(enabled = true) {
+  return useQuery({
+    queryKey: DUMP_PROGRESS_KEY,
+    queryFn: () => api<DumpProgress>('/settings/metadata/dump-progress'),
+    enabled,
+    refetchInterval: (query) => (query.state.data?.running ? 5000 : false),
+  })
+}
+
 export function useSaveMetadataSettings() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2266,11 +2428,15 @@ export function allowedContentRatings(max: ContentRating | string | undefined | 
   return CONTENT_RATINGS.slice(0, index < 0 ? 1 : index + 1)
 }
 
-export const CONTENT_RATING_LABELS: Record<string, string> = {
-  safe: 'Safe',
-  suggestive: 'Suggestive',
-  erotica: 'Erotica',
-  pornographic: 'Pornographic',
+/**
+ * Descriptors, not strings: this table is built once when the module loads, so a rendered string
+ * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
+ */
+export const CONTENT_RATING_LABELS: Record<string, MessageDescriptor> = {
+  safe: msg`Safe`,
+  suggestive: msg`Suggestive`,
+  erotica: msg`Erotica`,
+  pornographic: msg`Pornographic`,
 }
 
 export interface DiscoverSettings {
@@ -2320,6 +2486,12 @@ export interface LibrarySettings {
   seriesFolderFormat?: string
   /** Naming format for a downloaded chapter's file, extension excluded. */
   chapterFormat?: string
+  /**
+   * Whether files adopted from disk (torrent grabs, manual queue imports) are renamed to the
+   * chapter format, or keep the name they arrived with. Always filled in on read; leave it out of
+   * a write to keep the stored value.
+   */
+  renameImportedFiles?: boolean
 }
 
 export function useLibrarySettings() {
@@ -2531,10 +2703,44 @@ export function useSaveSourcePriority() {
   })
 }
 
+export interface SourceLanguageSettings {
+  order: string[]
+  /** Switched-off languages. They stay in `order` so an off/on cycle keeps their rank. */
+  disabled: string[]
+  /** Every language code any registered source publishes. */
+  available: string[]
+}
+
+/** Admin-only endpoint, so callers outside Settings have to gate this on the caller being one. */
+export function useSourceLanguages(enabled = true) {
+  return useQuery({
+    queryKey: ['settings', 'sources', 'languages'],
+    queryFn: () => api<SourceLanguageSettings>('/settings/sources/languages'),
+    enabled,
+  })
+}
+
+export function useSaveSourceLanguages() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: SourceLanguageSettings) =>
+      api<SourceLanguageSettings>('/settings/sources/languages', {
+        method: 'PUT',
+        body: JSON.stringify(value),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['settings', 'sources', 'languages'] })
+      void queryClient.invalidateQueries({ queryKey: ['sources'] })
+    },
+  })
+}
+
 export function useRefreshMetadataDump() {
   return useMutation({
     mutationFn: () =>
-      api<{ started: boolean }>('/settings/metadata/refresh', { method: 'POST' }),
+      api<{ started: boolean; alreadyRunning: boolean }>('/settings/metadata/refresh', {
+        method: 'POST',
+      }),
   })
 }
 
@@ -2599,6 +2805,10 @@ export interface ScrobbleConnection {
   syncReading: boolean
   /** Per-tracker: push ratings to this service. */
   syncRatings: boolean
+  /** Whether this tracker can hand over an anime list at all, which is what draws the switch. */
+  animeList: boolean
+  /** Per-tracker: let this service's watched anime steer recommendations. */
+  animeSignals: boolean
 }
 
 export interface ScrobbleCandidate {
@@ -2732,14 +2942,17 @@ export function useScrobblePreferences() {
       service,
       reading,
       ratings,
+      anime,
     }: {
       service: string
       reading: boolean
       ratings: boolean
+      /** Omitted for trackers with no anime list, so the server leaves that setting alone. */
+      anime?: boolean
     }) =>
-      api<{ service: string; reading: boolean; ratings: boolean }>(
+      api<{ service: string; reading: boolean; ratings: boolean; anime: boolean | null }>(
         `/scrobble/preferences/${service}`,
-        { method: 'PUT', body: JSON.stringify({ reading, ratings }) },
+        { method: 'PUT', body: JSON.stringify({ reading, ratings, anime }) },
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] })
@@ -3066,6 +3279,7 @@ export interface ActivitySeriesEvent {
   title: string
   at: string
   coverUrl: string | null
+  providerId: string | null
 }
 
 export interface ActivityDroppedSeries {

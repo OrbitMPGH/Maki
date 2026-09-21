@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button, Card, Group, PasswordInput, Text, TextInput, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { Trans } from '@lingui/react/macro'
+import { t as now } from '@lingui/core/macro'
 import {
   useConnectionSettings,
   useSaveConnectionSettings,
@@ -87,21 +89,21 @@ export function ConnectionSettingsCard({
           loading={test.isPending}
           onClick={() =>
             test.mutate(payload(), {
-              onSuccess: () => notifications.show({ message: `${title} is reachable`, color: 'green' }),
+              onSuccess: () => notifications.show({ message: now`${title} is reachable`, color: 'green' }),
             })
           }
         >
-          Test
+          <Trans>Test</Trans>
         </Button>
         <Button
           loading={save.isPending}
           onClick={() =>
             save.mutate(payload(), {
-              onSuccess: () => notifications.show({ message: 'Saved', color: 'green' }),
+              onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
             })
           }
         >
-          Save
+          <Trans>Save</Trans>
         </Button>
       </Group>
       {children}

@@ -1,4 +1,4 @@
-using Maki.Core.ComicInfo;
+﻿using Maki.Core.ComicInfo;
 using Maki.Core.Entities;
 
 namespace Maki.Core.Tests;
@@ -16,6 +16,46 @@ public class ComicInfoBuilderTests
         Genres = ["action", "fantasy"],
         MangaBakaId = 1692
     };
+
+    [Fact]
+    public void Localized_series_prefers_the_alt_title_in_the_chapters_language()
+    {
+        var series = TestSeries();
+        series.OriginalTitle = "ベルセルク";
+        series.AltTitles = [new LocalizedTitle("Berserk: La Edición Definitiva", "es")];
+
+        var spanish = ComicInfoBuilder.Build(
+            series, new Chapter { Number = 1, Language = "es" }, pageCount: 1);
+        Assert.Equal("Berserk: La Edición Definitiva", spanish.LocalizedSeries);
+
+        // Nothing tagged "es-la", so this falls through to the native-script title.
+        var latam = ComicInfoBuilder.Build(
+            series, new Chapter { Number = 1, Language = "es-la" }, pageCount: 1);
+        Assert.Equal("ベルセルク", latam.LocalizedSeries);
+    }
+
+    [Fact]
+    public void An_english_chapter_localizes_to_the_native_title_not_another_english_name()
+    {
+        // ComicInfo.Series is already the English title, so a language-matched alt title here would
+        // be a second English name picked arbitrarily from however many the provider listed.
+        var series = TestSeries();
+        series.OriginalTitle = "ベルセルク";
+        series.AltTitles = [new LocalizedTitle("Berserk: The Complete Edition", "en")];
+
+        var info = ComicInfoBuilder.Build(
+            series, new Chapter { Number = 1, Language = "en" }, pageCount: 1);
+
+        Assert.Equal("ベルセルク", info.LocalizedSeries);
+    }
+
+    [Fact]
+    public void Localized_series_is_null_when_the_series_has_no_other_name()
+    {
+        var info = ComicInfoBuilder.Build(
+            TestSeries(), new Chapter { Number = 1, Language = "en" }, pageCount: 1);
+        Assert.Null(info.LocalizedSeries);
+    }
 
     [Fact]
     public void Builds_expected_fields()

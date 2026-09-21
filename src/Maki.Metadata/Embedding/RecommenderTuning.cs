@@ -123,6 +123,92 @@ public enum AttributionScale
 }
 
 /// <summary>
+/// How the avoid channel's two halves combine into the score <c>HybridScore</c> subtracts.
+///
+/// <para>
+/// There are two of them because each alone has a known failure. The semantic half penalizes
+/// everything near an avoided vector, and a reader's dislikes are disproportionately famous, so the
+/// penalty lands on the popular part of the space rather than on resemblance: measured, median pick
+/// popularity went 1,448 to 3,389 while nDCG fell (<c>distribution/CLAUDE.md</c>, "v5: negative
+/// signals"). The tag half on its own would penalize every title carrying an avoided tag, including
+/// the harem comedies a harem reader would have liked.
+/// </para>
+/// </summary>
+public enum AvoidBlend
+{
+    /// <summary>
+    /// The semantic resemblance alone. v1, kept so the eval can reproduce that row and prove the
+    /// harness did not move underneath a comparison.
+    /// </summary>
+    Semantic,
+
+    /// <summary>
+    /// The contrastive tag score alone. Kept for the sweep as the control that is expected to fail
+    /// on a reader who likes most of what an avoided tag covers.
+    /// </summary>
+    Tag,
+
+    /// <summary>
+    /// Both, multiplied. Each factor is in [0, 1] so the product is too, and either side at zero
+    /// means no penalty: a candidate has to sit near something the reader rejected AND carry the
+    /// tags that made it a rejection.
+    /// </summary>
+    Product,
+
+    /// <summary>
+    /// The semantic score, but only where the tag score clears
+    /// <see cref="RecommenderTuning.AvoidTagFloor"/>. A product halves a strong penalty when one
+    /// side is middling; this exists so the sweep can say whether that damping helps or hurts.
+    /// </summary>
+    Gate,
+}
+
+/// <summary>
+/// What the semantic half of the avoid channel measures before <see cref="AvoidBlend"/> combines it
+/// with the tag half.
+///
+/// <para>
+/// v1 and v2 both used a raw maximum cosine to the avoided vectors, and both shipped inert for the
+/// same reason: in this space a raw cosine is a popularity hub effect before it is a resemblance
+/// measure. Famous rows sit near everything, a reader's dislikes are disproportionately famous, and
+/// median pick popularity therefore left its band in every configuration that moved anything
+/// (<c>distribution/CLAUDE.md</c>, "v5" and "v5.1"). These modes replace raw resemblance with
+/// resemblance beyond what something else already predicts.
+/// </para>
+/// </summary>
+public enum AvoidNeutralize
+{
+    /// <summary>
+    /// The raw scaled cosine. v1 and v2 behaviour, kept so the harness can reproduce those rows and
+    /// show it did not move underneath a comparison.
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// More like what was rejected than like what was kept: the row's resemblance to the reader's
+    /// own seed queries is subtracted from its resemblance to the avoided set, scaled by
+    /// <see cref="RecommenderTuning.AvoidRelativeMargin"/>. A hub row is near both sets and cancels;
+    /// a row near a dislike and near nothing the reader kept pays in full. The same shape as the
+    /// contrastive tag profile, in vector space.
+    /// </summary>
+    Relative,
+
+    /// <summary>
+    /// More like the rejected set than other titles of the same fame: the mean raw avoid score of
+    /// the row's own popularity bucket, over the scored pool, is subtracted from its own.
+    /// </summary>
+    PopResidual,
+
+    /// <summary>
+    /// Unusually close for this query: each avoided query's cosines are measured over the scan and
+    /// the row is scored on how many deviations above that query's mean it sits. Normalizes per
+    /// query rather than per candidate, so it is the control that says whether per-query scaling
+    /// alone is enough.
+    /// </summary>
+    Standardized,
+}
+
+/// <summary>
 /// The knobs on <see cref="SemanticRecommender"/> that are not a channel coefficient. Broken out
 /// as a record for the same reason <see cref="SearchTuning"/> and
 /// <see cref="RecoGraph.RecoGraphTuning"/> are: so <c>distribution/eval-reco-labels.cs</c> can sweep
@@ -731,4 +817,136 @@ public sealed record RecommenderTuning
     /// </para>
     /// </summary>
     public double TagConsensusPower { get; init; } = 1.0;
+
+    /// <summary>
+    /// How many avoided titles get their own query in the avoid channel, before the set is reduced
+    /// to that many representatives.
+    ///
+    /// <para>
+    /// 32 rather than <see cref="MaxSeedQueries"/>'s 48 because the avoid set is usually tiny -
+    /// a handful of thumbs down and whatever the reader rated badly - so the cap only binds on a
+    /// shelf with a long low-rated tail, and there the channel is subtracting rather than selecting.
+    /// Over the cap, the set is ordered by strength and then walked by the same farthest-point
+    /// selection the seed queries use, so a large low-rated shelf still gets a spread rather than
+    /// the strongest 32, which on a shelf full of one dropped franchise would all be the same book.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>maxavoidqueries</c>.</para>
+    /// </summary>
+    public int MaxAvoidQueries { get; init; } = 32;
+
+    /// <summary>
+    /// The cosine below which a candidate does not resemble an avoided title enough to be penalized
+    /// for it. The avoid score is <c>(cos - floor) / (1 - floor)</c> clamped at 0, so it lands in
+    /// [0, 1] like every other channel here.
+    ///
+    /// <para>
+    /// 0.45, well above the 0.30 <see cref="CosineFloor"/> ships at, because avoiding should demand
+    /// more resemblance than recommending does. A pick that merely clears the bar for "worth
+    /// showing" against something the reader disliked is not what they complained about; a
+    /// near-clone of it is. Getting this wrong in the generous direction turns one thumbs down into
+    /// a quiet tax on a third of the catalogue.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>avoidfloor</c>; the coefficient itself is <c>wavoid</c>.</para>
+    /// </summary>
+    public double AvoidFloor { get; init; } = 0.45;
+
+    /// <summary>
+    /// How many of the avoided titles have to carry a tag at class <c>Defining</c> or above before
+    /// it may enter the contrastive avoid profile.
+    ///
+    /// <para>
+    /// 2, because one dislike infers nothing: a single avoided title's whole tag list would become
+    /// a profile, and the UI's promise is that one thumbs down is a statement about that book. Two
+    /// is the smallest number that can be called agreement, and the margin below does the rest of
+    /// the filtering.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>avoidtagminsupport</c>.</para>
+    /// </summary>
+    public int AvoidTagMinSupport { get; init; } = 2;
+
+    /// <summary>
+    /// How much of the positive profile is subtracted from the avoided one before a tag counts as
+    /// avoided. Both profiles are share-normalized, so 1.0 means a tag only counts where the
+    /// avoided set carries more of it, per unit of profile mass, than the reader's own seeds do.
+    ///
+    /// <para>
+    /// Below 1 a tag the reader also likes can still be penalized, which is the failure a plain
+    /// "carries an avoided tag" test has: subtract a 40-tag famous dislike from a harem reader's
+    /// profile at margin 0 and every harem title on the page pays for it.
+    /// </para>
+    ///
+    /// <para>Eval knob: <c>avoidtagmargin</c>.</para>
+    /// </summary>
+    public double AvoidTagMargin { get; init; } = 1.0;
+
+    /// <summary>
+    /// The contrastive tag score a candidate has to reach before <see cref="AvoidBlend.Gate"/> lets
+    /// the semantic penalty through. Read in that mode and nowhere else.
+    ///
+    /// <para>Eval knob: <c>avoidtagfloor</c>.</para>
+    /// </summary>
+    public double AvoidTagFloor { get; init; } = 0.25;
+
+    /// <summary>
+    /// How the two halves of the avoid channel combine. See <see cref="AvoidBlend"/> for why there
+    /// are two of them at all.
+    ///
+    /// <para>Eval knob: <c>avoidblend</c>.</para>
+    /// </summary>
+    public AvoidBlend AvoidBlend { get; init; } = AvoidBlend.Product;
+
+    /// <summary>
+    /// What the semantic half measures. See <see cref="Embedding.AvoidNeutralize"/> for why a raw
+    /// cosine is the wrong thing to subtract.
+    ///
+    /// <para>Eval knob: <c>avoidneutralize</c>.</para>
+    /// </summary>
+    public AvoidNeutralize AvoidNeutralize { get; init; } = AvoidNeutralize.Relative;
+
+    /// <summary>
+    /// How much of a candidate's resemblance to the reader's own seeds cancels its resemblance to
+    /// the avoided set, under <see cref="AvoidNeutralize.Relative"/>. Both sides are on the same
+    /// <see cref="AvoidFloor"/> scale, so 1.0 means a row pays only for the resemblance to a
+    /// dislike that its resemblance to the shelf does not already account for. 0 reduces the mode
+    /// to <see cref="AvoidNeutralize.None"/>.
+    ///
+    /// <para>Eval knob: <c>avoidrelmargin</c>.</para>
+    /// </summary>
+    public double AvoidRelativeMargin { get; init; } = 1.0;
+
+    /// <summary>
+    /// How many popularity buckets <see cref="AvoidNeutralize.PopResidual"/> splits the scored pool
+    /// into, over the same log-scaled rank the obscurity term uses.
+    ///
+    /// <para>Eval knob: <c>avoidpopbuckets</c>.</para>
+    /// </summary>
+    public int AvoidPopBuckets { get; init; } = 10;
+
+    /// <summary>
+    /// How many pool rows a popularity bucket needs before its own mean is worth subtracting.
+    /// Under it the pool mean is used instead, because a mean over three rows is the rows rather
+    /// than the bucket.
+    ///
+    /// <para>Eval knob: <c>avoidpopminbucket</c>.</para>
+    /// </summary>
+    public int AvoidPopMinBucket { get; init; } = 10;
+
+    /// <summary>
+    /// The z-score below which a row is not unusually close to an avoided title, under
+    /// <see cref="AvoidNeutralize.Standardized"/>.
+    ///
+    /// <para>Eval knob: <c>avoidzfloor</c>.</para>
+    /// </summary>
+    public double AvoidZFloor { get; init; } = 1.0;
+
+    /// <summary>
+    /// How many deviations past <see cref="AvoidZFloor"/> earn a full penalty. 2.0, so a z of 3 is
+    /// 1.0.
+    ///
+    /// <para>Eval knob: <c>avoidzspan</c>.</para>
+    /// </summary>
+    public double AvoidZSpan { get; init; } = 2.0;
 }

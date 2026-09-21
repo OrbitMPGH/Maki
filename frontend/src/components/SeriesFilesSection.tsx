@@ -12,33 +12,30 @@ import {
 import { notifications } from '@mantine/notifications'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
+import { formatBytes } from '../format'
+import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { msg, plural, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { useLabel } from '../i18n-context'
 
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '-'
-  const units = ['B', 'KB', 'MB', 'GB']
-  let value = bytes
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit++
-  }
-  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`
-}
-
-const statusVisual: Record<string, { color: string; label: string; icon: typeof IconLink }> = {
-  linked: { color: 'teal', label: 'Linked', icon: IconLink },
-  unlinked: { color: 'yellow', label: 'Not linked', icon: IconLinkOff },
-  unrecognized: { color: 'orange', label: 'Unrecognized', icon: IconFileUnknown },
-  missing: { color: 'red', label: 'Missing from disk', icon: IconFileUnknown },
+const statusVisual: Record<string, { color: string; label: MessageDescriptor; icon: typeof IconLink }> = {
+  linked: { color: 'teal', label: msg`Linked`, icon: IconLink },
+  unlinked: { color: 'yellow', label: msg`Not linked`, icon: IconLinkOff },
+  unrecognized: { color: 'orange', label: msg`Unrecognized`, icon: IconFileUnknown },
+  missing: { color: 'red', label: msg`Missing from disk`, icon: IconFileUnknown },
 }
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
-  if (file.mappedChapters.length === 0) return '-'
-  return `Ch. ${file.mappedChapters.join(', ')}`
+  const { mappedChapters } = file
+  if (mappedChapters.length === 0) return '-'
+  const chapters = mappedChapters.join(', ')
+  return now`Ch. ${chapters}`
 }
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -66,12 +63,17 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         <Group gap="xs" align="center">
           <IconFileZip size={18} />
           <Title order={3}>
-            Files
+            <Trans>Files</Trans>
           </Title>
           {files && (
             <Text size="sm" c="dimmed" className="tnum">
               {files.length}
-              {problems > 0 ? ` · ${problems} need attention` : ''}
+              {problems > 0 && (
+                <>
+                  {' · '}
+                  <Plural value={problems} one="# needs attention" other="# need attention" />
+                </>
+              )}
             </Text>
           )}
         </Group>
@@ -83,7 +85,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               loading={isFetching}
               onClick={() => void refetch()}
             >
-              Refresh
+              <Trans>Refresh</Trans>
             </Button>
             {files && files.length > 0 && !selectMode && (
               <Button
@@ -91,7 +93,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                 variant="subtle"
                 onClick={() => setSelectMode(true)}
               >
-                Select
+                <Trans>Select</Trans>
               </Button>
             )}
           </Group>
@@ -101,12 +103,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           <Group py="md" gap="xs">
             <Loader size="sm" />
             <Text size="sm" c="dimmed">
-              Scanning folder…
+              <Trans>Scanning folder…</Trans>
             </Text>
           </Group>
         ) : !files || files.length === 0 ? (
           <Text c="dimmed" size="sm" py="sm">
-            No files in the series folder.
+            <Trans>No files in the series folder.</Trans>
           </Text>
         ) : (
         <>
@@ -115,7 +117,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               <Group gap="xs" justify="space-between">
                 <Group gap="xs">
                   <Text size="sm" c="dimmed">
-                    {selected.size} selected
+                    <Plural value={selected.size} one="# selected" other="# selected" />
                   </Text>
                   <Button
                     size="xs"
@@ -124,7 +126,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                       setSelected(new Set(files.filter((f) => f.onDisk).map((f) => f.relativePath)))
                     }
                   >
-                    Select all on disk
+                    <Trans>Select all on disk</Trans>
                   </Button>
                 </Group>
                 <Group gap="xs">
@@ -136,7 +138,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     disabled={selected.size === 0}
                     onClick={() => setConfirmOpen(true)}
                   >
-                    Delete selected
+                    <Trans>Delete selected</Trans>
                   </Button>
                   <Button
                     size="xs"
@@ -144,7 +146,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     leftSection={<IconX size={15} />}
                     onClick={exitSelectMode}
                   >
-                    Done
+                    <Trans>Done</Trans>
                   </Button>
                 </Group>
               </Group>
@@ -156,17 +158,18 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               <Table.Thead>
                 <Table.Tr>
                   {selectMode && <Table.Th w={40} />}
-                  <Table.Th>File</Table.Th>
-                  <Table.Th w={90}>Parsed</Table.Th>
-                  <Table.Th w={160}>Status</Table.Th>
-                  <Table.Th>Mapped to</Table.Th>
-                  <Table.Th w={90}>Size</Table.Th>
+                  <Table.Th><Trans>File</Trans></Table.Th>
+                  <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
+                  <Table.Th w={160}><Trans>Status</Trans></Table.Th>
+                  <Table.Th><Trans>Mapped to</Trans></Table.Th>
+                  <Table.Th w={90}><Trans>Size</Trans></Table.Th>
                   {!selectMode && <Table.Th w={40} />}
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {files.map((f) => {
                   const v = statusVisual[f.status] ?? statusVisual.unrecognized
+                  const { fileName } = f
                   return (
                     <Table.Tr key={f.relativePath} opacity={f.status === 'missing' ? 0.6 : 1}>
                       {selectMode && (
@@ -175,7 +178,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             checked={selected.has(f.relativePath)}
                             onChange={() => toggleSelected(f.relativePath)}
                             disabled={!f.onDisk}
-                            aria-label={`Select ${f.fileName}`}
+                            aria-label={t`Select ${fileName}`}
                           />
                         </Table.Td>
                       )}
@@ -202,12 +205,18 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                       </Table.Td>
                       <Table.Td>
                         <Badge size="sm" color={v.color} variant="light" leftSection={<v.icon size={12} />}>
-                          {v.label}
+                          {renderLabel(v.label)}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
                         {f.isVolume && f.mappedChapters.length > 0 ? (
-                          <Tooltip label={`Volume file backing ${f.mappedChapters.length} chapter(s)`} withArrow>
+                          <Tooltip
+                            label={plural(f.mappedChapters.length, {
+                              one: 'Volume file backing # chapter',
+                              other: 'Volume file backing # chapters',
+                            })}
+                            withArrow
+                          >
                             <Text size="sm" className="tnum">
                               {mappedLabel(f)}
                             </Text>
@@ -225,7 +234,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                       </Table.Td>
                       {!selectMode && (
                         <Table.Td>
-                          <Tooltip label={f.onDisk ? 'Delete from disk' : 'Missing from disk'} withArrow>
+                          <Tooltip label={f.onDisk ? t`Delete from disk` : t`Missing from disk`} withArrow>
                             <ActionIcon
                               variant="subtle"
                               color="red"
@@ -235,7 +244,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 setSelectMode(true)
                                 setConfirmOpen(true)
                               }}
-                              aria-label={`Delete ${f.fileName}`}
+                              aria-label={t`Delete ${fileName}`}
                             >
                               <IconTrash size={17} />
                             </ActionIcon>
@@ -252,20 +261,24 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           <Modal
             opened={confirmOpen}
             onClose={() => setConfirmOpen(false)}
-            title="Delete files from disk?"
+            title={t`Delete files from disk?`}
             centered
           >
             <Stack gap="md">
               <Text size="sm" c="dimmed">
-                This will permanently delete {selected.size} CBZ file(s) from disk.
-                Chapters that share a volume CBZ will also lose their file.
+                <Plural
+                  value={selected.size}
+                  one="This will permanently delete # CBZ file from disk."
+                  other="This will permanently delete # CBZ files from disk."
+                />{' '}
+                <Trans>Chapters that share a volume CBZ will also lose their file.</Trans>
               </Text>
               <Text size="sm" c="red">
-                This action cannot be undone.
+                <Trans>This action cannot be undone.</Trans>
               </Text>
               <Group justify="flex-end">
                 <Button variant="default" onClick={() => setConfirmOpen(false)}>
-                  Cancel
+                  <Trans>Cancel</Trans>
                 </Button>
                 <Button
                   color="red"
@@ -278,8 +291,14 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           color: r.failed > 0 ? 'yellow' : 'green',
                           message:
                             r.failed > 0
-                              ? `Deleted ${r.deleted} file(s), ${r.failed} could not be deleted (locked or permission denied)`
-                              : `Deleted ${r.deleted} file(s)`,
+                              ? `${plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' })}, ${plural(
+                                  r.failed,
+                                  {
+                                    one: '# could not be deleted (locked or permission denied)',
+                                    other: '# could not be deleted (locked or permission denied)',
+                                  },
+                                )}`
+                              : plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' }),
                         })
                         setConfirmOpen(false)
                         exitSelectMode()
@@ -287,7 +306,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     })
                   }
                 >
-                  Delete
+                  <Trans>Delete</Trans>
                 </Button>
               </Group>
             </Stack>

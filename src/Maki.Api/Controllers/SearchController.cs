@@ -1,4 +1,5 @@
-using System.Net;
+﻿using System.Net;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Metadata;
 using Maki.Core.Security;
@@ -10,6 +11,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/search")]
 public class SearchController(
+    ILocalizer localizer,
     IEnumerable<IMetadataProvider> metadataProviders,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
@@ -25,7 +27,7 @@ public class SearchController(
         var source = sourceRegistry.Find(sourceName);
         if (source is null)
         {
-            return BadRequest(new { error = $"Unknown source: {sourceName}" });
+            return this.Fail(localizer, "error.search.unknownSource", new { sourceName });
         }
 
         var results = await source.SearchAsync(query, ct);
@@ -45,7 +47,7 @@ public class SearchController(
         if (!Uri.TryCreate(url, UriKind.Absolute, out var target) ||
             (target.Scheme != Uri.UriSchemeHttp && target.Scheme != Uri.UriSchemeHttps))
         {
-            return BadRequest(new { error = "Not a valid http(s) URL" });
+            return this.Fail(localizer, "error.search.invalidUrl");
         }
 
         foreach (var source in sourceRegistry.All)
@@ -78,7 +80,7 @@ public class SearchController(
             }
         }
 
-        return NotFound(new { error = "No source recognizes this URL" });
+        return this.NotFoundMessage(localizer, "error.search.noSourceRecognizesUrl");
     }
 
     /// <summary>
@@ -106,7 +108,7 @@ public class SearchController(
         if (!CoverHostPolicy.Allows(source, target))
         {
             logger.LogWarning("Blocked cover proxy request for {Host} via source {Source}", target.Host, sourceName);
-            return BadRequest(new { error = "That host is not served by this source" });
+            return this.Fail(localizer, "error.search.hostNotServed");
         }
 
         var client = httpClientFactory.CreateClient("covers");
@@ -134,7 +136,7 @@ public class SearchController(
                 {
                     logger.LogWarning(
                         "Blocked cover proxy redirect to {Host} via source {Source}", next.Host, sourceName);
-                    return BadRequest(new { error = "That host is not served by this source" });
+                    return this.Fail(localizer, "error.search.hostNotServed");
                 }
 
                 current = next;
@@ -151,7 +153,7 @@ public class SearchController(
             return File(bytes, response.Content.Headers.ContentType?.MediaType ?? "image/jpeg");
         }
 
-        return BadRequest(new { error = "Too many redirects" });
+        return this.Fail(localizer, "error.search.tooManyRedirects");
     }
 
     /// <summary>Redirect hops the cover proxy will follow before giving up.</summary>
@@ -169,6 +171,12 @@ public class SearchController(
             s.DisplayName,
             s.BaseUrl,
             NeedsFlareSolverr = s.Capabilities.HasFlag(SourceCapabilities.NeedsFlareSolverr),
+            // Whether ListChaptersAsync honours SourceMapping.LanguageFilter, so the mappings card
+            // only offers a language picker where one does something. A multi-language source that
+            // serves each language as its own series id (MANGA Plus) answers false: there is
+            // nothing to filter, a second language is a second mapping.
+            SupportsLanguageFilter = s.Capabilities.HasFlag(SourceCapabilities.SupportsLanguageFilter),
+            s.SupportedLanguages,
             Enabled = !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase)
         }));
     }
@@ -178,7 +186,7 @@ public class SearchController(
     {
         if (string.IsNullOrWhiteSpace(query))
         {
-            return BadRequest(new { error = "query is required" });
+            return this.Fail(localizer, "error.search.queryRequired");
         }
 
         // The caller's own ceiling, not an instance setting: an account created at "safe" and denied

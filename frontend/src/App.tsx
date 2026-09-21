@@ -38,12 +38,17 @@ import { SetupAccountPage } from './pages/SetupAccountPage'
 import CommandPalette from './components/CommandPalette'
 import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
+import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
-import { isQueueActive } from './components/ui/status'
+import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
+import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
+import { useLanguageSync } from './i18n-context'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, pageTitle, type NavItem } from './nav'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
@@ -87,12 +92,13 @@ function NavLinks({
   badges?: Record<string, number>
 }) {
   const { pathname } = useLocation()
+  const { _ } = useLinguiReact()
   return (
     <Stack gap="lg">
       {sections.map((section) => (
-        <Stack key={section.label} gap={4}>
+        <Stack key={section.label.id} gap={4}>
           <Text className="nav-section-label" mb={2}>
-            {section.label}
+            {_(section.label)}
           </Text>
           {section.items.map((item) => {
             const count = badges?.[item.path] ?? 0
@@ -105,7 +111,7 @@ function NavLinks({
                 onClick={onNavigate}
               >
                 <item.icon size={18} stroke={1.7} className="nav-icon" />
-                {item.label}
+                {_(item.label)}
                 {count > 0 && (
                   <Badge size="xs" variant="filled" color="brand" ml="auto" className="tnum">
                     {count > 99 ? '99+' : count}
@@ -121,6 +127,7 @@ function NavLinks({
 }
 
 function HealthButton() {
+  const { t } = useLingui()
   const { data: health } = useHealth()
   if (!health || health.length === 0) return null
   const hasError = health.some((h) => h.severity === 'error')
@@ -128,7 +135,11 @@ function HealthButton() {
     <Popover width={340} position="bottom-end" withArrow shadow="md">
       <Popover.Target>
         <Indicator size={16} color={hasError ? 'red' : 'yellow'} label={health.length} withBorder>
-          <ActionIcon variant="subtle" color={hasError ? 'red' : 'yellow'} aria-label="Health issues">
+          <ActionIcon
+            variant="subtle"
+            color={hasError ? 'red' : 'yellow'}
+            aria-label={t`Health issues`}
+          >
             <IconAlertTriangle size={19} />
           </ActionIcon>
         </Indicator>
@@ -164,25 +175,42 @@ function HealthButton() {
 }
 
 function ActivityButton() {
+  const { t } = useLingui()
   const { data: queue } = useQueue()
   const active = queue?.items.filter((q) => isQueueActive(q.status)).length ?? 0
+  // A download waiting on an import decision outranks work in progress: progress finishes on its
+  // own, this does not, and the count is the only thing telling anyone it is there.
+  const review = queue?.items.filter((q) => needsImportReview(q.status)).length ?? 0
+  const count = review > 0 ? review : active
   return (
-    <Tooltip label={active > 0 ? `${active} download(s) in progress` : 'Activity'} withArrow>
+    <Tooltip
+      label={
+        review > 0 ? (
+          <Plural value={review} one="# download waiting for an import decision"
+            other="# downloads waiting for an import decision" />
+        ) : active > 0 ? (
+          <Plural value={active} one="# download in progress" other="# downloads in progress" />
+        ) : (
+          <Trans>Activity</Trans>
+        )
+      }
+      withArrow
+    >
       <ActionIcon
         component={Link}
         to="/activity"
         variant="subtle"
         color="gray"
-        aria-label="Activity"
+        aria-label={t`Activity`}
         pos="relative"
         style={{ overflow: 'visible' }}
       >
         <IconDownload size={19} />
-        {active > 0 && (
+        {count > 0 && (
           <Badge
             size="xs"
             variant="filled"
-            color="brand"
+            color={review > 0 ? 'yellow' : 'brand'}
             // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
             // horizontally (with a floor width so single digits still read as a dot) doesn't.
             style={{
@@ -195,7 +223,7 @@ function ActivityButton() {
             }}
             className="tnum"
           >
-            {active > 99 ? '99+' : active}
+            {count > 99 ? '99+' : count}
           </Badge>
         )}
       </ActionIcon>
@@ -284,7 +312,10 @@ function AppShellRoutes() {
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
+  const { _ } = useLinguiReact()
   useLiveEvents()
+  // localStorage decided the first paint; the stored preference is what follows the user here.
+  useLanguageSync(ui?.language)
 
   // Both default to "available" while their settings load, so a tab doesn't flash away and back
   // on every visit. HomePage takes the opposite default for its own data, see the note there.
@@ -292,6 +323,8 @@ function AppShellRoutes() {
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
+  // "Maki" when nothing here names the page. The product name is never translated.
+  const title = pageTitle(location.pathname)
   const sections = navSections({
     isAdmin,
     discoverAvailable,
@@ -331,7 +364,7 @@ function AppShellRoutes() {
               </span>
             </Group>
             <Text fw={700} fz="lg" visibleFrom="sm" style={{ letterSpacing: '-0.01em' }}>
-              {pageTitle(location.pathname)}
+              {title ? _(title) : 'Maki'}
             </Text>
           </Group>
           <Group gap="xs" wrap="nowrap">
@@ -430,6 +463,11 @@ function AppShellRoutes() {
       </AppShell.Main>
 
       {setup && !setup.completed && <SetupWizard />}
+      {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
+          nobody being handed a brand-new Maki needs to be told what changed in it. */}
+      {setup?.completed && <LanguageAnnouncementModal />}
+      {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
+      {isAdmin && <MetadataDumpProgress />}
       <TipLayer />
     </AppShell>
   )

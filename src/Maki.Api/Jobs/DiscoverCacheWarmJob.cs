@@ -28,6 +28,7 @@ public class DiscoverCacheWarmJob(
     VectorIndexCache searchIndex,
     CatalogueIndexCache catalogueIndex,
     IServiceScopeFactory scopeFactory,
+    ArtifactBuildGate gate,
     ILogger<DiscoverCacheWarmJob> logger) : IJob
 {
     public static readonly JobKey Key = new("discover-cache-warm");
@@ -36,6 +37,9 @@ public class DiscoverCacheWarmJob(
     {
         try
         {
+            // One heavy build at a time across every job here; see ArtifactBuildGate.
+            using var build = await gate.EnterAsync(nameof(DiscoverCacheWarmJob), context.CancellationToken);
+
             foreach (var ceiling in await CeilingsInUseAsync(context.CancellationToken))
             {
                 await discover.GetFeedsAsync(refresh: true, ceiling, context.CancellationToken);

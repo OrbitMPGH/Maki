@@ -3,6 +3,7 @@ using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Maki.Data;
 
@@ -32,6 +33,12 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserRootFolder> UserRootFolders => Set<UserRootFolder>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
     public DbSet<UserSeriesState> UserSeriesStates => Set<UserSeriesState>();
+    public DbSet<RecommendationFeedback> RecommendationFeedback => Set<RecommendationFeedback>();
+    public DbSet<RecommendationFeedbackEvent> RecommendationFeedbackEvents => Set<RecommendationFeedbackEvent>();
+    public DbSet<RecommendationSignalOverride> RecommendationSignalOverrides => Set<RecommendationSignalOverride>();
+    public DbSet<RecommendationProfileState> RecommendationProfileStates => Set<RecommendationProfileState>();
+    public DbSet<RecommendationMutationReceipt> RecommendationMutationReceipts => Set<RecommendationMutationReceipt>();
+    public DbSet<AnimeSignal> AnimeSignals => Set<AnimeSignal>();
     public DbSet<AuthEvent> AuthEvents => Set<AuthEvent>();
 
     public DbSet<Series> Series => Set<Series>();
@@ -49,7 +56,6 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
-    public DbSet<NamingConfig> NamingConfigs => Set<NamingConfig>();
     public DbSet<AppConfigEntry> AppConfig => Set<AppConfigEntry>();
     public DbSet<ScrobbleToken> ScrobbleTokens => Set<ScrobbleToken>();
     public DbSet<ScrobbleMapping> ScrobbleMappings => Set<ScrobbleMapping>();
@@ -112,6 +118,30 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         }
     }
 
+    /// <summary>
+    /// SQLite has no date type: a DateTime is stored as a bare string with no offset marker, so
+    /// every timestamp comes back with Kind=Unspecified however it was written. Anything that then
+    /// reads it as a point in time (<c>new DateTimeOffset(...)</c>, <c>ToLocalTime</c>) assumes the
+    /// container's local zone, which on a negative UTC offset put <c>QueuedAt</c> hours in the
+    /// future and left torrent claiming with an empty time window forever. Every timestamp the app
+    /// writes is UTC, so the kind is restored on read; Unspecified on write is taken as already UTC
+    /// rather than converted, for the same reason.
+    /// </summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
+    }
+
+    private sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
+        v => v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : v,
+        v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+    private sealed class NullableUtcDateTimeConverter() : ValueConverter<DateTime?, DateTime?>(
+        v => v.HasValue && v.Value.Kind == DateTimeKind.Local ? v.Value.ToUniversalTime() : v,
+        v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Configures the Identity tables. Without this the AspNetUsers key, the normalized-name
@@ -120,6 +150,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<HealthFile>().HasIndex(x => new { x.RootFolderId, x.RelativePath }).IsUnique();
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ContentHash);
+        // HealthWorker runs a correlated NOT EXISTS on this column every 15 seconds for as long as
+        // automatic scanning is on, so without an index it is a full HealthFiles scan per candidate
+        // ChapterFile, forever.
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
         modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
@@ -160,13 +194,55 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.HasIndex(s => new { s.UserId, s.SeriesId }).IsUnique();
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(s => s.Series).WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
 
             // SetNull, not Cascade: deleting a reading profile must un-pin the series that used it,
             // never delete the rating and per-series override that share the row.
             e.HasOne<ReadingProfile>().WithMany()
                 .HasForeignKey(s => s.ReadingProfileId).OnDelete(DeleteBehavior.SetNull);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<RecommendationFeedback>(e =>
+        {
+            e.Property(x => x.Revision).IsConcurrencyToken();
+            e.HasIndex(x => new { x.UserId, x.Provider, x.ProviderId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationFeedbackEvent>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.OccurredAtUtc, x.Id });
+            e.HasIndex(x => new { x.UserId, x.ClientMutationId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationSignalOverride>(e =>
+        {
+            e.Property(x => x.Revision).IsConcurrencyToken();
+            e.HasIndex(x => new { x.UserId, x.Provider, x.ProviderId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationProfileState>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<AnimeSignal>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.Service, x.AnimeId }).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.MangaBakaId });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationMutationReceipt>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.ClientMutationId }).IsUnique();
+            e.HasIndex(x => x.ExpiresAtUtc);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ReadingProfile>(e =>
@@ -228,7 +304,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => s.MangaBakaId);
             e.Property(s => s.Genres).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.Tags).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
-            e.Property(s => s.AltTitles).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
+            e.Property(s => s.AltTitles).HasConversion(LocalizedTitleListConverter.Instance, LocalizedTitleListComparer.Instance);
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.RootFolder).WithMany().HasForeignKey(s => s.RootFolderId).OnDelete(DeleteBehavior.Restrict);
@@ -286,7 +362,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // deleting the series must not either — see the entity's remarks.
             e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.ResolvedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.EditedByUserId).OnDelete(DeleteBehavior.SetNull);
-            e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(r => r.Series).WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
 
             e.HasQueryFilter(r => _scope.Unrestricted || r.UserId == _scope.UserId);
         });

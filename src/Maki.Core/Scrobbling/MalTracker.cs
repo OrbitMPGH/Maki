@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -12,7 +14,7 @@ public class MalTracker(
     IHttpClientFactory httpClientFactory,
     IAppSettings settings,
     IScrobbleTokenStore tokens,
-    ScrobbleTrackerOptions options) : IScrobbleTracker
+    ScrobbleTrackerOptions options) : IScrobbleTracker, IAnimeListSource
 {
     public const string HttpClientName = "scrobble";
 
@@ -324,6 +326,179 @@ public class MalTracker(
 
     private static string? GetString(JsonElement element, string name) =>
         element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.String ? p.GetString() : null;
+
+    // ---- anime list ----
+
+    private static readonly Dictionary<string, AnimeWatchStatus> AnimeStatusToInternal = new()
+    {
+        ["watching"] = AnimeWatchStatus.Watching,
+        ["completed"] = AnimeWatchStatus.Completed,
+        ["on_hold"] = AnimeWatchStatus.OnHold,
+        ["dropped"] = AnimeWatchStatus.Dropped,
+        ["plan_to_watch"] = AnimeWatchStatus.Planning,
+    };
+
+    /// <summary>
+    /// The whole anime list, paged by offset rather than by following <c>paging.next</c>: that field
+    /// is an absolute URL and everything else here goes through <see cref="RequestAsync"/>, which
+    /// takes a path. Carries no relation data, so every entry comes back unresolved and the sync
+    /// asks <see cref="RelatedMangaAsync"/> once per anime it has not asked about before.
+    /// </summary>
+    public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+    {
+        const int pageSize = 1000;
+        var entries = new List<AnimeListEntry>();
+        var seen = new HashSet<long>();
+        for (var offset = 0; offset < 20_000; offset += pageSize)
+        {
+            var data = await RequestAsync(userId, HttpMethod.Get,
+                $"/users/@me/animelist?fields=list_status&nsfw=true&limit={pageSize}&offset={offset}", null, ct);
+            if (!data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
+            {
+                break;
+            }
+
+            var count = 0;
+            foreach (var row in rows.EnumerateArray())
+            {
+                count++;
+                if (!row.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
+                    GetInt(node, "id") is not { } animeId || !seen.Add(animeId))
+                {
+                    continue;
+                }
+
+                var hasStatus = row.TryGetProperty("list_status", out var ls) &&
+                                ls.ValueKind == JsonValueKind.Object;
+                entries.Add(new AnimeListEntry(
+                    animeId,
+                    GetString(node, "title") ?? string.Empty,
+                    hasStatus ? PositiveOrNull(GetInt(ls, "score")) : null,
+                    hasStatus
+                        ? AnimeStatusToInternal.GetValueOrDefault(
+                            GetString(ls, "status") ?? string.Empty, AnimeWatchStatus.Planning)
+                        : AnimeWatchStatus.Planning,
+                    MalAnimeId: animeId));
+            }
+
+            if (count < pageSize)
+            {
+                break;
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// MyAnimeList's v2 API has no anime-to-manga relation field at all: <c>fields=related_manga</c>
+    /// on the anime endpoint always comes back an empty array, so this used to match nothing. Resolved
+    /// through AniList's public GraphQL instead, unauthenticated, by this anime's MAL id
+    /// (<c>Media(idMal: ...)</c>). AniList carries the adaptation relations MAL does not expose, and
+    /// no AniList entry for that MAL id (a 404 with a GraphQL <c>errors</c> array, or a 2xx with a
+    /// null <c>Media</c>) is a real "no match" and returns null rather than throwing.
+    /// </summary>
+    public async Task<AnimeRelatedManga?> RelatedMangaAsync(
+        int userId, long animeId, CancellationToken ct = default)
+    {
+        const string query = """
+            query($idMal:Int){ Media(idMal:$idMal, type:ANIME){
+              relations { edges { relationType node { id idMal type format } } } } }
+            """;
+
+        var data = await QueryAniListAsync(query, new { idMal = (int)animeId }, ct);
+        if (data is not { } d || !d.TryGetProperty("Media", out var media) || media.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var pick = AnimeRelationPicker.Pick(AnimeRelationPicker.ReadRelations(media));
+        return pick is { } p ? new AnimeRelatedManga(p.Id, p.IdMal) : null;
+    }
+
+    /// <summary>
+    /// One unauthenticated GraphQL call to AniList's public endpoint. Unauthenticated is limited to
+    /// 90 requests/min and answers with 429 + <c>Retry-After</c> when exceeded; waited out once (capped
+    /// at 60s) and then given up on, so one slow row cannot stall the rest of the pass.
+    /// <para>
+    /// A connection failure, a second 429, and every non-2xx other than "404 with a not-found
+    /// <c>errors</c> array" are transport failures and throw <see cref="HttpRequestException"/>, which
+    /// <c>AnimeSignalSyncService.IsTransportFailure</c> catches and leaves the row unstamped so the
+    /// next pass retries it. A 2xx with an <c>errors</c> array that is not that not-found shape is
+    /// ambiguous and is also treated as transport rather than as a real "no match".
+    /// </para>
+    /// </summary>
+    private async Task<JsonElement?> QueryAniListAsync(string query, object variables, CancellationToken ct)
+    {
+        var client = httpClientFactory.CreateClient(HttpClientName);
+        var waited429 = false;
+        while (true)
+        {
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.PostAsJsonAsync(options.AniListApiUrl, new { query, variables }, ct);
+            }
+            catch (HttpRequestException e)
+            {
+                throw new HttpRequestException($"AniList relation lookup failed: {e.Message}", e);
+            }
+
+            if ((int)response.StatusCode == 429)
+            {
+                if (!waited429)
+                {
+                    waited429 = true;
+                    var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
+                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    continue;
+                }
+
+                throw new HttpRequestException(
+                    $"AniList relation lookup failed ({(int)response.StatusCode}): rate limited again");
+            }
+
+            var body = await response.Content.ReadAsStringAsync(ct);
+            var hasErrors = HasErrors(body);
+
+            if (response.StatusCode == HttpStatusCode.NotFound && hasErrors)
+            {
+                // AniList answers a 404 with a GraphQL errors array when no Media has this idMal.
+                // That is a real "no match", not a transport problem.
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"AniList relation lookup failed ({(int)response.StatusCode}): {Truncate(body)}");
+            }
+
+            if (hasErrors)
+            {
+                // A 2xx with errors is ambiguous, not a confirmed not-found: treat as transport so it
+                // retries instead of being stamped as "no manga relation".
+                throw new HttpRequestException($"AniList relation lookup returned errors: {Truncate(body)}");
+            }
+
+            using var json = JsonDocument.Parse(body);
+            return json.RootElement.TryGetProperty("data", out var payload) ? payload.Clone() : null;
+        }
+    }
+
+    private static bool HasErrors(string body)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(body);
+            return json.RootElement.TryGetProperty("errors", out var e) && e.ValueKind != JsonValueKind.Null;
+        }
+        catch (JsonException)
+        {
+            // A non-JSON body (a plain-text 500 page, say) carries no errors array to read.
+            return false;
+        }
+    }
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
 }
