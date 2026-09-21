@@ -9211,6 +9211,10 @@ msgstr "synchronizacja w toku… · ostatnia {lastSync} · następna {nextSync}"
 msgid "Synced"
 msgstr "Zsynchronizowano"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Synced."
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

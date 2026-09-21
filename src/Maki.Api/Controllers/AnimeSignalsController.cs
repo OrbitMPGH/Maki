@@ -230,13 +230,27 @@ public class AnimeSignalsController(
             return this.Fail(localizer, "error.animeSignals.syncRunning");
         }
 
-        var summary = await signals.SyncUserAsync(user.UserId, ct);
+        AnimeSignalSyncSummary summary;
+        try
+        {
+            summary = await signals.SyncUserAsync(user.UserId, ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException ||
+                                    (ex is OperationCanceledException && !ct.IsCancellationRequested))
+        {
+            // A per-anime lookup timeout is caught inside the sync itself; this is the list fetch or
+            // something else upstream taking the whole pass down with it.
+            logger.LogWarning(ex, "Anime signal sync timed out for user {UserId}", user.UserId);
+            return this.ServiceUnavailable(localizer, "error.animeSignals.syncUnavailable");
+        }
+
         return Ok(new
         {
             summary.Fetched,
             summary.Matched,
             summary.Removed,
             summary.Looked,
+            summary.LookupFailures,
             lastSyncAtUtc = await signals.LastSyncAtAsync(user.UserId, ct),
         });
     }

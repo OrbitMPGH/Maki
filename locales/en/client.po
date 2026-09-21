@@ -7549,6 +7549,10 @@ msgstr "sync running… · last {lastSync} · next {nextSync}"
 msgid "Synced"
 msgstr "Synced"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Synced."
+msgstr "Synced."
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Synopsis"

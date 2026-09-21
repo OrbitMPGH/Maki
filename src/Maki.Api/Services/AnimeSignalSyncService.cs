@@ -12,7 +12,12 @@ namespace Maki.Api.Services;
 /// <param name="Matched">Entries that now carry a MangaBaka id.</param>
 /// <param name="Removed">Stored rows the tracker no longer lists.</param>
 /// <param name="Looked">Per-anime relation lookups spent, which is the expensive number.</param>
-public record AnimeSignalSyncSummary(int Fetched, int Matched, int Removed, int Looked, string? Error = null);
+/// <param name="LookupFailures">
+/// Per-anime relation lookups that timed out or hit a network error rather than answering. Those
+/// rows are left unstamped so the next pass retries them, and are not counted in <see cref="Looked"/>.
+/// </param>
+public record AnimeSignalSyncSummary(
+    int Fetched, int Matched, int Removed, int Looked, string? Error = null, int LookupFailures = 0);
 
 /// <summary>
 /// Pulls each opted-in user's anime list off their connected trackers, matches every entry to the
@@ -202,6 +207,7 @@ public class AnimeSignalSyncService(
         var fetched = 0;
         var removed = orphaned.Count;
         var looked = 0;
+        var lookupFailures = 0;
         var failed = false;
         var fetchedAny = false;
 
@@ -216,6 +222,13 @@ public class AnimeSignalSyncService(
             catch (TrackerException ex)
             {
                 logger.LogWarning(ex, "Could not read the {Service} anime list for user {UserId}", service, userId);
+                failed = true;
+                continue;
+            }
+            catch (Exception ex) when (IsTransportFailure(ex, ct))
+            {
+                logger.LogWarning(ex, "Could not read the {Service} anime list for user {UserId}: {Message}",
+                    service, userId, ex.Message);
                 failed = true;
                 continue;
             }
@@ -273,6 +286,7 @@ public class AnimeSignalSyncService(
                 .OrderBy(x => x.AnimeId)
                 .Take(MaxLookupsPerPass)
                 .ToListAsync(ct);
+            var consecutiveLookupFailures = 0;
             for (var i = 0; i < unresolved.Count; i++)
             {
                 var row = unresolved[i];
@@ -291,8 +305,31 @@ public class AnimeSignalSyncService(
                 catch (TrackerException ex)
                 {
                     logger.LogDebug(ex, "No manga relation for {Service} anime {AnimeId}", service, row.AnimeId);
+                    row.MatchAttemptedAtUtc = DateTime.UtcNow;
+                    looked++;
+                    continue;
+                }
+                catch (Exception ex) when (IsTransportFailure(ex, ct))
+                {
+                    // A slow or unreachable provider, not "this anime has no manga". Leaving
+                    // MatchAttemptedAtUtc unset means the next pass tries this row again instead of
+                    // silently giving up on it for good.
+                    logger.LogWarning("No manga relation for {Service} anime {AnimeId}: {Message}",
+                        service, row.AnimeId, ex.Message);
+                    lookupFailures++;
+                    consecutiveLookupFailures++;
+                    if (consecutiveLookupFailures >= 3)
+                    {
+                        logger.LogInformation(
+                            "Stopping {Service} relation lookups for user {UserId} after 3 consecutive failures",
+                            service, userId);
+                        break;
+                    }
+
+                    continue;
                 }
 
+                consecutiveLookupFailures = 0;
                 row.MatchAttemptedAtUtc = DateTime.UtcNow;
                 looked++;
             }
@@ -312,11 +349,27 @@ public class AnimeSignalSyncService(
                 DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), ct);
         }
         logger.LogInformation(
-            "Anime signals for user {UserId}: {Fetched} entries, {Matched} matched, {Removed} removed, {Looked} lookups",
-            userId, fetched, matched, removed, looked);
+            "Anime signals for user {UserId}: {Fetched} entries, {Matched} matched, {Removed} removed, " +
+            "{Looked} lookups, {LookupFailures} lookup failures",
+            userId, fetched, matched, removed, looked, lookupFailures);
         return new AnimeSignalSyncSummary(fetched, matched, removed, looked,
-            failed ? "one or more lists could not be read" : null);
+            failed ? "one or more lists could not be read" : null, lookupFailures);
     }
+
+    /// <summary>
+    /// A slow or unreachable provider, not a real failure of this pass: one MAL relation lookup can
+    /// hang its own HttpClient timeout (<see cref="TaskCanceledException"/> wrapping a
+    /// <see cref="TimeoutException"/>) or drop the connection (<see cref="HttpRequestException"/>),
+    /// and neither should take the rest of the list, or the request handling the manual "Sync now",
+    /// down with it. A real cancellation of <paramref name="ct"/> must still propagate.
+    /// </summary>
+    private static bool IsTransportFailure(Exception ex, CancellationToken ct) =>
+        ex switch
+        {
+            HttpRequestException => true,
+            OperationCanceledException => !ct.IsCancellationRequested,
+            _ => false,
+        };
 
     /// <summary>
     /// Turns the provider manga ids on every row into catalogue ids, in two batched reads of the

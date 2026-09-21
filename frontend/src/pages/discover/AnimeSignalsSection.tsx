@@ -241,10 +241,10 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     : Number.isInteger(entry.score) ? String(entry.score) : entry.score.toFixed(1)
 
   return (
-    <Group gap="sm" wrap="nowrap" py={4}>
+    <Group gap="sm" wrap="nowrap" py={4} style={{ minWidth: 0 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Group gap={6} wrap="nowrap">
-          <Text size="sm" fw={500} truncate>{entry.title}</Text>
+        <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+          <Text size="sm" fw={500} truncate style={{ minWidth: 0, flex: 1 }}>{entry.title}</Text>
           {entry.animeCount > 1 && (
             <Badge size="xs" variant="default" style={{ flexShrink: 0 }}>
               <Plural value={entry.animeCount} one="# season" other="# seasons" />

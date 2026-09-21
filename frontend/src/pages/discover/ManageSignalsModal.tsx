@@ -4,6 +4,7 @@ import {
   TextInput,
 } from '@mantine/core'
 import { IconSearch, IconX } from '@tabler/icons-react'
+import { notifications } from '@mantine/notifications'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { FeedbackState } from '../../api/recommendationFeedback'
 import {
@@ -291,7 +292,12 @@ function AnimeSignalsPanel() {
 
   async function runSync() {
     setSyncError('')
-    try { await sync.mutateAsync() } catch (cause) { setSyncError(String(cause)) }
+    try {
+      await sync.mutateAsync()
+      notifications.show({ message: t`Synced.`, color: 'green' })
+    } catch (cause) {
+      setSyncError(String(cause))
+    }
   }
 
   if (isLoading || !data) {
@@ -328,7 +334,7 @@ function AnimeSignalsPanel() {
             </>
           )}
         </Text>
-        <Button size="xs" variant="outline" loading={data.syncing} onClick={() => void runSync()}>
+        <Button size="xs" variant="outline" loading={sync.isPending || data.syncing} onClick={() => void runSync()}>
           <Trans>Sync now</Trans>
         </Button>
       </Group>
@@ -355,8 +361,8 @@ function AnimeSignalsPanel() {
         <Text size="sm" c="dimmed" py="md"><Trans>No shows match.</Trans></Text>
       )}
 
-      <ScrollArea.Autosize mah={460}>
-        <Stack gap={4}>
+      <ScrollArea.Autosize mah={460} scrollbars="y" style={{ overflowX: 'hidden' }}>
+        <Stack gap={4} style={{ minWidth: 0 }}>
           {filtered.map((entry) => (
             <AnimeSignalRow key={entry.key} entry={entry} />
           ))}

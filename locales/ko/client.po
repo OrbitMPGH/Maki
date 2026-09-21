@@ -9211,6 +9211,10 @@ msgstr "동기화 실행 중… · 마지막 {lastSync} · 다음 {nextSync}"
 msgid "Synced"
 msgstr "동기화됨"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Synced."
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

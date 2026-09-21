@@ -9211,6 +9211,10 @@ msgstr "同期実行中… · 前回{lastSync} · 次回{nextSync}"
 msgid "Synced"
 msgstr "同期済み"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Synced."
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

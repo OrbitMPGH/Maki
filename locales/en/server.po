@@ -63,6 +63,12 @@ msgstr "Turn on anime taste signals before syncing"
 msgid "error.animeSignals.syncRunning"
 msgstr "An anime list sync is already running"
 
+#. The tracker itself timed out or dropped the connection reading the anime list, rather than a
+#. single anime's relation lookup, which is caught and retried inside the sync instead.
+#: src/Maki.Api/Controllers/AnimeSignalsController.cs
+msgid "error.animeSignals.syncUnavailable"
+msgstr "Could not reach the tracker to sync your anime list, try again shortly"
+
 #. The CSRF filter's own refusal, shown for any state-changing request missing a valid
 #. XSRF-TOKEN/antiforgery cookie pair.
 #: src/Maki.Api/Auth/AntiforgeryCookieFilter.cs
