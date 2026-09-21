@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Maki.Core.Entities;
 
 namespace Maki.Core.Scrobbling;
@@ -97,22 +98,39 @@ public static class AnimeRelationPicker
             .FirstOrDefault();
 
     /// <summary>
-    /// The same question for MyAnimeList, whose <c>related_manga</c> is already manga-only and
-    /// carries no format. <see cref="int.MaxValue"/> means "not the work this anime came from", and
-    /// the caller must skip those edges rather than fall back to them.
-    /// <para>
-    /// Strict for the same reason the AniList picker is: <c>related_manga</c> lists spin-offs,
-    /// character books, side stories and art collections beside the source, and a fallback that took
-    /// "whatever is left" would put a 4-koma gag spin-off into somebody's profile as though they had
-    /// loved it. No relation at all is the right answer far more often than the wrong relation is.
-    /// </para>
+    /// Flattens an AniList <c>Media.relations.edges</c> node into <see cref="AnimeMangaRelation"/>s.
+    /// Shared by <see cref="AniListTracker"/> (its list query and its own <c>RelatedMangaAsync</c>)
+    /// and <see cref="MalTracker"/> (which resolves through AniList's public GraphQL, since MAL's own
+    /// v2 API has no anime-to-manga relation field at all).
     /// </summary>
-    public static int MalRelationRank(string? relationType) =>
-        (relationType ?? string.Empty).ToLowerInvariant() switch
+    internal static IEnumerable<AnimeMangaRelation> ReadRelations(JsonElement media)
+    {
+        if (!media.TryGetProperty("relations", out var relations) ||
+            !relations.TryGetProperty("edges", out var edges) || edges.ValueKind != JsonValueKind.Array)
         {
-            "adaptation" => 0,
-            "parent_story" => 1,
-            "full_story" => 2,
-            _ => int.MaxValue,
-        };
+            yield break;
+        }
+
+        foreach (var edge in edges.EnumerateArray())
+        {
+            if (!edge.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
+                GetInt(node, "id") is not { } id)
+            {
+                continue;
+            }
+
+            yield return new AnimeMangaRelation(
+                GetString(edge, "relationType") ?? string.Empty,
+                id,
+                GetInt(node, "idMal"),
+                GetString(node, "type") ?? string.Empty,
+                GetString(node, "format"));
+        }
+    }
+
+    private static int? GetInt(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.Number ? p.GetInt32() : null;
+
+    private static string? GetString(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.String ? p.GetString() : null;
 }

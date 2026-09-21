@@ -43,11 +43,14 @@ public class AnimeSignalSyncService(
     public const int DefaultIntervalHours = 24;
 
     /// <summary>
-    /// How long a per-anime relation lookup waits before the next one. MyAnimeList has no published
-    /// rate limit and an unthrottled few hundred requests is what gets an app registration blocked,
-    /// so a new list costs minutes rather than seconds. Only new entries pay it.
+    /// How long a per-anime relation lookup waits before the next one. Only new entries pay it.
+    /// A "mal" row is resolved through AniList's public GraphQL (MAL's own API has no relation field),
+    /// which is unauthenticated and capped at 90 requests/min, so that service waits a full second -
+    /// 1000ms keeps a whole pass under the ceiling with headroom for the request itself. Everything
+    /// else authenticates its own lookups and keeps the original 400ms.
     /// </summary>
-    private static readonly TimeSpan LookupDelay = TimeSpan.FromMilliseconds(400);
+    private static TimeSpan LookupDelayFor(string service) =>
+        TimeSpan.FromMilliseconds(service == "mal" ? 1000 : 400);
 
     /// <summary>How many per-anime lookups one user's pass may spend, so a 2,000-entry list lands over several runs.</summary>
     private const int MaxLookupsPerPass = 300;
@@ -320,7 +323,7 @@ public class AnimeSignalSyncService(
                 ct.ThrowIfCancellationRequested();
                 if (i > 0)
                 {
-                    await Task.Delay(LookupDelay, ct);
+                    await Task.Delay(LookupDelayFor(service), ct);
                 }
 
                 try

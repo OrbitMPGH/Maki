@@ -467,7 +467,7 @@ public class AniListTracker(
             return null;
         }
 
-        var pick = AnimeRelationPicker.Pick(ReadRelations(media));
+        var pick = AnimeRelationPicker.Pick(AnimeRelationPicker.ReadRelations(media));
         return pick is { } p ? new AnimeRelatedManga(p.Id, p.IdMal) : null;
     }
 
@@ -485,38 +485,13 @@ public class AniListTracker(
             : null) ?? string.Empty;
         var status = AnimeStatusToInternal.GetValueOrDefault(
             GetString(row, "status") ?? string.Empty, AnimeWatchStatus.Planning);
-        var pick = AnimeRelationPicker.Pick(ReadRelations(media));
+        var pick = AnimeRelationPicker.Pick(AnimeRelationPicker.ReadRelations(media));
         return new AnimeListEntry(
             animeId, title, ScoreOf(row, "score"), status,
             AniListMangaId: pick?.Id,
             MalMangaId: pick?.IdMal,
             RelationsResolved: true,
             MalAnimeId: GetInt(media, "idMal"));
-    }
-
-    private static IEnumerable<AnimeMangaRelation> ReadRelations(JsonElement media)
-    {
-        if (!media.TryGetProperty("relations", out var relations) ||
-            !relations.TryGetProperty("edges", out var edges) || edges.ValueKind != JsonValueKind.Array)
-        {
-            yield break;
-        }
-
-        foreach (var edge in edges.EnumerateArray())
-        {
-            if (!edge.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
-                GetInt(node, "id") is not { } id)
-            {
-                continue;
-            }
-
-            yield return new AnimeMangaRelation(
-                GetString(edge, "relationType") ?? string.Empty,
-                id,
-                GetInt(node, "idMal"),
-                GetString(node, "type") ?? string.Empty,
-                GetString(node, "format"));
-        }
     }
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;

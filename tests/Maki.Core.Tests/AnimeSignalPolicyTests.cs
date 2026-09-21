@@ -256,28 +256,4 @@ public class AnimeSignalPolicyTests
         };
         Assert.Equal(2, AnimeRelationPicker.Pick(edges)!.Value.Id);
     }
-
-    [Fact]
-    public void Mal_prefers_an_adaptation_over_a_parent_story()
-    {
-        Assert.True(AnimeRelationPicker.MalRelationRank("adaptation") <
-                    AnimeRelationPicker.MalRelationRank("parent_story"));
-        Assert.True(AnimeRelationPicker.MalRelationRank("parent_story") <
-                    AnimeRelationPicker.MalRelationRank("full_story"));
-    }
-
-    /// <summary>
-    /// A spin-off is not the work the anime came from. Ranking those last rather than excluding them
-    /// would seed a gag 4-koma off somebody's favourite show.
-    /// </summary>
-    [Theory]
-    [InlineData("spin_off")]
-    [InlineData("side_story")]
-    [InlineData("character")]
-    [InlineData("summary")]
-    [InlineData("other")]
-    [InlineData("alternative_version")]
-    [InlineData(null)]
-    public void Mal_refuses_every_relation_that_is_not_the_source_work(string? relationType) =>
-        Assert.Equal(int.MaxValue, AnimeRelationPicker.MalRelationRank(relationType));
 }
