@@ -1,4 +1,4 @@
-using Maki.Core.ComicInfo;
+﻿using Maki.Core.ComicInfo;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
@@ -78,7 +78,7 @@ public class CbzLinkService(
                 {
                     // No volume metadata to range-match against — read the chapters the
                     // compilation actually contains from its page file names.
-                    matched = LinkVolumeByContents(chapters, file, chapterFile.Id, replaceExisting);
+                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, replaceExisting);
                 }
 
                 if (parsed.IsVolume)
@@ -202,7 +202,7 @@ public class CbzLinkService(
                 var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
                 if (absolutePath is not null)
                 {
-                    matched = LinkVolumeByContents(chapters, absolutePath, dbFile.Id);
+                    matched = LinkVolumeByContents(chapters, parsed, absolutePath, dbFile.Id);
                 }
             }
 
@@ -419,7 +419,8 @@ public class CbzLinkService(
     /// boundaries disagree with the metadata provider's. Returns the chapters that were linked.
     /// </summary>
     private List<Chapter> LinkVolumeByContents(
-        List<Chapter> chapters, string cbzPath, int chapterFileId, bool replaceExisting = true)
+        List<Chapter> chapters, ParsedReleaseFile parsed, string cbzPath, int chapterFileId,
+        bool replaceExisting = true)
     {
         var numbers = VolumeChapterScanner.ScanCbz(cbzPath);
         if (numbers.Count == 0)
@@ -441,6 +442,7 @@ public class CbzLinkService(
         foreach (var chapter in targets)
         {
             chapter.ChapterFileId = chapterFileId;
+            AdoptParsedVolume(chapter, parsed);
         }
 
         if (targets.Count > 0)
@@ -480,6 +482,7 @@ public class CbzLinkService(
                 if (chapter != null)
                 {
                     chapter.ChapterFileId = fileId;
+                    AdoptParsedVolume(chapter, parsed);
                     filled++;
                 }
             }
@@ -525,8 +528,24 @@ public class CbzLinkService(
         foreach (var chapter in targets)
         {
             chapter.ChapterFileId = chapterFileId;
+            AdoptParsedVolume(chapter, parsed);
         }
 
         return targets;
+    }
+
+    /// <summary>
+    /// Copies the volume the file name carries onto a chapter that has none, so the naming tokens
+    /// and the volume column can see it for a series no source maps to volumes. A chapter that
+    /// already has one keeps it: the provider's assignment outranks a scene release's. A
+    /// multi-volume compilation is skipped, since it says nothing about which of its volumes any
+    /// one chapter belongs to.
+    /// </summary>
+    private static void AdoptParsedVolume(Chapter chapter, ParsedReleaseFile parsed)
+    {
+        if (parsed.VolumeEnd is null && parsed.Volume is int volume)
+        {
+            chapter.Volume ??= volume;
+        }
     }
 }
