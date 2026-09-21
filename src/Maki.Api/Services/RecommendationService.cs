@@ -150,10 +150,13 @@ public class RecommendationService(
         // instead: asking "more like this" about a title is a deliberate one-off, and refusing it
         // because that title is excluded from the inferred profile answers a question nobody asked.
         // The weights below stay effective either way, so the seed steers at neutral weight and its
-        // excluded preference is not quietly reinstated.
-        var visible = snapshot.Observed.EligibleIds.ToHashSet();
+        // excluded preference is not quietly reinstated. Only owned titles are checked: a chosen
+        // seed that is not on the shelf is a catalogue pick ("more like this" from the Discover
+        // hero), and dropping it would leave the request with no seeds at all.
+        var hidden = snapshot.Observed.LibraryIds.ToHashSet();
+        hidden.ExceptWith(snapshot.Observed.EligibleIds);
         IReadOnlyList<long> seeds = request.SeedIds is { Count: > 0 } chosen
-            ? chosen.Where(visible.Contains).Distinct().OrderBy(id => id).ToList()
+            ? chosen.Where(id => !hidden.Contains(id)).Distinct().OrderBy(id => id).ToList()
             : seeded.EligibleIds;
         if (seeds.Count == 0)
         {

@@ -335,6 +335,19 @@ public class RecommendationServiceTasteTests : IDisposable
     }
 
     [Fact]
+    public async Task More_like_this_accepts_a_catalogue_seed_that_is_not_in_the_library()
+    {
+        // The Discover hero asks "more like this" about a recommendation, which is by definition
+        // not owned. Filtering chosen seeds down to shelf titles left the request with none.
+        SeedSeries(101);
+
+        var (service, recommender) = Service();
+        await service.GetAsync(new RecommendationRequest(SeedIds: [909]), new TestCurrentUser(1));
+
+        Assert.Equal([909L], Assert.Single(recommender.SeenSeeds));
+    }
+
+    [Fact]
     public async Task A_thumbs_up_seeds_a_title_that_is_not_in_the_library()
     {
         // The point of the action: a rating can only describe something already on the shelf, so

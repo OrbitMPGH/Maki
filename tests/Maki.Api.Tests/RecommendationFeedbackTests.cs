@@ -69,6 +69,28 @@ public class RecommendationFeedbackTests : IDisposable
     }
 
     [Fact]
+    public async Task Undo_restores_the_sentiment_a_like_replaced()
+    {
+        // The notification's Undo button is offered on every action, like and dislike included.
+        using var db = _fixture.NewContext(1);
+        db.RecommendationFeedback.Add(new RecommendationFeedback
+        {
+            UserId = 1, ProviderId = 321, Sentiment = RecommendationSentiment.Disliked
+        });
+        await db.SaveChangesAsync();
+        var service = Service(db, 1);
+
+        var liked = await service.MutateAsync(1, 321, new FeedbackCommand("like", Guid.NewGuid(), 0));
+        Assert.Equal("liked", liked.State.Sentiment);
+
+        var restored = await service.UndoAsync(1, liked.EventId!.Value, Guid.NewGuid(), 1);
+        Assert.Equal("disliked", restored.State.Sentiment);
+        Assert.Equal(RecommendationSentiment.Disliked,
+            (await db.RecommendationFeedback.AsNoTracking()
+                .FirstAsync(x => x.UserId == 1 && x.ProviderId == 321)).Sentiment);
+    }
+
+    [Fact]
     public async Task Replayed_mutation_is_stable_and_a_new_identical_action_is_a_no_op()
     {
         using var db = _fixture.NewContext(1);

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -394,8 +395,8 @@ public class MalTracker(
     /// on the anime endpoint always comes back an empty array, so this used to match nothing. Resolved
     /// through AniList's public GraphQL instead, unauthenticated, by this anime's MAL id
     /// (<c>Media(idMal: ...)</c>). AniList carries the adaptation relations MAL does not expose, and
-    /// no AniList entry for that MAL id (or a GraphQL <c>errors</c> array) is the same "no match" a
-    /// <see cref="TrackerException"/> used to mean here.
+    /// no AniList entry for that MAL id (a 404 with a GraphQL <c>errors</c> array, or a 2xx with a
+    /// null <c>Media</c>) is a real "no match" and returns null rather than throwing.
     /// </summary>
     public async Task<AnimeRelatedManga?> RelatedMangaAsync(
         int userId, long animeId, CancellationToken ct = default)
@@ -419,6 +420,13 @@ public class MalTracker(
     /// One unauthenticated GraphQL call to AniList's public endpoint. Unauthenticated is limited to
     /// 90 requests/min and answers with 429 + <c>Retry-After</c> when exceeded; waited out once (capped
     /// at 60s) and then given up on, so one slow row cannot stall the rest of the pass.
+    /// <para>
+    /// A connection failure, a second 429, and every non-2xx other than "404 with a not-found
+    /// <c>errors</c> array" are transport failures and throw <see cref="HttpRequestException"/>, which
+    /// <c>AnimeSignalSyncService.IsTransportFailure</c> catches and leaves the row unstamped so the
+    /// next pass retries it. A 2xx with an <c>errors</c> array that is not that not-found shape is
+    /// ambiguous and is also treated as transport rather than as a real "no match".
+    /// </para>
     /// </summary>
     private async Task<JsonElement?> QueryAniListAsync(string query, object variables, CancellationToken ct)
     {
@@ -433,31 +441,62 @@ public class MalTracker(
             }
             catch (HttpRequestException e)
             {
-                throw new TrackerException($"AniList relation lookup failed: {e.Message}", e);
+                throw new HttpRequestException($"AniList relation lookup failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 429 && !waited429)
+            if ((int)response.StatusCode == 429)
             {
-                waited429 = true;
-                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
-                await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
-                continue;
+                if (!waited429)
+                {
+                    waited429 = true;
+                    var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
+                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    continue;
+                }
+
+                throw new HttpRequestException(
+                    $"AniList relation lookup failed ({(int)response.StatusCode}): rate limited again");
             }
 
             var body = await response.Content.ReadAsStringAsync(ct);
+            var hasErrors = HasErrors(body);
+
+            if (response.StatusCode == HttpStatusCode.NotFound && hasErrors)
+            {
+                // AniList answers a 404 with a GraphQL errors array when no Media has this idMal.
+                // That is a real "no match", not a transport problem.
+                return null;
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                throw new TrackerException(
+                throw new HttpRequestException(
                     $"AniList relation lookup failed ({(int)response.StatusCode}): {Truncate(body)}");
             }
 
-            using var json = JsonDocument.Parse(body);
-            if (json.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind != JsonValueKind.Null)
+            if (hasErrors)
             {
-                throw new TrackerException($"AniList relation lookup returned errors: {Truncate(body)}");
+                // A 2xx with errors is ambiguous, not a confirmed not-found: treat as transport so it
+                // retries instead of being stamped as "no manga relation".
+                throw new HttpRequestException($"AniList relation lookup returned errors: {Truncate(body)}");
             }
 
+            using var json = JsonDocument.Parse(body);
             return json.RootElement.TryGetProperty("data", out var payload) ? payload.Clone() : null;
+        }
+    }
+
+    private static bool HasErrors(string body)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(body);
+            return json.RootElement.TryGetProperty("errors", out var e) && e.ValueKind != JsonValueKind.Null;
+        }
+        catch (JsonException)
+        {
+            // A non-JSON body (a plain-text 500 page, say) carries no errors array to read.
+            return false;
         }
     }
 

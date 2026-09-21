@@ -383,6 +383,7 @@ public class RecommendationFeedbackService(
             throw new FeedbackConflictException("Feedback changed since this action.");
         var before = JsonSerializer.Serialize(State(current), Json);
         current.Suppression = Enum.Parse<RecommendationSuppression>(previous.Suppression, true);
+        current.Sentiment = Enum.Parse<RecommendationSentiment>(previous.Sentiment, true);
         current.DismissedUntilUtc = previous.DismissedUntilUtc;
         current.Exposure = previous.Exposure.Aggregate(RecommendationExposure.None,
             (value, medium) => value | ParseMedium(medium));

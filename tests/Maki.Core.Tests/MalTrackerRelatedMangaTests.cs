@@ -102,11 +102,30 @@ public class MalTrackerRelatedMangaTests
     }
 
     [Fact]
-    public async Task A_GraphQL_errors_array_is_treated_as_a_tracker_failure()
+    public async Task A_2xx_GraphQL_errors_array_is_treated_as_a_transport_failure()
     {
         var handler = new RecordingHandler().Then(HttpStatusCode.OK, """{"errors":[{"message":"bad request"}]}""");
 
-        await Assert.ThrowsAsync<TrackerException>(() => Build(handler).RelatedMangaAsync(userId: 1, animeId: 1));
+        await Assert.ThrowsAsync<HttpRequestException>(() => Build(handler).RelatedMangaAsync(userId: 1, animeId: 1));
+    }
+
+    [Fact]
+    public async Task A_404_with_a_GraphQL_errors_array_is_a_real_not_found()
+    {
+        var handler = new RecordingHandler()
+            .Then(HttpStatusCode.NotFound, """{"errors":[{"message":"Not Found."}]}""");
+
+        var result = await Build(handler).RelatedMangaAsync(userId: 1, animeId: 999999);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task A_500_is_a_transport_failure()
+    {
+        var handler = new RecordingHandler().Then(HttpStatusCode.InternalServerError, "internal error");
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => Build(handler).RelatedMangaAsync(userId: 1, animeId: 1));
     }
 
     [Fact]
@@ -145,7 +164,7 @@ public class MalTrackerRelatedMangaTests
                 return response;
             });
 
-        await Assert.ThrowsAsync<TrackerException>(() => Build(handler).RelatedMangaAsync(userId: 1, animeId: 1));
+        await Assert.ThrowsAsync<HttpRequestException>(() => Build(handler).RelatedMangaAsync(userId: 1, animeId: 1));
         Assert.Equal(2, handler.Requests.Count);
     }
 }
