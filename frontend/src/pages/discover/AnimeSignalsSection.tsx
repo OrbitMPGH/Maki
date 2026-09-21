@@ -264,10 +264,10 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     : Number.isInteger(entry.score) ? String(entry.score) : entry.score.toFixed(1)
 
   return (
-    <Group gap="sm" wrap="nowrap" py={4} style={{ minWidth: 0 }}>
+    <Group gap="sm" wrap="nowrap" align="flex-start" py={8} className="signals-row">
       <div style={{ flex: 1, minWidth: 0 }}>
         <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-          <Text size="sm" fw={500} truncate style={{ minWidth: 0, flex: 1 }}>{entry.title}</Text>
+          <Text size="sm" fw={500} truncate style={{ minWidth: 0 }}>{entry.title}</Text>
           {entry.animeCount > 1 && (
             <Badge size="xs" variant="default" style={{ flexShrink: 0 }}>
               <Plural value={entry.animeCount} one="# season" other="# seasons" />
@@ -278,17 +278,23 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
           {supersededNote ?? entry.mangaTitle ?? t`No manga match`}
         </Text>
       </div>
-      {entry.services.map((service) => (
-        <Badge key={service} size="sm" variant="light" color="gray" style={{ flexShrink: 0 }}>
-          {labelFor(service)}
-        </Badge>
-      ))}
-      <Text size="xs" c="dimmed" style={{ flexShrink: 0, width: 70, textAlign: 'right' }}>
+      <div style={{ width: 120, flex: 'none' }}>
+        <Group gap={4} wrap="wrap">
+          {entry.services.map((service) => (
+            <Badge key={service} size="sm" variant="light" color="gray">
+              {labelFor(service)}
+            </Badge>
+          ))}
+        </Group>
+      </div>
+      <Text size="sm" className="tnum" style={{ width: 80, flex: 'none' }}>
         {score !== null ? t`★ ${score}` : statusLabel}
       </Text>
-      <Badge size="sm" variant="light" color={roleBadge.color} style={{ flexShrink: 0 }}>
-        {roleBadge.label}
-      </Badge>
+      <div style={{ width: 110, flex: 'none' }}>
+        <Badge size="sm" variant="light" color={roleBadge.color}>
+          {roleBadge.label}
+        </Badge>
+      </div>
     </Group>
   )
 }

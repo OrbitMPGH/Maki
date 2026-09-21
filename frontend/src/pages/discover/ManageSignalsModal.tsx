@@ -366,7 +366,7 @@ function AnimeSignalsPanel() {
       )}
 
       <div style={{ maxHeight: 460, overflowY: 'auto', overflowX: 'hidden' }}>
-        <Stack gap={4}>
+        <Stack gap={0}>
           {filtered.map((entry) => (
             <AnimeSignalRow key={entry.key} entry={entry} />
           ))}
