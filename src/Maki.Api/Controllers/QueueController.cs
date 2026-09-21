@@ -227,8 +227,25 @@ public class QueueController(
         await db.SaveChangesAsync(ct);
         await Broadcast(item);
 
-        var contentPath = await importer.ResolveContentPathAsync(item, ct);
-        var outcome = await importer.ImportAsync(item, item.Series, contentPath, mode, ct);
+        TorrentImportOutcome outcome;
+        try
+        {
+            var contentPath = await importer.ResolveContentPathAsync(item, ct);
+            outcome = await importer.ImportAsync(item, item.Series, contentPath, mode, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Back to AwaitingImport, not Failed. The guard at the top of this method is the only
+            // way in, so a row left reading Importing could never be retried from here, and the
+            // poll job skips it too, since parked items are the user's to settle. Restoring the
+            // state it arrived in is what keeps a failed attempt retryable.
+            item.Status = QueueStatus.AwaitingImport;
+            item.SetRawError(ex.Message);
+            await db.SaveChangesAsync(ct);
+            await Broadcast(item);
+            throw;
+        }
+
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;

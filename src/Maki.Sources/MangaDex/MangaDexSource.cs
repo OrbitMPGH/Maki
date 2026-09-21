@@ -22,6 +22,28 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     // so this stands in for "essentially all of them" against Maki's own 14-language UI set.
     public IReadOnlyList<string> SupportedLanguages => Core.Localization.SupportedLanguages.All;
 
+    /// <summary>
+    /// A stored <c>LanguageFilter</c> code as MangaDex spells it.
+    /// <para>
+    /// The filter is seeded from Maki's own UI locales (<c>SourceLanguagePreference.SeedFilter</c>)
+    /// and MangaDex tags chapters with plain ISO 639-1, so the two agree on thirteen of the fourteen
+    /// by luck rather than by design. Simplified Chinese is the exception: Maki writes
+    /// <c>zh-Hans</c>, MangaDex files it under <c>zh</c> (<c>zh-hk</c> being the traditional one),
+    /// and a feed asked for <c>zh-hans</c> matches nothing at all, so the mapping listed zero
+    /// chapters while every screen reported it enabled and matched.
+    /// </para>
+    /// <para>
+    /// Anything not named here is passed through as it was stored. An unknown code is answered with
+    /// an empty feed rather than an error either way, and inventing a translation for a code no
+    /// picker can produce would only hide the next mismatch.
+    /// </para>
+    /// </summary>
+    private static string ToMangaDex(string code) => code switch
+    {
+        "zh-hans" => "zh",
+        _ => code,
+    };
+
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
     public string? ResolveSeriesIdFromUrl(Uri url)
@@ -66,7 +88,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var languages = SourceLanguages.Parse(languageFilter);
+        var languages = SourceLanguages.Parse(languageFilter).Select(ToMangaDex).Distinct().ToList();
         // translatedLanguage[] is a repeated parameter, so several languages cost one request per
         // page rather than one pass per language — and the feed stays ordered by chapter across all
         // of them, which is what SourceChapterList.Normalize's per-(Number, Volume, Language) group

@@ -370,6 +370,12 @@ public class AnimeSignalSyncService(
                 // Saves the row, advances the progress counter, and resolves catalogue ids every 10
                 // lookups so a matched title shows up in the panel while the pass is still running -
                 // otherwise a 300-lookup pass looks frozen for as long as it takes.
+                //
+                // Scoped to the rows this pass has looked up, not the whole stored set. Only those
+                // can have gained a provider manga id since the last time round, and a 2,000-entry
+                // first sync spends its whole 300-lookup budget here: unscoped, the same matched
+                // rows were re-read, re-resolved against the dump and re-saved thirty times over to
+                // show a progress number. The full pass still runs once at the end.
                 async Task FinishLookupAsync()
                 {
                     await db.SaveChangesAsync(ct);
@@ -377,7 +383,7 @@ public class AnimeSignalSyncService(
                     _progress[userId] = new AnimeSignalSyncProgress(progressLooked, progressTotal);
                     if (progressLooked % 10 == 0)
                     {
-                        await ResolveCatalogueIdsAsync(db, userId, ct);
+                        await ResolveCatalogueIdsAsync(db, userId, ct, unresolved.Take(i + 1).ToList());
                     }
                 }
             }
@@ -419,11 +425,19 @@ public class AnimeSignalSyncService(
     /// dump rather than one per entry. Runs over the whole stored set, not just this pass's rows,
     /// so a dump refresh that added a cross-reference picks up old rows too.
     /// </summary>
-    private async Task<int> ResolveCatalogueIdsAsync(MakiDbContext db, int userId, CancellationToken ct)
+    /// <param name="only">
+    /// Rows to resolve instead of the whole stored set, already tracked by <paramref name="db"/>.
+    /// For the mid-pass progress refresh, which only ever needs the rows it just looked up; the
+    /// end-of-pass call passes null and does the full sweep the summary above describes.
+    /// </param>
+    private async Task<int> ResolveCatalogueIdsAsync(
+        MakiDbContext db, int userId, CancellationToken ct, IReadOnlyList<AnimeSignal>? only = null)
     {
-        var rows = await db.AnimeSignals
-            .Where(x => x.UserId == userId && (x.AniListMangaId != null || x.MalMangaId != null))
-            .ToListAsync(ct);
+        var rows = only is null
+            ? await db.AnimeSignals
+                .Where(x => x.UserId == userId && (x.AniListMangaId != null || x.MalMangaId != null))
+                .ToListAsync(ct)
+            : only.Where(x => x.AniListMangaId != null || x.MalMangaId != null).ToList();
         if (rows.Count == 0)
         {
             return 0;

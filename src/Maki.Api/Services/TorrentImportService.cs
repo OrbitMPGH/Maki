@@ -192,10 +192,17 @@ public class TorrentImportService(
     /// Places the download's files in the series folder, links them, names them, and under
     /// <see cref="TorrentImportMode.Replace"/> deletes the files left backing nothing.
     /// </summary>
+    /// <param name="plan">
+    /// A plan the caller already built for this same item and content path, reused rather than
+    /// rebuilt. <see cref="PlanAsync"/> opens and scans the page names of every volume archive in
+    /// the download, so a caller that planned in order to decide whether to call this at all would
+    /// otherwise pay for that walk twice. Null plans here.
+    /// </param>
     public async Task<TorrentImportOutcome> ImportAsync(
-        DownloadQueueItem item, Series series, string? contentPath, TorrentImportMode mode, CancellationToken ct)
+        DownloadQueueItem item, Series series, string? contentPath, TorrentImportMode mode,
+        CancellationToken ct, TorrentImportPlan? plan = null)
     {
-        var plan = await PlanAsync(item, series, contentPath, ct);
+        plan ??= await PlanAsync(item, series, contentPath, ct);
         if (plan.Error is not null)
         {
             return new TorrentImportOutcome(false, plan.Error, 0, 0, 0, 0, 0, []);
@@ -218,7 +225,10 @@ public class TorrentImportService(
             return new TorrentImportOutcome(true, null, 0, 0, 0, 0, skipped, []);
         }
 
-        var byName = CbzFilesIn(contentPath!).ToDictionary(Path.GetFileName, f => f, StringComparer.Ordinal);
+        // Safe to key on the bare name: CbzFilesIn already returns one file per name, which is the
+        // same set PlanAsync named its rows after.
+        var byName = CbzFilesIn(contentPath!)
+            .ToDictionary(f => Path.GetFileName(f)!, f => f, StringComparer.Ordinal);
         var sourceFiles = wanted
             .Select(f => byName.GetValueOrDefault(f.FileName))
             .Where(f => f is not null)
@@ -441,6 +451,16 @@ public class TorrentImportService(
             .ToList();
     }
 
+    /// <summary>
+    /// The download's CBZ files, one per file name.
+    /// <para>
+    /// The walk is recursive but the import is flat: every file lands in the series folder under
+    /// its bare name, so two archives sharing a name in different subfolders can never both be
+    /// imported: the second would find the first already at the target and link the same bytes
+    /// twice. Dropping it here rather than downstream is what keeps the plan honest about that,
+    /// and what stops the name being used as a key twice over.
+    /// </para>
+    /// </summary>
     private static string[] CbzFilesIn(string contentPath) =>
         File.Exists(contentPath)
             ? Path.GetExtension(contentPath).Equals(".cbz", StringComparison.OrdinalIgnoreCase)
@@ -448,6 +468,10 @@ public class TorrentImportService(
                 : []
             : Directory.Exists(contentPath)
                 ? Directory.GetFiles(contentPath, "*.cbz", SearchOption.AllDirectories)
+                    .OrderBy(f => f, StringComparer.Ordinal)
+                    .GroupBy(Path.GetFileName, StringComparer.Ordinal)
+                    .Select(g => g.First())
+                    .ToArray()
                 : [];
 
     private static string Label(Chapter chapter) =>

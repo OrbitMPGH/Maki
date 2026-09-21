@@ -115,7 +115,21 @@ public class CompletedDownloadJob(
 
             if (torrent.IsComplete && item.Status != QueueStatus.AwaitingImport)
             {
-                await ImportAsync(item, torrent, pathMap, ct);
+                try
+                {
+                    await ImportAsync(item, torrent, pathMap, ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // One unimportable download must not take the pass with it. Everything above
+                    // this (progress, claimed hashes, the other items' statuses) is only written
+                    // by the single SaveChangesAsync below, so letting this escape would discard
+                    // the whole poll and then do it again every fifteen seconds, for as long as
+                    // the offending torrent sits in the queue.
+                    logger.LogError(ex, "Could not import torrent '{Title}'", item.Title);
+                    item.Status = QueueStatus.Failed;
+                    item.SetRawError(ex.Message);
+                }
             }
 
             // Only on a real change. A finished torrent stays finished, so keying this on
@@ -215,7 +229,11 @@ public class CompletedDownloadJob(
         }
 
         item.Status = QueueStatus.Importing;
-        var outcome = await importer.ImportAsync(item, series, contentPath, TorrentImportMode.Replace, ct);
+        // The plan just built, handed over rather than left to be rebuilt: PlanAsync reads the page
+        // names out of every volume archive in the download, and the answer cannot have changed
+        // between the conflict check above and this line.
+        var outcome = await importer.ImportAsync(
+            item, series, contentPath, TorrentImportMode.Replace, ct, plan);
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
