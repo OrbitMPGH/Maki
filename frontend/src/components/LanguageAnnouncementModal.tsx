@@ -44,8 +44,17 @@ export default function LanguageAnnouncementModal() {
   const languageCount = options.length - 1
 
   return (
-    <Modal opened={open} onClose={close} title={t`Maki speaks your language`} centered size="md">
-      <Stack gap="md">
+    <Modal
+      opened={open}
+      onClose={close}
+      title={t`Maki speaks your language`}
+      centered
+      size="md"
+      // Mantine gives the header no bottom padding, so the first paragraph reads as part of the
+      // title. The dialog is one short message; it can afford the room.
+      styles={{ header: { paddingBottom: 'var(--mantine-spacing-md)' } }}
+    >
+      <Stack gap="lg">
         <Group gap="sm" wrap="nowrap" align="flex-start">
           <ThemeIcon variant="light" color="brand" size="lg" radius="md">
             <IconLanguage size={20} />
