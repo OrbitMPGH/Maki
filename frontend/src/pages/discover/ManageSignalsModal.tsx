@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
   TextInput,
 } from '@mantine/core'
 import { IconSearch, IconX } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { FeedbackState } from '../../api/recommendationFeedback'
 import {
   useFeedbackLab, useFeedbackStates, useMutateFeedback, useMutateSignalOverride, useSignalOverrides,
 } from '../../api/recommendationFeedback'
 import { useAnimeSignals, useSyncAnimeSignals } from '../../api/animeSignals'
-import { AnimeSignalRow, useAnimeRoleFilters } from './AnimeSignalsSection'
+import { AnimeSignalRow, AnimeSignalsStatusLine, useAnimeRoleFilters } from './AnimeSignalsSection'
 import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
-import { formatDate, formatDateTime } from '../../format'
+import { formatDate } from '../../format'
 
 type Filter = 'all' | 'rated' | 'thumbs' | 'hidden' | 'exposed' | 'excluded' | 'added'
 
@@ -270,13 +270,26 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
  */
 function AnimeSignalsPanel() {
   const { t } = useLingui()
+  const queryClient = useQueryClient()
   const { data, isLoading, error } = useAnimeSignals()
   const sync = useSyncAnimeSignals()
   const [syncError, setSyncError] = useState('')
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
+  const [wasSyncing, setWasSyncing] = useState(false)
 
   const roles = useAnimeRoleFilters(data?.counts)
+
+  // The Taste tab shows counts that come from the same pass this panel triggers, so when a sync
+  // finishes here its numbers have to refresh there too rather than waiting for something else to
+  // invalidate them.
+  useEffect(() => {
+    if (!data) return
+    if (wasSyncing && !data.syncing) {
+      void queryClient.invalidateQueries({ queryKey: ['feedback-lab'] })
+    }
+    setWasSyncing(data.syncing)
+  }, [data, wasSyncing, queryClient])
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase()
@@ -294,7 +307,6 @@ function AnimeSignalsPanel() {
     setSyncError('')
     try {
       await sync.mutateAsync()
-      notifications.show({ message: t`Synced.`, color: 'green' })
     } catch (cause) {
       setSyncError(String(cause))
     }
@@ -321,20 +333,12 @@ function AnimeSignalsPanel() {
     <Stack gap="sm">
       <Group justify="space-between" align="center" wrap="wrap">
         <Text size="xs" c="dimmed">
-          {data.lastSyncAtUtc
-            ? t`Last synced ${formatDateTime(data.lastSyncAtUtc)}`
-            : t`Not synced yet`}
-          {data.counts && (
-            <>
-              {' · '}
-              <Trans>
-                {data.counts.matched} of {data.counts.total} matched, {data.counts.positive} positive,{' '}
-                {data.counts.avoided} avoided, {data.counts.superseded} already yours
-              </Trans>
-            </>
-          )}
+          <AnimeSignalsStatusLine data={data} />
         </Text>
-        <Button size="xs" variant="outline" loading={sync.isPending || data.syncing} onClick={() => void runSync()}>
+        <Button
+          size="xs" variant="outline" loading={sync.isPending} disabled={data.syncing}
+          onClick={() => void runSync()}
+        >
           <Trans>Sync now</Trans>
         </Button>
       </Group>

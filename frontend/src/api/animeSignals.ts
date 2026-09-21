@@ -58,11 +58,18 @@ export interface AnimeSignalCounts {
   unmatched: number
 }
 
+/** How far an in-flight sync has gotten through its relation lookups. Null when nothing is running. */
+export interface AnimeSignalSyncProgress {
+  looked: number
+  total: number
+}
+
 export interface AnimeSignalsData {
   enabled: boolean
   instanceEnabled: boolean
   lastSyncAtUtc: string | null
   syncing: boolean
+  progress: AnimeSignalSyncProgress | null
   services: string[]
   strength: AnimeSignalStrength
   /** Every level with the arithmetic behind it, so the panel never keeps its own copy. */
@@ -71,23 +78,16 @@ export interface AnimeSignalsData {
   entries: AnimeSignalEntry[]
 }
 
-export interface AnimeSignalSyncResult {
-  fetched: number
-  matched: number
-  removed: number
-  looked: number
-  lastSyncAtUtc: string | null
-}
-
 /**
- * Polls every 4s while a sync is in flight so the "Sync now" button and the counts settle back to
- * idle on their own; otherwise a plain fetch, since the section is hidden while it loads.
+ * Polls every 2s while a sync is in flight, tight enough that the progress line moves visibly, and
+ * settles the "Sync now" button and the counts back to idle on their own; otherwise a plain fetch,
+ * since the section is hidden while it loads.
  */
 export function useAnimeSignals() {
   return useQuery({
     queryKey: ['anime-signals'],
     queryFn: () => api<AnimeSignalsData>('/recommendations/anime-signals'),
-    refetchInterval: (query) => (query.state.data?.syncing ? 4000 : false),
+    refetchInterval: (query) => (query.state.data?.syncing ? 2000 : false),
   })
 }
 
@@ -127,10 +127,15 @@ export function useSetAnimeSignalsStrength() {
   })
 }
 
+/**
+ * Starts a pass in the background; the request returns at once, and `syncing`/`progress` on
+ * `useAnimeSignals` are what track it from here. `onSuccess` still invalidates right away so
+ * `syncing` flips true and polling starts without waiting for the next scheduled refetch.
+ */
 export function useSyncAnimeSignals() {
   const refresh = useRefreshAnimeSignals()
   return useMutation({
-    mutationFn: () => api<AnimeSignalSyncResult>('/recommendations/anime-signals/sync', { method: 'POST' }),
+    mutationFn: () => api<void>('/recommendations/anime-signals/sync', { method: 'POST' }),
     onSuccess: refresh,
   })
 }

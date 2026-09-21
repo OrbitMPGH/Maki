@@ -232,18 +232,12 @@ msgstr "{0, plural, other {卷文件支持 # 个章节}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {想要 # 个章节}}"
 
-#. placeholder {0}: counts.matched
 #. placeholder {0}: data.counts.matched
-#. placeholder {1}: counts.total
 #. placeholder {1}: data.counts.total
-#. placeholder {2}: counts.positive
 #. placeholder {2}: data.counts.positive
-#. placeholder {3}: counts.avoided
 #. placeholder {3}: data.counts.avoided
-#. placeholder {4}: counts.superseded
 #. placeholder {4}: data.counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 msgstr ""
 
@@ -4964,7 +4958,6 @@ msgstr "上次登录"
 
 #. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Last synced {0}"
 msgstr ""
 
@@ -5227,6 +5220,10 @@ msgstr "加载中……"
 #, fuzzy
 msgid "Lockout duration (minutes)"
 msgstr "锁定时长（分钟）"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Looking up {looked} of {total}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -6228,7 +6225,6 @@ msgid "Not scanned"
 msgstr "未扫描"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Not synced yet"
 msgstr ""
 
@@ -9211,8 +9207,8 @@ msgstr "同步运行中…… · 上次 {lastSync} · 下次 {nextSync}"
 msgid "Synced"
 msgstr "已同步"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "Synced."
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Syncing…"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx

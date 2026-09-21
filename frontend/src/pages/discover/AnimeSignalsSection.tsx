@@ -4,11 +4,47 @@ import {
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import type { AnimeSignalCounts, AnimeSignalEntry, AnimeSignalRole, AnimeSignalStrength } from '../../api/animeSignals'
+import type {
+  AnimeSignalCounts, AnimeSignalEntry, AnimeSignalRole, AnimeSignalsData, AnimeSignalStrength,
+} from '../../api/animeSignals'
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
 import { formatDateTime } from '../../format'
 
 export type RoleFilter = AnimeSignalRole | 'all'
+
+/**
+ * The last-synced line, shared by the Taste tab's summary and the Manage signals modal's Anime
+ * tab: a running pass says how far it's gotten, otherwise it says when it last finished.
+ */
+export function AnimeSignalsStatusLine({ data }: { data: AnimeSignalsData }) {
+  const { t } = useLingui()
+
+  if (data.syncing) {
+    if (data.progress) {
+      const looked = data.progress.looked
+      const total = data.progress.total
+      return <Trans>Looking up {looked} of {total}</Trans>
+    }
+    return <Trans>Syncing…</Trans>
+  }
+
+  return (
+    <>
+      {data.lastSyncAtUtc
+        ? t`Last synced ${formatDateTime(data.lastSyncAtUtc)}`
+        : t`Not synced yet`}
+      {data.counts && (
+        <>
+          {' · '}
+          <Trans>
+            {data.counts.matched} of {data.counts.total} matched, {data.counts.positive} positive,{' '}
+            {data.counts.avoided} avoided, {data.counts.superseded} already yours
+          </Trans>
+        </>
+      )}
+    </>
+  )
+}
 
 /**
  * The roles a reader can filter the anime signal list by, with their counts, so the modal does not
@@ -40,8 +76,6 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   const setEnabled = useSetAnimeSignalsEnabled()
   const setStrength = useSetAnimeSignalsStrength()
   const [toggleError, setToggleError] = useState('')
-
-  const counts = data?.counts
 
   async function toggle(next: boolean) {
     setToggleError('')
@@ -109,18 +143,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
             />
             <Group gap="xs">
               <Text size="xs" c="dimmed">
-                {data.lastSyncAtUtc
-                  ? t`Last synced ${formatDateTime(data.lastSyncAtUtc)}`
-                  : t`Not synced yet`}
-                {counts && (
-                  <>
-                    {' · '}
-                    <Trans>
-                      {counts.matched} of {counts.total} matched, {counts.positive} positive,{' '}
-                      {counts.avoided} avoided, {counts.superseded} already yours
-                    </Trans>
-                  </>
-                )}
+                <AnimeSignalsStatusLine data={data} />
               </Text>
               <Button size="xs" variant="subtle" onClick={onOpenList}>
                 <Trans>Show list</Trans>

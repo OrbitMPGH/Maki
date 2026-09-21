@@ -232,18 +232,12 @@ msgstr "{0, plural, other {챕터 #개를 담고 있는 볼륨 파일}}"
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, other {원하는 챕터 #개}}"
 
-#. placeholder {0}: counts.matched
 #. placeholder {0}: data.counts.matched
-#. placeholder {1}: counts.total
 #. placeholder {1}: data.counts.total
-#. placeholder {2}: counts.positive
 #. placeholder {2}: data.counts.positive
-#. placeholder {3}: counts.avoided
 #. placeholder {3}: data.counts.avoided
-#. placeholder {4}: counts.superseded
 #. placeholder {4}: data.counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 msgstr ""
 
@@ -4964,7 +4958,6 @@ msgstr "마지막 로그인"
 
 #. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Last synced {0}"
 msgstr ""
 
@@ -5227,6 +5220,10 @@ msgstr "로드 중…"
 #, fuzzy
 msgid "Lockout duration (minutes)"
 msgstr "잠금 기간(분)"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Looking up {looked} of {total}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -6228,7 +6225,6 @@ msgid "Not scanned"
 msgstr "아직 스캔하지 않음"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Not synced yet"
 msgstr ""
 
@@ -9211,8 +9207,8 @@ msgstr "동기화 실행 중… · 마지막 {lastSync} · 다음 {nextSync}"
 msgid "Synced"
 msgstr "동기화됨"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "Synced."
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Syncing…"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx

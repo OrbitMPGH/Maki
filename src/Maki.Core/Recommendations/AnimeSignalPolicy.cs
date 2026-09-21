@@ -126,7 +126,11 @@ public static class AnimeSignalPolicy
     public static double SeedScaleOf(AnimeSignalStrength strength) =>
         RatingSeedScale * RatingShareOf(strength);
 
-    /// <summary>What an unscored but completed anime stands in at, on the 0-1 pre-scale range.</summary>
+    /// <summary>
+    /// What an unscored but completed anime stands in at, on the 0-1 pre-scale range.
+    /// <see cref="AnimeSignalSyncService"/> stores scored entries only, so this branch is reachable
+    /// today only for rows a sync wrote before that change; nothing new lands here.
+    /// </summary>
     public const double UnscoredCredit = 0.8;
 
     /// <summary>The lowest score that still reads as enthusiasm. 5 and 6 are neutral and ignored.</summary>

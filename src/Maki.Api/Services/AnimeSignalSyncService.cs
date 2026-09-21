@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -18,6 +19,9 @@ namespace Maki.Api.Services;
 /// </param>
 public record AnimeSignalSyncSummary(
     int Fetched, int Matched, int Removed, int Looked, string? Error = null, int LookupFailures = 0);
+
+/// <summary>How far one user's in-flight pass has gotten through its relation lookups.</summary>
+public record AnimeSignalSyncProgress(int Looked, int Total);
 
 /// <summary>
 /// Pulls each opted-in user's anime list off their connected trackers, matches every entry to the
@@ -50,6 +54,7 @@ public class AnimeSignalSyncService(
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly HashSet<int> _running = [];
+    private readonly ConcurrentDictionary<int, AnimeSignalSyncProgress> _progress = new();
 
     public bool IsRunning(int userId)
     {
@@ -58,6 +63,9 @@ public class AnimeSignalSyncService(
             return _running.Contains(userId);
         }
     }
+
+    /// <summary>How far a user's in-flight pass has gotten, or null when nothing is running.</summary>
+    public AnimeSignalSyncProgress? Progress(int userId) => _progress.GetValueOrDefault(userId);
 
     public async Task<bool> EnabledAsync(CancellationToken ct = default) =>
         await settings.GetAsync(SettingKeys.RecommendationsAnimeSignals, ct) != "false";
@@ -170,6 +178,8 @@ public class AnimeSignalSyncService(
             {
                 _running.Remove(userId);
             }
+
+            _progress.TryRemove(userId, out _);
         }
     }
 
@@ -210,6 +220,8 @@ public class AnimeSignalSyncService(
         var lookupFailures = 0;
         var failed = false;
         var fetchedAny = false;
+        var progressLooked = 0;
+        var progressTotal = 0;
 
         foreach (var source in sources)
         {
@@ -241,6 +253,15 @@ public class AnimeSignalSyncService(
 
             foreach (var entry in entries)
             {
+                // An unscored entry carries no opinion: it neither seeds (unscored Completed) nor
+                // avoids (unscored Dropped), so it is not worth storing at all. Dropping it here
+                // rather than in AnimeSignalPolicy means a reader who later scores it just gets
+                // picked up on the next sync like any other new entry.
+                if (entry.Score is null)
+                {
+                    continue;
+                }
+
                 if (!existing.TryGetValue(entry.AnimeId, out var row))
                 {
                     row = new AnimeSignal { UserId = userId, Service = service, AnimeId = entry.AnimeId };
@@ -264,9 +285,9 @@ public class AnimeSignalSyncService(
                 }
             }
 
-            // A row the tracker no longer lists is a list the user edited, not a fetch that came
-            // back short: an empty or failed fetch threw above rather than reaching this.
-            var listed = entries.Select(e => e.AnimeId).ToHashSet();
+            // A row the tracker no longer lists, or now lists unscored, is treated the same way: not
+            // stored. An empty or failed fetch threw above rather than reaching this.
+            var listed = entries.Where(e => e.Score is not null).Select(e => e.AnimeId).ToHashSet();
             foreach (var row in existing.Where(x => !listed.Contains(x.Key)).Select(x => x.Value))
             {
                 if (row.Id != 0)
@@ -286,6 +307,12 @@ public class AnimeSignalSyncService(
                 .OrderBy(x => x.AnimeId)
                 .Take(MaxLookupsPerPass)
                 .ToListAsync(ct);
+            progressTotal += unresolved.Count;
+            if (unresolved.Count > 0)
+            {
+                _progress[userId] = new AnimeSignalSyncProgress(progressLooked, progressTotal);
+            }
+
             var consecutiveLookupFailures = 0;
             for (var i = 0; i < unresolved.Count; i++)
             {
@@ -307,6 +334,7 @@ public class AnimeSignalSyncService(
                     logger.LogDebug(ex, "No manga relation for {Service} anime {AnimeId}", service, row.AnimeId);
                     row.MatchAttemptedAtUtc = DateTime.UtcNow;
                     looked++;
+                    await FinishLookupAsync();
                     continue;
                 }
                 catch (Exception ex) when (IsTransportFailure(ex, ct))
@@ -323,20 +351,32 @@ public class AnimeSignalSyncService(
                         logger.LogInformation(
                             "Stopping {Service} relation lookups for user {UserId} after 3 consecutive failures",
                             service, userId);
+                        await FinishLookupAsync();
                         break;
                     }
 
+                    await FinishLookupAsync();
                     continue;
                 }
 
                 consecutiveLookupFailures = 0;
                 row.MatchAttemptedAtUtc = DateTime.UtcNow;
                 looked++;
-            }
+                await FinishLookupAsync();
 
-            if (unresolved.Count > 0)
-            {
-                await db.SaveChangesAsync(ct);
+                // Saves the row, advances the progress counter, and resolves catalogue ids every 10
+                // lookups so a matched title shows up in the panel while the pass is still running -
+                // otherwise a 300-lookup pass looks frozen for as long as it takes.
+                async Task FinishLookupAsync()
+                {
+                    await db.SaveChangesAsync(ct);
+                    progressLooked++;
+                    _progress[userId] = new AnimeSignalSyncProgress(progressLooked, progressTotal);
+                    if (progressLooked % 10 == 0)
+                    {
+                        await ResolveCatalogueIdsAsync(db, userId, ct);
+                    }
+                }
             }
         }
 

@@ -196,18 +196,12 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 
-#. placeholder {0}: counts.matched
 #. placeholder {0}: data.counts.matched
-#. placeholder {1}: counts.total
 #. placeholder {1}: data.counts.total
-#. placeholder {2}: counts.positive
 #. placeholder {2}: data.counts.positive
-#. placeholder {3}: counts.avoided
 #. placeholder {3}: data.counts.avoided
-#. placeholder {4}: counts.superseded
 #. placeholder {4}: data.counts.superseded
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 msgstr "{0} of {1} matched, {2} positive, {3} avoided, {4} already yours"
 
@@ -4077,7 +4071,6 @@ msgstr "Last sign-in"
 
 #. placeholder {0}: formatDateTime(data.lastSyncAtUtc)
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Last synced {0}"
 msgstr "Last synced {0}"
 
@@ -4292,6 +4285,10 @@ msgstr "Loading…"
 #: src/components/settings/SecuritySection.tsx
 msgid "Lockout duration (minutes)"
 msgstr "Lockout duration (minutes)"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Looking up {looked} of {total}"
+msgstr "Looking up {looked} of {total}"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Looking up chapters…"
@@ -5108,7 +5105,6 @@ msgid "Not scanned"
 msgstr "Not scanned"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Not synced yet"
 msgstr "Not synced yet"
 
@@ -7549,9 +7545,9 @@ msgstr "sync running… · last {lastSync} · next {nextSync}"
 msgid "Synced"
 msgstr "Synced"
 
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "Synced."
-msgstr "Synced."
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Syncing…"
+msgstr "Syncing…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx

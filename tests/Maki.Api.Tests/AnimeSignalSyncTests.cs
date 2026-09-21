@@ -71,6 +71,69 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.NotNull(rows[3].MatchAttemptedAtUtc);
     }
 
+    /// <summary>
+    /// An unscored entry carries no opinion either way, so it is not worth storing: an unscored
+    /// Completed no longer seeds and an unscored Dropped no longer avoids.
+    /// </summary>
+    [Fact]
+    public async Task An_unscored_entry_is_not_stored()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+
+        var source = new FakeAnimeListSource(
+            [
+                new AnimeListEntry(1, "Unscored completed", null, AnimeWatchStatus.Completed),
+                new AnimeListEntry(2, "Scored", 8, AnimeWatchStatus.Completed),
+            ],
+            failing: 0);
+
+        var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        Assert.Equal(2, summary.Fetched);
+        Assert.Equal(1, summary.Looked);
+
+        using var db = _fixture.NewContext();
+        var rows = await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync();
+        Assert.Single(rows);
+        Assert.Equal(2, rows[0].AnimeId);
+    }
+
+    /// <summary>A row a previous sync stored unscored is removed once the entry comes back unscored again.</summary>
+    [Fact]
+    public async Task A_previously_stored_unscored_row_is_removed_on_the_next_pass()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+
+        using (var seed = _fixture.NewContext())
+        {
+            seed.AnimeSignals.Add(new AnimeSignal
+            {
+                UserId = userId,
+                Service = "mal",
+                AnimeId = 1,
+                Title = "Unscored completed",
+                Score = null,
+                Status = AnimeWatchStatus.Completed,
+                UpdatedAtUtc = DateTime.UtcNow,
+                MatchAttemptedAtUtc = DateTime.UtcNow,
+            });
+            seed.SaveChanges();
+        }
+
+        var source = new FakeAnimeListSource(
+            [new AnimeListEntry(1, "Unscored completed", null, AnimeWatchStatus.Completed)],
+            failing: 0);
+
+        var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        Assert.Equal(1, summary.Removed);
+
+        using var db = _fixture.NewContext();
+        Assert.Empty(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync());
+    }
+
     /// <summary>A real cancellation must still propagate rather than being swallowed as a lookup failure.</summary>
     [Fact]
     public async Task A_real_cancellation_still_propagates()

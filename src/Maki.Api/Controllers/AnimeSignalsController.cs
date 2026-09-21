@@ -139,6 +139,7 @@ public class AnimeSignalsController(
             instanceEnabled,
             lastSyncAtUtc = await signals.LastSyncAtAsync(user.UserId, ct),
             syncing = signals.IsRunning(user.UserId),
+            progress = signals.Progress(user.UserId) is { } p ? new { looked = p.Looked, total = p.Total } : null,
             services,
             strength = AnimeSignalPolicy.NameOf(strength),
             // The dial's own arithmetic, so the panel can say what a level costs without keeping a
@@ -217,6 +218,12 @@ public class AnimeSignalsController(
         });
     }
 
+    /// <summary>
+    /// Starts a pass in the background and returns at once, the same way opting in does: a first
+    /// sync is minutes of throttled lookups, and running it inline made this request itself the
+    /// timeout it exists to avoid. The panel watches <c>GET</c>'s <c>syncing</c>/<c>progress</c>
+    /// fields instead of a response here.
+    /// </summary>
     [HttpPost("sync")]
     public async Task<IActionResult> Sync(CancellationToken ct)
     {
@@ -230,29 +237,8 @@ public class AnimeSignalsController(
             return this.Fail(localizer, "error.animeSignals.syncRunning");
         }
 
-        AnimeSignalSyncSummary summary;
-        try
-        {
-            summary = await signals.SyncUserAsync(user.UserId, ct);
-        }
-        catch (Exception ex) when (ex is HttpRequestException ||
-                                    (ex is OperationCanceledException && !ct.IsCancellationRequested))
-        {
-            // A per-anime lookup timeout is caught inside the sync itself; this is the list fetch or
-            // something else upstream taking the whole pass down with it.
-            logger.LogWarning(ex, "Anime signal sync timed out for user {UserId}", user.UserId);
-            return this.ServiceUnavailable(localizer, "error.animeSignals.syncUnavailable");
-        }
-
-        return Ok(new
-        {
-            summary.Fetched,
-            summary.Matched,
-            summary.Removed,
-            summary.Looked,
-            summary.LookupFailures,
-            lastSyncAtUtc = await signals.LastSyncAtAsync(user.UserId, ct),
-        });
+        StartBackgroundSync(user.UserId);
+        return Accepted();
     }
 
     /// <summary>
