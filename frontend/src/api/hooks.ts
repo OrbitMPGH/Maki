@@ -884,6 +884,38 @@ export function useSaveUiSettings() {
   })
 }
 
+/** The one-off notices this user has not been shown yet. */
+export interface Announcements {
+  /**
+   * The notice telling someone Maki ships translations now. True only for an account that existed
+   * before they did, and only until it is dismissed.
+   */
+  language: boolean
+}
+
+export function useAnnouncements() {
+  return useQuery({
+    queryKey: ['settings', 'announcements'],
+    queryFn: () => api<Announcements>('/settings/announcements'),
+    // Nothing but this client ever flips one of these, and it writes the answer into the cache
+    // itself. Refetching would only risk re-opening a modal somebody has already closed.
+    staleTime: Infinity,
+  })
+}
+
+export function useSeenLanguageAnnouncement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<void>('/settings/announcements/language/seen', { method: 'POST' }),
+    // Written straight into the cache rather than invalidated: the modal closes on the click, and
+    // a refetch that lost the race would put it back.
+    onSuccess: () =>
+      queryClient.setQueryData(['settings', 'announcements'], (old?: Announcements) =>
+        old ? { ...old, language: false } : old,
+      ),
+  })
+}
+
 /** Tag names for the Discover tag filter (empty until the embedding index is built). */
 export function useRecommendationTags() {
   return useQuery({

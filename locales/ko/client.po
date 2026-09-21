@@ -1911,7 +1911,7 @@ msgstr "자동 일치가 이미 실행 중입니다."
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "자동 일치가 아직 실행 중입니다. 곧 사용할 수 있습니다."
 
-#: src/pages/SettingsPage.tsx
+#: src/components/ui/language.ts
 #, fuzzy
 msgid "Automatic (match my browser)"
 msgstr "자동 (내 브라우저에 맞춤)"
@@ -3518,6 +3518,7 @@ msgstr "원하지 않음"
 msgid "Don't want specials on new series"
 msgstr "새 시리즈에서 스페셜을 원하지 않음"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -5034,6 +5035,7 @@ msgstr "한국어"
 msgid "landing page, home, library, discover, opens on, default page"
 msgstr "시작 페이지, Home, 라이브러리, Discover, 열리는 페이지, 기본 페이지"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5477,10 +5479,20 @@ msgstr "Maki는 Kavita의 읽기 진행 상황을 AniList, MyAnimeList, Kitsu �
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki를 적용하기 위해 다시 시작하는 중입니다. 잠시 후 다시 로드하세요."
 
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki speaks your language"
+msgstr "Maki가 이제 당신의 언어를 지원합니다"
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
 msgstr "Maki는 각 CBZ에 표준화된 <0>ComicInfo.xml</0>을 기록하므로 Kavita가 챕터를 일관되게 그룹화하고 이름을 지정할 수 있습니다. 이 기능을 끄면 가져온 파일(토렌트 가져오기 및 수동 가져오기)은 원래 상태 그대로 유지됩니다. Maki가 소스에서 직접 다운로드하는 챕터에는 Maki가 파일을 만들기 때문에 여전히 ComicInfo가 포함됩니다. 나중에 시리즈 페이지의 \"Update ComicInfo\" 일괄 작업으로 단일 시리즈를 표준화할 수 있습니다."
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
+msgstr "Maki 인터페이스가 이제 {languageCount}개 언어로 번역되었습니다. 여기서 선택하거나 설정, 언어에서 언제든지 변경할 수 있습니다."
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5664,8 +5676,9 @@ msgid "Metadata database"
 msgstr "메타데이터 데이터베이스"
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "Metadata database download failed:"
-msgstr ""
+msgstr "메타데이터 데이터베이스 다운로드 실패:"
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -10138,6 +10151,11 @@ msgstr "서로 거의 복사본이 아닌 추천 항목을 위해 유사도를 �
 #, fuzzy
 msgid "Tragedy"
 msgstr "비극"
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
+msgstr "영어 이외의 번역은 기계 번역으로 작성되었으며 시간이 지나며 수정됩니다. 아직 번역되지 않은 항목은 영어로 표시됩니다."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

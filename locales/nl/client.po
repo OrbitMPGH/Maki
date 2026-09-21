@@ -1911,7 +1911,7 @@ msgstr "Automatisch koppelen wordt al uitgevoerd."
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Automatisch koppelen wordt nog uitgevoerd. Het is zo weer beschikbaar."
 
-#: src/pages/SettingsPage.tsx
+#: src/components/ui/language.ts
 #, fuzzy
 msgid "Automatic (match my browser)"
 msgstr "Automatisch (mijn browser volgen)"
@@ -3518,6 +3518,7 @@ msgstr "Niet gewenst"
 msgid "Don't want specials on new series"
 msgstr "Geen specials op nieuwe series"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -5034,6 +5035,7 @@ msgstr "Koreaans"
 msgid "landing page, home, library, discover, opens on, default page"
 msgstr "startpagina, home, bibliotheek, discover, wordt geopend op, standaardpagina"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5477,10 +5479,20 @@ msgstr "Maki kan je leesvoortgang van Kavita naar AniList, MyAnimeList, Kitsu en
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki wordt opnieuw gestart om dit toe te passen. Laad de pagina zo opnieuw."
 
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki speaks your language"
+msgstr "Maki spreekt je taal"
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
 msgstr "Maki schrijft een gestandaardiseerd <0>ComicInfo.xml</0> in elke CBZ, zodat Kavita hoofdstukken consistent groepeert en benoemt. Schakel dit uit om geïmporteerde bestanden (torrentdownloads en handmatige imports) precies te laten zoals ze waren; hoofdstukken die Maki zelf van een bron downloadt krijgen nog steeds een ComicInfo, omdat Maki die bestanden opbouwt. Je kunt een afzonderlijke serie later altijd standaardiseren met de bulkactie \"Update ComicInfo\" op de seriepagina."
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
+msgstr "De interface van Maki is nu vertaald in {languageCount} talen. Kies hier je taal, of wijzig dit op elk moment onder Instellingen, Taal."
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5664,8 +5676,9 @@ msgid "Metadata database"
 msgstr "Metadatadatabase"
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "Metadata database download failed:"
-msgstr ""
+msgstr "Downloaden van metadatadatabase mislukt:"
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -10138,6 +10151,11 @@ msgstr "Levert een beetje overeenkomst in voor keuzes die geen bijna-kopieën va
 #, fuzzy
 msgid "Tragedy"
 msgstr "Tragedie"
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
+msgstr "Vertalingen anders dan Engels zijn automatisch gemaakt en worden in de loop van de tijd verbeterd; alles wat nog niet is vertaald valt terug op Engels."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

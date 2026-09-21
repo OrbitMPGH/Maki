@@ -42,6 +42,7 @@ import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import UpdateBanner from './components/UpdateBanner'
+import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
 import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
@@ -462,6 +463,9 @@ function AppShellRoutes() {
       </AppShell.Main>
 
       {setup && !setup.completed && <SetupWizard />}
+      {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
+          nobody being handed a brand-new Maki needs to be told what changed in it. */}
+      {setup?.completed && <LanguageAnnouncementModal />}
       {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
       {isAdmin && <MetadataDumpProgress />}
       <TipLayer />

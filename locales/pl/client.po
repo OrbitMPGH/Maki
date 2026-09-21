@@ -1911,7 +1911,7 @@ msgstr "Automatyczne dopasowywanie już trwa."
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Automatyczne dopasowywanie nadal trwa. Za chwilę będzie wolne."
 
-#: src/pages/SettingsPage.tsx
+#: src/components/ui/language.ts
 #, fuzzy
 msgid "Automatic (match my browser)"
 msgstr "Automatycznie (dopasuj do mojej przeglądarki)"
@@ -3518,6 +3518,7 @@ msgstr "Nie chcę"
 msgid "Don't want specials on new series"
 msgstr "Nie chcę specjałów w nowych seriach"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -5034,6 +5035,7 @@ msgstr "Koreański"
 msgid "landing page, home, library, discover, opens on, default page"
 msgstr "strona startowa, home, biblioteka, discover, otwiera się na, strona domyślna"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5477,10 +5479,20 @@ msgstr "Maki może wysyłać Twój postęp czytania z Kavity do AniList, MyAnime
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki uruchamia się ponownie, aby to zastosować. Odśwież stronę za chwilę."
 
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki speaks your language"
+msgstr "Maki mówi w Twoim języku"
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
 msgstr "Maki zapisuje zestandaryzowany <0>ComicInfo.xml</0> w każdym CBZ, dzięki czemu Kavita spójnie grupuje i nazywa rozdziały. Wyłącz to, aby pozostawić zaimportowane pliki (przechwycone torrenty i importy ręczne) dokładnie takimi, jakimi przyszły; rozdziały pobierane samodzielnie przez Maki ze źródła nadal otrzymują ComicInfo, ponieważ to Maki tworzy te pliki. Zawsze możesz później zestandaryzować pojedynczą serię akcją zbiorczą „Aktualizuj ComicInfo” na jej stronie."
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
+msgstr "Interfejs Maki jest teraz przetłumaczony na {languageCount} języków. Wybierz swój tutaj lub zmień go w dowolnym momencie w Ustawieniach, Język."
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5664,8 +5676,9 @@ msgid "Metadata database"
 msgstr "Baza danych metadanych"
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "Metadata database download failed:"
-msgstr ""
+msgstr "Pobieranie bazy danych metadanych nie powiodło się:"
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -10138,6 +10151,11 @@ msgstr "Poświęca odrobinę podobieństwa na rzecz propozycji, które nie są n
 #, fuzzy
 msgid "Tragedy"
 msgstr "Tragedia"
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
+msgstr "Tłumaczenia inne niż angielskie są tworzone maszynowo i z czasem poprawiane; wszystko, co wciąż nieprzetłumaczone, wyświetla się po angielsku."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

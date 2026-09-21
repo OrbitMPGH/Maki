@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
 import { useLabel, useLanguageChoice } from '../i18n-context'
-import { type LocaleCode } from '../i18n'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -61,6 +59,7 @@ import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSe
 import { ProgressSection } from '../components/settings/ProgressSection'
 import { CONTENT_RATINGS, ContentRatingCards } from '../components/ContentRatingCards'
 import { useIncognitoOptions, type IncognitoMode } from '../components/ui/incognito'
+import { useApplyLanguage, useLanguageOptions } from '../components/ui/language'
 import {
   useAddRootFolder,
   useBackups,
@@ -2014,43 +2013,12 @@ function StartPageSection() {
  * first paint does not have to wait for the settings round trip.
  */
 function LanguageSection() {
-  const { t } = useLingui()
   const { data: ui } = useUiSettings()
-  const patch = useUiPatch()
-  const queryClient = useQueryClient()
-  const { locale, setLocale, followBrowser, locales } = useLanguageChoice()
+  const { locale, locales } = useLanguageChoice()
+  const options = useLanguageOptions()
+  const apply = useApplyLanguage()
 
-  // "" is a real choice and not a null: it deletes the row, which means "follow the browser".
-  const options = [
-    { value: '', label: t`Automatic (match my browser)` },
-    ...locales.map((l) => ({ value: l.code, label: l.label })),
-  ]
   const currentLocaleLabel = locales.find((l) => l.code === locale)?.label ?? locale
-
-  const onChange = (value: string | null) => {
-    if (value === null) return
-    patch?.({ language: value })
-
-    // Write the choice into the cache too, because the save above is not awaited and the query
-    // keeps its old value until the refetch lands. Without this, `useLanguageSync` wakes up in
-    // that window, sees the activated locale disagree with a stale `ui.language`, and puts the old
-    // language back along with its stored copy. Picking Automatic is where that hurts: the blank
-    // value that eventually arrives is ignored by design, so the undo is permanent.
-    queryClient.setQueryData(['settings', 'ui'], (old?: UiSettings) =>
-      old ? { ...old, language: value } : old,
-    )
-
-    // Activate straight away rather than waiting for the settings query to come back, so the UI
-    // changes on the click. `LanguageSync` would eventually do it, but a visible delay on a
-    // language picker reads as the setting not having worked.
-    const applied = value === '' ? followBrowser() : setLocale(value as LocaleCode)
-    void applied.then(() => {
-      // Error messages, notification bodies and queue labels are all rendered server-side, so they
-      // sit in the query cache in the language they were fetched in. Invalidating one key is not
-      // enough; almost every payload carries some.
-      void queryClient.clear()
-    })
-  }
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -2067,8 +2035,8 @@ function LanguageSection() {
       <Select
         data={options}
         value={ui?.language ?? ''}
-        onChange={onChange}
-        disabled={!patch}
+        onChange={(value) => value !== null && apply?.(value)}
+        disabled={!apply}
         allowDeselect={false}
         maw={260}
       />

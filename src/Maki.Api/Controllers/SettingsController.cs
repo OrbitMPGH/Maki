@@ -162,6 +162,12 @@ public class SettingsController(
     public record UiSettings(
         string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
         string? TitleLanguage = null, string? Language = null);
+
+    /// <param name="Language">
+    /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
+    /// </param>
+    public record AnnouncementsResponse(bool Language);
+
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
     public record SecuritySettings(
@@ -453,6 +459,23 @@ public class SettingsController(
         // short cache, so without this a language change would not reach it for up to five minutes.
         userLocales.Forget(currentUser.UserId);
         return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language));
+    }
+
+    /// <summary>
+    /// The one-off notices this user has not been shown yet. Read on every app load, so it is one
+    /// key read and nothing more.
+    /// </summary>
+    [HttpGet("announcements")]
+    public async Task<IActionResult> GetAnnouncements(CancellationToken ct) =>
+        Ok(new AnnouncementsResponse(
+            await userSettings.GetAsync(SettingKeys.UiLanguageAnnouncement, ct) == "pending"));
+
+    /// <summary>Marks the language notice as shown. Idempotent, and only ever for the caller.</summary>
+    [HttpPost("announcements/language/seen")]
+    public async Task<IActionResult> SeenLanguageAnnouncement(CancellationToken ct)
+    {
+        await userSettings.SetAsync(SettingKeys.UiLanguageAnnouncement, "seen", ct);
+        return NoContent();
     }
 
     [HttpGet("library")]

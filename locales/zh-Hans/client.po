@@ -1911,7 +1911,7 @@ msgstr "自动匹配已在运行。"
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "自动匹配仍在运行。很快就会空闲。"
 
-#: src/pages/SettingsPage.tsx
+#: src/components/ui/language.ts
 #, fuzzy
 msgid "Automatic (match my browser)"
 msgstr "自动（匹配我的浏览器）"
@@ -3518,6 +3518,7 @@ msgstr "不想要"
 msgid "Don't want specials on new series"
 msgstr "新系列不需要特殊章节"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -5034,6 +5035,7 @@ msgstr "韩语"
 msgid "landing page, home, library, discover, opens on, default page"
 msgstr "着陆页，Home，资料库，Discover，打开页面，默认页面"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5477,10 +5479,20 @@ msgstr "Maki 可以将你在 Kavita 中的阅读进度推送到 AniList、MyAnim
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki 正在重启以应用更改。稍后重新加载。"
 
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki speaks your language"
+msgstr "Maki 支持你的语言"
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
 msgstr "Maki 会在每个 CBZ 中写入标准化的 <0>ComicInfo.xml</0>，让 Kavita 统一分组和命名章节。关闭此选项后，导入的文件（抓取的种子和手动导入的文件）会保持原样；Maki 自己从来源下载的章节仍会获得 ComicInfo，因为这些文件由 Maki 创建。之后你始终可以在系列页面使用“更新 ComicInfo”批量操作来标准化单个系列。"
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
+msgstr "Maki 界面现已支持 {languageCount} 种语言。可在此选择，或随时在设置、语言中更改。"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5664,8 +5676,9 @@ msgid "Metadata database"
 msgstr "元数据数据库"
 
 #: src/components/MetadataDumpProgress.tsx
+#, fuzzy
 msgid "Metadata database download failed:"
-msgstr ""
+msgstr "元数据数据库下载失败："
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -10138,6 +10151,11 @@ msgstr "牺牲少量相似度，换取彼此不会过于相似的推荐。"
 #, fuzzy
 msgid "Tragedy"
 msgstr "悲剧"
+
+#: src/components/LanguageAnnouncementModal.tsx
+#, fuzzy
+msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
+msgstr "英语以外的翻译由机器生成，会随着时间修正；仍未翻译的内容会退回英语。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

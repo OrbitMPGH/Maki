@@ -217,6 +217,18 @@ public static class SettingKeys
     /// </summary>
     public const string UiDefaultLanguage = "ui.defaultlanguage";
 
+    /// <summary>
+    /// Per user: the state of the one-off notice telling someone Maki now ships translations.
+    /// "pending" → show it, anything else (or unset) → don't.
+    /// <para>
+    /// Written as "pending" by the <c>LanguageAnnouncement</c> migration for every account that
+    /// already existed when translations shipped, and never written again. A row is what makes the
+    /// notice appear, so an account created afterwards has none and never sees it — which is the
+    /// point, since somebody whose first Maki already spoke their language has nothing to be told.
+    /// </para>
+    /// </summary>
+    public const string UiLanguageAnnouncement = "ui.languageannouncement";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

@@ -1550,7 +1550,7 @@ msgstr "Auto-matching is already running."
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Auto-matching is still running. It'll be free in a moment."
 
-#: src/pages/SettingsPage.tsx
+#: src/components/ui/language.ts
 msgid "Automatic (match my browser)"
 msgstr "Automatic (match my browser)"
 
@@ -2855,6 +2855,7 @@ msgstr "Don't want"
 msgid "Don't want specials on new series"
 msgstr "Don't want specials on new series"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -4082,6 +4083,7 @@ msgstr "Korean"
 msgid "landing page, home, library, discover, opens on, default page"
 msgstr "landing page, home, library, discover, opens on, default page"
 
+#: src/components/LanguageAnnouncementModal.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Language"
@@ -4442,9 +4444,17 @@ msgstr "Maki can push your Kavita reading progress to AniList, MyAnimeList, Kits
 msgid "Maki is restarting to apply it. Reload in a moment."
 msgstr "Maki is restarting to apply it. Reload in a moment."
 
+#: src/components/LanguageAnnouncementModal.tsx
+msgid "Maki speaks your language"
+msgstr "Maki speaks your language"
+
 #: src/pages/SettingsPage.tsx
 msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
 msgstr "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
+
+#: src/components/LanguageAnnouncementModal.tsx
+msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
+msgstr "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 
 #: src/components/settings/UsersSection.tsx
 msgid "Manage queue"
@@ -8218,6 +8228,10 @@ msgstr "Trades a little similarity for picks that aren't near-copies of each oth
 #: src/components/CatalogueFilters.tsx
 msgid "Tragedy"
 msgstr "Tragedy"
+
+#: src/components/LanguageAnnouncementModal.tsx
+msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
+msgstr "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 
 #: src/pages/HealthPage.tsx
 msgid "Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a source instead pins it: no fallback, so you only ever get a candidate from where you chose."
