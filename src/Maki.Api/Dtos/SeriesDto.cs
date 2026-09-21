@@ -143,6 +143,7 @@ public record SeriesDto(
     /// created, so these can't be errors, but silently returning 201 hid them entirely.
     /// </summary>
     public IReadOnlyList<string>? Warnings { get; init; }
+    public SeriesOperationDto? Operation { get; init; }
 
     /// <summary>
     /// Source keys with a <see cref="SourceMapping"/> on this series, enabled or not. Empty means
@@ -282,9 +283,13 @@ public record SeriesDto(
 /// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
 /// to be the fallback rather than a hardcoded Off.
 /// </param>
+public record SeriesOperationDto(Guid Id, string State, int SeriesId, long SignalRevision);
+
 public record AddSeriesRequest(
     string MetadataProviderId,
     int RootFolderId,
     bool Monitored = true,
     string MonitorNewItems = "All",
-    string? Incognito = null);
+    string? Incognito = null,
+    string? AddedFrom = null,
+    Guid? ClientMutationId = null);

@@ -2621,6 +2621,15 @@ body {
 .stats-thumb-empty {
   border: 1px solid var(--border);
 }
+.stats-thumb-lg {
+  width: 44px;
+  height: 62px;
+  border-radius: 6px;
+}
+
+.signals-row + .signals-row {
+  border-top: 1px solid var(--border);
+}
 
 .stats-rank-row {
   display: flex;

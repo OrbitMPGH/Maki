@@ -497,6 +497,104 @@ public static class TagMath
     }
 
     /// <summary>
+    /// What the avoided set carries that the positive seeds do not: the avoided titles' own tag
+    /// profile with the reader's taste subtracted out of it.
+    ///
+    /// <para>
+    /// Both sides are share-normalized. <see cref="BuildProfile"/> divides every seed's mass by the
+    /// total seed weight, so a tag's entry is its share of the profile regardless of how many titles
+    /// fed each side, and subtracting five dislikes' profile from ninety shelf titles' profile
+    /// compares like with like. That is the one non-obvious property here and the whole reason the
+    /// subtraction is legitimate.
+    /// </para>
+    ///
+    /// <para>
+    /// <paramref name="avoided"/> is built with sharpening and consensus fixed at 1, deliberately
+    /// not taken from the tuning: those two exist to concentrate a POSITIVE profile on what its
+    /// seeds agree about, and exponentiating one side of a difference would make the result a
+    /// statement about the exponent rather than about the contrast. Everything else - the IDF, the
+    /// class weights, the category weights, the ancestor expansion - is the caller's, because the
+    /// two profiles have to live in the same space to be subtracted at all.
+    /// </para>
+    ///
+    /// <para>
+    /// <paramref name="minSupport"/> is counted in distinct avoided titles carrying the tag at class
+    /// <see cref="Defining"/> or above, ancestors included. One dislike infers nothing, and this is
+    /// where that promise is kept.
+    /// </para>
+    /// </summary>
+    public static Profile BuildContrastiveProfile(
+        Profile positive, IReadOnlyCollection<(byte[] Blob, double Weight)> avoided,
+        Func<int, double> idf, int minSupport, double margin,
+        Func<int, double>? categoryWeight = null, TagTree? tree = null)
+    {
+        if (avoided.Count == 0)
+        {
+            return Profile.Empty;
+        }
+
+        var avoidedProfile = BuildProfile(avoided, idf, 1.0, categoryWeight, 1.0, tree);
+        if (avoidedProfile.IsEmpty)
+        {
+            return Profile.Empty;
+        }
+
+        var ancestors = tree is { IsEmpty: false } ? tree : null;
+        var carriers = new Dictionary<int, int>();
+        var seen = new HashSet<int>();
+        foreach (var (blob, _) in avoided)
+        {
+            seen.Clear();
+            foreach (var (id, cls) in Unpack(blob))
+            {
+                if (cls < Defining)
+                {
+                    continue;
+                }
+
+                if (seen.Add(id))
+                {
+                    carriers[id] = carriers.GetValueOrDefault(id) + 1;
+                }
+
+                if (ancestors is null)
+                {
+                    continue;
+                }
+
+                foreach (var ancestor in ancestors.AncestorsOf(id))
+                {
+                    if (seen.Add(ancestor.Id))
+                    {
+                        carriers[ancestor.Id] = carriers.GetValueOrDefault(ancestor.Id) + 1;
+                    }
+                }
+            }
+        }
+
+        var contrast = new Dictionary<int, double>();
+        var normSq = 0.0;
+        foreach (var (id, weight) in avoidedProfile.IdfWeight)
+        {
+            if (carriers.GetValueOrDefault(id) < minSupport)
+            {
+                continue;
+            }
+
+            var kept = weight - (margin * positive.IdfWeight.GetValueOrDefault(id));
+            if (kept <= 0)
+            {
+                continue;
+            }
+
+            contrast[id] = kept;
+            normSq += kept * kept;
+        }
+
+        return contrast.Count == 0 ? Profile.Empty : new Profile(contrast, Math.Sqrt(normSq));
+    }
+
+    /// <summary>
     /// Cosine ∈ [0,1] between the seed profile and a candidate's packed tags, both
     /// IDF-weighted. <paramref name="matched"/>, when given, receives every shared tag with
     /// its share of the dot product (unsorted) so the UI can rank matches by contribution.

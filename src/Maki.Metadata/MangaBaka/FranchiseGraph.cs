@@ -107,14 +107,62 @@ public static class FranchiseGraph
         return componentOf;
     }
 
+    /// <summary>The flat relation columns that mean the same work, for a caller reading one row.</summary>
+    public static IReadOnlyList<string> SameWorkColumns => FlatColumns;
+
+    /// <summary>
+    /// The same-work ids one row points at, off its typed blob plus its flat columns, so a caller
+    /// walking the dump a few rows at a time uses the same relation-type set the components do.
+    /// </summary>
+    public static IEnumerable<long> SameWorkTargets(string? typed, IEnumerable<string?> flat)
+    {
+        if (typed is not null)
+        {
+            foreach (var id in TypedTargets(typed))
+            {
+                yield return id;
+            }
+        }
+
+        foreach (var json in flat)
+        {
+            if (json is null)
+            {
+                continue;
+            }
+
+            foreach (var id in BareTargets(json))
+            {
+                yield return id;
+            }
+        }
+    }
+
     private static void AddTyped(string json, long from, UnionFind union)
     {
+        foreach (var target in TypedTargets(json))
+        {
+            union.Union(from, target);
+        }
+    }
+
+    private static void AddBare(string json, long from, UnionFind union)
+    {
+        foreach (var target in BareTargets(json))
+        {
+            union.Union(from, target);
+        }
+    }
+
+    private static List<long> TypedTargets(string json)
+    {
+        var targets = new List<long>();
         try
         {
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.ValueKind != JsonValueKind.Array)
             {
-                return;
+                return targets;
             }
 
             foreach (var edge in doc.RootElement.EnumerateArray())
@@ -126,7 +174,7 @@ public static class FranchiseGraph
                     && edge.TryGetProperty("to_series_id", out var to)
                     && to.TryGetInt64(out var target))
                 {
-                    union.Union(from, target);
+                    targets.Add(target);
                 }
             }
         }
@@ -134,23 +182,26 @@ public static class FranchiseGraph
         {
             // One malformed blob is a dump defect, not a reason to lose the graph.
         }
+
+        return targets;
     }
 
-    private static void AddBare(string json, long from, UnionFind union)
+    private static List<long> BareTargets(string json)
     {
+        var targets = new List<long>();
         try
         {
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.ValueKind != JsonValueKind.Array)
             {
-                return;
+                return targets;
             }
 
             foreach (var target in doc.RootElement.EnumerateArray())
             {
                 if (target.TryGetInt64(out var id))
                 {
-                    union.Union(from, id);
+                    targets.Add(id);
                 }
             }
         }
@@ -158,6 +209,8 @@ public static class FranchiseGraph
         {
             // Same reason.
         }
+
+        return targets;
     }
 
     /// <summary>Dictionary-backed union-find over sparse MangaBaka ids, with path halving.</summary>

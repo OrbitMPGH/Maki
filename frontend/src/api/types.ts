@@ -430,6 +430,8 @@ export interface AddSeriesRequest {
    * (Settings → Library incognito rules), which is what happens on any add form that doesn't ask.
    */
   incognito?: string
+  addedFrom?: string
+  clientMutationId?: string
 }
 
 export type NotificationType = 'Discord' | 'Webhook'

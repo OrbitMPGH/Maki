@@ -1,4 +1,4 @@
-﻿using Maki.Core.Entities;
+using Maki.Core.Entities;
 using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -32,6 +32,12 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserRootFolder> UserRootFolders => Set<UserRootFolder>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
     public DbSet<UserSeriesState> UserSeriesStates => Set<UserSeriesState>();
+    public DbSet<RecommendationFeedback> RecommendationFeedback => Set<RecommendationFeedback>();
+    public DbSet<RecommendationFeedbackEvent> RecommendationFeedbackEvents => Set<RecommendationFeedbackEvent>();
+    public DbSet<RecommendationSignalOverride> RecommendationSignalOverrides => Set<RecommendationSignalOverride>();
+    public DbSet<RecommendationProfileState> RecommendationProfileStates => Set<RecommendationProfileState>();
+    public DbSet<RecommendationMutationReceipt> RecommendationMutationReceipts => Set<RecommendationMutationReceipt>();
+    public DbSet<AnimeSignal> AnimeSignals => Set<AnimeSignal>();
     public DbSet<AuthEvent> AuthEvents => Set<AuthEvent>();
 
     public DbSet<Series> Series => Set<Series>();
@@ -163,13 +169,55 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.HasIndex(s => new { s.UserId, s.SeriesId }).IsUnique();
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne<Series>().WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(s => s.Series).WithMany().HasForeignKey(s => s.SeriesId).OnDelete(DeleteBehavior.Cascade);
 
             // SetNull, not Cascade: deleting a reading profile must un-pin the series that used it,
             // never delete the rating and per-series override that share the row.
             e.HasOne<ReadingProfile>().WithMany()
                 .HasForeignKey(s => s.ReadingProfileId).OnDelete(DeleteBehavior.SetNull);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<RecommendationFeedback>(e =>
+        {
+            e.Property(x => x.Revision).IsConcurrencyToken();
+            e.HasIndex(x => new { x.UserId, x.Provider, x.ProviderId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationFeedbackEvent>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.OccurredAtUtc, x.Id });
+            e.HasIndex(x => new { x.UserId, x.ClientMutationId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationSignalOverride>(e =>
+        {
+            e.Property(x => x.Revision).IsConcurrencyToken();
+            e.HasIndex(x => new { x.UserId, x.Provider, x.ProviderId }).IsUnique();
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationProfileState>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<AnimeSignal>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.Service, x.AnimeId }).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.MangaBakaId });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<RecommendationMutationReceipt>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.ClientMutationId }).IsUnique();
+            e.HasIndex(x => x.ExpiresAtUtc);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ReadingProfile>(e =>
@@ -289,7 +337,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // deleting the series must not either — see the entity's remarks.
             e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.ResolvedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(r => r.EditedByUserId).OnDelete(DeleteBehavior.SetNull);
-            e.HasOne<Series>().WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(r => r.Series).WithMany().HasForeignKey(r => r.SeriesId).OnDelete(DeleteBehavior.SetNull);
 
             e.HasQueryFilter(r => _scope.Unrestricted || r.UserId == _scope.UserId);
         });

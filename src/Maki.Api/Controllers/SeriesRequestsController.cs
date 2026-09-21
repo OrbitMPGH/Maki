@@ -275,11 +275,6 @@ public class SeriesRequestsController(
             return NotFound();
         }
 
-        if (request.Status != SeriesRequestStatus.Pending)
-        {
-            return this.Conflict(localizer, "error.requests.alreadyResolved");
-        }
-
         if (request.Kind == SeriesRequestKind.NewSeries && request.SeriesId is null)
         {
             if (body.RootFolderId is not int rootFolderId)
@@ -287,15 +282,61 @@ public class SeriesRequestsController(
                 return this.Fail(localizer, "error.requests.rootFolderRequired");
             }
 
+            var claimedAt = DateTime.UtcNow;
+            var staleBefore = claimedAt.AddMinutes(-30);
+            var claimed = await db.SeriesRequests.IgnoreQueryFilters()
+                .Where(r => r.Id == id && (r.Status == SeriesRequestStatus.Pending ||
+                    r.Status == SeriesRequestStatus.Processing && r.ApprovalClaimedAtUtc < staleBefore))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, SeriesRequestStatus.Processing)
+                    .SetProperty(r => r.ApprovalClaimedAtUtc, claimedAt), ct);
+            if (claimed != 1)
+            {
+                // The claim is the guard now, so it has to answer both questions the old
+                // Status != Pending check answered: a request somebody already resolved reads as
+                // resolved, and only one that is still Pending and held by another admin reads as
+                // in progress.
+                var status = await db.SeriesRequests.IgnoreQueryFilters().AsNoTracking()
+                    .Where(r => r.Id == id).Select(r => (SeriesRequestStatus?)r.Status)
+                    .FirstOrDefaultAsync(ct);
+                return status is null or SeriesRequestStatus.Pending or SeriesRequestStatus.Processing
+                    ? this.Conflict(localizer, "error.requests.approvalInProgress")
+                    : this.Conflict(localizer, "error.requests.alreadyResolved");
+            }
+            // The claim went through ExecuteUpdate, which the change tracker never sees, so this
+            // entity still holds its pre-claim values. Assigning them by hand instead of reloading
+            // leaves the tracker thinking Processing was always the original: setting Status back to
+            // Pending on a failure then looks like no change at all and the release writes nothing,
+            // stranding the request until the stale window expires.
+            await db.Entry(request).ReloadAsync(ct);
+
             var result = await seriesCreation.CreateAsync(
-                request.MetadataProviderId!, rootFolderId, monitored: true, body.MonitorNewItems, ct);
+                request.MetadataProviderId!, rootFolderId, monitored: true, body.MonitorNewItems, ct,
+                attributedUserId: request.UserId, addedFrom: "request", originatingRequest: request,
+                clientMutationId: SeriesCreationResult.MutationIdFor(request));
 
             if (result.Series is null)
             {
+                // Everything except "somebody already added it" leaves the request unresolved, so
+                // the claim has to go back or it sits in Processing until the stale window expires.
+                if (result.Error is not SeriesCreationError.AlreadyInLibrary)
+                {
+                    request.Status = SeriesRequestStatus.Pending;
+                    request.ApprovalClaimedAtUtc = null;
+                    await db.SaveChangesAsync(ct);
+                }
                 return result.Error switch
                 {
                     SeriesCreationError.RootFolderNotFound => this.Fail(localizer, "error.requests.rootFolderNotFound"),
                     SeriesCreationError.MetadataNotFound => this.Fail(localizer, "error.requests.metadataNotFound"),
+                    // An earlier approval of this request committed a series that has since been
+                    // deleted. Not "already in library" and not a fresh add either: the receipt that
+                    // makes approval retry-safe is keyed on the request, so creating again here would
+                    // mean honouring it after its result was thrown away.
+                    SeriesCreationError.OperationResultGone =>
+                        this.Conflict(localizer, "error.requests.approvedSeriesDeleted"),
+                    SeriesCreationError.MutationIdReused =>
+                        this.Conflict(localizer, "error.requests.approvedElsewhere"),
                     // Somebody added it between the request and the approval. Nothing to do, but the
                     // request is genuinely satisfied — resolve it rather than making the admin reject
                     // a request whose outcome already happened.
@@ -314,6 +355,25 @@ public class SeriesRequestsController(
                     request.Id, result.Series.Title, string.Join(" ", result.Warnings));
             }
         }
+        else
+        {
+            var claimedAt = DateTime.UtcNow;
+            var staleBefore = claimedAt.AddMinutes(-30);
+            var claimed = await db.SeriesRequests.IgnoreQueryFilters()
+                .Where(r => r.Id == id && (r.Status == SeriesRequestStatus.Pending ||
+                    r.Status == SeriesRequestStatus.Processing && r.ApprovalClaimedAtUtc < staleBefore))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, SeriesRequestStatus.Processing)
+                    .SetProperty(r => r.ApprovalClaimedAtUtc, claimedAt), ct);
+            if (claimed != 1)
+                return this.Conflict(localizer, "error.requests.approvalInProgress");
+            // The claim went through ExecuteUpdate, which the change tracker never sees, so this
+            // entity still holds its pre-claim values. Assigning them by hand instead of reloading
+            // leaves the tracker thinking Processing was always the original: setting Status back to
+            // Pending on a failure then looks like no change at all and the release writes nothing,
+            // stranding the request until the stale window expires.
+            await db.Entry(request).ReloadAsync(ct);
+        }
 
         var queued = request.SeriesId is int seriesId
             ? await QueueRangeAsync(
@@ -321,6 +381,7 @@ public class SeriesRequestsController(
             : 0;
 
         request.Status = SeriesRequestStatus.Approved;
+        request.ApprovalClaimedAtUtc = null;
         request.QueuedCount = queued;
         request.ResolvedAt = DateTime.UtcNow;
         request.ResolvedByUserId = currentUser.UserId;
@@ -372,6 +433,11 @@ public class SeriesRequestsController(
         if (request is null)
         {
             return NotFound();
+        }
+
+        if (request.Status == SeriesRequestStatus.Processing)
+        {
+            return this.Conflict(localizer, "error.requests.approvalInProgress");
         }
 
         if (!IsAdmin && request.Status != SeriesRequestStatus.Pending)
@@ -455,6 +521,7 @@ public class SeriesRequestsController(
     private async Task<IActionResult> ResolveAsAlreadyPresentAsync(SeriesRequest request, CancellationToken ct)
     {
         request.Status = SeriesRequestStatus.Approved;
+        request.ApprovalClaimedAtUtc = null;
         request.QueuedCount = 0;
         request.ResolvedAt = DateTime.UtcNow;
         request.ResolvedByUserId = currentUser.UserId;

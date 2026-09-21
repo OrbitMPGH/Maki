@@ -469,6 +469,13 @@ public static class EmbeddingMath
     /// <c>distribution/fit-weights.cs</c>: fitting the coefficients needs the terms unblended, and
     /// recomputing them outside the scorer would be a second copy of every channel.
     /// </summary>
+    /// <param name="Avoid">
+    /// The BLENDED avoid score, which is what the scorer subtracts.
+    /// </param>
+    /// <param name="AvoidTag">
+    /// The contrastive tag half on its own, carried beside the blend so a fit can see which of the
+    /// two halves a coefficient it likes is really following.
+    /// </param>
     /// <param name="Percentile">
     /// Popularity percentile, 0 = most popular. Carried so a fit can see whether a coefficient it
     /// likes is really just fame, which is the failure every table in this codebase is read against.
@@ -484,7 +491,9 @@ public static class EmbeddingMath
         double CoRead,
         double Taste,
         double Distinct,
-        double Percentile);
+        double Percentile,
+        double Avoid,
+        double AvoidTag = 0);
 
     public sealed record Weights(
         double Semantic = 3.0,
@@ -496,7 +505,16 @@ public static class EmbeddingMath
         double Graph = 0.0,
         double CoRead = 0.0,
         double Distinct = 0.0,
-        double Taste = 0.0);
+        double Taste = 0.0,
+        // 12, the `rel-p12` configuration: RecommenderTuning.AvoidNeutralize Relative,
+        // AvoidBlend Product, AvoidRelativeMargin 1.0, AvoidFloor 0.45, AvoidTagMinSupport 2,
+        // AvoidTagMargin 1.0. A large coefficient on a penalty that is almost always zero: the
+        // Product blend fires only where a neutralized semantic score and a contrastive tag score
+        // are both positive, which on a real page is a handful of rows. Measured at nDCG@40 +0.0003
+        // [+0.0001, +0.0006] and median pick popularity 1,522 against the default's 1,448, the
+        // first configuration in three phases inside that band. See distribution/CLAUDE.md,
+        // "v5.2: negative signals, neutralized", including what it does NOT do.
+        double Avoid = 12.0);
 
     /// <summary>
     /// Combines the semantic cosine with the structured signals into a single rank score.
@@ -523,12 +541,18 @@ public static class EmbeddingMath
     /// appear in both. Agreement is therefore genuine corroboration and worth paying for twice;
     /// folding them into one term would throw that away.
     /// </para>
+    /// <paramref name="avoidScore"/> ∈ [0,1] is how much this candidate resembles the titles the
+    /// reader said they wanted less of, and it is the only term here that SUBTRACTS. It is a
+    /// separate channel rather than a negative seed weight because the seed queries are built from a
+    /// weighted centroid: a negative weight there moves the centroid to a point on the sphere that
+    /// stands for nothing, and every candidate is then scored against that point. 0 means no
+    /// resemblance to anything avoided, which is the common case and must cost nothing.
     /// </summary>
     public static double HybridScore(
         double cosine, double genreSum, double tagScore, bool authorMatch, double rating0To100,
         double obscuritySlider, double percentile, Weights w,
         double graphScore = 0, double coReadScore = 0, double distinctiveness = 0,
-        double tasteCosine = 0) =>
+        double tasteCosine = 0, double avoidScore = 0) =>
         (w.Semantic * cosine)
         + (w.Taste * tasteCosine)
         + (w.Genre * genreSum)
@@ -538,5 +562,6 @@ public static class EmbeddingMath
         + (w.CoRead * coReadScore)
         + (w.Obscurity * obscuritySlider * (percentile - 0.5))
         + (w.Graph * graphScore)
-        + (w.Distinct * distinctiveness);
+        + (w.Distinct * distinctiveness)
+        - (w.Avoid * avoidScore);
 }

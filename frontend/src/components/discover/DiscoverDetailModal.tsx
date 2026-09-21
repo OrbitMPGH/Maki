@@ -40,6 +40,7 @@ import {
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
+import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
@@ -49,6 +50,7 @@ export function DiscoverDetailModal({
   inLibrarySeriesId,
   rootFolders,
   onClose,
+  feedbackContext,
 }: {
   /** The card that was clicked; null closes the modal. Used for an instant header while detail loads. */
   item: RecommendationItem | null
@@ -56,6 +58,7 @@ export function DiscoverDetailModal({
   inLibrarySeriesId: number | null | undefined
   rootFolders: RootFolder[] | undefined
   onClose: () => void
+  feedbackContext?: { surface: string }
 }) {
   const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
 
@@ -316,16 +319,32 @@ export function DiscoverDetailModal({
                   </Stack>
                 </Group>
 
-                {/* Keyed by provider id: a half-filled request belongs to the series it was started
-                    for, and remounting is a cheaper reset than clearing six fields. */}
-                <DiscoverLibraryRail
-                  key={item.providerId}
-                  item={item}
-                  detail={detail}
-                  inLibrarySeriesId={inLibrarySeriesId}
-                  rootFolders={rootFolders}
-                  onClose={onClose}
-                />
+                {/* One grid cell, not two. `.series-hero-content` is a two-column grid, so a
+                    feedback control rendered as its own child became a third item and wrapped onto a
+                    row of its own under the poster. It belongs under the add panel it relates to.
+
+                    `alignSelf: end` because the grid sets `align-items: start`: the cell hugs its
+                    content, so without it the panel rides at the top of the band and leaves the gap
+                    underneath. Bottom is where the panel sat before the feedback row joined it. */}
+                <Stack gap="sm" style={{ minWidth: 0, alignSelf: 'end' }}>
+                  {/* Keyed by provider id: a half-filled request belongs to the series it was started
+                      for, and remounting is a cheaper reset than clearing six fields. */}
+                  <DiscoverLibraryRail
+                    key={item.providerId}
+                    item={item}
+                    detail={detail}
+                    inLibrarySeriesId={inLibrarySeriesId}
+                    rootFolders={rootFolders}
+                    onClose={onClose}
+                    addedFrom={feedbackContext ? 'recommendation' : 'library'}
+                  />
+                  {feedbackContext && (
+                    <RecommendationFeedbackMenu
+                      providerId={item.providerId}
+                      surface={feedbackContext.surface}
+                    />
+                  )}
+                </Stack>
               </div>
 
             </div>

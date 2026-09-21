@@ -107,6 +107,7 @@ var workPath = Path.Combine(".artifacts", "coread-graph.db");
 string? muPathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
+var negatives = false;
 var feel = false;
 string? dumpFeatures = null;
 var foldIndex = -1;
@@ -159,6 +160,12 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--strata":
             strata = true;
+            break;
+        // Splits a held-out reading list into titles the reader liked and titles they did NOT, and
+        // hands the disliked half of the SEED slice to the avoid channel. `library` only: it is the
+        // one mode that reads per-entry scores, and a pair graph has no notion of a negative.
+        case "--negatives":
+            negatives = true;
             break;
         case "--feel":
             feel = true;
@@ -224,9 +231,23 @@ if (labelKind is not ("reco" or "coread" or "mu" or "mu-human"))
     return 2;
 }
 
-if (csvMetric is not ("rr" or "ndcg" or "r40"))
+if (csvMetric is not ("rr" or "ndcg" or "r40" or "neg"))
 {
-    Console.WriteLine($"error: --csv wants 'rr', 'ndcg' or 'r40', not '{csvMetric}'.");
+    Console.WriteLine($"error: --csv wants 'rr', 'ndcg', 'r40' or 'neg', not '{csvMetric}'.");
+    return 2;
+}
+
+if (negatives && mode != "library")
+{
+    Console.WriteLine("error: --negatives only means anything in `library` mode.");
+    Console.WriteLine("  A pair graph says which titles go together, never which one somebody");
+    Console.WriteLine("  disliked. Only a reading list carries a score to read that off.");
+    return 2;
+}
+
+if (csvMetric == "neg" && !negatives)
+{
+    Console.WriteLine("error: --csv neg needs --negatives, which is what produces that column.");
     return 2;
 }
 
@@ -447,6 +468,25 @@ if (labelKind == "reco" && variants.Any(v => v.Taste.Weight > 0))
 var csvSuffix = mode == "library" ? "library" : labelKind;
 
 var rng = new Random(rngSeed);
+/// <summary>
+/// Scored entries a reader needs before their own mean is worth subtracting from. Below this the
+/// mean is one or two numbers and "well under it" is noise, which would hand the avoid channel
+/// titles nobody disliked.
+/// </summary>
+const int MinScoredForMean = 5;
+
+/// <summary>
+/// How hard a held-out dislike pushes, from how far under the reader's own mean it sits.
+///
+/// <para>
+/// The app's own scale is <c>(5 - rating) / 4</c>: four steps between the neutral point and the
+/// bottom. This lays the same four-step band over the gap instead of over an absolute score,
+/// because a reader's own zero is where most of the variance in these lists is - the qualifying
+/// gap of 15 POINT_100 points maps to 0.25 and a 40-point one to 1.0.
+/// </para>
+/// </summary>
+static double AvoidStrength(double gap) => Math.Clamp(0.25 + (0.75 * (gap - 15.0) / 25.0), 0.25, 1.0);
+
 var requests = mode == "library"
     ? BuildLibraryRequests()
     : BuildPairRequests();
@@ -629,6 +669,8 @@ List<Request> BuildLibraryRequests()
         $"libraries: {usable.Count} of {byUser.Count} reading lists have >= {minLibrary} in-index completed titles");
 
     var built = new List<Request>();
+    var unscored = 0;
+    var unusable = 0;
     foreach (var (_, entries) in usable.OrderBy(_ => rng.Next()))
     {
         if (built.Count >= requestCount)
@@ -650,18 +692,61 @@ List<Request> BuildLibraryRequests()
             continue;
         }
 
-        var positives = shuffled.Take(heldOut).ToDictionary(e => e.Id, _ => 1.0);
         // Capped, because a 4,000-title list costs one dot product per catalogue row per seed query
         // and buys nothing a 300-title one does not: MaxSeedQueries stops at 8 either way.
         var seedEntries = shuffled.Skip(heldOut).Take(maxLibrary).ToList();
-        var scores = seedEntries
+        var heldOutEntries = shuffled.Take(heldOut).ToList();
+
+        // A reader's own zero is where most of the variance is (see the reader-cohort phase), so a
+        // dislike here is relative to their own mean rather than to an absolute score. 15 points on
+        // AniList's POINT_100 scale is the 1.5 the plan asks for on a /10 one.
+        var scoredEntries = shuffled.Where(e => e.Score > 0).ToList();
+        var readerMean = scoredEntries.Count >= MinScoredForMean
+            ? scoredEntries.Average(e => e.Score)
+            : double.NaN;
+        var threshold = readerMean - 15.0;
+        bool Disliked((long Id, int Score) e) =>
+            negatives && !double.IsNaN(readerMean) && e.Score > 0 && e.Score <= threshold;
+
+        if (negatives && double.IsNaN(readerMean))
+        {
+            unscored++;
+            continue;
+        }
+
+        var positives = heldOutEntries.Where(e => !Disliked(e)).ToDictionary(e => e.Id, _ => 1.0);
+        var heldOutNegatives = heldOutEntries.Where(Disliked).Select(e => e.Id).ToList();
+        if (negatives && (positives.Count == 0 || heldOutNegatives.Count == 0))
+        {
+            // Every graded reader has to carry both halves, or the two columns would be averaged
+            // over different populations and the table would compare them anyway.
+            unusable++;
+            continue;
+        }
+
+        var seeds = seedEntries.Where(e => !Disliked(e)).ToList();
+        var avoid = seedEntries.Where(Disliked)
+            .ToDictionary(e => e.Id, e => AvoidStrength(readerMean - e.Score));
+        var scores = seeds
             .Where(e => e.Score > 0)
             .ToDictionary(e => e.Id, e => e.Score / 50.0); // POINT_100, mirroring rating/5.0 locally
 
         built.Add(new Request(
-            seedEntries.Select(e => e.Id).ToList(),
+            seeds.Select(e => e.Id).ToList(),
             scores.Count > 0 ? scores : null,
-            positives));
+            positives,
+            avoid.Count > 0 ? avoid : null,
+            heldOutNegatives));
+    }
+
+    if (negatives)
+    {
+        Console.WriteLine(
+            $"negatives: {built.Count} readers graded, {unscored} skipped for fewer than "
+            + $"{MinScoredForMean} scored entries, {unusable} for holding out only one of the two halves");
+        Console.WriteLine(
+            $"           mean avoided seeds {built.Average(r => r.Avoid?.Count ?? 0):F1}, "
+            + $"mean held-out negatives {built.Average(r => r.Negatives!.Count):F1}");
     }
 
     return built;
@@ -682,7 +767,7 @@ async Task<ResultRow> Score(Variant variant)
     // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
     // the fit would pair candidates that never competed.
     var dumping = dumpFeatures is not null && ReferenceEquals(variant, variants[0])
-        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,pop\n")
+        ? new StringBuilder("request,label,semantic,genre,tag,author,quality,graph,coread,taste,distinct,avoid,avoidtag,pop\n")
         : null;
 
     var reciprocal = new double[requests.Count];
@@ -691,6 +776,7 @@ async Task<ResultRow> Score(Variant variant)
     var r40 = new double[requests.Count];
     var ndcg = new double[requests.Count];
     var named = new double[requests.Count];
+    var negativeHit = new double[requests.Count];
     var popularity = new List<double>();
     var feelRows = new List<FeelRow>();
     var hits = 0;
@@ -709,6 +795,7 @@ async Task<ResultRow> Score(Variant variant)
             RecommendationFilters.None,
             obscurity: 0,
             seedWeights: seedWeights,
+            avoidWeights: request.Avoid,
             diversity: variant.Diversity,
             weights: variant.Weights,
             coGraph: coGraph,
@@ -725,7 +812,9 @@ async Task<ResultRow> Score(Variant variant)
                     .Append(Csv(f.Tag)).Append(',').Append(Csv(f.Author)).Append(',')
                     .Append(Csv(f.Quality)).Append(',').Append(Csv(f.Graph)).Append(',')
                     .Append(Csv(f.CoRead)).Append(',').Append(Csv(f.Taste)).Append(',')
-                    .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Percentile)).Append('\n');
+                    .Append(Csv(f.Distinct)).Append(',').Append(Csv(f.Avoid)).Append(',')
+                    .Append(Csv(f.AvoidTag)).Append(',')
+                    .Append(Csv(f.Percentile)).Append('\n');
             }
         }
 
@@ -737,6 +826,12 @@ async Task<ResultRow> Score(Variant variant)
         named[i] = picks.Count == 0
             ? 0
             : (double)picks.Count(p => p.BecauseOfTitle is not null) / picks.Count;
+        // The column the avoid channel exists to move: what share of the titles this reader
+        // actually disliked still made the page. Lower is better, and it is only meaningful read
+        // together with nDCG on the positives - dropping everything moves both.
+        negativeHit[i] = request.Negatives is { Count: > 0 } wanted
+            ? (double)ids.Take(limit).Count(wanted.Contains) / wanted.Count
+            : 0;
         r10[i] = RecallAt(ids, request.Positives, 10);
         r20[i] = RecallAt(ids, request.Positives, 20);
         r40[i] = RecallAt(ids, request.Positives, limit);
@@ -781,6 +876,7 @@ async Task<ResultRow> Score(Variant variant)
     {
         "ndcg" => ndcg,
         "r40" => r40,
+        "neg" => negativeHit,
         _ => reciprocal,
     };
 
@@ -792,6 +888,23 @@ async Task<ResultRow> Score(Variant variant)
 
     File.WriteAllText(Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-{csvSuffix}.csv"), csv.ToString());
 
+    // The negative hit rate gets its own file whenever it exists, under the suffix `library-neg`,
+    // so one run answers both questions the avoid channel has to pass: the drop has to be real AND
+    // nDCG on the positives has to hold. Two runs to read two columns is how a sweep this size
+    // stops being affordable.
+    if (negatives)
+    {
+        var negCsv = new StringBuilder();
+        for (var i = 0; i < negativeHit.Length; i++)
+        {
+            negCsv.Append(i).Append(',')
+                .Append(negativeHit[i].ToString("R", CultureInfo.InvariantCulture)).Append('\n');
+        }
+
+        File.WriteAllText(
+            Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-library-neg.csv"), negCsv.ToString());
+    }
+
     if (dumping is not null)
     {
         File.WriteAllText(dumpFeatures!, dumping.ToString());
@@ -799,7 +912,7 @@ async Task<ResultRow> Score(Variant variant)
     }
 
     return new ResultRow(
-        variant.Name, r10, r20, r40, ndcg, reciprocal, named,
+        variant.Name, r10, r20, r40, ndcg, reciprocal, named, negativeHit,
         (double)hits / requests.Count,
         popularity.Count == 0 ? double.NaN : Median(popularity),
         clock.Elapsed.TotalMilliseconds / Math.Max(1, requests.Count),
@@ -860,15 +973,17 @@ void Report()
 {
     Console.WriteLine(
         $"{"variant",-24}{"R@10",8}{"R@20",8}{$"R@{limit}",8}{$"nDCG@{limit}",10}{"MRR",8}{"hit",8}" +
-        $"{"named",8}{"pop",9}{"ms",8}");
-    Console.WriteLine(new string('-', 97));
+        $"{"named",8}{(negatives ? $"{"neg",8}" : string.Empty)}{"pop",9}{"ms",8}");
+    Console.WriteLine(new string('-', negatives ? 105 : 97));
     foreach (var row in rows)
     {
         var pop = double.IsNaN(row.Popularity) ? "-" : row.Popularity.ToString("F0", CultureInfo.InvariantCulture);
         Console.WriteLine(
             $"{row.Name,-24}{row.R10.Average(),8:F3}{row.R20.Average(),8:F3}{row.R40.Average(),8:F3}" +
             $"{row.Ndcg.Average(),10:F3}{row.Rr.Average(),8:F3}{row.Hit,8:P0}" +
-            $"{row.Named.Average(),8:P0}{pop,9}{row.MillisecondsPerRequest,8:F0}");
+            $"{row.Named.Average(),8:P0}"
+            + (negatives ? $"{row.NegativeHit.Average(),8:P0}" : string.Empty)
+            + $"{pop,9}{row.MillisecondsPerRequest,8:F0}");
     }
 
     Console.WriteLine();
@@ -890,6 +1005,13 @@ void Report()
     Console.WriteLine("  named   : share of picks carrying a BecauseOfTitle, i.e. ones the UI can label");
     Console.WriteLine("            \"Feels like X\" instead of leaving unattributed. Not a quality measure -");
     Console.WriteLine("            read it against nDCG, never on its own.");
+    if (negatives)
+    {
+        Console.WriteLine("  neg     : share of this reader's held-out DISLIKED titles still in the top 40.");
+        Console.WriteLine("            LOWER is better, and it is only a result paired with nDCG holding:");
+        Console.WriteLine("            a variant that returns fewer titles of any kind moves both.");
+    }
+
     Console.WriteLine("  ms      : mean wall time for one GetSimilarAsync, so `maxseedqueries` has a price");
     Console.WriteLine("            next to its gain. Comparable within a run only.");
     Console.WriteLine();
@@ -912,6 +1034,14 @@ void Report()
         Console.WriteLine(
             $"  per-request {csvMetric} written to .artifacts/eval/rr-<variant>-{csvSuffix}.csv" +
             $"{(csvMetric == "rr" ? " (--csv ndcg|r40 to test a different column)" : string.Empty)}");
+        if (negatives)
+        {
+            Console.WriteLine(
+                "  per-request negative hit rate written to .artifacts/eval/rr-<variant>-library-neg.csv");
+            Console.WriteLine(
+                $"  paired stats: python distribution/eval-compare.py {rows[1].Name} {rows[0].Name} library-neg");
+        }
+
         Console.WriteLine(
             $"  paired stats: python distribution/eval-compare.py {rows[1].Name} {rows[0].Name} {csvSuffix}" +
             $"{(csvMetric == "rr" ? string.Empty : $" {csvMetric}")}");
@@ -1645,10 +1775,20 @@ file sealed class FeelIndex
 /// a variant carrying <c>seedweights=score</c> uses them, which is what makes the weighting itself
 /// measurable rather than assumed.
 /// </param>
+/// <param name="Avoid">
+/// Titles from this reader's SEED slice that they scored well under their own mean, at the same
+/// strength the app derives from a low rating. Null unless --negatives.
+/// </param>
+/// <param name="Negatives">
+/// Titles from this reader's HELD-OUT slice that they scored the same way: what a working avoid
+/// channel should push out of the top 40. Empty unless --negatives.
+/// </param>
 file record Request(
     IReadOnlyList<long> Seeds,
     IReadOnlyDictionary<long, double>? Scores,
-    Dictionary<long, double> Positives);
+    Dictionary<long, double> Positives,
+    IReadOnlyDictionary<long, double>? Avoid = null,
+    IReadOnlyList<long>? Negatives = null);
 
 /// <param name="MillisecondsPerRequest">
 /// Mean wall time for one <c>GetSimilarAsync</c>. Reported because <c>maxseedqueries</c> is a pure
@@ -1657,6 +1797,7 @@ file record Request(
 /// </param>
 file record ResultRow(
     string Name, double[] R10, double[] R20, double[] R40, double[] Ndcg, double[] Rr, double[] Named,
+    double[] NegativeHit,
     double Hit, double Popularity, double MillisecondsPerRequest, FeelRow? Feel);
 
 /// <summary>
@@ -1668,7 +1809,14 @@ file record ResultRow(
 /// <see cref="EmbeddingMath.Weights"/> (so <c>wcoread</c> is the channel's coefficient in the hybrid
 /// score and <c>coreadweight</c> is the scorer's own — they are different numbers and both matter).
 /// <c>diversity</c> and <c>seedweights</c> stand alone, as do the <see cref="RecommenderTuning"/>
-/// keys: <c>cosinefloor</c>, <c>crowdbypassesfloor</c>, <c>genrerawsum</c>, <c>maxseedqueries</c>
+/// keys: <c>cosinefloor</c>, <c>crowdbypassesfloor</c>, <c>genrerawsum</c>, <c>maxseedqueries</c>,
+/// <c>avoidfloor</c>, <c>maxavoidqueries</c>, <c>avoidblend</c> (<c>semantic</c> / <c>tag</c> /
+/// <c>product</c> / <c>gate</c>), <c>avoidtagminsupport</c>, <c>avoidtagmargin</c>,
+/// <c>avoidtagfloor</c> (<c>gate</c> only), <c>avoidweight</c> (an alias for <c>wavoid</c>),
+/// <c>avoidneutralize</c> (<c>none</c> / <c>relative</c> / <c>popresidual</c> /
+/// <c>standardized</c>, what the semantic half measures), <c>avoidrelmargin</c>
+/// (<c>relative</c> only), <c>avoidpopbuckets</c> and <c>avoidpopminbucket</c>
+/// (<c>popresidual</c> only), <c>avoidzfloor</c> and <c>avoidzspan</c> (<c>standardized</c> only)
 /// and <c>seedselection</c> (<c>farthest</c> / <c>weight</c> / <c>medoid</c> /
 /// <c>weightedfarthest</c>). The last two only move anything in <c>library</c> mode: below
 /// <c>maxseedqueries</c> seeds every seed is queried and the strategy cannot matter.
@@ -1724,7 +1872,7 @@ file record ResultRow(
 /// <para>
 /// Shorthand names: <c>default</c> is what ships; <c>nograph</c>, <c>nocoread</c> and <c>nocrowd</c>
 /// switch one or both crowd channels off, which are the baselines those features have to be read
-/// against; <c>rail</c> is the reduced-weight, slightly-diversified configuration
+/// against; <c>noavoid</c> is the same for the avoid channel; <c>rail</c> is the reduced-weight, slightly-diversified configuration
 /// <c>SimilarSeriesService</c> uses for a single seed.
 /// </para>
 /// </summary>
@@ -1747,6 +1895,14 @@ file static class Variants
         var weights = (EmbeddingMath.Weights?)null;
         var diversity = 0.0;
         var scoreWeights = false;
+
+        // The baseline the avoid channel has to be read against, the same way `nocrowd` and
+        // `notaste` are for the other channels. A bare `avoid` would be a variant NAME rather than
+        // an override, which is the trap this file's header already records once.
+        if (lower == "noavoid")
+        {
+            weights = new EmbeddingMath.Weights() with { Avoid = 0 };
+        }
 
         if (lower == "rail")
         {
@@ -1893,6 +2049,97 @@ file static class Variants
                     TagAncestorIncludesSelf = bool.Parse(value),
                 };
             }
+            else if (key == "avoidfloor")
+            {
+                recommender = recommender with
+                {
+                    AvoidFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "maxavoidqueries")
+            {
+                recommender = recommender with
+                {
+                    MaxAvoidQueries = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidblend")
+            {
+                recommender = recommender with
+                {
+                    AvoidBlend = Enum.Parse<AvoidBlend>(value, ignoreCase: true),
+                };
+            }
+            else if (key == "avoidtagminsupport")
+            {
+                recommender = recommender with
+                {
+                    AvoidTagMinSupport = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidtagmargin")
+            {
+                recommender = recommender with
+                {
+                    AvoidTagMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidtagfloor")
+            {
+                recommender = recommender with
+                {
+                    AvoidTagFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidneutralize")
+            {
+                recommender = recommender with
+                {
+                    AvoidNeutralize = Enum.Parse<AvoidNeutralize>(value, ignoreCase: true),
+                };
+            }
+            else if (key == "avoidrelmargin")
+            {
+                recommender = recommender with
+                {
+                    AvoidRelativeMargin = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidpopbuckets")
+            {
+                recommender = recommender with
+                {
+                    AvoidPopBuckets = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidpopminbucket")
+            {
+                recommender = recommender with
+                {
+                    AvoidPopMinBucket = int.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidzfloor")
+            {
+                recommender = recommender with
+                {
+                    AvoidZFloor = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            else if (key == "avoidzspan")
+            {
+                recommender = recommender with
+                {
+                    AvoidZSpan = double.Parse(value, CultureInfo.InvariantCulture),
+                };
+            }
+            // Spelled out rather than left to the `w*` prefix, because every other key in this
+            // family is `avoid*` and a sweep that reads `avoidblend=product,wavoid=6` invites the
+            // reader to check which of the two is the coefficient. Same number as `wavoid`.
+            else if (key == "avoidweight")
+            {
+                weights = ApplyWeight(weights ?? new EmbeddingMath.Weights(), "avoid", value);
+            }
             else if (key == "attributionscale")
             {
                 recommender = recommender with
@@ -1939,6 +2186,9 @@ file static class Variants
             "graph" => w with { Graph = d },
             "coread" => w with { CoRead = d },
             "distinct" => w with { Distinct = d },
+            // The avoid channel's coefficient. Unlike graph and coread it is never set for you when
+            // the channel has something to say: it ships at 0 and only a sweep turns it on.
+            "avoid" => w with { Avoid = d },
             _ => throw new InvalidOperationException($"Unknown hybrid weight 'w{key}'."),
         };
     }

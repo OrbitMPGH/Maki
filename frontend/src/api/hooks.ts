@@ -10,6 +10,7 @@ import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
+import { affectedKeys } from './recommendationFeedback'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
@@ -173,6 +174,8 @@ export interface RecommendationsResult {
   generatedAt: string
   page: number
   hasMore: boolean
+  poolVersion?: string | null
+  restartRequired?: boolean
 }
 
 export interface RecommendationFilters {
@@ -411,12 +414,25 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
         // deeper pages read from the pool that page 0 just rebuilt.
         body: JSON.stringify({
           ...request,
-          page: pageParam,
-          refresh: pageParam === 0 ? request.refresh : false,
+          page: pageParam.page,
+          poolVersion: pageParam.poolVersion,
+          refresh: pageParam.page === 0 ? request.refresh : false,
         }),
       }),
-    initialPageParam: 0,
-    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
+    getNextPageParam: (last) => (last.hasMore
+      ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }
+      : undefined),
+    // A restart page is the server saying the pool changed under us and handing back the new one
+    // from the top. Everything loaded before it came from a pool that no longer exists, so keeping
+    // it would show titles this reader hid or repeat ones the new pool ordered differently. Drop
+    // those pages here rather than stopping at the restart: paging carries on from the new page 0.
+    select: (data) => {
+      const restart = data.pages.findLastIndex((page) => page.restartRequired)
+      return restart <= 0
+        ? data
+        : { pages: data.pages.slice(restart), pageParams: data.pageParams.slice(restart) }
+    },
     enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
@@ -1172,6 +1188,7 @@ export function useAddSeries() {
       api<SeriesDto>('/series', { method: 'POST', body: JSON.stringify(request) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -1183,6 +1200,7 @@ export function useDeleteSeries() {
       api<void>(`/series/${id}?deleteFiles=${deleteFiles}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -1651,7 +1669,9 @@ export function useSetRating() {
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
-      void queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+      // Every recommendation surface, not just the Recommended tab: a rating of 4 or under now
+      // moves the avoided set, which changes Home's rail and the taste surfaces too.
+      for (const key of affectedKeys) void queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }
@@ -2753,6 +2773,10 @@ export interface ScrobbleConnection {
   syncReading: boolean
   /** Per-tracker: push ratings to this service. */
   syncRatings: boolean
+  /** Whether this tracker can hand over an anime list at all, which is what draws the switch. */
+  animeList: boolean
+  /** Per-tracker: let this service's watched anime steer recommendations. */
+  animeSignals: boolean
 }
 
 export interface ScrobbleCandidate {
@@ -2886,14 +2910,17 @@ export function useScrobblePreferences() {
       service,
       reading,
       ratings,
+      anime,
     }: {
       service: string
       reading: boolean
       ratings: boolean
+      /** Omitted for trackers with no anime list, so the server leaves that setting alone. */
+      anime?: boolean
     }) =>
-      api<{ service: string; reading: boolean; ratings: boolean }>(
+      api<{ service: string; reading: boolean; ratings: boolean; anime: boolean | null }>(
         `/scrobble/preferences/${service}`,
-        { method: 'PUT', body: JSON.stringify({ reading, ratings }) },
+        { method: 'PUT', body: JSON.stringify({ reading, ratings, anime }) },
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] })

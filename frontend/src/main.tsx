@@ -55,7 +55,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppI18nProvider>
       <AppThemeProvider>
-        <Notifications autoClose={6000} />
+        {/* Above every modal, not Mantine's default 400. The Discover detail modal sits at 1000 and
+            the fullscreen "Show more" modal above that, so a toast raised by an action taken inside
+            one of them rendered behind it: the action worked, said so, and the reader saw nothing. */}
+        <Notifications autoClose={6000} zIndex={2000} />
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <App />

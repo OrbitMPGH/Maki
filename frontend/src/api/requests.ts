@@ -3,7 +3,7 @@ import { t } from '@lingui/core/macro'
 import { api } from './client'
 
 export type SeriesRequestKind = 'NewSeries' | 'Chapters'
-export type SeriesRequestStatus = 'Pending' | 'Approved' | 'Rejected'
+export type SeriesRequestStatus = 'Pending' | 'Processing' | 'Approved' | 'Rejected'
 
 export interface SeriesRequest {
   id: number

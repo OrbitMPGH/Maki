@@ -26,6 +26,18 @@
   The first two share a population with everything the recommender learns from. The MangaUpdates
   pair does not, which is the only reason a behaviourally-trained channel can be graded honestly.
 
+  `library` runs with --negatives, which adds the `neg` column: what share of a reader's held-out
+  DISLIKED titles still made the top 40. It is the only place the avoid channel can be measured at
+  all, because a pair graph says which titles go together and never which one somebody disliked.
+  Read it with nDCG beside it - a variant that returns fewer titles of any kind moves both.
+
+  The avoid channel SHIPS as of v5.2, so `default` now means `EmbeddingMath.Weights.Avoid` 12 with
+  `AvoidNeutralize.Relative` and `AvoidBlend.Product`. `noavoid` is the baseline it has to be read
+  against, the same way `nocrowd` and `notaste` are for theirs, and `avoidnone12` is the old raw
+  cosine at the same coefficient, kept so the neutralization can still be priced on its own. What
+  decided v5.2 was `pop` and nDCG; the `dial` gate was NOT met, so read `eval-reco.cs dial` beside
+  these rows rather than assuming this table covers it.
+
 .PARAMETER Variants
   Which variants to score. Defaults to the shipped configuration against the no-crowd baseline.
   Later phases pass their own, e.g. -Variants default,"anc:tagancestordecay=0.5".
@@ -47,7 +59,9 @@
 #>
 [CmdletBinding()]
 param(
-  [string[]]$Variants = @("nocrowd", "default"),
+  [string[]]$Variants = @(
+    "nocrowd", "default", "noavoid",
+    "avoidnone12:avoidneutralize=none,avoidweight=12"),
   [string]$Config = "",
   [int]$Requests = 500,
   [int]$Libraries = 400,
@@ -132,7 +146,8 @@ foreach ($labels in @("reco", "coread", "mu", "mu-human")) {
 # taste-vectors.db built by `build-taste-vectors.cs --fold-out k/n`, and the eval will refuse the
 # run outright if the installed artifact was trained on the fold being graded. Without it, library
 # mode grades a model against readers it learned from and the number is meaningless.
-$libraryArgs = @("library", "--requests", "$Libraries", "--holdout", "0.2", "--strata") + $feel
+$libraryArgs = @(
+  "library", "--requests", "$Libraries", "--holdout", "0.2", "--strata", "--negatives") + $feel
 if ($LibraryFold) {
   $libraryArgs += @("--fold-users", $LibraryFold)
 } elseif (Test-Path (Join-Path $Config "taste-vectors.db")) {

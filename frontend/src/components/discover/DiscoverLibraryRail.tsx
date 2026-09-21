@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Button, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -30,6 +30,7 @@ export function DiscoverLibraryRail({
   inLibrarySeriesId,
   rootFolders,
   onClose,
+  addedFrom,
 }: {
   item: RecommendationItem
   /** Undefined until the detail request lands; only the content rating is read from it. */
@@ -38,12 +39,14 @@ export function DiscoverLibraryRail({
   inLibrarySeriesId: number | null | undefined
   rootFolders: RootFolder[] | undefined
   onClose: () => void
+  addedFrom?: 'recommendation' | 'library'
 }) {
   const { t } = useLingui()
   const navigate = useNavigate()
   const { can } = useAuth()
   const incognitoOptions = useIncognitoOptions()
   const addSeries = useAddSeries()
+  const addMutationId = useRef<string | null>(null)
   const createRequest = useCreateSeriesRequest()
   const { data: librarySettings } = useLibrarySettings()
 
@@ -100,6 +103,7 @@ export function DiscoverLibraryRail({
 
   const add = () => {
     if (!rootFolderId) return
+    addMutationId.current ??= crypto.randomUUID()
     addSeries.mutate(
       {
         metadataProviderId: item.providerId,
@@ -107,6 +111,8 @@ export function DiscoverLibraryRail({
         monitored,
         monitorNewItems: monitored ? 'All' : 'None',
         incognito: incognito ?? 'Off',
+        addedFrom: addedFrom ?? 'library',
+        clientMutationId: addMutationId.current,
       },
       {
         onSuccess: (series) => {
@@ -128,6 +134,12 @@ export function DiscoverLibraryRail({
             color: warnings.length > 0 ? 'yellow' : 'green',
             autoClose: warnings.length > 0 ? false : undefined,
           })
+        },
+        onError: (error) => {
+          // 410 means this mutation id belongs to an add that committed and was then deleted. The
+          // id is sticky so a retry cannot double-add; keeping it after a 410 would make every
+          // later press fail the same way, so adding again becomes a genuinely new operation.
+          if (error.message.startsWith('API 410')) addMutationId.current = null
         },
       },
     )
@@ -161,7 +173,6 @@ export function DiscoverLibraryRail({
       radius="lg"
       p="md"
       className="series-hero-glass-panel"
-      style={{ alignSelf: 'end' }}
     >
       {seriesId != null ? (
         <>

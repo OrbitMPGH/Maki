@@ -56,6 +56,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
+import { SignalsCard } from './FeedbackLab'
 import { formatNumber, formatReadingTime } from '../../format'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
@@ -546,9 +547,12 @@ export function TasteTab() {
 
   if (nothingAtAll) {
     return (
+      <Stack gap="md">
       <Alert color="gray" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
         <Trans>Read a few chapters and this fills in.</Trans>
       </Alert>
+      <SignalsCard />
+      </Stack>
     )
   }
 
@@ -568,19 +572,7 @@ export function TasteTab() {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="center" wrap="wrap">
-        <SegmentedControl
-          value={view}
-          onChange={(v) => setView(v as TasteView)}
-          data={[
-            { value: 'read', label: t`What you've read` },
-            { value: 'shelf', label: t`Everything you own` },
-          ]}
-        />
-        <Text c="dimmed" size="sm">
-          {summaryText}
-        </Text>
-      </Group>
+      <SignalsCard />
 
       {behaviour && behaviour.chaptersRead > 0 && (
         <>
@@ -593,7 +585,21 @@ export function TasteTab() {
         icon={IconCompass}
         title={t`What you read, grouped`}
         count={insights?.groups.length ? insights.groups.length : undefined}
+        action={
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(v) => setView(v as TasteView)}
+            data={[
+              { value: 'read', label: t`What you've read` },
+              { value: 'shelf', label: t`Everything you own` },
+            ]}
+          />
+        }
       />
+      <Text c="dimmed" size="xs">
+        {summaryText}
+      </Text>
       {insights?.unavailable || insights?.groupsUnavailable ? (
         <Alert color="gray" icon={<IconAlertCircle size={16} />}>
           {insights.unavailable ?? insights.groupsUnavailable}
@@ -704,12 +710,13 @@ export function TasteTab() {
         <IconLock size={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
         <Text c="dimmed" size="xs">
           <Trans>Only you can see this.</Trans>{' '}
-          <Trans>It is built from the same weights that pick your recommendations.</Trans>
+          <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>
         </Text>
       </Group>
 
       <DiscoverDetailModal
         item={detailItem}
+        feedbackContext={{ surface: 'taste' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}

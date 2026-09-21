@@ -43,6 +43,7 @@ export function SimilarSeriesSection({ seriesId }: { seriesId: number }) {
 
       <DiscoverDetailModal
         item={detailItem}
+        feedbackContext={{ surface: 'similar' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}

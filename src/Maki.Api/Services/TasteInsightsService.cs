@@ -80,7 +80,6 @@ public record TasteInsights(
 public class TasteInsightsService(
     IServiceScopeFactory scopeFactory,
     SeedWeightService seedWeights,
-    BehavioralTasteService taste,
     MangaBakaLocalStore store,
     VectorIndexCache vectorIndex,
     EmbeddingStore embeddings,
@@ -103,7 +102,7 @@ public class TasteInsightsService(
     /// Which weight classes of a tag can name a group. A tag the dump marked incidental is a thing
     /// that happened in one chapter, and a group built on those is a group about nothing.
     /// </summary>
-    private const byte MinTagClass = TagMath.Defining;
+    internal const byte MinTagClass = TagMath.Defining;
 
     /// <summary>
     /// The <c>name_path</c> roots a tag may name a group from.
@@ -137,7 +136,7 @@ public class TasteInsightsService(
     /// library actually needs are in <c>Settings &gt; Game Elements</c> and <c>Themes</c> already.
     /// </para>
     /// </summary>
-    private static readonly HashSet<string> GroupCategories = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> GroupCategories = new(StringComparer.OrdinalIgnoreCase)
     {
         "Themes", "Settings", "Relationship", "Activities", "Occupations",
         "Species & Creatures", "World Building",
@@ -153,7 +152,7 @@ public class TasteInsightsService(
     /// series is the broad, useless label this whole surface exists to replace.
     /// </para>
     /// </summary>
-    private static readonly HashSet<string> DemographicGenres = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> DemographicGenres = new(StringComparer.OrdinalIgnoreCase)
     {
         "Shounen", "Shoujo", "Seinen", "Josei", "Kodomo",
     };
@@ -212,7 +211,32 @@ public class TasteInsightsService(
     public async Task<TasteInsights> GetAsync(
         ICurrentUser scope, TasteView view, bool refresh, CancellationToken ct = default)
     {
-        var key = $"{scope.UserId}:{view}";
+        // One library read for both the key and the build behind a miss. Keying on a snapshot this
+        // then throws away would read the library, the overrides and the read counts twice over on
+        // every call, warm hits included, which is more work than the cache saves.
+        SeedSnapshot snapshot;
+        HashSet<long> suppressed;
+        long feedbackRevision;
+        long signalRevision;
+        long nextDismissalExpiry;
+        using (var inputScope = scopeFactory.CreateScope())
+        {
+            var inputDb = inputScope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            inputDb.Scope.SetUser(scope.UserId, scope.AllRootFolders);
+            var versions = await RecommendationFeedbackService.VersionsAsync(inputDb, scope.UserId, ct);
+            feedbackRevision = versions.FeedbackRevision;
+            signalRevision = versions.SignalRevision;
+            var now = DateTime.UtcNow;
+            nextDismissalExpiry = (await inputDb.RecommendationFeedback.AsNoTracking()
+                .Where(x => x.UserId == scope.UserId &&
+                    x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now)
+                .OrderBy(x => x.DismissedUntilUtc)
+                .Select(x => x.DismissedUntilUtc).FirstOrDefaultAsync(ct))?.Ticks ?? 0;
+            snapshot = await seedWeights.SnapshotAsync(inputDb, scope, ct);
+            suppressed = await RecommendationFeedbackService.SuppressedAsync(inputDb, scope.UserId, ct);
+        }
+        var key = $"{scope.UserId}:{view}:{feedbackRevision}:{signalRevision}:{nextDismissalExpiry}:{scope.MaxContentRating}:" +
+            $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{snapshot.Fingerprint()}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -223,7 +247,7 @@ public class TasteInsightsService(
                 return hit.Insights;
             }
 
-            var insights = await BuildAsync(scope, view, ct);
+            var insights = await BuildAsync(scope, snapshot, suppressed, view, ct);
             _cache[key] = (insights, DateTime.UtcNow);
 
             foreach (var stale in _cache
@@ -251,7 +275,9 @@ public class TasteInsightsService(
     private static TasteInsights Nothing(string why, int covered = 0, int total = 0) =>
         new([], null, null, null, [], null, covered, total, why, DateTime.UtcNow);
 
-    private async Task<TasteInsights> BuildAsync(ICurrentUser scope, TasteView view, CancellationToken ct)
+    private async Task<TasteInsights> BuildAsync(
+        ICurrentUser scope, SeedSnapshot snapshot, HashSet<long> suppressed, TasteView view,
+        CancellationToken ct)
     {
         var index = await vectorIndex.GetAsync(ct);
         if (index is null || index.Count == 0)
@@ -259,20 +285,22 @@ public class TasteInsightsService(
             return Nothing("The recommendation index has not been built yet.");
         }
 
-        SeedWeights seeded;
-        IReadOnlySet<long> readIds;
+        var seeded = snapshot.Effective;
+        var readIds = snapshot.Signals.Keys.ToHashSet();
         List<LibraryRow> library;
         Dictionary<int, DateTime> firstReadAt;
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
             db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
-            seeded = await seedWeights.BuildAsync(db, scope, ct);
-            var signals = await taste.ReadSignalsAsync(db, scope.UserId, seeded.LibraryIds, ct);
-            readIds = signals.Keys.ToHashSet();
             library = await LibraryRowsAsync(db, ct);
             firstReadAt = await FirstReadAtAsync(db, scope.UserId, ct);
         }
+
+        // The groups and the drift chart describe the shelf, so they keep ignored sources and drop
+        // only what the reader cannot see. A set, not the list: this runs over the whole library.
+        var observedIds = snapshot.Observed.EligibleIds.ToHashSet();
+        library = library.Where(r => observedIds.Contains(r.MangaBakaId)).ToList();
 
         var wanted = view == TasteView.Read
             ? library.Where(r => readIds.Contains(r.MangaBakaId)).ToList()
@@ -336,7 +364,8 @@ public class TasteInsightsService(
                 drift, driftUnavailable, points.Count, total, null, DateTime.UtcNow);
         }
 
-        var groups = await GroupsAsync(scope, index, points, facets, mined, ct);
+        var groups = await GroupsAsync(index, points, facets, mined, scope.MaxContentRating,
+            seeded.LibraryIds, seeded.EligibleIds.ToHashSet(), suppressed, ct);
         var (oddOneOut, oddSimilarity) = OddOneOut(points, mined, groups.Centroids);
 
         logger.LogInformation(
@@ -385,7 +414,7 @@ public class TasteInsightsService(
         var names = new Dictionary<string, (string Name, bool IsTag, long Df)>(StringComparer.Ordinal);
         var perPointNames = new List<List<string>>(points.Count);
 
-        var genreIds = GenreIdsOf(index, points);
+        var genreIds = GenreIdsOf(index, points.SelectMany(p => p.Genres));
         var genreDf = GenreDocumentFrequencies(index, genreIds);
 
         foreach (var point in points)
@@ -466,10 +495,10 @@ public class TasteInsightsService(
     }
 
     /// <summary>The library's genre names resolved against the index's vocabulary, once.</summary>
-    private static Dictionary<string, int> GenreIdsOf(VectorIndex index, List<Point> points)
+    internal static Dictionary<string, int> GenreIdsOf(VectorIndex index, IEnumerable<string> genres)
     {
         var ids = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var name in points.SelectMany(p => p.Genres).Select(g => g.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var name in genres.Select(g => g.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (name.Length > 0 && index.TryGetGenreId(name, out var id))
             {
@@ -484,7 +513,7 @@ public class TasteInsightsService(
     /// How much of the catalogue carries each genre the reader has. One pass over the index's genre
     /// column, which nothing precomputes - unlike a tag, whose count the vocabulary already carries.
     /// </summary>
-    private static Dictionary<int, long> GenreDocumentFrequencies(
+    internal static Dictionary<int, long> GenreDocumentFrequencies(
         VectorIndex index, Dictionary<string, int> genreIds)
     {
         var counts = genreIds.Values.Distinct().ToDictionary(id => id, _ => 0L);
@@ -520,25 +549,33 @@ public class TasteInsightsService(
     /// </para>
     /// </summary>
     private async Task<BuiltGroups> GroupsAsync(
-        ICurrentUser scope,
         VectorIndex index,
         List<Point> points,
         FacetSet facets,
         IReadOnlyList<TasteGroupMining.Group> mined,
+        string? maxContentRating,
+        IReadOnlyList<long> libraryIds,
+        IReadOnlySet<long> effectiveIds,
+        HashSet<long> suppressed,
         CancellationToken ct)
     {
         var owned = points.Select(p => p.Row).ToHashSet();
-        var allowed = ContentRating.Allowed(scope.MaxContentRating);
+        foreach (var id in libraryIds)
+            if (index.TryGetRow(id, out var row)) owned.Add(row);
+        var allowed = ContentRating.Allowed(maxContentRating);
 
         var scans = new List<(TasteGroupMining.Group Mined, float[] Centroid, List<int> Picks)>();
         foreach (var group in mined)
         {
             var members = group.Members.Select(i => points[i]).ToList();
-            var centroid = TasteClustering.Centroid([.. members.Select(m => m.Vector)]);
-            if (centroid is null)
+            var observedCentroid = TasteClustering.Centroid([.. members.Select(m => m.Vector)]);
+            if (observedCentroid is null)
             {
                 continue;
             }
+
+            var effectiveCentroid = TasteClustering.Centroid(
+                [.. members.Where(m => effectiveIds.Contains(m.MangaBakaId)).Select(m => m.Vector)]);
 
             var names = group.Keys.Select(k => facets.ById[k]).ToList();
             var plan = index.Plan(new RecommendationFilters(
@@ -547,7 +584,8 @@ public class TasteInsightsService(
                 ContentRatings: allowed,
                 MinChapters: 5));
 
-            scans.Add((group, centroid, plan.Impossible ? [] : Scan(index, centroid, plan, owned, ct)));
+            scans.Add((group, observedCentroid, plan.Impossible || effectiveCentroid is null
+                ? [] : Scan(index, effectiveCentroid, plan, owned, suppressed, ct)));
         }
 
         // Every card's cards in one dump read. Hydration is the expensive half of this and the
@@ -628,12 +666,13 @@ public class TasteInsightsService(
     /// to <see cref="PickPool"/>. Hits arrive nearest-first, so this keeps the closest of them.
     /// </summary>
     private static List<int> Scan(
-        VectorIndex index, float[] centroid, FilterPlan plan, HashSet<int> owned, CancellationToken ct)
+        VectorIndex index, float[] centroid, FilterPlan plan, HashSet<int> owned,
+        HashSet<long> suppressed, CancellationToken ct)
     {
         var picks = new List<int>();
         foreach (var (row, _) in index.Search(centroid, plan, GroupScan, ct))
         {
-            if (!owned.Contains(row))
+            if (!owned.Contains(row) && !suppressed.Contains(index.IdAt(row)))
             {
                 picks.Add(row);
                 if (picks.Count == PickPool)

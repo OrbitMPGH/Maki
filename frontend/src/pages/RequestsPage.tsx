@@ -49,6 +49,7 @@ import { formatDate } from '../format'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'yellow',
+  Processing: 'blue',
   Approved: 'green',
   Rejected: 'red',
 }
@@ -56,6 +57,7 @@ const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
 /** Descriptors, not strings: this table is built once, when the module loads. */
 const STATUS_LABEL: Record<SeriesRequest['status'], MessageDescriptor> = {
   Pending: msg`Pending`,
+  Processing: msg`Approval in progress`,
   Approved: msg`Approved`,
   Rejected: msg`Rejected`,
 }
@@ -282,7 +284,7 @@ export default function RequestsPage() {
 
                     {r.status !== 'Pending' && (
                       <Text size="xs" c="dimmed" mt={4}>
-                        {resolvedBy ? (
+                        {resolvedBy && r.status !== 'Processing' ? (
                           r.status === 'Approved' ? (
                             <Trans>Approved by {resolvedBy}</Trans>
                           ) : (
@@ -351,7 +353,7 @@ export default function RequestsPage() {
                         </Button>
                       </>
                     )}
-                    {(isAdmin || r.status === 'Pending') && (
+                    {((isAdmin && r.status !== 'Processing') || r.status === 'Pending') && (
                       <Tooltip label={isAdmin ? t`Delete request` : t`Cancel request`} withArrow>
                         <ActionIcon
                           variant="subtle"

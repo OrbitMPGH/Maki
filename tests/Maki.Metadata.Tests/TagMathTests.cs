@@ -513,4 +513,129 @@ public class TagMathTests
         var tree = TagMath.TagTree.Build(stale, decay: 0.5, includeSelf: false, activeCount: 10_000);
         Assert.True(tree.IsEmpty);
     }
+
+    /// <summary>
+    /// The contrastive fixture: five avoided titles and ninety shelf titles, the shelf expressed as
+    /// weighted blobs because <see cref="TagMath.BuildProfile"/> share-normalizes by weight and one
+    /// blob at weight 78 is the same profile as 78 blobs at weight 1.
+    ///
+    /// <para>
+    /// Tag 7 is on 4 of the 5 avoided and 80 of the 90 shelf titles: the reader's own genre.
+    /// Tag 9 is on the same 4 avoided titles and 2 shelf titles: what the dislikes actually share.
+    /// Tag 8 is on one avoided title and nothing else: a coincidence.
+    /// </para>
+    /// </summary>
+    private static (TagMath.Profile Positive, (byte[] Blob, double Weight)[] Avoided) ContrastFixture()
+    {
+        var positive = TagMath.BuildProfile(
+            [
+                (TagMath.Pack([(7, TagMath.Core)]), 78.0),
+                (TagMath.Pack([(7, TagMath.Core), (9, TagMath.Core)]), 2.0),
+                (TagMath.Pack([(99, TagMath.Core)]), 10.0),
+            ],
+            FlatIdf);
+
+        var shared = TagMath.Pack([(7, TagMath.Core), (9, TagMath.Core)]);
+        (byte[], double)[] avoided =
+        [
+            (shared, 1.0), (shared, 1.0), (shared, 1.0), (shared, 1.0),
+            (TagMath.Pack([(8, TagMath.Core)]), 1.0),
+        ];
+
+        return (positive, avoided);
+    }
+
+    [Fact]
+    public void ContrastiveProfile_DropsAFacetOnlyOneAvoidedTitleCarries()
+    {
+        var (positive, avoided) = ContrastFixture();
+
+        var contrast = TagMath.BuildContrastiveProfile(
+            positive, avoided, FlatIdf, minSupport: 2, margin: 1.0);
+
+        Assert.False(contrast.IdfWeight.ContainsKey(8));
+    }
+
+    [Fact]
+    public void ContrastiveProfile_DropsAFacetTheReadersOwnShelfIsFullOf()
+    {
+        // 4 of 5 avoided is 0.8 of the avoided profile; 80 of 90 shelf titles is 0.889 of the
+        // positive one. The reader likes this more than they avoid it, so it is not evidence.
+        var (positive, avoided) = ContrastFixture();
+
+        var contrast = TagMath.BuildContrastiveProfile(
+            positive, avoided, FlatIdf, minSupport: 2, margin: 1.0);
+
+        Assert.False(contrast.IdfWeight.ContainsKey(7));
+    }
+
+    [Fact]
+    public void ContrastiveProfile_KeepsAFacetTheAvoidedSetCarriesAndTheShelfDoesNot()
+    {
+        var (positive, avoided) = ContrastFixture();
+
+        var contrast = TagMath.BuildContrastiveProfile(
+            positive, avoided, FlatIdf, minSupport: 2, margin: 1.0);
+
+        // 0.8 of the avoided profile less 2 of 90 on the shelf. Close to the avoided mass, which is
+        // the point: subtracting a taste the reader does not have costs almost nothing.
+        Assert.Equal(0.8 - (2.0 / 90.0), contrast.IdfWeight[9], 6);
+        Assert.Equal([9], contrast.IdfWeight.Keys.Order());
+        Assert.Equal(contrast.IdfWeight[9], contrast.Norm, 6);
+    }
+
+    [Fact]
+    public void ContrastiveProfile_AtMarginZero_IsTheAvoidedProfileWithNothingSubtracted()
+    {
+        var (positive, avoided) = ContrastFixture();
+
+        var contrast = TagMath.BuildContrastiveProfile(
+            positive, avoided, FlatIdf, minSupport: 2, margin: 0.0);
+
+        Assert.Equal(0.8, contrast.IdfWeight[7], 6);
+        Assert.Equal(0.8, contrast.IdfWeight[9], 6);
+        // Support is not a margin question, so it still binds.
+        Assert.False(contrast.IdfWeight.ContainsKey(8));
+    }
+
+    [Fact]
+    public void ContrastiveProfile_IsEmptyForOneDislike()
+    {
+        // The promise the UI makes: one thumbs down is a statement about that book and infers
+        // nothing about a tag it happens to carry.
+        var (positive, _) = ContrastFixture();
+
+        var contrast = TagMath.BuildContrastiveProfile(
+            positive,
+            [(TagMath.Pack([(9, TagMath.Core), (42, TagMath.Core)]), 1.0)],
+            FlatIdf,
+            minSupport: 2,
+            margin: 1.0);
+
+        Assert.True(contrast.IsEmpty);
+    }
+
+    [Fact]
+    public void ContrastiveProfile_IsEmptyWithNothingAvoided()
+    {
+        var (positive, _) = ContrastFixture();
+
+        Assert.True(TagMath.BuildContrastiveProfile(
+            positive, [], FlatIdf, minSupport: 2, margin: 1.0).IsEmpty);
+    }
+
+    [Fact]
+    public void ContrastiveProfile_CountsSupportOnlyFromDefiningTagsAndAbove()
+    {
+        // A tag four avoided titles carry incidentally is not four titles agreeing about anything.
+        var incidental = TagMath.Pack([(9, TagMath.Incidental)]);
+        var contrast = TagMath.BuildContrastiveProfile(
+            TagMath.Profile.Empty,
+            [(incidental, 1.0), (incidental, 1.0), (incidental, 1.0), (incidental, 1.0)],
+            FlatIdf,
+            minSupport: 2,
+            margin: 1.0);
+
+        Assert.True(contrast.IsEmpty);
+    }
 }

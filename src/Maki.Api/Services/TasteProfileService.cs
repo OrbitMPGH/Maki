@@ -76,7 +76,6 @@ public record TasteProfile(
 public class TasteProfileService(
     IServiceScopeFactory scopeFactory,
     SeedWeightService seedWeights,
-    BehavioralTasteService taste,
     MangaBakaLocalStore store,
     VectorIndexCache vectorIndex,
     ReaderCohortCache readerCohorts,
@@ -125,7 +124,21 @@ public class TasteProfileService(
     public async Task<TasteProfile> GetAsync(
         ICurrentUser scope, TasteView view, bool refresh, CancellationToken ct = default)
     {
-        var key = $"{scope.UserId}:{view}";
+        // One library read for both the key and the build behind a miss. Deriving the key from its
+        // own snapshot would read the library, the overrides and the read counts a second time on
+        // every call, warm hits included, which is more work than the cache saves.
+        SeedSnapshot snapshot;
+        long signalRevision;
+        using (var dbScope = scopeFactory.CreateScope())
+        {
+            var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
+            snapshot = await seedWeights.SnapshotAsync(db, scope, ct);
+            signalRevision = (await RecommendationFeedbackService.VersionsAsync(db, scope.UserId, ct)).SignalRevision;
+        }
+
+        var key = $"{scope.UserId}:{view}:{scope.MaxContentRating}:{signalRevision}:" +
+                  $"{scope.AllRootFolders}:{string.Join(',', scope.RootFolderIds.Order())}:{snapshot.Fingerprint()}";
         await _lock.WaitAsync(ct);
         try
         {
@@ -136,7 +149,7 @@ public class TasteProfileService(
                 return hit.Profile;
             }
 
-            var profile = await BuildAsync(scope, view, ct);
+            var profile = await BuildAsync(snapshot, view, ct);
             _cache[key] = (profile, DateTime.UtcNow);
             Evict();
             return profile;
@@ -163,38 +176,32 @@ public class TasteProfileService(
         }
     }
 
-    private async Task<TasteProfile> BuildAsync(ICurrentUser scope, TasteView view, CancellationToken ct)
+    private async Task<TasteProfile> BuildAsync(SeedSnapshot snapshot, TasteView view, CancellationToken ct)
     {
-        SeedWeights seeded;
-        IReadOnlySet<long> readIds;
-        using (var dbScope = scopeFactory.CreateScope())
-        {
-            var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
-            db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
-            seeded = await seedWeights.BuildAsync(db, scope, ct);
-            // The raw read set, not the weights: a series whose reading happens to imply a neutral
-            // weight was still read, and belongs in the Read population.
-            var signals = await taste.ReadSignalsAsync(db, scope.UserId, seeded.LibraryIds, ct);
-            readIds = signals.Keys.ToHashSet();
-        }
+        // Observed, not effective: the charts describe the shelf. Excluding a source from
+        // recommendations stops it steering picks, it does not rewrite the reading it came from.
+        var seeded = snapshot.Observed;
+        // The raw read set, not the weights: a series whose reading happens to imply a neutral
+        // weight was still read, and belongs in the Read population.
+        var readIds = snapshot.Signals.Keys.ToHashSet();
 
-        if (seeded.LibraryIds.Count == 0)
+        if (seeded.EligibleIds.Count == 0)
         {
             return new TasteProfile([], [], [], [], [], 0, 0, false, null, DateTime.UtcNow);
         }
 
         // One dump round trip covers both the view's numerator and the library denominator, whichever
         // view was asked for.
-        var rows = await store.GetProfileRowsAsync(seeded.LibraryIds, ct);
+        var rows = await store.GetProfileRowsAsync(seeded.EligibleIds, ct);
 
         var population = view == TasteView.Read
-            ? seeded.LibraryIds.Where(readIds.Contains).ToList()
-            : seeded.LibraryIds.ToList();
+            ? seeded.EligibleIds.Where(readIds.Contains).ToList()
+            : seeded.EligibleIds.ToList();
 
         var profile = Aggregate(population, rows, seeded.Weights);
         // Flat: every owned series counts once, whatever the reader did with it. That is what makes
         // the ratio read as "more than owning it would predict".
-        var baseline = Aggregate(seeded.LibraryIds, rows, weights: null);
+        var baseline = Aggregate(seeded.EligibleIds, rows, weights: null);
         var catalogue = await GetCatalogueBaselineAsync(ct);
 
         return new TasteProfile(
@@ -209,7 +216,7 @@ public class TasteProfileService(
             Types: Facets(profile.Types, profile.TypeSupport, baseline.Types, null),
             Years: Years(profile.Years),
             SeriesCount: profile.SeriesCount,
-            LibraryCount: seeded.LibraryIds.Count,
+            LibraryCount: seeded.EligibleIds.Count,
             CatalogueBaselineAvailable: catalogue is not null,
             CatalogueBaselineSource: catalogue?.Source,
             GeneratedAt: DateTime.UtcNow);

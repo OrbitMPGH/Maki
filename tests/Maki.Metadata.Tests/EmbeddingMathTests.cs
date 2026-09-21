@@ -120,6 +120,31 @@ public class EmbeddingMathTests
     }
 
     [Fact]
+    public void HybridScore_SubtractsTheAvoidChannel()
+    {
+        var w = new EmbeddingMath.Weights(Avoid: 3.0);
+        var clean = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w);
+        var resembles = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: 0.5);
+        Assert.Equal(clean - 1.5, resembles, 6);
+    }
+
+    [Fact]
+    public void HybridScore_AvoidShipsAtTheMeasuredCoefficient()
+    {
+        // 12, the `rel-p12` configuration. Large because the Product blend leaves the score at zero
+        // on all but a handful of rows; an avoidScore of 1.0 is a near-clone of a dislike that also
+        // carries the tags that made it one.
+        var w = new EmbeddingMath.Weights();
+        Assert.Equal(12.0, w.Avoid);
+        var clean = EmbeddingMath.HybridScore(0.6, 0, 0, false, 50, 0, 0.5, w);
+        Assert.Equal(clean - 12.0, EmbeddingMath.HybridScore(
+            0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: 1.0), 6);
+        // A zero score is still exactly no penalty, which is what the blend's agreement buys.
+        Assert.Equal(clean, EmbeddingMath.HybridScore(
+            0.6, 0, 0, false, 50, 0, 0.5, w, avoidScore: 0), 6);
+    }
+
+    [Fact]
     public void HybridScore_ObscurityDial_BiasesByPopularity()
     {
         var w = new EmbeddingMath.Weights();

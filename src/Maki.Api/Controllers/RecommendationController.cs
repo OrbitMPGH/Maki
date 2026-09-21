@@ -14,6 +14,7 @@ namespace Maki.Api.Controllers;
 public class RecommendationController(
     ILocalizer localizer,
     RecommendationService recommendations,
+    RecommendationFeedbackService feedback,
     ICurrentUser currentUser,
     DiscoverService discover,
     RecentActivityRailService recentActivity,
@@ -116,7 +117,10 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await discover.GetFeedsAsync(refresh, currentUser.MaxContentRating, ct));
+            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var rails = await discover.GetFeedsAsync(
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
+            return Ok(FilterRails(rails, suppressed));
         }
         catch (InvalidOperationException ex)
         {
@@ -190,7 +194,10 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await discover.GetGenreFeedsAsync(refresh, currentUser.MaxContentRating, ct));
+            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var rails = await discover.GetGenreFeedsAsync(
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
+            return Ok(FilterRails(rails, suppressed));
         }
         catch (InvalidOperationException ex)
         {
@@ -213,7 +220,9 @@ public class RecommendationController(
                     ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
                     : ContentRating.Allowed(currentUser.MaxContentRating)
             };
-            return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct));
+            var items = await discover.GetFeedAsync(request with { Filters = clamped }, ct);
+            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            return Ok(items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id)).ToList());
         }
         catch (InvalidOperationException ex)
         {
@@ -401,6 +410,34 @@ public class RecommendationController(
     }
 
     public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
+
+    /// <summary>
+    /// Deeper rails only for a caller who has something to filter out of them. The Discover caches
+    /// are shared instance-wide, so a reader with no feedback asking for refill headroom would make
+    /// every reader pay a doubled catalogue scan for slack none of them use.
+    /// </summary>
+    private static int RailDepth(HashSet<long> suppressed) =>
+        suppressed.Count > 0 ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+
+    /// <summary>
+    /// The viewer's suppression over a shared rail. Returns a new list every time: the cached rail
+    /// is one object handed to every reader, and filtering it in place would hide one reader's
+    /// titles from all of them.
+    /// </summary>
+    private static IReadOnlyList<DiscoverRail> FilterRails(
+        IReadOnlyList<DiscoverRail> rails, HashSet<long> suppressed)
+    {
+        if (suppressed.Count == 0)
+        {
+            return rails;
+        }
+
+        return rails.Select(rail => rail with
+        {
+            Items = rail.Items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id))
+                .Take(DiscoverService.RailSize).ToList()
+        }).ToList();
+    }
 
     /// <summary>Rich detail for one MangaBaka series (for the Discover detail card).</summary>
     [HttpGet("detail/{id:long}")]

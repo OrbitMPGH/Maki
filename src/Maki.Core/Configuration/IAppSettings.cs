@@ -1,4 +1,4 @@
-﻿using Maki.Core.Naming;
+using Maki.Core.Naming;
 
 namespace Maki.Core.Configuration;
 
@@ -339,6 +339,57 @@ public static class SettingKeys
     /// </para>
     /// </summary>
     public const string RecommendationsTasteWeighting = "recommendations.tasteweighting";
+
+    public const string RecommendationsPersonalAddWeighting = "recommendations.personaladdweighting";
+    public const string RecommendationsFeedbackLab = "recommendations.feedbacklab";
+
+    /// <summary>
+    /// Instance kill switch for anime-derived taste signals: whether a connected AniList or
+    /// MyAnimeList <em>anime</em> list may be matched to manga and fed to the recommender at all.
+    /// Off here means the sync never runs and the seeds never load, whatever any user opted into.
+    /// </summary>
+    public const string RecommendationsAnimeSignals = "recommendations.animesignals";
+
+    /// <summary>How often the anime-list sync walks every opted-in user. Default 24, minimum 1.</summary>
+    public const string RecommendationsAnimeSignalsIntervalHours = "recommendations.animesignals.intervalhours";
+
+    /// <summary>When the last instance-wide anime-signal pass finished, for the tick's own gate.</summary>
+    public const string RecommendationsAnimeSignalsLastSyncAt = "recommendations.animesignals.lastsyncat";
+
+    /// <summary>
+    /// Per user: opt in to anime signals. Unset means off, unlike most switches here, because this
+    /// one reads a second medium's list and puts it in somebody's recommendations without asking.
+    /// </summary>
+    public const string RecommendationsAnimeSignalsEnabled = "recommendations.animesignals.enabled";
+
+    /// <summary>Per user: when that user's list was last synced, for the panel and the manual button.</summary>
+    public const string RecommendationsAnimeSignalsLastSync = "recommendations.animesignals.lastsync";
+
+    /// <summary>
+    /// Per user: how much authority watched anime carry, as an <c>AnimeSignalStrength</c> name
+    /// ("subtle", "balanced", "full"). Unset means balanced, which is half a manga rating.
+    /// <para>
+    /// Per user rather than instance-wide, unlike most of the recommender's dials: how far an
+    /// adaptation's score tracks its source is a fact about one person's watching, not about the
+    /// deployment. Somebody who only watches shows they already trust wants Full; somebody who
+    /// rates adaptations on whether the studio did the book justice wants Subtle.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsAnimeSignalsStrength = "recommendations.animesignals.strength";
+
+    /// <summary>
+    /// Per user, per tracker: may this service's anime list feed the reader's taste? Unset = on, so
+    /// the account-level opt-in stays the only decision somebody has to make, and this is the
+    /// escape hatch for a reader whose two trackers hold the same list twice or disagree.
+    /// <para>
+    /// Under the anime-signals prefix rather than <c>scrobble.{service}.*</c>, even though the
+    /// switch sits beside those in Settings: those three push manga <em>to</em> a tracker, and this
+    /// reads a different medium's list <em>from</em> one. A reader can reasonably want AniList
+    /// scrobbled and its anime list ignored.
+    /// </para>
+    /// </summary>
+    public static string RecommendationsAnimeSignalsSourceKey(string service) =>
+        $"recommendations.animesignals.source.{service}";
 
     /// <summary>
     /// Kill-switch for the co-recommendation channel: whether recommendations may use the
