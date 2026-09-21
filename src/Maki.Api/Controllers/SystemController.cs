@@ -23,6 +23,7 @@ public class SystemController(
     ISchedulerFactory schedulerFactory,
     ICurrentUser currentUser,
     IHostApplicationLifetime lifetime,
+    Maki.Api.Localization.ILocalizer localizer,
     ILogger<SystemController> logger) : ControllerBase
 {
     /// <summary>
@@ -37,10 +38,20 @@ public class SystemController(
     /// </remarks>
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("health")]
-    public async Task<IActionResult> Health(CancellationToken ct) =>
-        Ok(await HttpContext.RequestServices.GetRequiredService<Maki.Data.MakiDbContext>().HealthChecks
+    public async Task<IActionResult> Health(CancellationToken ct)
+    {
+        var rows = await HttpContext.RequestServices.GetRequiredService<Maki.Data.MakiDbContext>().HealthChecks
             .Where(HealthTransitions.Unattended)
-            .Select(i => new { type = i.Category, severity = i.Status, message = i.Message }).ToListAsync(ct));
+            .Select(i => new { i.Category, i.Status, i.MessageKey, i.ParamsJson, i.Message }).ToListAsync(ct);
+        return Ok(rows.Select(i => new
+        {
+            type = i.Category,
+            severity = i.Status,
+            message = i.MessageKey is { Length: > 0 } key
+                ? localizer.Get(key, HealthMonitor.HealthParams(i.ParamsJson))
+                : i.Message,
+        }));
+    }
 
     [HttpGet("status")]
     public IActionResult Status()
