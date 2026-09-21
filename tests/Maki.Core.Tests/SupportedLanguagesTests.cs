@@ -22,21 +22,21 @@ public class SupportedLanguagesTests
     }
 
     [Theory]
-    [InlineData("sv", "sv")]
+    [InlineData("de", "de")]
     [InlineData("pt-BR", "pt-BR")]
     [InlineData("zh-Hans", "zh-Hans")]
     public void MatchesAShippedCodeExactly(string input, string expected) =>
         Assert.Equal(expected, SupportedLanguages.Match(input));
 
     [Theory]
-    [InlineData("SV", "sv")]
+    [InlineData("DE", "de")]
     [InlineData("PT-br", "pt-BR")]
     public void MatchIsCaseInsensitiveButAnswersInCanonicalCasing(string input, string expected) =>
         Assert.Equal(expected, SupportedLanguages.Match(input));
 
     [Theory]
     [InlineData("de-AT", "de")]
-    [InlineData("sv-FI", "sv")]
+    [InlineData("tr-CY", "tr")]
     [InlineData("fr-CA", "fr")]
     public void FallsBackToThePrimarySubtag(string input, string expected)
     {

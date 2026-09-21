@@ -31,13 +31,13 @@ Work one language at a time, in chunks, committing as you go.
 
 ```bash
 # 1. See what is pending. Start with a couple of hundred, not everything.
-node scripts/i18n/todo.mjs --locale sv --limit 200
+node scripts/i18n/todo.mjs --locale de --limit 200
 
-# 2. Edit locales/sv/client.po and locales/sv/server.po, filling the msgstr of each listed key.
+# 2. Edit locales/de/client.po and locales/de/server.po, filling the msgstr of each listed key.
 #    Add "#, fuzzy" above each entry you fill, if it is not already there.
 
 # 3. Check your work. This must pass before you commit.
-node scripts/i18n/validate.mjs --locale sv
+node scripts/i18n/validate.mjs --locale de
 
 # 4. Commit, then go back to step 1 until todo.mjs reports 0 untranslated.
 ```
@@ -63,14 +63,14 @@ claim that a person reviewed the text, which is false and is the one thing this 
 do. If you find yourself reasoning toward clearing them, stop: the instruction is wrong somewhere,
 not the flag.
 
-### Do Swedish first, then stop
+### Do German first, then stop
 
-Translate `sv` completely, then **stop and report**. The repo owner reads Swedish and will check it
-before the other twelve are worth doing. If the glossary or the tone is wrong, it is much cheaper to
-find out on one language than on thirteen.
+Translate `de` completely, then **stop and report**. The repo owner will check it
+before the other nine are worth doing. If the glossary or the tone is wrong, it is much cheaper to
+find out on one language than on ten.
 
-After Swedish is approved, the remaining order does not matter:
-`de fr es pt-BR it nl pl ru tr ja zh-Hans ko`
+After German is approved, the remaining order does not matter:
+`fr es pt-BR pl ru tr ja zh-Hans ko`
 
 ## The two catalogues
 
@@ -82,7 +82,7 @@ text**, because the extractor generates these from the source.
 ```po
 #: src/pages/SettingsPage.tsx
 msgid "Start page"
-msgstr "Startsida"
+msgstr "Startseite"
 ```
 
 **`server.po`** is what the API sends back: error messages, notifications. Its `msgid` is a **dotted
@@ -137,7 +137,7 @@ are missing. Run it and read the message.
 
 ## What the validator checks
 
-`node scripts/i18n/validate.mjs --locale sv` fails on:
+`node scripts/i18n/validate.mjs --locale de` fails on:
 
 - a placeholder you dropped or invented
 - a plural missing a category the language requires, or using one it does not have

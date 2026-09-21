@@ -195,8 +195,8 @@ migrated and nothing is lost.
 
 ## Languages
 
-Maki's interface ships in fourteen languages: English, Swedish, German, French, Spanish, Brazilian
-Portuguese, Italian, Dutch, Polish, Russian, Turkish, Japanese, Simplified Chinese and Korean.
+Maki's interface ships in eleven languages: English, German, French, Spanish, Brazilian
+Portuguese, Polish, Russian, Turkish, Japanese, Simplified Chinese and Korean.
 Set yours under **Settings > My account > Language**, or leave it on Automatic to follow your
 browser. It is stored on the server, so it applies on every device you sign in from, and it is
 separate from **Title language**, which controls the language series titles are shown in. A Swede
@@ -403,7 +403,7 @@ Notes:
 - The build context is the repo root; `.dockerignore` keeps `bin/`, `obj/`, `node_modules/`,
   `dist/` and dev config out of the context. It has to be the repo root rather than a narrower
   directory: the message catalogues live in `locales/` and both build stages copy them in, since
-  the API embeds `server.po` and Vite bundles `client.po`. The build asserts that all fourteen
+  the API embeds `server.po` and Vite bundles `client.po`. The build asserts that all eleven
   languages ended up in the image on both halves, so a context or path change that loses them
   fails the build instead of shipping an English-only container.
 - `entrypoint.sh` drops privileges to `PUID`/`PGID` (via `gosu`) after fixing ownership of

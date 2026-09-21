@@ -4,7 +4,7 @@ Weblate is where people who actually speak these languages fix what the machine 
 GPL-3.0 and public, which qualifies for [Hosted Weblate](https://hosted.weblate.org/)'s libre plan at
 no cost. Self-hosting works the same way; only the URL changes.
 
-Nothing below is required for the app to ship in fourteen languages. It already does. This is about
+Nothing below is required for the app to ship in eleven languages. It already does. This is about
 making corrections easy for someone who is not going to open a pull request.
 
 ## Why it composes with machine translation instead of fighting it
@@ -56,7 +56,7 @@ the sync script writes the English into that comment. Set **Key filter** off and
 - **Translation flags**: `icu-message-format`. This is the one that matters. It turns on Weblate's
   ICU checks, so a contributor who drops a `{count}` or leaves Polish without its `few` form is told
   immediately rather than at review time.
-- **Adding new translation**: `None`. The language list is fixed at fourteen by
+- **Adding new translation**: `None`. The language list is fixed at eleven by
   `SupportedLanguages.All` and `frontend/src/i18n.ts`; a language added in Weblate would produce a
   catalogue the app never loads and would fail `LocalizationCatalogTests`.
 - **Push on commit**: on, with a push branch of `weblate` rather than `dev`, so corrections arrive as
@@ -73,7 +73,7 @@ file formats, the sites Maki downloads from, the feature names Rewind / Smart Do
 Home) and the tone. Weblate has a glossary feature; the terms in that file are worth entering into it
 so they show up inline while somebody translates.
 
-Swedish has been reviewed by the repo owner and is the reference for tone. The other twelve are
+All ten non-English catalogues are
 machine output, every entry fuzzy, waiting for exactly this.
 
 ## What CI already guarantees

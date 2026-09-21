@@ -22,19 +22,19 @@ public static class SupportedLanguages
     /// <summary>
     /// Ordered as the picker shows them: English first as the source language, then the rest by
     /// how widely they are spoken among self-hosters rather than alphabetically, since an
-    /// alphabetical list in one language is arbitrary in the other thirteen.
+    /// alphabetical list in one language is arbitrary in the other ten.
     /// </summary>
     public static readonly string[] All =
     [
         "en",
-        "sv", "de", "fr", "es", "pt-BR", "it", "nl",
+        "de", "fr", "es", "pt-BR",
         "pl", "ru", "tr", "ja", "zh-Hans", "ko",
     ];
 
     /// <summary>
     /// The shipped code matching <paramref name="code"/>, in its canonical casing, or null.
     /// <para>
-    /// Falls back to the primary subtag, so a browser asking for <c>de-AT</c> or <c>sv-FI</c> gets
+    /// Falls back to the primary subtag, so a browser asking for <c>de-AT</c> or <c>fr-CA</c> gets
     /// German or Swedish rather than English. <c>pt</c> resolves to <c>pt-BR</c> because it is the
     /// only Portuguese shipped, and a Brazilian interface reads far closer to a European Portuguese
     /// speaker than an English one does.

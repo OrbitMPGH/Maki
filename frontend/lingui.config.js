@@ -14,7 +14,7 @@ export default defineConfig({
   fallbackLocales: { default: 'en' },
   locales: [
     'en',
-    'sv', 'de', 'fr', 'es', 'pt-BR', 'it', 'nl',
+    'de', 'fr', 'es', 'pt-BR',
     'pl', 'ru', 'tr', 'ja', 'zh-Hans', 'ko',
   ],
   catalogs: [

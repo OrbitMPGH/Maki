@@ -17,7 +17,7 @@ public sealed class MessageCatalog(
     {
         var resolved = SupportedLanguages.Resolve(locale);
 
-        // English is the source, so it is the last stop rather than one option among fourteen. A key
+        // English is the source, so it is the last stop rather than one option among eleven. A key
         // missing there too is a bug in the catalogue, not a missing translation.
         var pattern = catalogs.Lookup(resolved, key)
                       ?? catalogs.Lookup(SupportedLanguages.Default, key);

@@ -3,7 +3,7 @@
  * Asserts that no non-English catalogue is loaded before the app renders.
  *
  * English is bundled eagerly on purpose: it is the fallback for every untranslated entry, and
- * waiting for a round trip to have it would mean a frame of message ids. The other thirteen are
+ * waiting for a round trip to have it would mean a frame of message ids. The other ten are
  * dynamic imports, so a browser fetches only the language it is showing.
  *
  * A single static `import` of one of those thirteen anywhere in the tree quietly undoes that. The

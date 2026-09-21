@@ -60,13 +60,10 @@ that mentions either page uses the same one:
 
 | | Home | Discover |
 |---|---|---|
-| sv | Hem | Upptäck |
 | de | Start | Entdecken |
 | fr | Accueil | Découvrir |
 | es | Inicio | Descubrir |
 | pt-BR | Início | Descobrir |
-| it | Inizio | Scopri |
-| nl | Start | Ontdekken |
 | pl | Start | Odkrywanie |
 | ru | Главная | Обзор |
 | tr | Ana Sayfa | Keşfet |

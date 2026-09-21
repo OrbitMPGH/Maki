@@ -142,7 +142,7 @@ export function SeriesHero({
     // Named rather than inlined into the <Plural>: Lingui names a placeholder after the expression
     // only when it is a plain identifier, so a subtraction would extract as {0}. Naming it
     // `overflow` also makes the message identical to the one TagBuckets already produces, which
-    // means this reuses that translation in all thirteen languages instead of adding a new entry.
+    // means this reuses that translation in all ten languages instead of adding a new entry.
     const overflow = altTitles.length - MAX_HERO_ALT_TITLES
 
     return (

@@ -10,13 +10,10 @@ import { i18n } from '@lingui/core'
  */
 export const SUPPORTED_LOCALES = [
   { code: 'en', label: 'English' },
-  { code: 'sv', label: 'Svenska' },
   { code: 'de', label: 'Deutsch' },
   { code: 'fr', label: 'Français' },
   { code: 'es', label: 'Español' },
   { code: 'pt-BR', label: 'Português (Brasil)' },
-  { code: 'it', label: 'Italiano' },
-  { code: 'nl', label: 'Nederlands' },
   { code: 'pl', label: 'Polski' },
   { code: 'ru', label: 'Русский' },
   { code: 'tr', label: 'Türkçe' },
@@ -36,7 +33,7 @@ const CODES = SUPPORTED_LOCALES.map((l) => l.code) as readonly string[]
 
 /**
  * The nearest shipped locale to `tag`, or null. Matches exactly first, then on the primary subtag,
- * so a browser asking for `de-AT` or `sv-FI` gets German or Swedish rather than English. `pt-BR` is
+ * so a browser asking for `de-AT` or `fr-CA` gets German or French rather than English. `pt-BR` is
  * deliberately the only Portuguese: `pt` resolves to it because a Brazilian UI reads far better to a
  * European Portuguese speaker than an English one does.
  */
@@ -121,13 +118,10 @@ export function resolveInitialLocale(): LocaleCode {
 // locale set is closed, so no runtime key matching is needed either: we just call the right function.
 const CATALOG_LOADERS: Record<LocaleCode, () => Promise<{ messages: Record<string, string> }>> = {
   en: () => import('@locales/en/client.po'),
-  sv: () => import('@locales/sv/client.po'),
   de: () => import('@locales/de/client.po'),
   fr: () => import('@locales/fr/client.po'),
   es: () => import('@locales/es/client.po'),
   'pt-BR': () => import('@locales/pt-BR/client.po'),
-  it: () => import('@locales/it/client.po'),
-  nl: () => import('@locales/nl/client.po'),
   pl: () => import('@locales/pl/client.po'),
   ru: () => import('@locales/ru/client.po'),
   tr: () => import('@locales/tr/client.po'),

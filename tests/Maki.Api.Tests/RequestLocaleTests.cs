@@ -19,24 +19,24 @@ public class RequestLocaleTests
     [Fact]
     public void AnExplicitChoiceWinsOverEverything()
     {
-        var locale = Build(chosen: "de", negotiated: "sv", stored: "sv", signedIn: true);
+        var locale = Build(chosen: "de", negotiated: "pl", stored: "pl", signedIn: true);
         Assert.Equal("de", locale.Locale);
     }
 
     [Fact]
     public void AStoredPreferenceBeatsAcceptLanguage()
     {
-        // The browser says English on every request; the user chose Swedish once. Swedish wins.
-        var locale = Build(chosen: null, negotiated: "en", stored: "sv", signedIn: true);
-        Assert.Equal("sv", locale.Locale);
+        // The browser says English on every request; the user chose Polish once. Polish wins.
+        var locale = Build(chosen: null, negotiated: "en", stored: "pl", signedIn: true);
+        Assert.Equal("pl", locale.Locale);
     }
 
     [Fact]
     public void AcceptLanguageIsUsedWhenNothingIsStored()
     {
         // The OPDS and curl path: a real client with no preference of ours to read.
-        var locale = Build(chosen: null, negotiated: "sv", stored: null, signedIn: true);
-        Assert.Equal("sv", locale.Locale);
+        var locale = Build(chosen: null, negotiated: "pl", stored: null, signedIn: true);
+        Assert.Equal("pl", locale.Locale);
     }
 
     [Fact]
@@ -45,9 +45,9 @@ public class RequestLocaleTests
         var settings = new ThrowingUserSettings();
         var locale = new RequestLocaleContext(
             new TestCurrentUser(0, authenticated: false), settings, new TestUserLocaleResolver());
-        locale.SetRequested(chosen: null, negotiated: "sv");
+        locale.SetRequested(chosen: null, negotiated: "pl");
 
-        Assert.Equal("sv", locale.Locale);
+        Assert.Equal("pl", locale.Locale);
         Assert.False(settings.WasRead, "An unauthenticated request has no settings row to read.");
     }
 
@@ -62,14 +62,14 @@ public class RequestLocaleTests
     public void AnUnsupportedStoredValueIsIgnoredRatherThanServed()
     {
         // A row written by a build that shipped a catalogue this one does not.
-        var locale = Build(chosen: null, negotiated: "sv", stored: "klingon", signedIn: true);
-        Assert.Equal("sv", locale.Locale);
+        var locale = Build(chosen: null, negotiated: "pl", stored: "klingon", signedIn: true);
+        Assert.Equal("pl", locale.Locale);
     }
 
     [Fact]
     public void ResolvesOnceAndRemembers()
     {
-        var settings = new FakeUserSettings("sv");
+        var settings = new FakeUserSettings("pl");
         var locale = new RequestLocaleContext(
             new TestCurrentUser(1), settings, new TestUserLocaleResolver());
         locale.SetRequested(chosen: null, negotiated: null);
