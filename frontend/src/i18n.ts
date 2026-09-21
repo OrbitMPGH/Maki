@@ -112,26 +112,28 @@ export function resolveInitialLocale(): LocaleCode {
  * `lingui.config.js`), which is what stops a missing translation rendering as its internal message
  * id. That is a silent failure, so the fallback is not optional.
  */
-// Static literal specifiers, one per shipped locale. `import.meta.glob`'s runtime key format for a
-// path outside the package root (../../locales) is not stable across environments — it matched the
-// build on this machine but not the one produced from a clean `npm ci` in the Docker build, so the
-// runtime lookup came back empty there. A closed set of literal `import()` calls needs no runtime
-// key matching: each is resolved and chunked at build time, and we just call the right function.
+// Static literal specifiers, one per shipped locale, through the `@locales` alias (`vite.config.ts`)
+// rather than a relative `../../locales/...` traversal. `import.meta.glob`'s runtime key format for
+// that relative path was not stable across environments (matched on this machine, not the Docker
+// build's clean install), and even a static relative `import()` past the package root resolved on
+// Windows but failed with "Module not found" in the Linux/musl Docker build. The alias resolves to
+// an absolute path up front, so there is no boundary-crossing resolution left to disagree about. The
+// locale set is closed, so no runtime key matching is needed either: we just call the right function.
 const CATALOG_LOADERS: Record<LocaleCode, () => Promise<{ messages: Record<string, string> }>> = {
-  en: () => import('../../locales/en/client.po'),
-  sv: () => import('../../locales/sv/client.po'),
-  de: () => import('../../locales/de/client.po'),
-  fr: () => import('../../locales/fr/client.po'),
-  es: () => import('../../locales/es/client.po'),
-  'pt-BR': () => import('../../locales/pt-BR/client.po'),
-  it: () => import('../../locales/it/client.po'),
-  nl: () => import('../../locales/nl/client.po'),
-  pl: () => import('../../locales/pl/client.po'),
-  ru: () => import('../../locales/ru/client.po'),
-  tr: () => import('../../locales/tr/client.po'),
-  ja: () => import('../../locales/ja/client.po'),
-  'zh-Hans': () => import('../../locales/zh-Hans/client.po'),
-  ko: () => import('../../locales/ko/client.po'),
+  en: () => import('@locales/en/client.po'),
+  sv: () => import('@locales/sv/client.po'),
+  de: () => import('@locales/de/client.po'),
+  fr: () => import('@locales/fr/client.po'),
+  es: () => import('@locales/es/client.po'),
+  'pt-BR': () => import('@locales/pt-BR/client.po'),
+  it: () => import('@locales/it/client.po'),
+  nl: () => import('@locales/nl/client.po'),
+  pl: () => import('@locales/pl/client.po'),
+  ru: () => import('@locales/ru/client.po'),
+  tr: () => import('@locales/tr/client.po'),
+  ja: () => import('@locales/ja/client.po'),
+  'zh-Hans': () => import('@locales/zh-Hans/client.po'),
+  ko: () => import('@locales/ko/client.po'),
 }
 
 export async function loadLocale(locale: LocaleCode): Promise<void> {
