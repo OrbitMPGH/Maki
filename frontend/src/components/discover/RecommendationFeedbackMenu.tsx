@@ -31,7 +31,9 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
   if (!Number.isSafeInteger(id) || id <= 0) return null
 
   const sentiment = state?.sentiment ?? 'none'
-  const suppressed = state?.suppression === 'hidden' || state?.suppression === 'dismissed'
+  const suppression = state?.suppression ?? 'none'
+  const suppressed = suppression === 'hidden' || suppression === 'dismissed'
+  const exposed = (state?.exposure.length ?? 0) > 0
 
   async function submit(action: string, medium?: string, retry?: Command) {
     // Falling back to 0 is what a title with no feedback yet needs. If the state query failed rather
@@ -109,10 +111,10 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
         </Menu.Target>
         <Menu.Dropdown>
           <Menu.Label>{t`Change this title only`}</Menu.Label>
-          <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void submit('hide')}>
+          <Menu.Item leftSection={<IconEyeOff size={16} />} disabled={suppression === 'hidden'} onClick={() => void submit('hide')}>
             {t`Hide this title`}
           </Menu.Item>
-          <Menu.Item leftSection={<IconClock size={16} />} onClick={() => void submit('dismiss')}>
+          <Menu.Item leftSection={<IconClock size={16} />} disabled={suppression === 'dismissed'} onClick={() => void submit('dismiss')}>
             {t`Dismiss for 30 days`}
           </Menu.Item>
           <Menu.Divider />
@@ -130,7 +132,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
           <Menu.Item disabled={!suppressed} onClick={() => void submit('clear-suppression')}>
             {t`Restore hidden or dismissed title`}
           </Menu.Item>
-          <Menu.Item onClick={() => void submit('clear-exposure')}>{t`Clear read or seen`}</Menu.Item>
+          <Menu.Item disabled={!exposed} onClick={() => void submit('clear-exposure')}>{t`Clear read or seen`}</Menu.Item>
           <Text size="xs" c="dimmed" px="sm" py="xs">
             {t`A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it.`}
           </Text>
