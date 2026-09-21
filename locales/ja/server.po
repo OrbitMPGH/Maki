@@ -69,20 +69,23 @@ msgstr "現在のパスワードと新しいパスワードが必要です"
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "二要素認証はすでに有効です"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: Anime taste signals are switched off on this server
 msgid "error.animeSignals.disabled"
-msgstr ""
+msgstr "このサーバーではアニメの好みシグナルが無効になっています"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: Turn on anime taste signals before syncing
 msgid "error.animeSignals.notEnabled"
-msgstr ""
+msgstr "同期する前にアニメの好みシグナルを有効にしてください"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: An anime list sync is already running
 msgid "error.animeSignals.syncRunning"
-msgstr ""
+msgstr "アニメリストの同期はすでに実行中です"
 
 #. The CSRF filter's own refusal, shown for any state-changing request missing a valid
 #. XSRF-TOKEN/antiforgery cookie pair.
@@ -171,94 +174,110 @@ msgstr "シリーズにルートフォルダーがありません"
 msgid "error.chapter.pathOutsideRoot"
 msgstr "パスがシリーズのルートフォルダー外です"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: A feedback action is required
 msgid "error.feedback.actionRequired"
-msgstr ""
+msgstr "フィードバック操作が必要です"
 
 #. The catalogue dump is not installed or not readable, so a first thumbs up or hide on a title Maki has never stored cannot be checked.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Catalogue metadata is temporarily unavailable
 msgid "error.feedback.catalogueUnavailable"
-msgstr ""
+msgstr "カタログのメタデータが一時的に利用できません"
 
 #. Somebody changed this title's feedback since the page loaded.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Feedback changed. Refresh and try again.
 msgid "error.feedback.changed"
-msgstr ""
+msgstr "フィードバックが変更されました。更新してもう一度お試しください。"
 
 #. The undo is for an action that is no longer the most recent one on this title.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Feedback changed since this action
 msgid "error.feedback.changedSinceAction"
-msgstr ""
+msgstr "この操作後にフィードバックが変更されました"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Feedback event was not found
 msgid "error.feedback.eventNotFound"
-msgstr ""
+msgstr "フィードバックイベントが見つかりませんでした"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: A mutation ID is required
 msgid "error.feedback.mutationIdRequired"
-msgstr ""
+msgstr "ミューテーションIDが必要です"
 
 #. The client reused a mutation id it had already sent with a different feedback action.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: That mutation ID was already used for a different action
 msgid "error.feedback.mutationIdReused"
-msgstr ""
+msgstr "そのミューテーションIDはすでに別の操作で使用されています"
 
 #. The reader asked to stop seeding from a title that is not on their shelf, or that their content rating ceiling hides.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: This title is not an eligible source in your visible library
 msgid "error.feedback.notAnEligibleSource"
-msgstr ""
+msgstr "このタイトルは表示中のライブラリで対象となるソースではありません"
 
 #. Somebody changed this title's seed override since the page loaded.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Signal changed. Refresh and try again.
 msgid "error.feedback.signalChanged"
-msgstr ""
+msgstr "シグナルが変更されました。更新してもう一度お試しください。"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: A valid title, mutation ID, and revision are required
 msgid "error.feedback.titleAndRevisionRequired"
-msgstr ""
+msgstr "有効なタイトル、ミューテーションID、リビジョンが必要です"
 
 #. The catalogue title is above the account's content rating ceiling.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Catalogue title is not available to this account
 msgid "error.feedback.titleNotAvailable"
-msgstr ""
+msgstr "カタログのタイトルはこのアカウントでは利用できません"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unknown catalogue title
 msgid "error.feedback.unknownTitle"
-msgstr ""
+msgstr "不明なカタログタイトルです"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported feedback action
 msgid "error.feedback.unsupportedAction"
-msgstr ""
+msgstr "サポートされていないフィードバック操作です"
 
 #. The exposure medium names something other than manga, anime, both or unspecified.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported exposure medium
 msgid "error.feedback.unsupportedMedium"
-msgstr ""
+msgstr "サポートされていない表示経路です"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported feedback sort
 msgid "error.feedback.unsupportedSort"
-msgstr ""
+msgstr "サポートされていないフィードバックの並び替えです"
 
 #. The state filter on the Manage signals list names something other than hidden, dismissed or exposed.
+#, fuzzy
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported feedback state
 msgid "error.feedback.unsupportedState"
-msgstr ""
+msgstr "サポートされていないフィードバック状態です"
 
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
@@ -689,10 +708,11 @@ msgstr "メタデータ検索に失敗しました。シリーズにプロバイ
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
+#, fuzzy
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: A valid mutation ID is required
 msgid "error.series.mutationIdRequired"
-msgstr ""
+msgstr "有効なミューテーションIDが必要です"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
@@ -747,10 +767,11 @@ msgid "error.series.unknownNotificationMode"
 msgstr "不明なモード：{mode}"
 
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
+#, fuzzy
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unsupported add origin
 msgid "error.series.unsupportedAddOrigin"
-msgstr ""
+msgstr "サポートされていない追加元です"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: One or more tag ids do not exist
@@ -954,15 +975,17 @@ msgstr "ダウンロードのタイムアウトは0（制限なし）、また�
 msgid "error.settings.backupsToKeepRange"
 msgstr "保持するバックアップ数は{min}から{max}の間でなければなりません"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown language code(s): {codes}
 msgid "error.settings.unknownSourceLanguage"
-msgstr ""
+msgstr "不明な言語コード: {codes}"
 
+#, fuzzy
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: At least one language must stay enabled
 msgid "error.settings.noSourceLanguageEnabled"
-msgstr ""
+msgstr "少なくとも1つの言語を有効のままにする必要があります"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr is not configured

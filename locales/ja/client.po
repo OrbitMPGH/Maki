@@ -65,8 +65,9 @@ msgstr "{0, plural, other {#件の一致}}"
 
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "{0, plural, one {# season} other {# seasons}}"
-msgstr ""
+msgstr "{0, plural, other {#シーズン}}"
 
 #. placeholder {0}: seedIds.length
 #: src/pages/DiscoverPage.tsx
@@ -234,8 +235,9 @@ msgstr "{0, plural, other {#章を読みたい}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "{actionError} Refresh the page and try again."
-msgstr ""
+msgstr "{actionError} ページを更新してもう一度お試しください。"
 
 #: src/App.tsx
 #, fuzzy
@@ -243,8 +245,9 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, other {進行中のダウンロード#件}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{adds} added by you, {excluded} excluded from taste"
-msgstr ""
+msgstr "{adds}件を追加、{excluded}件を好みから除外"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -348,8 +351,9 @@ msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, other {#章}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
-msgstr ""
+msgstr "{count, plural, other {#タイトル}}"
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -362,8 +366,9 @@ msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, other {アーカイブを#件削除しますか？}}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
-msgstr ""
+msgstr "{count, plural, other {#件を非表示}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -412,8 +417,9 @@ msgid "{eta} left"
 msgstr "残り{eta}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{exposed} seen elsewhere"
-msgstr ""
+msgstr "{exposed}件を他で視聴済み"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -538,8 +544,9 @@ msgid "{markerLabel} Anime adaptation starts here · click to expand"
 msgstr "{markerLabel} アニメ化はここから開始 · クリックして展開"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
-msgstr ""
+msgstr "{total}件中{matched}件が一致、{positive}件がポジティブ、{avoided}件を回避、{superseded}件はすでに所持"
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -629,8 +636,9 @@ msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, other {#件が要対応}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{pushingDown} kept out of your taste"
-msgstr ""
+msgstr "{pushingDown}件を好みから除外中"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -638,8 +646,9 @@ msgid "{queued, plural, one {Auto-matching # series in the background.} other {A
 msgstr "{queued, plural, other {バックグラウンドで#シリーズを自動照合しています。}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{rated} rated"
-msgstr ""
+msgstr "{rated}件を評価済み"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -820,8 +829,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, other {#シリーズ}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{pushedDown}件中{support}件を順位下げ、{shelfCount}件中{positiveSupport}件が棚にあり"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -870,8 +880,9 @@ msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folde
 msgstr "{total, plural, other {{ok}/#件のフォルダーをインポート}}"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "{total, plural, one {Show all #} other {Show all #}}"
-msgstr ""
+msgstr "{total, plural, other {すべて表示 (#)}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1040,12 +1051,14 @@ msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> list
 msgstr "<0>{sub}</0>はサブ章（1.1、1.2、…）を示し、<1>{whole}</1>は同じ内容の全体章を示します。どちらも下に別々の行として表示されます。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
-msgstr ""
+msgstr "<0>好みから除外</0>すると、棚にあるタイトルがランキングから外れます。読書履歴には影響しません。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Hide and dismiss</0> only affect that one title."
-msgstr ""
+msgstr "<0>非表示と見送り</0>はそのタイトル1件にのみ影響します。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -1053,16 +1066,19 @@ msgid "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so p
 msgstr "<0>MAKI_ALLOW_LOCAL_LOGIN</0>がこのインスタンスの環境に設定されているため、上の切り替えに関係なくすべてのアカウントでパスワードサインインを利用できます。変数を削除して再起動すると、再びこの設定が適用されます。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Seen elsewhere</0> stops a title being recommended without changing taste."
-msgstr ""
+msgstr "<0>他で視聴済み</0>にすると、好みを変えずにそのタイトルがおすすめされなくなります。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>低評価</0>と4以下の評価は、残した作品よりも拒否した作品に近いタイトルの順位を下げます。共通点は3件以上一致すると上に表示されます。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
-msgstr ""
+msgstr "<0>高評価</0>は好みに反映されます。似たタイトルの順位が上がります。"
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1071,26 +1087,31 @@ msgstr "~240 MB RAM · 最良の結果、推奨"
 
 #. placeholder {0}: formatRating(item.rating)
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "★ {0} rated"
-msgstr ""
+msgstr "★ {0}件評価済み"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "★ {rating} rated"
-msgstr ""
+msgstr "★ {rating}件評価済み"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "★ {score}"
-msgstr ""
+msgstr "★ {score}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👍 Liked"
-msgstr ""
+msgstr "👍 高評価"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👎 Disliked"
-msgstr ""
+msgstr "👎 低評価"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -1138,8 +1159,9 @@ msgid "90 days"
 msgstr "90日"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
-msgstr ""
+msgstr "10点満点のアニメは{topSeed}として作用します。棚にある未評価の作品は1.00です。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -1207,16 +1229,19 @@ msgid "A refresh is already running"
 msgstr "更新はすでに実行中です"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
-msgstr ""
+msgstr "高く評価したアニメは似た漫画をおすすめに近づけます。低評価や視聴中止にした作品は遠ざけます。"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
-msgstr ""
+msgstr "より優先順位の高い言語で公開しているソースは、自動マッチング時にこのリストより優先されます。"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "低評価はこのタイトルを非表示にし、残したものよりもこのタイトルに近い作品の順位を下げます。非表示はこの作品だけを除外します。"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -1224,8 +1249,9 @@ msgid "A token with no value for a given series renders as nothing, and the surr
 msgstr "シリーズに値のないトークンは何も表示せず、前後の空白と空の括弧も整理されるため、年のないシリーズでは{yearExampleToken}はタイトルだけになります。"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "A watched anime counts for as much as a manga you rated yourself."
-msgstr ""
+msgstr "視聴済みのアニメは、自分で評価した漫画と同じ重みでカウントされます。"
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1411,8 +1437,9 @@ msgstr "追加済み"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Added by you"
-msgstr ""
+msgstr "自分で追加"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1560,12 +1587,14 @@ msgid "All time"
 msgstr "全期間"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Already on your shelf, so your own reading counts instead"
-msgstr ""
+msgstr "すでに棚にあるため、自分の読書履歴が代わりにカウントされます"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Already read or seen, taste unchanged"
-msgstr ""
+msgstr "既読・視聴済み、好みは変更なし"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -1578,8 +1607,9 @@ msgid "Already up to date"
 msgstr "最新です"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Already yours"
-msgstr ""
+msgstr "所持済み"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1632,8 +1662,9 @@ msgid "and {remaining} more selected on other pages"
 msgstr "他のページで選択した残り{remaining}件"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "AniList"
-msgstr ""
+msgstr "AniList"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -1642,12 +1673,14 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "anilist、myanimelist、mal、mangabaka、kitsu、トラッカー、oauth、クライアントID、クライアントシークレット、同期間隔、読む予定"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "anime"
-msgstr ""
+msgstr "アニメ"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Anime"
-msgstr ""
+msgstr "アニメ"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/SeriesHero.tsx
@@ -1662,8 +1695,9 @@ msgid "Anime coverage"
 msgstr "アニメ化範囲"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Anime you've watched"
-msgstr ""
+msgstr "視聴済みのアニメ"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1733,8 +1767,9 @@ msgid "Apply replacement"
 msgstr "置換を適用"
 
 #: src/pages/RequestsPage.tsx
+#, fuzzy
 msgid "Approval in progress"
-msgstr ""
+msgstr "承認処理中"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -1815,8 +1850,9 @@ msgid "At least one enabled"
 msgstr "1つ以上を有効化"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "At least one language must stay enabled."
-msgstr ""
+msgstr "少なくとも1つの言語を有効のままにする必要があります。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -1902,8 +1938,9 @@ msgid "Automation"
 msgstr "自動化"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Avoided"
-msgstr ""
+msgstr "回避"
 
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
@@ -1912,8 +1949,9 @@ msgid "Back"
 msgstr "戻る"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "back in the running"
-msgstr ""
+msgstr "候補に復帰"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -1994,12 +2032,14 @@ msgid "balanced"
 msgstr "バランス"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Balanced"
-msgstr ""
+msgstr "バランス"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Barely nudges. A show you loved stays below a book you never rated."
-msgstr ""
+msgstr "影響はごくわずかです。大好きなアニメでも、未評価の漫画より下に位置します。"
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -2085,8 +2125,9 @@ msgid "Bookmark this page"
 msgstr "このページをブックマーク"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Both"
-msgstr ""
+msgstr "両方"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -2225,8 +2266,9 @@ msgid "cat {ratioValue}"
 msgstr "カタログ {ratioValue}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Catalogue fallback is active. Personal add weights need semantic ranking."
-msgstr ""
+msgstr "カタログのフォールバックが有効です。個人の追加による重み付けにはセマンティックランキングが必要です。"
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #, fuzzy
@@ -2235,8 +2277,9 @@ msgstr "カタログフィード"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Catalogue title {id}"
-msgstr ""
+msgstr "カタログタイトル {id}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2389,8 +2432,9 @@ msgid "Change"
 msgstr "変更"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Change how individual titles affect recommendations."
-msgstr ""
+msgstr "個々のタイトルがおすすめに与える影響を変更します。"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2403,8 +2447,9 @@ msgid "Change the chapter range"
 msgstr "章の範囲を変更"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Change this title only"
-msgstr ""
+msgstr "このタイトルのみ変更"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2650,8 +2695,9 @@ msgstr "評価をクリア"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear read or seen"
-msgstr ""
+msgstr "既読・視聴済みを解除"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -2659,8 +2705,9 @@ msgid "Clear search"
 msgstr "検索をクリア"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear seen"
-msgstr ""
+msgstr "視聴済みを解除"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2668,12 +2715,14 @@ msgid "Clear the record"
 msgstr "記録をクリア"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs down"
-msgstr ""
+msgstr "低評価を解除"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs up"
-msgstr ""
+msgstr "高評価を解除"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2881,12 +2930,14 @@ msgid "Connect"
 msgstr "接続"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this."
-msgstr ""
+msgstr "これを使うにはAniListまたはMyAnimeListのトラッカーを連携してください。"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
-msgstr ""
+msgstr "これを使うにはAniListまたはMyAnimeListのトラッカーを連携してください。<0>トラッカー設定を開く</0>"
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -3029,8 +3080,9 @@ msgstr "コア"
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Could not load anime signals: {0}"
-msgstr ""
+msgstr "アニメシグナルを読み込めませんでした: {0}"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3048,8 +3100,9 @@ msgid "Could not load your progress. The server logs will say why."
 msgstr "進捗を読み込めませんでした。理由はサーバーログに記録されています。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Could not load your signals: {loadError}"
-msgstr ""
+msgstr "シグナルを読み込めませんでした: {loadError}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3057,12 +3110,14 @@ msgid "Could not read your profile"
 msgstr "プロフィールを読み込めませんでした"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
-msgstr ""
+msgstr "{surface}のフィードバックを更新できませんでした: {reason}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "counts a little more than the rest"
-msgstr ""
+msgstr "他より少し重みが大きい"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3070,8 +3125,9 @@ msgid "Counts both switches: the per-series link and the global source toggle"
 msgstr "シリーズごとのリンクとグローバルソース切り替えの両方を数えます"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "counts toward your taste"
-msgstr ""
+msgstr "好みに反映される"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3416,8 +3472,9 @@ msgid "Dismiss"
 msgstr "閉じる"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Dismiss for 30 days"
-msgstr ""
+msgstr "30日間非表示にする"
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -3425,17 +3482,20 @@ msgid "Dismiss notification"
 msgstr "通知を閉じる"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Dismissed"
-msgstr ""
+msgstr "見送り済み"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Dismissed for 30 days. It comes back on its own."
-msgstr ""
+msgstr "30日間非表示にしました。期限が来ると自動的に戻ります。"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Dismissed until {until}"
-msgstr ""
+msgstr "{until}まで見送り"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3604,8 +3664,9 @@ msgid "Drama"
 msgstr "ドラマ"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Dropped"
-msgstr ""
+msgstr "視聴中止"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3695,8 +3756,9 @@ msgid "Empty."
 msgstr "空です。"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Enable {name}"
-msgstr ""
+msgstr "{name}を有効にする"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3862,20 +3924,24 @@ msgid "Example: {example}"
 msgstr "例：{example}"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Exclude"
-msgstr ""
+msgstr "除外"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Exclude from taste"
-msgstr ""
+msgstr "好みから除外"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Excluded"
-msgstr ""
+msgstr "除外済み"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Excluded from taste"
-msgstr ""
+msgstr "好みから除外済み"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3986,8 +4052,9 @@ msgid "File"
 msgstr "ファイル"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "File naming on import"
-msgstr ""
+msgstr "インポート時のファイル命名"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -4218,8 +4285,9 @@ msgid "From your library"
 msgstr "ライブラリから"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "From your shelf"
-msgstr ""
+msgstr "棚から"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -4371,8 +4439,9 @@ msgid "h"
 msgstr "時間"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
-msgstr ""
+msgstr "漫画本体を評価した場合の半分の重みです。大好きなアニメはジャンルやタグをプロファイルに加えますが、実際に読んだ漫画より優先されることはありません。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4429,12 +4498,14 @@ msgstr "休載"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden"
-msgstr ""
+msgstr "非表示"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden from recommendations"
-msgstr ""
+msgstr "おすすめから非表示"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -4442,8 +4513,9 @@ msgid "hidden gems"
 msgstr "隠れた名作"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "hidden or dismissed"
-msgstr ""
+msgstr "非表示または見送り済み"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4456,12 +4528,14 @@ msgid "Hide source text"
 msgstr "ソーステキストを隠す"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Hide this and its franchise"
-msgstr ""
+msgstr "この作品とシリーズ全体を非表示にする"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Hide this title"
-msgstr ""
+msgstr "このタイトルを非表示にする"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
@@ -4549,12 +4623,14 @@ msgid "How many chapters download at once from scraper sources. Higher isn't alw
 msgstr "スクレーパーソースから一度にダウンロードする章数です。多いほど速いとは限りません。各ワーカーは同じサイトへの接続で、レート制限に達するとすべてのダウンロードが停止します。torrentリリースには影響しません。再起動後に有効になります。"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "How much they count"
-msgstr ""
+msgstr "重みの大きさ"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "How signals work"
-msgstr ""
+msgstr "シグナルの仕組み"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4728,8 +4804,9 @@ msgid "Incidental"
 msgstr "付随"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Include"
-msgstr ""
+msgstr "含める"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5022,8 +5099,9 @@ msgid "Last sign-in"
 msgstr "最終サインイン"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Last synced {synced}"
-msgstr ""
+msgstr "最終同期: {synced}"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -5286,8 +5364,9 @@ msgid "Lockout duration (minutes)"
 msgstr "ロックアウト期間（分）"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Looking up {looked} of {total}"
-msgstr ""
+msgstr "{total}件中{looked}件を検索中"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5401,8 +5480,9 @@ msgstr "キューを管理"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Manage signals"
-msgstr ""
+msgstr "シグナルの管理"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5417,8 +5497,9 @@ msgid "Manage tags"
 msgstr "タグを管理"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "manga"
-msgstr ""
+msgstr "漫画"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
@@ -5486,8 +5567,9 @@ msgid "Mark watched"
 msgstr "視聴済みにする"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Marked as already read or seen. Your taste profile was not changed."
-msgstr ""
+msgstr "既読・視聴済みとしてマークしました。好みのプロファイルは変更されていません。"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5678,8 +5760,9 @@ msgid "More download options"
 msgstr "その他のダウンロードオプション"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "More feedback options"
-msgstr ""
+msgstr "その他のフィードバック操作"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -5695,8 +5778,9 @@ msgid "More of this"
 msgstr "これをもっと"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "More recommendation feedback actions"
-msgstr ""
+msgstr "おすすめフィードバックのその他の操作"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5803,8 +5887,9 @@ msgid "My Discord server"
 msgstr "自分のDiscordサーバー"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "MyAnimeList"
-msgstr ""
+msgstr "MyAnimeList"
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -5863,12 +5948,14 @@ msgid "Needs review"
 msgstr "レビューが必要"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Neutral"
-msgstr ""
+msgstr "中立"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "neutral, seeds at shelf weight"
-msgstr ""
+msgstr "中立、棚と同じ重みで反映"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5965,12 +6052,14 @@ msgid "No activity in this period."
 msgstr "この期間のアクティビティはありません。"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "No change: the whole franchise was already hidden."
-msgstr ""
+msgstr "変更なし: シリーズ全体はすでに非表示になっています。"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "No change: this title was already in that state."
-msgstr ""
+msgstr "変更なし: このタイトルはすでにその状態です。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -6043,12 +6132,14 @@ msgid "No indexers configured in Prowlarr."
 msgstr "Prowlarrにインデクサーが設定されていません。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "no longer steers your taste"
-msgstr ""
+msgstr "好みに影響しなくなりました"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "No manga match"
-msgstr ""
+msgstr "一致する漫画なし"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6148,8 +6239,9 @@ msgid "No series match the current filter. Try clearing the search or status fil
 msgstr "現在のフィルターに一致するシリーズはありません。検索またはステータスフィルターをクリアしてみてください。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "No shows match."
-msgstr ""
+msgstr "一致するアニメがありません。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6198,8 +6290,9 @@ msgid "No titles match these filters. Try loosening them."
 msgstr "これらのフィルターに一致するタイトルはありません。条件を緩めてみてください。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "No titles match."
-msgstr ""
+msgstr "一致するタイトルがありません。"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6273,8 +6366,9 @@ msgid "Not every source carries chapter {chapterNumber}, so some columns are sho
 msgstr "すべてのソースに第{chapterNumber}章があるとは限らないため、一部の列には代わりに各ソースの最初の章が表示されます。各列に取得した章が示されます。"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Not for me"
-msgstr ""
+msgstr "自分には合わない"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6308,8 +6402,9 @@ msgid "Not rated"
 msgstr "未評価"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Not recommended again"
-msgstr ""
+msgstr "今後おすすめされません"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6322,8 +6417,9 @@ msgid "Not scanned"
 msgstr "未スキャン"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Not synced yet"
-msgstr ""
+msgstr "まだ同期されていません"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6578,16 +6674,19 @@ msgid "On disk"
 msgstr "ディスク上"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "On hold"
-msgstr ""
+msgstr "中断中"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On shelf"
-msgstr ""
+msgstr "棚にあり"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On your shelf, not used for ranking"
-msgstr ""
+msgstr "棚にありますが、ランキングには使われません"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -6973,8 +7072,9 @@ msgid "Personal Access Token"
 msgstr "Personal Access Token"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Personal add weighting is disabled for this instance."
-msgstr ""
+msgstr "この環境では個人の追加による重み付けは無効です。"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -7023,8 +7123,9 @@ msgid "Plan to read"
 msgstr "読む予定"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Planning"
-msgstr ""
+msgstr "視聴予定"
 
 #: src/pages/StatsPage.tsx
 #, fuzzy
@@ -7075,8 +7176,9 @@ msgid "Portuguese (Br)"
 msgstr "ポルトガル語（ブラジル）"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Positive"
-msgstr ""
+msgstr "ポジティブ"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7200,12 +7302,14 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "更新するには新しいイメージを取得してコンテナを再作成してください。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "pushes down titles close to it"
-msgstr ""
+msgstr "近いタイトルの順位を下げる"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "このタイトルに近い作品の順位を下げます"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7272,8 +7376,9 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "{source}によるレート制限。次の試行まで待機中"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Rated"
-msgstr ""
+msgstr "評価済み"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7313,8 +7418,9 @@ msgid "Reached for {ratioValue} more than owning it would predict, across {serie
 msgstr "{seriesPhrase}全体で、所持していれば予測されるより{ratioValue}多く到達"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "read"
-msgstr ""
+msgstr "既読"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -7353,8 +7459,9 @@ msgid "Read in Maki"
 msgstr "Makiで読んだ"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Read manga elsewhere"
-msgstr ""
+msgstr "他の場所で読んだ"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
@@ -7427,8 +7534,9 @@ msgid "Reading goals"
 msgstr "読書目標"
 
 #: src/pages/discover/TasteTab.tsx
+#, fuzzy
 msgid "Reading history stays visible when a source is excluded from recommendations."
-msgstr ""
+msgstr "ソースをおすすめから除外しても読書履歴は表示されたままです。"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7512,8 +7620,9 @@ msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "ポスターを再構築中、{totalCount}件中{processedCount}件"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Recent feedback"
-msgstr ""
+msgstr "最近のフィードバック"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -7528,8 +7637,9 @@ msgid "Recently added"
 msgstr "最近追加"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Recently changed"
-msgstr ""
+msgstr "最近変更"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7758,12 +7868,14 @@ msgid "Remove without cleanup"
 msgstr "整理せずに削除"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Remove your thumbs down"
-msgstr ""
+msgstr "低評価を取り消す"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Remove your thumbs up"
-msgstr ""
+msgstr "高評価を取り消す"
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -7771,8 +7883,9 @@ msgid "Removed"
 msgstr "削除済み"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Removed from recommendations. Only this title: its genres and author are unaffected."
-msgstr ""
+msgstr "おすすめから除外しました。対象はこのタイトルのみで、ジャンルや作者への影響はありません。"
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -7812,8 +7925,9 @@ msgid "Rename folder to Maki standard"
 msgstr "フォルダー名をMaki標準に変更"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Rename imported files to the Chapter Format"
-msgstr ""
+msgstr "インポートしたファイルをチャプター形式にリネームする"
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -7962,8 +8076,9 @@ msgid "Restore & restart"
 msgstr "復元して再起動"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Restore any of them from Manage signals."
-msgstr ""
+msgstr "シグナルの管理からいつでも復元できます。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7981,8 +8096,9 @@ msgid "Restore from file…"
 msgstr "ファイルから復元…"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Restore hidden or dismissed title"
-msgstr ""
+msgstr "非表示または見送ったタイトルを復元"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7990,12 +8106,14 @@ msgid "Restore staged"
 msgstr "ステージ済みを復元"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Restore this title"
-msgstr ""
+msgstr "このタイトルを復元"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Restored"
-msgstr ""
+msgstr "復元しました"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8467,8 +8585,9 @@ msgid "Search releases (Prowlarr)"
 msgstr "リリースを検索（Prowlarr）"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Search shows"
-msgstr ""
+msgstr "アニメを検索"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8481,8 +8600,9 @@ msgid "Search the remaining sources for this title again. Sources already linked
 msgstr "このタイトルの残りのソースを再検索します。すでにリンク済みのソースはそのままです。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Search titles"
-msgstr ""
+msgstr "タイトルを検索"
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
@@ -8536,17 +8656,20 @@ msgid "Seeds"
 msgstr "シード"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Seen anime"
-msgstr ""
+msgstr "アニメを視聴済み"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Seen cleared"
-msgstr ""
+msgstr "視聴済みを解除しました"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen elsewhere"
-msgstr ""
+msgstr "他で視聴済み"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -8554,8 +8677,9 @@ msgid "Seen through to the end"
 msgstr "末尾まで読了"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen: {media}"
-msgstr ""
+msgstr "視聴済み: {media}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8775,8 +8899,9 @@ msgid "Settings › {tabName}"
 msgstr "Settings › {tabName}"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Shapes recommendations"
-msgstr ""
+msgstr "おすすめに反映"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8804,8 +8929,9 @@ msgid "Show a popup when a notification arrives"
 msgstr "通知が届いたときポップアップを表示"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Show all"
-msgstr ""
+msgstr "すべて表示"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -8854,8 +8980,9 @@ msgid "Showing {currentLocaleLabel}. Translations other than English are machine
 msgstr "{currentLocaleLabel}を表示しています。英語以外の翻訳は機械翻訳で、時間をかけて修正されます。未翻訳のものは英語にフォールバックします。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Showing {shown} of {total}"
-msgstr ""
+msgstr "{total}件中{shown}件を表示"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -9105,8 +9232,9 @@ msgid "Sources disagree on where a chapter starts: a credit page here, a colour 
 msgstr "ソースによって章の開始位置が異なります。こちらにはクレジットページ、あちらにはカラー表紙があります。ページは画像内容で照合されるため、各列の各行は同じ絵です。どのページとも一致しないスキャンは、そのソース自身の最初のページのままになります。"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
-msgstr ""
+msgstr "言語を選択できるソースは、マッピングが自動作成される際にこれらの言語に設定されます。既存のマッピングが書き換えられることはなく、言語の有効/無効を切り替えてもソースの有効/無効は変わりません。"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -9278,8 +9406,9 @@ msgid "Studio"
 msgstr "スタジオ"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Subtle"
-msgstr ""
+msgstr "控えめ"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
@@ -9335,8 +9464,9 @@ msgid "Synced"
 msgstr "同期済み"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Syncing…"
-msgstr ""
+msgstr "同期中…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9739,8 +9869,9 @@ msgid "This takes a minute or two and only happens once per snapshot."
 msgstr "1～2分かかり、スナップショットごとに1回だけ実行されます。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "this title only"
-msgstr ""
+msgstr "このタイトルのみ"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -9773,32 +9904,39 @@ msgid "Thumbnails"
 msgstr "サムネイル"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Thumbs"
-msgstr ""
+msgstr "評価"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down"
-msgstr ""
+msgstr "低評価"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "低評価。このタイトルは除外され、残したものよりこの作品に近いタイトルの順位が下がります。"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs up"
-msgstr ""
+msgstr "高評価"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "thumbs up / down"
-msgstr ""
+msgstr "高評価 / 低評価"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs up. This title now steers your recommendations, and it will not be recommended back to you."
-msgstr ""
+msgstr "高評価。このタイトルはおすすめの傾向に反映され、今後このタイトル自体がおすすめされることはありません。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
-msgstr ""
+msgstr "おすすめを評価・非表示・見送りするとここに表示されます。"
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -9870,12 +10008,14 @@ msgid "Title search"
 msgstr "タイトル検索"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Titles"
-msgstr ""
+msgstr "タイトル"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "titles on the shelf"
-msgstr ""
+msgstr "棚にあるタイトル"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10022,8 +10162,9 @@ msgid "Turkish"
 msgstr "トルコ語"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Turn on anime signals on the Taste tab to use this."
-msgstr ""
+msgstr "これを使うには「好み」タブでアニメシグナルを有効にしてください。"
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -10097,12 +10238,14 @@ msgstr "アンダースコア（_）"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undo"
-msgstr ""
+msgstr "元に戻す"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undone"
-msgstr ""
+msgstr "元に戻しました"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -10152,8 +10295,9 @@ msgid "Unrecognized"
 msgstr "認識できない"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "unspecified"
-msgstr ""
+msgstr "未指定"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10192,12 +10336,14 @@ msgid "Update available: {latestVersion}"
 msgstr "更新があります：{latestVersion}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Updated. This title can appear in recommendations again."
-msgstr ""
+msgstr "更新しました。このタイトルは再びおすすめに表示されるようになります。"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Updated. This title stays out of recommendations."
-msgstr ""
+msgstr "更新しました。このタイトルはおすすめから除外されたままです。"
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
@@ -10224,8 +10370,9 @@ msgid "Use"
 msgstr "使用"
 
 #: src/components/TrackerSyncControls.tsx
+#, fuzzy
 msgid "Use anime for recommendation taste"
-msgstr ""
+msgstr "アニメをおすすめの好みに使用する"
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -10233,8 +10380,9 @@ msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "{MIN_PASSWORD_LENGTH}文字以上を使用"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use for taste"
-msgstr ""
+msgstr "好みに使用"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10252,8 +10400,9 @@ msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "ローカルMangaBakaデータベースを使用（強く推奨）"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use this title for taste"
-msgstr ""
+msgstr "このタイトルを好みに使用"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10266,8 +10415,9 @@ msgid "Use trackers"
 msgstr "トラッカーを使用"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Used for chapters Maki downloads, and for imported files unless you keep their original names below"
-msgstr ""
+msgstr "Makiがダウンロードするチャプターと、下で元の名前を保持しない限りインポートしたファイルに使用されます"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10495,8 +10645,9 @@ msgid "Watched"
 msgstr "視聴済み"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Watching"
-msgstr ""
+msgstr "視聴中"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10509,8 +10660,9 @@ msgid "Webhook URL"
 msgstr "Webhook URL"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "weighted by how far you got"
-msgstr ""
+msgstr "読み進めた分だけ重み付け"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10544,8 +10696,9 @@ msgid "What readers without add or download permissions have asked for. Approvin
 msgstr "追加またはダウンロード権限のない読者からの依頼です。承認するとシリーズを追加し、章をキューに入れます。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "What shapes your recommendations"
-msgstr ""
+msgstr "おすすめを左右する要素"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10618,8 +10771,9 @@ msgid "Where your taste has moved"
 msgstr "あなたのテイストの変化"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene release's own name often carries more than the format can say (the edition, the group, the year), so turning this off keeps what the release named it. Chapters Maki downloads itself are always named by the format, and renaming a series from its own page still renames everything in it."
-msgstr ""
+msgstr "ディスクから取り込んだファイルを、上記のチャプター形式にリネームするかどうかです。シーンリリース自体の名前には、形式では表現できない情報(エディション、グループ、年など)が含まれていることが多いため、これをオフにするとリリースが付けた名前をそのまま保持します。Makiが自身でダウンロードするチャプターは常にこの形式で命名され、シリーズのページからのリネームは引き続きすべてに適用されます。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10637,8 +10791,9 @@ msgid "Which language series titles are shown in, where the metadata provider ha
 msgstr "メタデータプロバイダーにある場合にシリーズタイトルを表示する言語です。表示だけに適用され、フォルダー名とファイル名、並べ替えは英語タイトルのままです。"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
-msgstr ""
+msgstr "ダウンロードする言語を優先順位順に指定します。自動マッチング時、各ソースはこのリストで最も優先順位の高い、公開している言語によってランク付けされるため、最優先言語を持つソースが先に試されます。有効な言語を1つも公開していないソースは自動マッチングの対象外になります。ドラッグして並べ替えられます。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10661,8 +10816,9 @@ msgid "While reading only tells you about new chapters while you are partway thr
 msgstr "読書中は、シリーズの途中にいる間だけ新しい章を知らせます。"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Whole franchise"
-msgstr ""
+msgstr "シリーズ全体"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -10700,8 +10856,9 @@ msgid "With none selected this account sees an empty library: access is granted,
 msgstr "何も選択しない場合、このアカウントのライブラリは空になります。アクセスは明示的に許可され、暗黙には許可されません。"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "won't be recommended again"
-msgstr ""
+msgstr "今後おすすめされません"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
@@ -10727,8 +10884,9 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "年：{yearRangeMin}～{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Yesterday"
-msgstr ""
+msgstr "昨日"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -10751,8 +10909,9 @@ msgid "You cannot remove your own administrator permission. Promote another acco
 msgstr "自分の管理者権限は削除できません。先に別のアカウントを昇格させ、そちらからこのアカウントを編集してください。"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "You excluded this title from recommendations"
-msgstr ""
+msgstr "このタイトルをおすすめから除外しました"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10786,12 +10945,14 @@ msgid "You put down"
 msgstr "途中で置いた作品"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "You rated this one yourself, so the anime is not counted again"
-msgstr ""
+msgstr "この作品はご自身で評価済みのため、アニメは重複してカウントされません"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "You seem to avoid"
-msgstr ""
+msgstr "避けている傾向があります"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10889,8 +11050,9 @@ msgid "Your request was declined"
 msgstr "リクエストが拒否されました"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr ""
+msgstr "棚、評価、読書履歴がランキングに反映されます。評価・非表示・視聴済みはそれぞれ1タイトルのみに影響します。"
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy

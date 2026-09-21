@@ -65,8 +65,9 @@ msgstr "{0, plural, one {# Treffer} other {# Treffer}}"
 
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "{0, plural, one {# season} other {# seasons}}"
-msgstr ""
+msgstr "{0, plural, one {# Staffel} other {# Staffeln}}"
 
 #. placeholder {0}: seedIds.length
 #: src/pages/DiscoverPage.tsx
@@ -234,8 +235,9 @@ msgstr "{0, plural, one {# Kapitel gewünscht} other {# Kapitel gewünscht}}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "{actionError} Refresh the page and try again."
-msgstr ""
+msgstr "{actionError} Lade die Seite neu und versuche es erneut."
 
 #: src/App.tsx
 #, fuzzy
@@ -243,8 +245,9 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, one {# Download läuft} other {# Downloads laufen}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{adds} added by you, {excluded} excluded from taste"
-msgstr ""
+msgstr "{adds} von dir hinzugefügt, {excluded} vom Geschmack ausgeschlossen"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -348,8 +351,9 @@ msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, one {# Kap.} other {# Kap.}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
-msgstr ""
+msgstr "{count, plural, one {# Titel} other {# Titel}}"
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -362,8 +366,9 @@ msgid "{count, plural, one {Delete # archive?} other {Delete # archives?}}"
 msgstr "{count, plural, one {# Archiv löschen?} other {# Archive löschen?}}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
-msgstr ""
+msgstr "{count, plural, one {# ausgeblendeter Titel} other {# ausgeblendete Titel}}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -412,8 +417,9 @@ msgid "{eta} left"
 msgstr "{eta} verbleibend"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{exposed} seen elsewhere"
-msgstr ""
+msgstr "{exposed} anderswo gesehen"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -538,8 +544,9 @@ msgid "{markerLabel} Anime adaptation starts here · click to expand"
 msgstr "{markerLabel} Hier beginnt die Anime-Adaption · zum Aufklappen klicken"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
-msgstr ""
+msgstr "{matched} von {total} zugeordnet, {positive} positiv, {avoided} gemieden, {superseded} bereits deins"
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -629,8 +636,9 @@ msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, one {# erfordert Aufmerksamkeit} other {# erfordern Aufmerksamkeit}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{pushingDown} kept out of your taste"
-msgstr ""
+msgstr "{pushingDown} aus deinem Geschmack herausgehalten"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -638,8 +646,9 @@ msgid "{queued, plural, one {Auto-matching # series in the background.} other {A
 msgstr "{queued, plural, one {Die automatische Zuordnung von # Serie läuft im Hintergrund.} other {Die automatische Zuordnung von # Serien läuft im Hintergrund.}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{rated} rated"
-msgstr ""
+msgstr "{rated} bewertet"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -820,8 +829,9 @@ msgid "{support, plural, one {# series} other {# series}}"
 msgstr "{support, plural, one {# Serie} other {# Serien}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
-msgstr ""
+msgstr "{support} von {pushedDown} herabgestuft, {positiveSupport} von {shelfCount} in deinem Regal"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -870,8 +880,9 @@ msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folde
 msgstr "{total, plural, one {Importiert: {ok}/# Ordner} other {Importiert: {ok}/# Ordner}}"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "{total, plural, one {Show all #} other {Show all #}}"
-msgstr ""
+msgstr "{total, plural, one {Alle # anzeigen} other {Alle # anzeigen}}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1040,12 +1051,14 @@ msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> list
 msgstr "<0>{sub}</0> listet Unterkapitel (1.1, 1.2, …) auf, während <1>{whole}</1> ganze Kapitel für denselben Inhalt auflistet. Daher erscheinen beide unten als separate Zeilen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
-msgstr ""
+msgstr "<0>Vom Geschmack ausgeschlossen</0> hält einen Regal-Titel aus dem Ranking heraus. Der Leseverlauf bleibt unberührt."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Hide and dismiss</0> only affect that one title."
-msgstr ""
+msgstr "<0>Ausblenden und Verwerfen</0> betreffen nur diesen einen Titel."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -1053,16 +1066,19 @@ msgid "<0>MAKI_ALLOW_LOCAL_LOGIN</0> is set in this instance's environment, so p
 msgstr "<0>MAKI_ALLOW_LOCAL_LOGIN</0> ist in der Umgebung dieser Instanz gesetzt. Die Anmeldung per Passwort ist daher für jedes Konto verfügbar, unabhängig vom Schalter oben. Entferne die Variable und starte Maki neu, um die Einstellung wieder durchzusetzen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Seen elsewhere</0> stops a title being recommended without changing taste."
-msgstr ""
+msgstr "<0>Anderswo gesehen</0> verhindert, dass ein Titel empfohlen wird, ohne den Geschmack zu ändern."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs down</0> and ratings of 4 or under push down titles that are closer to what you rejected than to what you kept. What they share shows up above once three or more agree."
-msgstr ""
+msgstr "<0>Daumen runter</0> und Bewertungen von 4 oder darunter stufen Titel herab, die dem Abgelehnten näher sind als dem Behaltenen. Was sie gemeinsam haben, erscheint oben, sobald drei oder mehr übereinstimmen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
-msgstr ""
+msgstr "<0>Daumen hoch</0> zählt zu deinem Geschmack. Ähnliche Titel ranken höher."
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1071,26 +1087,31 @@ msgstr "~240 MB RAM · beste Ergebnisse, empfohlen"
 
 #. placeholder {0}: formatRating(item.rating)
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "★ {0} rated"
-msgstr ""
+msgstr "★ {0} bewertet"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "★ {rating} rated"
-msgstr ""
+msgstr "★ {rating} bewertet"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "★ {score}"
-msgstr ""
+msgstr "★ {score}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👍 Liked"
-msgstr ""
+msgstr "👍 Gefällt mir"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "👎 Disliked"
-msgstr ""
+msgstr "👎 Gefällt mir nicht"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -1138,8 +1159,9 @@ msgid "90 days"
 msgstr "90 Tage"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
-msgstr ""
+msgstr "Ein Anime mit 10/10 startet bei {topSeed}, gegenüber 1,00 für ein unbewertetes Buch in deinem Regal."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -1207,16 +1229,19 @@ msgid "A refresh is already running"
 msgstr "Eine Aktualisierung läuft bereits"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
-msgstr ""
+msgstr "Eine gut bewertete Serie lenkt Empfehlungen zu ähnlichen Manga. Eine niedrige Bewertung oder eine abgebrochene Serie drängt sie weg."
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
-msgstr ""
+msgstr "Eine Quelle, die eine höher eingestufte Sprache veröffentlicht, wird beim automatischen Zuordnen vor dieser Liste eingestuft."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
-msgstr ""
+msgstr "Daumen runter blendet diesen Titel aus und stuft Titel herab, die ihm näher sind als dem, was du behalten hast. Ausblenden entfernt nur diesen einen."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -1224,8 +1249,9 @@ msgid "A token with no value for a given series renders as nothing, and the surr
 msgstr "Ein Token ohne Wert für eine bestimmte Serie wird als nichts ausgegeben. Umgebende Leerzeichen und leere Klammern werden bereinigt, sodass {yearExampleToken} bei einer Serie ohne Jahr einfach deren Titel ergibt."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "A watched anime counts for as much as a manga you rated yourself."
-msgstr ""
+msgstr "Ein gesehener Anime zählt genauso viel wie ein Manga, den du selbst bewertet hast."
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1411,8 +1437,9 @@ msgstr "Hinzugefügt"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Added by you"
-msgstr ""
+msgstr "Von dir hinzugefügt"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1560,12 +1587,14 @@ msgid "All time"
 msgstr "Gesamter Zeitraum"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Already on your shelf, so your own reading counts instead"
-msgstr ""
+msgstr "Bereits in deinem Regal, daher zählt stattdessen dein eigenes Leseverhalten"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Already read or seen, taste unchanged"
-msgstr ""
+msgstr "Bereits gelesen oder gesehen, Geschmack unverändert"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -1578,8 +1607,9 @@ msgid "Already up to date"
 msgstr "Bereits aktuell"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Already yours"
-msgstr ""
+msgstr "Bereits deins"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1632,8 +1662,9 @@ msgid "and {remaining} more selected on other pages"
 msgstr "und {remaining} weitere auf anderen Seiten ausgewählt"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "AniList"
-msgstr ""
+msgstr "AniList"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -1642,12 +1673,14 @@ msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, 
 msgstr "anilist, myanimelist, mal, mangabaka, kitsu, Tracker, OAuth, Client-ID, Client-Secret, Synchronisierungsintervall, Lesen geplant"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "anime"
-msgstr ""
+msgstr "Anime"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Anime"
-msgstr ""
+msgstr "Anime"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/SeriesHero.tsx
@@ -1662,8 +1695,9 @@ msgid "Anime coverage"
 msgstr "Anime-Abdeckung"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Anime you've watched"
-msgstr ""
+msgstr "Von dir gesehene Anime"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1733,8 +1767,9 @@ msgid "Apply replacement"
 msgstr "Ersetzung anwenden"
 
 #: src/pages/RequestsPage.tsx
+#, fuzzy
 msgid "Approval in progress"
-msgstr ""
+msgstr "Genehmigung läuft"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -1815,8 +1850,9 @@ msgid "At least one enabled"
 msgstr "Mindestens eines aktiviert"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "At least one language must stay enabled."
-msgstr ""
+msgstr "Mindestens eine Sprache muss aktiviert bleiben."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -1902,8 +1938,9 @@ msgid "Automation"
 msgstr "Automatisierung"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Avoided"
-msgstr ""
+msgstr "Gemieden"
 
 #: src/components/SetupWizard.tsx
 #: src/lib/navHistory.tsx
@@ -1912,8 +1949,9 @@ msgid "Back"
 msgstr "Zurück"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "back in the running"
-msgstr ""
+msgstr "wieder im Rennen"
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -1994,12 +2032,14 @@ msgid "balanced"
 msgstr "ausgewogen"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Balanced"
-msgstr ""
+msgstr "Ausgewogen"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Barely nudges. A show you loved stays below a book you never rated."
-msgstr ""
+msgstr "Kaum ein Einfluss. Eine geliebte Serie bleibt unter einem nie bewerteten Buch."
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -2085,8 +2125,9 @@ msgid "Bookmark this page"
 msgstr "Diese Seite mit einem Lesezeichen versehen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Both"
-msgstr ""
+msgstr "Beides"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -2225,8 +2266,9 @@ msgid "cat {ratioValue}"
 msgstr "Katalog {ratioValue}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Catalogue fallback is active. Personal add weights need semantic ranking."
-msgstr ""
+msgstr "Katalog-Fallback ist aktiv. Persönliche Hinzufüge-Gewichtungen benötigen semantisches Ranking."
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #, fuzzy
@@ -2235,8 +2277,9 @@ msgstr "Katalog-Feeds"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Catalogue title {id}"
-msgstr ""
+msgstr "Katalogtitel {id}"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2389,8 +2432,9 @@ msgid "Change"
 msgstr "Ändern"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Change how individual titles affect recommendations."
-msgstr ""
+msgstr "Ändere, wie einzelne Titel Empfehlungen beeinflussen."
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2403,8 +2447,9 @@ msgid "Change the chapter range"
 msgstr "Kapitelbereich ändern"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Change this title only"
-msgstr ""
+msgstr "Nur diesen Titel ändern"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2650,8 +2695,9 @@ msgstr "Bewertung löschen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear read or seen"
-msgstr ""
+msgstr "Gelesen oder gesehen zurücksetzen"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -2659,8 +2705,9 @@ msgid "Clear search"
 msgstr "Suche leeren"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear seen"
-msgstr ""
+msgstr "Gesehen zurücksetzen"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2668,12 +2715,14 @@ msgid "Clear the record"
 msgstr "Datensatz leeren"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs down"
-msgstr ""
+msgstr "Daumen runter zurücksetzen"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Clear the thumbs up"
-msgstr ""
+msgstr "Daumen hoch zurücksetzen"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2881,12 +2930,14 @@ msgid "Connect"
 msgstr "Verbinden"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this."
-msgstr ""
+msgstr "Verbinde einen AniList- oder MyAnimeList-Tracker, um dies zu nutzen."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker settings</0>"
-msgstr ""
+msgstr "Verbinde einen AniList- oder MyAnimeList-Tracker, um dies zu nutzen. <0>Tracker-Einstellungen öffnen</0>"
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -3029,8 +3080,9 @@ msgstr "Kern"
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Could not load anime signals: {0}"
-msgstr ""
+msgstr "Anime-Signale konnten nicht geladen werden: {0}"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3048,8 +3100,9 @@ msgid "Could not load your progress. The server logs will say why."
 msgstr "Dein Fortschritt konnte nicht geladen werden. In den Serverprotokollen steht der Grund."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Could not load your signals: {loadError}"
-msgstr ""
+msgstr "Deine Signale konnten nicht geladen werden: {loadError}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3057,12 +3110,14 @@ msgid "Could not read your profile"
 msgstr "Dein Profil konnte nicht gelesen werden"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
-msgstr ""
+msgstr "{surface}-Feedback konnte nicht aktualisiert werden: {reason}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "counts a little more than the rest"
-msgstr ""
+msgstr "zählt etwas mehr als der Rest"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3070,8 +3125,9 @@ msgid "Counts both switches: the per-series link and the global source toggle"
 msgstr "Beide Schalter werden gezählt: die Verknüpfung pro Serie und der globale Quellen-Schalter"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "counts toward your taste"
-msgstr ""
+msgstr "zählt zu deinem Geschmack"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3416,8 +3472,9 @@ msgid "Dismiss"
 msgstr "Ausblenden"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Dismiss for 30 days"
-msgstr ""
+msgstr "30 Tage lang ausblenden"
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -3425,17 +3482,20 @@ msgid "Dismiss notification"
 msgstr "Benachrichtigung ausblenden"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Dismissed"
-msgstr ""
+msgstr "Verworfen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Dismissed for 30 days. It comes back on its own."
-msgstr ""
+msgstr "30 Tage lang ausgeblendet. Kommt von selbst zurück."
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Dismissed until {until}"
-msgstr ""
+msgstr "Verworfen bis {until}"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3604,8 +3664,9 @@ msgid "Drama"
 msgstr "Drama"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Dropped"
-msgstr ""
+msgstr "Abgebrochen"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3695,8 +3756,9 @@ msgid "Empty."
 msgstr "Leer."
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Enable {name}"
-msgstr ""
+msgstr "{name} aktivieren"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3862,20 +3924,24 @@ msgid "Example: {example}"
 msgstr "Beispiel: {example}"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Exclude"
-msgstr ""
+msgstr "Ausschließen"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Exclude from taste"
-msgstr ""
+msgstr "Vom Geschmack ausschließen"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Excluded"
-msgstr ""
+msgstr "Ausgeschlossen"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Excluded from taste"
-msgstr ""
+msgstr "Vom Geschmack ausgeschlossen"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3986,8 +4052,9 @@ msgid "File"
 msgstr "Datei"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "File naming on import"
-msgstr ""
+msgstr "Dateibenennung beim Import"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -4218,8 +4285,9 @@ msgid "From your library"
 msgstr "Aus deiner Bibliothek"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "From your shelf"
-msgstr ""
+msgstr "Aus deinem Regal"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -4371,8 +4439,9 @@ msgid "h"
 msgstr "Std."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
-msgstr ""
+msgstr "Die Hälfte des Gewichts, das der Manga hätte. Eine geliebte Serie gibt ihre Genres und Tags an dein Profil weiter, ohne ein tatsächlich gelesenes Buch zu überstimmen."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4429,12 +4498,14 @@ msgstr "Pause"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden"
-msgstr ""
+msgstr "Ausgeblendet"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Hidden from recommendations"
-msgstr ""
+msgstr "Aus den Empfehlungen ausgeblendet"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -4442,8 +4513,9 @@ msgid "hidden gems"
 msgstr "verborgene Perlen"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "hidden or dismissed"
-msgstr ""
+msgstr "ausgeblendet oder verworfen"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4456,12 +4528,14 @@ msgid "Hide source text"
 msgstr "Quellentext ausblenden"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Hide this and its franchise"
-msgstr ""
+msgstr "Diesen Titel und sein Franchise ausblenden"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Hide this title"
-msgstr ""
+msgstr "Diesen Titel ausblenden"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
@@ -4549,12 +4623,14 @@ msgid "How many chapters download at once from scraper sources. Higher isn't alw
 msgstr "Wie viele Kapitel gleichzeitig von Scraper-Quellen heruntergeladen werden. Mehr ist nicht immer schneller: Jeder Worker ist eine aktive Verbindung zur selben Website, und ein ausgelöstes Ratenlimit pausiert jeden Download. Torrent-Releases sind nicht betroffen. Die Änderung wird nach einem Neustart wirksam."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "How much they count"
-msgstr ""
+msgstr "Wie stark sie zählen"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "How signals work"
-msgstr ""
+msgstr "Wie Signale funktionieren"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4728,8 +4804,9 @@ msgid "Incidental"
 msgstr "Beiläufig"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Include"
-msgstr ""
+msgstr "Einbeziehen"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5022,8 +5099,9 @@ msgid "Last sign-in"
 msgstr "Letzte Anmeldung"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Last synced {synced}"
-msgstr ""
+msgstr "Zuletzt synchronisiert {synced}"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -5286,8 +5364,9 @@ msgid "Lockout duration (minutes)"
 msgstr "Sperrdauer (Minuten)"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Looking up {looked} of {total}"
-msgstr ""
+msgstr "Suche {looked} von {total}"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -5401,8 +5480,9 @@ msgstr "Warteschlange verwalten"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Manage signals"
-msgstr ""
+msgstr "Signale verwalten"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5417,8 +5497,9 @@ msgid "Manage tags"
 msgstr "Tags verwalten"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "manga"
-msgstr ""
+msgstr "Manga"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
@@ -5486,8 +5567,9 @@ msgid "Mark watched"
 msgstr "Als angesehen markieren"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Marked as already read or seen. Your taste profile was not changed."
-msgstr ""
+msgstr "Als bereits gelesen oder gesehen markiert. Dein Geschmacksprofil wurde nicht geändert."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5678,8 +5760,9 @@ msgid "More download options"
 msgstr "Weitere Download-Optionen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "More feedback options"
-msgstr ""
+msgstr "Weitere Feedback-Optionen"
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -5695,8 +5778,9 @@ msgid "More of this"
 msgstr "Mehr davon"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "More recommendation feedback actions"
-msgstr ""
+msgstr "Weitere Aktionen für Empfehlungs-Feedback"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5803,8 +5887,9 @@ msgid "My Discord server"
 msgstr "Mein Discord-Server"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "MyAnimeList"
-msgstr ""
+msgstr "MyAnimeList"
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -5863,12 +5948,14 @@ msgid "Needs review"
 msgstr "Überprüfung erforderlich"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Neutral"
-msgstr ""
+msgstr "Neutral"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "neutral, seeds at shelf weight"
-msgstr ""
+msgstr "neutral, startet mit Regal-Gewicht"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -5965,12 +6052,14 @@ msgid "No activity in this period."
 msgstr "Keine Aktivität in diesem Zeitraum."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "No change: the whole franchise was already hidden."
-msgstr ""
+msgstr "Keine Änderung: Das gesamte Franchise war bereits ausgeblendet."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "No change: this title was already in that state."
-msgstr ""
+msgstr "Keine Änderung: Dieser Titel hatte diesen Status bereits."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -6043,12 +6132,14 @@ msgid "No indexers configured in Prowlarr."
 msgstr "Keine Indexer in Prowlarr konfiguriert."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "no longer steers your taste"
-msgstr ""
+msgstr "beeinflusst deinen Geschmack nicht mehr"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "No manga match"
-msgstr ""
+msgstr "Keine Manga-Übereinstimmung"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6148,8 +6239,9 @@ msgid "No series match the current filter. Try clearing the search or status fil
 msgstr "Keine Serie entspricht dem aktuellen Filter. Versuche, die Suche oder den Statusfilter zu löschen."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "No shows match."
-msgstr ""
+msgstr "Keine Serien gefunden."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6198,8 +6290,9 @@ msgid "No titles match these filters. Try loosening them."
 msgstr "Keine Titel entsprechen diesen Filtern. Versuche, sie zu lockern."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "No titles match."
-msgstr ""
+msgstr "Keine Titel gefunden."
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6273,8 +6366,9 @@ msgid "Not every source carries chapter {chapterNumber}, so some columns are sho
 msgstr "Nicht jede Quelle führt Kapitel {chapterNumber}, daher zeigen einige Spalten stattdessen ihr jeweils erstes Kapitel. Jede Spalte gibt an, welches Kapitel sie erhalten hat."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Not for me"
-msgstr ""
+msgstr "Nichts für mich"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6308,8 +6402,9 @@ msgid "Not rated"
 msgstr "Nicht bewertet"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Not recommended again"
-msgstr ""
+msgstr "Wird nicht erneut empfohlen"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6322,8 +6417,9 @@ msgid "Not scanned"
 msgstr "Noch nicht gescannt"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Not synced yet"
-msgstr ""
+msgstr "Noch nicht synchronisiert"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -6578,16 +6674,19 @@ msgid "On disk"
 msgstr "Auf der Festplatte"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "On hold"
-msgstr ""
+msgstr "Pausiert"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On shelf"
-msgstr ""
+msgstr "Im Regal"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "On your shelf, not used for ranking"
-msgstr ""
+msgstr "In deinem Regal, wird nicht fürs Ranking verwendet"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -6973,8 +7072,9 @@ msgid "Personal Access Token"
 msgstr "Persönlicher Zugriffstoken"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Personal add weighting is disabled for this instance."
-msgstr ""
+msgstr "Persönliche Hinzufüge-Gewichtung ist für diese Instanz deaktiviert."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -7023,8 +7123,9 @@ msgid "Plan to read"
 msgstr "Lesen geplant"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Planning"
-msgstr ""
+msgstr "Geplant"
 
 #: src/pages/StatsPage.tsx
 #, fuzzy
@@ -7075,8 +7176,9 @@ msgid "Portuguese (Br)"
 msgstr "Portugiesisch (Br)"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Positive"
-msgstr ""
+msgstr "Positiv"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7200,12 +7302,14 @@ msgid "Pull the new image and recreate the container to update."
 msgstr "Zum Aktualisieren das neue Image laden und den Container neu erstellen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "pushes down titles close to it"
-msgstr ""
+msgstr "stuft ihm nahestehende Titel herab"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Pushes down titles close to this one"
-msgstr ""
+msgstr "Stuft diesem nahestehende Titel herab"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7272,8 +7376,9 @@ msgid "Rate limited by {source}, waiting before the next try"
 msgstr "Ratenlimit von {source}, warten vor dem nächsten Versuch"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Rated"
-msgstr ""
+msgstr "Bewertet"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7313,8 +7418,9 @@ msgid "Reached for {ratioValue} more than owning it would predict, across {serie
 msgstr "Für {seriesPhrase} wurde {ratioValue} mehr aufgerufen, als der Besitz vermuten ließe"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "read"
-msgstr ""
+msgstr "gelesen"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -7353,8 +7459,9 @@ msgid "Read in Maki"
 msgstr "In Maki lesen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Read manga elsewhere"
-msgstr ""
+msgstr "Manga anderswo gelesen"
 
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
@@ -7427,8 +7534,9 @@ msgid "Reading goals"
 msgstr "Leseziele"
 
 #: src/pages/discover/TasteTab.tsx
+#, fuzzy
 msgid "Reading history stays visible when a source is excluded from recommendations."
-msgstr ""
+msgstr "Der Leseverlauf bleibt sichtbar, wenn eine Quelle von den Empfehlungen ausgeschlossen ist."
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7512,8 +7620,9 @@ msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Poster werden neu erstellt, {processedCount} von {totalCount}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Recent feedback"
-msgstr ""
+msgstr "Letztes Feedback"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -7528,8 +7637,9 @@ msgid "Recently added"
 msgstr "Kürzlich hinzugefügt"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Recently changed"
-msgstr ""
+msgstr "Kürzlich geändert"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7758,12 +7868,14 @@ msgid "Remove without cleanup"
 msgstr "Ohne Bereinigung entfernen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Remove your thumbs down"
-msgstr ""
+msgstr "Daumen runter entfernen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Remove your thumbs up"
-msgstr ""
+msgstr "Daumen hoch entfernen"
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -7771,8 +7883,9 @@ msgid "Removed"
 msgstr "Entfernt"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Removed from recommendations. Only this title: its genres and author are unaffected."
-msgstr ""
+msgstr "Aus den Empfehlungen entfernt. Nur dieser Titel: Genres und Autor bleiben unberührt."
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -7812,8 +7925,9 @@ msgid "Rename folder to Maki standard"
 msgstr "Ordner in Maki-Standard umbenennen"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Rename imported files to the Chapter Format"
-msgstr ""
+msgstr "Importierte Dateien nach dem Kapitelformat umbenennen"
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -7962,8 +8076,9 @@ msgid "Restore & restart"
 msgstr "Wiederherstellen und neu starten"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Restore any of them from Manage signals."
-msgstr ""
+msgstr "Stelle sie über Signale verwalten wieder her."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7981,8 +8096,9 @@ msgid "Restore from file…"
 msgstr "Aus Datei wiederherstellen…"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Restore hidden or dismissed title"
-msgstr ""
+msgstr "Ausgeblendeten oder verworfenen Titel wiederherstellen"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7990,12 +8106,14 @@ msgid "Restore staged"
 msgstr "Wiederherstellung vorbereitet"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Restore this title"
-msgstr ""
+msgstr "Diesen Titel wiederherstellen"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Restored"
-msgstr ""
+msgstr "Wiederhergestellt"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8467,8 +8585,9 @@ msgid "Search releases (Prowlarr)"
 msgstr "Releases suchen (Prowlarr)"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Search shows"
-msgstr ""
+msgstr "Serien suchen"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8481,8 +8600,9 @@ msgid "Search the remaining sources for this title again. Sources already linked
 msgstr "Die übrigen Quellen erneut nach diesem Titel durchsuchen. Bereits verknüpfte Quellen bleiben unverändert."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Search titles"
-msgstr ""
+msgstr "Titel suchen"
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
@@ -8536,17 +8656,20 @@ msgid "Seeds"
 msgstr "Ausgangstitel"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Seen anime"
-msgstr ""
+msgstr "Anime gesehen"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Seen cleared"
-msgstr ""
+msgstr "Gesehen-Status zurückgesetzt"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen elsewhere"
-msgstr ""
+msgstr "Anderswo gesehen"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -8554,8 +8677,9 @@ msgid "Seen through to the end"
 msgstr "Bis zum Ende gelesen"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Seen: {media}"
-msgstr ""
+msgstr "Gesehen: {media}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8775,8 +8899,9 @@ msgid "Settings › {tabName}"
 msgstr "Einstellungen › {tabName}"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Shapes recommendations"
-msgstr ""
+msgstr "Prägt Empfehlungen"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8804,8 +8929,9 @@ msgid "Show a popup when a notification arrives"
 msgstr "Beim Eintreffen einer Benachrichtigung ein Popup anzeigen"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Show all"
-msgstr ""
+msgstr "Alle anzeigen"
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -8854,8 +8980,9 @@ msgid "Showing {currentLocaleLabel}. Translations other than English are machine
 msgstr "{currentLocaleLabel} wird angezeigt. Übersetzungen außer Englisch wurden maschinell erstellt und werden nach und nach korrigiert. Noch nicht übersetzte Texte fallen auf Englisch zurück."
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Showing {shown} of {total}"
-msgstr ""
+msgstr "Zeige {shown} von {total}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -9105,8 +9232,9 @@ msgid "Sources disagree on where a chapter starts: a credit page here, a colour 
 msgstr "Quellen sind sich uneinig, wo ein Kapitel beginnt: hier eine Credits-Seite, dort ein farbiges Cover. Seiten werden anhand ihres Bildinhalts zugeordnet, daher zeigt jede Zeile in jeder Spalte dieselbe Zeichnung. Eine Quelle, deren Scan zu nichts passt, bleibt bei ihrer eigenen ersten Seite."
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
-msgstr ""
+msgstr "Quellen mit einer Sprachauswahl werden bei automatisch erstellter Zuordnung auf diese Sprachen gesetzt. Bestehende Zuordnungen werden nie überschrieben, und das Ein- oder Ausschalten einer Sprache schaltet nie eine Quelle ein oder aus."
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -9278,8 +9406,9 @@ msgid "Studio"
 msgstr "Studio"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Subtle"
-msgstr ""
+msgstr "Dezent"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
@@ -9335,8 +9464,9 @@ msgid "Synced"
 msgstr "Synchronisiert"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Syncing…"
-msgstr ""
+msgstr "Synchronisiere…"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9739,8 +9869,9 @@ msgid "This takes a minute or two and only happens once per snapshot."
 msgstr "Dies dauert ein bis zwei Minuten und passiert nur einmal pro Schnappschuss."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "this title only"
-msgstr ""
+msgstr "nur dieser Titel"
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -9773,32 +9904,39 @@ msgid "Thumbnails"
 msgstr "Thumbnails"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Thumbs"
-msgstr ""
+msgstr "Daumen"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down"
-msgstr ""
+msgstr "Daumen runter"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs down. This title is out, and titles closer to it than to what you kept rank lower."
-msgstr ""
+msgstr "Daumen runter. Dieser Titel ist raus, und Titel, die ihm näher sind als dem, was du behalten hast, ranken niedriger."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs up"
-msgstr ""
+msgstr "Daumen hoch"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "thumbs up / down"
-msgstr ""
+msgstr "Daumen hoch / runter"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Thumbs up. This title now steers your recommendations, and it will not be recommended back to you."
-msgstr ""
+msgstr "Daumen hoch. Dieser Titel beeinflusst jetzt deine Empfehlungen und wird dir nicht erneut empfohlen."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
-msgstr ""
+msgstr "Gib einer Empfehlung Daumen hoch/runter, blende sie aus oder verwirf sie, und sie erscheint hier."
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -9870,12 +10008,14 @@ msgid "Title search"
 msgstr "Titelsuche"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Titles"
-msgstr ""
+msgstr "Titel"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "titles on the shelf"
-msgstr ""
+msgstr "Titel im Regal"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10022,8 +10162,9 @@ msgid "Turkish"
 msgstr "Türkisch"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Turn on anime signals on the Taste tab to use this."
-msgstr ""
+msgstr "Aktiviere Anime-Signale im Tab Geschmack, um dies zu nutzen."
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -10097,12 +10238,14 @@ msgstr "Unterstrich (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undo"
-msgstr ""
+msgstr "Rückgängig"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Undone"
-msgstr ""
+msgstr "Rückgängig gemacht"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -10152,8 +10295,9 @@ msgid "Unrecognized"
 msgstr "Nicht erkannt"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "unspecified"
-msgstr ""
+msgstr "nicht angegeben"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10192,12 +10336,14 @@ msgid "Update available: {latestVersion}"
 msgstr "Update verfügbar: {latestVersion}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Updated. This title can appear in recommendations again."
-msgstr ""
+msgstr "Aktualisiert. Dieser Titel kann wieder in Empfehlungen erscheinen."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Updated. This title stays out of recommendations."
-msgstr ""
+msgstr "Aktualisiert. Dieser Titel bleibt aus den Empfehlungen ausgeschlossen."
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
@@ -10224,8 +10370,9 @@ msgid "Use"
 msgstr "Verwenden"
 
 #: src/components/TrackerSyncControls.tsx
+#, fuzzy
 msgid "Use anime for recommendation taste"
-msgstr ""
+msgstr "Anime für den Empfehlungsgeschmack nutzen"
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -10233,8 +10380,9 @@ msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "Verwende mindestens {MIN_PASSWORD_LENGTH} Zeichen"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use for taste"
-msgstr ""
+msgstr "Für den Geschmack verwenden"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10252,8 +10400,9 @@ msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "Lokale MangaBaka-Datenbank verwenden (dringend empfohlen)"
 
 #: src/pages/discover/ManageSignalsModal.tsx
+#, fuzzy
 msgid "Use this title for taste"
-msgstr ""
+msgstr "Diesen Titel für den Geschmack verwenden"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10266,8 +10415,9 @@ msgid "Use trackers"
 msgstr "Tracker verwenden"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Used for chapters Maki downloads, and for imported files unless you keep their original names below"
-msgstr ""
+msgstr "Wird für von Maki heruntergeladene Kapitel verwendet, sowie für importierte Dateien, sofern du deren Originalnamen unten nicht beibehältst"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10495,8 +10645,9 @@ msgid "Watched"
 msgstr "Angesehen"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "Watching"
-msgstr ""
+msgstr "Wird angesehen"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10509,8 +10660,9 @@ msgid "Webhook URL"
 msgstr "Webhook-URL"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "weighted by how far you got"
-msgstr ""
+msgstr "gewichtet danach, wie weit du gekommen bist"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10544,8 +10696,9 @@ msgid "What readers without add or download permissions have asked for. Approvin
 msgstr "Was Leser ohne Berechtigungen zum Hinzufügen oder Herunterladen angefragt haben. Durch die Genehmigung wird die Serie hinzugefügt und die Kapitel werden in die Warteschlange gestellt."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "What shapes your recommendations"
-msgstr ""
+msgstr "Was deine Empfehlungen prägt"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10618,8 +10771,9 @@ msgid "Where your taste has moved"
 msgstr "Wie sich dein Geschmack verändert hat"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene release's own name often carries more than the format can say (the edition, the group, the year), so turning this off keeps what the release named it. Chapters Maki downloads itself are always named by the format, and renaming a series from its own page still renames everything in it."
-msgstr ""
+msgstr "Ob Dateien, die Maki von der Festplatte übernimmt, nach dem obigen Kapitelformat umbenannt werden. Der Name eines Scene-Releases trägt oft mehr Information, als das Format ausdrücken kann (die Edition, die Gruppe, das Jahr), daher behält das Deaktivieren dieser Option den vom Release vergebenen Namen bei. Von Maki selbst heruntergeladene Kapitel werden immer nach dem Format benannt, und das Umbenennen einer Serie von ihrer eigenen Seite aus benennt weiterhin alles darin um."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10637,8 +10791,9 @@ msgid "Which language series titles are shown in, where the metadata provider ha
 msgstr "In welcher Sprache Serientitel angezeigt werden, sofern der Metadatenanbieter diese anbietet. Gilt nur für die Anzeige: Ordner und Dateinamen behalten den englischen Titel, ebenso die Sortierung."
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
-msgstr ""
+msgstr "Welche Sprachen heruntergeladen werden sollen, bevorzugteste zuerst. Beim automatischen Zuordnen wird jede Quelle nach der höchsten Sprache auf dieser Liste eingestuft, die sie veröffentlicht, sodass eine Quelle mit deiner bevorzugten Sprache vor einer ohne diese versucht wird. Quellen, die keine der aktivierten Sprachen veröffentlichen, werden beim automatischen Zuordnen vollständig übersprungen. Zum Umsortieren ziehen."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10661,8 +10816,9 @@ msgid "While reading only tells you about new chapters while you are partway thr
 msgstr "Beim Lesen informiert dich nur über neue Kapitel, solange du die Serie noch nicht abgeschlossen hast."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#, fuzzy
 msgid "Whole franchise"
-msgstr ""
+msgstr "Gesamtes Franchise"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -10700,8 +10856,9 @@ msgid "With none selected this account sees an empty library: access is granted,
 msgstr "Wenn nichts ausgewählt ist, sieht dieses Konto eine leere Bibliothek: Zugriff wird gewährt, nie vorausgesetzt."
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "won't be recommended again"
-msgstr ""
+msgstr "wird nicht erneut empfohlen"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
@@ -10727,8 +10884,9 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "Jahr: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Yesterday"
-msgstr ""
+msgstr "Gestern"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -10751,8 +10909,9 @@ msgid "You cannot remove your own administrator permission. Promote another acco
 msgstr "Du kannst deine eigenen Administratorberechtigungen nicht entfernen. Befördere zuerst ein anderes Konto und bearbeite dieses dann von dort aus."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "You excluded this title from recommendations"
-msgstr ""
+msgstr "Du hast diesen Titel von den Empfehlungen ausgeschlossen"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10786,12 +10945,14 @@ msgid "You put down"
 msgstr "Diese Serien hast du abgebrochen"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#, fuzzy
 msgid "You rated this one yourself, so the anime is not counted again"
-msgstr ""
+msgstr "Du hast diesen Titel selbst bewertet, daher zählt der Anime nicht erneut"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "You seem to avoid"
-msgstr ""
+msgstr "Du scheinst zu meiden"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10889,8 +11050,9 @@ msgid "Your request was declined"
 msgstr "Deine Anfrage wurde abgelehnt"
 
 #: src/pages/discover/FeedbackLab.tsx
+#, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr ""
+msgstr "Dein Regal, deine Bewertungen und dein Leseverhalten fließen ins Ranking ein. Daumen, Ausblenden und Gesehen betreffen jeweils nur einen Titel."
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy

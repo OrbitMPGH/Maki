@@ -71,18 +71,21 @@ msgstr "Die Zwei-Faktor-Authentifizierung ist bereits aktiviert"
 
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: Anime taste signals are switched off on this server
+#, fuzzy
 msgid "error.animeSignals.disabled"
-msgstr ""
+msgstr "Anime-Geschmackssignale sind auf diesem Server deaktiviert"
 
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: Turn on anime taste signals before syncing
+#, fuzzy
 msgid "error.animeSignals.notEnabled"
-msgstr ""
+msgstr "Aktiviere Anime-Geschmackssignale, bevor du synchronisierst"
 
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: An anime list sync is already running
+#, fuzzy
 msgid "error.animeSignals.syncRunning"
-msgstr ""
+msgstr "Eine Anime-Listen-Synchronisierung läuft bereits"
 
 #. The CSRF filter's own refusal, shown for any state-changing request missing a valid
 #. XSRF-TOKEN/antiforgery cookie pair.
@@ -173,92 +176,108 @@ msgstr "Der Pfad liegt außerhalb des Stammordners der Serie"
 
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: A feedback action is required
+#, fuzzy
 msgid "error.feedback.actionRequired"
-msgstr ""
+msgstr "Eine Feedback-Aktion ist erforderlich"
 
 #. The catalogue dump is not installed or not readable, so a first thumbs up or hide on a title Maki has never stored cannot be checked.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Catalogue metadata is temporarily unavailable
+#, fuzzy
 msgid "error.feedback.catalogueUnavailable"
-msgstr ""
+msgstr "Katalog-Metadaten sind vorübergehend nicht verfügbar"
 
 #. Somebody changed this title's feedback since the page loaded.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Feedback changed. Refresh and try again.
+#, fuzzy
 msgid "error.feedback.changed"
-msgstr ""
+msgstr "Feedback geändert. Lade neu und versuche es erneut."
 
 #. The undo is for an action that is no longer the most recent one on this title.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Feedback changed since this action
+#, fuzzy
 msgid "error.feedback.changedSinceAction"
-msgstr ""
+msgstr "Feedback wurde seit dieser Aktion geändert"
 
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Feedback event was not found
+#, fuzzy
 msgid "error.feedback.eventNotFound"
-msgstr ""
+msgstr "Feedback-Ereignis wurde nicht gefunden"
 
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: A mutation ID is required
+#, fuzzy
 msgid "error.feedback.mutationIdRequired"
-msgstr ""
+msgstr "Eine Mutation-ID ist erforderlich"
 
 #. The client reused a mutation id it had already sent with a different feedback action.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: That mutation ID was already used for a different action
+#, fuzzy
 msgid "error.feedback.mutationIdReused"
-msgstr ""
+msgstr "Diese Mutation-ID wurde bereits für eine andere Aktion verwendet"
 
 #. The reader asked to stop seeding from a title that is not on their shelf, or that their content rating ceiling hides.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: This title is not an eligible source in your visible library
+#, fuzzy
 msgid "error.feedback.notAnEligibleSource"
-msgstr ""
+msgstr "Dieser Titel ist keine zulässige Quelle in deiner sichtbaren Bibliothek"
 
 #. Somebody changed this title's seed override since the page loaded.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Signal changed. Refresh and try again.
+#, fuzzy
 msgid "error.feedback.signalChanged"
-msgstr ""
+msgstr "Signal geändert. Lade neu und versuche es erneut."
 
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: A valid title, mutation ID, and revision are required
+#, fuzzy
 msgid "error.feedback.titleAndRevisionRequired"
-msgstr ""
+msgstr "Ein gültiger Titel, eine Mutation-ID und eine Revision sind erforderlich"
 
 #. The catalogue title is above the account's content rating ceiling.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Catalogue title is not available to this account
+#, fuzzy
 msgid "error.feedback.titleNotAvailable"
-msgstr ""
+msgstr "Katalogtitel ist für dieses Konto nicht verfügbar"
 
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unknown catalogue title
+#, fuzzy
 msgid "error.feedback.unknownTitle"
-msgstr ""
+msgstr "Unbekannter Katalogtitel"
 
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported feedback action
+#, fuzzy
 msgid "error.feedback.unsupportedAction"
-msgstr ""
+msgstr "Nicht unterstützte Feedback-Aktion"
 
 #. The exposure medium names something other than manga, anime, both or unspecified.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported exposure medium
+#, fuzzy
 msgid "error.feedback.unsupportedMedium"
-msgstr ""
+msgstr "Nicht unterstütztes Medium"
 
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported feedback sort
+#, fuzzy
 msgid "error.feedback.unsupportedSort"
-msgstr ""
+msgstr "Nicht unterstützte Feedback-Sortierung"
 
 #. The state filter on the Manage signals list names something other than hidden, dismissed or exposed.
 #: src/Maki.Api/Controllers/RecommendationFeedbackController.cs
 #. English: Unsupported feedback state
+#, fuzzy
 msgid "error.feedback.unsupportedState"
-msgstr ""
+msgstr "Nicht unterstützter Feedback-Status"
 
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
@@ -691,8 +710,9 @@ msgstr "Metadatensuche fehlgeschlagen. Die Serie hat keine Anbieter-ID oder der 
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: A valid mutation ID is required
+#, fuzzy
 msgid "error.series.mutationIdRequired"
-msgstr ""
+msgstr "Eine gültige Mutation-ID ist erforderlich"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That mutation ID was already used for a different add
@@ -749,8 +769,9 @@ msgstr "Unbekannter Modus: {mode}"
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Unsupported add origin
+#, fuzzy
 msgid "error.series.unsupportedAddOrigin"
-msgstr ""
+msgstr "Nicht unterstützter Hinzufüge-Ursprung"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: One or more tag ids do not exist
@@ -956,13 +977,15 @@ msgstr "Die Anzahl der aufzubewahrenden Backups muss zwischen {min} und {max} li
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown language code(s): {codes}
+#, fuzzy
 msgid "error.settings.unknownSourceLanguage"
-msgstr ""
+msgstr "Unbekannte(r) Sprachcode(s): {codes}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: At least one language must stay enabled
+#, fuzzy
 msgid "error.settings.noSourceLanguageEnabled"
-msgstr ""
+msgstr "Mindestens eine Sprache muss aktiviert bleiben"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Prowlarr is not configured
