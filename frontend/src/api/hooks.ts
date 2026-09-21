@@ -2454,6 +2454,12 @@ export interface LibrarySettings {
   seriesFolderFormat?: string
   /** Naming format for a downloaded chapter's file, extension excluded. */
   chapterFormat?: string
+  /**
+   * Whether files adopted from disk (torrent grabs, manual queue imports) are renamed to the
+   * chapter format, or keep the name they arrived with. Always filled in on read; leave it out of
+   * a write to keep the stored value.
+   */
+  renameImportedFiles?: boolean
 }
 
 export function useLibrarySettings() {

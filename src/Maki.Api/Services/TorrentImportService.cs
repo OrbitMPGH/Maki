@@ -323,6 +323,15 @@ public class TorrentImportService(
             return;
         }
 
+        // Gated here rather than at the two call sites so the unattended job and the reviewed
+        // queue import can't disagree about it. A scene release's own name usually carries more
+        // than the chapter format can express (edition, group, year), so "keep it" is a real
+        // answer, and it's the one importing a series from disk has always given.
+        if (await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) == "false")
+        {
+            return;
+        }
+
         // Resolved by path rather than returned by the linker: LinkFilesAsync answers with counts,
         // and these files sit directly in the series folder, which is exactly how it stored them.
         var relativePaths = importedPaths

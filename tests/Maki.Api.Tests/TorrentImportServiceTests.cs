@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
 using Maki.Core.Sources;
@@ -119,6 +120,13 @@ public class TorrentImportServiceTests : IDisposable
 
         // Detached copies: the service resolves its own context, and these only carry ids.
         return (series, item);
+    }
+
+    private void Complete(DownloadQueueItem item)
+    {
+        using var db = _db.NewContext();
+        db.DownloadQueue.Single(q => q.Id == item.Id).Status = QueueStatus.Completed;
+        db.SaveChanges();
     }
 
     /// <summary>The downloaded volume: one archive whose page names mark chapters 1-6.</summary>
@@ -263,6 +271,51 @@ public class TorrentImportServiceTests : IDisposable
         // Only the chapter nothing backed moved onto the compilation.
         Assert.Equal(imported.Id, chapters.Single(c => c.Number == 7).ChapterFileId);
         Assert.All(chapters.Where(c => c.Number < 7), c => Assert.NotEqual(imported.Id, c.ChapterFileId));
+    }
+
+    [Fact]
+    public async Task Naming_renames_an_imported_file_to_the_chapter_format_by_default()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
+
+        var service = Service();
+        var outcome = await service.ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+        // What CompletedDownloadJob does before naming: the rename refuses while the series has an
+        // in-flight download, and this item is that download.
+        Complete(item);
+        await service.ApplyNamingAsync(series, outcome.ImportedPaths, CancellationToken.None);
+
+        Assert.False(File.Exists(Path.Combine(_root, "Berserk", "Berserk v01 (Digital) (1r0n).cbz")));
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk", "Berserk Vol.1.cbz")));
+    }
+
+    /// <summary>
+    /// With library.renameimportedfiles off, an adopted file keeps the name the release gave it —
+    /// the same promise importing a series from disk has always made.
+    /// </summary>
+    [Fact]
+    public async Task Naming_leaves_an_imported_file_alone_when_renaming_is_off()
+    {
+        _settings.Set(SettingKeys.LibraryRenameImportedFiles, "false");
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
+
+        var service = Service();
+        var outcome = await service.ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+        // What CompletedDownloadJob does before naming: the rename refuses while the series has an
+        // in-flight download, and this item is that download.
+        Complete(item);
+        await service.ApplyNamingAsync(series, outcome.ImportedPaths, CancellationToken.None);
+
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk", "Berserk v01 (Digital) (1r0n).cbz")));
+        Assert.False(File.Exists(Path.Combine(_root, "Berserk", "Berserk Vol.1.cbz")));
+
+        using var db = _db.NewContext();
+        var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.EndsWith("Berserk v01 (Digital) (1r0n).cbz", file.RelativePath);
     }
 
     [Fact]

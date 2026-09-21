@@ -100,7 +100,8 @@ public class SettingsController(
         Dictionary<string, string>? IncognitoByRating = null,
         bool WriteCoverToFolder = false,
         string? SeriesFolderFormat = null,
-        string? ChapterFormat = null);
+        string? ChapterFormat = null,
+        bool? RenameImportedFiles = null);
 
     /// <param name="Example">The token rendered against the sample series and chapter.</param>
     public record NamingTokenDto(string Token, string Category, string Description, string Example);
@@ -472,7 +473,8 @@ public class SettingsController(
                 r => IncognitoRatingRules.Resolve(incognito, r).ToString()),
             await settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true",
             await naming.SeriesFolderFormatAsync(ct),
-            await naming.ChapterFormatAsync(ct)));
+            await naming.ChapterFormatAsync(ct),
+            await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) != "false"));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -531,6 +533,11 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.LibraryFolderNamingMode, request.FolderNamingMode, ct);
         await settings.SetAsync(
             SettingKeys.LibraryWriteCoverToFolder, request.WriteCoverToFolder ? "true" : "false", ct);
+        if (request.RenameImportedFiles is { } renameImportedFiles)
+        {
+            await settings.SetAsync(
+                SettingKeys.LibraryRenameImportedFiles, renameImportedFiles ? "true" : "false", ct);
+        }
 
         if (request.SeriesFolderFormat is { } seriesFolderFormat)
         {

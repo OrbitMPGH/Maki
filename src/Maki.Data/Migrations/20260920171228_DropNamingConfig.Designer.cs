@@ -3,6 +3,7 @@ using System;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,62 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    partial class MakiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920171228_DropNamingConfig")]
+    partial class DropNamingConfig
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
-
-            modelBuilder.Entity("Maki.Core.Entities.AnimeSignal", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("AniListMangaId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("AnimeId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("MalMangaId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long?>("MangaBakaId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("MatchAttemptedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("Score")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Service")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "MangaBakaId");
-
-                    b.HasIndex("UserId", "Service", "AnimeId")
-                        .IsUnique();
-
-                    b.ToTable("AnimeSignals");
-                });
 
             modelBuilder.Entity("Maki.Core.Entities.AppConfigEntry", b =>
                 {
@@ -884,188 +837,6 @@ namespace Maki.Data.Migrations
                     b.ToTable("ReadingStates");
                 });
 
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationFeedback", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("DismissedUntilUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Exposure")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("ProviderId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("Revision")
-                        .IsConcurrencyToken()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Sentiment")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Suppression")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "Provider", "ProviderId")
-                        .IsUnique();
-
-                    b.ToTable("RecommendationFeedback");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationFeedbackEvent", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("ClientMutationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("NewState")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("OccurredAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PreviousState")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("ProviderId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("StateRevision")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "ClientMutationId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId", "OccurredAtUtc", "Id");
-
-                    b.ToTable("RecommendationFeedbackEvents");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationMutationReceipt", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("ClientMutationId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Operation")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PayloadHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("ProviderId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ResultJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExpiresAtUtc");
-
-                    b.HasIndex("UserId", "ClientMutationId")
-                        .IsUnique();
-
-                    b.ToTable("RecommendationMutationReceipts");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationProfileState", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("FeedbackRevision")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("SignalRevision")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("UserId");
-
-                    b.ToTable("RecommendationProfileStates");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationSignalOverride", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IgnoreAsSeed")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("ProviderId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("Revision")
-                        .IsConcurrencyToken()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "Provider", "ProviderId")
-                        .IsUnique();
-
-                    b.ToTable("RecommendationSignalOverrides");
-                });
-
             modelBuilder.Entity("Maki.Core.Entities.RootFolder", b =>
                 {
                     b.Property<int>("Id")
@@ -1434,9 +1205,6 @@ namespace Maki.Data.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("ApprovalClaimedAtUtc")
-                        .HasColumnType("TEXT");
 
                     b.Property<double?>("ChapterEnd")
                         .HasColumnType("REAL");
@@ -1966,12 +1734,6 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("AddedFrom")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("AddedToLibraryAtUtc")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("NotificationMode")
                         .HasColumnType("INTEGER");
 
@@ -2082,15 +1844,6 @@ namespace Maki.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.AnimeSignal", b =>
-                {
-                    b.HasOne("Maki.Data.Identity.MakiUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>
@@ -2238,51 +1991,6 @@ namespace Maki.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationFeedback", b =>
-                {
-                    b.HasOne("Maki.Data.Identity.MakiUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationFeedbackEvent", b =>
-                {
-                    b.HasOne("Maki.Data.Identity.MakiUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationMutationReceipt", b =>
-                {
-                    b.HasOne("Maki.Data.Identity.MakiUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationProfileState", b =>
-                {
-                    b.HasOne("Maki.Data.Identity.MakiUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RecommendationSignalOverride", b =>
-                {
-                    b.HasOne("Maki.Data.Identity.MakiUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Maki.Core.Entities.SavedFilter", b =>
                 {
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
@@ -2360,7 +2068,7 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("ResolvedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Maki.Core.Entities.Series", "Series")
+                    b.HasOne("Maki.Core.Entities.Series", null)
                         .WithMany()
                         .HasForeignKey("SeriesId")
                         .OnDelete(DeleteBehavior.SetNull);
@@ -2370,8 +2078,6 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Series");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SeriesScrobbleState", b =>
@@ -2479,7 +2185,7 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("ReadingProfileId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Maki.Core.Entities.Series", "Series")
+                    b.HasOne("Maki.Core.Entities.Series", null)
                         .WithMany()
                         .HasForeignKey("SeriesId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2490,8 +2196,6 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Series");
                 });
 
             modelBuilder.Entity("Maki.Data.Identity.UserSetting", b =>

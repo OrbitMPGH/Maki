@@ -703,7 +703,7 @@ function LibrarySection() {
         />
         <NamingFormatInput
           label={t`Chapter Format`}
-          description={t`Used for chapters Maki downloads. Files imported from disk keep their own names`}
+          description={t`Used for chapters Maki downloads, and for imported files unless you keep their original names below`}
           value={chapterFormat}
           example={preview.data?.chapterFile}
           error={chapterError?.replace('Chapter format: ', '')}
@@ -797,6 +797,35 @@ function LibrarySection() {
           <Radio value="keep-original" label={t`Keep folder name, and put new downloads there too`} />
         </Stack>
       </Radio.Group>
+
+      <Text fw={500} size="sm" mt="lg" mb={4}>
+        <Trans>File naming on import</Trans>
+      </Text>
+      <Text size="sm" c="dimmed" mb="sm">
+        <Trans>
+          Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene
+          release's own name often carries more than the format can say (the edition, the group,
+          the year), so turning this off keeps what the release named it. Chapters Maki downloads
+          itself are always named by the format, and renaming a series from its own page still
+          renames everything in it.
+        </Trans>
+      </Text>
+      <Switch
+        mb="lg"
+        label={t`Rename imported files to the Chapter Format`}
+        checked={settings?.renameImportedFiles ?? true}
+        onChange={(e) =>
+          save.mutate(
+            {
+              writeComicInfo: settings?.writeComicInfo ?? true,
+              folderNamingMode: settings?.folderNamingMode ?? 'rename',
+              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+              renameImportedFiles: e.currentTarget.checked,
+            },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+          )
+        }
+      />
 
       <Text fw={500} size="sm" mt="lg" mb={4}>
         <Trans>Incognito by content rating</Trans>
