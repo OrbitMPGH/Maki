@@ -5,10 +5,20 @@ import { affectedKeys } from './recommendationFeedback'
 export type AnimeSignalRole = 'positive' | 'avoided' | 'neutral' | 'unmatched'
 export type AnimeSignalStatus = 'Watching' | 'Completed' | 'OnHold' | 'Dropped' | 'Planning'
 
+/**
+ * One work, not one list row. The server folds the same show listed on two trackers together and
+ * averages a franchise's seasons into a single opinion, so a reader who scrobbles to both AniList
+ * and MyAnimeList sees each title once.
+ */
 export interface AnimeSignalEntry {
-  service: string
-  animeId: number
+  /** Stable row key across syncs. */
+  key: string
+  /** Every tracker that listed this work. */
+  services: string[]
+  /** Distinct anime behind the entry: 3 means three seasons were averaged into it. */
+  animeCount: number
   title: string
+  /** Averaged across the seasons that carry a score, so it is often fractional. */
   score: number | null
   status: AnimeSignalStatus
   mangaBakaId: number | null

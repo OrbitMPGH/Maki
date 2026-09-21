@@ -3,7 +3,7 @@ import {
   Alert, Badge, Button, Chip, Group, Paper, Stack, Switch, Text,
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AnimeSignalEntry, AnimeSignalRole } from '../../api/animeSignals'
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSyncAnimeSignals } from '../../api/animeSignals'
 import { formatDateTime } from '../../format'
@@ -72,7 +72,8 @@ export function AnimeSignalsSection() {
               <Trans>
                 A watched anime with a good score gently steers recommendations toward similar
                 manga. A low score or a dropped show pushes down titles close to it, the same way a
-                thumbs down does.
+                thumbs down does. A show listed on both your trackers counts once, and a
+                franchise's seasons are averaged into one score.
               </Trans>
             </Text>
           </div>
@@ -133,7 +134,7 @@ export function AnimeSignalsSection() {
 
                 <Stack gap={4}>
                   {filtered.slice(0, 40).map((entry) => (
-                    <AnimeSignalRow key={`${entry.service}:${entry.animeId}`} entry={entry} />
+                    <AnimeSignalRow key={entry.key} entry={entry} />
                   ))}
                 </Stack>
               </>
@@ -147,7 +148,8 @@ export function AnimeSignalsSection() {
 
 function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
   const { t } = useLingui()
-  const serviceLabel = entry.service === 'anilist' ? t`AniList` : entry.service === 'mal' ? t`MyAnimeList` : entry.service
+  const labelFor = (service: string) =>
+    service === 'anilist' ? t`AniList` : service === 'mal' ? t`MyAnimeList` : service
 
   const statusLabel = ((): string => {
     switch (entry.status) {
@@ -169,17 +171,33 @@ function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     }
   })()
 
+  // One decimal only when averaging produced one: a show watched once still reads "★ 8".
+  const score = entry.score === null
+    ? null
+    : Number.isInteger(entry.score) ? String(entry.score) : entry.score.toFixed(1)
+
   return (
     <Group gap="sm" wrap="nowrap" py={4}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Text size="sm" fw={500} truncate>{entry.title}</Text>
+        <Group gap={6} wrap="nowrap">
+          <Text size="sm" fw={500} truncate>{entry.title}</Text>
+          {entry.animeCount > 1 && (
+            <Badge size="xs" variant="default" style={{ flexShrink: 0 }}>
+              <Plural value={entry.animeCount} one="# season" other="# seasons" />
+            </Badge>
+          )}
+        </Group>
         <Text size="xs" c="dimmed" truncate>
           {entry.mangaTitle ?? t`No manga match`}
         </Text>
       </div>
-      <Badge size="sm" variant="light" color="gray" style={{ flexShrink: 0 }}>{serviceLabel}</Badge>
+      {entry.services.map((service) => (
+        <Badge key={service} size="sm" variant="light" color="gray" style={{ flexShrink: 0 }}>
+          {labelFor(service)}
+        </Badge>
+      ))}
       <Text size="xs" c="dimmed" style={{ flexShrink: 0, width: 70, textAlign: 'right' }}>
-        {entry.score !== null ? t`★ ${entry.score}` : statusLabel}
+        {score !== null ? t`★ ${score}` : statusLabel}
       </Text>
       <Badge size="sm" variant="light" color={roleBadge.color} style={{ flexShrink: 0 }}>
         {roleBadge.label}

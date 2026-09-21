@@ -366,6 +366,20 @@ public static class SettingKeys
     public const string RecommendationsAnimeSignalsLastSync = "recommendations.animesignals.lastsync";
 
     /// <summary>
+    /// Per user, per tracker: may this service's anime list feed the reader's taste? Unset = on, so
+    /// the account-level opt-in stays the only decision somebody has to make, and this is the
+    /// escape hatch for a reader whose two trackers hold the same list twice or disagree.
+    /// <para>
+    /// Under the anime-signals prefix rather than <c>scrobble.{service}.*</c>, even though the
+    /// switch sits beside those in Settings: those three push manga <em>to</em> a tracker, and this
+    /// reads a different medium's list <em>from</em> one. A reader can reasonably want AniList
+    /// scrobbled and its anime list ignored.
+    /// </para>
+    /// </summary>
+    public static string RecommendationsAnimeSignalsSourceKey(string service) =>
+        $"recommendations.animesignals.source.{service}";
+
+    /// <summary>
     /// Kill-switch for the co-recommendation channel: whether recommendations may use the
     /// AniList/MAL "readers of X also read Y" graph on top of the semantic score.
     /// <para>

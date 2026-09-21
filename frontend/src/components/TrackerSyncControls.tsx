@@ -6,9 +6,13 @@ import { RatingImportModal } from './RatingImportModal'
 import { useScrobblePreferences, type ScrobbleConnection } from '../api/hooks'
 
 /**
- * Per-tracker sync toggles ("scrobble reading" / "sync ratings") plus the rating-import action,
- * shown under each site block in Settings. Toggles save immediately; import needs a live
- * connection. `connection` is undefined until the scrobble status loads.
+ * Per-tracker sync toggles ("scrobble reading" / "sync ratings" / "use anime for taste") plus the
+ * rating-import action, shown under each site block in Settings. Toggles save immediately; import
+ * needs a live connection. `connection` is undefined until the scrobble status loads.
+ *
+ * The anime toggle only appears on trackers that can serve an anime list, which the server says.
+ * It exists because a reader who scrobbles to two trackers has the same watch history on both, and
+ * turning one off is how they stop the duplicate from reaching the recommender at all.
  */
 export function TrackerSyncControls({
   service,
@@ -25,13 +29,18 @@ export function TrackerSyncControls({
 
   const reading = connection?.syncReading ?? true
   const ratings = connection?.syncRatings ?? true
+  const animeList = connection?.animeList ?? false
+  const anime = connection?.animeSignals ?? true
   const connected = connection?.connected ?? false
 
-  const setPref = (patch: { reading?: boolean; ratings?: boolean }) =>
+  const setPref = (patch: { reading?: boolean; ratings?: boolean; anime?: boolean }) =>
     prefs.mutate({
       service,
       reading: patch.reading ?? reading,
       ratings: patch.ratings ?? ratings,
+      // Only for trackers that have an anime list. Sending it for the rest would write a setting
+      // nothing reads, and the request is the same shape for every block otherwise.
+      anime: animeList ? patch.anime ?? anime : undefined,
     })
 
   return (
@@ -51,6 +60,16 @@ export function TrackerSyncControls({
           disabled={prefs.isPending || !connection}
           onChange={(e) => setPref({ ratings: e.currentTarget.checked })}
         />
+        {animeList && (
+          <Switch
+            size="xs"
+            label={t`Use anime for taste`}
+            description={t`Watched anime from this tracker seeds recommendations`}
+            checked={anime}
+            disabled={prefs.isPending || !connection}
+            onChange={(e) => setPref({ anime: e.currentTarget.checked })}
+          />
+        )}
       </Group>
       <Group gap="xs">
         <Button

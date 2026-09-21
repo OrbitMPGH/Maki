@@ -375,7 +375,8 @@ public class MalTracker(
                     hasStatus
                         ? AnimeStatusToInternal.GetValueOrDefault(
                             GetString(ls, "status") ?? string.Empty, AnimeWatchStatus.Planning)
-                        : AnimeWatchStatus.Planning));
+                        : AnimeWatchStatus.Planning,
+                    MalAnimeId: animeId));
             }
 
             if (count < pageSize)

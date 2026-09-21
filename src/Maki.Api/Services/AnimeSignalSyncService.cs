@@ -175,7 +175,7 @@ public class AnimeSignalSyncService(
             return new AnimeSignalSyncSummary(0, 0, 0, 0, "disabled");
         }
 
-        var sources = await animeSources.ConnectedAsync(userId, ct);
+        var sources = await animeSources.EnabledAsync(userId, ct);
         if (sources.Count == 0)
         {
             return new AnimeSignalSyncSummary(0, 0, 0, 0, "no connected tracker");
@@ -185,9 +185,22 @@ public class AnimeSignalSyncService(
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         db.Scope.SetUser(userId, true);
 
+        // A tracker the reader switched off takes its rows with it, the same way opting out of the
+        // whole feature does. Grouping would otherwise keep averaging a list they asked to stop
+        // using, and the panel would keep listing it, until they happened to reconnect.
+        var enabledNames = sources.Select(AnimeSignalSources.NameOf).ToHashSet(StringComparer.Ordinal);
+        var orphaned = await db.AnimeSignals
+            .Where(x => x.UserId == userId && !enabledNames.Contains(x.Service))
+            .ToListAsync(ct);
+        if (orphaned.Count > 0)
+        {
+            db.AnimeSignals.RemoveRange(orphaned);
+            await db.SaveChangesAsync(ct);
+        }
+
         var now = DateTime.UtcNow;
         var fetched = 0;
-        var removed = 0;
+        var removed = orphaned.Count;
         var looked = 0;
         var failed = false;
         var fetchedAny = false;
@@ -226,6 +239,10 @@ public class AnimeSignalSyncService(
                 row.Score = entry.Score;
                 row.Status = entry.Status;
                 row.UpdatedAtUtc = now;
+                // Outside the RelationsResolved branch: this is the anime's own cross-reference,
+                // not a manga relation, and an existing row from before the column existed has to
+                // pick it up on an ordinary refresh or it never dedupes against the other tracker.
+                row.MalAnimeId = entry.MalAnimeId ?? row.MalAnimeId;
                 if (entry.RelationsResolved)
                 {
                     row.AniListMangaId = entry.AniListMangaId;

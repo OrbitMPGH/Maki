@@ -490,7 +490,8 @@ public class AniListTracker(
             animeId, title, ScoreOf(row, "score"), status,
             AniListMangaId: pick?.Id,
             MalMangaId: pick?.IdMal,
-            RelationsResolved: true);
+            RelationsResolved: true,
+            MalAnimeId: GetInt(media, "idMal"));
     }
 
     private static IEnumerable<AnimeMangaRelation> ReadRelations(JsonElement media)

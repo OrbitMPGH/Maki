@@ -63,6 +63,11 @@ msgstr "{0, plural, one {# отсутствует на {displayName}, поэто
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# совпадение} few {# совпадения} many {# совпадений} other {# совпадения}}"
 
+#. placeholder {0}: entry.animeCount
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0, plural, one {# season} other {# seasons}}"
+msgstr ""
+
 #. placeholder {0}: seedIds.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1060,13 +1065,12 @@ msgstr ""
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 МБ ОЗУ · лучшие результаты, рекомендуется"
 
-#. placeholder {0}: entry.score
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "★ {0}"
-msgstr ""
-
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "★ {rating} rated"
+msgstr ""
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "★ {score}"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -1203,7 +1207,7 @@ msgid "A token with no value for a given series renders as nothing, and the surr
 msgstr "Токен без значения для серии отображается как пустой, а окружающие пробелы и пустые скобки очищаются. Поэтому {yearExampleToken} для серии без года содержит только её название."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
+msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
 msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
@@ -9991,6 +9995,10 @@ msgstr "URL"
 msgid "Use"
 msgstr "Использовать"
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Use anime for taste"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
@@ -10257,6 +10265,10 @@ msgstr "Запрошено для {spanLabel}: {wantedCount} из {total} гла
 #, fuzzy
 msgid "Watched"
 msgstr "Просмотрено"
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Watched anime from this tracker seeds recommendations"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"

@@ -23,6 +23,7 @@ namespace Maki.Api.Controllers;
 public class ScrobbleController(
     ILocalizer localizer,
     ScrobbleService scrobbler,
+    AnimeSignalSources animeSources,
     IScrobbleTokenStore tokens,
     SettingsService settings,
     IUserSettings userSettings,
@@ -37,13 +38,23 @@ public class ScrobbleController(
     /// </summary>
     private int UserId => currentUser.UserId;
 
+    /// <param name="AnimeList">
+    /// Whether this tracker can hand over an anime list at all, which is what decides if the client
+    /// draws the anime-taste switch. AniList and MyAnimeList can; Kitsu, MangaBaka and Kavita
+    /// cannot, and a switch on those would be a control with nothing behind it.
+    /// </param>
+    /// <param name="AnimeSignals">The per-tracker anime-taste toggle. Meaningless when <paramref name="AnimeList"/> is false.</param>
     public record ConnectionDto(
         string Service, string Label, bool Configured, bool Connected, string? Username, bool OAuth,
-        bool SyncReading, bool SyncRatings);
+        bool SyncReading, bool SyncRatings, bool AnimeList, bool AnimeSignals);
 
     public record MatchRequest(int KavitaSeriesId, string Service, string RemoteId);
     public record IgnoreRequest(int KavitaSeriesId, string Service);
-    public record PreferencesRequest(bool Reading, bool Ratings);
+    /// <param name="Anime">
+    /// Nullable and written only when present: the switch shows on two of the five tracker blocks,
+    /// so a client saving the other three sends no opinion about it rather than an accidental off.
+    /// </param>
+    public record PreferencesRequest(bool Reading, bool Ratings, bool? Anime = null);
     public record ApplyRatingImportRequest(int[] SeriesIds);
 
     [HttpGet("status")]
@@ -57,7 +68,7 @@ public class ScrobbleController(
             new("kavita", "Kavita", kavitaConfigured,
                 kavitaConfigured && await scrobbler.KavitaConnectedAsync(ct),
                 await settings.GetAsync(SettingKeys.KavitaUrl, ct), OAuth: false,
-                SyncReading: true, SyncRatings: false),
+                SyncReading: true, SyncRatings: false, AnimeList: false, AnimeSignals: false),
         };
 
         foreach (var tracker in scrobbler.Trackers)
@@ -68,7 +79,9 @@ public class ScrobbleController(
                 tracker.Name, tracker.Label, configured, connected,
                 connected ? await tracker.UsernameAsync(UserId, ct) : null, tracker.UsesOAuth,
                 await scrobbler.SyncReadingEnabledAsync(UserId, tracker.Name, ct),
-                await scrobbler.SyncRatingsEnabledAsync(UserId, tracker.Name, ct)));
+                await scrobbler.SyncRatingsEnabledAsync(UserId, tracker.Name, ct),
+                AnimeList: tracker is IAnimeListSource,
+                AnimeSignals: await animeSources.EnabledForAsync(UserId, tracker.Name, ct)));
         }
 
         var lastSync = await scrobbler.LastSyncAtAsync(ct);
@@ -245,7 +258,33 @@ public class ScrobbleController(
             SettingKeys.ScrobbleReadingKey(service), request.Reading ? "true" : "false", ct);
         await userSettings.SetAsync(
             SettingKeys.ScrobbleRatingsKey(service), request.Ratings ? "true" : "false", ct);
-        return Ok(new { service, reading = request.Reading, ratings = request.Ratings });
+
+        if (request.Anime is { } anime)
+        {
+            await userSettings.SetAsync(
+                SettingKeys.RecommendationsAnimeSignalsSourceKey(service), anime ? "true" : "false", ct);
+            if (!anime)
+            {
+                // Now rather than at the next sync. The stored rows are what the recommender reads,
+                // so leaving them would keep this tracker's list in somebody's taste for up to a
+                // day after they switched it off, which is not what a switch means.
+                var stale = await db.AnimeSignals
+                    .Where(x => x.UserId == UserId && x.Service == service).ToListAsync(ct);
+                if (stale.Count > 0)
+                {
+                    db.AnimeSignals.RemoveRange(stale);
+                    await db.SaveChangesAsync(ct);
+                }
+            }
+        }
+
+        return Ok(new
+        {
+            service,
+            reading = request.Reading,
+            ratings = request.Ratings,
+            anime = request.Anime,
+        });
     }
 
     // ---- rating import (preview → apply) ----

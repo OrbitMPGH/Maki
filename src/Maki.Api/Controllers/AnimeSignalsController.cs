@@ -40,11 +40,19 @@ public class AnimeSignalsController(
             .Select(AnimeSignalSources.NameOf)
             .ToList();
 
-        var rows = await db.AnimeSignals.AsNoTracking()
+        var stored = await db.AnimeSignals.AsNoTracking()
             .Where(x => x.UserId == user.UserId)
-            .OrderByDescending(x => x.Score ?? 0)
-            .ThenBy(x => x.Title)
+            .Select(x => new AnimeSignalRow(
+                x.Service, x.AnimeId, x.MalAnimeId, x.Title, x.Score, x.Status, x.MangaBakaId))
             .ToListAsync(ct);
+
+        // The same grouping the seeds are built from, so the panel lists what actually steers the
+        // recommender rather than the raw rows behind it. A reader who scrobbles to both trackers
+        // would otherwise see every show twice, and every season of a franchise as its own opinion.
+        var rows = AnimeSignalGrouping.Group(stored)
+            .OrderByDescending(x => x.Score ?? 0)
+            .ThenBy(x => x.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
 
         // One dump read for every matched row, rather than one per entry: the panel lists a whole
         // watch history and a point query each would be thousands of opens.
@@ -67,7 +75,7 @@ public class AnimeSignalsController(
         {
             var role = row.MangaBakaId is null
                 ? "unmatched"
-                : AnimeSignalPolicy.RoleOf(row.Status, row.Score) switch
+                : row.Role switch
                 {
                     AnimeSignalRole.Positive => "positive",
                     AnimeSignalRole.Avoided => "avoided",
@@ -75,9 +83,10 @@ public class AnimeSignalsController(
                 };
             return new
             {
-                service = row.Service,
-                animeId = row.AnimeId,
-                title = row.Title ?? string.Empty,
+                key = row.Key,
+                services = row.Services,
+                animeCount = row.AnimeCount,
+                title = row.Title,
                 score = row.Score,
                 status = row.Status.ToString(),
                 mangaBakaId = row.MangaBakaId,

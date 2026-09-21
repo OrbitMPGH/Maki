@@ -29,6 +29,14 @@ public class AnimeSignal : IUserOwned
     /// <summary>The anime's id on <see cref="Service"/>.</summary>
     public long AnimeId { get; set; }
 
+    /// <summary>
+    /// The same anime's MyAnimeList id, which is what two rows from two trackers have in common.
+    /// Trivially <see cref="AnimeId"/> on a "mal" row; AniList's <c>media.idMal</c> on an "anilist"
+    /// one, and null when AniList has no cross-reference. Stored rather than derived because it is
+    /// the only key that can tell a duplicate from a second season.
+    /// </summary>
+    public long? MalAnimeId { get; set; }
+
     public string? Title { get; set; }
 
     /// <summary>The watcher's score, normalized to 1-10. Null when they never scored it.</summary>

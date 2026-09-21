@@ -3,6 +3,13 @@ using Maki.Core.Entities;
 namespace Maki.Core.Scrobbling;
 
 /// <summary>One row of a watcher's anime list, with whatever manga the provider volunteered.</summary>
+/// <param name="MalAnimeId">
+/// This <em>anime</em>'s MyAnimeList id, which is the one id both providers can name: AniList
+/// carries it as <c>media.idMal</c> and MyAnimeList's own ids are it. That makes it the key that
+/// tells "the same show, listed on two trackers" apart from "two shows", which nothing else here
+/// can do - a reader who scrobbles to both has every entry twice. Null when AniList has no
+/// cross-reference for the show.
+/// </param>
 /// <param name="RelationsResolved">
 /// True when the list call itself carried the relation data, so the sync never has to ask again.
 /// AniList sets it; MyAnimeList cannot, because its list endpoint has no relation field.
@@ -14,7 +21,8 @@ public record AnimeListEntry(
     AnimeWatchStatus Status,
     long? AniListMangaId = null,
     long? MalMangaId = null,
-    bool RelationsResolved = false);
+    bool RelationsResolved = false,
+    long? MalAnimeId = null);
 
 /// <summary>The manga one anime was adapted from, in whichever ids the provider knows.</summary>
 public record AnimeRelatedManga(long? AniListMangaId, long? MalMangaId);

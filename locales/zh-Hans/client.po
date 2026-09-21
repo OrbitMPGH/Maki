@@ -63,6 +63,11 @@ msgstr "{0, plural, other {# 个不在 {displayName} 上，因此保持原样。
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, other {# 个匹配结果}}"
 
+#. placeholder {0}: entry.animeCount
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0, plural, one {# season} other {# seasons}}"
+msgstr ""
+
 #. placeholder {0}: seedIds.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -1060,13 +1065,12 @@ msgstr ""
 msgid "~240 MB RAM · best results, recommended"
 msgstr "约 240 MB 内存 · 效果最佳，推荐"
 
-#. placeholder {0}: entry.score
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "★ {0}"
-msgstr ""
-
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "★ {rating} rated"
+msgstr ""
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "★ {score}"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -1203,7 +1207,7 @@ msgid "A token with no value for a given series renders as nothing, and the surr
 msgstr "某个系列的令牌没有值时不会显示，周围的空格和空括号也会被清理。因此，对于没有年份的系列，{yearExampleToken} 最终只会显示标题。"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
+msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
 msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
@@ -9991,6 +9995,10 @@ msgstr "URL"
 msgid "Use"
 msgstr "使用"
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Use anime for taste"
+msgstr ""
+
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
@@ -10257,6 +10265,10 @@ msgstr "{spanLabel} 想要：{total} 个章节中的 {wantedCount} 个"
 #, fuzzy
 msgid "Watched"
 msgstr "已看过"
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Watched anime from this tracker seeds recommendations"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"

@@ -48,7 +48,12 @@ public static class AnimeSignalPolicy
     /// </summary>
     public const double DroppedStrength = 0.75;
 
-    public static AnimeSignalRole RoleOf(AnimeWatchStatus status, int? score)
+    /// <summary>
+    /// The role of one grouped signal. <paramref name="score"/> is a double rather than an int
+    /// because what reaches here is an <see cref="AnimeSignalGrouping"/> average over a franchise's
+    /// seasons, and a reader who gave season 1 a 9 and season 2 a 6 means 7.5, not 7 or 8.
+    /// </summary>
+    public static AnimeSignalRole RoleOf(AnimeWatchStatus status, double? score)
     {
         if (status == AnimeWatchStatus.Dropped || AvoidStrengthOf(status, score) > 0)
         {
@@ -67,7 +72,8 @@ public static class AnimeSignalPolicy
 
     /// <summary>
     /// How hard a score at or below <see cref="AvoidScoreCeiling"/> pushes, on (0, 1]: 1 -> 1.0,
-    /// 2 -> 0.75, 3 -> 0.5, 4 -> 0.25. Zero for 5 and above, which carry no complaint.
+    /// 2 -> 0.75, 3 -> 0.5, 4 -> 0.25. Zero for 5 and above, which carry no complaint, and the
+    /// curve is continuous in between so an averaged 3.5 lands at 0.375 rather than on a step.
     /// <para>
     /// Its own curve over the 0-10 scale rather than a call into the star-rating one. Passing a
     /// 10-point score to a function whose domain is 1-5 reads a 6/10 as "off the scale, no
@@ -75,16 +81,16 @@ public static class AnimeSignalPolicy
     /// ceiling moved.
     /// </para>
     /// </summary>
-    public static double AvoidStrengthOfScore(int score) =>
+    public static double AvoidStrengthOfScore(double score) =>
         score is >= 1 and <= AvoidScoreCeiling
-            ? (AvoidScoreCeiling + 1 - score) / (double)AvoidScoreCeiling
+            ? (AvoidScoreCeiling + 1 - score) / AvoidScoreCeiling
             : 0;
 
     /// <summary>
     /// The avoidance strength in (0, 1], or 0 for anything that is not a complaint. A drop adds its
     /// own floor on top of whatever the score said.
     /// </summary>
-    public static double AvoidStrengthOf(AnimeWatchStatus status, int? score)
+    public static double AvoidStrengthOf(AnimeWatchStatus status, double? score)
     {
         // Planning is not evidence either way: nobody drops a show they never started, and a score
         // on an unwatched entry is somebody rating the premise.
@@ -98,7 +104,7 @@ public static class AnimeSignalPolicy
     }
 
     /// <summary>The positive seed weight, or 0 when the entry is not a positive one.</summary>
-    public static double SeedWeightOf(AnimeWatchStatus status, int? score) =>
+    public static double SeedWeightOf(AnimeWatchStatus status, double? score) =>
         RoleOf(status, score) != AnimeSignalRole.Positive
             ? 0
             : (score is { } s ? s / 10.0 : UnscoredCredit) * SeedScale;

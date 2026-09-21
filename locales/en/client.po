@@ -54,6 +54,11 @@ msgstr "{0, plural, one {# isn't on {displayName}, so it was left as it is.} oth
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# match} other {# matches}}"
 
+#. placeholder {0}: entry.animeCount
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "{0, plural, one {# season} other {# seasons}}"
+msgstr "{0, plural, one {# season} other {# seasons}}"
+
 #. placeholder {0}: seedIds.length
 #: src/pages/DiscoverPage.tsx
 msgid "{0, plural, one {# seed} other {# seeds}}"
@@ -871,14 +876,13 @@ msgstr "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgid "~240 MB RAM · best results, recommended"
 msgstr "~240 MB RAM · best results, recommended"
 
-#. placeholder {0}: entry.score
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "★ {0}"
-msgstr "★ {0}"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "★ {rating} rated"
 msgstr "★ {rating} rated"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "★ {score}"
+msgstr "★ {score}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -991,8 +995,8 @@ msgid "A token with no value for a given series renders as nothing, and the surr
 msgstr "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
-msgstr "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does."
+msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
+msgstr "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
 
 #: src/components/RecommendationModelCards.tsx
 msgid "about {hourPhrase} {restPhrase} left"
@@ -8172,6 +8176,10 @@ msgstr "URL"
 msgid "Use"
 msgstr "Use"
 
+#: src/components/TrackerSyncControls.tsx
+msgid "Use anime for taste"
+msgstr "Use anime for taste"
+
 #: src/pages/SetupAccountPage.tsx
 msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "Use at least {MIN_PASSWORD_LENGTH} characters"
@@ -8389,6 +8397,10 @@ msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Watched"
 msgstr "Watched"
+
+#: src/components/TrackerSyncControls.tsx
+msgid "Watched anime from this tracker seeds recommendations"
+msgstr "Watched anime from this tracker seeds recommendations"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"

@@ -387,9 +387,10 @@ public class RecommendationFeedbackTests : IDisposable
 
     /// <summary>
     /// A reader with no tracker connected, which is what decides whether the Lab offers the anime
-    /// panel at all. Subclassed with a null scrobbler because the override never reaches it.
+    /// panel at all. Subclassed with a null scrobbler and null settings because the override never
+    /// reaches either.
     /// </summary>
-    private sealed class NoSources() : AnimeSignalSources(null!)
+    private sealed class NoSources() : AnimeSignalSources(null!, null!)
     {
         public override Task<IReadOnlyList<IAnimeListSource>> ConnectedAsync(
             int userId, CancellationToken ct = default) =>
@@ -398,7 +399,7 @@ public class RecommendationFeedbackTests : IDisposable
 
     private static AnimeSignalSources NoAnimeSources() => new NoSources();
 
-    private sealed class OneSource() : AnimeSignalSources(null!)
+    private sealed class OneSource() : AnimeSignalSources(null!, null!)
     {
         public override Task<IReadOnlyList<IAnimeListSource>> ConnectedAsync(
             int userId, CancellationToken ct = default) =>

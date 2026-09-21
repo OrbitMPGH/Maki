@@ -33,7 +33,7 @@ public class AnimeSignalSeedTests : IDisposable
     }
 
     private void Signal(long mangaBakaId, AnimeWatchStatus status, int? score,
-        long animeId = 1, string service = "anilist", int userId = 1)
+        long animeId = 1, string service = "anilist", int userId = 1, long? malAnimeId = null)
     {
         using var db = _fixture.NewContext();
         db.AnimeSignals.Add(new AnimeSignal
@@ -41,6 +41,7 @@ public class AnimeSignalSeedTests : IDisposable
             UserId = userId,
             Service = service,
             AnimeId = animeId,
+            MalAnimeId = malAnimeId,
             Title = $"Anime {animeId}",
             Score = score,
             Status = status,
@@ -80,6 +81,62 @@ public class AnimeSignalSeedTests : IDisposable
         Assert.Equal(AnimeSignalPolicy.AvoidStrengthOfScore(2), snapshot.Avoided[601], 8);
         Assert.DoesNotContain(600L, snapshot.Effective.EligibleIds);
         Assert.DoesNotContain(601L, snapshot.Effective.EligibleIds);
+    }
+
+    /// <summary>
+    /// The duplicate case, end to end. A reader who scrobbles to both trackers has one viewing
+    /// recorded twice, so the seed has to come out at the score they gave rather than at whatever
+    /// counting the same opinion twice alongside a weaker season would produce.
+    /// </summary>
+    [Fact]
+    public async Task One_show_listed_on_two_trackers_seeds_once()
+    {
+        OptIn();
+        Signal(550, AnimeWatchStatus.Completed, 9, animeId: 101, service: "anilist", malAnimeId: 55);
+        Signal(550, AnimeWatchStatus.Completed, 9, animeId: 55, service: "mal", malAnimeId: 55);
+        Signal(550, AnimeWatchStatus.Completed, 5, animeId: 102, service: "anilist", malAnimeId: 56);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        // (9 + 5) / 2, not (9 + 9 + 5) / 3.
+        Assert.Equal(0.7 * AnimeSignalPolicy.SeedScale, snapshot.Effective.Weights[550], 8);
+        Assert.Single(snapshot.Effective.EligibleIds, 550L);
+    }
+
+    /// <summary>
+    /// Seasons of one franchise are one opinion about one manga, and the weakest one no longer gets
+    /// to be outvoted by the strongest: before grouping the highest season's weight simply won.
+    /// </summary>
+    [Fact]
+    public async Task Seasons_of_one_franchise_seed_at_their_average()
+    {
+        OptIn();
+        Signal(560, AnimeWatchStatus.Completed, 10, animeId: 1);
+        Signal(560, AnimeWatchStatus.Completed, 8, animeId: 2);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Equal(0.9 * AnimeSignalPolicy.SeedScale, snapshot.Effective.Weights[560], 8);
+    }
+
+    /// <summary>
+    /// Averaging has to be able to take a title out of the seeds entirely, or it is only cosmetic.
+    /// One loved season and one disliked one is a lukewarm opinion about the manga behind both.
+    /// </summary>
+    [Fact]
+    public async Task A_franchise_the_reader_cooled_on_seeds_nothing_either_way()
+    {
+        OptIn();
+        Signal(570, AnimeWatchStatus.Completed, 9, animeId: 1);
+        Signal(570, AnimeWatchStatus.Completed, 4, animeId: 2);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(570L, snapshot.Effective.EligibleIds);
+        Assert.DoesNotContain(570L, snapshot.Avoided.Keys);
     }
 
     [Fact]

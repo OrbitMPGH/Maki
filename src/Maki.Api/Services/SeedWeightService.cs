@@ -219,30 +219,34 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             var explicitOpinion = liked.Concat(disliked).ToHashSet();
             var animeRows = await db.AnimeSignals.AsNoTracking()
                 .Where(x => x.UserId == scope.UserId && x.MangaBakaId != null)
-                .Select(x => new { Id = x.MangaBakaId!.Value, x.Status, x.Score })
+                .Select(x => new AnimeSignalRow(
+                    x.Service, x.AnimeId, x.MalAnimeId, x.Title, x.Score, x.Status, x.MangaBakaId))
                 .ToListAsync(ct);
-            foreach (var row in animeRows)
+
+            // Grouped, never row by row. The raw rows hold one show once per tracker the reader
+            // scrobbles to and one franchise once per season, so a per-row loop would read a single
+            // opinion as several and let the best-liked season speak for a work the reader was
+            // lukewarm on overall. One group is one manga, with the seasons' scores averaged.
+            foreach (var group in AnimeSignalGrouping.Group(animeRows))
             {
-                if (libraryPopulation.Contains(row.Id) || explicitOpinion.Contains(row.Id) ||
-                    ignored.Contains(row.Id))
+                if (group.MangaBakaId is not { } id || libraryPopulation.Contains(id) ||
+                    explicitOpinion.Contains(id) || ignored.Contains(id))
                 {
                     continue;
                 }
 
-                var strength = AnimeSignalPolicy.AvoidStrengthOf(row.Status, row.Score);
+                var strength = AnimeSignalPolicy.AvoidStrengthOf(group.Status, group.Score);
                 if (strength > 0)
                 {
-                    // Max for the same reason a rating and a thumbs down take the max: two adaptations
-                    // of one manga, both dropped, is still one complaint.
-                    avoided[row.Id] = Math.Max(avoided.GetValueOrDefault(row.Id), strength);
-                    animeSeeds.Remove(row.Id);
+                    avoided[id] = Math.Max(avoided.GetValueOrDefault(id), strength);
+                    animeSeeds.Remove(id);
                     continue;
                 }
 
-                var weight = AnimeSignalPolicy.SeedWeightOf(row.Status, row.Score);
-                if (weight > 0 && !avoided.ContainsKey(row.Id))
+                var weight = AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score);
+                if (weight > 0 && !avoided.ContainsKey(id))
                 {
-                    animeSeeds[row.Id] = Math.Max(animeSeeds.GetValueOrDefault(row.Id), weight);
+                    animeSeeds[id] = weight;
                 }
             }
 

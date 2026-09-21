@@ -2773,6 +2773,10 @@ export interface ScrobbleConnection {
   syncReading: boolean
   /** Per-tracker: push ratings to this service. */
   syncRatings: boolean
+  /** Whether this tracker can hand over an anime list at all, which is what draws the switch. */
+  animeList: boolean
+  /** Per-tracker: let this service's watched anime steer recommendations. */
+  animeSignals: boolean
 }
 
 export interface ScrobbleCandidate {
@@ -2906,14 +2910,17 @@ export function useScrobblePreferences() {
       service,
       reading,
       ratings,
+      anime,
     }: {
       service: string
       reading: boolean
       ratings: boolean
+      /** Omitted for trackers with no anime list, so the server leaves that setting alone. */
+      anime?: boolean
     }) =>
-      api<{ service: string; reading: boolean; ratings: boolean }>(
+      api<{ service: string; reading: boolean; ratings: boolean; anime: boolean | null }>(
         `/scrobble/preferences/${service}`,
-        { method: 'PUT', body: JSON.stringify({ reading, ratings }) },
+        { method: 'PUT', body: JSON.stringify({ reading, ratings, anime }) },
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] })
