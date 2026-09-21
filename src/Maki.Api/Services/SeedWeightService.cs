@@ -215,6 +215,7 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         var animeSeeds = new Dictionary<long, double>();
         if (await AnimeSignalsEnabledAsync(db, scope.UserId, ct))
         {
+            var strength = await AnimeSignalStrengthAsync(db, scope.UserId, ct);
             var libraryPopulation = libraryIds.ToHashSet();
             var explicitOpinion = liked.Concat(disliked).ToHashSet();
             var animeRows = await db.AnimeSignals.AsNoTracking()
@@ -235,15 +236,15 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
                     continue;
                 }
 
-                var strength = AnimeSignalPolicy.AvoidStrengthOf(group.Status, group.Score);
-                if (strength > 0)
+                var avoid = AnimeSignalPolicy.AvoidStrengthOf(group.Status, group.Score, strength);
+                if (avoid > 0)
                 {
-                    avoided[id] = Math.Max(avoided.GetValueOrDefault(id), strength);
+                    avoided[id] = Math.Max(avoided.GetValueOrDefault(id), avoid);
                     animeSeeds.Remove(id);
                     continue;
                 }
 
-                var weight = AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score);
+                var weight = AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score, strength);
                 if (weight > 0 && !avoided.ContainsKey(id))
                 {
                     animeSeeds[id] = weight;
@@ -336,6 +337,23 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             .Select(x => x.Value)
             .FirstOrDefaultAsync(ct) == "true";
     }
+
+    /// <summary>
+    /// How much authority this reader lets their watch history carry. Read the same way and for the
+    /// same reason as the opt-in above.
+    /// <para>
+    /// It reaches the pool cache without any help: the level changes the seed weights and the
+    /// avoidance values, and both are already part of <see cref="SeedSnapshot.Fingerprint"/> and of
+    /// the recommender's own cache key. Moving the dial invalidates the pool on the next request
+    /// rather than sitting behind a twelve-hour hit.
+    /// </para>
+    /// </summary>
+    private async Task<AnimeSignalStrength> AnimeSignalStrengthAsync(
+        MakiDbContext db, int userId, CancellationToken ct) =>
+        AnimeSignalPolicy.ParseStrength(await db.UserSettings.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Key == SettingKeys.RecommendationsAnimeSignalsStrength)
+            .Select(x => x.Value)
+            .FirstOrDefaultAsync(ct));
 
     /// <summary>
     /// Whether behavioural seeding is on. Read per request rather than at startup so the switch takes

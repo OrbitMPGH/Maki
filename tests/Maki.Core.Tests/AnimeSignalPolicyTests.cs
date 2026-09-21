@@ -37,17 +37,118 @@ public class AnimeSignalPolicyTests
     public void Planning_is_always_ignored(int? score)
     {
         Assert.Equal(AnimeSignalRole.Neutral, AnimeSignalPolicy.RoleOf(AnimeWatchStatus.Planning, score));
-        Assert.Equal(0, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Planning, score));
-        Assert.Equal(0, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Planning, score));
+        foreach (var level in Enum.GetValues<AnimeSignalStrength>())
+        {
+            Assert.Equal(0, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Planning, score, level));
+            Assert.Equal(0, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Planning, score, level));
+        }
     }
 
     [Fact]
-    public void A_positive_seed_stays_under_the_neutral_weight_an_unrated_shelf_title_gets()
+    public void A_subtle_seed_stays_under_the_neutral_weight_an_unrated_shelf_title_gets()
     {
-        Assert.Equal(0.7, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10), 8);
-        Assert.Equal(0.49, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 7), 8);
-        Assert.Equal(0.56, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, null), 8);
-        Assert.True(AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10) < 1.0);
+        const AnimeSignalStrength subtle = AnimeSignalStrength.Subtle;
+        Assert.Equal(0.7, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10, subtle), 8);
+        Assert.Equal(0.49, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 7, subtle), 8);
+        Assert.Equal(0.56, AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, null, subtle), 8);
+        Assert.True(AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10, subtle) < 1.0);
+    }
+
+    /// <summary>
+    /// The three levels are one number apart, and that number is "how much of a manga rating does
+    /// this carry". The library seeds a rated series at <c>rating / 5.0</c>, so a full share has to
+    /// reproduce it exactly or the level is lying about what it means.
+    /// </summary>
+    [Theory]
+    [InlineData(AnimeSignalStrength.Subtle, 0.35)]
+    [InlineData(AnimeSignalStrength.Balanced, 0.5)]
+    [InlineData(AnimeSignalStrength.Full, 1.0)]
+    public void A_level_is_a_share_of_what_rating_the_manga_would_carry(
+        AnimeSignalStrength level, double share)
+    {
+        Assert.Equal(share, AnimeSignalPolicy.RatingShareOf(level), 8);
+        foreach (var score in new[] { 7, 8, 9, 10 })
+        {
+            // What the library would give the same number, from SeedWeightService.Weigh.
+            var asRating = score / 5.0;
+            Assert.Equal(asRating * share,
+                AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, score, level), 8);
+        }
+    }
+
+    /// <summary>
+    /// The default is the one that matters, since nobody has to touch the dial. A loved anime lands
+    /// exactly on the neutral weight: it contributes its genres and tags to the profile and cannot
+    /// out-vote a book the reader rated.
+    /// </summary>
+    [Fact]
+    public void The_default_puts_a_loved_anime_exactly_at_neutral()
+    {
+        Assert.Equal(AnimeSignalStrength.Balanced, AnimeSignalPolicy.DefaultStrength);
+        Assert.Equal(
+            1.0,
+            AnimeSignalPolicy.SeedWeightOf(
+                AnimeWatchStatus.Completed, 10, AnimeSignalPolicy.DefaultStrength),
+            8);
+    }
+
+    /// <summary>
+    /// The reason the dial exists. A low anime score is the least trustworthy thing a watch history
+    /// says about a book - people rate an adaptation for the adaptation - so a complaint must never
+    /// push harder than the same level's praise pulls. Before the level, a 1/10 anime avoided at the
+    /// full 1.0 a deliberate thumbs down carries while a 10/10 seeded at 0.7.
+    /// </summary>
+    [Theory]
+    [InlineData(AnimeSignalStrength.Subtle, 0.35)]
+    [InlineData(AnimeSignalStrength.Balanced, 0.5)]
+    [InlineData(AnimeSignalStrength.Full, 1.0)]
+    public void A_complaint_is_discounted_by_the_same_share_as_a_recommendation(
+        AnimeSignalStrength level, double share)
+    {
+        // A thumbs down is 1.0, so a 1/10 anime is exactly `share` of one.
+        Assert.Equal(share, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Completed, 1, level), 8);
+        Assert.Equal(AnimeSignalPolicy.DroppedStrength * share,
+            AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, null, level), 8);
+        Assert.True(AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Completed, 1, level) <= 1.0);
+    }
+
+    /// <summary>
+    /// The level scales how hard a signal pushes, never which way it points. A panel whose badges
+    /// flipped as somebody moved the dial would be describing the dial, not their watch history.
+    /// </summary>
+    [Theory]
+    [InlineData(AnimeWatchStatus.Completed, 9, AnimeSignalRole.Positive)]
+    [InlineData(AnimeWatchStatus.Completed, 2, AnimeSignalRole.Avoided)]
+    [InlineData(AnimeWatchStatus.Completed, 6, AnimeSignalRole.Neutral)]
+    [InlineData(AnimeWatchStatus.Dropped, null, AnimeSignalRole.Avoided)]
+    public void The_level_never_changes_which_way_a_signal_points(
+        AnimeWatchStatus status, int? score, AnimeSignalRole expected)
+    {
+        Assert.Equal(expected, AnimeSignalPolicy.RoleOf(status, score));
+
+        // Every level agrees on which channel it lands in, only on how loud it is there.
+        foreach (var level in Enum.GetValues<AnimeSignalStrength>())
+        {
+            Assert.Equal(expected == AnimeSignalRole.Avoided,
+                AnimeSignalPolicy.AvoidStrengthOf(status, score, level) > 0);
+            Assert.Equal(expected == AnimeSignalRole.Positive,
+                AnimeSignalPolicy.SeedWeightOf(status, score, level) > 0);
+        }
+    }
+
+    [Theory]
+    [InlineData("subtle", AnimeSignalStrength.Subtle)]
+    [InlineData("Balanced", AnimeSignalStrength.Balanced)]
+    [InlineData("FULL", AnimeSignalStrength.Full)]
+    // An unset setting, and anything written by a client that guessed at the name.
+    [InlineData(null, AnimeSignalStrength.Balanced)]
+    [InlineData("", AnimeSignalStrength.Balanced)]
+    [InlineData("medium", AnimeSignalStrength.Balanced)]
+    public void An_unrecognised_stored_level_falls_back_to_the_default(
+        string? raw, AnimeSignalStrength expected)
+    {
+        Assert.Equal(expected, AnimeSignalPolicy.ParseStrength(raw));
+        Assert.Equal(expected, AnimeSignalPolicy.ParseStrength(AnimeSignalPolicy.NameOf(expected)));
     }
 
     /// <summary>
@@ -65,7 +166,8 @@ public class AnimeSignalPolicyTests
     public void The_avoid_curve_runs_over_the_ten_point_scale(int score, double expected)
     {
         Assert.Equal(expected, AnimeSignalPolicy.AvoidStrengthOfScore(score), 8);
-        Assert.Equal(expected, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Completed, score), 8);
+        Assert.Equal(expected,
+            AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Completed, score, AnimeSignalStrength.Full), 8);
     }
 
     /// <summary>
@@ -75,9 +177,10 @@ public class AnimeSignalPolicyTests
     [Fact]
     public void A_drop_pushes_below_a_thumbs_down_but_never_below_its_own_score()
     {
-        Assert.Equal(0.75, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, null), 8);
-        Assert.Equal(1.0, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 1), 8);
-        Assert.Equal(0.75, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 4), 8);
+        const AnimeSignalStrength full = AnimeSignalStrength.Full;
+        Assert.Equal(0.75, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, null, full), 8);
+        Assert.Equal(1.0, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 1, full), 8);
+        Assert.Equal(0.75, AnimeSignalPolicy.AvoidStrengthOf(AnimeWatchStatus.Dropped, 4, full), 8);
     }
 
     /// <summary>

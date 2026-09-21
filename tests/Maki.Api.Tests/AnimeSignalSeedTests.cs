@@ -32,6 +32,18 @@ public class AnimeSignalSeedTests : IDisposable
         db.SaveChanges();
     }
 
+    private void SetStrength(AnimeSignalStrength strength, int userId = 1)
+    {
+        using var db = _fixture.NewContext();
+        db.UserSettings.Add(new UserSetting
+        {
+            UserId = userId,
+            Key = SettingKeys.RecommendationsAnimeSignalsStrength,
+            Value = AnimeSignalPolicy.NameOf(strength),
+        });
+        db.SaveChanges();
+    }
+
     private void Signal(long mangaBakaId, AnimeWatchStatus status, int? score,
         long animeId = 1, string service = "anilist", int userId = 1, long? malAnimeId = null)
     {
@@ -60,7 +72,7 @@ public class AnimeSignalSeedTests : IDisposable
         var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
 
         Assert.Contains(500L, snapshot.Effective.EligibleIds);
-        Assert.Equal(0.9 * AnimeSignalPolicy.SeedScale, snapshot.Effective.Weights[500], 8);
+        Assert.Equal(0.9 * AnimeSignalPolicy.SeedScaleOf(AnimeSignalPolicy.DefaultStrength), snapshot.Effective.Weights[500], 8);
         Assert.DoesNotContain(500L, snapshot.Avoided.Keys);
         // The observed half describes the shelf, and an anime is not on it.
         Assert.DoesNotContain(500L, snapshot.Observed.EligibleIds);
@@ -77,8 +89,11 @@ public class AnimeSignalSeedTests : IDisposable
         using var db = _fixture.NewContext(1);
         var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
 
-        Assert.Equal(AnimeSignalPolicy.DroppedStrength, snapshot.Avoided[600], 8);
-        Assert.Equal(AnimeSignalPolicy.AvoidStrengthOfScore(2), snapshot.Avoided[601], 8);
+        // Both discounted by the default level's share of a rating, which is what keeps a bad
+        // adaptation from pushing as hard as a deliberate thumbs down.
+        var share = AnimeSignalPolicy.RatingShareOf(AnimeSignalPolicy.DefaultStrength);
+        Assert.Equal(AnimeSignalPolicy.DroppedStrength * share, snapshot.Avoided[600], 8);
+        Assert.Equal(AnimeSignalPolicy.AvoidStrengthOfScore(2) * share, snapshot.Avoided[601], 8);
         Assert.DoesNotContain(600L, snapshot.Effective.EligibleIds);
         Assert.DoesNotContain(601L, snapshot.Effective.EligibleIds);
     }
@@ -100,7 +115,7 @@ public class AnimeSignalSeedTests : IDisposable
         var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
 
         // (9 + 5) / 2, not (9 + 9 + 5) / 3.
-        Assert.Equal(0.7 * AnimeSignalPolicy.SeedScale, snapshot.Effective.Weights[550], 8);
+        Assert.Equal(0.7 * AnimeSignalPolicy.SeedScaleOf(AnimeSignalPolicy.DefaultStrength), snapshot.Effective.Weights[550], 8);
         Assert.Single(snapshot.Effective.EligibleIds, 550L);
     }
 
@@ -118,7 +133,7 @@ public class AnimeSignalSeedTests : IDisposable
         using var db = _fixture.NewContext(1);
         var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
 
-        Assert.Equal(0.9 * AnimeSignalPolicy.SeedScale, snapshot.Effective.Weights[560], 8);
+        Assert.Equal(0.9 * AnimeSignalPolicy.SeedScaleOf(AnimeSignalPolicy.DefaultStrength), snapshot.Effective.Weights[560], 8);
     }
 
     /// <summary>
@@ -137,6 +152,70 @@ public class AnimeSignalSeedTests : IDisposable
 
         Assert.DoesNotContain(570L, snapshot.Effective.EligibleIds);
         Assert.DoesNotContain(570L, snapshot.Avoided.Keys);
+    }
+
+    /// <summary>
+    /// The dial, end to end. Each level is a share of what rating the manga would carry, and at Full
+    /// a 9/10 anime seeds at exactly the 1.8 a 9 on the shelf does.
+    /// </summary>
+    [Theory]
+    [InlineData(AnimeSignalStrength.Subtle, 0.63)]
+    [InlineData(AnimeSignalStrength.Balanced, 0.9)]
+    [InlineData(AnimeSignalStrength.Full, 1.8)]
+    public async Task The_strength_dial_scales_what_a_loved_anime_seeds_at(
+        AnimeSignalStrength level, double expected)
+    {
+        OptIn();
+        SetStrength(level);
+        Signal(580, AnimeWatchStatus.Completed, 9);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Equal(expected, snapshot.Effective.Weights[580], 8);
+    }
+
+    /// <summary>
+    /// The half the dial exists for. A bad anime score is usually a complaint about the adaptation,
+    /// so the default must push it well under the 1.0 a deliberate thumbs down carries.
+    /// </summary>
+    [Theory]
+    [InlineData(AnimeSignalStrength.Subtle, 0.35)]
+    [InlineData(AnimeSignalStrength.Balanced, 0.5)]
+    [InlineData(AnimeSignalStrength.Full, 1.0)]
+    public async Task The_strength_dial_scales_a_complaint_too(
+        AnimeSignalStrength level, double expected)
+    {
+        OptIn();
+        SetStrength(level);
+        Signal(590, AnimeWatchStatus.Completed, 1);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.Equal(expected, snapshot.Avoided[590], 8);
+        Assert.DoesNotContain(590L, snapshot.Effective.EligibleIds);
+    }
+
+    /// <summary>
+    /// The pool is cached for twelve hours on this fingerprint, so a dial nobody can see the effect
+    /// of until tomorrow is a dial that looks broken.
+    /// </summary>
+    [Fact]
+    public async Task Moving_the_dial_changes_the_fingerprint()
+    {
+        OptIn();
+        Signal(595, AnimeWatchStatus.Completed, 9);
+
+        async Task<string> FingerprintAsync()
+        {
+            using var db = _fixture.NewContext(1);
+            return (await Service().SnapshotAsync(db, new TestCurrentUser(1))).Fingerprint();
+        }
+
+        var atDefault = await FingerprintAsync();
+        SetStrength(AnimeSignalStrength.Full);
+        Assert.NotEqual(atDefault, await FingerprintAsync());
     }
 
     [Fact]

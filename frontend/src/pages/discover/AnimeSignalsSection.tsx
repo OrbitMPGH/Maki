@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Badge, Button, Chip, Group, Paper, Stack, Switch, Text,
+  Alert, Badge, Button, Chip, Group, Paper, SegmentedControl, Stack, Switch, Text,
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import type { AnimeSignalEntry, AnimeSignalRole } from '../../api/animeSignals'
-import { useAnimeSignals, useSetAnimeSignalsEnabled, useSyncAnimeSignals } from '../../api/animeSignals'
+import type { AnimeSignalEntry, AnimeSignalRole, AnimeSignalStrength } from '../../api/animeSignals'
+import {
+  useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength, useSyncAnimeSignals,
+} from '../../api/animeSignals'
 import { formatDateTime } from '../../format'
 
 type RoleFilter = AnimeSignalRole | 'all'
@@ -20,6 +22,7 @@ export function AnimeSignalsSection() {
   const { t } = useLingui()
   const { data, isLoading, error } = useAnimeSignals()
   const setEnabled = useSetAnimeSignalsEnabled()
+  const setStrength = useSetAnimeSignalsStrength()
   const sync = useSyncAnimeSignals()
   const [toggleError, setToggleError] = useState('')
   const [syncError, setSyncError] = useState('')
@@ -42,6 +45,15 @@ export function AnimeSignalsSection() {
   async function runSync() {
     setSyncError('')
     try { await sync.mutateAsync() } catch (cause) { setSyncError(String(cause)) }
+  }
+
+  async function changeStrength(strength: AnimeSignalStrength) {
+    setToggleError('')
+    try {
+      await setStrength.mutateAsync({ enabled: true, strength })
+    } catch (cause) {
+      setToggleError(String(cause))
+    }
   }
 
   if (isLoading || !data) {
@@ -98,6 +110,13 @@ export function AnimeSignalsSection() {
 
         {data.enabled && !noTracker && (
           <>
+            <AnimeSignalStrengthControl
+              value={data.strength}
+              topSeedWeight={data.strengths.find((s) => s.value === data.strength)?.topSeedWeight}
+              pending={setStrength.isPending}
+              onChange={(next) => void changeStrength(next)}
+            />
+
             <Group justify="space-between" align="center" wrap="wrap">
               <Text size="xs" c="dimmed">
                 {data.lastSyncAtUtc
@@ -143,6 +162,68 @@ export function AnimeSignalsSection() {
         )}
       </Stack>
     </Paper>
+  )
+}
+
+/**
+ * How much authority a watched anime carries, as the three-step control the grids use for density.
+ *
+ * Three named steps rather than a continuous slider because the number underneath is not something
+ * anybody can aim: the levels are 0.35, 0.5 and 1.0 of what rating the manga yourself would carry,
+ * and a reader dragging to 0.62 would be expressing precision the signal does not have. The hint
+ * line names the one number that is legible - what a 10/10 anime ends up seeding at, against the
+ * 1.0 an unrated book on the shelf already gets.
+ */
+function AnimeSignalStrengthControl({
+  value,
+  topSeedWeight,
+  pending,
+  onChange,
+}: {
+  value: AnimeSignalStrength
+  topSeedWeight: number | undefined
+  pending: boolean
+  onChange: (value: AnimeSignalStrength) => void
+}) {
+  const { t } = useLingui()
+
+  const hint = ((): string => {
+    switch (value) {
+      case 'subtle':
+        return t`Barely nudges. A show you loved stays below a book you never rated.`
+      case 'full':
+        return t`A watched anime counts for as much as a manga you rated yourself.`
+      default:
+        return t`Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read.`
+    }
+  })()
+
+  return (
+    <Stack gap={4}>
+      <Group gap="sm" wrap="wrap" align="center">
+        <Text size="xs" fw={500}><Trans>How much they count</Trans></Text>
+        <SegmentedControl
+          size="xs"
+          value={value}
+          disabled={pending}
+          onChange={(next) => onChange(next as AnimeSignalStrength)}
+          data={[
+            { value: 'subtle', label: t`Subtle` },
+            { value: 'balanced', label: t`Balanced` },
+            { value: 'full', label: t`Full` },
+          ]}
+        />
+      </Group>
+      <Text size="xs" c="dimmed" maw={560}>
+        {hint}
+        {topSeedWeight !== undefined && (
+          <>
+            {' '}
+            <Trans>A 10/10 anime seeds at {topSeedWeight.toFixed(2)}, against 1.00 for an unrated book on your shelf.</Trans>
+          </>
+        )}
+      </Text>
+    </Stack>
   )
 }
 

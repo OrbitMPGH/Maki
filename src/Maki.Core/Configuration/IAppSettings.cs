@@ -366,6 +366,18 @@ public static class SettingKeys
     public const string RecommendationsAnimeSignalsLastSync = "recommendations.animesignals.lastsync";
 
     /// <summary>
+    /// Per user: how much authority watched anime carry, as an <c>AnimeSignalStrength</c> name
+    /// ("subtle", "balanced", "full"). Unset means balanced, which is half a manga rating.
+    /// <para>
+    /// Per user rather than instance-wide, unlike most of the recommender's dials: how far an
+    /// adaptation's score tracks its source is a fact about one person's watching, not about the
+    /// deployment. Somebody who only watches shows they already trust wants Full; somebody who
+    /// rates adaptations on whether the studio did the book justice wants Subtle.
+    /// </para>
+    /// </summary>
+    public const string RecommendationsAnimeSignalsStrength = "recommendations.animesignals.strength";
+
+    /// <summary>
     /// Per user, per tracker: may this service's anime list feed the reader's taste? Unset = on, so
     /// the account-level opt-in stays the only decision somebody has to make, and this is the
     /// escape hatch for a reader whose two trackers hold the same list twice or disagree.

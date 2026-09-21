@@ -107,8 +107,10 @@ public class AnimeSignalGroupingTests
         Assert.Equal(6.5, group.Score);
         // Neither a seed nor a complaint: 9 alone would have seeded, 4 alone would have avoided.
         Assert.Equal(AnimeSignalRole.Neutral, group.Role);
-        Assert.Equal(0, AnimeSignalPolicy.SeedWeightOf(group.Status, group.Score));
-        Assert.Equal(0, AnimeSignalPolicy.AvoidStrengthOf(group.Status, group.Score));
+        Assert.Equal(0, AnimeSignalPolicy.SeedWeightOf(
+            group.Status, group.Score, AnimeSignalPolicy.DefaultStrength));
+        Assert.Equal(0, AnimeSignalPolicy.AvoidStrengthOf(
+            group.Status, group.Score, AnimeSignalPolicy.DefaultStrength));
     }
 
     /// <summary>
@@ -142,7 +144,7 @@ public class AnimeSignalGroupingTests
         var group = Assert.Single(groups);
         Assert.Equal(AnimeWatchStatus.Dropped, group.Status);
         Assert.Equal(AnimeSignalPolicy.DroppedStrength,
-            AnimeSignalPolicy.AvoidStrengthOf(group.Status, group.Score), 8);
+            AnimeSignalPolicy.AvoidStrengthOf(group.Status, group.Score, AnimeSignalStrength.Full), 8);
     }
 
     /// <summary>

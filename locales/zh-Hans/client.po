@@ -1128,6 +1128,11 @@ msgstr "每页 75 个"
 msgid "90 days"
 msgstr "90 天"
 
+#. placeholder {0}: topSeedWeight.toFixed(2)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A 10/10 anime seeds at {0}, against 1.00 for an unrated book on your shelf."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "A backup is a zip of your database and <0>config.json</0>, your whole library and all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left out. One is taken automatically right before any upgrade migration runs. Restoring replaces the current data and restarts Maki."
@@ -1205,6 +1210,10 @@ msgstr ""
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "某个系列的令牌没有值时不会显示，周围的空格和空括号也会被清理。因此，对于没有年份的系列，{yearExampleToken} 最终只会显示标题。"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A watched anime counts for as much as a manga you rated yourself."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
@@ -1954,6 +1963,14 @@ msgstr "备份、更新和实例级详细信息。"
 #, fuzzy
 msgid "balanced"
 msgstr "均衡"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Balanced"
+msgstr ""
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Barely nudges. A show you loved stays below a book you never rated."
+msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -4139,6 +4156,7 @@ msgid "From: {start}"
 msgstr "起始：{start}"
 
 #: src/components/ui/incognito.ts
+#: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Full"
 msgstr "完整"
@@ -4280,6 +4298,10 @@ msgstr "增长"
 #, fuzzy
 msgid "h"
 msgstr "小时"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4446,6 +4468,10 @@ msgstr "数量"
 #, fuzzy
 msgid "How many chapters download at once from scraper sources. Higher isn't always faster: each worker is a live connection to the same site, and tripping its rate limit pauses every download. Torrent releases aren't affected. Takes effect after a restart."
 msgstr "从抓取来源一次下载多少章节。数量更多不一定更快：每个工作线程都是连接到同一网站的实时连接，触发其速率限制会暂停所有下载。种子发布不受影响。重启后生效。"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "How much they count"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "How signals work"
@@ -9089,6 +9115,10 @@ msgstr "卡住的下载"
 #, fuzzy
 msgid "Studio"
 msgstr "工作室"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Subtle"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx

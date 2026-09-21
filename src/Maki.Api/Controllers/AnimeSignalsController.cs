@@ -28,7 +28,12 @@ public class AnimeSignalsController(
     IServiceScopeFactory scopeFactory,
     ILogger<AnimeSignalsController> logger) : ControllerBase
 {
-    public record SettingsRequest(bool Enabled);
+    /// <param name="Strength">
+    /// An <c>AnimeSignalStrength</c> name, or null to leave the level alone. Nullable because the
+    /// switch and the dial are two controls on one panel and each saves on its own: a toggle that
+    /// also posted a level would reset a dial the reader had moved.
+    /// </param>
+    public record SettingsRequest(bool Enabled, string? Strength = null);
 
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
@@ -36,6 +41,8 @@ public class AnimeSignalsController(
         var instanceEnabled = await signals.EnabledAsync(ct);
         var enabled = instanceEnabled &&
             await userSettings.GetAsync(SettingKeys.RecommendationsAnimeSignalsEnabled, ct) == "true";
+        var strength = AnimeSignalPolicy.ParseStrength(
+            await userSettings.GetAsync(SettingKeys.RecommendationsAnimeSignalsStrength, ct));
         var services = (await animeSources.ConnectedAsync(user.UserId, ct))
             .Select(AnimeSignalSources.NameOf)
             .ToList();
@@ -102,6 +109,15 @@ public class AnimeSignalsController(
             lastSyncAtUtc = await signals.LastSyncAtAsync(user.UserId, ct),
             syncing = signals.IsRunning(user.UserId),
             services,
+            strength = AnimeSignalPolicy.NameOf(strength),
+            // The dial's own arithmetic, so the panel can say what a level costs without keeping a
+            // second copy of the numbers that would drift the first time they were tuned.
+            strengths = Enum.GetValues<AnimeSignalStrength>().Select(level => new
+            {
+                value = AnimeSignalPolicy.NameOf(level),
+                ratingShare = AnimeSignalPolicy.RatingShareOf(level),
+                topSeedWeight = AnimeSignalPolicy.SeedWeightOf(AnimeWatchStatus.Completed, 10, level),
+            }),
             counts = new
             {
                 total = entries.Count,
@@ -125,6 +141,16 @@ public class AnimeSignalsController(
         await userSettings.SetAsync(SettingKeys.RecommendationsAnimeSignalsEnabled,
             request.Enabled ? "true" : null, ct);
 
+        if (request.Strength is { Length: > 0 } raw)
+        {
+            // Stored normalized, and the default is stored as null rather than as "balanced": an
+            // unset key is what every other default here means, and writing the word would pin this
+            // reader to today's default if it ever moved.
+            var level = AnimeSignalPolicy.ParseStrength(raw);
+            await userSettings.SetAsync(SettingKeys.RecommendationsAnimeSignalsStrength,
+                level == AnimeSignalPolicy.DefaultStrength ? null : AnimeSignalPolicy.NameOf(level), ct);
+        }
+
         if (request.Enabled)
         {
             // This one user, in the background. Triggering the Quartz job instead would walk every
@@ -147,7 +173,12 @@ public class AnimeSignalsController(
             await userSettings.SetAsync(SettingKeys.RecommendationsAnimeSignalsLastSync, null, ct);
         }
 
-        return Ok(new { enabled = request.Enabled });
+        return Ok(new
+        {
+            enabled = request.Enabled,
+            strength = AnimeSignalPolicy.NameOf(AnimeSignalPolicy.ParseStrength(
+                await userSettings.GetAsync(SettingKeys.RecommendationsAnimeSignalsStrength, ct))),
+        });
     }
 
     [HttpPost("sync")]

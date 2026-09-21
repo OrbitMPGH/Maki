@@ -930,6 +930,11 @@ msgstr "75 / page"
 msgid "90 days"
 msgstr "90 days"
 
+#. placeholder {0}: topSeedWeight.toFixed(2)
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A 10/10 anime seeds at {0}, against 1.00 for an unrated book on your shelf."
+msgstr "A 10/10 anime seeds at {0}, against 1.00 for an unrated book on your shelf."
+
 #: src/pages/SettingsPage.tsx
 msgid "A backup is a zip of your database and <0>config.json</0>, your whole library and all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left out. One is taken automatically right before any upgrade migration runs. Restoring replaces the current data and restarts Maki."
 msgstr "A backup is a zip of your database and <0>config.json</0>, your whole library and all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left out. One is taken automatically right before any upgrade migration runs. Restoring replaces the current data and restarts Maki."
@@ -993,6 +998,10 @@ msgstr "A thumbs down hides this title and pushes down titles closer to it than 
 #: src/components/NamingTokenModal.tsx
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "A watched anime counts for as much as a manga you rated yourself."
+msgstr "A watched anime counts for as much as a manga you rated yourself."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A watched anime with a good score gently steers recommendations toward similar manga. A low score or a dropped show pushes down titles close to it, the same way a thumbs down does. A show listed on both your trackers counts once, and a franchise's seasons are averaged into one score."
@@ -1608,6 +1617,14 @@ msgstr "Backups, updates and instance-level details."
 #: src/pages/DiscoverPage.tsx
 msgid "balanced"
 msgstr "balanced"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Balanced"
+msgstr "Balanced"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Barely nudges. A show you loved stays below a book you never rated."
+msgstr "Barely nudges. A show you loved stays below a book you never rated."
 
 #: src/pages/stats/OverviewPanel.tsx
 msgid "Barely touched"
@@ -3396,6 +3413,7 @@ msgid "From: {start}"
 msgstr "From: {start}"
 
 #: src/components/ui/incognito.ts
+#: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Full"
 msgstr "Full"
 
@@ -3510,6 +3528,10 @@ msgstr "Growth"
 #: src/pages/stats/OverviewPanel.tsx
 msgid "h"
 msgstr "h"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
+msgstr "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
 
 #: src/pages/SettingsPage.tsx
 msgid "Hardlink imported torrents when possible"
@@ -3647,6 +3669,10 @@ msgstr "How many"
 #: src/pages/SettingsPage.tsx
 msgid "How many chapters download at once from scraper sources. Higher isn't always faster: each worker is a live connection to the same site, and tripping its rate limit pauses every download. Torrent releases aren't affected. Takes effect after a restart."
 msgstr "How many chapters download at once from scraper sources. Higher isn't always faster: each worker is a live connection to the same site, and tripping its rate limit pauses every download. Torrent releases aren't affected. Takes effect after a restart."
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "How much they count"
+msgstr "How much they count"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "How signals work"
@@ -7437,6 +7463,10 @@ msgstr "Stuck downloads"
 #: src/pages/CreatorPage.tsx
 msgid "Studio"
 msgstr "Studio"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Subtle"
+msgstr "Subtle"
 
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
