@@ -3,6 +3,7 @@ using Maki.Core.Security;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Maki.Data;
 
@@ -116,6 +117,30 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             }
         }
     }
+
+    /// <summary>
+    /// SQLite has no date type: a DateTime is stored as a bare string with no offset marker, so
+    /// every timestamp comes back with Kind=Unspecified however it was written. Anything that then
+    /// reads it as a point in time (<c>new DateTimeOffset(...)</c>, <c>ToLocalTime</c>) assumes the
+    /// container's local zone, which on a negative UTC offset put <c>QueuedAt</c> hours in the
+    /// future and left torrent claiming with an empty time window forever. Every timestamp the app
+    /// writes is UTC, so the kind is restored on read; Unspecified on write is taken as already UTC
+    /// rather than converted, for the same reason.
+    /// </summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
+    }
+
+    private sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
+        v => v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : v,
+        v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+    private sealed class NullableUtcDateTimeConverter() : ValueConverter<DateTime?, DateTime?>(
+        v => v.HasValue && v.Value.Kind == DateTimeKind.Local ? v.Value.ToUniversalTime() : v,
+        v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
