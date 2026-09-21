@@ -133,10 +133,23 @@ public class ReleaseNameParserTests
         Assert.False(ReleaseNameParser.ParseFileName(file).IsRecognized);
     }
 
+    // "c049" without the h is the scanlation convention, and VolumeChapterScanner already read it
+    // off the page names inside an archive. An archive whose own name said c001 parsed as nothing.
+    [Theory]
+    [InlineData("Bokura no Hentai c001.cbz", 1)]
+    [InlineData("My Series - c049 (v05).cbz", 49)]
+    [InlineData("My_Series_c07.5.cbz", 7.5)]
+    public void A_bare_c_is_a_chapter_marker(string file, double number)
+    {
+        Assert.Equal((decimal)number, ReleaseNameParser.ParseFileName(file).Number);
+    }
+
     [Fact]
     public void A_word_ending_in_the_marker_letters_is_not_a_marker()
     {
         Assert.False(ReleaseNameParser.ParseFileName("Revolution 9 Arc.cbz").IsVolume);
         Assert.False(ReleaseNameParser.ParseFileName("March 5 Diaries.cbz").IsChapter);
+        Assert.False(ReleaseNameParser.ParseFileName("Arc049 Notes.cbz").IsChapter);
+        Assert.False(ReleaseNameParser.ParseFileName("Comic 5 Extras.cbz").IsChapter);
     }
 }

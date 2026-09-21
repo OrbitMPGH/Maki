@@ -35,7 +35,11 @@ public static partial class ReleaseNameParser
     [GeneratedRegex(@"(?<![a-z0-9])v(?:ol(?:ume)?)?\.?[\s_]*(\d+)(?:\s*-\s*(?:v(?:ol)?\.?[\s_]*)?(\d+))?", RegexOptions.IgnoreCase)]
     private static partial Regex VolumePattern();
 
-    [GeneratedRegex(@"(?<![a-z0-9])ch(?:apter)?\.?[\s_]*(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
+    // The "h" is optional because a bare "c049" is the scanlation convention, and this has to read
+    // the same marker VolumeChapterScanner reads off the page names inside an archive — the two
+    // disagreeing meant an archive whose own name said c001 parsed as nothing at all while its
+    // pages parsed fine. The lookbehind is what keeps "Comic" and "Arc049" out.
+    [GeneratedRegex(@"(?<![a-z0-9])c(?:h(?:apter)?)?\.?[\s_]*(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterPattern();
 
     [GeneratedRegex(@"(?:^|[\s_])#?(\d+(?:\.\d+)?)\s*$")]
