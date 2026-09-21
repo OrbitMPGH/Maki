@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ActionIcon, Alert, Badge, Button, Chip, Group, Modal, ScrollArea, Select, Stack, Tabs, Text,
+  ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
   TextInput,
 } from '@mantine/core'
 import { IconSearch, IconX } from '@tabler/icons-react'
@@ -361,13 +361,13 @@ function AnimeSignalsPanel() {
         <Text size="sm" c="dimmed" py="md"><Trans>No shows match.</Trans></Text>
       )}
 
-      <ScrollArea.Autosize mah={460} scrollbars="y" style={{ overflowX: 'hidden' }}>
-        <Stack gap={4} style={{ minWidth: 0 }}>
+      <div style={{ maxHeight: 460, overflowY: 'auto', overflowX: 'hidden' }}>
+        <Stack gap={4}>
           {filtered.map((entry) => (
             <AnimeSignalRow key={entry.key} entry={entry} />
           ))}
         </Stack>
-      </ScrollArea.Autosize>
+      </div>
 
       <Text size="xs" c="dimmed">
         <Trans>Showing {shown} of {total}</Trans>
