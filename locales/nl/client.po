@@ -3857,8 +3857,16 @@ msgstr "Alles, geen filter"
 msgid "Example: {example}"
 msgstr "Voorbeeld: {example}"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Exclude"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Exclude from taste"
+msgstr ""
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Excluded"
 msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -4710,6 +4718,10 @@ msgstr "in de reader"
 #, fuzzy
 msgid "Incidental"
 msgstr "Bijkomstig"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Include"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy

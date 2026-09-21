@@ -8,6 +8,7 @@ import type {
   AnimeSignalCounts, AnimeSignalEntry, AnimeSignalRole, AnimeSignalsData, AnimeSignalStrength,
 } from '../../api/animeSignals'
 import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength } from '../../api/animeSignals'
+import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
 import { formatDateTime } from '../../format'
 import { SeriesThumb } from '../stats/SeriesLink'
 
@@ -271,7 +272,10 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
       case 'positive': return { label: t`Positive`, color: 'teal' }
       case 'avoided': return { label: t`Avoided`, color: 'red' }
       case 'neutral': return { label: t`Neutral`, color: 'gray' }
-      case 'superseded': return { label: t`Already yours`, color: 'gray' }
+      case 'superseded':
+        return entry.supersededBy === 'ignored'
+          ? { label: t`Excluded`, color: 'gray' }
+          : { label: t`Already yours`, color: 'gray' }
       default: return { label: t`Unmatched`, color: 'gray' }
     }
   })()
@@ -291,6 +295,27 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
   const score = entry.score === null
     ? null
     : Number.isInteger(entry.score) ? String(entry.score) : entry.score.toFixed(1)
+
+  const signal = useMutateSignalOverride()
+  const { data: overrides } = useSignalOverrides()
+  const [actionError, setActionError] = useState('')
+  const mangaBakaId = entry.mangaBakaId
+
+  async function setExcluded(ignoreAsSeed: boolean) {
+    if (mangaBakaId === null) return
+    setActionError('')
+    try {
+      await signal.mutateAsync({
+        id: mangaBakaId, ignoreAsSeed, clientMutationId: crypto.randomUUID(),
+        expectedRevision: overrides?.find((item) => item.mangaBakaId === mangaBakaId)?.revision ?? 0,
+      })
+    } catch (cause) {
+      setActionError(String(cause))
+    }
+  }
+
+  const showExclude = mangaBakaId !== null &&
+    entry.supersededBy !== 'library' && entry.supersededBy !== 'feedback'
 
   return (
     <Group gap="sm" wrap="nowrap" align="flex-start" py={8} className="signals-row">
@@ -324,6 +349,22 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
         <Badge size="sm" variant="light" color={roleBadge.color}>
           {roleBadge.label}
         </Badge>
+      </div>
+      <div style={{ width: 140, flex: 'none', textAlign: 'right' }}>
+        {showExclude && entry.supersededBy === 'ignored' && (
+          <Button size="xs" variant="subtle" loading={signal.isPending} onClick={() => void setExcluded(false)}>
+            <Trans>Include</Trans>
+          </Button>
+        )}
+        {showExclude && entry.supersededBy !== 'ignored' && (
+          <Button
+            size="xs" variant="subtle" color="gray" loading={signal.isPending}
+            onClick={() => void setExcluded(true)}
+          >
+            <Trans>Exclude</Trans>
+          </Button>
+        )}
+        {actionError && <Text c="red" size="xs">{actionError}</Text>}
       </div>
     </Group>
   )

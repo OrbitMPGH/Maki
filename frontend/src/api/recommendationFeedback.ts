@@ -95,6 +95,7 @@ const affectedKeys = [
   'recommendations', 'discover-recent-activity', 'discover-side-interests',
   'discover-cohort', 'discover-rails', 'discover-feed', 'discover-genres',
   'taste-insights', 'taste-profile', 'series-related', 'series-similar', 'home',
+  'anime-signals',
 ]
 const outputKeys = [
   'recommendations', 'discover-recent-activity', 'discover-side-interests',

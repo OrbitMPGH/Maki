@@ -3178,9 +3178,17 @@ msgstr "Everything, no filter"
 msgid "Example: {example}"
 msgstr "Example: {example}"
 
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Exclude"
+msgstr "Exclude"
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Exclude from taste"
 msgstr "Exclude from taste"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Excluded"
+msgstr "Excluded"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Excluded from taste"
@@ -3878,6 +3886,10 @@ msgstr "in the reader"
 #: src/components/TagBuckets.tsx
 msgid "Incidental"
 msgstr "Incidental"
+
+#: src/pages/discover/AnimeSignalsSection.tsx
+msgid "Include"
+msgstr "Include"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Including root folders added later."
