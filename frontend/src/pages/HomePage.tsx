@@ -37,7 +37,7 @@ import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
 import { ContinueRail } from '../components/home/ContinueRail'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
-import { HomeHero, type HomeHeroFigure } from '../components/home/HomeHero'
+import { HomeHeader, type HomeHeaderFigure } from '../components/home/HomeHeader'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -121,10 +121,10 @@ export default function HomePage() {
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
 
-  // Every figure the band carries, gated the same way the glance panels were: each of these three
-  // groups is still its own switch in Settings, they just share the band's panel now instead of a
-  // row of panels of their own.
-  const libraryFigures: HomeHeroFigure[] = on('stats')
+  // Every figure the header carries, gated the same way the glance panels were: each of these
+  // three groups is still its own switch in Settings, they just share the header's panel now
+  // instead of a row of panels of their own.
+  const libraryFigures: HomeHeaderFigure[] = on('stats')
     ? [
         { label: t`Series`, value: stats.total },
         { label: t`Monitored`, value: stats.monitored },
@@ -133,9 +133,9 @@ export default function HomePage() {
       ]
     : []
 
-  // Only ever with tracking on: without it every downloaded chapter reads as unread, and the band
+  // Only ever with tracking on: without it every downloaded chapter reads as unread, and the panel
   // would tell a Kavita-less library that it has 12,000 chapters waiting.
-  const readingFigures: HomeHeroFigure[] =
+  const readingFigures: HomeHeaderFigure[] =
     on('toread') && readTracking
       ? [
           { label: t`Unread`, value: waiting.unread },
@@ -144,17 +144,8 @@ export default function HomePage() {
         ]
       : []
 
-  // First cover the page already holds, in the order the sections read in: what you are part-way
-  // through, then what you put down, then what just arrived.
-  const heroCover =
-    continueReading.find((i) => i.coverUrl)?.coverUrl ??
-    jumpBackIn.find((i) => i.coverUrl)?.coverUrl ??
-    (recent ?? []).find((i) => i.coverUrl)?.coverUrl ??
-    null
-
   const header = (
-    <HomeHero
-      coverUrl={heroCover}
+    <HomeHeader
       greeting={t`Pick up where you left off.`}
       loading={seriesLoading}
       figures={libraryFigures}
@@ -244,7 +235,7 @@ export default function HomePage() {
       </>
     ),
 
-    // All three live in the page band above, not in the ordered list.
+    // All three live in the page header above, not in the ordered list.
     stats: null,
     progress: null,
     toread: null,

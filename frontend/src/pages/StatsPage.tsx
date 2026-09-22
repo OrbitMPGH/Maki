@@ -13,7 +13,7 @@ import { RewindIntro } from './rewind/RewindIntro'
 import { AchievementsPanel } from './stats/AchievementsPanel'
 import { LibraryPanel } from './stats/LibraryPanel'
 import { OverviewPanel } from './stats/OverviewPanel'
-import { StatsHero, type StatsTab } from './stats/StatsHero'
+import { StatsHeader, type StatsTab } from './stats/StatsHeader'
 import { calendarRange, type RangePreset } from './stats/StatsRange'
 
 /**
@@ -71,8 +71,7 @@ export default function StatsPage() {
         />
       )}
 
-      <StatsHero
-        coverUrl={rewindStats?.topRead.find((s) => s.coverUrl)?.coverUrl ?? null}
+      <StatsHeader
         description={t`What you read, what the library holds, and how far you have come.`}
         tab={tab}
         onTabChange={setTab}

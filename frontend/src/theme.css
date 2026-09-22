@@ -888,75 +888,19 @@ body {
   background: transparent;
 }
 
-/* --- Home: the page band -------------------------------------------------- */
-/* Home is the most visited page in Maki, so it opens with the same full-bleed band the series page
-   and the Discover modal do, at the modal's compact height. `.series-hero` supplies the bleed, the
-   backdrop layers and the flex-end alignment; everything here is the compact override. */
-.series-hero.home-hero {
-  min-height: 300px;
-}
-/* The cover often lands after first paint. Fading the art in stops it snapping over the gradient;
-   the band's height never depends on it, so nothing moves either way. */
-.home-hero .series-hero-art {
-  animation: home-hero-art-in 0.3s var(--ease) both;
-}
-@keyframes home-hero-art-in {
-  from {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .home-hero .series-hero-art {
-    animation: none;
-  }
-}
-.home-hero-body {
-  padding: 30px clamp(24px, 3.6vw, 64px) 28px;
-}
-/* Identity against the figures, the way the series band sets it against Progress. Capped rather
-   than proportional: past ~440px the panel is only stretching its hairlines. */
-.home-hero-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 34%, 440px);
-  gap: clamp(24px, 3vw, 48px);
-  align-items: end;
-}
-.home-hero-identity {
-  min-width: 0;
-}
-.home-hero-eyebrow {
-  display: block;
-  margin-bottom: 12px;
-  color: var(--ink-4);
-  font-size: var(--type-label);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-/* Below `--type-display`'s ceiling on purpose, the same trade the compact series band makes: this
-   title is a sentence rather than a name, and at 4rem it wraps to three lines in its column. */
-.home-hero-title {
-  margin: 0;
-  max-width: 18ch;
-  color: var(--ink-hi);
-  font-size: clamp(1.9rem, 3.4vw, 3rem);
-  line-height: 0.9;
-  letter-spacing: -0.01em;
-}
-.home-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mantine-spacing-xs);
-  margin-top: 22px;
-}
-.home-hero-panel {
+/* --- Home / Stats: the header aside ---------------------------------------- */
+/* Home and Stats open with the house page header and hang their figures off it as an aside. The
+   split grid lives on `.page-header-split`; everything here is the panel and its figure grammar. */
+.home-header-panel {
   align-self: end;
   min-width: 0;
+  width: 100%;
+  max-width: 560px;
 }
 /* One row that never wraps, so the hairline between two numbers can never end up hanging at the
    start of a wrapped line; a narrow panel shrinks the columns instead, which the short uppercase
    labels take without complaint. */
-.home-hero-figures {
+.home-header-figures {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
@@ -964,12 +908,12 @@ body {
 /* Padded on both sides: with padding on one side only a number runs flush into the hairline that
    divides it from the next figure. The `:first-child` / `:last-child` rules on `.hero-stat` still
    flatten the two outer edges, since both are declared after this one. */
-.home-hero-figures .hero-stat {
+.home-header-figures .hero-stat {
   padding: 2px 12px;
   min-width: 0;
 }
 /* The progression block links to Stats as one target, the way its card used to. */
-.home-hero-progress {
+.home-header-progress {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -978,13 +922,31 @@ body {
   color: inherit;
   text-decoration: none;
 }
-.home-hero-progress .hero-stat {
+.home-header-progress .hero-stat {
   padding: 2px 12px;
 }
-/* A step under the library figures: the band's headline numbers are the library's, and progression
-   is the footnote under them. Also what keeps the whole panel inside the band's height. */
-.home-hero-progress .hero-stat-n {
+/* A step under the library figures: the headline numbers are the library's, and progression is
+   the footnote under them. */
+.home-header-progress .hero-stat-n {
   font-size: var(--type-subhead);
+}
+
+/* --- Page header: the aside variant ---------------------------------------- */
+.page-header-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(20px, 3vw, 40px);
+  margin-bottom: var(--mantine-spacing-lg);
+}
+.page-header-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink-4);
+  font-size: var(--type-label);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* --- Home dashboard rails ------------------------------------------------ */
@@ -1863,10 +1825,8 @@ body {
   background: var(--app-bg);
 }
 /* Off-centre on purpose: two lobes at opposite corners, so it reads as light falling across the
-   band rather than as a centred gradient wash. Shared with Home's band, which shows it when the
-   library has no cover to seed the art from. */
-.auth-backdrop-art,
-.home-hero-art {
+   band rather than as a centred gradient wash. */
+.auth-backdrop-art {
   position: absolute;
   inset: 0;
   background:
@@ -2559,8 +2519,11 @@ body {
     margin-top: var(--mantine-spacing-lg);
   }
   /* Identity first, then the figures across the full width. */
-  .home-hero-content {
+  .page-header-split {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .home-header-panel {
+    max-width: none;
   }
 }
 
@@ -2582,26 +2545,20 @@ body {
   .series-hero-body {
     padding-bottom: 4px;
   }
-  .series-hero.home-hero {
-    min-height: 0;
-  }
-  .home-hero-body {
-    padding: 24px;
-  }
   /* Two figures per row rather than four squeezed into a phone's width. `auto-fit` keeps the last
      row filling the panel, and the hairline is dropped: on a wrapping grid it would hang at the
      start of every row after the first. */
-  .home-hero-figures {
+  .home-header-figures {
     grid-auto-flow: row;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px 0;
   }
-  .home-hero-figures .hero-stat,
-  .home-hero-figures .hero-stat:first-child,
-  .home-hero-figures .hero-stat:last-child {
+  .home-header-figures .hero-stat,
+  .home-header-figures .hero-stat:first-child,
+  .home-header-figures .hero-stat:last-child {
     padding: 2px 12px;
   }
-  .home-hero-figures .hero-stat:nth-child(2n + 1) {
+  .home-header-figures .hero-stat:nth-child(2n + 1) {
     padding-left: 0;
     border-left: none;
   }
@@ -2982,21 +2939,11 @@ body {
   flex-shrink: 0;
 }
 
-/* --- Stats: the page band -------------------------------------------------- */
-/* Home's band with a tab rail at its foot. Everything above the rail is Home's, so the two pages
-   cannot drift; only the rail and the subtitle are new. */
-.stats-hero-sub {
-  margin: 14px 0 0;
-  max-width: 54ch;
-  color: var(--ink-3);
-  font-size: var(--type-body);
-  line-height: 1.5;
-}
-.stats-hero-tabs {
-  margin-top: 26px;
-}
-.stats-hero-body {
-  padding-bottom: 0;
+/* --- Stats: the page header ------------------------------------------------ */
+/* Home's header with the underline tab rail under it, full width and on its own hairline. */
+.stats-header-tabs {
+  margin-bottom: var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--hairline);
 }
 
 /* --- Stats: the period figures row ----------------------------------------- */
@@ -3074,12 +3021,7 @@ body {
   .stats-figure:nth-child(2n + 1) {
     border-inline-start: none;
   }
-  .stats-hero-sub {
-    margin-top: 10px;
-    font-size: var(--type-meta);
-  }
-  .stats-hero-tabs {
-    margin-top: 18px;
+  .stats-header-tabs {
     gap: 22px;
   }
   .stats-rank-row {

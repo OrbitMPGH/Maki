@@ -421,8 +421,6 @@ function AppShellRoutes() {
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
       <AppShell.Main
         className={
-          location.pathname === '/home' ||
-          location.pathname === '/stats' ||
           /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
           /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
             ? 'app-main-hero'
