@@ -26,7 +26,7 @@ export function SectionHeader({
       </ThemeIcon>
       <Title order={4}>{title}</Title>
       {count != null && (
-        <Badge variant="light" color="gray" size="sm">
+        <Badge variant="light" color="var(--neutral)" size="sm">
           {count}
         </Badge>
       )}

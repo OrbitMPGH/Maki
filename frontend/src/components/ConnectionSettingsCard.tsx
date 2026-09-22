@@ -53,7 +53,7 @@ export function ConnectionSettingsCard({
       <Title order={4} mb="sm">
         {title}
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         {description}
       </Text>
       <Group align="flex-end" wrap="wrap">

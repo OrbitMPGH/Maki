@@ -88,11 +88,16 @@ export function SeriesActionsMenu({
         >
             <Menu.Target>
                 <ActionIcon
-                    variant="default"
+                    variant="subtle"
                     size={42}
                     radius="md"
                     aria-label={t`More actions`}
                     disabled={busy}
+                    style={{
+                        color: 'var(--ink-3)',
+                        background: 'color-mix(in srgb, var(--app-bg) 45%, transparent)',
+                        border: '1px solid var(--border-strong)',
+                    }}
                 >
                     <IconDotsVertical size={19} />
                 </ActionIcon>
@@ -127,7 +132,7 @@ export function SeriesActionsMenu({
                         <Menu.Sub.Item
                             leftSection={<IconEye size={16} />}
                             rightSection={
-                                <Text size="xs" c="dimmed">
+                                <Text size="xs" c="var(--ink-3)">
                                     {renderLabel(label(MONITOR_OPTIONS, monitorMode))}
                                 </Text>
                             }
@@ -153,7 +158,7 @@ export function SeriesActionsMenu({
                         <Menu.Sub.Item
                             leftSection={<IconEyeOff size={16} />}
                             rightSection={
-                                <Text size="xs" c="dimmed">
+                                <Text size="xs" c="var(--ink-3)">
                                     {renderLabel(label(incognitoOptions, incognito))}
                                 </Text>
                             }
@@ -181,7 +186,7 @@ export function SeriesActionsMenu({
                         <Menu.Sub.Item
                             leftSection={<IconBell size={16} />}
                             rightSection={
-                                <Text size="xs" c="dimmed">
+                                <Text size="xs" c="var(--ink-3)">
                                     {renderLabel(label(notificationOptions, notificationMode))}
                                 </Text>
                             }

@@ -35,14 +35,14 @@ export function RankList({
         <Text fw={650}>{title}</Text>
       </Group>
       {items.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           {emptyText}
         </Text>
       ) : (
         <Stack gap={0}>
           {items.map((item, i) => (
             <div className="stats-rank-row" key={`${item.seriesId ?? item.title}-${i}`}>
-              <Text c="dimmed" fw={700} size="sm" className="tnum stats-rank-num">
+              <Text c="var(--ink-3)" fw={700} size="sm" className="tnum stats-rank-num">
                 {i + 1}
               </Text>
               <SeriesThumb url={item.coverUrl} alt={item.title} />

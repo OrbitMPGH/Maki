@@ -93,7 +93,7 @@ export function RatingImportModal({
         <Center py={40}>
           <Stack align="center" gap="xs">
             <Loader />
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>Reading your ratings from {label}…</Trans>
             </Text>
           </Stack>
@@ -102,14 +102,14 @@ export function RatingImportModal({
     }
     if (data?.error) {
       return (
-        <Alert color="red" variant="light">
+        <Alert color="var(--danger)" variant="light">
           {data.error}
         </Alert>
       )
     }
     if (items.length === 0) {
       return (
-        <Text size="sm" c="dimmed" py="md">
+        <Text size="sm" c="var(--ink-3)" py="md">
           <Trans>Nothing to import, no scores on {label} differ from your local ratings.</Trans>
         </Text>
       )
@@ -142,11 +142,11 @@ export function RatingImportModal({
                   </Text>
                 </Group>
                 <Group gap={6} wrap="nowrap">
-                  <Text size="xs" c="dimmed" className="tnum">
+                  <Text size="xs" c="var(--ink-3)" className="tnum">
                     {i.localRating ? `${i.localRating}/10` : '-'} →
                   </Text>
                   <Rating size="xs" count={5} fractions={2} value={i.remoteScore / 2} readOnly />
-                  <Text size="xs" c="dimmed" className="tnum" w={34} ta="right">
+                  <Text size="xs" c="var(--ink-3)" className="tnum" w={34} ta="right">
                     {i.remoteScore}/10
                   </Text>
                 </Group>

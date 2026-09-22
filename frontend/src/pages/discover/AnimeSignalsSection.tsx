@@ -113,7 +113,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
 
   if (isLoading || !data) {
     return error ? (
-      <Alert color="red"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
     ) : null
   }
 
@@ -127,7 +127,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
         <Group justify="space-between" align="center" wrap="wrap">
           <div>
             <Text fw={600}><Trans>Anime you've watched</Trans></Text>
-            <Text size="xs" c="dimmed" maw={520}>
+            <Text size="xs" c="var(--ink-3)" maw={520}>
               <Trans>
                 A show you scored well nudges recommendations toward similar manga. A low score or
                 a dropped show pushes them away.
@@ -141,10 +141,10 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
           />
         </Group>
 
-        {toggleError && <Alert color="red">{toggleError}</Alert>}
+        {toggleError && <Alert color="var(--danger)">{toggleError}</Alert>}
 
         {noTracker && (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               Connect an AniList or MyAnimeList tracker to use this. <Link to="/scrobble">
                 <Trans>Open tracker settings</Trans>
@@ -162,7 +162,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
               onChange={(next) => void changeStrength(next)}
             />
             <Group gap="xs">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <AnimeSignalsStatusLine data={data} />
               </Text>
               <Button size="xs" variant="subtle" onClick={onOpenList}>
@@ -329,14 +329,14 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
             </Badge>
           )}
         </Group>
-        <Text size="xs" c="dimmed" truncate>
+        <Text size="xs" c="var(--ink-3)" truncate>
           {supersededNote ?? entry.mangaTitle ?? t`No manga match`}
         </Text>
       </div>
       <div style={{ width: 120, flex: 'none' }}>
         <Group gap={4} wrap="wrap">
           {entry.services.map((service) => (
-            <Badge key={service} size="sm" variant="light" color="gray">
+            <Badge key={service} size="sm" variant="light" color="var(--neutral)">
               {labelFor(service)}
             </Badge>
           ))}
@@ -358,13 +358,13 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
         )}
         {showExclude && entry.supersededBy !== 'ignored' && (
           <Button
-            size="xs" variant="subtle" color="gray" loading={signal.isPending}
+            size="xs" variant="subtle" color="var(--neutral)" loading={signal.isPending}
             onClick={() => void setExcluded(true)}
           >
             <Trans>Exclude</Trans>
           </Button>
         )}
-        {actionError && <Text c="red" size="xs">{actionError}</Text>}
+        {actionError && <Text c="var(--danger)" size="xs">{actionError}</Text>}
       </div>
     </Group>
   )

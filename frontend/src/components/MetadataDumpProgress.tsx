@@ -70,7 +70,7 @@ export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
           {phaseLabel}
         </Text>
         {percent !== null && (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {percent.toFixed(0)}%
           </Text>
         )}
@@ -82,7 +82,7 @@ export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
         radius="xl"
         aria-label={phaseLabel}
       />
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="var(--ink-3)">
         {dumpDetail(progress)}
       </Text>
     </Stack>

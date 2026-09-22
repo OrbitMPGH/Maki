@@ -21,6 +21,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
+import { statusToken, trackerConnectionVisual, trackerStatusVisual } from '../components/ui/status'
 import {
   useScrobbleAuthStart,
   useScrobbleDisconnect,
@@ -38,24 +39,11 @@ function fmtTime(iso: string | null | undefined): string {
   return iso ? formatDateTime(iso) : '-'
 }
 
-function statusColor(status: string | null): string {
-  switch (status) {
-    case 'completed':
-      return 'green'
-    case 'reading':
-      return 'brand'
-    case 'plan_to_read':
-      return 'cyan'
-    default:
-      return 'gray'
-  }
-}
-
 function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const authStart = useScrobbleAuthStart()
   const disconnect = useScrobbleDisconnect()
 
-  const dotColor = connection.connected ? 'green' : connection.configured ? 'red' : 'gray'
+  const dot = trackerConnectionVisual(connection.connected, connection.configured)
   const state = connection.connected ? (
     (connection.username ?? <Trans>connected</Trans>)
   ) : connection.configured ? (
@@ -75,10 +63,14 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   return (
     <Card withBorder radius="md" padding="md">
       <Group gap="xs">
-        <Box w={10} h={10} bg={dotColor} style={{ borderRadius: '50%' }} />
+        <Box
+          w={10}
+          h={10}
+          style={{ borderRadius: '50%', background: `var(--${statusToken(dot.color)})` }}
+        />
         <Text fw={700}>{connection.label}</Text>
       </Group>
-      <Text size="sm" c="dimmed" mt={4} style={{ overflowWrap: 'anywhere' }}>
+      <Text size="sm" c="var(--ink-3)" mt={4} style={{ overflowWrap: 'anywhere' }}>
         {state}
       </Text>
       {connection.oAuth && connection.configured && (
@@ -133,7 +125,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           {item.service}
         </Badge>
       </Group>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" c="var(--ink-3)">
         {item.reason}
       </Text>
       {item.candidates.length > 0 && (
@@ -220,7 +212,7 @@ export default function ScrobblePage() {
         }
         actions={
           <Group gap="sm">
-            <Text size="xs" c="dimmed" ta="right" className="tnum">
+            <Text size="xs" c="var(--ink-3)" ta="right" className="tnum">
               {data?.running ? (
                 <Trans>
                   sync running… · last {lastSync} · next {nextSync}
@@ -277,7 +269,7 @@ export default function ScrobblePage() {
           ))}
         </Stack>
       ) : (
-        <Text size="sm" c="dimmed" mb="lg">
+        <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>Nothing needs review.</Trans>
         </Text>
       )}
@@ -331,15 +323,24 @@ export default function ScrobblePage() {
                     </Table.Td>
                     <Table.Td>
                       {status ? (
-                        <Badge size="sm" variant="light" color={statusColor(status)}>
-                          {status}
-                        </Badge>
+                        (() => {
+                          const visual = trackerStatusVisual(status)
+                          return (
+                            <Badge
+                              size="sm"
+                              variant="light"
+                              color={`var(--${statusToken(visual.color)})`}
+                            >
+                              {status}
+                            </Badge>
+                          )
+                        })()
                       ) : (
                         '-'
                       )}
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="var(--ink-3)">
                         {fmtTime(at)}
                       </Text>
                     </Table.Td>
@@ -350,7 +351,7 @@ export default function ScrobblePage() {
           </Table>
         </Table.ScrollContainer>
       ) : (
-        <Text size="sm" c="dimmed" mb="lg">
+        <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>No syncs yet.</Trans>
         </Text>
       )}
@@ -367,7 +368,13 @@ export default function ScrobblePage() {
                 <Text key={i} size="xs" ff="monospace" component="div">
                   <Text
                     span
-                    c={l.level === 'error' ? 'red' : l.level === 'warning' ? 'yellow' : 'dimmed'}
+                    c={
+                      l.level === 'error'
+                        ? 'var(--danger)'
+                        : l.level === 'warning'
+                          ? 'var(--warn)'
+                          : 'var(--ink-3)'
+                    }
                   >
                     {fmtTime(l.timestamp)}
                   </Text>{' '}
@@ -382,7 +389,7 @@ export default function ScrobblePage() {
               ))}
             </Stack>
           ) : (
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>Empty.</Trans>
             </Text>
           )}

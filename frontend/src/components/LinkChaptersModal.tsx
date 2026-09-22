@@ -50,7 +50,7 @@ export function LinkChaptersModal({
   return (
     <Modal opened={opened} onClose={handleClose} title={t`Link ${chapterPhrase} to a file`} size="lg">
       <Stack gap="sm">
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>
             Pick the file in the series folder these chapters are actually contained in, useful for
             compilation CBZs or oddly-named releases the automatic matcher couldn't parse.
@@ -59,12 +59,12 @@ export function LinkChaptersModal({
         {isLoading ? (
           <Group py="md" gap="xs">
             <Loader size="sm" />
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>Scanning folder…</Trans>
             </Text>
           </Group>
         ) : !files || files.length === 0 ? (
-          <Text c="dimmed" size="sm" py="sm">
+          <Text c="var(--ink-3)" size="sm" py="sm">
             <Trans>No files found in the series folder.</Trans>
           </Text>
         ) : (
@@ -91,11 +91,11 @@ export function LinkChaptersModal({
                     </Group>
                     <Group gap={6} wrap="nowrap">
                       {f.parsedLabel && (
-                        <Badge size="sm" variant="light" color={f.isVolume ? 'indigo' : 'gray'} className="tnum">
+                        <Badge size="sm" variant="light" color={f.isVolume ? 'indigo' : 'var(--neutral)'} className="tnum">
                           {f.parsedLabel}
                         </Badge>
                       )}
-                      <Text size="xs" c="dimmed" className="tnum">
+                      <Text size="xs" c="var(--ink-3)" className="tnum">
                         {formatBytes(f.size)}
                       </Text>
                     </Group>

@@ -56,7 +56,7 @@ export function DiscoverCatalogue({
       </div>
 
       <Group justify="space-between" mt="md" mb="sm">
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Plural value={active.items.length} one="# title" other="# titles" />
         </Text>
         <Button

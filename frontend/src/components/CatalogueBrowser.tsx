@@ -270,7 +270,7 @@ export function CatalogueBrowser({
                 query ? (
                   <ActionIcon
                     variant="subtle"
-                    color="gray"
+                    color="var(--neutral)"
                     aria-label={t`Clear search`}
                     onClick={() => setQuery('')}
                   >
@@ -356,16 +356,16 @@ export function CatalogueBrowser({
           <Group gap="xs" mb="sm" justify="space-between" wrap="wrap">
             <Group gap="xs">
               {searching ? (
-                <Text c="dimmed" size="sm">
+                <Text c="var(--ink-3)" size="sm">
                   <Plural value={items.length} one="# match" other="# matches" />
                 </Text>
               ) : (
-                <Text c="dimmed" size="sm">
+                <Text c="var(--ink-3)" size="sm">
                   <Trans>Browsing the catalogue</Trans>
                 </Text>
               )}
               {corrected && (
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="var(--ink-3)">
                   <Trans>
                     showing results for <strong>{corrected}</strong>
                   </Trans>
@@ -375,7 +375,7 @@ export function CatalogueBrowser({
                 <CreditChip key={`${credit.name}-${credit.roles.join()}`} credit={credit} />
               ))}
               {search.data?.mode === 'title' && mode === 'smart' && (
-                <Badge variant="light" color="gray" size="sm">
+                <Badge variant="light" color="var(--neutral)" size="sm">
                   <Trans>title match only, build the recommendation index for search by meaning</Trans>
                 </Badge>
               )}
@@ -397,7 +397,7 @@ export function CatalogueBrowser({
           </Group>
 
           {error && (
-            <Alert color="yellow" variant="light" mb="md">
+            <Alert color="var(--warn)" variant="light" mb="md">
               {String(error)}
             </Alert>
           )}

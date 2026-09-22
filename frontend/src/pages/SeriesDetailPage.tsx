@@ -946,7 +946,7 @@ export default function SeriesDetailPage() {
             </Group>
           </Table.Td>
           <Table.Td>
-            <Text size="sm" c="dimmed" className="tnum">
+            <Text size="sm" c="var(--ink-3)" className="tnum">
               <Trans>{total} chapters · {downloadedCount} downloaded</Trans>
               {watchedCount > 0 && (
                   <>
@@ -1351,7 +1351,7 @@ export default function SeriesDetailPage() {
                       {series.overview}
                     </Text>
                 ) : (
-                    <Text size="sm" mt="sm" c="dimmed">
+                    <Text size="sm" mt="sm" c="var(--ink-3)">
                       <Trans>No synopsis yet.</Trans> <Trans>Refresh metadata to fetch one.</Trans>
                     </Text>
                 )}
@@ -1599,7 +1599,7 @@ export default function SeriesDetailPage() {
 
         <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title={t`Move series`} centered>
           <Stack gap="md">
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
               <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
                 itself.</Trans>
@@ -1661,7 +1661,7 @@ export default function SeriesDetailPage() {
               <Group gap="xs" align="baseline">
                 <Title order={3}><Trans>Chapters</Trans></Title>
                 {chapters && (
-                    <Text size="sm" c="dimmed" className="tnum">
+                    <Text size="sm" c="var(--ink-3)" className="tnum">
                       {progress.have}/{progress.total}
                     </Text>
                 )}
@@ -1742,7 +1742,7 @@ export default function SeriesDetailPage() {
                 <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="lg">
                   <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs">
-                      <Text size="sm" c="dimmed" className="tnum">
+                      <Text size="sm" c="var(--ink-3)" className="tnum">
                         <Trans>{selectedCount} selected</Trans>
                       </Text>
                       <Menu shadow="md" position="bottom-start" withinPortal>
@@ -1786,7 +1786,7 @@ export default function SeriesDetailPage() {
                           </Menu.Item>
                         </Menu.Dropdown>
                       </Menu>
-                      <Text size="xs" c="dimmed" visibleFrom="sm">
+                      <Text size="xs" c="var(--ink-3)" visibleFrom="sm">
                         <Trans>Click a row to select, shift-click for a range</Trans>
                       </Text>
                     </Group>
@@ -1931,7 +1931,7 @@ export default function SeriesDetailPage() {
                 centered
             >
               <Stack gap="md">
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="var(--ink-3)">
                   <Trans>This permanently removes {selectedCount} chapter row(s), not just their file link,
                     along with any backing file on disk.</Trans>{' '}
                   <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
@@ -1977,11 +1977,11 @@ export default function SeriesDetailPage() {
             />
 
             {!chapters || chapters.length === 0 ? (
-                <Text c="dimmed" size="sm">
+                <Text c="var(--ink-3)" size="sm">
                   <Trans>No chapters known.</Trans> <Trans>Link a source and refresh.</Trans>
                 </Text>
             ) : renderedRows.rows.length === 0 ? (
-                <Text c="dimmed" size="sm">
+                <Text c="var(--ink-3)" size="sm">
                   <Trans>No chapters match this search and filter.</Trans>
                 </Text>
             ) : (
@@ -2121,12 +2121,12 @@ export default function SeriesDetailPage() {
                                       )}
                                     </Table.Td>
                                     <Table.Td>
-                                      <Text size="sm" c="dimmed" lineClamp={1}>
+                                      <Text size="sm" c="var(--ink-3)" lineClamp={1}>
                                         {c.title}
                                       </Text>
                                     </Table.Td>
                                     <Table.Td>
-                                      <Text size="sm" c="dimmed" className="tnum">
+                                      <Text size="sm" c="var(--ink-3)" className="tnum">
                                         {c.releaseDate ? formatDate(c.releaseDate) : '-'}
                                       </Text>
                                     </Table.Td>
@@ -2134,7 +2134,7 @@ export default function SeriesDetailPage() {
                                       {/* Where the file on disk actually came from, which is what makes a source
                           comparison actionable: the winner is often not what you already have. */}
                                       {!c.hasFile || !c.fileSourceName ? (
-                                          <Text size="sm" c="dimmed">
+                                          <Text size="sm" c="var(--ink-3)">
                                             -
                                           </Text>
                                       ) : (
@@ -2310,7 +2310,7 @@ export default function SeriesDetailPage() {
                   </Paper>
                   {chapterPageCount > 1 && (
                       <Group justify="space-between" gap="xs" wrap="wrap">
-                        <Text size="xs" c="dimmed" className="tnum">
+                        <Text size="xs" c="var(--ink-3)" className="tnum">
                           <Trans>Chapters {currentPageLabel} · {visibleAllCount} matching</Trans>
                         </Text>
                         <Pagination
@@ -2350,7 +2350,7 @@ export default function SeriesDetailPage() {
             centered
         >
           <Stack gap="md">
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
             </Text>
             <Checkbox
@@ -2438,7 +2438,7 @@ function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
         <Text size="sm" fw={650} className="tnum">
           <Trans>About {readingTime}</Trans>
         </Text>
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           {style === 'scrolling' ? (
               seriesSpecific ? (
                   <Trans>

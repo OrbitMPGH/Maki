@@ -55,7 +55,7 @@ export function SetupAccountPage() {
           <Title order={2} mt="sm">
             <Trans>Welcome to Maki</Trans>
           </Title>
-          <Text c="dimmed" fz="sm" ta="center">
+          <Text c="var(--ink-3)" fz="sm" ta="center">
             <Trans>
               Create the administrator account. Your library and reading history, if you have any, are
               already attached to it.
@@ -93,7 +93,7 @@ export function SetupAccountPage() {
               />
 
               {setup.error && (
-                <Alert color="red" variant="light">
+                <Alert color="var(--danger)" variant="light">
                   {setup.error.message}
                 </Alert>
               )}
@@ -109,7 +109,7 @@ export function SetupAccountPage() {
           <Text fz="sm" fw={600} mb={6}>
             <Trans>Before exposing Maki to the internet</Trans>
           </Text>
-          <List fz="sm" c="dimmed" spacing={4}>
+          <List fz="sm" c="var(--ink-3)" spacing={4}>
             <List.Item>
               <Trans>Put it behind HTTPS, then turn on Settings → Security → Require HTTPS.</Trans>
             </List.Item>

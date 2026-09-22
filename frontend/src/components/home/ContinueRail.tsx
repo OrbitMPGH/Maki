@@ -69,7 +69,7 @@ export function ContinueRail({ items }: { items: HomeReadingItem[] }) {
         <Group className="reading-rail-controls" justify="flex-end" gap="xs">
           <ActionIcon
             variant="subtle"
-            color="gray"
+            color="var(--neutral)"
             aria-label={t`Show earlier chapters`}
             disabled={!reach.left}
             onClick={() => move(-1)}
@@ -78,7 +78,7 @@ export function ContinueRail({ items }: { items: HomeReadingItem[] }) {
           </ActionIcon>
           <ActionIcon
             variant="subtle"
-            color="gray"
+            color="var(--neutral)"
             aria-label={t`Show later chapters`}
             disabled={!reach.right}
             onClick={() => move(1)}

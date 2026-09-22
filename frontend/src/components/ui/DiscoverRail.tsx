@@ -111,7 +111,7 @@ export const RecommendationCard = memo(function RecommendationCard({
 
         {item.rating != null && (
           <span className="cover-badge discover-rating">
-            <IconStar size={10} style={{ color: '#f5c518' }} />
+            <IconStar size={10} style={{ color: 'var(--rating)' }} />
             {(item.rating / 10).toFixed(1)}
           </span>
         )}
@@ -226,7 +226,7 @@ export const RecommendationRow = memo(function RecommendationRow({
         <div className="row-progress">
           {item.rating != null && (
             <span className="cover-badge" style={{ flexShrink: 0 }}>
-              <IconStar size={11} style={{ color: '#f5c518' }} />
+              <IconStar size={11} style={{ color: 'var(--rating)' }} />
               {(item.rating / 10).toFixed(1)}
             </span>
           )}
@@ -318,7 +318,7 @@ export const EngineCard = memo(function EngineCard({
 
         {item.rating != null && (
           <span className="cover-badge discover-rating">
-            <IconStar size={10} style={{ color: '#f5c518' }} />
+            <IconStar size={10} style={{ color: 'var(--rating)' }} />
             {(item.rating / 10).toFixed(1)}
           </span>
         )}

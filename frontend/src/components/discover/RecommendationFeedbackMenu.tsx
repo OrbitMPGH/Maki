@@ -170,7 +170,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
             {t`Restore hidden or dismissed title`}
           </Menu.Item>
           <Menu.Item disabled={!exposed} onClick={() => void submit('clear-exposure')}>{t`Clear read or seen`}</Menu.Item>
-          <Text size="xs" c="dimmed" px="sm" py="xs">
+          <Text size="xs" c="var(--ink-3)" px="sm" py="xs">
             {t`A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it.`}
           </Text>
         </Menu.Dropdown>

@@ -52,7 +52,7 @@ export function SelectCards<T extends string>({
             <Text size="sm" fw={active ? 700 : 600}>
               {o.title}
             </Text>
-            <Text size="xs" c="dimmed" mt={2}>
+            <Text size="xs" c="var(--ink-3)" mt={2}>
               {o.subtitle}
             </Text>
           </UnstyledButton>

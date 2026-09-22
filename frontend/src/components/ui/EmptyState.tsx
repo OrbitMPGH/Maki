@@ -21,14 +21,14 @@ export function EmptyState({
 }) {
   return (
     <Stack align="center" gap="sm" py={64} px="md">
-      <ThemeIcon size={64} radius="xl" variant="light" color="gray">
+      <ThemeIcon size={64} radius="xl" variant="light" color="var(--neutral)">
         <IconCmp size={30} stroke={1.6} />
       </ThemeIcon>
       <Text fw={650} fz="lg">
         {title}
       </Text>
       {description && (
-        <Text c="dimmed" size="sm" ta="center" maw={420}>
+        <Text c="var(--ink-3)" size="sm" ta="center" maw={420}>
           {description}
         </Text>
       )}

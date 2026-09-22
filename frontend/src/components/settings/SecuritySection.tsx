@@ -51,7 +51,7 @@ export function SecuritySection() {
       <Title order={4} mb="sm">
         <Trans>Security</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>Changes take effect after Maki restarts.</Trans>
       </Text>
 
@@ -72,7 +72,7 @@ export function SecuritySection() {
         />
 
         {!draft.trustedProxies.trim() && (
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
               With no trusted proxy configured, forwarded headers are ignored entirely, deliberately,
               since believing them from anyone would let a client claim any address and slip past both
@@ -158,7 +158,7 @@ export function OidcSection() {
       <Title order={4} mb="sm">
         <Trans>Single sign-on</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
           take effect after Maki restarts. Register{' '}
@@ -221,7 +221,7 @@ export function OidcSection() {
         />
 
         {draft.breakGlassActive && (
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
               <Code>MAKI_ALLOW_LOCAL_LOGIN</Code> is set in this instance&apos;s environment, so password
               sign-in is available to every account regardless of the switch above. Remove the variable
@@ -263,7 +263,7 @@ export function OidcSection() {
         </Group>
 
         {mapsPermissions && (
-          <Alert color="blue" variant="light">
+          <Alert color="var(--info)" variant="light">
             <Trans>
               With either claim set, your provider is the authority on permissions: they are recomputed
               on every sign-in, so changes made on the Users page are overwritten the next time that

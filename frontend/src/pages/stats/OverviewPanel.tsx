@@ -216,7 +216,7 @@ export function OverviewPanel({
       {rangeControls}
       <Stack gap="lg">
         {!stats.readTrackingAvailable && (
-          <Alert icon={<IconInfoCircle size={16} />} color="gray" variant="light">
+          <Alert icon={<IconInfoCircle size={16} />} color="var(--neutral)" variant="light">
             <Trans>
               Reading stats need Kavita: connect it in Settings and Maki will start tracking
               chapters you read. Downloads and library changes are tracked either way.
@@ -291,7 +291,7 @@ export function OverviewPanel({
               />
             </Group>
             {timelineData.length === 0 ? (
-              <Text c="dimmed" size="sm">
+              <Text c="var(--ink-3)" size="sm">
                 <Trans>No activity in this period.</Trans>
               </Text>
             ) : (
@@ -362,7 +362,7 @@ export function OverviewPanel({
                   <Trans>Top genres</Trans>
                 </Text>
                 {genreData.length === 0 ? (
-                  <Text c="dimmed" size="sm">
+                  <Text c="var(--ink-3)" size="sm">
                     <Trans>No genre data yet.</Trans>
                   </Text>
                 ) : (
@@ -383,7 +383,7 @@ export function OverviewPanel({
                           <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
                             {g.name}
                           </Text>
-                          <Text size="xs" c="dimmed" className="tnum" style={{ flexShrink: 0 }}>
+                          <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
                             {genreTotal > 0 ? Math.round((g.value / genreTotal) * 100) : 0}%
                           </Text>
                         </Group>
@@ -397,13 +397,13 @@ export function OverviewPanel({
                   <Trans>Favorite tags</Trans>
                 </Text>
                 {stats.topTags.length === 0 ? (
-                  <Text c="dimmed" size="sm">
+                  <Text c="var(--ink-3)" size="sm">
                     <Trans>No tag data yet.</Trans>
                   </Text>
                 ) : (
                   <Group gap={6}>
                     {stats.topTags.map((t) => (
-                      <Badge key={t.name} variant="default" color="gray" fw={500}>
+                      <Badge key={t.name} variant="default" color="var(--neutral)" fw={500}>
                         {t.name}
                       </Badge>
                     ))}

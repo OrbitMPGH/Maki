@@ -143,7 +143,7 @@ export default function NotificationsPage() {
                 component={Link}
                 to="/settings?tab=account&s=notification-prefs"
                 variant="subtle"
-                color="gray"
+                color="var(--neutral)"
                 aria-label={t`Notification settings`}
               >
                 <IconSettings size={18} />
@@ -159,7 +159,7 @@ export default function NotificationsPage() {
             </Button>
             <Button
               variant="subtle"
-              color="red"
+              color="var(--danger)"
               size="xs"
               disabled={all.length === 0}
               onClick={() => clear.mutate()}
@@ -267,10 +267,10 @@ function Row({
             <Text size="sm" fw={item.read ? 500 : 650}>
               {item.title}
             </Text>
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="var(--ink-3)">
               {item.body}
             </Text>
-            <Text fz={10} lh={1.5} c="dimmed">
+            <Text fz={10} lh={1.5} c="var(--ink-3)">
               {relativeTime(item.createdAt)}
             </Text>
           </Stack>
@@ -279,7 +279,7 @@ function Row({
       <Tooltip label={t`Dismiss`} withArrow>
         <ActionIcon
           variant="subtle"
-          color="gray"
+          color="var(--neutral)"
           aria-label={t`Dismiss notification`}
           onClick={onDismiss}
           m="sm"

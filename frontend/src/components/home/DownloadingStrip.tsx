@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Badge, Button, Group, Paper, Progress, Stack, Text } from '@mantine/core'
 import { IconChevronRight } from '@tabler/icons-react'
-import { queueStatusVisual } from '../ui/status'
+import { queueStatusVisual, statusToken } from '../ui/status'
 import type { QueueItemDto } from '../../api/types'
 import { queueItemLabel } from '../../api/queue'
 import { useLabel } from '../../i18n-context'
@@ -53,9 +53,12 @@ export function DownloadingStrip({ items }: { items: QueueItemDto[] }) {
               )}
               <Badge
                 variant="light"
-                color={visual.color}
                 size="sm"
                 leftSection={<visual.Icon size={11} />}
+                style={{
+                  color: `var(--${statusToken(visual.color)})`,
+                  background: `var(--${statusToken(visual.color)}-soft)`,
+                }}
               >
                 {renderLabel(visual.label)}
               </Badge>

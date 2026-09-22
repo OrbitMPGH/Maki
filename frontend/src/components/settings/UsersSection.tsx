@@ -101,7 +101,7 @@ export function UsersSection() {
           <Trans>Add user</Trans>
         </Button>
       </Group>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Each account has its own login, permissions and content rating. Reading progress is shared
           across accounts for now; per-user history arrives with the next release.
@@ -133,7 +133,7 @@ export function UsersSection() {
                         </Badge>
                       )}
                       {user.disabled && (
-                        <Badge size="xs" color="red" variant="light">
+                        <Badge size="xs" color="var(--danger)" variant="light">
                           <Trans>disabled</Trans>
                         </Badge>
                       )}
@@ -145,17 +145,17 @@ export function UsersSection() {
                         <Trans>Administrator</Trans>
                       </Badge>
                     ) : (
-                      <Text fz="xs" c="dimmed">
+                      <Text fz="xs" c="var(--ink-3)">
                         <Plural value={granted} one="# granted" other="# granted" />
                       </Text>
                     )}
                   </Table.Td>
                   <Table.Td>
-                    <Text fz="xs" c="dimmed">
+                    <Text fz="xs" c="var(--ink-3)">
                       {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
                     </Text>
                   </Table.Td>
-                  <Table.Td c="dimmed">
+                  <Table.Td c="var(--ink-3)">
                     {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <Trans>never</Trans>}
                   </Table.Td>
                   <Table.Td ta="right">
@@ -169,7 +169,7 @@ export function UsersSection() {
                         <Button
                           size="compact-xs"
                           variant="subtle"
-                          color="red"
+                          color="var(--danger)"
                           onClick={() =>
                             remove.mutate(user.id, {
                               onError: (e) => notifications.show({ message: e.message, color: 'red' }),
@@ -293,7 +293,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           onChange={(e) => setIsAdmin(e.currentTarget.checked)}
         />
         {editingSelf && existing?.isAdmin && (
-          <Alert variant="light" color="blue">
+          <Alert variant="light" color="var(--info)">
             <Trans>
               You cannot remove your own administrator permission. Promote another account first, then
               edit this one from there.

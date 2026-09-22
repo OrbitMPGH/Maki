@@ -45,7 +45,7 @@ export function RequestForm({
 
   return (
     <Stack gap="xs" mt="xs">
-      <Text size="xs" fw={700} c="dimmed" tt="uppercase">
+      <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase">
         <Trans>Chapters - leave blank for all</Trans>
       </Text>
       <Group gap="sm" align="flex-end" wrap="nowrap">

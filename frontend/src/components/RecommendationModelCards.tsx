@@ -110,7 +110,7 @@ export function RecommendationModelCards({
           value={(running || switching) && pct === null ? 100 : (pct ?? 0)}
           animated={running || switching}
           striped={running || switching}
-          color={status?.lastError ? 'red' : 'brand'}
+          color={status?.lastError ? 'var(--danger)' : 'brand'}
         />
       )}
 
@@ -148,12 +148,12 @@ export function RecommendationModelCards({
               </Button>
       </Group>
       {modelSwitchError && !switching && (
-        <Text size="xs" c="red">
+        <Text size="xs" c="var(--danger)">
           <Trans>Model switch: {modelSwitchError}</Trans>
         </Text>
       )}
       {lastError && (
-        <Text size="xs" c="red">
+        <Text size="xs" c="var(--danger)">
           <Trans>Last error: {lastError}</Trans>
         </Text>
       )}

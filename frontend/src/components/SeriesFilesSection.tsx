@@ -2,10 +2,7 @@ import { useState } from 'react'
 import { ActionIcon, Badge, Button, Checkbox, Group, Loader, Modal, Paper, Stack, Table, Text, Title, Tooltip } from '@mantine/core'
 import {
   IconFileTypePdf,
-  IconFileUnknown,
   IconFileZip,
-  IconLink,
-  IconLinkOff,
   IconRefresh,
   IconTrash,
   IconX,
@@ -15,17 +12,10 @@ import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { msg, plural, t as now } from '@lingui/core/macro'
-import type { MessageDescriptor } from '@lingui/core'
+import { plural, t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
-
-const statusVisual: Record<string, { color: string; label: MessageDescriptor; icon: typeof IconLink }> = {
-  linked: { color: 'teal', label: msg`Linked`, icon: IconLink },
-  unlinked: { color: 'yellow', label: msg`Not linked`, icon: IconLinkOff },
-  unrecognized: { color: 'orange', label: msg`Unrecognized`, icon: IconFileUnknown },
-  missing: { color: 'red', label: msg`Missing from disk`, icon: IconFileUnknown },
-}
+import { fileStatusVisual, statusToken } from './ui/status'
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
@@ -68,7 +58,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             <Trans>Files</Trans>
           </Title>
           {files && (
-            <Text size="sm" c="dimmed" className="tnum">
+            <Text size="sm" c="var(--ink-3)" className="tnum">
               {files.length}
               {problems > 0 && (
                 <>
@@ -104,21 +94,21 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       {(isLoading ? (
           <Group py="md" gap="xs">
             <Loader size="sm" />
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>Scanning folder…</Trans>
             </Text>
           </Group>
         ) : !files || files.length === 0 ? (
-          <Text c="dimmed" size="sm" py="sm">
+          <Text c="var(--ink-3)" size="sm" py="sm">
             <Trans>No files in the series folder.</Trans>
           </Text>
         ) : (
         <>
           {selectMode && (
-            <Paper bg="var(--mantine-color-dark-8)" px="sm" py="xs" mt="sm" style={{ borderRadius: 'var(--mantine-radius-sm)' }}>
+            <Paper bg="var(--surface-sunken)" px="sm" py="xs" mt="sm" style={{ borderRadius: 'var(--radius-control)' }}>
               <Group gap="xs" justify="space-between">
                 <Group gap="xs">
-                  <Text size="sm" c="dimmed">
+                  <Text size="sm" c="var(--ink-3)">
                     <Plural value={selected.size} one="# selected" other="# selected" />
                   </Text>
                   <Button
@@ -170,7 +160,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               </Table.Thead>
               <Table.Tbody>
                 {files.map((f) => {
-                  const v = statusVisual[f.status] ?? statusVisual.unrecognized
+                  const v = fileStatusVisual(f.status)
                   const { fileName } = f
                   return (
                     <Table.Tr key={f.relativePath} opacity={f.status === 'missing' ? 0.6 : 1}>
@@ -207,13 +197,18 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             {f.parsedLabel}
                           </Badge>
                         ) : (
-                          <Text size="sm" c="dimmed">
+                          <Text size="sm" c="var(--ink-3)">
                             -
                           </Text>
                         )}
                       </Table.Td>
                       <Table.Td>
-                        <Badge size="sm" color={v.color} variant="light" leftSection={<v.icon size={12} />}>
+                        <Badge
+                          size="sm"
+                          color={`var(--${statusToken(v.color)})`}
+                          variant="light"
+                          leftSection={<v.Icon size={12} />}
+                        >
                           {renderLabel(v.label)}
                         </Badge>
                       </Table.Td>
@@ -231,13 +226,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             </Text>
                           </Tooltip>
                         ) : (
-                          <Text size="sm" c={f.mappedChapters.length ? undefined : 'dimmed'} className="tnum">
+                          <Text size="sm" c={f.mappedChapters.length ? undefined : 'var(--ink-3)'} className="tnum">
                             {mappedLabel(f)}
                           </Text>
                         )}
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm" c="dimmed" className="tnum">
+                        <Text size="sm" c="var(--ink-3)" className="tnum">
                           {formatBytes(f.size)}
                         </Text>
                       </Table.Td>
@@ -274,7 +269,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             centered
           >
             <Stack gap="md">
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="var(--ink-3)">
                 <Plural
                   value={selected.size}
                   one="This will permanently delete # file from disk."

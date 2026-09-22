@@ -740,11 +740,11 @@ function RecommendedTab() {
                     { value: 0.5, label: '·' },
                     { value: 1, label: t`varied` },
                   ]}
-                  color="teal"
+                  color="var(--ok)"
                 />
                 {/* Mark labels are absolutely positioned, so they take no layout space — this has
                     to clear them by hand or the caption lands on top of "closest"/"varied". */}
-                <Text size="xs" c="dimmed" mt={26}>
+                <Text size="xs" c="var(--ink-3)" mt={26}>
                   <Trans>Trades a little similarity for picks that aren't near-copies of each other.</Trans>
                 </Text>
               </div>
@@ -791,13 +791,13 @@ function RecommendedTab() {
       )}
 
       {error && (
-        <Alert color="yellow" variant="light">
+        <Alert color="var(--warn)" variant="light">
           {String(error)}
         </Alert>
       )}
       {isFetching && !data && (
         <>
-          <Text c="dimmed" size="sm" mb="sm">
+          <Text c="var(--ink-3)" size="sm" mb="sm">
             <Trans>Scanning the MangaBaka database for matches…</Trans>
           </Text>
           <PosterSkeletons density={density} viewMode={viewMode} />
@@ -1033,7 +1033,7 @@ function FeedExpandModal({
       </Card>
 
       {error && (
-        <Alert color="yellow" variant="light">
+        <Alert color="var(--warn)" variant="light">
           {String(error)}
         </Alert>
       )}
@@ -1051,7 +1051,7 @@ function FeedExpandModal({
       {items && items.length > 0 && (
         <>
           <Group justify="space-between" mb="sm">
-            <Text c="dimmed" size="sm">
+            <Text c="var(--ink-3)" size="sm">
               <Plural value={items.length} one="# title" other="# titles" />
             </Text>
             <DensityControl value={density} onChange={setDensity} />
@@ -1183,7 +1183,7 @@ function DiscoverBrowseTab({
             <DiscoverSeedStrip seedIds={recentRail.seedIds} />
           ) : (
             recentRail.subtitle && (
-              <Text c="dimmed" size="sm" mb="sm">
+              <Text c="var(--ink-3)" size="sm" mb="sm">
                 {recentRail.subtitle}
               </Text>
             )
@@ -1214,7 +1214,7 @@ function DiscoverBrowseTab({
           {rail.seedIds && rail.seedIds.length > 0 ? (
             <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
           ) : (
-            <Text c="dimmed" size="sm" mb="sm">{rail.subtitle}</Text>
+            <Text c="var(--ink-3)" size="sm" mb="sm">{rail.subtitle}</Text>
           )}
           <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
         </div>
@@ -1239,7 +1239,7 @@ function DiscoverBrowseTab({
             }
           />
           {cohortRail.subtitle && (
-            <Text c="dimmed" size="sm" mb="sm">
+            <Text c="var(--ink-3)" size="sm" mb="sm">
               {cohortRail.subtitle}
             </Text>
           )}
@@ -1295,7 +1295,7 @@ function DiscoverBrowseTab({
         <SectionHeader icon={IconCompass} title={t`Browse the catalogue`} />
         {error ? (
           <Alert
-            color="yellow"
+            color="var(--warn)"
             variant="light"
             icon={<IconAlertTriangle size={18} />}
             title={t`Catalogue unavailable`}
@@ -1315,7 +1315,7 @@ function DiscoverBrowseTab({
           </Alert>
         ) : isFetching && !rails ? (
           <>
-            <Text c="dimmed" size="sm" mb="sm">
+            <Text c="var(--ink-3)" size="sm" mb="sm">
               <Trans>Scanning the MangaBaka catalogue…</Trans>
             </Text>
             <DiscoverCatalogueSkeleton density={density.density} />
@@ -1426,7 +1426,7 @@ export default function DiscoverPage() {
               <Tooltip label={t`Refresh the catalogue`} withArrow>
                 <ActionIcon
                   variant="subtle"
-                  color="gray"
+                  color="var(--neutral)"
                   size="lg"
                   loading={railsFetching}
                   onClick={refreshRails}

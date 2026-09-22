@@ -66,7 +66,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
         </Group>
 
         {(tags ?? []).length === 0 && (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>No tags yet.</Trans> <Trans>Add one above, or tag a series from its detail page.</Trans>
           </Text>
         )}
@@ -85,10 +85,10 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                     style={{ flex: 1 }}
                     autoFocus
                   />
-                  <ActionIcon variant="subtle" color="green" onClick={() => saveLabel(id)} aria-label={t`Save`}>
+                  <ActionIcon variant="subtle" color="var(--ok)" onClick={() => saveLabel(id)} aria-label={t`Save`}>
                     <IconCheck size={15} />
                   </ActionIcon>
-                  <ActionIcon variant="subtle" color="gray" onClick={() => setEditingId(null)} aria-label={t`Cancel`}>
+                  <ActionIcon variant="subtle" color="var(--neutral)" onClick={() => setEditingId(null)} aria-label={t`Cancel`}>
                     <IconX size={15} />
                   </ActionIcon>
                 </>
@@ -115,12 +115,12 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                       </Group>
                     </Popover.Dropdown>
                   </Popover>
-                  <Text size="xs" c="dimmed" style={{ flex: 1 }} className="tnum">
+                  <Text size="xs" c="var(--ink-3)" style={{ flex: 1 }} className="tnum">
                     <Plural value={seriesCount} one="# series" other="# series" />
                   </Text>
                   <ActionIcon
                     variant="subtle"
-                    color="gray"
+                    color="var(--neutral)"
                     onClick={() => {
                       setEditingId(id)
                       setEditLabel(label)
@@ -131,7 +131,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                   </ActionIcon>
                   <ActionIcon
                     variant="subtle"
-                    color="red"
+                    color="var(--danger)"
                     onClick={() => deleteTag.mutate(id, { onError: fail })}
                     aria-label={t`Delete ${label}`}
                   >

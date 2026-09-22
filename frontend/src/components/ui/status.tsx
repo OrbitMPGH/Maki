@@ -9,8 +9,11 @@ import {
   IconEye,
   IconEyeCheck,
   IconEyeOff,
+  IconFileUnknown,
   IconFileZip,
   IconHourglass,
+  IconLink,
+  IconLinkOff,
   IconLoader2,
   IconPackage,
   IconPlayerPlay,
@@ -52,6 +55,12 @@ const STATUS_TOKEN: Record<string, string> = {
   red: 'danger',
   violet: 'watched',
   gray: 'neutral',
+  cyan: 'info',
+  orange: 'warn',
+  grape: 'watched',
+  green: 'ok',
+  lime: 'suggestive',
+  brand: 'brand',
 }
 
 /** Token stem for a `StatusVisual.color`, for `var(--x)` / `var(--x-soft)` pairs. */
@@ -246,4 +255,39 @@ export function isQueueActive(status: string): boolean {
     status !== 'Cancelled' &&
     !needsImportReview(status)
   )
+}
+
+/** A tracker's reading status for one series, as returned by scrobble sync. */
+export function trackerStatusVisual(status: string): StatusVisual {
+  switch (status) {
+    case 'completed':
+      return { color: 'green', label: msg`Completed`, Icon: IconCircleCheck }
+    case 'reading':
+      return { color: 'brand', label: msg`Reading`, Icon: IconPlayerPlay }
+    case 'plan_to_read':
+      return { color: 'cyan', label: msg`Plan to read`, Icon: IconClock }
+    default:
+      return { color: 'gray', label: status || msg`Listed`, Icon: IconHourglass }
+  }
+}
+
+/** A tracker connection's dot/state: connected, configured but not connected, or not configured. */
+export function trackerConnectionVisual(connected: boolean, configured: boolean): StatusVisual {
+  if (connected) return { color: 'green', label: msg`Connected`, Icon: IconLink }
+  if (configured) return { color: 'red', label: msg`Not connected`, Icon: IconLinkOff }
+  return { color: 'gray', label: msg`Not configured`, Icon: IconLinkOff }
+}
+
+/** A library file's link state against the series' chapters. */
+export function fileStatusVisual(status: string): StatusVisual {
+  switch (status) {
+    case 'linked':
+      return { color: 'teal', label: msg`Linked`, Icon: IconLink }
+    case 'unlinked':
+      return { color: 'yellow', label: msg`Not linked`, Icon: IconLinkOff }
+    case 'missing':
+      return { color: 'red', label: msg`Missing from disk`, Icon: IconFileUnknown }
+    default:
+      return { color: 'orange', label: msg`Unrecognized`, Icon: IconFileUnknown }
+  }
 }

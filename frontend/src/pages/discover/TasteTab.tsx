@@ -67,7 +67,7 @@ const SLICE_COLORS = [
   'var(--ok)',
   'var(--warn)',
   'var(--danger)',
-  'var(--mantine-color-dark-3)',
+  'var(--neutral)',
 ]
 
 /** How many of each composition facet the demoted row shows. */
@@ -117,7 +117,7 @@ function GroupCard({
         <Text fw={650} style={{ minWidth: 0 }}>
           {group.label}
         </Text>
-        <Text c="dimmed" size="xs" style={{ flexShrink: 0 }}>
+        <Text c="var(--ink-3)" size="xs" style={{ flexShrink: 0 }}>
           {summary}
         </Text>
       </Group>
@@ -164,7 +164,7 @@ function BehaviourList({
         <Text fw={650}>{title}</Text>
       </Group>
       {items.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           {emptyText}
         </Text>
       ) : (
@@ -237,7 +237,7 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
         />
       </SimpleGrid>
 
-      <Text c="dimmed" size="xs" mt={6}>
+      <Text c="var(--ink-3)" size="xs" mt={6}>
         {readSummary}{' '}
         {paceSummary ?? (
           <>
@@ -277,7 +277,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
 
   return (
     <Card padding="md" radius="lg" withBorder>
-      <Text c="dimmed" size="xs" mb="md">
+      <Text c="var(--ink-3)" size="xs" mb="md">
         <Trans>How close each quarter sat to where you started.</Trans>{' '}
         <Trans>Falling means you moved.</Trans>
       </Text>
@@ -299,15 +299,15 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
             </Text>
             <Group gap={4} style={{ flexShrink: 0 }}>
               {point.distinctiveTags.slice(0, 2).map((tag) => (
-                <Badge key={tag} variant="light" color="grape" size="xs">
+                <Badge key={tag} variant="light" color="var(--watched)" size="xs">
                   {tag}
                 </Badge>
               ))}
             </Group>
-            <Text c="dimmed" size="xs" truncate style={{ flex: 1, minWidth: 0 }}>
+            <Text c="var(--ink-3)" size="xs" truncate style={{ flex: 1, minWidth: 0 }}>
               {point.example ? point.example.title : ''}
             </Text>
-            <Text c="dimmed" size="xs" className="tnum" style={{ flexShrink: 0 }}>
+            <Text c="var(--ink-3)" size="xs" className="tnum" style={{ flexShrink: 0 }}>
               {point.seriesCount}
             </Text>
           </Group>
@@ -342,7 +342,7 @@ function AgainstCatalogue({ facet }: { facet: TasteFacet }) {
   const label = t`${ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read`
   return (
     <Tooltip label={label} multiline w={260}>
-      <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
+      <Badge variant="outline" color="var(--neutral)" size="sm" style={{ flexShrink: 0 }}>
         <Trans>cat {ratioValue}</Trans>
       </Badge>
     </Tooltip>
@@ -375,7 +375,7 @@ function CompositionCard({
         {title}
       </Text>
       {data.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Trans>Nothing to show yet.</Trans>
         </Text>
       ) : (
@@ -397,7 +397,7 @@ function CompositionCard({
                   {d.label}
                 </Text>
                 {byName.get(d.name) && <OverIndex facet={byName.get(d.name)!} />}
-                <Text size="xs" c="dimmed" className="tnum" style={{ flexShrink: 0 }}>
+                <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
                   {percent(d.value)}
                 </Text>
               </Group>
@@ -419,7 +419,7 @@ function CreatorsCard({ facets }: { facets: TasteFacet[] }) {
         </Text>
       </Group>
       {facets.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Trans>No creator shows up often enough yet.</Trans>
         </Text>
       ) : (
@@ -429,7 +429,7 @@ function CreatorsCard({ facets }: { facets: TasteFacet[] }) {
             const supportLabel = plural(support, { one: '# series', other: '# series' })
             return (
               <Group key={name} gap={8} wrap="nowrap">
-                <Text c="dimmed" fw={700} size="sm" className="tnum" style={{ width: 18 }}>
+                <Text c="var(--ink-3)" fw={700} size="sm" className="tnum" style={{ width: 18 }}>
                   {i + 1}
                 </Text>
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
@@ -437,7 +437,7 @@ function CreatorsCard({ facets }: { facets: TasteFacet[] }) {
                     {name}
                   </Anchor>
                 </Text>
-                <Text size="xs" c="dimmed" className="tnum" style={{ flexShrink: 0 }}>
+                <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
                   {supportLabel}
                 </Text>
               </Group>
@@ -465,7 +465,7 @@ function TagsCard({
         </Text>
       </Group>
       {facets.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Trans>No tags yet.</Trans>{' '}
           <Trans>They come from the catalogue, so a library the dump does not cover has none.</Trans>
         </Text>
@@ -475,7 +475,7 @@ function TagsCard({
             <Group key={f.name} gap={8} wrap="nowrap">
               <Badge
                 variant="light"
-                color="grape"
+                color="var(--watched)"
                 size="sm"
                 style={{ cursor: 'pointer', flexShrink: 0 }}
                 onClick={() => onExplore(f.name)}
@@ -485,7 +485,7 @@ function TagsCard({
               <div style={{ flex: 1 }} />
               <OverIndex facet={f} />
               <AgainstCatalogue facet={f} />
-              <Text size="xs" c="dimmed" className="tnum" style={{ flexShrink: 0 }}>
+              <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
                 {f.support}
               </Text>
             </Group>
@@ -534,7 +534,7 @@ export function TasteTab() {
 
   if (error) {
     return (
-      <Alert color="red" icon={<IconAlertCircle size={16} />} title={t`Could not read your profile`}>
+      <Alert color="var(--danger)" icon={<IconAlertCircle size={16} />} title={t`Could not read your profile`}>
         {String(error)}
       </Alert>
     )
@@ -548,7 +548,7 @@ export function TasteTab() {
   if (nothingAtAll) {
     return (
       <Stack gap="md">
-      <Alert color="gray" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
+      <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
         <Trans>Read a few chapters and this fills in.</Trans>
       </Alert>
       <SignalsCard />
@@ -597,16 +597,16 @@ export function TasteTab() {
           />
         }
       />
-      <Text c="dimmed" size="xs">
+      <Text c="var(--ink-3)" size="xs">
         {summaryText}
       </Text>
       {insights?.unavailable || insights?.groupsUnavailable ? (
-        <Alert color="gray" icon={<IconAlertCircle size={16} />}>
+        <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />}>
           {insights.unavailable ?? insights.groupsUnavailable}
         </Alert>
       ) : (
         <>
-          <Text c="dimmed" size="xs">
+          <Text c="var(--ink-3)" size="xs">
             <Trans>
               The specific things that keep coming back in your library, each with more of the same
               beside it.
@@ -634,7 +634,7 @@ export function TasteTab() {
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
                   <SeriesLink id={insights.oddOneOut.seriesId} title={insights.oddOneOut.title} />
                 </Text>
-                <Text c="dimmed" size="xs" style={{ flexShrink: 0 }}>
+                <Text c="var(--ink-3)" size="xs" style={{ flexShrink: 0 }}>
                   <Trans>least like anything else you read</Trans>
                 </Text>
               </Group>
@@ -647,7 +647,7 @@ export function TasteTab() {
         <>
           <SectionHeader icon={IconRoute} title={t`Where your taste has moved`} />
           {insights.driftUnavailable ? (
-            <Alert color="gray" icon={<IconAlertCircle size={16} />}>
+            <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />}>
               {insights.driftUnavailable}
             </Alert>
           ) : (
@@ -673,14 +673,14 @@ export function TasteTab() {
               </Button>
             }
           />
-          <Text c="dimmed" size="xs">
+          <Text c="var(--ink-3)" size="xs">
             <Trans>
               The same counts the Stats page shows, kept here so the groups above have something to
               sit against.
             </Trans>
           </Text>
           {!profile.catalogueBaselineAvailable && (
-            <Text c="dimmed" size="xs">
+            <Text c="var(--ink-3)" size="xs">
               <Trans>
                 Comparisons against the wider catalogue need the embedding index.
               </Trans>{' '}
@@ -689,7 +689,7 @@ export function TasteTab() {
           )}
           {profile.catalogueBaselineAvailable &&
             profile.catalogueBaselineSource === 'popularity' && (
-              <Text c="dimmed" size="xs">
+              <Text c="var(--ink-3)" size="xs">
                 <Trans>
                   The catalogue badges weight titles by popularity rank, standing in for how many
                   people actually read them.
@@ -707,8 +707,8 @@ export function TasteTab() {
       )}
 
       <Group gap="xs" mt="xs">
-        <IconLock size={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
-        <Text c="dimmed" size="xs">
+        <IconLock size={14} style={{ color: 'var(--ink-3)' }} />
+        <Text c="var(--ink-3)" size="xs">
           <Trans>Only you can see this.</Trans>{' '}
           <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>
         </Text>

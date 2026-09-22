@@ -85,7 +85,7 @@ export function ReadingProfilesSection() {
         </Button>
       </Group>
 
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Named reader settings, picked automatically from a series' type. Series with a type no
           profile covers fall back to the Reader defaults above. A series whose metadata hasn't been
@@ -118,7 +118,7 @@ export function ReadingProfilesSection() {
           <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
         ))}
         {profiles?.length === 0 && !creating && (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>No profiles. Every series uses the reader defaults.</Trans>
           </Text>
         )}
@@ -149,7 +149,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
               </Badge>
             ))}
           </Group>
-          <Text fz="xs" c="dimmed">
+          <Text fz="xs" c="var(--ink-3)">
             {summarize(profile.prefs, renderLabel)}
           </Text>
         </div>
@@ -157,7 +157,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
           <Tooltip label={t`Delete profile`} withArrow>
             <ActionIcon
               variant="subtle"
-              color="red"
+              color="var(--danger)"
               loading={remove.isPending}
               onClick={() =>
                 remove.mutate(profile.id, {
@@ -172,7 +172,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
           </Tooltip>
           <ActionIcon
             variant="subtle"
-            color="gray"
+            color="var(--neutral)"
             onClick={() => setOpen((value) => !value)}
             aria-label={open ? t`Collapse` : t`Edit profile`}
           >
@@ -361,7 +361,7 @@ function ProfileEditor({
       />
 
       <Group justify="flex-end" gap="xs">
-        <Button size="xs" variant="subtle" color="gray" onClick={onCancel}>
+        <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
           <Trans>Cancel</Trans>
         </Button>
         <Button

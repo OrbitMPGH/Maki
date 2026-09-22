@@ -58,10 +58,30 @@ function iconFor(key: string): Icon {
  * rows deliberately keep their shape and lose only their colour: a badge you have not earned should
  * still show you what it takes.
  */
-const TIER_COLORS = ['#a1662f', '#9aa4ad', '#d4a017', '#4fb0c6', '#7f6fd6', '#d64f7f']
+const TIER_COLORS = [
+  'var(--tier-1)',
+  'var(--tier-2)',
+  'var(--tier-3)',
+  'var(--tier-4)',
+  'var(--tier-5)',
+  'var(--tier-6)',
+]
+
+const TIER_SOFT_COLORS = [
+  'var(--tier-1-soft)',
+  'var(--tier-2-soft)',
+  'var(--tier-3-soft)',
+  'var(--tier-4-soft)',
+  'var(--tier-5-soft)',
+  'var(--tier-6-soft)',
+]
 
 function tierColor(tier: number): string {
   return TIER_COLORS[Math.min(Math.max(tier, 1), TIER_COLORS.length) - 1]
+}
+
+function tierSoftColor(tier: number): string {
+  return TIER_SOFT_COLORS[Math.min(Math.max(tier, 1), TIER_SOFT_COLORS.length) - 1]
 }
 
 /**
@@ -102,7 +122,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               size="sm"
               radius="xl"
               variant={earned ? 'light' : 'default'}
-              color={earned ? tierColor(achievement.tier) : 'gray'}
+              color={earned ? tierColor(achievement.tier) : 'var(--neutral)'}
             >
               {(() => {
                 const Icon = iconFor(achievement.icon)
@@ -118,12 +138,12 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               <Badge
                 size="sm"
                 variant="light"
-                style={{ backgroundColor: `${tierColor(achievement.tier)}22`, color: tierColor(achievement.tier) }}
+                style={{ backgroundColor: tierSoftColor(achievement.tier), color: tierColor(achievement.tier) }}
               >
                 {achievement.tierName}
               </Badge>
             ) : (
-              <Badge size="sm" variant="light" color="green">
+              <Badge size="sm" variant="light" color="var(--ok)">
                 <Trans>Earned</Trans>
               </Badge>
             )
@@ -132,7 +152,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
           )}
         </Group>
 
-        <Text size="xs" c="dimmed" lineClamp={2}>
+        <Text size="xs" c="var(--ink-3)" lineClamp={2}>
           {achievement.description}
         </Text>
 
@@ -142,15 +162,15 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               value={progress * 100}
               size="sm"
               radius="xl"
-              color={earned ? tierColor(achievement.tier) : 'gray'}
+              color={earned ? tierColor(achievement.tier) : 'var(--neutral)'}
             />
             <Group justify="space-between" gap="xs">
-              <Text size="xs" c="dimmed" className="tnum">
+              <Text size="xs" c="var(--ink-3)" className="tnum">
                 {formatValue(achievement, achievement.value)}
               </Text>
               {next !== null && (
                 <Tooltip label={t`Next tier at ${nextValue}`}>
-                  <Text size="xs" c="dimmed" className="tnum">
+                  <Text size="xs" c="var(--ink-3)" className="tnum">
                     / {nextValue}
                   </Text>
                 </Tooltip>
@@ -188,7 +208,7 @@ export function AchievementGrid({ achievements }: { achievements: Achievement[] 
           {/* Said plainly, because these count what is on disk and the library is shared: on a
               multi-user instance everybody sees the same numbers here, and presenting them beside
               the reading badges without saying so would read as a claim about the viewer. */}
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Earned by the library itself, so everyone on this instance shares them.</Trans>
           </Text>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">

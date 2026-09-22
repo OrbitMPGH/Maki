@@ -82,7 +82,7 @@ export default function LanguageAnnouncementModal() {
           comboboxProps={{ withinPortal: true }}
         />
 
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>
             Translations other than English are machine-made and being corrected over time; anything
             still untranslated falls back to English.

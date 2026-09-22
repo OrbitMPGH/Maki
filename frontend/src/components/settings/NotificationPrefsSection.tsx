@@ -46,7 +46,7 @@ export function NotificationPrefsSection() {
       <Title order={4}>
         <Trans>Notifications</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mt={4}>
+      <Text size="sm" c="var(--ink-3)" mt={4}>
         <Trans>
           What lands in your bell. These are yours alone, they don't affect the Discord and webhook
           connections on the Integrations tab.
@@ -66,7 +66,7 @@ export function NotificationPrefsSection() {
       <Text size="sm" fw={500}>
         <Trans>Tell me about new chapters for</Trans>
       </Text>
-      <Text size="xs" c="dimmed" mb="xs">
+      <Text size="xs" c="var(--ink-3)" mb="xs">
         <Trans>
           The starting point for every series. Any series can be set to something else from its own
           page, or for a whole selection at once from the Library's Select mode.
@@ -84,7 +84,7 @@ export function NotificationPrefsSection() {
       {categories.map((category) => (
         <div key={category.id}>
           <Divider my="md" />
-          <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb="xs" style={{ letterSpacing: '0.08em' }}>
+          <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb="xs" style={{ letterSpacing: '0.08em' }}>
             {renderLabel(category.label)}
           </Text>
           <Stack gap="xs">

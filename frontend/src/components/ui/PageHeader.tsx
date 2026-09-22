@@ -19,7 +19,7 @@ export function PageHeader({
       <Stack gap={2} style={{ minWidth: 0 }}>
         <Title order={1}>{title}</Title>
         {description && (
-          <Text size="sm" c="dimmed" maw={620}>
+          <Text size="sm" c="var(--ink-3)" maw={620}>
             {description}
           </Text>
         )}

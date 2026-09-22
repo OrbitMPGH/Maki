@@ -66,10 +66,10 @@ const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
 }
 
 const ORIGIN_COLORS: Record<string, string> = {
-  TitleSearch: 'blue',
-  CrossId: 'grape',
-  Manual: 'teal',
-  Unknown: 'gray'
+  TitleSearch: 'var(--info)',
+  CrossId: 'var(--watched)',
+  Manual: 'var(--ok)',
+  Unknown: 'var(--neutral)'
 }
 
 const SOURCE_ICONS: Record<string, string> = {
@@ -287,7 +287,7 @@ export function SourceMappingsSection({
       {matching && (
         <Group gap="xs">
           <Loader size="xs" />
-          <Text c="dimmed" size="sm">
+          <Text c="var(--ink-3)" size="sm">
             {mappings && mappings.length > 0 ? (
               <Trans>Matching the remaining sources…</Trans>
             ) : (
@@ -299,7 +299,7 @@ export function SourceMappingsSection({
 
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
-          <Text c="dimmed" size="sm">
+          <Text c="var(--ink-3)" size="sm">
             <Trans>No sources linked. Chapters cannot be synced or downloaded.</Trans>
           </Text>
         )
@@ -337,16 +337,16 @@ export function SourceMappingsSection({
                             }}
                         />
                     )}
-                    <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'dimmed' : undefined}>
+                    <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}>
                       {m.sourceName}
                     </Text>
                     {sourceDisabled(m.sourceName) && (
-                      <Badge size="xs" color="gray" variant="light">
+                      <Badge size="xs" color="var(--neutral)" variant="light">
                         <Trans>Source off</Trans>
                       </Badge>
                     )}
                     {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
-                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'gray'} variant="light">
+                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light">
                         {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                       </Badge>
                     </Tooltip>}
@@ -408,12 +408,12 @@ export function SourceMappingsSection({
                 <Table.Td>
                   {m.lastError ? (
                     <Tooltip label={m.lastError} withArrow>
-                      <Badge size="sm" color="red" variant="light">
+                      <Badge size="sm" color="var(--danger)" variant="light">
                         <Trans>Error</Trans>
                       </Badge>
                     </Tooltip>
                   ) : (
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="var(--ink-3)">
                       {m.lastRefresh ? formatDateTime(m.lastRefresh) : <Trans>never</Trans>}
                     </Text>
                   )}
@@ -421,7 +421,7 @@ export function SourceMappingsSection({
                 <Table.Td>
                   <ActionIcon
                     variant="subtle"
-                    color="red"
+                    color="var(--danger)"
                     onClick={() => {
                       setRemoving(m)
                       setDeleteFiles(false)
@@ -475,14 +475,14 @@ export function SourceMappingsSection({
                       {state === 'Matched' ? (
                         <Badge
                           size="xs"
-                          color="green"
+                          color="var(--ok)"
                           variant="light"
                           leftSection={<IconCheck size={10} />}
                         >
                           <Trans>Found</Trans>
                         </Badge>
                       ) : state === 'NoMatch' ? (
-                        <Badge size="xs" color="gray" variant="light">
+                        <Badge size="xs" color="var(--neutral)" variant="light">
                           <Trans>No match</Trans>
                         </Badge>
                       ) : (
@@ -517,18 +517,18 @@ export function SourceMappingsSection({
         centered
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               Chapters not listed by another enabled source will be removed. Files downloaded from
               this source will be detached so they cannot be read as the correct chapter.
             </Trans>
           </Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Detached CBZs stay in the Files section unless you choose to delete them.</Trans>
           </Text>
 
           {missingSnapshots.length > 0 && (
-            <Alert color="orange" title={t`One refresh required`}>
+            <Alert color="var(--warn)" title={t`One refresh required`}>
               <Stack gap="xs">
                 <Text size="sm">
                   <Trans>
@@ -567,13 +567,13 @@ export function SourceMappingsSection({
             />
           )}
 
-          <Text size="sm" c="red">
+          <Text size="sm" c="var(--danger)">
             <Trans>Reading progress and bookmarks for removed chapter rows will also be deleted.</Trans>
           </Text>
           <Group justify="space-between">
             <Button
               variant="subtle"
-              color="red"
+              color="var(--danger)"
               onClick={() => setFallbackOpen(true)}
             >
               <Trans>Remove without cleanup</Trans>
@@ -583,7 +583,7 @@ export function SourceMappingsSection({
                 <Trans>Cancel</Trans>
               </Button>
               <Button
-                color="red"
+                color="var(--danger)"
                 leftSection={<IconTrash size={16} />}
                 disabled={missingSnapshots.length > 0 || !removing}
                 loading={removeMapping.isPending}
@@ -636,13 +636,13 @@ export function SourceMappingsSection({
         centered
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               This removes only the source mapping. Existing chapter rows and files will stay
               exactly as they are and may need manual cleanup later.
             </Trans>
           </Text>
-          <Text size="sm" c="red">
+          <Text size="sm" c="var(--danger)">
             <Trans>This action cannot be undone.</Trans>
           </Text>
           <Group justify="flex-end">
@@ -650,7 +650,7 @@ export function SourceMappingsSection({
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="red"
+              color="var(--danger)"
               loading={deleteMapping.isPending}
               onClick={() =>
                 removing &&
@@ -719,7 +719,7 @@ export function SourceMappingsSection({
                         {resolved.displayName}
                       </Badge>
                     </Group>
-                    <Text size="xs" c="dimmed" lineClamp={1}>
+                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
                       {resolved.url}
                     </Text>
                   </div>
@@ -727,7 +727,7 @@ export function SourceMappingsSection({
               </Card>
             )}
             {pastedUrl && resolveError && (
-              <Text c="red" size="sm">
+              <Text c="var(--danger)" size="sm">
                 {String(resolveError)}
               </Text>
             )}
@@ -747,7 +747,7 @@ export function SourceMappingsSection({
                     <Text fw={600} size="sm">
                       {r.title}
                     </Text>
-                    <Text size="xs" c="dimmed" lineClamp={1}>
+                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
                       {r.url}
                     </Text>
                   </div>
@@ -768,7 +768,7 @@ export function SourceMappingsSection({
               </Card>
             ))}
             {sourceName && debounced.trim().length > 1 && results?.length === 0 && !isFetching && (
-              <Text c="dimmed" size="sm">
+              <Text c="var(--ink-3)" size="sm">
                 <Trans>No results.</Trans>
               </Text>
             )}
@@ -820,7 +820,7 @@ function MappingLanguages({
         multiline
         w={240}
       >
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           {selected.join(', ') || 'en'}
         </Text>
       </Tooltip>

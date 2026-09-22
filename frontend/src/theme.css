@@ -17,6 +17,20 @@
   --ink-3: #a6adbb;
   --ink-4: #9098a8;
   --hairline: var(--border);
+  --mantine-color-dimmed: var(--ink-3);
+  --rating: #f5c518;
+  --tier-1: #a1662f;
+  --tier-1-soft: color-mix(in srgb, var(--tier-1) 15%, transparent);
+  --tier-2: #9aa4ad;
+  --tier-2-soft: color-mix(in srgb, var(--tier-2) 15%, transparent);
+  --tier-3: #d4a017;
+  --tier-3-soft: color-mix(in srgb, var(--tier-3) 15%, transparent);
+  --tier-4: #4fb0c6;
+  --tier-4-soft: color-mix(in srgb, var(--tier-4) 15%, transparent);
+  --tier-5: #7f6fd6;
+  --tier-5-soft: color-mix(in srgb, var(--tier-5) 15%, transparent);
+  --tier-6: #d64f7f;
+  --tier-6-soft: color-mix(in srgb, var(--tier-6) 15%, transparent);
 
   --brand: #6d7dff;
   --brand-hover: #5c6cf0;
@@ -122,6 +136,13 @@
   --watched: #7040bd;
   --suggestive: #657018;
   --neutral: #606879;
+  --rating: #b8860b;
+  --tier-1: #7a4a1e;
+  --tier-2: #6b7480;
+  --tier-3: #8a6a0a;
+  --tier-4: #1f7a8c;
+  --tier-5: #5b4bab;
+  --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
   --surface-raised: #ffffff;
   --surface-sunken: #eceef6;
@@ -180,6 +201,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+:root[data-mantine-color-scheme='dark'],
+:root[data-mantine-color-scheme='light'] {
+  --mantine-color-dimmed: var(--ink-3);
+}
+
 /* Elevate surfaces above the app body so cards/modals read as layers. */
 [data-mantine-color-scheme='dark'] {
   --mantine-color-default-border: var(--border);
@@ -235,7 +261,7 @@ body {
   box-shadow: none;
 }
 [data-mantine-color-scheme='dark'] .mantine-Table-tr:hover > td {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: color-mix(in srgb, white 2%, transparent);
 }
 
 /* Tabular figures anywhere counts/ratios/dates are shown side by side. */
@@ -345,7 +371,7 @@ body {
   gap: 11px;
   padding: 8px 11px;
   border-radius: var(--radius-control);
-  color: var(--mantine-color-dark-1);
+  color: var(--ink-2);
   font-size: var(--type-body);
   font-weight: 550;
   line-height: 1;
@@ -395,7 +421,7 @@ body {
   border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: var(--surface-2);
-  color: var(--mantine-color-dark-1);
+  color: var(--ink-2);
   font-size: var(--type-meta);
   cursor: pointer;
   transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
@@ -416,7 +442,7 @@ body {
   display: none;
   font-size: var(--type-label);
   font-weight: 600;
-  color: var(--mantine-color-dark-3);
+  color: var(--ink-4);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1px 5px;
@@ -466,7 +492,7 @@ body {
   display: flex;
   padding: 1px;
   border-radius: 3px 0 0 0;
-  background: var(--mantine-color-body);
+  background: var(--surface);
 }
 
 /* Arriving from the command palette: the tab switches and the page scrolls, so without a marker
@@ -496,7 +522,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--mantine-color-dark-3);
+  color: var(--ink-4);
   padding: 0 11px;
 }
 
@@ -563,7 +589,7 @@ body {
   place-items: center;
   padding: 12px;
   text-align: center;
-  color: var(--mantine-color-dark-2);
+  color: var(--ink-3);
   font-size: var(--type-meta);
 }
 
@@ -610,18 +636,18 @@ body {
   text-transform: uppercase;
   white-space: nowrap;
   color: #fff;
-  background: var(--mantine-color-gray-filled);
+  background: color-mix(in srgb, black 55%, transparent);
 }
 .cover-badge-circle {
   width: 20px;
   padding: 0;
   justify-content: center;
   border-radius: 50%;
-  background: var(--mantine-color-dark-9);
+  background: #000;
   opacity: 0.9;
 }
 .cover-badge-circle[data-dim] {
-  background: var(--mantine-color-dark-7);
+  background: #000;
   opacity: 0.7;
 }
 /* Unread count / all-read marker. The progress ring beside these is easy to miss at grid
@@ -708,7 +734,7 @@ body {
   width: 20px;
   height: 20px;
   border-radius: var(--mantine-radius-sm);
-  border: 1px solid var(--mantine-color-gray-5);
+  border: 1px solid color-mix(in srgb, white 35%, transparent);
   background: rgba(6, 7, 11, 0.65);
 }
 .cover-check[data-checked] {
@@ -743,7 +769,7 @@ body {
   flex: 1;
   height: 4px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, white 16%, transparent);
   overflow: hidden;
 }
 .cover-bar-fill {
@@ -757,10 +783,10 @@ body {
 .cover-count {
   font-size: var(--type-micro);
   white-space: nowrap;
-  color: var(--mantine-color-gray-4);
+  color: color-mix(in srgb, white 82%, transparent);
 }
 .cover-count[data-nothing-wanted] {
-  color: var(--mantine-color-gray-6);
+  color: color-mix(in srgb, white 55%, transparent);
 }
 
 /* Shared delegated tooltip (TipLayer): one node for every `data-tip` in the app.
@@ -931,7 +957,7 @@ body {
   margin-top: 3px;
   font-size: var(--type-micro);
   font-variant-numeric: tabular-nums;
-  color: var(--mantine-color-gray-4);
+  color: color-mix(in srgb, white 82%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -943,7 +969,7 @@ body {
   height: 4px;
   margin-top: 7px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, white 16%, transparent);
   overflow: hidden;
 }
 .home-resume-fill {
@@ -952,7 +978,7 @@ body {
   background: var(--brand);
 }
 .home-read-badge {
-  background: var(--mantine-color-dark-9);
+  background: #000;
   opacity: 0.92;
   cursor: pointer;
 }
@@ -1012,7 +1038,7 @@ body {
   z-index: 1;
   text-transform: none;
   font-variant-numeric: tabular-nums;
-  background: var(--mantine-color-dark-9);
+  background: #000;
 }
 .discover-meta {
   position: absolute;
@@ -1030,7 +1056,7 @@ body {
   flex-wrap: nowrap;
   white-space: nowrap;
   font-size: var(--type-micro);
-  color: var(--mantine-color-gray-4);
+  color: color-mix(in srgb, white 82%, transparent);
 }
 .discover-sub-status {
   text-transform: capitalize;
@@ -2323,7 +2349,7 @@ body {
   gap: 18px;
   align-items: baseline;
   padding: 9px 0;
-  border-top: 1px solid var(--mantine-color-dark-4);
+  border-top: 1px solid var(--hairline);
 }
 .series-split-row {
   display: grid;
@@ -2392,7 +2418,7 @@ body {
 .chapter-table tbody td,
 .panel-table tbody td {
   height: 48px;
-  border-bottom: 1px solid var(--mantine-color-dark-4);
+  border-bottom: 1px solid var(--hairline);
 }
 .panel-table tbody td {
   height: 56px;

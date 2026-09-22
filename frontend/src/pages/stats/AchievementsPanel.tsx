@@ -58,7 +58,7 @@ function GoalCard({ goal }: { goal: ReadingGoal }) {
           <Text size="sm" fw={600}>
             {renderLabel(GOAL_LABELS[goal.period])}
           </Text>
-          <Text size="xs" c="dimmed" className="tnum">
+          <Text size="xs" c="var(--ink-3)" className="tnum">
             {formatNumber(goal.progress)} / {metricProgress(goal.metric, goal.target)}
           </Text>
         </Stack>
@@ -101,7 +101,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
   // is already in the position they want.
   if (isError || !summary) {
     return (
-      <Alert icon={<IconAlertTriangle size={16} />} color="red" variant="light">
+      <Alert icon={<IconAlertTriangle size={16} />} color="var(--danger)" variant="light">
         <Trans>Could not load your progress. The server logs will say why.</Trans>
       </Alert>
     )
@@ -109,7 +109,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
 
   if (!summary.enabled) {
     return (
-      <Alert icon={<IconInfoCircle size={16} />} color="gray" variant="light">
+      <Alert icon={<IconInfoCircle size={16} />} color="var(--neutral)" variant="light">
         <Trans>
           Progress tracking is switched off. Turn it back on under Settings to see levels,
           achievements and streaks. Nothing was lost while it was off: all of it is worked out from
@@ -146,12 +146,12 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
               <Title order={4}>
                 <Trans>Level {currentLevel}</Trans>
               </Title>
-              <Text size="sm" c="dimmed" className="tnum">
+              <Text size="sm" c="var(--ink-3)" className="tnum">
                 <Trans>
                   {intoLevel} / {levelSpan} XP to level {nextLevel}
                 </Trans>
               </Text>
-              <Text size="xs" c="dimmed" className="tnum">
+              <Text size="xs" c="var(--ink-3)" className="tnum">
                 <Trans>
                   {earnedCount} of{' '}
                   <Plural value={summary.total} one="# achievement earned" other="# achievements earned" />
@@ -166,7 +166,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
                 <Text size="xl" fw={700} className="tnum">
                   {summary.currentStreak}
                 </Text>
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="var(--ink-3)">
                   <Trans>day streak</Trans>
                 </Text>
               </Stack>
@@ -174,7 +174,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
                 <Text size="xl" fw={700} className="tnum">
                   {summary.longestStreak}
                 </Text>
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="var(--ink-3)">
                   <Trans>best streak</Trans>
                 </Text>
               </Stack>

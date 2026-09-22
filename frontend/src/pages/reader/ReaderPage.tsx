@@ -353,7 +353,7 @@ export default function ReaderPage() {
       <div className="reader-root">
         <Center h="100dvh">
           <Stack align="center" gap="sm">
-            <Text c="dimmed">
+            <Text c="var(--ink-3)">
               <Trans>This chapter has no readable file.</Trans>
             </Text>
             <Button component={Link} to="/library" variant="light">
@@ -397,7 +397,7 @@ export default function ReaderPage() {
       {atEnd ? (
         <Center h="100dvh">
           <Stack align="center" gap="sm">
-            <Text fz="sm" c="dimmed">
+            <Text fz="sm" c="var(--ink-3)">
               {manifest.nextChapterId == null ? (
                 <Trans>{chapterLabel} is the last chapter. No more chapters available.</Trans>
               ) : (

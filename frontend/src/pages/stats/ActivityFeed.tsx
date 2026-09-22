@@ -177,12 +177,12 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                     }
                   />
                 </Text>
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="var(--ink-3)">
                   {renderLabel(kind.label)}
                   {e.note ? ` · ${e.note}` : ''}
                 </Text>
               </div>
-              <Text size="xs" c="dimmed" className="tnum" style={{ flexShrink: 0 }}>
+              <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
                 {formatDate(e.at)}
               </Text>
             </Group>

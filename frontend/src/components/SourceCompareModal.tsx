@@ -345,7 +345,7 @@ export function SourceCompareModal({
         closeOnEscape={zoom === null}
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               The same chapter as each source scans it, heaviest first. Drag the columns so your
               favourite is first, then save: that becomes the order chapters download in for this
@@ -379,7 +379,7 @@ export function SourceCompareModal({
                   multiline
                   w={300}
                 >
-                  <Badge size="sm" variant="light" color="teal" leftSection={<IconPhotoCheck size={12} />}>
+                  <Badge size="sm" variant="light" color="var(--ok)" leftSection={<IconPhotoCheck size={12} />}>
                     <Trans>Pages matched</Trans>
                   </Badge>
                 </Tooltip>
@@ -395,7 +395,7 @@ export function SourceCompareModal({
           </Group>
 
           {snapshot?.mixedChapters && (
-            <Alert color="yellow" icon={<IconAlertTriangle size={16} />}>
+            <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />}>
               <Trans>
                 Not every source carries chapter {chapterNumber}, so some columns are
                 showing their own first chapter instead. Each column says which one it got.
@@ -469,7 +469,7 @@ export function SourceCompareModal({
                           {blind ? (blindLabels.get(panel.mappingId) ?? '?') : panel.displayName}
                         </Text>
                         {snapshot?.mixedChapters && panel.chapterLabel && (
-                          <Badge size="xs" variant="light" color="gray">
+                          <Badge size="xs" variant="light" color="var(--neutral)">
                             <Trans>Ch. {chapterLabel}</Trans>
                           </Badge>
                         )}
@@ -480,7 +480,7 @@ export function SourceCompareModal({
                             multiline
                             w={280}
                           >
-                            <Badge size="xs" variant="light" color="orange">
+                            <Badge size="xs" variant="light" color="var(--warn)">
                               <Trans>Unmatched</Trans>
                             </Badge>
                           </Tooltip>
@@ -494,14 +494,14 @@ export function SourceCompareModal({
                           multiline
                           w={280}
                         >
-                          <Text size="xs" c="dimmed" mb={6}>
+                          <Text size="xs" c="var(--ink-3)" mb={6}>
                             <Trans>{weight} total</Trans>
                           </Text>
                         </Tooltip>
                       )}
 
                       {panel.status === 'failed' ? (
-                        <Text size="xs" c="dimmed">
+                        <Text size="xs" c="var(--ink-3)">
                           {panel.error ?? <Trans>Failed</Trans>}
                         </Text>
                       ) : panel.status === 'ready' ? (
@@ -518,7 +518,7 @@ export function SourceCompareModal({
                                   onMouseDown={(e) => e.stopPropagation()}
                                   onClick={() => setZoom({ panel: i, page: pageIndex })}
                                 />
-                                <Text size="10px" c="dimmed" ta="center" mt={2}>
+                                <Text size="10px" c="var(--ink-3)" ta="center" mt={2}>
                                   {page.width ? `${page.width}×${page.height} · ` : ''}
                                   {formatSize(page.bytes)}
                                 </Text>
@@ -532,12 +532,12 @@ export function SourceCompareModal({
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  border: '1px dashed var(--mantine-color-dimmed)',
+                                  border: '1px dashed var(--ink-3)',
                                   borderRadius: 4,
                                   opacity: 0.4,
                                 }}
                               >
-                                <Text size="xs" c="dimmed">
+                                <Text size="xs" c="var(--ink-3)">
                                   <Trans>No matching page</Trans>
                                 </Text>
                               </Box>
@@ -547,7 +547,7 @@ export function SourceCompareModal({
                       ) : (
                         <Stack gap="xs">
                           <Skeleton height={320} radius="sm" />
-                          <Text size="xs" c="dimmed" ta="center">
+                          <Text size="xs" c="var(--ink-3)" ta="center">
                             {panel.status === 'listing' ? (
                               <Trans>Looking up chapters…</Trans>
                             ) : (
@@ -659,7 +659,7 @@ export function SourceCompareModal({
                   <IconChevronRight size={16} />
                 </ActionIcon>
               </Group>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   Row {zoomRowNumber} of {zoomTotalPages}
                 </Trans>
@@ -684,7 +684,7 @@ export function SourceCompareModal({
               />
             </Box>
 
-            <Text size="xs" c="dimmed" ta="center" px="sm" py={6}>
+            <Text size="xs" c="var(--ink-3)" ta="center" px="sm" py={6}>
               <Trans>← → swap source</Trans> · <Trans>↑ ↓ change page</Trans> · <Trans>Esc closes</Trans>
             </Text>
           </Stack>

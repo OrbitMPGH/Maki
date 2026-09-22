@@ -110,7 +110,7 @@ export default function ActivityPage() {
         description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
           canManageQueue && queue && queue.total > 0 ? (
-            <Button color="red" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
+            <Button color="var(--danger)" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
               <Trans>Clear queue</Trans>
             </Button>
           ) : undefined
@@ -191,12 +191,12 @@ export default function ActivityPage() {
                       {q.status === 'Resolving' ? (
                         <Group gap={6} wrap="nowrap">
                           <Loader size="xs" />
-                          <Text size="sm" c="dimmed">
+                          <Text size="sm" c="var(--ink-3)">
                             <Trans>Finding source</Trans>
                           </Text>
                         </Group>
                       ) : (
-                        <Text size="sm" c="dimmed">
+                        <Text size="sm" c="var(--ink-3)">
                           {q.sourceName}
                         </Text>
                       )}
@@ -211,12 +211,12 @@ export default function ActivityPage() {
                             animated={q.status === 'Downloading'}
                             color={q.status === 'Failed' ? 'red' : 'brand'}
                           />
-                          <Text size="xs" c="dimmed" w={52} className="tnum" ta="right">
+                          <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
                             {q.pagesDone}/{q.pagesTotal}
                           </Text>
                         </Group>
                       ) : (
-                        <Text size="xs" c="dimmed">
+                        <Text size="xs" c="var(--ink-3)">
                           -
                         </Text>
                       )}
@@ -240,7 +240,7 @@ export default function ActivityPage() {
                             <Tooltip label={t`Move to top`} withArrow>
                               <ActionIcon
                                 variant="subtle"
-                                color="gray"
+                                color="var(--neutral)"
                                 disabled={index === 0}
                                 onClick={() => moveToTop(index)}
                                 aria-label={t`Move to top of queue`}
@@ -251,7 +251,7 @@ export default function ActivityPage() {
                             <Tooltip label={t`Move up`} withArrow>
                               <ActionIcon
                                 variant="subtle"
-                                color="gray"
+                                color="var(--neutral)"
                                 disabled={index === 0}
                                 onClick={() => moveItem(index, -1)}
                                 aria-label={t`Move up in queue`}
@@ -262,7 +262,7 @@ export default function ActivityPage() {
                             <Tooltip label={t`Move down`} withArrow>
                               <ActionIcon
                                 variant="subtle"
-                                color="gray"
+                                color="var(--neutral)"
                                 disabled={index === queueItems.length - 1}
                                 onClick={() => moveItem(index, 1)}
                                 aria-label={t`Move down in queue`}
@@ -273,7 +273,7 @@ export default function ActivityPage() {
                           </>
                         )}
                         {needsImportReview(q.status) && canManageQueue && (
-                          <Button size="compact-sm" variant="light" color="yellow" onClick={() => setReviewing(q.id)}>
+                          <Button size="compact-sm" variant="light" color="var(--warn)" onClick={() => setReviewing(q.id)}>
                             <Trans>Review</Trans>
                           </Button>
                         )}
@@ -281,7 +281,7 @@ export default function ActivityPage() {
                           <Tooltip label={t`Retry`} withArrow>
                             <ActionIcon
                               variant="subtle"
-                              color="gray"
+                              color="var(--neutral)"
                               onClick={() => retry.mutate(q.id)}
                               aria-label={t`Retry download`}
                             >
@@ -292,7 +292,7 @@ export default function ActivityPage() {
                         <Tooltip label={t`Remove`} withArrow>
                           <ActionIcon
                             variant="subtle"
-                            color="red"
+                            color="var(--danger)"
                             onClick={() => remove.mutate(q.id)}
                             aria-label={t`Remove from queue`}
                           >
@@ -310,7 +310,7 @@ export default function ActivityPage() {
       )}
 
       {truncated && (
-        <Text size="xs" c="dimmed" mt="xs">
+        <Text size="xs" c="var(--ink-3)" mt="xs">
           <Trans>
             Showing {shownQueueCount} of {totalQueueCount} queued items. The rest are still queued
             and will download, they're just not listed here.
@@ -341,7 +341,7 @@ export default function ActivityPage() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="red"
+              color="var(--danger)"
               loading={clear.isPending}
               onClick={() => {
                 clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
@@ -413,7 +413,7 @@ export default function ActivityPage() {
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm" c="dimmed">
+                          <Text size="sm" c="var(--ink-3)">
                             {q.sourceName}
                           </Text>
                         </Table.Td>
@@ -428,7 +428,7 @@ export default function ActivityPage() {
                           </Badge>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="xs" c="dimmed" className="tnum">
+                          <Text size="xs" c="var(--ink-3)" className="tnum">
                             {q.completedAt ? formatDateTime(q.completedAt) : '-'}
                           </Text>
                         </Table.Td>

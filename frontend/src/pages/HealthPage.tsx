@@ -88,12 +88,12 @@ const CATEGORY_ICON: Record<string, Icon> = {
 
 const color = (status: string) =>
   status === 'error' || status === 'failed'
-    ? 'red'
+    ? 'var(--danger)'
     : ['warning', 'partial', 'open'].includes(status)
-      ? 'yellow'
+      ? 'var(--warn)'
       : ['healthy', 'complete', 'completed'].includes(status)
-        ? 'green'
-        : 'gray'
+        ? 'var(--ok)'
+        : 'var(--neutral)'
 
 const bytes = (size: number, missing: string) =>
   size < 0 ? missing : `${(size / 1024 / 1024).toFixed(1)} MiB`
@@ -215,7 +215,7 @@ export default function HealthPage() {
       />
 
       {error && (
-        <Alert color="red" mb="lg">
+        <Alert color="var(--danger)" mb="lg">
           {error.message}
         </Alert>
       )}
@@ -260,7 +260,7 @@ export default function HealthPage() {
           )
         })}
       {partialScanError && (
-        <Alert color="yellow" mb="lg">
+        <Alert color="var(--warn)" mb="lg">
           <Trans>Last partial scan: {partialScanError}</Trans>
         </Alert>
       )}
@@ -380,7 +380,7 @@ export default function HealthPage() {
                   ))}
                   <Button
                     size="xs"
-                    color="red"
+                    color="var(--danger)"
                     variant="light"
                     leftSection={<IconTrash size={14} />}
                     onClick={() => setDeleteOpen(true)}
@@ -395,7 +395,7 @@ export default function HealthPage() {
             )}
 
             {deleteReport && failedCount > 0 && (
-              <Alert color="red" withCloseButton onClose={() => setDeleteReport(null)}>
+              <Alert color="var(--danger)" withCloseButton onClose={() => setDeleteReport(null)}>
                 <Text size="sm" mb="xs">
                   <Trans>
                     {deletedCount} deleted, {failedCount} refused:
@@ -472,7 +472,7 @@ export default function HealthPage() {
                             <Text size="sm" style={{ overflowWrap: 'anywhere' }}>
                               {file.relativePath}
                             </Text>
-                            <Text size="xs" c="dimmed">
+                            <Text size="xs" c="var(--ink-3)">
                               {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
                             </Text>
                           </Table.Td>
@@ -501,7 +501,7 @@ export default function HealthPage() {
                   </Table>
                 </Table.ScrollContainer>
                 {files.data?.items.length === 0 && (
-                  <Text c="dimmed">
+                  <Text c="var(--ink-3)">
                     <Trans>No files match these filters. Run a scan to inventory the library.</Trans>
                   </Text>
                 )}
@@ -533,7 +533,7 @@ export default function HealthPage() {
                         </Text>
                         <Status value={op.status} />
                       </Group>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="var(--ink-3)">
                         {op.error ?? formatDateTime(op.createdAt)}
                       </Text>
                     </div>
@@ -545,7 +545,7 @@ export default function HealthPage() {
               )
             })}
             {operations.data?.items.length === 0 && (
-              <Text c="dimmed">
+              <Text c="var(--ink-3)">
                 <Trans>No repairs or deletions requested.</Trans>
               </Text>
             )}
@@ -564,7 +564,7 @@ export default function HealthPage() {
                 <Badge variant="light">{entry.kind}</Badge>
                 <div>
                   <Text size="sm">{entry.message}</Text>
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" c="var(--ink-3)">
                     {formatDateTime(entry.createdAt)}
                   </Text>
                 </div>
@@ -675,7 +675,7 @@ function BulkDeleteModal({
       scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="md">
-        <Alert color="red">
+        <Alert color="var(--danger)">
           <Trans>
             This permanently deletes <Plural value={count} one="the file" other="these files" /> from disk.
             Chapter records, Wanted flags and reading history are kept, so anything still wanted can be
@@ -706,7 +706,7 @@ function BulkDeleteModal({
           <Button variant="default" onClick={close}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="red" disabled={!confirmed} loading={pending} onClick={onConfirm}>
+          <Button color="var(--danger)" disabled={!confirmed} loading={pending} onClick={onConfirm}>
             <Trans>Delete permanently</Trans>
           </Button>
         </Group>
@@ -749,7 +749,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
         </Alert>
       )}
       {checks.length > 0 && visible.length === 0 && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>
             Everything is passing. Turn on Show passing to see all{' '}
             <Plural value={totalChecks} one="# check" other="# checks" />.
@@ -842,7 +842,7 @@ function FileReview({
       scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Alert color="red">{(error ?? action.error)?.message}</Alert>}
+        {(error ?? action.error) && <Alert color="var(--danger)">{(error ?? action.error)?.message}</Alert>}
         {!data ? (
           <Loader />
         ) : (
@@ -943,7 +943,7 @@ function FileReview({
               ))}
 
               {!data.analysis.verified && (
-                <Alert color="gray">
+                <Alert color="var(--neutral)">
                   <Trans>
                     This archive has only been indexed: what it says it holds is known, whether it still holds
                     it is not. Verifying reads every byte and checks it against the archive's own checksums. It
@@ -1029,7 +1029,7 @@ function FileReview({
                   )}
                 </Text>
                 <Button
-                  color="red"
+                  color="var(--danger)"
                   variant="light"
                   fullWidth
                   leftSection={<IconTrash size={16} />}
@@ -1084,7 +1084,7 @@ function UnlinkedPanel({
         <Title order={4} fz={15}>
           <Trans>Not linked to any chapter</Trans>
         </Title>
-        <Badge variant="light" color="gray">
+        <Badge variant="light" color="var(--neutral)">
           {label}
         </Badge>
       </Group>
@@ -1112,7 +1112,7 @@ function UnlinkedPanel({
       )}
 
       {!recognized && (
-        <Alert color="yellow">
+        <Alert color="var(--warn)">
           <Trans>
             The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to
             the library's naming format and rescan, or link it by hand from the series' Files tab.
@@ -1121,7 +1121,7 @@ function UnlinkedPanel({
       )}
 
       {recognized && seriesId == null && (
-        <Alert color="yellow">
+        <Alert color="var(--warn)">
           <Trans>
             This archive is not inside any series folder in its root, so there is no series to import it into.
             Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in.
@@ -1130,7 +1130,7 @@ function UnlinkedPanel({
       )}
 
       {recognized && seriesId != null && chapterCount === 0 && (
-        <Alert color="yellow">
+        <Alert color="var(--warn)">
           <Trans>
             {seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this
             archive.
@@ -1140,7 +1140,7 @@ function UnlinkedPanel({
 
       {importable && (
         <Stack gap="sm">
-          <Alert color="blue">
+          <Alert color="var(--info)">
             <Trans>
               No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and
               links it to the chapter.
@@ -1169,7 +1169,7 @@ function UnlinkedPanel({
 
       {counterparts.length > 0 && (
         <Stack gap="md">
-          <Alert color="yellow">
+          <Alert color="var(--warn)">
             <Trans>
               {label} already has a file. Compare the two before deciding: importing this archive links it
               alongside the existing one, it does not replace it. To swap them, delete the file you do not want
@@ -1276,13 +1276,13 @@ function CompareArchives({
       </div>
 
       {counterpart.contentHash != null && counterpart.contentHash === file.contentHash && (
-        <Alert color="yellow" mt="md">
+        <Alert color="var(--warn)" mt="md">
           <Trans>Byte-identical to the linked file. Importing gains nothing; delete one of them.</Trans>
         </Alert>
       )}
 
       {strip && analysis.pages.length !== counterpart.pages && (
-        <Alert color="gray" mt="md">
+        <Alert color="var(--neutral)" mt="md">
           {heights ? (
             drift <= 0.02 ? (
               <Trans>
@@ -1347,7 +1347,7 @@ function CompareArchives({
           </Group>
         </>
       ) : (
-        <Alert color="gray" mt="md">
+        <Alert color="var(--neutral)" mt="md">
           <Trans>
             The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then
             come back to compare them.
@@ -1377,15 +1377,15 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
       scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Alert color="red">{(error ?? action.error)?.message}</Alert>}
+        {(error ?? action.error) && <Alert color="var(--danger)">{(error ?? action.error)?.message}</Alert>}
         {!data ? (
           <Loader />
         ) : (
           <div className="health-review">
             <div className="health-review-column">
-              {data.operation.error && <Alert color="red">{data.operation.error}</Alert>}
+              {data.operation.error && <Alert color="var(--danger)">{data.operation.error}</Alert>}
               {data.operation.kind === 'delete' ? (
-                <Alert color={data.file.size < 0 ? 'yellow' : 'red'}>
+                <Alert color={data.file.size < 0 ? 'var(--warn)' : 'var(--danger)'}>
                   {data.file.size < 0 ? (
                     <Trans>
                       This file is already gone from disk, so nothing is deleted. It drops the record that
@@ -1474,7 +1474,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                         }
                       />
                       <Button
-                        color={data.operation.kind === 'delete' ? 'red' : 'brand'}
+                        color={data.operation.kind === 'delete' ? 'var(--danger)' : 'brand'}
                         loading={action.isPending}
                         disabled={!confirm || (data.operation.kind === 'repair' && data.requiresReset && !reset)}
                         onClick={() =>
@@ -1536,7 +1536,7 @@ function OptionsPanel() {
         <Title order={3} fz={17}>
           <Trans>Health settings</Trans>
         </Title>
-        {action.error && <Alert color="red">{action.error.message}</Alert>}
+        {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
         <Switch
           label={t`Analyze new files and run daily reconciliation`}
           checked={value.automaticScanning}
@@ -1626,7 +1626,7 @@ function CachePanel() {
             ))}
           </div>
         )}
-        {(cache.error ?? rebuild.error) && <Alert color="red">{(cache.error ?? rebuild.error)?.message}</Alert>}
+        {(cache.error ?? rebuild.error) && <Alert color="var(--danger)">{(cache.error ?? rebuild.error)?.message}</Alert>}
         <Group gap="xs">
           <Button
             variant="default"

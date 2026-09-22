@@ -402,7 +402,7 @@ export function DiscoverDetailModal({
                     {genres.length > 0 && (
                       <div>
                         <Divider mb="md" color="var(--hairline)"/>
-                        <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
+                        <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase" mb={6}>
                           <Trans>Genres</Trans>
                         </Text>
                         <Group gap={6}>

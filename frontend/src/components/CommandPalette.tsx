@@ -207,7 +207,7 @@ export default function CommandPalette({ navItems }: Props) {
           <ScrollArea.Autosize mah={360} type="auto" viewportRef={listRef}>
             <Stack gap={2} p="xs">
               {results.length === 0 && (
-                <Text c="dimmed" size="sm" ta="center" py="lg">
+                <Text c="var(--ink-3)" size="sm" ta="center" py="lg">
                   <Trans>No matches.</Trans>
                 </Text>
               )}
@@ -249,7 +249,7 @@ export default function CommandPalette({ navItems }: Props) {
                     <Text size="sm" fw={550} truncate>
                       {r.label}
                     </Text>
-                    <Text size="xs" c="dimmed" truncate>
+                    <Text size="xs" c="var(--ink-3)" truncate>
                       {r.sub}
                     </Text>
                   </Stack>

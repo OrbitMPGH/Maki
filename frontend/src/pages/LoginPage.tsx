@@ -99,7 +99,7 @@ export function LoginPage() {
           <Title order={2} mt="sm">
             Maki
           </Title>
-          <Text c="dimmed" fz="sm">
+          <Text c="var(--ink-3)" fz="sm">
             {needsCode ? <Trans>Enter your authenticator code</Trans> : <Trans>Sign in to continue</Trans>}
           </Text>
         </Stack>
@@ -125,7 +125,7 @@ export function LoginPage() {
                   onChange={(e) => setRememberMachine(e.currentTarget.checked)}
                 />
                 {error && (
-                  <Alert color="red" variant="light">
+                  <Alert color="var(--danger)" variant="light">
                     {error.message}
                   </Alert>
                 )}
@@ -148,7 +148,7 @@ export function LoginPage() {
           ) : (
             <Stack>
               {ssoError && (
-                <Alert color="red" variant="light">
+                <Alert color="var(--danger)" variant="light">
                   {ssoError}
                 </Alert>
               )}
@@ -178,7 +178,7 @@ export function LoginPage() {
                 <form onSubmit={submitPassword}>
                   <Stack>
                     {sso.enabled && sso.restricted && (
-                      <Text fz="xs" c="dimmed">
+                      <Text fz="xs" c="var(--ink-3)">
                         <Trans>Password sign-in is limited to administrators on this instance.</Trans>
                       </Text>
                     )}
@@ -198,7 +198,7 @@ export function LoginPage() {
                       onChange={(e) => setPassword(e.currentTarget.value)}
                     />
                     {error && (
-                      <Alert color="red" variant="light">
+                      <Alert color="var(--danger)" variant="light">
                         {error.message}
                       </Alert>
                     )}

@@ -134,10 +134,15 @@ function HealthButton() {
   return (
     <Popover width={340} position="bottom-end" withArrow shadow="md">
       <Popover.Target>
-        <Indicator size={16} color={hasError ? 'red' : 'yellow'} label={health.length} withBorder>
+        <Indicator
+          size={16}
+          color={hasError ? 'var(--danger)' : 'var(--warn)'}
+          label={health.length}
+          withBorder
+        >
           <ActionIcon
             variant="subtle"
-            color={hasError ? 'red' : 'yellow'}
+            color={hasError ? 'var(--danger)' : 'var(--warn)'}
             aria-label={t`Health issues`}
           >
             <IconAlertTriangle size={19} />
@@ -157,13 +162,13 @@ function HealthButton() {
             <Group key={i} gap="xs" wrap="nowrap" align="flex-start">
               <Badge
                 size="xs"
-                color={issue.severity === 'error' ? 'red' : 'yellow'}
+                color={issue.severity === 'error' ? 'var(--danger)' : 'var(--warn)'}
                 variant="light"
                 mt={2}
               >
                 {issue.severity}
               </Badge>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 {issue.message}
               </Text>
             </Group>
@@ -210,7 +215,7 @@ function ActivityButton() {
           <Badge
             size="xs"
             variant="filled"
-            color={review > 0 ? 'yellow' : 'brand'}
+            color={review > 0 ? 'var(--warn)' : 'brand'}
             // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
             // horizontally (with a floor width so single digits still read as a dot) doesn't.
             style={{
@@ -241,7 +246,7 @@ function VersionFooter() {
     <Tooltip label={unofficial ? 'Unofficial build (not a tagged release)' : `Maki ${version}`} withArrow>
       <Text
         fz={10}
-        c="dimmed"
+        c="var(--ink-3)"
         fw={600}
         px={4}
         tt="uppercase"
@@ -392,7 +397,7 @@ function AppShellRoutes() {
             <Text fw={800} fz="lg" lh={1} style={{ letterSpacing: '-0.02em' }}>
               Maki
             </Text>
-            <Text fz={10} c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
+            <Text fz={10} c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
               Manga manager
             </Text>
           </div>

@@ -93,7 +93,7 @@ function TokenRow({ token, spelling, onPick }: {
         </Code>
         <Text size="sm" px="sm" py={8} truncate style={{ flex: 1 }}>
           {token.example || (
-            <Text span c="dimmed" size="sm">
+            <Text span c="var(--ink-3)" size="sm">
               <Trans>(blank when unset)</Trans>
             </Text>
           )}
@@ -170,7 +170,7 @@ export function NamingTokenModal({
         />
       </Group>
 
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>Click a token to insert it.</Trans>{' '}
         <Trans>
           A token with no value for a given series renders as nothing, and the surrounding spaces and
@@ -201,7 +201,7 @@ export function NamingTokenModal({
       </Stack>
 
       <Divider my="md" />
-      <Text size="sm" c="dimmed" mb={4}>
+      <Text size="sm" c="var(--ink-3)" mb={4}>
         <Trans>
           Chapter number and volume also take zero-padding: <Code>{paddingExampleToken}</Code>{' '}
           renders 24 as 024.

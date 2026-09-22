@@ -194,7 +194,7 @@ export default function ImportPage() {
           </Button>
           {candidates && candidates.length > 0 && (
             <Button
-              color="teal"
+              color="var(--ok)"
               leftSection={<IconPackageImport size={16} />}
               loading={doImport.isPending}
               disabled={selectedCount === 0}
@@ -225,7 +225,7 @@ export default function ImportPage() {
           onChange={(e) => setUpdateComicInfo(e.currentTarget.checked)}
           mb="xs"
         />
-        <Text size="xs" c="dimmed" mb="lg">
+        <Text size="xs" c="var(--ink-3)" mb="lg">
           <Trans>
             Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter
             numbers) to Maki's standard so Kavita groups these files with future downloads and
@@ -240,7 +240,7 @@ export default function ImportPage() {
             <Trans>Cancel</Trans>
           </Button>
           <Button
-            color="teal"
+            color="var(--ok)"
             onClick={() => {
               setConfirmOpen(false)
               if (rootFolderId) {
@@ -263,7 +263,7 @@ export default function ImportPage() {
             const folderLabel = r.newFolderName ?? r.folderName
             const { filesLinked, filesUnrecognized } = r
             return (
-              <Text key={r.folderName} c={r.success ? 'teal' : 'red'} size="sm">
+              <Text key={r.folderName} c={r.success ? 'var(--ok)' : 'var(--danger)'} size="sm">
                 {r.success ? (
                   filesUnrecognized > 0 ? (
                     <Trans>
@@ -338,7 +338,7 @@ export default function ImportPage() {
                       <Text size="sm" fw={600}>
                         {c.folderName}
                       </Text>
-                      <Text size="xs" c="dimmed">
+                      <Text size="xs" c="var(--ink-3)">
                         <Trans>searched as “{cleanedTitle}”</Trans>
                       </Text>
                     </Table.Td>
@@ -347,7 +347,7 @@ export default function ImportPage() {
                         <Plural value={comicCount} one="# comic" other="# comics" />
                       </Text>
                       {recognizedCount < comicCount && (
-                        <Badge size="xs" color="yellow" variant="light">
+                        <Badge size="xs" color="var(--warn)" variant="light">
                           <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
                         </Badge>
                       )}
@@ -372,14 +372,14 @@ export default function ImportPage() {
                               color={
                                 rowProgress.done
                                   ? rowProgress.success
-                                    ? 'teal'
-                                    : 'red'
+                                    ? 'var(--ok)'
+                                    : 'var(--danger)'
                                   : 'brand'
                               }
                             />
                             <Text
                               size="xs"
-                              c={rowProgress.done && !rowProgress.success ? 'red' : 'dimmed'}
+                              c={rowProgress.done && !rowProgress.success ? 'var(--danger)' : 'var(--ink-3)'}
                             >
                               {rowProgress.stage === 'Queued' ? <Trans>Queued</Trans> : rowProgress.stage}
                               {rowProgress.total
@@ -389,7 +389,7 @@ export default function ImportPage() {
                             </Text>
                           </Stack>
                         ) : c.matches.length === 0 ? (
-                          <Text size="sm" c="red">
+                          <Text size="sm" c="var(--danger)">
                             <Trans>No metadata match, rename the folder closer to the title and rescan.</Trans>
                           </Text>
                         ) : (

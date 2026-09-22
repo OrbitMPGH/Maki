@@ -39,7 +39,7 @@ const SLICE_COLORS = [
   'var(--ok)',
   'var(--warn)',
   'var(--danger)',
-  'var(--mantine-color-dark-3)',
+  'var(--neutral)',
 ]
 
 function fileCount(n: number): string {
@@ -60,7 +60,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
         {title}
       </Text>
       {data.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Trans>Nothing to show yet.</Trans>
         </Text>
       ) : (
@@ -81,7 +81,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
                   {d.name}
                 </Text>
-                <Text size="xs" c="dimmed" className="tnum" style={{ flexShrink: 0 }}>
+                <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
                   {total > 0 ? Math.round((d.value / total) * 100) : 0}%
                 </Text>
               </Group>
@@ -125,7 +125,7 @@ export function LibraryPanel() {
 
   if (isError || !stats) {
     return (
-      <Alert icon={<IconAlertTriangle size={16} />} color="red" variant="light">
+      <Alert icon={<IconAlertTriangle size={16} />} color="var(--danger)" variant="light">
         <Trans>Could not load library stats. The server logs will say why.</Trans>
       </Alert>
     )
@@ -197,7 +197,7 @@ export function LibraryPanel() {
               <Trans>Sources</Trans>
             </Text>
             {stats.bySource.length === 0 ? (
-              <Text c="dimmed" size="sm">
+              <Text c="var(--ink-3)" size="sm">
                 <Trans>Nothing downloaded yet.</Trans>
               </Text>
             ) : (
@@ -215,7 +215,7 @@ export function LibraryPanel() {
                         />
                       </Table.Td>
                       <Table.Td w={90} align="right">
-                        <Text size="sm" c="dimmed" className="tnum">
+                        <Text size="sm" c="var(--ink-3)" className="tnum">
                           {fileCount(s.files)}
                         </Text>
                       </Table.Td>
@@ -236,14 +236,14 @@ export function LibraryPanel() {
               <Trans>Biggest series</Trans>
             </Text>
             {stats.largest.length === 0 ? (
-              <Text c="dimmed" size="sm">
+              <Text c="var(--ink-3)" size="sm">
                 <Trans>Nothing downloaded yet.</Trans>
               </Text>
             ) : (
               <Stack gap={0}>
                 {stats.largest.map((s, i) => (
                   <div className="stats-rank-row" key={s.seriesId}>
-                    <Text c="dimmed" fw={700} size="sm" className="tnum stats-rank-num">
+                    <Text c="var(--ink-3)" fw={700} size="sm" className="tnum stats-rank-num">
                       {i + 1}
                     </Text>
                     <SeriesThumb url={s.coverUrl} alt={s.title} />
@@ -251,7 +251,7 @@ export function LibraryPanel() {
                       <Text size="sm" truncate>
                         <SeriesLink id={s.seriesId} title={s.title} />
                       </Text>
-                      <Text size="xs" c="dimmed" className="tnum">
+                      <Text size="xs" c="var(--ink-3)" className="tnum">
                         {fileCount(s.files)}
                       </Text>
                     </div>
@@ -272,7 +272,7 @@ export function LibraryPanel() {
           <Card padding="md" radius="lg" withBorder>
             <Group gap={6}>
               {stats.topGenres.map((g) => (
-                <Badge key={g.name} variant="default" color="gray" fw={500}>
+                <Badge key={g.name} variant="default" color="var(--neutral)" fw={500}>
                   {g.name} <span className="tnum">{g.count}</span>
                 </Badge>
               ))}

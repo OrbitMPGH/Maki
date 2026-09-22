@@ -72,7 +72,7 @@ function LibraryStep() {
 
   return (
     <StepBody title={<Trans>Your library</Trans>}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" c="var(--ink-3)">
         <Trans>
           Point Maki at the folder where your manga is stored (or should be). Kavita, if you use
           it, watches the same location. You can add more later in Settings.
@@ -84,14 +84,14 @@ function LibraryStep() {
             <Text size="sm">
               {f.path}
               {!f.accessible && (
-                <Text span c="red" size="xs" ml="xs">
+                <Text span c="var(--danger)" size="xs" ml="xs">
                   <Trans>(inaccessible)</Trans>
                 </Text>
               )}
             </Text>
             <ActionIcon
               variant="subtle"
-              color="red"
+              color="var(--danger)"
               onClick={() => deleteFolder.mutate(f.id)}
               aria-label={t`Delete root folder`}
             >
@@ -129,7 +129,7 @@ function RecommendationsStep() {
 
   return (
     <StepBody title={<Trans>Recommendations</Trans>}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" c="var(--ink-3)">
         <Trans>
           Discover recommends by semantic "feel" and searches by description, using a local
           embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier
@@ -184,7 +184,7 @@ function PreferencesStep() {
         <Text size="sm" fw={500} mb={4}>
           <Trans>Content rating</Trans>
         </Text>
-        <Text size="sm" c="dimmed" mb="xs">
+        <Text size="sm" c="var(--ink-3)" mb="xs">
           <Trans>Highest rating shown in "Add Series" search results. Changeable later in Settings.</Trans>
         </Text>
         <ContentRatingCards
@@ -196,7 +196,7 @@ function PreferencesStep() {
         <Text size="sm" fw={500} mb={4}>
           <Trans>Folder naming</Trans>
         </Text>
-        <Text size="sm" c="dimmed" mb="xs">
+        <Text size="sm" c="var(--ink-3)" mb="xs">
           <Trans>
             Whether Maki renames an imported series' folder to its standard sanitized-title name,
             or leaves it as found. Changeable later in Settings.
@@ -228,7 +228,7 @@ function PreferencesStep() {
         <Text size="sm" fw={500} mb={4}>
           <Trans>Appearance</Trans>
         </Text>
-        <Text size="sm" c="dimmed" mb="sm">
+        <Text size="sm" c="var(--ink-3)" mb="sm">
           <Trans>Pick an accent colour or the light theme. Applies instantly, remembered on this device.</Trans>
         </Text>
         <Group gap="sm">
@@ -288,7 +288,7 @@ function FlareSolverrCard() {
       <Text size="sm" fw={600}>
         FlareSolverr
       </Text>
-      <Text size="xs" c="dimmed" mb="xs">
+      <Text size="xs" c="var(--ink-3)" mb="xs">
         <Trans>
           Required for Cloudflare-protected sources like MangaFire. Point at a running instance
           (e.g. http://localhost:8191).
@@ -332,7 +332,7 @@ function ConnectionsStep() {
   const { t } = useLingui()
   return (
     <StepBody title={<Trans>Connections</Trans>}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" c="var(--ink-3)">
         <Trans>All optional: fill in only what you use. Everything here can be changed later in Settings.</Trans>
       </Text>
       <FlareSolverrCard />
@@ -371,13 +371,13 @@ function ConnectionsStep() {
 function ScrobbleStep() {
   return (
     <StepBody title={<Trans>Scrobbling</Trans>}>
-      <Text size="sm" c="dimmed">
+      <Text size="sm" c="var(--ink-3)">
         <Trans>
           Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka.
           Each needs an OAuth app or token, so it's set up on the Settings page rather than here.
         </Trans>
       </Text>
-      <Alert color="blue" icon={<IconInfoCircle size={16} />} variant="light">
+      <Alert color="var(--info)" icon={<IconInfoCircle size={16} />} variant="light">
         <Trans>
           Finish setup, then open{' '}
           <Anchor component={Link} to="/settings">
@@ -430,7 +430,7 @@ export default function SetupWizard() {
         <Text fw={800} fz="xl" style={{ letterSpacing: '-0.02em' }}>
           <Trans>Welcome to Maki</Trans>
         </Text>
-        <Button variant="subtle" color="gray" size="xs" onClick={finish} loading={complete.isPending}>
+        <Button variant="subtle" color="var(--neutral)" size="xs" onClick={finish} loading={complete.isPending}>
           <Trans>Skip setup</Trans>
         </Button>
       </Group>
@@ -443,7 +443,7 @@ export default function SetupWizard() {
 
       {active === 0 && (
         <StepBody title={<Trans>Let's get you set up</Trans>}>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               A few quick choices to get Maki ready: where your library lives, how metadata and
               monitoring behave, and any download or reading tools you already run. Every step is
@@ -459,7 +459,7 @@ export default function SetupWizard() {
       {active === 5 && <ScrobbleStep />}
       {active === 6 && (
         <StepBody title={<Trans>All set</Trans>}>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               You're ready to go. Head to <b>Add Series</b> to start building your library, or
               open <b>Settings</b> any time to fine-tune connections and scrobbling. You can

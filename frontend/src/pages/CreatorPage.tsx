@@ -225,7 +225,7 @@ export default function CreatorPage() {
       )}
 
       {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && (
-        <Alert variant="light" color="gray" mt="md">
+        <Alert variant="light" color="var(--neutral)" mt="md">
           <Text size="sm">
             Showing {items.length} of {data.workCount} titles. Filters and the catalogue's own
             coverage both narrow this: only rated, non-novel entries are searchable.

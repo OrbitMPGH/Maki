@@ -49,10 +49,10 @@ import { formatDate } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
-  Pending: 'yellow',
-  Processing: 'blue',
-  Approved: 'green',
-  Rejected: 'red',
+  Pending: 'var(--warn)',
+  Processing: 'var(--info)',
+  Approved: 'var(--ok)',
+  Rejected: 'var(--danger)',
 }
 
 /** Descriptors, not strings: this table is built once, when the module loads. */
@@ -195,7 +195,7 @@ export default function RequestsPage() {
       </Group>
 
       {(approve.isError || reject.isError || remove.isError || edit.isError) && (
-        <Alert color="red" variant="light" mb="md">
+        <Alert color="var(--danger)" variant="light" mb="md">
           {String(approve.error ?? reject.error ?? remove.error ?? edit.error)}
         </Alert>
       )}
@@ -238,26 +238,26 @@ export default function RequestsPage() {
                         {r.title}
                       </Text>
                       {r.year && (
-                        <Text size="sm" c="dimmed" className="tnum">
+                        <Text size="sm" c="var(--ink-3)" className="tnum">
                           {r.year}
                         </Text>
                       )}
                       <Badge size="sm" variant="light" color={STATUS_COLOR[r.status]}>
                         {renderLabel(STATUS_LABEL[r.status])}
                       </Badge>
-                      <Badge size="sm" variant="outline" color="gray">
+                      <Badge size="sm" variant="outline" color="var(--neutral)">
                         {r.kind === 'NewSeries' ? t`New series` : t`Chapters`}
                       </Badge>
                     </Group>
 
                     <Group gap="xs" mt={4}>
-                      <Text size="sm" c={r.editedAt ? undefined : 'dimmed'} fw={r.editedAt ? 600 : undefined}>
+                      <Text size="sm" c={r.editedAt ? undefined : 'var(--ink-3)'} fw={r.editedAt ? 600 : undefined}>
                         {chapterRangeLabel(r.chapterStart, r.chapterEnd)}
                       </Text>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="var(--ink-3)">
                         ·
                       </Text>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="var(--ink-3)">
                         {r.requestedBy}, {formatDate(r.created)}
                       </Text>
                     </Group>
@@ -266,7 +266,7 @@ export default function RequestsPage() {
                         asked for has to stay visible, or a trimmed request reads as the requester's
                         own. */}
                     {r.editedAt && (
-                      <Text size="xs" c="dimmed" mt={2}>
+                      <Text size="xs" c="var(--ink-3)" mt={2}>
                         {editedBy ? (
                           <Trans>
                             Adjusted by {editedBy}, asked for {askedFor}
@@ -284,7 +284,7 @@ export default function RequestsPage() {
                     )}
 
                     {r.status !== 'Pending' && (
-                      <Text size="xs" c="dimmed" mt={4}>
+                      <Text size="xs" c="var(--ink-3)" mt={4}>
                         {resolvedBy && r.status !== 'Processing' ? (
                           r.status === 'Approved' ? (
                             <Trans>Approved by {resolvedBy}</Trans>
@@ -312,7 +312,7 @@ export default function RequestsPage() {
                           component={Link}
                           to={`/series/${r.seriesId}`}
                           variant="subtle"
-                          color="gray"
+                          color="var(--neutral)"
                           aria-label={t`Open ${title}`}
                         >
                           <IconExternalLink size={17} />
@@ -324,7 +324,7 @@ export default function RequestsPage() {
                         <Tooltip label={t`Change the chapter range`} withArrow>
                           <ActionIcon
                             variant="subtle"
-                            color="gray"
+                            color="var(--neutral)"
                             aria-label={t`Edit request for ${title}`}
                             onClick={() => openEdit(r)}
                           >
@@ -334,7 +334,7 @@ export default function RequestsPage() {
                         <Button
                           size="xs"
                           variant="light"
-                          color="green"
+                          color="var(--ok)"
                           leftSection={<IconCheck size={15} />}
                           onClick={() => openApprove(r)}
                         >
@@ -343,7 +343,7 @@ export default function RequestsPage() {
                         <Button
                           size="xs"
                           variant="subtle"
-                          color="red"
+                          color="var(--danger)"
                           leftSection={<IconX size={15} />}
                           onClick={() => {
                             setRejecting(r)
@@ -358,7 +358,7 @@ export default function RequestsPage() {
                       <Tooltip label={isAdmin ? t`Delete request` : t`Cancel request`} withArrow>
                         <ActionIcon
                           variant="subtle"
-                          color="red"
+                          color="var(--danger)"
                           aria-label={t`Remove request`}
                           onClick={() => remove.mutate(r.id)}
                           loading={remove.isPending && remove.variables === r.id}
@@ -405,7 +405,7 @@ export default function RequestsPage() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="green"
+              color="var(--ok)"
               onClick={submitApprove}
               loading={approve.isPending}
               disabled={needsRootFolder && !rootFolderId}
@@ -446,7 +446,7 @@ export default function RequestsPage() {
               w={130}
             />
           </Group>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Leave a field blank for no bound. Approving queues exactly this range.</Trans>
           </Text>
 
@@ -476,7 +476,7 @@ export default function RequestsPage() {
             <Button variant="default" onClick={() => setRejecting(null)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button color="red" onClick={submitReject} loading={reject.isPending}>
+            <Button color="var(--danger)" onClick={submitReject} loading={reject.isPending}>
               <Trans>Reject</Trans>
             </Button>
           </Group>

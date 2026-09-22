@@ -154,7 +154,7 @@ function RootFoldersSection() {
       <Title order={4} mb="sm">
         <Trans>Root Folders</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>Library folders where series are stored (point Kavita at the same location).</Trans>
       </Text>
       <Stack>
@@ -173,7 +173,7 @@ function RootFoldersSection() {
                   <Table.Td>
                     {f.path}
                     {!f.accessible && (
-                      <Text span c="red" size="xs" ml="xs">
+                      <Text span c="var(--danger)" size="xs" ml="xs">
                         <Trans>(inaccessible)</Trans>
                       </Text>
                     )}
@@ -182,7 +182,7 @@ function RootFoldersSection() {
                   <Table.Td>
                     <ActionIcon
                       variant="subtle"
-                      color="red"
+                      color="var(--danger)"
                       onClick={() =>
                         deleteFolder.mutate(f.id, {
                         })
@@ -240,7 +240,7 @@ function SourceLanguageSection() {
       <Title order={4} mb="sm">
         <Trans>Languages</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Which languages to download, most preferred first. When auto-matching, every source is
           ranked by the highest language on this list that it publishes, so a source carrying your
@@ -248,7 +248,7 @@ function SourceLanguageSection() {
           languages are skipped by auto-matching entirely. Drag to reorder.
         </Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Sources with a language picker get it set to these languages when a mapping is created
           automatically. Mappings that already exist are never rewritten, and switching a language on
@@ -271,7 +271,7 @@ function SourceLanguageSection() {
         />
       )}
       {noneEnabled && (
-        <Text size="sm" c="red" mb="md">
+        <Text size="sm" c="var(--danger)" mb="md">
           <Trans>At least one language must stay enabled.</Trans>
         </Text>
       )}
@@ -322,20 +322,20 @@ function SourcePrioritySection() {
       <Title order={4} mb="sm">
         <Trans>Sources</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           When a series auto-matches multiple sources, chapters download from the highest-priority
           enabled source first. Applies to new auto-matches and manual "Auto-match" runs; existing
           series mappings keep their current priorities. Drag to reorder.
         </Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           A source publishing a higher-ranked language is ranked ahead of this list when
           auto-matching.
         </Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Switching a source off skips it when auto-matching and stops every series from using it,
           without changing the per-series toggles: turn it back on and each series picks up exactly
@@ -360,21 +360,21 @@ function SourcePrioritySection() {
             const langs = source?.supportedLanguages.filter((lang) => lang !== 'en') ?? []
             return (
               <>
-                <Text size="xs" c="dimmed">
+                <Text size="xs" c="var(--ink-3)">
                   {source?.baseUrl}
                 </Text>
                 {source?.needsFlareSolverr && (
-                  <Badge size="sm" color="orange" variant="light">
+                  <Badge size="sm" color="var(--warn)" variant="light">
                     <Trans>Needs FlareSolverr</Trans>
                   </Badge>
                 )}
                 {langs.length > 3 ? (
-                  <Badge size="sm" color="blue" variant="light">
+                  <Badge size="sm" color="var(--info)" variant="light">
                     <Trans>Multi-language</Trans>
                   </Badge>
                 ) : (
                   langs.map((lang) => (
-                    <Badge key={lang} size="sm" color="blue" variant="light">
+                    <Badge key={lang} size="sm" color="var(--info)" variant="light">
                       {languageName(lang)}
                     </Badge>
                   ))
@@ -423,7 +423,7 @@ function MetadataSection() {
       <Title order={4} mb="sm">
         <Trans>Metadata</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Series metadata comes from MangaBaka. With the local database enabled, Maki keeps a
           nightly snapshot on disk (~3 GB) so searches and library imports are instant instead of
@@ -441,12 +441,12 @@ function MetadataSection() {
         />
         {downloading && progress && <DumpProgressBar progress={progress} />}
         {!downloading && lastError && (
-          <Text size="sm" c="red">
+          <Text size="sm" c="var(--danger)">
             <Trans>Last download failed: {lastError}. The next scheduled run retries.</Trans>
           </Text>
         )}
         <Group justify="space-between">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {settings === undefined ? (
               '...'
             ) : settings.dumpPresent ? (
@@ -511,7 +511,7 @@ function RecommendationIndexSection() {
       <Title order={4} mb="sm">
         <Trans>Recommendations</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Discover recommends by semantic "feel" and searches by description, using a local
           embedding model. The vectors download prebuilt, so this normally needs no attention;
@@ -535,7 +535,7 @@ function MonitoringSection() {
       <Title order={4} mb="sm">
         <Trans>Monitoring</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on
           newly added or imported series are marked "not wanted": they stay listed, but they never
@@ -565,7 +565,7 @@ function DiscoverSection() {
       <Title order={4} mb="sm">
         Discover
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Highest content rating shown in "Add Series" search results, everything up to and
           including it is allowed. Discover and recommendations never surface pornographic titles
@@ -637,7 +637,7 @@ function LibrarySection() {
       <Title order={4} mb="sm">
         <Trans>Library files</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Maki writes a standardized <Code>ComicInfo.xml</Code> into each CBZ so Kavita groups and
           names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put
@@ -683,7 +683,7 @@ function LibrarySection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Naming</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           How Maki names a series' folder and the chapter files it downloads. Both take tokens;
           the "?" button lists every one with an example, and its dialog is directly editable too.
@@ -740,7 +740,7 @@ function LibrarySection() {
             <Trans>Cancel</Trans>
           </Button>
           <Button
-            color="red"
+            color="var(--danger)"
             loading={renameMany.isPending}
             onClick={() =>
               renameMany.mutate((allSeries ?? []).map((s) => s.id), {
@@ -770,7 +770,7 @@ function LibrarySection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Folder naming on import</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           Only affects importing an existing series from disk: whether Maki renames its current
           folder to match the Series Folder Format above, or leaves it as found.
@@ -802,7 +802,7 @@ function LibrarySection() {
       <Text fw={500} size="sm" mt="lg" mb={4}>
         <Trans>File naming on import</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene
           release's own name often carries more than the format can say (the edition, the group,
@@ -831,7 +831,7 @@ function LibrarySection() {
       <Text fw={500} size="sm" mt="lg" mb={4}>
         <Trans>Incognito by content rating</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           What the incognito setting is pre-filled with when a series of each rating is added.
           "No scrobble" keeps it off your trackers; "Full" also keeps it out of stats and reading
@@ -899,7 +899,7 @@ function ReaderSection() {
       <Title order={4} mb="sm">
         <Trans>Reader</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           The fallback for Maki's built-in reader: what a series gets when no reading profile
           covers its type and nothing is pinned or overridden on the series itself.
@@ -968,7 +968,7 @@ function ReaderSection() {
             checked={defaults.chapterBanner}
             onChange={(e) => saveWith({ chapterBanner: e.currentTarget.checked })}
           />
-          <Text size="xs" c="dimmed" mt={4}>
+          <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
               Credit pages and the next chapter's opening pages often look the same, so a chapter
               turn can pass unnoticed. This shows the chapter name over the page for a couple of
@@ -984,7 +984,7 @@ function ReaderSection() {
             disabled={!ownsKavita}
             onChange={(e) => saveWith({}, e.currentTarget.checked)}
           />
-          <Text size="xs" c="dimmed" mt={4}>
+          <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
               Off by default. When on, finishing a chapter in Maki's reader also marks it read for
               your Kavita user, so the two stay in step. Only applies to series Maki has matched to
@@ -992,7 +992,7 @@ function ReaderSection() {
             </Trans>
           </Text>
           {ownsKavita ? null : (
-            <Text size="xs" c="dimmed" mt={4}>
+            <Text size="xs" c="var(--ink-3)" mt={4}>
               <Trans>
                 Kavita is one server behind one API key, so its reading belongs to a single Maki
                 account, and it isn't yours. An admin picks which one under Settings → Kavita.
@@ -1053,7 +1053,7 @@ function OpdsSection() {
       <Title order={4} mb="sm">
         OPDS
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader,
           Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between.
@@ -1068,7 +1068,7 @@ function OpdsSection() {
             checked={enabled}
             onChange={(e) => saveWith({ enabled: e.currentTarget.checked })}
           />
-          <Text size="xs" c="dimmed" mt={4}>
+          <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
               The feed URL carries its own token and is the only credential a reading app needs,
               so anyone holding it can read the whole library. It is deliberately not your API
@@ -1092,13 +1092,13 @@ function OpdsSection() {
                     </ActionIcon>
                   </Tooltip>
                 </Group>
-                <Alert color="yellow" variant="light" mt="xs">
+                <Alert color="var(--warn)" variant="light" mt="xs">
                   <Trans>
                     Copy this now, it is shown only once. Maki stores a fingerprint of the token,
                     not the token, so it cannot be displayed again. Lose it and you regenerate.
                   </Trans>
                 </Alert>
-                <Text size="xs" c="dimmed" mt={4}>
+                <Text size="xs" c="var(--ink-3)" mt={4}>
                   <Trans>
                     Paste it into your reading app as an OPDS catalogue. If you reach Maki from
                     outside your network, swap the host for the address you use there.
@@ -1111,7 +1111,7 @@ function OpdsSection() {
                 <Button
                   size="compact-xs"
                   variant="light"
-                  color="red"
+                  color="var(--danger)"
                   leftSection={<IconRefresh size={14} />}
                   onClick={() => setRotateModalOpen(true)}
                 >
@@ -1129,7 +1129,7 @@ function OpdsSection() {
               checked={trackProgress}
               onChange={(e) => saveWith({ trackProgress: e.currentTarget.checked })}
             />
-            <Text size="xs" c="dimmed" mt={4}>
+            <Text size="xs" c="var(--ink-3)" mt={4}>
               <Trans>
                 Pages fetched by a streaming reader count as read, so OPDS reading shows up in
                 your library, Rewind and your trackers. Turn it off if an app reports progress you
@@ -1158,7 +1158,7 @@ function OpdsSection() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="red"
+              color="var(--danger)"
               loading={rotate.isPending}
               onClick={() =>
                 rotate.mutate(undefined, {
@@ -1187,7 +1187,7 @@ function KavitaImportResultSummary({
 }) {
   const { chaptersMarked, seriesMatched, seriesUnmatched } = result
   return (
-    <Text size="xs" c="dimmed">
+    <Text size="xs" c="var(--ink-3)">
       {seriesUnmatched > 0 ? (
         <Trans>
           <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
@@ -1212,7 +1212,7 @@ function KavitaReadImportControl() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Import read status from Kavita</Trans>
       </Text>
-      <Text size="xs" c="dimmed" mb="sm">
+      <Text size="xs" c="var(--ink-3)" mb="sm">
         <Trans>
           Marks every chapter you've already finished in Kavita as read in Maki, so the built-in
           reader and the library's progress bars don't start from zero. Safe to run more than
@@ -1235,12 +1235,12 @@ function KavitaReadImportControl() {
           <Trans>Import read status</Trans>
         </Button>
         {status?.running && (
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Reading progress from Kavita…</Trans>
           </Text>
         )}
         {!status?.running && status?.error && (
-          <Text size="xs" c="red">
+          <Text size="xs" c="var(--danger)">
             {status.error}
           </Text>
         )}
@@ -1289,7 +1289,7 @@ function DownloadSection() {
       <Title order={4} mb="sm">
         <Trans>Downloads</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           How many chapters download at once from scraper sources. Higher isn't always faster:
           each worker is a live connection to the same site, and tripping its rate limit pauses
@@ -1309,7 +1309,7 @@ function DownloadSection() {
       <Text fw={500} size="sm" mb={4}>
         Smart Download
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <Text size="sm" c="var(--ink-3)" mb="xs">
         <Trans>
           Automatically downloads the next chapters of a series when you have only a few unread
           chapters left. The settings below control how many unread chapters trigger the download
@@ -1342,7 +1342,7 @@ function DownloadSection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Stuck downloads</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <Text size="sm" c="var(--ink-3)" mb="xs">
         <Trans>
           A chapter that never finishes holds a worker for as long as the app runs, and with only
           a couple of workers that stops the whole queue: everything else sits on "Queued" with
@@ -1364,7 +1364,7 @@ function DownloadSection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Torrent imports</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <Text size="sm" c="var(--ink-3)" mb="xs">
         <Trans>
           A finished torrent keeps seeding from the download folder, so its files are brought into
           the library rather than moved. A hardlink gives the library its own name for the same
@@ -1384,7 +1384,7 @@ function DownloadSection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Retry Handling</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <Text size="sm" c="var(--ink-3)" mb="xs">
         <Trans>
           Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...)
           up to the attempt cap below. A manual retry from the Activity page doesn't count against
@@ -1488,7 +1488,7 @@ function BackupSection() {
       <Title order={4} mb="sm">
         <Trans>Backup &amp; Restore</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           A backup is a zip of your database and <Code>config.json</Code>, your whole library and
           all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache)
@@ -1496,7 +1496,7 @@ function BackupSection() {
           Restoring replaces the current data and restarts Maki.
         </Trans>
       </Text>
-      <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
+      <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
         <Trans>
           Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a
           downloaded backup like a password. Restore auto-recovers only under a supervisor (Docker
@@ -1521,12 +1521,12 @@ function BackupSection() {
                 <Table.Tr key={b.name}>
                   <Table.Td>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
                   <Table.Td>
-                    <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'gray' : 'blue'}>
+                    <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'var(--neutral)' : 'var(--info)'}>
                       {b.manifest.kind}
                     </Badge>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="var(--ink-3)">
                       {b.manifest.appVersion}
                     </Text>
                   </Table.Td>
@@ -1549,7 +1549,7 @@ function BackupSection() {
                       </ActionIcon>
                       <ActionIcon
                         variant="subtle"
-                        color="red"
+                        color="var(--danger)"
                         onClick={() => remove.mutate(b.name)}
                         aria-label={t`Delete backup`}
                       >
@@ -1621,7 +1621,7 @@ function BackupSection() {
             <Button variant="default" onClick={() => setTarget(null)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button color="red" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
+            <Button color="var(--danger)" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
               <Trans>Restore &amp; restart</Trans>
             </Button>
           </Group>
@@ -1666,7 +1666,7 @@ function ProwlarrOptionsSection() {
   return (
     <Stack gap="sm" mt="md">
       {configured && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>
             Restrict release searches to specific indexers and Torznab categories. With nothing
             selected, every indexer and category is searched.
@@ -1674,7 +1674,7 @@ function ProwlarrOptionsSection() {
         </Text>
       )}
       {configured && indexersErrorMessage != null && (
-        <Text size="sm" c="red">
+        <Text size="sm" c="var(--danger)">
           <Trans>Could not load indexers from Prowlarr: {indexersErrorMessage}</Trans>
         </Text>
       )}
@@ -1701,7 +1701,7 @@ function ProwlarrOptionsSection() {
               )
             })}
             {indexers.length === 0 && (
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>No indexers configured in Prowlarr.</Trans>
               </Text>
             )}
@@ -1754,7 +1754,7 @@ function FlareSolverrSection() {
       <Title order={4} mb="sm">
         FlareSolverr
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Required for Cloudflare-protected sources like MangaFire. Point this at a running
           FlareSolverr instance (e.g. http://localhost:8191).
@@ -1817,7 +1817,7 @@ function ScrobbleSection() {
       <Title order={4} mb="xs">
         <Trans>Scrobbling</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any
           combination, leave a site's credentials empty to disable it). Manage connections and
@@ -1828,7 +1828,7 @@ function ScrobbleSection() {
         <Text size="sm" fw={600}>
           AniList
         </Text>
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>
             Create an API client at anilist.co/settings/developer with redirect URL{' '}
             <Code>{origin}/api/v1/scrobble/oauth/anilist</Code>
@@ -1852,7 +1852,7 @@ function ScrobbleSection() {
         <Text size="sm" fw={600} mt="xs">
           MyAnimeList
         </Text>
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>
             Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
             <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
@@ -1981,7 +1981,7 @@ function StartPageSection() {
       <Title order={4} mb={4}>
         <Trans>Start page</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>Which page Maki opens on. Stored on the server, so it applies on every device.</Trans>
       </Text>
       <Select
@@ -2027,7 +2027,7 @@ function LanguageSection() {
       <Title order={4} mb={4}>
         <Trans>Language</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           Which language Maki's interface is in. Stored on the server, so it applies on every
           device. This is separate from Title language below, which is about the metadata rather
@@ -2042,7 +2042,7 @@ function LanguageSection() {
         allowDeselect={false}
         maw={260}
       />
-      <Text size="xs" c="dimmed" mt="sm">
+      <Text size="xs" c="var(--ink-3)" mt="sm">
         <Trans>
           Showing {currentLocaleLabel}. Translations other than English are machine-made and being
           corrected over time; anything still untranslated falls back to English.
@@ -2090,7 +2090,7 @@ function TitleLanguageSection() {
       <Title order={4} mb={4}>
         <Trans>Title language</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           Which language series titles are shown in, where the metadata provider has one. Display
           only: folders and file names keep the English title, and so does sorting.
@@ -2130,7 +2130,7 @@ function SeriesPageSection() {
       <Title order={4} mb={4}>
         <Trans>Series page</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           Which rails appear below the chapter list. Turning one off also stops it being fetched.
         </Trans>
@@ -2216,7 +2216,7 @@ function HomeSectionsSection() {
           <Title order={4} mb={4}>
             <Trans>Home screen</Trans>
           </Title>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               Pick which sections appear and what order they run in. Turn Home off entirely if you
               don&apos;t read in Maki: the tab disappears and the library takes over as the start
@@ -2282,7 +2282,7 @@ function HomeSectionsSection() {
                 <IconGripVertical size={14} opacity={0.5} />
                 <ActionIcon
                   variant="subtle"
-                  color="gray"
+                  color="var(--neutral)"
                   size="sm"
                   disabled={index === 0 || !patch}
                   aria-label={t`Move ${label} up`}
@@ -2292,7 +2292,7 @@ function HomeSectionsSection() {
                 </ActionIcon>
                 <ActionIcon
                   variant="subtle"
-                  color="gray"
+                  color="var(--neutral)"
                   size="sm"
                   disabled={index === sections.length - 1 || !patch}
                   aria-label={t`Move ${label} down`}
@@ -2330,7 +2330,7 @@ function AppearanceSection() {
       <Title order={4} mb={4}>
         <Trans>Appearance</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <Text size="sm" c="var(--ink-3)" mb="sm">
         <Trans>
           Pick an accent colour, or switch to the light theme. Applies instantly and is remembered
           on this device.
@@ -2397,7 +2397,7 @@ function GeneralSection() {
             key any more: credentials belong to accounts and are created under My account, where
             each one can be revoked without affecting anything else. */}
         <Group justify="space-between" mt="xs">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Re-open the first-time setup guide.</Trans>
           </Text>
           <Button
@@ -2428,7 +2428,7 @@ function UpdatesSection() {
       <Title order={4} mb="sm">
         <Trans>Updates</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         {status?.isDocker ? (
           <Trans>
             Checks GitHub daily for a newer release and raises a banner and a Notifications event
@@ -2449,7 +2449,7 @@ function UpdatesSection() {
           onChange={(e) => save.mutate(e.currentTarget.checked)}
         />
         <Group justify="space-between">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {status?.isDevBuild ? (
               <Trans>Unofficial build, update checks are skipped.</Trans>
             ) : status?.updateAvailable ? (
@@ -2555,7 +2555,7 @@ function ImageCacheSection() {
       <Title order={4} mb="sm">
         <Trans>Image cache</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Clears the reader&apos;s page thumbnails and the source-comparison samples, drops poster
           folders for series that no longer exist, and re-downloads series posters from the
@@ -2566,7 +2566,7 @@ function ImageCacheSection() {
 
       {usage && (
         <Stack gap={4} mb="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {usage.coversMissing > 0 ? (
               <Trans>
                 Posters: {coverFilesLabel} files, {coverBytesLabel} - {coversMissingLabel} of{' '}
@@ -2578,7 +2578,7 @@ function ImageCacheSection() {
               </Trans>
             )}
           </Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               Reader thumbnails: {thumbnailFilesLabel} files, {thumbnailBytesLabel}
             </Trans>
@@ -2592,7 +2592,7 @@ function ImageCacheSection() {
           value={pct ?? 100}
           animated={running}
           striped={running}
-          color={status?.lastError ? 'red' : 'brand'}
+          color={status?.lastError ? 'var(--danger)' : 'brand'}
         />
       )}
 
@@ -2693,7 +2693,7 @@ function KavitaUserSection() {
       <Title order={4} mb="sm">
         <Trans>Kavita reading</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered
           admin, which is what a single-user instance wants. Only this account can import read
@@ -2900,7 +2900,7 @@ export default function SettingsPage() {
         {tabs.map((tab) => (
           <Tabs.Panel key={tab.key} value={tab.key}>
             <Stack className="settings-content">
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="var(--ink-3)">
                 {renderLabel(tab.description)}
               </Text>
               {visible

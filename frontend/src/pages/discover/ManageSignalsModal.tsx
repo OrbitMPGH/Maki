@@ -193,7 +193,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
       title={
         <div>
           <Text fw={600}><Trans>Manage signals</Trans></Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Change how individual titles affect recommendations.</Trans>
           </Text>
         </div>
@@ -235,13 +235,13 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
             </Chip.Group>
 
             {actionError && (
-              <Alert color="red">
+              <Alert color="var(--danger)">
                 <Trans>{actionError} Refresh the page and try again.</Trans>
               </Alert>
             )}
 
             {visible.length === 0 && (
-              <Text size="sm" c="dimmed" py="md"><Trans>No titles match.</Trans></Text>
+              <Text size="sm" c="var(--ink-3)" py="md"><Trans>No titles match.</Trans></Text>
             )}
 
             <Stack gap={0}>
@@ -254,7 +254,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
             </Stack>
 
             <Group justify="space-between">
-              <Text size="xs" c="dimmed"><Trans>Showing {shown} of {total}</Trans></Text>
+              <Text size="xs" c="var(--ink-3)"><Trans>Showing {shown} of {total}</Trans></Text>
               {states?.nextCursor && (
                 <Button size="xs" variant="subtle" onClick={() => setCursor(states.nextCursor!)}>
                   <Trans>Load more</Trans>
@@ -324,14 +324,14 @@ function AnimeSignalsPanel() {
 
   if (isLoading || !data) {
     return error ? (
-      <Alert color="red"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
     ) : null
   }
 
   const noTracker = data.services.length === 0
   if (!data.enabled || noTracker) {
     return (
-      <Text size="sm" c="dimmed" py="md">
+      <Text size="sm" c="var(--ink-3)" py="md">
         {noTracker
           ? <Trans>Connect an AniList or MyAnimeList tracker to use this.</Trans>
           : <Trans>Turn on anime signals on the Taste tab to use this.</Trans>}
@@ -342,7 +342,7 @@ function AnimeSignalsPanel() {
   return (
     <Stack gap="sm">
       <Group justify="space-between" align="center" wrap="wrap">
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <AnimeSignalsStatusLine data={data} />
         </Text>
         <Button
@@ -353,7 +353,7 @@ function AnimeSignalsPanel() {
         </Button>
       </Group>
 
-      {syncError && <Alert color="red">{syncError}</Alert>}
+      {syncError && <Alert color="var(--danger)">{syncError}</Alert>}
 
       <TextInput
         value={search} onChange={(event) => setSearch(event.currentTarget.value)}
@@ -372,7 +372,7 @@ function AnimeSignalsPanel() {
       </Chip.Group>
 
       {filtered.length === 0 && (
-        <Text size="sm" c="dimmed" py="md"><Trans>No shows match.</Trans></Text>
+        <Text size="sm" c="var(--ink-3)" py="md"><Trans>No shows match.</Trans></Text>
       )}
 
       <div style={{ overflowX: 'hidden' }}>
@@ -383,7 +383,7 @@ function AnimeSignalsPanel() {
         </Stack>
       </div>
 
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="var(--ink-3)">
         <Trans>Showing {shown} of {total}</Trans>
       </Text>
     </Stack>
@@ -443,7 +443,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
       <div style={{ flex: 1, minWidth: 0 }}>
         <Text size="sm" fw={500} truncate>{title}</Text>
         {row.genres.length > 0 && (
-          <Text size="xs" c="dimmed" truncate>{row.genres.join(', ')}</Text>
+          <Text size="xs" c="var(--ink-3)" truncate>{row.genres.join(', ')}</Text>
         )}
       </div>
       <div style={{ width: 300, flex: 'none' }}>
@@ -454,35 +454,35 @@ function SignalRow({ row, busy, onClear, onExclude }: {
             </Badge>
           )}
           {sentiment === 'liked' && (
-            <Pill color="teal" label={t`👍 Liked`} clear={t`Clear the thumbs up`}
+            <Pill color="var(--ok)" label={t`👍 Liked`} clear={t`Clear the thumbs up`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {sentiment === 'disliked' && (
-            <Pill color="red" label={t`👎 Disliked`} clear={t`Clear the thumbs down`}
+            <Pill color="var(--danger)" label={t`👎 Disliked`} clear={t`Clear the thumbs down`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {suppression === 'hidden' && (
-            <Pill color="yellow" label={t`Hidden`} clear={t`Restore this title`}
+            <Pill color="var(--warn)" label={t`Hidden`} clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {suppression === 'dismissed' && (
-            <Pill color="yellow" label={t`Dismissed until ${until}`} clear={t`Restore this title`}
+            <Pill color="var(--warn)" label={t`Dismissed until ${until}`} clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {exposure.length > 0 && (
-            <Pill color="blue" label={t`Seen: ${media}`} clear={t`Clear read or seen`}
+            <Pill color="var(--info)" label={t`Seen: ${media}`} clear={t`Clear read or seen`}
               onClear={() => onClear(row, 'clear-exposure')} />
           )}
           {row.excluded && (
-            <Pill color="gray" label={t`Excluded from taste`} clear={t`Use this title for taste`}
+            <Pill color="var(--neutral)" label={t`Excluded from taste`} clear={t`Use this title for taste`}
               onClear={() => onExclude(row, false)} />
           )}
-          {plain && row.isRead && <Badge size="sm" variant="light" color="gray">{t`Read`}</Badge>}
+          {plain && row.isRead && <Badge size="sm" variant="light" color="var(--neutral)">{t`Read`}</Badge>}
           {plain && !row.isRead && row.onShelf && (
-            <Badge size="sm" variant="light" color="gray">{t`On shelf`}</Badge>
+            <Badge size="sm" variant="light" color="var(--neutral)">{t`On shelf`}</Badge>
           )}
         </Group>
-        <Text size="xs" c="dimmed" mt={4}>{why}</Text>
+        <Text size="xs" c="var(--ink-3)" mt={4}>{why}</Text>
       </div>
       <div style={{ width: 140, flex: 'none', textAlign: 'right' }}>
         {action && (

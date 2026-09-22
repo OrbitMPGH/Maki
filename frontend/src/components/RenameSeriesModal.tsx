@@ -59,7 +59,7 @@ export function RenameSeriesModal({
         )}
 
         {conflicted && (
-          <Alert color="red" icon={<IconAlertTriangle size={18} />} title={t`Two chapters want one name`}>
+          <Alert color="var(--danger)" icon={<IconAlertTriangle size={18} />} title={t`Two chapters want one name`}>
             <Stack gap={4}>
               {plan?.conflicts.map((c) => (
                 <Text key={c} size="sm">

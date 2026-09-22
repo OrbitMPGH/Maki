@@ -161,7 +161,7 @@ export default function ReaderToolbar({
               {manifest.seriesTitle}
             </Text>
             <Group gap={8} wrap="nowrap" align="center">
-              <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+              <Text fz="xs" c="var(--ink-3)" style={{ whiteSpace: 'nowrap' }}>
                 {manifest.label}
               </Text>
               {manifest.seriesChapterCount > 0 && (
@@ -176,7 +176,7 @@ export default function ReaderToolbar({
                       w={64}
                       aria-label={t`Chapters read in this series`}
                     />
-                    <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }} className="tnum">
+                    <Text fz="xs" c="var(--ink-3)" style={{ whiteSpace: 'nowrap' }} className="tnum">
                       {chaptersRead}/{seriesChapterCount}
                       {' · '}
                       {chaptersLeft > 0 ? (
@@ -262,7 +262,7 @@ export default function ReaderToolbar({
           <Text
             visibleFrom="xs"
             fz="xs"
-            c="dimmed"
+            c="var(--ink-3)"
             style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
           >
             {page + 1} / {manifest.pageCount}
@@ -313,7 +313,7 @@ export default function ReaderToolbar({
             <Popover.Dropdown>
               <Stack gap="sm">
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Layout</Trans>
                   </Text>
                   <SegmentedControl
@@ -329,7 +329,7 @@ export default function ReaderToolbar({
                   />
                 </div>
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Direction</Trans>
                   </Text>
                   <SegmentedControl
@@ -344,7 +344,7 @@ export default function ReaderToolbar({
                   />
                 </div>
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Fit</Trans>
                   </Text>
                   <SegmentedControl
@@ -362,7 +362,7 @@ export default function ReaderToolbar({
                 </div>
                 {prefs.fit === 'original' && (
                   <div>
-                    <Text fz="xs" c="dimmed" mb={4}>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
                       <Trans>Scale ({scale}%)</Trans>
                     </Text>
                     <Slider
@@ -376,7 +376,7 @@ export default function ReaderToolbar({
                   </div>
                 )}
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Background</Trans>
                   </Text>
                   <SegmentedControl
@@ -424,7 +424,7 @@ export default function ReaderToolbar({
                 />
 
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Reading profile</Trans>
                   </Text>
                   <Select
@@ -442,7 +442,7 @@ export default function ReaderToolbar({
                       { label: t`Just this series`, value: 'series' },
                     ]}
                   />
-                  <Text fz="xs" c="dimmed" mt={4}>
+                  <Text fz="xs" c="var(--ink-3)" mt={4}>
                     {editsAffect}
                   </Text>
                 </div>

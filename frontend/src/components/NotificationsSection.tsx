@@ -137,7 +137,7 @@ export function NotificationsSection() {
           <Trans>Add connection</Trans>
         </Button>
       </Group>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
           Send alerts to Discord or a generic webhook when chapters download, downloads fail, new
           chapters appear, imports finish, or a health issue is detected.
@@ -165,7 +165,7 @@ export function NotificationsSection() {
                   </Badge>
                 </Table.Td>
                 <Table.Td>
-                  <Badge size="sm" variant="light" color={n.enabled ? 'green' : 'gray'}>
+                  <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
                     {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
                   </Badge>
                 </Table.Td>
@@ -176,7 +176,7 @@ export function NotificationsSection() {
                     </ActionIcon>
                     <ActionIcon
                       variant="subtle"
-                      color="red"
+                      color="var(--danger)"
                       onClick={() => remove.mutate(n.id)}
                       aria-label={t`Delete connection`}
                     >
@@ -189,7 +189,7 @@ export function NotificationsSection() {
           </Table.Tbody>
         </Table>
       ) : (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>No notification connections yet.</Trans>
         </Text>
       )}

@@ -13,7 +13,7 @@ function Figure({ value, label, icon: FigIcon }: { value: string | number; label
           {value}
         </Text>
       </Group>
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="var(--ink-3)">
         {label}
       </Text>
     </Stack>
@@ -60,7 +60,7 @@ export function ProgressStrip({
             <Text fw={650}>
               <Trans>Level {currentLevel}</Trans>
             </Text>
-            <Text size="xs" c="dimmed" className="tnum">
+            <Text size="xs" c="var(--ink-3)" className="tnum">
               <Trans>
                 {intoLevel} / {levelSpan} XP to level {nextLevel}
               </Trans>

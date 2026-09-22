@@ -630,7 +630,7 @@ export default function LibraryPage() {
         )}
       </Group>
       {description && (
-        <Text size="xs" c="dimmed" mb={4}>
+        <Text size="xs" c="var(--ink-3)" mb={4}>
           {description}
         </Text>
       )}
@@ -758,7 +758,7 @@ export default function LibraryPage() {
           {selectMode ? (
             <Group className="library-selection-bar" justify="space-between" wrap="wrap" gap="xs">
               <Group gap="xs">
-                <Text size="sm" c="dimmed" className="tnum">
+                <Text size="sm" c="var(--ink-3)" className="tnum">
                   <Plural value={selectedCount} one="# selected" other="# selected" />
                 </Text>
                 <Button
@@ -776,7 +776,7 @@ export default function LibraryPage() {
                     <Trans>Select all</Trans>
                   )}
                 </Button>
-                <Text size="xs" c="dimmed" className="tnum">
+                <Text size="xs" c="var(--ink-3)" className="tnum">
                   {filtersActive ? (
                     <Trans>
                       {visibleCount} of {totalCount} series match
@@ -868,7 +868,7 @@ export default function LibraryPage() {
                   onChange={(v) => setSort(v ?? 'added')}
                   comboboxProps={{ withinPortal: true }}
                 />
-                <Text size="sm" c="dimmed" className="tnum">
+                <Text size="sm" c="var(--ink-3)" className="tnum">
                   {filtersActive ? (
                     <Trans>
                       {visibleCount} of {totalCount} series match
@@ -921,7 +921,7 @@ export default function LibraryPage() {
                 <Button
                   size="compact-xs"
                   variant="subtle"
-                  color="gray"
+                  color="var(--neutral)"
                   leftSection={<IconX size={14} />}
                   onClick={() => applySpec(DEFAULT_SPEC, null)}
                 >
@@ -931,7 +931,7 @@ export default function LibraryPage() {
               <Tooltip label={t`Manage tags`} withArrow>
                 <ActionIcon
                   variant="subtle"
-                  color="gray"
+                  color="var(--neutral)"
                   onClick={() => setTagManagerOpen(true)}
                   aria-label={t`Manage tags`}
                 >
@@ -952,7 +952,7 @@ export default function LibraryPage() {
         title={t`Filters`}
       >
         <Stack gap="sm" pb="xl">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               {shownCount} of {totalSeriesShown} series shown.
             </Trans>{' '}
@@ -1028,7 +1028,7 @@ export default function LibraryPage() {
             <Text size="sm" fw={500} mb={2}>
               <Trans>Chapters</Trans>
             </Text>
-            <Text size="xs" c="dimmed" mb="xs">
+            <Text size="xs" c="var(--ink-3)" mb="xs">
               <Trans>Leave both boxes empty to ignore.</Trans>
             </Text>
             <SegmentedControl
@@ -1089,7 +1089,7 @@ export default function LibraryPage() {
               <Text size="sm" fw={500} mb={2}>
                 <Trans>Read</Trans>
               </Text>
-              <Text size="xs" c="dimmed" mb="md">
+              <Text size="xs" c="var(--ink-3)" mb="md">
                 <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
               </Text>
               <RangeSlider
@@ -1124,7 +1124,7 @@ export default function LibraryPage() {
         title={t`Save this filter`}
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
             <Trans>Reusing the name of the active preset overwrites it.</Trans>
           </Text>
@@ -1170,7 +1170,7 @@ export default function LibraryPage() {
         title={t`Tag ${selectedCount} series`}
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
             <Trans>Create new tags from "Manage tags".</Trans>
           </Text>
@@ -1238,7 +1238,7 @@ export default function LibraryPage() {
           </Trans>{' '}
           <Trans>Sources already linked are left exactly as they are, so this only ever adds.</Trans>
         </Text>
-        <Text size="sm" c="dimmed" mb="lg">
+        <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>
             Matching runs in the background, one series at a time, to keep the request rate at the
             sites sane.
@@ -1295,7 +1295,7 @@ export default function LibraryPage() {
             <Trans>Cancel</Trans>
           </Button>
           <Button
-            color="red"
+            color="var(--danger)"
             leftSection={<IconTrash size={16} />}
             onClick={() => {
               setDeleteModalOpen(false)
@@ -1369,7 +1369,7 @@ export default function LibraryPage() {
           data={notificationOptions}
           mb="xs"
         />
-        <Text size="xs" c="dimmed" mb="lg">
+        <Text size="xs" c="var(--ink-3)" mb="lg">
           {notificationHelp}
         </Text>
         <Group justify="flex-end">
@@ -1412,7 +1412,7 @@ export default function LibraryPage() {
         title={t`Move ${selectedCount} series`}
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
             <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
             <Trans>A file move is blocked for any series with an active download.</Trans>
@@ -1467,7 +1467,7 @@ export default function LibraryPage() {
         </Center>
       )}
       {error && (
-        <Text c="red" ta="center" py="xl">
+        <Text c="var(--danger)" ta="center" py="xl">
           <Trans>Failed to load library: {loadErrorMessage}</Trans>
         </Text>
       )}

@@ -8,7 +8,7 @@ const ACCENT: Record<string, string> = {
   warn: 'var(--warn)',
   info: 'var(--info)',
   danger: 'var(--danger)',
-  gray: 'var(--mantine-color-dark-3)',
+  gray: 'var(--neutral)',
 }
 
 /**
@@ -48,21 +48,21 @@ export function StatTile({
   // number that reads as an infinite improvement.
   const good = invertDelta ? (delta ?? 0) < 0 : (delta ?? 0) > 0
   const deltaColor =
-    delta === null || delta === 0 ? 'var(--mantine-color-dimmed)' : good ? 'var(--ok)' : 'var(--danger)'
+    delta === null || delta === 0 ? 'var(--ink-3)' : good ? 'var(--ok)' : 'var(--danger)'
 
   return (
     <Card className="stat-tile" padding="md" radius="lg">
       <span className="stat-accent" style={{ background: color }} />
       <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
         <div style={{ minWidth: 0 }}>
-          <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+          <Text size="xs" c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
             {label}
           </Text>
           <Text fz={26} fw={750} lh={1.1} mt={6} className="tnum">
             {value}
           </Text>
           {hint && (
-            <Text size="xs" c="dimmed" mt={4}>
+            <Text size="xs" c="var(--ink-3)" mt={4}>
               {hint}
             </Text>
           )}

@@ -54,7 +54,7 @@ export function AccountSection() {
         <Trans>My account</Trans>
       </Title>
       <Group gap="xs" mb="md">
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>Signed in as</Trans>
         </Text>
         <Code>{me?.userName}</Code>
@@ -122,10 +122,10 @@ function SsoCard() {
       </Text>
       {me?.oidcLinked ? (
         <Group gap="xs">
-          <Badge color="green" variant="light">
+          <Badge color="var(--ok)" variant="light">
             <Trans>Linked</Trans>
           </Badge>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>
               Signed in as <Code>{oidcUserName}</Code> on {displayName}.
             </Trans>
@@ -133,7 +133,7 @@ function SsoCard() {
         </Group>
       ) : (
         <Group align="center">
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Not linked yet. Sign in with {displayName} once to enable it for this account.</Trans>
           </Text>
           <Button component="a" href="/api/v1/auth/oidc/link" size="xs" variant="default">
@@ -239,7 +239,7 @@ function TwoFactorCard() {
           <Text fw={600} size="sm">
             <Trans>Two-factor authentication</Trans>
           </Text>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             {status && !status.available ? (
               <Trans>This account has no password login for two-factor to protect.</Trans>
             ) : (
@@ -248,7 +248,7 @@ function TwoFactorCard() {
           </Text>
         </div>
         {status?.enabled ? (
-          <Badge color="green" variant="light">
+          <Badge color="var(--ok)" variant="light">
             <Trans>On</Trans>
           </Badge>
         ) : (
@@ -279,7 +279,7 @@ function TwoFactorCard() {
             w={260}
           />
           <Button
-            color="red"
+            color="var(--danger)"
             variant="light"
             loading={disable.isPending}
             disabled={!disablePassword}
@@ -362,7 +362,7 @@ function TwoFactorCard() {
         centered
       >
         <Stack>
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
               These are shown once. They are stored hashed, so nobody (including you) can read them
               back. Keep them somewhere you can reach without your authenticator.
@@ -401,7 +401,7 @@ function ApiKeysCard() {
       <Text fw={600} size="sm">
         <Trans>API keys</Trans>
       </Text>
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="var(--ink-3)">
         <Trans>
           For scripts and third-party clients. A <Code>Full</Code> key acts as you through the{' '}
           <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL, it cannot reach
@@ -471,19 +471,19 @@ function ApiKeysCard() {
                 <Table.Td>
                   <Code>{key.prefix}…</Code>
                 </Table.Td>
-                <Table.Td c="dimmed">
+                <Table.Td c="var(--ink-3)">
                   {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : <Trans>never</Trans>}
                 </Table.Td>
                 <Table.Td ta="right">
                   {key.revokedAt ? (
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="var(--ink-3)">
                       <Trans>revoked</Trans>
                     </Text>
                   ) : (
                     <Button
                       size="compact-xs"
                       variant="subtle"
-                      color="red"
+                      color="var(--danger)"
                       onClick={() => revoke.mutate(key.id)}
                     >
                       <Trans>Revoke</Trans>
@@ -504,7 +504,7 @@ function ApiKeysCard() {
         size="lg"
       >
         <Stack>
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
               Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose
               it, revoke this one and create another.
@@ -535,13 +535,13 @@ function SessionsCard() {
         <Text fw={600} size="sm">
           <Trans>Sessions</Trans>
         </Text>
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>Signs out every other browser and device. This one stays signed in.</Trans>
         </Text>
       </div>
       <Button
         variant="light"
-        color="red"
+        color="var(--danger)"
         size="xs"
         loading={revoke.isPending}
         onClick={() =>

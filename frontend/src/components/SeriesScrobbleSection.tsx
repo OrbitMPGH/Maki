@@ -22,34 +22,9 @@ import {
 import type { SeriesScrobbleServiceDto } from '../api/types'
 import { formatDate } from '../format'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { msg, t as now } from '@lingui/core/macro'
-import type { MessageDescriptor } from '@lingui/core'
+import { t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
-
-function statusColor(status: string | null): string {
-  switch (status) {
-    case 'completed':
-      return 'green'
-    case 'reading':
-      return 'brand'
-    case 'plan_to_read':
-      return 'cyan'
-    default:
-      return 'gray'
-  }
-}
-
-const STATUS_LABELS: Record<string, MessageDescriptor> = {
-  completed: msg`Completed`,
-  reading: msg`Reading`,
-  plan_to_read: msg`Plan to read`,
-  other: msg`Listed`,
-}
-
-function statusLabel(status: string | null): MessageDescriptor | string {
-  if (!status) return '-'
-  return STATUS_LABELS[status] ?? status
-}
+import { statusToken, trackerConnectionVisual, trackerStatusVisual } from './ui/status'
 
 /** "-> ch 12" / "ch 12, vol 2" summary for a synced service. */
 function progressLabel(s: SeriesScrobbleServiceDto): string {
@@ -153,7 +128,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
         <Group gap="xs" align="baseline">
           <Title order={3}><Trans>Scrobbling</Trans></Title>
           {!data.matched && (
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>not yet synced</Trans>
             </Text>
           )}
@@ -174,7 +149,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
       </Group>
 
       {data.services.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Trans>No tracker is connected.</Trans> <Trans>Connect one on the Scrobble page.</Trans>
         </Text>
       ) : (
@@ -199,7 +174,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                             width: 8,
                             height: 8,
                             borderRadius: '50%',
-                            background: `var(--mantine-color-${s.connected ? 'green' : 'gray'}-6)`,
+                            background: `var(--${statusToken(trackerConnectionVisual(s.connected, true).color)})`,
                             flexShrink: 0,
                           }}
                         />
@@ -247,17 +222,22 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                             </Badge>
                           </Tooltip>
                         ) : s.syncedAt ? (
-                          <Badge size="sm" color={statusColor(s.status)} variant="light">
-                            {renderLabel(statusLabel(s.status))}
-                          </Badge>
+                          (() => {
+                            const visual = trackerStatusVisual(s.status ?? '')
+                            return (
+                              <Badge size="sm" color={`var(--${statusToken(visual.color)})`} variant="light">
+                                {renderLabel(visual.label)}
+                              </Badge>
+                            )
+                          })()
                         ) : (
-                          <Text size="sm" c="dimmed">
+                          <Text size="sm" c="var(--ink-3)">
                             <Trans>Not yet synced</Trans>
                           </Text>
                         )}
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm" c="dimmed" className="tnum">
+                        <Text size="sm" c="var(--ink-3)" className="tnum">
                           {s.syncedAt ? formatDate(s.syncedAt) : '-'}
                         </Text>
                       </Table.Td>
