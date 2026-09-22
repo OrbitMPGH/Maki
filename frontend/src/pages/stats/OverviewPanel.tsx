@@ -15,11 +15,9 @@ import {
   IconCalendarStats,
   IconChecks,
   IconClock,
-  IconDownload,
   IconHistory,
   IconHourglassLow,
   IconInfoCircle,
-  IconPlus,
   IconTrophy,
 } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -29,9 +27,8 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { useLabel } from '../../i18n-context'
 import { Panel } from '../../components/ui/Panel'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { StatTile } from '../../components/ui/StatTile'
 import { TagChip, TagChips } from '../../components/ui/TagChip'
-import { formatReadingTime, monthName } from '../../format'
+import { formatNumber, formatReadingTime, monthName } from '../../format'
 import { ActivityFeed } from './ActivityFeed'
 import { ProgressStrip } from './ProgressStrip'
 import { RankList } from './RankList'
@@ -148,6 +145,43 @@ export function OverviewPanel({
   const compare = (current: number, pick: (t: NonNullable<typeof prevStats>['totals']) => number) =>
     comparing ? delta(current, pick(prevStats!.totals)) : undefined
 
+  // The headline row of the period, in the band's grammar: one number per cell, the change against
+  // the previous window as a chip beside it.
+  const figures: { label: string; value: string; delta?: number | null }[] = stats
+    ? [
+        {
+          label: t`Chapters read`,
+          value: formatNumber(stats.totals.chaptersRead),
+          delta: compare(stats.totals.chaptersRead, (p) => p.chaptersRead),
+        },
+        {
+          label: t`Time read`,
+          value: formatReadingTime(stats.totals.readingSeconds),
+          delta: compare(stats.totals.readingSeconds, (p) => p.readingSeconds),
+        },
+        {
+          label: t`Days active`,
+          value: formatNumber(stats.totals.daysActive),
+          delta: compare(stats.totals.daysActive, (p) => p.daysActive),
+        },
+        {
+          label: t`Finished`,
+          value: formatNumber(stats.totals.seriesFinished),
+          delta: compare(stats.totals.seriesFinished, (p) => p.seriesFinished),
+        },
+        {
+          label: t`Downloaded`,
+          value: formatNumber(stats.totals.chaptersDownloaded),
+          delta: compare(stats.totals.chaptersDownloaded, (p) => p.chaptersDownloaded),
+        },
+        {
+          label: t`Series added`,
+          value: formatNumber(stats.totals.seriesAdded),
+          delta: compare(stats.totals.seriesAdded, (p) => p.seriesAdded),
+        },
+      ]
+    : []
+
   const rangeControls = (
     <Group gap="sm" wrap="wrap" mb="lg">
       <SegmentedControl
@@ -224,53 +258,29 @@ export function OverviewPanel({
           </Alert>
         )}
 
-        <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-          <StatTile
-            label={t`Chapters read`}
-            value={stats.totals.chaptersRead}
-            icon={IconBook2}
-            delta={compare(stats.totals.chaptersRead, (t) => t.chaptersRead)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label={t`Time read`}
-            value={formatReadingTime(stats.totals.readingSeconds)}
-            icon={IconClock}
-            delta={compare(stats.totals.readingSeconds, (t) => t.readingSeconds)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label={t`Days active`}
-            value={stats.totals.daysActive}
-            icon={IconCalendarStats}
-            delta={compare(stats.totals.daysActive, (t) => t.daysActive)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label={t`Finished`}
-            value={stats.totals.seriesFinished}
-            icon={IconChecks}
-            accent="ok"
-            delta={compare(stats.totals.seriesFinished, (t) => t.seriesFinished)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label={t`Downloaded`}
-            value={stats.totals.chaptersDownloaded}
-            icon={IconDownload}
-            accent="info"
-            delta={compare(stats.totals.chaptersDownloaded, (t) => t.chaptersDownloaded)}
-            deltaLabel={deltaLabel}
-          />
-          <StatTile
-            label={t`Series added`}
-            value={stats.totals.seriesAdded}
-            icon={IconPlus}
-            accent="ok"
-            delta={compare(stats.totals.seriesAdded, (t) => t.seriesAdded)}
-            deltaLabel={deltaLabel}
-          />
-        </SimpleGrid>
+        <Panel edge="brand" p={0}>
+          <div className="stats-figures">
+            {figures.map((f) => (
+              <div className="stats-figure" key={f.label}>
+                <div className="stats-figure-value">
+                  <span className="stats-figure-n tnum">{f.value}</span>
+                  {f.delta !== undefined && (
+                    <span
+                      className="stats-figure-delta tnum"
+                      data-tone={f.delta === null || f.delta === 0 ? 'flat' : f.delta > 0 ? 'up' : 'down'}
+                      title={deltaLabel}
+                    >
+                      {f.delta === null
+                        ? t`no baseline`
+                        : `${f.delta > 0 ? '+' : ''}${Math.round(f.delta * 100)}%`}
+                    </span>
+                  )}
+                </div>
+                <span className="stats-figure-l">{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </Panel>
 
         {progressOn && summary && (
           <ProgressStrip summary={summary} onOpenAchievements={onOpenAchievements} />

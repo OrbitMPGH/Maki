@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Select, Tabs } from '@mantine/core'
+import { Button, Select } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 // Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk,
 // and here in the shell rather than in a panel so it loads once regardless of which tab opens.
@@ -8,15 +8,13 @@ import { IconPlayerPlay } from '@tabler/icons-react'
 import { useActivityStats, useActivityYears } from '../api/hooks'
 import { useUsers } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
-import { PageHeader } from '../components/ui/PageHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { RewindIntro } from './rewind/RewindIntro'
 import { AchievementsPanel } from './stats/AchievementsPanel'
 import { LibraryPanel } from './stats/LibraryPanel'
 import { OverviewPanel } from './stats/OverviewPanel'
+import { StatsHero, type StatsTab } from './stats/StatsHero'
 import { calendarRange, type RangePreset } from './stats/StatsRange'
-
-type StatsTab = 'overview' | 'library' | 'achievements'
 
 /**
  * The Stats page shell: who is being looked at, which tab, and the Rewind launcher. Each tab owns
@@ -73,9 +71,12 @@ export default function StatsPage() {
         />
       )}
 
-      <PageHeader
-        title={t`Stats`}
+      <StatsHero
+        coverUrl={rewindStats?.topRead.find((s) => s.coverUrl)?.coverUrl ?? null}
         description={t`What you read, what the library holds, and how far you have come.`}
+        tab={tab}
+        onTabChange={setTab}
+        userId={viewUserId}
         actions={
           <>
             {isAdmin && users && users.length > 1 && tab !== 'library' && (
@@ -102,20 +103,6 @@ export default function StatsPage() {
           </>
         }
       />
-
-      <Tabs value={tab} onChange={(v) => setTab((v as StatsTab) ?? 'overview')} mb="lg">
-        <Tabs.List>
-          <Tabs.Tab value="overview">
-            <Trans>Overview</Trans>
-          </Tabs.Tab>
-          <Tabs.Tab value="library">
-            <Trans>Library</Trans>
-          </Tabs.Tab>
-          <Tabs.Tab value="achievements">
-            <Trans>Achievements</Trans>
-          </Tabs.Tab>
-        </Tabs.List>
-      </Tabs>
 
       {tab === 'overview' && (
         <OverviewPanel

@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import {
-  Alert,
   Group,
   Loader,
   Progress,
@@ -26,6 +25,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useLibraryComposition } from '../../api/hooks'
 import type { NamedCount } from '../../api/hooks'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { Panel } from '../../components/ui/Panel'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
@@ -99,7 +99,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
  */
 export function LibraryPanel() {
   const { t, i18n } = useLingui()
-  const { data: stats, isLoading, isError } = useLibraryComposition()
+  const { data: stats, isLoading, isError, refetch } = useLibraryComposition()
 
   const growthData = useMemo(
     () =>
@@ -125,9 +125,13 @@ export function LibraryPanel() {
 
   if (isError || !stats) {
     return (
-      <Alert icon={<IconAlertTriangle size={16} />} color="var(--danger)" variant="light">
-        <Trans>Could not load library stats. The server logs will say why.</Trans>
-      </Alert>
+      <EmptyState
+        icon={IconAlertTriangle}
+        title={t`Could not load library stats`}
+        description={t`The server logs will say why.`}
+        actionLabel={t`Try again`}
+        onAction={() => void refetch()}
+      />
     )
   }
 

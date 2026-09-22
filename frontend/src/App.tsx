@@ -422,6 +422,7 @@ function AppShellRoutes() {
       <AppShell.Main
         className={
           location.pathname === '/home' ||
+          location.pathname === '/stats' ||
           /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
           /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
             ? 'app-main-hero'

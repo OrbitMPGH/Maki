@@ -1977,7 +1977,9 @@ body {
    bar floating over it. See .claude/rules/design-system.md for the backdrop recipe. */
 .series-hero {
   position: relative;
-  overflow: hidden;
+  /* clip, not hidden: hidden is still programmatically scrollable, and the art at inset -7% gives
+     the band scroll range, so focusing a tab in the rail scrolled the band and lifted the rail. */
+  overflow: clip;
   isolation: isolate;
   margin: calc(var(--app-shell-padding, 1rem) * -1);
   margin-bottom: 0;
@@ -2978,6 +2980,122 @@ body {
   width: 18px;
   text-align: right;
   flex-shrink: 0;
+}
+
+/* --- Stats: the page band -------------------------------------------------- */
+/* Home's band with a tab rail at its foot. Everything above the rail is Home's, so the two pages
+   cannot drift; only the rail and the subtitle are new. */
+.stats-hero-sub {
+  margin: 14px 0 0;
+  max-width: 54ch;
+  color: var(--ink-3);
+  font-size: var(--type-body);
+  line-height: 1.5;
+}
+.stats-hero-tabs {
+  margin-top: 26px;
+}
+.stats-hero-body {
+  padding-bottom: 0;
+}
+
+/* --- Stats: the period figures row ----------------------------------------- */
+/* The band's figure grammar in a panel: one number per cell, hairlines instead of gaps, the change
+   against the previous window as a chip beside the number rather than a fourth line under it. */
+.stats-figures {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.stats-figure {
+  display: grid;
+  gap: 4px;
+  padding: 18px 20px;
+  min-width: 0;
+  border-inline-start: 1px solid var(--hairline);
+}
+.stats-figure:first-child {
+  border-inline-start: none;
+}
+.stats-figure-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.stats-figure-n {
+  color: var(--ink-hi);
+  font-size: var(--type-figure);
+  font-weight: 700;
+  line-height: 1.05;
+}
+.stats-figure-delta {
+  padding: 2px 7px;
+  border-radius: var(--radius-control);
+  font-size: var(--type-label);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink-3);
+  background: var(--surface-2);
+}
+.stats-figure-delta[data-tone='up'] {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.stats-figure-delta[data-tone='down'] {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.stats-figure-l {
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 61.9375em) {
+  .stats-figures {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .stats-figure:nth-child(3n + 1) {
+    border-inline-start: none;
+  }
+}
+
+/* A phone gets two figures per row, and the rank rows drop the thumbnail and put the value under
+   the title: at 360px a cover, a title and a right-aligned number leave the title two words wide. */
+@media (max-width: 47.9375em) {
+  .stats-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stats-figure {
+    padding: 14px 16px;
+  }
+  .stats-figure:nth-child(2n + 1) {
+    border-inline-start: none;
+  }
+  .stats-hero-sub {
+    margin-top: 10px;
+    font-size: var(--type-meta);
+  }
+  .stats-hero-tabs {
+    margin-top: 18px;
+    gap: 22px;
+  }
+  .stats-rank-row {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .stats-rank-row .stats-thumb {
+    display: none;
+  }
+  .stats-rank-row > :last-child {
+    margin-inline-start: auto;
+  }
+  .stats-thumb-lg {
+    width: 34px;
+    height: 48px;
+  }
 }
 
 /* --- Rewind --------------------------------------------------------------- */
