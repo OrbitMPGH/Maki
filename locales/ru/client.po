@@ -314,11 +314,6 @@ msgstr "{chaptersCount, plural, one {# затронутая глава} few {# �
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, one {глава загружена} few {главы загружены} many {главы загружены} other {глава загружена}}"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "{chaptersLeft, plural, one {# left} other {# left}}"
-msgstr "{chaptersLeft, plural, one {осталась #} few {осталось #} many {осталось #} other {осталась #}}"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
@@ -338,6 +333,10 @@ msgstr "Прочитано {chaptersRead} из {seriesChapterCount} загруж
 #, fuzzy
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "Прочитано {chaptersRead} из {seriesChapterCount} загруженных глав, в серии: {seriesWantedCount}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{chaptersRead}/{seriesChapterCount} chapters read"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -1969,6 +1968,7 @@ msgid "Back to Discover"
 msgstr "Назад к Обзору"
 
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Back to library"
 msgstr "Назад к библиотеке"
@@ -4423,6 +4423,10 @@ msgstr "Перейти на страницу {pageNumber}"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "Перейти на страницу {pageNumber} (в закладках)"
 
+#: src/App.tsx
+msgid "Go to start page"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Goal metric"
@@ -4954,6 +4958,10 @@ msgstr "Исэкай"
 #, fuzzy
 msgid "Issuer URL"
 msgstr "URL издателя"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "It may have been removed from the library."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -6555,6 +6563,10 @@ msgstr "В вашей библиотеке пока ничего нет"
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
 msgstr "В очередь добавлять нечего. Все запрошенные главы есть на диске или уже в очереди."
 
+#: src/App.tsx
+msgid "Nothing lives at this address. The link may be old or mistyped."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Nothing matches"
@@ -7001,6 +7013,10 @@ msgstr "Подгонка страницы"
 #, fuzzy
 msgid "Page gap"
 msgstr "Зазор между страницами"
+
+#: src/App.tsx
+msgid "Page not found"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -8916,9 +8932,8 @@ msgid "Series moved"
 msgstr "Серии перемещены"
 
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Series not found."
-msgstr "Серия не найдена."
+msgid "Series not found"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx

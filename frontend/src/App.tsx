@@ -19,6 +19,7 @@ import {
   IconAlertTriangle,
   IconDownload,
   IconHeartbeat,
+  IconMapQuestion,
 } from '@tabler/icons-react'
 import { lazy, Suspense, useEffect } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -46,6 +47,7 @@ import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
 import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
+import { EmptyState } from './components/ui/EmptyState'
 import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
@@ -71,6 +73,19 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const HealthPage = lazy(() => import('./pages/HealthPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
+
+function NotFoundPage() {
+  const { t } = useLingui()
+  return (
+    <EmptyState
+      icon={IconMapQuestion}
+      title={t`Page not found`}
+      description={t`Nothing lives at this address. The link may be old or mistyped.`}
+      actionLabel={t`Go to start page`}
+      actionTo="/"
+    />
+  )
+}
 
 /** Shared placeholder while a route chunk is in flight. Matches StartPageRedirect's loader. */
 function RouteFallback() {
@@ -463,6 +478,7 @@ function AppShellRoutes() {
             <Route path="/rewind" element={<Navigate replace to="/stats" />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/health" element={isAdmin ? <HealthPage /> : <Navigate to="/" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </AppShell.Main>

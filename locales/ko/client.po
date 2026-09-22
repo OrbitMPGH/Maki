@@ -314,11 +314,6 @@ msgstr "{chaptersCount, plural, other {영향받는 챕터 #개}}"
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, other {다운로드한 챕터}}"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "{chaptersLeft, plural, one {# left} other {# left}}"
-msgstr "{chaptersLeft, plural, other {남은 챕터 #개}}"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
@@ -338,6 +333,10 @@ msgstr "다운로드된 챕터 {seriesChapterCount}개 중 {chaptersRead}개를 
 #, fuzzy
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "다운로드된 챕터 {seriesChapterCount}개 중 {chaptersRead}개를 읽음, 시리즈 내 {seriesWantedCount}개"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{chaptersRead}/{seriesChapterCount} chapters read"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -1969,6 +1968,7 @@ msgid "Back to Discover"
 msgstr "탐색으로 돌아가기"
 
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Back to library"
 msgstr "라이브러리로 돌아가기"
@@ -4423,6 +4423,10 @@ msgstr "페이지 {pageNumber}(으)로 이동"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "페이지 {pageNumber}(으)로 이동 (북마크됨)"
 
+#: src/App.tsx
+msgid "Go to start page"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Goal metric"
@@ -4954,6 +4958,10 @@ msgstr "이세계"
 #, fuzzy
 msgid "Issuer URL"
 msgstr "발급자 URL"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "It may have been removed from the library."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -6555,6 +6563,10 @@ msgstr "아직 라이브러리에 아무것도 없습니다"
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
 msgstr "대기열에 추가할 항목이 없습니다. 원하는 모든 챕터가 디스크에 있거나 이미 대기열에 있습니다."
 
+#: src/App.tsx
+msgid "Nothing lives at this address. The link may be old or mistyped."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Nothing matches"
@@ -7001,6 +7013,10 @@ msgstr "페이지 맞춤"
 #, fuzzy
 msgid "Page gap"
 msgstr "페이지 간격"
+
+#: src/App.tsx
+msgid "Page not found"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -8916,9 +8932,8 @@ msgid "Series moved"
 msgstr "시리즈 이동됨"
 
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Series not found."
-msgstr "시리즈를 찾을 수 없습니다."
+msgid "Series not found"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx

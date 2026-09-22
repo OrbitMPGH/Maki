@@ -125,7 +125,6 @@ export default function ReaderToolbar({
     manifest.seriesChapterCount,
     manifest.seriesReadCount + (readingCounted ? 1 : 0),
   )
-  const chaptersLeft = Math.max(0, manifest.seriesChapterCount - chaptersRead)
   // Only worth saying when the series is longer than what's on disk; otherwise it just repeats the
   // denominator next to it.
   const moreInSeries = manifest.seriesWantedCount > manifest.seriesChapterCount
@@ -167,20 +166,22 @@ export default function ReaderToolbar({
               {manifest.seriesChapterCount > 0 && (
                 <Tooltip label={seriesProgressTooltip} withArrow zIndex={OVERLAY_Z}>
                   {/* The series meter, not the page one: the bottom bar's slider is this chapter. */}
-                  <Group gap={6} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
+                  <Group gap={6} wrap="nowrap" align="center" style={{ minWidth: 0 }}>
                     <Progress
                       value={(chaptersRead / manifest.seriesChapterCount) * 100}
                       color="var(--info)"
                       radius="xl"
                       size="xs"
                       w={64}
+                      style={{ flexShrink: 0 }}
                       aria-label={t`Chapters read in this series`}
                     />
-                    <Text fz="xs" c="var(--ink-3)" style={{ whiteSpace: 'nowrap' }} className="tnum">
-                      {chaptersRead}/{seriesChapterCount}
-                      {' · '}
-                      {chaptersLeft > 0 ? (
-                        <Plural value={chaptersLeft} one="# left" other="# left" />
+                    <Text fz="xs" c="var(--ink-3)" truncate className="tnum">
+                      {/* Named, since the bottom bar's bare page count sits right under it. */}
+                      {chaptersRead < seriesChapterCount ? (
+                        <Trans>
+                          {chaptersRead}/{seriesChapterCount} chapters read
+                        </Trans>
                       ) : (
                         <Trans>all read</Trans>
                       )}

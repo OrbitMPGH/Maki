@@ -55,6 +55,7 @@ import {
   IconDotsVertical,
   IconPhotoSearch,
   IconEyeOff,
+  IconBookOff,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -127,6 +128,7 @@ import {
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { EmptyState } from '../components/ui/EmptyState'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 
 function chapterLabel(c: ChapterDto): string {
@@ -1073,9 +1075,13 @@ export default function SeriesDetailPage() {
 
   if (!series) {
     return (
-        <Text c="red">
-          <Trans>Series not found.</Trans>
-        </Text>
+        <EmptyState
+            icon={IconBookOff}
+            title={t`Series not found`}
+            description={t`It may have been removed from the library.`}
+            actionLabel={t`Back to library`}
+            actionTo="/library"
+        />
     )
   }
 

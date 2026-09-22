@@ -314,11 +314,6 @@ msgstr "{chaptersCount, plural, one {# betroffenes Kapitel} other {# betroffene 
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, one {Kapitel heruntergeladen} other {Kapitel heruntergeladen}}"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "{chaptersLeft, plural, one {# left} other {# left}}"
-msgstr "{chaptersLeft, plural, one {# übrig} other {# übrig}}"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
@@ -338,6 +333,10 @@ msgstr "{chaptersRead} von {seriesChapterCount} heruntergeladenen Kapiteln geles
 #, fuzzy
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "{chaptersRead} von {seriesChapterCount} heruntergeladenen Kapiteln gelesen, {seriesWantedCount} in der Serie"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{chaptersRead}/{seriesChapterCount} chapters read"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -1969,6 +1968,7 @@ msgid "Back to Discover"
 msgstr "Zurück zu Entdecken"
 
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Back to library"
 msgstr "Zurück zur Bibliothek"
@@ -4423,6 +4423,10 @@ msgstr "Zu Seite {pageNumber}"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "Zu Seite {pageNumber} (Lesezeichen)"
 
+#: src/App.tsx
+msgid "Go to start page"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Goal metric"
@@ -4954,6 +4958,10 @@ msgstr "Isekai"
 #, fuzzy
 msgid "Issuer URL"
 msgstr "Issuer-URL"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "It may have been removed from the library."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -6555,6 +6563,10 @@ msgstr "Noch nichts in deiner Bibliothek"
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
 msgstr "Nichts mehr in die Warteschlange zu stellen. Jedes gewünschte Kapitel liegt auf der Festplatte oder ist bereits eingereiht."
 
+#: src/App.tsx
+msgid "Nothing lives at this address. The link may be old or mistyped."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Nothing matches"
@@ -7001,6 +7013,10 @@ msgstr "Seiteneinpassung"
 #, fuzzy
 msgid "Page gap"
 msgstr "Seitenabstand"
+
+#: src/App.tsx
+msgid "Page not found"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -8916,9 +8932,8 @@ msgid "Series moved"
 msgstr "Serie verschoben"
 
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Series not found."
-msgstr "Serie nicht gefunden."
+msgid "Series not found"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx

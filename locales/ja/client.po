@@ -314,11 +314,6 @@ msgstr "{chaptersCount, plural, other {影響を受ける#章}}"
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, other {章をダウンロード}}"
 
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "{chaptersLeft, plural, one {# left} other {# left}}"
-msgstr "{chaptersLeft, plural, other {残り#件}}"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
@@ -338,6 +333,10 @@ msgstr "{seriesChapterCount}章中{chaptersRead}章を読了"
 #, fuzzy
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "{seriesChapterCount}章中{chaptersRead}章を読了、シリーズには{seriesWantedCount}章"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{chaptersRead}/{seriesChapterCount} chapters read"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -1969,6 +1968,7 @@ msgid "Back to Discover"
 msgstr "「見つける」に戻る"
 
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Back to library"
 msgstr "ライブラリに戻る"
@@ -4423,6 +4423,10 @@ msgstr "ページ{pageNumber}へ移動"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "ページ{pageNumber}へ移動（ブックマーク済み）"
 
+#: src/App.tsx
+msgid "Go to start page"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Goal metric"
@@ -4954,6 +4958,10 @@ msgstr "異世界"
 #, fuzzy
 msgid "Issuer URL"
 msgstr "発行者URL"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "It may have been removed from the library."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -6555,6 +6563,10 @@ msgstr "ライブラリにはまだ何もありません"
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
 msgstr "キューに追加するものはありません。希望した章はすべてディスク上にあるか、すでにキューに入っています。"
 
+#: src/App.tsx
+msgid "Nothing lives at this address. The link may be old or mistyped."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Nothing matches"
@@ -7001,6 +7013,10 @@ msgstr "ページの合わせ方"
 #, fuzzy
 msgid "Page gap"
 msgstr "ページ間隔"
+
+#: src/App.tsx
+msgid "Page not found"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -8916,9 +8932,8 @@ msgid "Series moved"
 msgstr "シリーズを移動しました"
 
 #: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Series not found."
-msgstr "シリーズが見つかりません。"
+msgid "Series not found"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx

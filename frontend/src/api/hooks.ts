@@ -111,6 +111,7 @@ export function useSeriesDetail(id: number) {
   return useQuery({
     queryKey: ['series', id],
     queryFn: () => api<SeriesDto>(`/series/${id}`),
+    meta: { inlineNotFound: true },
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
     // would otherwise leave the Sources card spinning with nothing to end it, so poll while — and
     // only while — there is something to wait for.
@@ -1249,6 +1250,7 @@ export function useSeriesFiles(seriesId: number, enabled = true) {
     queryKey: ['series-files', seriesId],
     queryFn: () => api<SeriesFileDto[]>(`/series/${seriesId}/files`),
     enabled,
+    meta: { inlineNotFound: true },
   })
 }
 

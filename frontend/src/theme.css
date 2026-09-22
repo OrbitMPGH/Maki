@@ -941,6 +941,40 @@ body {
   padding-left: 14px;
   border-left: 1px solid var(--border-strong);
 }
+/* Too narrow for one row, the shrinking columns ran the uppercase labels into each other. Two
+   columns instead, with the hairline only between the pair on each line. Four figures need more
+   room than three, hence the two thresholds. */
+.home-glance > :not(.home-glance-wide) {
+  container-type: inline-size;
+}
+@container (max-width: 23rem) {
+  .home-figures:has(> :nth-child(4)) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--mantine-spacing-sm);
+  }
+  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(even) {
+    padding-right: 0;
+  }
+}
+@container (max-width: 14rem) {
+  .home-figures {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--mantine-spacing-sm);
+  }
+  .home-figures > .home-figure:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .home-figures > .home-figure:nth-child(even) {
+    padding-right: 0;
+  }
+}
 
 /* --- Home dashboard rails ------------------------------------------------ */
 /* The chapter line under the title on a Home card, where the library grid carries have/total. */
@@ -2502,7 +2536,9 @@ body {
 /* --- Series detail panels -------------------------------------------------- */
 .series-split {
   display: grid;
-  grid-template-columns: minmax(40%, 1fr) minmax(min-content, 1fr);
+  /* Zero minimums: a `min-content` track took the Sources table's full width and pushed the page
+     sideways. The table scrolls inside its own container instead. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
@@ -2521,6 +2557,7 @@ body {
 }
 .series-split-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: max-content max-content;
   gap: var(--mantine-spacing-lg);
   align-items: start;
@@ -2986,10 +3023,7 @@ body {
   color: var(--ok);
   background: var(--ok-soft);
 }
-.stats-figure-delta[data-tone='down'] {
-  color: var(--danger);
-  background: var(--danger-soft);
-}
+/* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
 .stats-figure-l {
   color: var(--ink-4);
   font-size: var(--type-micro);
@@ -4171,6 +4205,11 @@ body.reader-open {
   padding: 0.875rem 1.125rem;
 }
 @media (max-width: 47.9375em) {
+  /* Home carries the same four numbers. On a phone the 2x2 tiles pushed the first cover below the
+     fold. */
+  .library-index-metrics {
+    display: none;
+  }
   .library-toolbar-row .library-search {
     flex-basis: 100%;
     min-width: 100%;

@@ -263,10 +263,6 @@ msgstr "{chaptersCount, plural, one {# affected chapter} other {# affected chapt
 msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 msgstr "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 
-#: src/pages/reader/ReaderToolbar.tsx
-msgid "{chaptersLeft, plural, one {# left} other {# left}}"
-msgstr "{chaptersLeft, plural, one {# left} other {# left}}"
-
 #: src/pages/SettingsPage.tsx
 msgid "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
 msgstr "{chaptersMarked, plural, one {# chapter} other {# chapters}} marked read across {seriesMatched} series"
@@ -282,6 +278,10 @@ msgstr "{chaptersRead} of {seriesChapterCount} downloaded chapters read"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
 msgstr "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {seriesWantedCount} in the series"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{chaptersRead}/{seriesChapterCount} chapters read"
+msgstr "{chaptersRead}/{seriesChapterCount} chapters read"
 
 #: src/pages/ImportPage.tsx
 msgid "{comicCount, plural, one {# comic} other {# comics}}"
@@ -1599,6 +1599,7 @@ msgid "Back to Discover"
 msgstr "Back to Discover"
 
 #: src/pages/reader/ReaderPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Back to library"
 msgstr "Back to library"
 
@@ -3599,6 +3600,10 @@ msgstr "Go to page {pageNumber}"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "Go to page {pageNumber} (bookmarked)"
 
+#: src/App.tsx
+msgid "Go to start page"
+msgstr "Go to start page"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Goal metric"
 msgstr "Goal metric"
@@ -4028,6 +4033,10 @@ msgstr "Isekai"
 #: src/components/settings/SecuritySection.tsx
 msgid "Issuer URL"
 msgstr "Issuer URL"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "It may have been removed from the library."
+msgstr "It may have been removed from the library."
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -5330,6 +5339,10 @@ msgstr "Nothing in your library yet"
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
 msgstr "Nothing left to queue. Every wanted chapter is on disk or already queued."
 
+#: src/App.tsx
+msgid "Nothing lives at this address. The link may be old or mistyped."
+msgstr "Nothing lives at this address. The link may be old or mistyped."
+
 #: src/pages/NotificationsPage.tsx
 msgid "Nothing matches"
 msgstr "Nothing matches"
@@ -5691,6 +5704,10 @@ msgstr "Page fit"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Page gap"
 msgstr "Page gap"
+
+#: src/App.tsx
+msgid "Page not found"
+msgstr "Page not found"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Page thumbnails"
@@ -7249,8 +7266,8 @@ msgid "Series moved"
 msgstr "Series moved"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Series not found."
-msgstr "Series not found."
+msgid "Series not found"
+msgstr "Series not found"
 
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
