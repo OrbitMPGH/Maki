@@ -12,7 +12,6 @@ import {
   Modal,
   MultiSelect,
   NumberInput,
-  Paper,
   Radio,
   RangeSlider,
   SegmentedControl,
@@ -741,22 +740,23 @@ export default function LibraryPage() {
       />
 
       {series && series.length > 0 && (
-        <SimpleGrid cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }} spacing="sm" mb="lg">
-          <StatTile label={t`Series`} value={stats.total} icon={IconLibrary} accent="brand" />
-          <StatTile label={t`Monitored`} value={stats.monitored} icon={IconEye} accent="info" />
-          <StatTile label={t`On disk`} value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-          <StatTile label={t`Missing`} value={stats.missing} icon={IconDownload} accent="warn" />
-          {stats.inQueue > 0 && (
-            <StatTile label={t`In queue`} value={stats.inQueue} icon={IconClock} accent="brand" />
-          )}
-        </SimpleGrid>
-      )}
+        <div className="library-index layer-sunken">
+          <SimpleGrid
+            className="library-index-metrics"
+            cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }}
+            spacing="sm"
+          >
+            <StatTile label={t`Series`} value={stats.total} icon={IconLibrary} accent="brand" />
+            <StatTile label={t`Monitored`} value={stats.monitored} icon={IconEye} accent="info" />
+            <StatTile label={t`On disk`} value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
+            <StatTile label={t`Missing`} value={stats.missing} icon={IconDownload} accent="warn" />
+            {stats.inQueue > 0 && (
+              <StatTile label={t`In queue`} value={stats.inQueue} icon={IconClock} accent="brand" />
+            )}
+          </SimpleGrid>
 
-      {/* Toolbar / selection bar */}
-      {series && series.length > 0 &&
-        (selectMode ? (
-          <Paper withBorder p="xs" mb="lg" radius="lg">
-            <Group justify="space-between" wrap="wrap" gap="xs">
+          {selectMode ? (
+            <Group className="library-selection-bar" justify="space-between" wrap="wrap" gap="xs">
               <Group gap="xs">
                 <Text size="sm" c="dimmed" className="tnum">
                   <Plural value={selectedCount} one="# selected" other="# selected" />
@@ -837,51 +837,50 @@ export default function LibraryPage() {
                 </Button>
               </Group>
             </Group>
-          </Paper>
-        ) : (
-          <Stack mb="lg" gap="sm">
-            <Group gap="sm" wrap="wrap">
-              <TextInput
-                placeholder={t`Filter library…`}
-                leftSection={<IconSearch size={16} />}
-                value={query}
-                onChange={(e) => setQuery(e.currentTarget.value)}
-                style={{ flex: '1 1 240px' }}
-              />
-              <Button
-                variant={activeFilterCount > 0 ? 'light' : 'default'}
-                leftSection={<IconFilter size={16} />}
-                rightSection={
-                  activeFilterCount > 0 ? (
-                    <Badge size="xs" circle variant="filled">
-                      {activeFilterCount}
-                    </Badge>
-                  ) : undefined
-                }
-                onClick={() => setFiltersOpen(true)}
-              >
-                <Trans>Filters</Trans>
-              </Button>
-              <Select
-                data={sortOptions}
-                value={sort}
-                onChange={(v) => setSort(v ?? 'added')}
-                w={170}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Text size="sm" c="dimmed" className="tnum">
-                {filtersActive ? (
-                  <Trans>
-                    {visibleCount} of {totalCount} series match
-                  </Trans>
-                ) : (
-                  <Plural value={totalSeries} one="# series" other="# series" />
-                )}
-              </Text>
-            </Group>
+          ) : (
+            <Stack className="library-toolbar" gap="sm">
+              <Group className="library-toolbar-row" gap="sm" wrap="wrap">
+                <TextInput
+                  className="library-search"
+                  placeholder={t`Filter library…`}
+                  leftSection={<IconSearch size={16} />}
+                  value={query}
+                  onChange={(e) => setQuery(e.currentTarget.value)}
+                />
+                <Button
+                  variant={activeFilterCount > 0 ? 'light' : 'default'}
+                  leftSection={<IconFilter size={16} />}
+                  rightSection={
+                    activeFilterCount > 0 ? (
+                      <Badge size="xs" circle variant="filled">
+                        {activeFilterCount}
+                      </Badge>
+                    ) : undefined
+                  }
+                  onClick={() => setFiltersOpen(true)}
+                >
+                  <Trans>Filters</Trans>
+                </Button>
+                <Select
+                  className="library-sort"
+                  data={sortOptions}
+                  value={sort}
+                  onChange={(v) => setSort(v ?? 'added')}
+                  comboboxProps={{ withinPortal: true }}
+                />
+                <Text size="sm" c="dimmed" className="tnum">
+                  {filtersActive ? (
+                    <Trans>
+                      {visibleCount} of {totalCount} series match
+                    </Trans>
+                  ) : (
+                    <Plural value={totalSeries} one="# series" other="# series" />
+                  )}
+                </Text>
+              </Group>
 
-            <Group gap="xs" wrap="wrap">
-              {(savedFilters ?? []).map((f) => (
+              <Group className="library-saved-filters" gap="xs" wrap="wrap">
+                {(savedFilters ?? []).map((f) => (
                 <Badge
                   key={f.id}
                   variant={activeFilterId === f.id ? 'filled' : 'light'}
@@ -939,9 +938,11 @@ export default function LibraryPage() {
                   <IconSettings size={16} />
                 </ActionIcon>
               </Tooltip>
-            </Group>
-          </Stack>
-        ))}
+              </Group>
+            </Stack>
+          )}
+        </div>
+      )}
 
       <Drawer
         opened={filtersOpen}

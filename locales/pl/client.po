@@ -919,6 +919,7 @@ msgstr "{typeLabel} (inny profil)"
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, one {# nieprzeczytany} few {# nieprzeczytane} many {# nieprzeczytanych} other {# nieprzeczytanego}}"
 
+#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
@@ -2652,6 +2653,10 @@ msgstr "Codziennie sprawdza GitHub w poszukiwaniu nowszego wydania i wyświetla 
 msgid "Chinese"
 msgstr "Chiński"
 
+#: src/pages/ImportPage.tsx
+msgid "Choose a root folder"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
@@ -2916,6 +2921,10 @@ msgstr "równoczesne, procesy robocze, ponów, maksymalna liczba prób, opóźni
 #, fuzzy
 msgid "configured, not connected"
 msgstr "skonfigurowane, niepołączone"
+
+#: src/pages/ImportPage.tsx
+msgid "Confirm metadata matches"
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -4731,6 +4740,10 @@ msgstr "Zaimportuj tylko to, czego brakuje, zachowaj istniejące pliki"
 msgid "Import page"
 msgstr "Strona Import"
 
+#: src/pages/ImportPage.tsx
+msgid "Import progress"
+msgstr ""
+
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
 msgid "Import ratings"
@@ -5292,6 +5305,10 @@ msgstr "Połącz źródło i odśwież."
 #, fuzzy
 msgid "Link and unlink per-series sources"
 msgstr "Łącz i odłączaj źródła dla poszczególnych serii"
+
+#: src/pages/ImportPage.tsx
+msgid "Link files and report results"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6925,6 +6942,7 @@ msgstr "Strona"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Strona {pageIndex}/{pageCount}"
 
+#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
@@ -7571,6 +7589,10 @@ msgstr "Profil czytania"
 msgid "Reading profiles"
 msgstr "Profile czytania"
 
+#: src/components/home/ContinueLead.tsx
+msgid "Reading progress"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Reading progress and bookmarks for removed chapter rows will also be deleted."
@@ -8142,6 +8164,14 @@ msgstr "Przywrócono"
 msgid "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
 msgstr "Ogranicz wyszukiwanie wydań do konkretnych indekserów i kategorii Torznab. Gdy nic nie jest zaznaczone, przeszukiwany jest każdy indekser i każda kategoria."
 
+#: src/components/home/ContinueLead.tsx
+msgid "Resume"
+msgstr ""
+
+#: src/components/home/ContinueLead.tsx
+msgid "Resume {seriesTitle}, {chapterLabel}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -8180,6 +8210,7 @@ msgstr "Ponowne użycie nazwy aktywnego presetu nadpisze go."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Review"
 msgstr "Przejrzyj"
@@ -8953,10 +8984,18 @@ msgstr "Pokaż wyskakujące okno po nadejściu powiadomienia"
 msgid "Show all"
 msgstr "Pokaż wszystko"
 
+#: src/components/home/ContinueRail.tsx
+msgid "Show earlier chapters"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
 msgstr "Pokaż mniej"
+
+#: src/components/home/ContinueRail.tsx
+msgid "Show later chapters"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
@@ -9337,6 +9376,14 @@ msgstr "utknęło na rozdz. {maxChapter}"
 #, fuzzy
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "Standaryzuj ComicInfo.xml wewnątrz zaimportowanych plików (zalecane)"
+
+#: src/components/home/ContinueLead.tsx
+msgid "Start {seriesTitle}, {chapterLabel}"
+msgstr ""
+
+#: src/components/home/ContinueLead.tsx
+msgid "Start chapter"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -10048,6 +10095,7 @@ msgid "To"
 msgstr "Do"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/NotificationsPage.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "Today"
@@ -10276,6 +10324,10 @@ msgstr "Cofnięto"
 #, fuzzy
 msgid "Unknown"
 msgstr "Nieznany"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Unknown date"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10908,6 +10960,7 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "Rok: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Yesterday"
 msgstr "Wczoraj"

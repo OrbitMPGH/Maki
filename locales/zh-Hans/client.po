@@ -919,6 +919,7 @@ msgstr "{typeLabel}（另一个配置文件）"
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, other {# 个未读}}"
 
+#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
@@ -2652,6 +2653,10 @@ msgstr "每天检查 GitHub 是否有更新版本，发现后显示横幅并创�
 msgid "Chinese"
 msgstr "中文"
 
+#: src/pages/ImportPage.tsx
+msgid "Choose a root folder"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
@@ -2916,6 +2921,10 @@ msgstr "并行，工作线程，重试，最大尝试次数，退避，Smart Dow
 #, fuzzy
 msgid "configured, not connected"
 msgstr "已配置，未连接"
+
+#: src/pages/ImportPage.tsx
+msgid "Confirm metadata matches"
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -4731,6 +4740,10 @@ msgstr "仅导入缺失内容，保留现有文件"
 msgid "Import page"
 msgstr "导入页面"
 
+#: src/pages/ImportPage.tsx
+msgid "Import progress"
+msgstr ""
+
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
 msgid "Import ratings"
@@ -5292,6 +5305,10 @@ msgstr "关联来源并刷新。"
 #, fuzzy
 msgid "Link and unlink per-series sources"
 msgstr "关联和取消关联每个系列的来源"
+
+#: src/pages/ImportPage.tsx
+msgid "Link files and report results"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6925,6 +6942,7 @@ msgstr "页面"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "第 {pageIndex}/{pageCount} 页"
 
+#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "Page {pageNumber} of {pageCount}"
@@ -7571,6 +7589,10 @@ msgstr "阅读配置文件"
 msgid "Reading profiles"
 msgstr "阅读配置文件"
 
+#: src/components/home/ContinueLead.tsx
+msgid "Reading progress"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Reading progress and bookmarks for removed chapter rows will also be deleted."
@@ -8142,6 +8164,14 @@ msgstr "已恢复"
 msgid "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
 msgstr "将发布内容搜索限制为指定的索引器和 Torznab 类别。未选择任何内容时，会搜索所有索引器和类别。"
 
+#: src/components/home/ContinueLead.tsx
+msgid "Resume"
+msgstr ""
+
+#: src/components/home/ContinueLead.tsx
+msgid "Resume {seriesTitle}, {chapterLabel}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retried {retryCount}x"
@@ -8180,6 +8210,7 @@ msgstr "重新使用当前预设的名称会将其覆盖。"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Review"
 msgstr "审核"
@@ -8953,10 +8984,18 @@ msgstr "通知到达时显示弹窗"
 msgid "Show all"
 msgstr "显示全部"
 
+#: src/components/home/ContinueRail.tsx
+msgid "Show earlier chapters"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
 msgstr "显示更少"
+
+#: src/components/home/ContinueRail.tsx
+msgid "Show later chapters"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
@@ -9337,6 +9376,14 @@ msgstr "停滞在第 {maxChapter} 章"
 #, fuzzy
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "标准化导入文件中的 ComicInfo.xml（推荐）"
+
+#: src/components/home/ContinueLead.tsx
+msgid "Start {seriesTitle}, {chapterLabel}"
+msgstr ""
+
+#: src/components/home/ContinueLead.tsx
+msgid "Start chapter"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -10048,6 +10095,7 @@ msgid "To"
 msgstr "至"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/NotificationsPage.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "Today"
@@ -10276,6 +10324,10 @@ msgstr "已撤销"
 #, fuzzy
 msgid "Unknown"
 msgstr "未知"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Unknown date"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10908,6 +10960,7 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "年份：{yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Yesterday"
 msgstr "昨天"

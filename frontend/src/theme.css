@@ -3842,3 +3842,388 @@ body.reader-open {
     max-width: none;
   }
 }
+
+/* --- library page (ported from redesignv2) --- */
+
+/* --- Library index: ruled, overflow-clipped block merging stats + toolbar --- */
+.library-index {
+  margin-bottom: var(--mantine-spacing-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  /* Clips the metric grid's cell borders back to the rounded edge. */
+  overflow: hidden;
+}
+.library-index-metrics {
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+.library-toolbar {
+  padding: 0.875rem 1.125rem;
+}
+.library-toolbar-row {
+  align-items: flex-end;
+}
+.library-toolbar-row .library-search {
+  flex: 1 1 15rem;
+  min-width: min(18rem, 100%);
+}
+.library-toolbar-row .library-sort {
+  flex: 0 0 10.625rem;
+}
+.library-saved-filters {
+  min-height: 1.5rem;
+  padding-top: 0.15rem;
+}
+.library-selection-bar {
+  padding: 0.875rem 1.125rem;
+}
+@media (max-width: 47.9375em) {
+  .library-toolbar-row .library-search {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+  .library-toolbar-row .library-sort {
+    flex-basis: 10rem;
+  }
+}
+
+/* --- series page (ported from redesignv2) --- */
+
+/* Series detail page: accent-edge panel grammar, ported from redesignv2.
+   Append into frontend/src/theme.css (not touched directly by this agent). */
+
+.series-detail-surface .series-detail-synopsis,
+.series-detail-surface .series-detail-source-panel,
+.series-detail-surface .series-detail-metadata-panel,
+.series-detail-surface .series-detail-chapter-table {
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+.series-detail-synopsis {
+  border-top: 2px solid var(--brand);
+}
+.series-detail-source-panel {
+  border-left: 2px solid var(--info);
+  border-right: 0;
+}
+.series-detail-metadata-panel {
+  border-left: 2px solid var(--border-strong);
+  border-right: 0;
+}
+.series-detail-chapter-toolbar {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.series-detail-chapter-selection {
+  border-left: 2px solid var(--brand);
+  border-right: 0;
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+.series-detail-chapter-table {
+  overflow: hidden;
+}
+.series-detail-chapter-table thead th {
+  background: color-mix(in srgb, var(--surface-2) 46%, transparent);
+}
+.series-detail-files .file-table,
+.series-detail-source-panel .source-table,
+.series-detail-overview .scrobble-table {
+  min-width: 0;
+}
+
+/* --- notifications page (ported from redesignv2) --- */
+
+.notifications-filter-rail {
+  align-items: center;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.notifications-filter-controls {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.notifications-unread-switch {
+  margin-inline-start: auto;
+}
+.notifications-feed {
+  overflow: hidden;
+  box-shadow: none;
+}
+.notification-date-group + .notification-date-group {
+  border-top: 1px solid var(--border);
+}
+.notification-date-label {
+  margin: 0;
+  padding: 0.8rem 1rem 0.45rem;
+  color: var(--ink-3);
+  font-size: var(--type-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.inbox-record {
+  border-bottom: 1px solid var(--line-soft);
+}
+.inbox-record:last-child {
+  border-bottom: 0;
+}
+.inbox-record[data-read='false'] {
+  background: color-mix(in srgb, var(--brand-glow) 24%, transparent);
+}
+.inbox-row:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 47.9375em) {
+  .notifications-filter-rail {
+    align-items: flex-start;
+  }
+  .notifications-filter-controls {
+    flex-basis: 100%;
+  }
+  .notifications-unread-switch {
+    margin-inline-start: 0;
+  }
+  .notification-date-label {
+    padding-inline: 0.75rem;
+  }
+}
+
+/* --- home page (ported from redesignv2) --- */
+
+/* ── Home: Continue reading lead ─────────────────────────────────────────────
+   Ported from redesignv2. The mount reveal is CSS-only: no JS motion wrapper, so
+   `prefers-reduced-motion` is honoured without a guard in the component. */
+
+@keyframes continue-tile-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.continue-lead-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--lead-cols, 3), minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+.continue-lead-grid[data-count='1'] {
+  --lead-cols: 1;
+}
+.continue-lead-grid[data-count='2'] {
+  --lead-cols: 2;
+}
+@media (max-width: 1200px) {
+  .continue-lead-grid {
+    --lead-cols: 2;
+  }
+  .continue-lead-grid[data-count='1'] {
+    --lead-cols: 1;
+  }
+}
+@media (max-width: 760px) {
+  .continue-lead-grid,
+  .continue-lead-grid[data-count='2'] {
+    --lead-cols: 1;
+  }
+}
+
+.continue-tile {
+  position: relative;
+  overflow: hidden;
+  /* The backdrop's layers are absolutely positioned; without a stacking context of its own the
+     art escapes the tile's rounded corners. */
+  isolation: isolate;
+  display: flex;
+  min-height: 188px;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface-raised);
+}
+.continue-tile .series-hero-art {
+  background-position: 82% 22%;
+  background-size: 118%;
+}
+.continue-tile-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: clamp(0.75rem, 1.2vw, 1.125rem);
+  padding: clamp(0.75rem, 1vw, 1rem);
+}
+.continue-tile-motion {
+  position: relative;
+  flex: 0 0 auto;
+}
+.continue-tile-motion img {
+  transform-origin: center;
+  animation: continue-tile-reveal 0.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+.continue-lead-grid > :nth-child(2) .continue-tile-motion img {
+  animation-delay: 70ms;
+}
+.continue-lead-grid > :nth-child(3) .continue-tile-motion img {
+  animation-delay: 140ms;
+}
+.continue-tile-poster {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: clamp(72px, 6vw, 96px);
+  aspect-ratio: 2 / 3;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
+  transition:
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.continue-tile-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s var(--ease);
+}
+.continue-tile-poster:hover {
+  border-color: var(--brand);
+  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85), 0 0 12px var(--brand-glow);
+}
+.continue-tile-poster:hover img {
+  transform: scale(1.04);
+}
+.continue-tile-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0.4rem;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  text-align: center;
+}
+.continue-tile-body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+.continue-tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+.continue-tile-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.continue-tile-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--ink-hi);
+  font-size: var(--type-section);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  text-decoration: none;
+}
+.continue-tile-title:hover {
+  color: var(--brand-fg);
+}
+.continue-lead-grid[data-count='1'] .continue-tile {
+  min-height: 212px;
+}
+.continue-lead-grid[data-count='1'] .continue-tile-title {
+  font-size: var(--type-feature);
+}
+.continue-lead-grid[data-count='1'] .continue-tile-poster {
+  width: clamp(96px, 8vw, 128px);
+}
+.continue-tile-chapter {
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+.continue-tile-progress {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+}
+.continue-tile-bar {
+  overflow: hidden;
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 4px;
+  /* The tile's own ground shows through here, not poster art, so this track is themed rather
+     than the fixed light-on-dark that .home-resume-bar uses over a scrim. */
+  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
+}
+.continue-tile-fill {
+  height: 100%;
+  background: var(--brand);
+}
+.continue-tile-pages {
+  color: var(--ink-3);
+  font-size: var(--type-badge);
+  white-space: nowrap;
+}
+.continue-tile-action {
+  margin-top: 0.35rem;
+}
+
+/* The global reduced-motion rule already collapses every transition-duration, so only the hover
+   transform and the stagger need cancelling here: an animation reduced to 0.001ms still waits
+   out its delay before appearing. */
+@media (prefers-reduced-motion: reduce) {
+  .continue-tile-poster:hover img {
+    transform: none;
+  }
+  .continue-lead-grid > :nth-child(2) .continue-tile-motion img,
+  .continue-lead-grid > :nth-child(3) .continue-tile-motion img {
+    animation-delay: 0ms;
+  }
+}
+
+/* ── Home: Continue reading spill-over carousel ───────────────────────────── */
+
+.reading-rail-shell--carousel {
+  position: relative;
+}
+.reading-rail-controls {
+  min-height: 2rem;
+  margin-bottom: 0.35rem;
+}
+.reading-rail-controls .mantine-ActionIcon-root {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+}
+.reading-rail-controls .mantine-ActionIcon-root:hover {
+  border-color: var(--brand);
+  background: var(--surface-sunken);
+}

@@ -748,6 +748,7 @@ msgstr "{typeLabel} (another profile)"
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, one {# unread} other {# unread}}"
 
+#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# unread} other {# unread}}"
@@ -2152,6 +2153,10 @@ msgstr "Checks GitHub daily for a newer release and raises a banner and a Notifi
 msgid "Chinese"
 msgstr "Chinese"
 
+#: src/pages/ImportPage.tsx
+msgid "Choose a root folder"
+msgstr "Choose a root folder"
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
@@ -2367,6 +2372,10 @@ msgstr "concurrent, workers, retry, max attempts, backoff, smart download, unrea
 #: src/pages/ScrobblePage.tsx
 msgid "configured, not connected"
 msgstr "configured, not connected"
+
+#: src/pages/ImportPage.tsx
+msgid "Confirm metadata matches"
+msgstr "Confirm metadata matches"
 
 #: src/pages/SetupAccountPage.tsx
 msgid "Confirm password"
@@ -3840,6 +3849,10 @@ msgstr "Import only what is missing, keep existing files"
 msgid "Import page"
 msgstr "Import page"
 
+#: src/pages/ImportPage.tsx
+msgid "Import progress"
+msgstr "Import progress"
+
 #: src/components/TrackerSyncControls.tsx
 msgid "Import ratings"
 msgstr "Import ratings"
@@ -4295,6 +4308,10 @@ msgstr "Link a source and refresh."
 #: src/components/settings/UsersSection.tsx
 msgid "Link and unlink per-series sources"
 msgstr "Link and unlink per-series sources"
+
+#: src/pages/ImportPage.tsx
+msgid "Link files and report results"
+msgstr "Link files and report results"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Link source"
@@ -5617,6 +5634,7 @@ msgstr "Page"
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Page {pageIndex}/{pageCount}"
 
+#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} of {pageCount}"
@@ -6142,6 +6160,10 @@ msgstr "Reading profile"
 msgid "Reading profiles"
 msgstr "Reading profiles"
 
+#: src/components/home/ContinueLead.tsx
+msgid "Reading progress"
+msgstr "Reading progress"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Reading progress and bookmarks for removed chapter rows will also be deleted."
 msgstr "Reading progress and bookmarks for removed chapter rows will also be deleted."
@@ -6603,6 +6625,14 @@ msgstr "Restored"
 msgid "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
 msgstr "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
 
+#: src/components/home/ContinueLead.tsx
+msgid "Resume"
+msgstr "Resume"
+
+#: src/components/home/ContinueLead.tsx
+msgid "Resume {seriesTitle}, {chapterLabel}"
+msgstr "Resume {seriesTitle}, {chapterLabel}"
+
 #: src/pages/ActivityPage.tsx
 msgid "Retried {retryCount}x"
 msgstr "Retried {retryCount}x"
@@ -6634,6 +6664,7 @@ msgstr "Reusing the name of the active preset overwrites it."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/ImportPage.tsx
 msgid "Review"
 msgstr "Review"
 
@@ -7262,9 +7293,17 @@ msgstr "Show a popup when a notification arrives"
 msgid "Show all"
 msgstr "Show all"
 
+#: src/components/home/ContinueRail.tsx
+msgid "Show earlier chapters"
+msgstr "Show earlier chapters"
+
 #: src/components/TagBuckets.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
+
+#: src/components/home/ContinueRail.tsx
+msgid "Show later chapters"
+msgstr "Show later chapters"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
@@ -7574,6 +7613,14 @@ msgstr "stalled at ch {maxChapter}"
 #: src/pages/ImportPage.tsx
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "Standardize ComicInfo.xml inside the imported files (recommended)"
+
+#: src/components/home/ContinueLead.tsx
+msgid "Start {seriesTitle}, {chapterLabel}"
+msgstr "Start {seriesTitle}, {chapterLabel}"
+
+#: src/components/home/ContinueLead.tsx
+msgid "Start chapter"
+msgstr "Start chapter"
 
 #: src/pages/LoginPage.tsx
 msgid "Start over"
@@ -8151,6 +8198,7 @@ msgid "To"
 msgstr "To"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/NotificationsPage.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 msgid "Today"
 msgstr "Today"
@@ -8335,6 +8383,10 @@ msgstr "Undone"
 #: src/pages/HealthPage.tsx
 msgid "Unknown"
 msgstr "Unknown"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Unknown date"
+msgstr "Unknown date"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Unlink"
@@ -8845,6 +8897,7 @@ msgid "Year: {yearRangeMin}–{yearRangeMax}"
 msgstr "Year: {yearRangeMin}–{yearRangeMax}"
 
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/NotificationsPage.tsx
 msgid "Yesterday"
 msgstr "Yesterday"
 

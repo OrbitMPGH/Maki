@@ -34,9 +34,10 @@ import {
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
+import { ContinueRail } from '../components/home/ContinueRail'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { ProgressCard } from '../components/home/ProgressCard'
-import { ReadingRail } from '../components/home/ReadingRail'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -200,7 +201,10 @@ export default function HomePage() {
     ) : continueReading.length > 0 ? (
       <>
         <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
-        <ReadingRail items={continueReading} />
+        <ContinueLead items={continueReading.slice(0, CONTINUE_LEAD_MAX)} />
+        {continueReading.length > CONTINUE_LEAD_MAX && (
+          <ContinueRail items={continueReading.slice(CONTINUE_LEAD_MAX)} />
+        )}
       </>
     ) : (
       // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
@@ -225,7 +229,10 @@ export default function HomePage() {
     jumpback: jumpBackIn.length > 0 && (
       <>
         <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-        <ReadingRail items={jumpBackIn} />
+        <ContinueLead items={jumpBackIn.slice(0, CONTINUE_LEAD_MAX)} />
+        {jumpBackIn.length > CONTINUE_LEAD_MAX && (
+          <ContinueRail items={jumpBackIn.slice(CONTINUE_LEAD_MAX)} />
+        )}
       </>
     ),
 
