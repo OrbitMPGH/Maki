@@ -31,9 +31,8 @@ function Figure({
  * Home's progression figures, matching the Stats overview's ProgressStrip so the same numbers read
  * the same in both places. The whole group links to Stats for the full picture.
  *
- * Deliberately without a card of its own: it sits in the page header's figures panel, under the
- * library figures, and that panel supplies the border and the padding. See
- * `.home-header-progress` in theme.css.
+ * Deliberately without a card of its own: it is one half of Home's glance strip, which supplies
+ * the border and the padding for both halves. See `.home-glance` in theme.css.
  */
 export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const { t } = useLingui()
@@ -46,7 +45,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   return (
     // A plain Link rather than a Mantine element with `component`: the polymorphic prop types do
     // not carry react-router's `to` through, and this element only needs to be a flex row.
-    <Link to="/stats" className="home-header-progress">
+    <Link to="/stats" className="home-glance-progress">
       <Group gap={11} wrap="nowrap">
         <RingProgress
           size={46}
