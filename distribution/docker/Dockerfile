@@ -5,7 +5,7 @@
 # under qemu emulation for the second platform. Only the final runtime stage below actually needs
 # to differ per architecture (it pulls a per-arch base image and installs native apt packages).
 # ---- Frontend build ----
-FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci

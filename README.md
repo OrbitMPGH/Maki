@@ -373,7 +373,7 @@ downgraded).
 ## Building the Docker image
 
 The repository ships a multi-stage [`Dockerfile`](Dockerfile) that builds the frontend
-(Node 22) and backend (.NET 10 SDK) and packages them into an `aspnet:10.0` runtime image with
+(Node 24) and backend (.NET 10 SDK) and packages them into an `aspnet:10.0` runtime image with
 the built SPA served from `wwwroot/`. Build and run it yourself:
 
 ```bash
