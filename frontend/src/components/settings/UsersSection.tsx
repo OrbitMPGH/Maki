@@ -92,7 +92,7 @@ export function UsersSection() {
   const remove = useDeleteUser()
 
   return (
-    <Panel edge="brand" id="users" p="md">
+    <Panel id="users" p="md">
       <Group justify="space-between" mb="sm">
         <Title order={4}>
           <Trans>Users</Trans>

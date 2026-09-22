@@ -1330,6 +1330,10 @@ msgstr "업적"
 msgid "Acknowledge"
 msgstr "확인"
 
+#: src/pages/HealthPage.tsx
+msgid "Acknowledged"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Action"
@@ -1658,6 +1662,10 @@ msgstr "대체 제목"
 #, fuzzy
 msgid "Amber"
 msgstr "앰버"
+
+#: src/pages/HealthPage.tsx
+msgid "Ambiguous names"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3262,6 +3270,10 @@ msgstr "사용자 지정됨"
 msgid "Daily scan hour (0-23)"
 msgstr "일일 스캔 시간 (0-23)"
 
+#: src/pages/HealthPage.tsx
+msgid "Damaged image"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3725,6 +3737,10 @@ msgstr "드라마"
 msgid "Dropped"
 msgstr "중단함"
 
+#: src/pages/HealthPage.tsx
+msgid "Duplicate"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "e.g. Ongoing & behind"
@@ -3806,6 +3822,10 @@ msgstr "임베딩, 임베딩 모델, 의미 검색, 벡터, Discover 검색"
 #, fuzzy
 msgid "Emerald"
 msgstr "에메랄드"
+
+#: src/pages/HealthPage.tsx
+msgid "Empty"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -4934,6 +4954,10 @@ msgid "Incognito: {mode}"
 msgstr "Incognito: {mode}"
 
 #: src/pages/HealthPage.tsx
+msgid "Incomplete"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Index"
 msgstr "인덱스"
@@ -5014,6 +5038,10 @@ msgstr "항목 {start}–{end}"
 #, fuzzy
 msgid "Japanese"
 msgstr "일본어"
+
+#: src/pages/HealthPage.tsx
+msgid "Job"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6320,6 +6348,10 @@ msgstr "아직 알림 없음"
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "다른 파일이 {lowerLabel}을(를) 뒷받침하지 않습니다. 비교할 항목이 없으므로 가져오기가 이 보관 파일을 채택하고 챕터에 연결합니다."
 
+#: src/pages/HealthPage.tsx
+msgid "No pages"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "No pending requests"
@@ -6508,6 +6540,7 @@ msgid "Not imported"
 msgstr "가져오지 않음"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not linked"
 msgstr "연결되지 않음"
@@ -8099,6 +8132,10 @@ msgid "Reopen"
 msgstr "다시 열기"
 
 #: src/pages/HealthPage.tsx
+msgid "Repair"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Repairs"
 msgstr "수리"
@@ -8538,6 +8575,7 @@ msgstr "크기 조정"
 msgid "Scale ({scale}%)"
 msgstr "크기 조정 ({scale}%)"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Scan"
@@ -9280,6 +9318,10 @@ msgstr "<0>{seriesTitle}</0>에 있습니다."
 msgid "Size"
 msgstr "크기"
 
+#: src/pages/HealthPage.tsx
+msgid "Size mismatch"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Skip setup"
@@ -9548,6 +9590,10 @@ msgstr "통계"
 #, fuzzy
 msgid "Status"
 msgstr "상태"
+
+#: src/pages/HealthPage.tsx
+msgid "Status change"
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

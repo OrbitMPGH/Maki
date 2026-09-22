@@ -112,6 +112,7 @@ const STATUS_LABEL: Record<string, MessageDescriptor> = {
   review: msg`Needs review`,
   resolved: msg`Resolved`,
   ignored: msg`Ignored`,
+  acknowledged: msg`Acknowledged`,
   pending: msg`Pending`,
   running: msg`Running`,
   applying: msg`Applying`,
@@ -125,6 +126,31 @@ const STATUS_LABEL: Record<string, MessageDescriptor> = {
 const bytes = (size: number, missing: string) =>
   size < 0 ? missing : `${(size / 1024 / 1024).toFixed(1)} MiB`
 
+/** HealthScanService's finding kinds, in the order the filter lists them. */
+const FINDING_LABEL: Record<string, MessageDescriptor> = {
+  missing: msg`Missing`,
+  empty: msg`Empty`,
+  corrupt: msg`Corrupt`,
+  noPages: msg`No pages`,
+  damagedImage: msg`Damaged image`,
+  duplicate: msg`Duplicate`,
+  unlinked: msg`Not linked`,
+  sizeMismatch: msg`Size mismatch`,
+  incomplete: msg`Incomplete`,
+  ambiguousNames: msg`Ambiguous names`,
+}
+
+const FINDING_STATES = ['open', 'acknowledged', 'ignored', 'resolved']
+
+/** What a history entry records, as HealthScanService/HealthOperationService/HealthMonitor tag it. */
+const HISTORY_KIND_LABEL: Record<string, MessageDescriptor> = {
+  scan: msg`Scan`,
+  repair: msg`Repair`,
+  delete: msg`Delete`,
+  job: msg`Job`,
+  transition: msg`Status change`,
+}
+
 function Status({ value }: { value: string }) {
   const renderLabel = useLabel()
   return (
@@ -136,6 +162,7 @@ function Status({ value }: { value: string }) {
 
 export default function HealthPage() {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') ?? 'overview'
   const overview = useHealthData<HealthOverview>()
@@ -331,24 +358,16 @@ export default function HealthPage() {
                 clearable
                 value={kind}
                 onChange={(v) => refilter(() => setKind(v))}
-                data={[
-                  'missing',
-                  'empty',
-                  'corrupt',
-                  'noPages',
-                  'damagedImage',
-                  'duplicate',
-                  'unlinked',
-                  'sizeMismatch',
-                  'incomplete',
-                ]}
+                data={Object.entries(FINDING_LABEL)
+                  .filter(([value]) => value !== 'ambiguousNames')
+                  .map(([value, label]) => ({ value, label: renderLabel(label) }))}
               />
               <Select
                 placeholder={t`All states`}
                 clearable
                 value={state}
                 onChange={(v) => refilter(() => setState(v))}
-                data={['open', 'acknowledged', 'ignored', 'resolved']}
+                data={FINDING_STATES.map((value) => ({ value, label: renderLabel(STATUS_LABEL[value]) }))}
               />
             </Group>
 
@@ -505,7 +524,7 @@ export default function HealthPage() {
                             <Group gap={4}>
                               {file.findings.map((f) => (
                                 <Badge key={f.id} color={color(f.severity)} variant="light">
-                                  {f.kind}
+                                  {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
                                 </Badge>
                               ))}
                             </Group>
@@ -582,7 +601,7 @@ export default function HealthPage() {
           <Stack>
             {history.data?.items.map((entry) => (
               <Group key={entry.id} align="flex-start">
-                <Badge variant="light">{entry.kind}</Badge>
+                <Badge variant="light">{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</Badge>
                 <div>
                   <Text size="sm">{entry.message}</Text>
                   <Text size="xs" c="var(--ink-3)">
@@ -749,9 +768,16 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
   const totalChecks = checks.length
+  // Coloured only while something needs attention; a healthy system is the plain panel.
+  const unresolved = checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged)
+  const edge = unresolved.some((c) => tone(c.status) === 'danger')
+    ? 'danger'
+    : unresolved.length > 0
+      ? 'warn'
+      : undefined
 
   return (
-    <Panel edge="ok" className="health-area-checks" p="lg">
+    <Panel edge={edge} className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
         <Title order={3} fz={17}>
           <Trans>System checks</Trans>
@@ -843,6 +869,7 @@ function FileReview({
   openOperation: (id: number) => void
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data, error } = useHealthData<FileDetail>(`/files/${id}`)
   const action = useHealthAction()
   // Automatic by default: the reviewer usually wants "get me a good copy", and picking a source by
@@ -937,7 +964,7 @@ function FileReview({
                   </Group>
                   <Group mt="sm" gap="xs">
                     <Text size="xs" c="var(--ink-4)">
-                      {f.state}
+                      {renderLabel(STATUS_LABEL[f.state] ?? f.state)}
                     </Text>
                     {['acknowledged', 'ignored', 'open']
                       .filter((s) => s !== f.state)
@@ -1622,7 +1649,7 @@ function CachePanel() {
   const rebuild = useRebuildImageCache()
 
   return (
-    <Panel edge="info" className="health-area-cache" p="lg">
+    <Panel className="health-area-cache" p="lg">
       <Stack>
         <Title order={3} fz={17}>
           <Trans>Image cache and backups</Trans>

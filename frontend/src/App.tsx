@@ -51,7 +51,8 @@ import { EmptyState } from './components/ui/EmptyState'
 import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
-import { navSections, isActive, pageTitle, type NavItem } from './nav'
+import { navSections, isActive, type NavItem } from './nav'
+import { ShellTitleProvider, useShellTitleValue } from './lib/shellTitle'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -73,6 +74,16 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const HealthPage = lazy(() => import('./pages/HealthPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
+
+function ShellTitle() {
+  const title = useShellTitleValue()
+  if (!title) return null
+  return (
+    <Text fw={650} fz="md" visibleFrom="sm" truncate className="app-header-title">
+      {title}
+    </Text>
+  )
+}
 
 function NotFoundPage() {
   const { t } = useLingui()
@@ -332,7 +343,6 @@ function AppShellRoutes() {
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
-  const { _ } = useLinguiReact()
   useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
@@ -343,8 +353,6 @@ function AppShellRoutes() {
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
-  // "Maki" when nothing here names the page. The product name is never translated.
-  const title = pageTitle(location.pathname)
   const sections = navSections({
     isAdmin,
     discoverAvailable,
@@ -369,6 +377,7 @@ function AppShellRoutes() {
   }, [discoverAvailable, homeEnabled, location.pathname, navigate])
 
   return (
+    <ShellTitleProvider>
     <AppShell
       header={{ height: 58 }}
       navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !opened } }}
@@ -383,9 +392,7 @@ function AppShellRoutes() {
                 <IconBrandMark />
               </span>
             </Group>
-            <Text fw={700} fz="lg" visibleFrom="sm" style={{ letterSpacing: '-0.01em' }}>
-              {title ? _(title) : 'Maki'}
-            </Text>
+            <ShellTitle />
           </Group>
           <Group gap="xs" wrap="nowrap">
             <CommandPalette navItems={allItems} />
@@ -491,6 +498,7 @@ function AppShellRoutes() {
       {isAdmin && <MetadataDumpProgress />}
       <TipLayer />
     </AppShell>
+    </ShellTitleProvider>
   )
 }
 

@@ -64,7 +64,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   }
 
   return (
-    <Panel edge="info" p="md">
+    <Panel p="md">
       <Group gap="xs">
         <Box
           w={10}

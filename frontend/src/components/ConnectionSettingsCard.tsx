@@ -54,7 +54,7 @@ export function ConnectionSettingsCard({
     Object.fromEntries(fields.map((f) => [f.key, values[f.key] || null]))
 
   return (
-    <Panel edge="info">
+    <Panel>
       <Title order={4} mb="sm">
         {title}
       </Title>

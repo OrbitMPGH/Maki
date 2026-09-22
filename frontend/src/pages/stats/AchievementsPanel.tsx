@@ -129,7 +129,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
 
   return (
     <Stack gap="lg">
-      <Panel edge="ok" p="md">
+      <Panel p="md">
         <Group justify="space-between" wrap="wrap" gap="lg">
           <Group gap="md" wrap="nowrap">
             <RingProgress

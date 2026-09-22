@@ -129,6 +129,7 @@ import {
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
+import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 
 function chapterLabel(c: ChapterDto): string {
@@ -1064,6 +1065,20 @@ export default function SeriesDetailPage() {
       // renders without its chapter number until something else changes the chapter list's identity.
       [chapters, continueAt?.chapterId, i18n.locale]
   )
+
+  // The top bar takes the series name once the hero heading has scrolled out of view.
+  const [heroTitleHidden, setHeroTitleHidden] = useState(false)
+  const heroTitleShown = series !== undefined
+  useEffect(() => {
+    const el = document.querySelector('.series-hero-title')
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) => setHeroTitleHidden(!entry.isIntersecting), {
+      rootMargin: '-58px 0px 0px 0px',
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [heroTitleShown])
+  useShellTitle(heroTitleHidden && series ? series.displayTitle : null)
 
   if (isLoading) {
     return (

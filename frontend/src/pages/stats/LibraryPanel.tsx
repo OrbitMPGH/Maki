@@ -55,7 +55,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
   }))
 
   return (
-    <Panel edge="info" p="md">
+    <Panel p="md">
       <Text fw={650} mb="md">
         {title}
       </Text>

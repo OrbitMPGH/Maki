@@ -258,7 +258,7 @@ export function OverviewPanel({
           </Alert>
         )}
 
-        <Panel edge="brand" p={0}>
+        <Panel p={0}>
           <div className="stats-figures">
             {figures.map((f) => (
               <div className="stats-figure" key={f.label}>
@@ -288,7 +288,7 @@ export function OverviewPanel({
 
         <div>
           <SectionHeader icon={IconCalendarStats} title={t`Activity`} />
-          <Panel edge="brand" p="md">
+          <Panel p="md">
             <Group justify="flex-end" mb="sm">
               <SegmentedControl
                 size="xs"

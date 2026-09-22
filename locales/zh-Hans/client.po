@@ -1330,6 +1330,10 @@ msgstr "成就"
 msgid "Acknowledge"
 msgstr "确认"
 
+#: src/pages/HealthPage.tsx
+msgid "Acknowledged"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Action"
@@ -1658,6 +1662,10 @@ msgstr "别名标题"
 #, fuzzy
 msgid "Amber"
 msgstr "琥珀色"
+
+#: src/pages/HealthPage.tsx
+msgid "Ambiguous names"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3262,6 +3270,10 @@ msgstr "已自定义"
 msgid "Daily scan hour (0-23)"
 msgstr "每日扫描时间（0-23 点）"
 
+#: src/pages/HealthPage.tsx
+msgid "Damaged image"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3725,6 +3737,10 @@ msgstr "剧情"
 msgid "Dropped"
 msgstr "已弃看"
 
+#: src/pages/HealthPage.tsx
+msgid "Duplicate"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "e.g. Ongoing & behind"
@@ -3806,6 +3822,10 @@ msgstr "嵌入，嵌入模型，语义搜索，向量，Discover 搜索"
 #, fuzzy
 msgid "Emerald"
 msgstr "翡翠色"
+
+#: src/pages/HealthPage.tsx
+msgid "Empty"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -4934,6 +4954,10 @@ msgid "Incognito: {mode}"
 msgstr "隐身：{mode}"
 
 #: src/pages/HealthPage.tsx
+msgid "Incomplete"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Index"
 msgstr "索引"
@@ -5014,6 +5038,10 @@ msgstr "项目 {start}–{end}"
 #, fuzzy
 msgid "Japanese"
 msgstr "日语"
+
+#: src/pages/HealthPage.tsx
+msgid "Job"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6320,6 +6348,10 @@ msgstr "暂无通知"
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "没有其他文件支持 {lowerLabel}。无需比较任何内容：导入会采用此归档并将其与章节关联。"
 
+#: src/pages/HealthPage.tsx
+msgid "No pages"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "No pending requests"
@@ -6508,6 +6540,7 @@ msgid "Not imported"
 msgstr "未导入"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not linked"
 msgstr "未关联"
@@ -8099,6 +8132,10 @@ msgid "Reopen"
 msgstr "重新打开"
 
 #: src/pages/HealthPage.tsx
+msgid "Repair"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Repairs"
 msgstr "修复"
@@ -8538,6 +8575,7 @@ msgstr "缩放"
 msgid "Scale ({scale}%)"
 msgstr "缩放（{scale}%）"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Scan"
@@ -9280,6 +9318,10 @@ msgstr "位于 <0>{seriesTitle}</0> 中。"
 msgid "Size"
 msgstr "大小"
 
+#: src/pages/HealthPage.tsx
+msgid "Size mismatch"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Skip setup"
@@ -9548,6 +9590,10 @@ msgstr "统计"
 #, fuzzy
 msgid "Status"
 msgstr "状态"
+
+#: src/pages/HealthPage.tsx
+msgid "Status change"
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

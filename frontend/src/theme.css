@@ -308,6 +308,23 @@ body {
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
+.app-header-title {
+  max-width: 40vw;
+  color: var(--ink-hi);
+  letter-spacing: -0.01em;
+  animation: app-header-title-in 0.2s var(--ease);
+}
+@keyframes app-header-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-header-title {
+    animation: none;
+  }
+}
 
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
    which changes two things the desktop styles above get away with:
@@ -912,12 +929,9 @@ body {
   color: inherit;
   text-decoration: none;
 }
-/* Tighter than the series band's, where the same figures have a whole band to spread across, but
-   padded on both sides: with padding on one side only, a number runs flush into the hairline that
-   divides it from the next figure. `.hero-stat:first-child` / `:last-child` still flatten the two
-   outer edges, since both are declared after this rule. */
-.home-glance .hero-stat {
-  padding: 2px 14px;
+/* Tighter than the series band's, where the same figures have a whole band to spread across. */
+.home-glance .hero-stats {
+  --hero-stat-pad: 14px;
 }
 
 /* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
@@ -2216,26 +2230,26 @@ body {
   height: 30px;
   background: var(--border-strong);
 }
+/* Hairlines rather than a wider gap: three numbers in a row read as one number until something
+   divides them, and the same rule already separates the score from the set.
+   The hairline is a shadow on the left of every figure, and the row is pulled left by one padding
+   and clipped. Whichever figure starts a line, including a wrapped one, has its hairline in the
+   clipped strip, so a line never opens with a rule and every line starts flush. A border on
+   `+ .hero-stat` could not know which figure a wrap had moved to the front. */
 .hero-stats {
+  --hero-stat-pad: 20px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  row-gap: 10px;
+  margin-left: calc(-1 * var(--hero-stat-pad));
+  overflow: hidden;
 }
-/* Hairlines rather than a wider gap: three numbers in a row read as one number until something
-   divides them, and the same rule already separates the score from the set. */
 .hero-stat {
   display: grid;
   gap: 2px;
-  padding: 2px 20px;
-}
-.hero-stat:first-child {
-  padding-left: 0;
-}
-.hero-stat:last-child {
-  padding-right: 0;
-}
-.hero-stat + .hero-stat {
-  border-left: 1px solid var(--border-strong);
+  padding: 2px var(--hero-stat-pad);
+  box-shadow: -1px 0 0 var(--border-strong);
 }
 .hero-stat-n {
   color: var(--ink-hi);
@@ -4403,17 +4417,6 @@ body.reader-open {
 .series-detail-surface .series-detail-chapter-table {
   border-radius: var(--radius-surface);
   box-shadow: none;
-}
-.series-detail-synopsis {
-  border-top: 2px solid var(--brand);
-}
-.series-detail-source-panel {
-  border-left: 2px solid var(--info);
-  border-right: 0;
-}
-.series-detail-metadata-panel {
-  border-left: 2px solid var(--border-strong);
-  border-right: 0;
 }
 /* --- Panel: shared accent-edge panel grammar (components/ui/Panel.tsx) --- */
 

@@ -113,7 +113,7 @@ function GroupCard({
   })
 
   return (
-    <Panel edge="brand" p="md">
+    <Panel p="md">
       <Group justify="space-between" align="center" wrap="wrap" gap="xs" mb="xs">
         <Text fw={650} style={{ minWidth: 0 }}>
           {group.label}
@@ -371,7 +371,7 @@ function CompositionCard({
   const byName = new Map(facets.map((f) => [f.name, f]))
 
   return (
-    <Panel edge="info" p="md">
+    <Panel p="md">
       <Text fw={650} mb="md">
         {title}
       </Text>

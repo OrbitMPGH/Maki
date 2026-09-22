@@ -47,7 +47,7 @@ export function SecuritySection() {
   const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
 
   return (
-    <Panel edge="warn" id="security">
+    <Panel id="security">
       <Title order={4} mb="sm">
         <Trans>Security</Trans>
       </Title>

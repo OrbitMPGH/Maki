@@ -1330,6 +1330,10 @@ msgstr "Erfolge"
 msgid "Acknowledge"
 msgstr "Bestätigen"
 
+#: src/pages/HealthPage.tsx
+msgid "Acknowledged"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Action"
@@ -1658,6 +1662,10 @@ msgstr "Alternative Titel"
 #, fuzzy
 msgid "Amber"
 msgstr "Bernstein"
+
+#: src/pages/HealthPage.tsx
+msgid "Ambiguous names"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3262,6 +3270,10 @@ msgstr "Angepasst"
 msgid "Daily scan hour (0-23)"
 msgstr "Tägliche Scan-Stunde (0-23)"
 
+#: src/pages/HealthPage.tsx
+msgid "Damaged image"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3725,6 +3737,10 @@ msgstr "Drama"
 msgid "Dropped"
 msgstr "Abgebrochen"
 
+#: src/pages/HealthPage.tsx
+msgid "Duplicate"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "e.g. Ongoing & behind"
@@ -3806,6 +3822,10 @@ msgstr "Embeddings, Embedding-Modell, semantische Suche, Vektoren, Discover-Such
 #, fuzzy
 msgid "Emerald"
 msgstr "Smaragd"
+
+#: src/pages/HealthPage.tsx
+msgid "Empty"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -4934,6 +4954,10 @@ msgid "Incognito: {mode}"
 msgstr "Inkognito: {mode}"
 
 #: src/pages/HealthPage.tsx
+msgid "Incomplete"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Index"
 msgstr "Index"
@@ -5014,6 +5038,10 @@ msgstr "Elemente {start}–{end}"
 #, fuzzy
 msgid "Japanese"
 msgstr "Japanisch"
+
+#: src/pages/HealthPage.tsx
+msgid "Job"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6320,6 +6348,10 @@ msgstr "Noch keine Benachrichtigungen"
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "Keine andere Datei hinterlegt {lowerLabel}. Es muss nichts verglichen werden: Beim Import wird dieses Archiv übernommen und mit dem Kapitel verknüpft."
 
+#: src/pages/HealthPage.tsx
+msgid "No pages"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "No pending requests"
@@ -6508,6 +6540,7 @@ msgid "Not imported"
 msgstr "Nicht importiert"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not linked"
 msgstr "Nicht verknüpft"
@@ -8099,6 +8132,10 @@ msgid "Reopen"
 msgstr "Erneut öffnen"
 
 #: src/pages/HealthPage.tsx
+msgid "Repair"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Repairs"
 msgstr "Reparaturen"
@@ -8538,6 +8575,7 @@ msgstr "Skalierung"
 msgid "Scale ({scale}%)"
 msgstr "Skalierung ({scale}%)"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Scan"
@@ -9280,6 +9318,10 @@ msgstr "Befindet sich in <0>{seriesTitle}</0>."
 msgid "Size"
 msgstr "Größe"
 
+#: src/pages/HealthPage.tsx
+msgid "Size mismatch"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Skip setup"
@@ -9548,6 +9590,10 @@ msgstr "Statistiken"
 #, fuzzy
 msgid "Status"
 msgstr "Status"
+
+#: src/pages/HealthPage.tsx
+msgid "Status change"
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

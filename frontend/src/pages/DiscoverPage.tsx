@@ -562,7 +562,7 @@ function RecommendedTab() {
       </Group>
 
       <Collapse expanded={customizeOpen}>
-        <Panel edge="brand" p="md" mb="md">
+        <Panel p="md" mb="md">
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}
@@ -1016,7 +1016,7 @@ function FeedExpandModal({
       }
       styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
     >
-      <Panel edge="brand" p="md" mb="md">
+      <Panel p="md" mb="md">
         <Stack gap="md">
           <CatalogueFilters controls={catalogue.controls} />
           <CatalogueFilterActions

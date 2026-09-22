@@ -1081,6 +1081,10 @@ msgstr "Achievements"
 msgid "Acknowledge"
 msgstr "Acknowledge"
 
+#: src/pages/HealthPage.tsx
+msgid "Acknowledged"
+msgstr "Acknowledged"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Action"
 msgstr "Action"
@@ -1348,6 +1352,10 @@ msgstr "Alt titles"
 #: src/theme-context.tsx
 msgid "Amber"
 msgstr "Amber"
+
+#: src/pages/HealthPage.tsx
+msgid "Ambiguous names"
+msgstr "Ambiguous names"
 
 #: src/pages/HealthPage.tsx
 msgid "Analysis"
@@ -2657,6 +2665,10 @@ msgstr "Customized"
 msgid "Daily scan hour (0-23)"
 msgstr "Daily scan hour (0-23)"
 
+#: src/pages/HealthPage.tsx
+msgid "Damaged image"
+msgstr "Damaged image"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Dark"
@@ -3037,6 +3049,10 @@ msgstr "Drama"
 msgid "Dropped"
 msgstr "Dropped"
 
+#: src/pages/HealthPage.tsx
+msgid "Duplicate"
+msgstr "Duplicate"
+
 #: src/pages/LibraryPage.tsx
 msgid "e.g. Ongoing & behind"
 msgstr "e.g. Ongoing & behind"
@@ -3102,6 +3118,10 @@ msgstr "embeddings, embedding model, semantic search, vectors, discover search"
 #: src/theme-context.tsx
 msgid "Emerald"
 msgstr "Emerald"
+
+#: src/pages/HealthPage.tsx
+msgid "Empty"
+msgstr "Empty"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Empty."
@@ -4021,6 +4041,10 @@ msgid "Incognito: {mode}"
 msgstr "Incognito: {mode}"
 
 #: src/pages/HealthPage.tsx
+msgid "Incomplete"
+msgstr "Incomplete"
+
+#: src/pages/HealthPage.tsx
 msgid "Index"
 msgstr "Index"
 
@@ -4086,6 +4110,10 @@ msgstr "Items {start}–{end}"
 #: src/pages/SettingsPage.tsx
 msgid "Japanese"
 msgstr "Japanese"
+
+#: src/pages/HealthPage.tsx
+msgid "Job"
+msgstr "Job"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Josei"
@@ -5151,6 +5179,10 @@ msgstr "No notifications yet"
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 
+#: src/pages/HealthPage.tsx
+msgid "No pages"
+msgstr "No pages"
+
 #: src/pages/RequestsPage.tsx
 msgid "No pending requests"
 msgstr "No pending requests"
@@ -5303,6 +5335,7 @@ msgid "Not imported"
 msgstr "Not imported"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 msgid "Not linked"
 msgstr "Not linked"
 
@@ -6596,6 +6629,10 @@ msgid "Reopen"
 msgstr "Reopen"
 
 #: src/pages/HealthPage.tsx
+msgid "Repair"
+msgstr "Repair"
+
+#: src/pages/HealthPage.tsx
 msgid "Repairs"
 msgstr "Repairs"
 
@@ -6956,6 +6993,7 @@ msgstr "Scale"
 msgid "Scale ({scale}%)"
 msgstr "Scale ({scale}%)"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 msgid "Scan"
 msgstr "Scan"
@@ -7561,6 +7599,10 @@ msgstr "Sits in <0>{seriesTitle}</0>."
 msgid "Size"
 msgstr "Size"
 
+#: src/pages/HealthPage.tsx
+msgid "Size mismatch"
+msgstr "Size mismatch"
+
 #: src/components/SetupWizard.tsx
 msgid "Skip setup"
 msgstr "Skip setup"
@@ -7782,6 +7824,10 @@ msgstr "Stats"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Status"
 msgstr "Status"
+
+#: src/pages/HealthPage.tsx
+msgid "Status change"
+msgstr "Status change"
 
 #: src/pages/reader/ReaderPage.tsx
 msgid "Stay here"
