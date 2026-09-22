@@ -140,8 +140,9 @@ msgstr "Nom d'utilisateur requis"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already downloading, try again once it finishes
+#, fuzzy
 msgid "error.chapter.alreadyDownloading"
-msgstr ""
+msgstr "Ce chapitre est déjà en cours de téléchargement. Réessayez une fois le téléchargement terminé."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
@@ -163,18 +164,21 @@ msgstr "Fichier introuvable sur le disque"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping is disabled
+#, fuzzy
 msgid "error.chapter.mappingDisabled"
-msgstr ""
+msgstr "La correspondance de source est désactivée."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping not found
+#, fuzzy
 msgid "error.chapter.mappingNotFound"
-msgstr ""
+msgstr "Correspondance de source introuvable."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping does not belong to this series
+#, fuzzy
 msgid "error.chapter.mappingWrongSeries"
-msgstr ""
+msgstr "La correspondance de source n'appartient pas à cette série."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
@@ -1625,8 +1629,9 @@ msgstr "Toutes les sources ont échoué pour ce chapitre"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #: src/Maki.Api/Services/DownloadQueueService.cs
 #. English: The source you picked could not provide this chapter
+#, fuzzy
 msgid "error.download.pickedSourceUnavailable"
-msgstr ""
+msgstr "La source sélectionnée ne peut pas fournir ce chapitre."
 
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.
@@ -2199,8 +2204,9 @@ msgstr "{check} est de nouveau opérationnel"
 
 #: src/Maki.Api/Controllers/HealthController.cs
 #. English: PDFs are read in place and can't be repaired by replacement
+#, fuzzy
 msgid "health.repair.pdfUnsupported"
-msgstr ""
+msgstr "Les PDF sont lus directement et ne peuvent pas être réparés par remplacement."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Replacement requested for {count, plural, one {# chapter} other {# chapters}}

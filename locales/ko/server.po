@@ -140,8 +140,9 @@ msgstr "사용자 이름이 필요합니다"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already downloading, try again once it finishes
+#, fuzzy
 msgid "error.chapter.alreadyDownloading"
-msgstr ""
+msgstr "챕터를 이미 다운로드 중입니다. 완료된 후 다시 시도하세요."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
@@ -163,18 +164,21 @@ msgstr "디스크에서 파일을 찾을 수 없습니다"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping is disabled
+#, fuzzy
 msgid "error.chapter.mappingDisabled"
-msgstr ""
+msgstr "소스 매핑이 비활성화되어 있습니다."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping not found
+#, fuzzy
 msgid "error.chapter.mappingNotFound"
-msgstr ""
+msgstr "소스 매핑을 찾을 수 없습니다."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping does not belong to this series
+#, fuzzy
 msgid "error.chapter.mappingWrongSeries"
-msgstr ""
+msgstr "소스 매핑이 이 시리즈에 속하지 않습니다."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
@@ -1625,8 +1629,9 @@ msgstr "이 챕터의 모든 소스에서 실패했습니다"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #: src/Maki.Api/Services/DownloadQueueService.cs
 #. English: The source you picked could not provide this chapter
+#, fuzzy
 msgid "error.download.pickedSourceUnavailable"
-msgstr ""
+msgstr "선택한 소스에서 이 챕터를 가져올 수 없습니다."
 
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.
@@ -2199,8 +2204,9 @@ msgstr "{check} 복구됨"
 
 #: src/Maki.Api/Controllers/HealthController.cs
 #. English: PDFs are read in place and can't be repaired by replacement
+#, fuzzy
 msgid "health.repair.pdfUnsupported"
-msgstr ""
+msgstr "PDF는 원래 위치에서 읽으므로 교체로 복구할 수 없습니다."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Replacement requested for {count, plural, one {# chapter} other {# chapters}}

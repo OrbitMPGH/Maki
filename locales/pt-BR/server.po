@@ -140,8 +140,9 @@ msgstr "O nome de usuário é obrigatório"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already downloading, try again once it finishes
+#, fuzzy
 msgid "error.chapter.alreadyDownloading"
-msgstr ""
+msgstr "O capítulo já está sendo baixado. Tente novamente quando o download terminar."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
@@ -163,18 +164,21 @@ msgstr "Arquivo não encontrado no disco"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping is disabled
+#, fuzzy
 msgid "error.chapter.mappingDisabled"
-msgstr ""
+msgstr "O mapeamento da fonte está desativado."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping not found
+#, fuzzy
 msgid "error.chapter.mappingNotFound"
-msgstr ""
+msgstr "Mapeamento da fonte não encontrado."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping does not belong to this series
+#, fuzzy
 msgid "error.chapter.mappingWrongSeries"
-msgstr ""
+msgstr "O mapeamento da fonte não pertence a esta série."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
@@ -1625,8 +1629,9 @@ msgstr "Todas as fontes falharam para este capítulo"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #: src/Maki.Api/Services/DownloadQueueService.cs
 #. English: The source you picked could not provide this chapter
+#, fuzzy
 msgid "error.download.pickedSourceUnavailable"
-msgstr ""
+msgstr "A fonte escolhida não conseguiu fornecer este capítulo."
 
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.
@@ -2199,8 +2204,9 @@ msgstr "{check} se recuperou"
 
 #: src/Maki.Api/Controllers/HealthController.cs
 #. English: PDFs are read in place and can't be repaired by replacement
+#, fuzzy
 msgid "health.repair.pdfUnsupported"
-msgstr ""
+msgstr "PDFs são lidos diretamente do arquivo e não podem ser reparados com uma substituição."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Replacement requested for {count, plural, one {# chapter} other {# chapters}}

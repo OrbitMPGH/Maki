@@ -140,8 +140,9 @@ msgstr "Kullanıcı adı gerekli"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already downloading, try again once it finishes
+#, fuzzy
 msgid "error.chapter.alreadyDownloading"
-msgstr ""
+msgstr "Bölüm zaten indiriliyor. İndirme tamamlandığında yeniden deneyin."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
@@ -163,18 +164,21 @@ msgstr "Dosya diskte bulunamadı"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping is disabled
+#, fuzzy
 msgid "error.chapter.mappingDisabled"
-msgstr ""
+msgstr "Kaynak eşlemesi devre dışı"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping not found
+#, fuzzy
 msgid "error.chapter.mappingNotFound"
-msgstr ""
+msgstr "Kaynak eşlemesi bulunamadı"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping does not belong to this series
+#, fuzzy
 msgid "error.chapter.mappingWrongSeries"
-msgstr ""
+msgstr "Kaynak eşlemesi bu seriye ait değil"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
@@ -1625,8 +1629,9 @@ msgstr "Bu bölüm için tüm kaynaklar başarısız oldu"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #: src/Maki.Api/Services/DownloadQueueService.cs
 #. English: The source you picked could not provide this chapter
+#, fuzzy
 msgid "error.download.pickedSourceUnavailable"
-msgstr ""
+msgstr "Seçtiğiniz kaynak bu bölümü sağlayamadı"
 
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.
@@ -2199,8 +2204,9 @@ msgstr "{check} düzeldi"
 
 #: src/Maki.Api/Controllers/HealthController.cs
 #. English: PDFs are read in place and can't be repaired by replacement
+#, fuzzy
 msgid "health.repair.pdfUnsupported"
-msgstr ""
+msgstr "PDF dosyaları bulundukları konumdan okunur ve değiştirilerek onarılamaz"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Replacement requested for {count, plural, one {# chapter} other {# chapters}}

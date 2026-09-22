@@ -140,8 +140,9 @@ msgstr "用户名不能为空"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already downloading, try again once it finishes
+#, fuzzy
 msgid "error.chapter.alreadyDownloading"
-msgstr ""
+msgstr "章节已在下载中，请等下载完成后重试"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
@@ -163,18 +164,21 @@ msgstr "磁盘上找不到文件"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping is disabled
+#, fuzzy
 msgid "error.chapter.mappingDisabled"
-msgstr ""
+msgstr "来源映射已禁用"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping not found
+#, fuzzy
 msgid "error.chapter.mappingNotFound"
-msgstr ""
+msgstr "未找到来源映射"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Source mapping does not belong to this series
+#, fuzzy
 msgid "error.chapter.mappingWrongSeries"
-msgstr ""
+msgstr "来源映射不属于此系列"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
@@ -1625,8 +1629,9 @@ msgstr "此章节的所有来源均失败"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #: src/Maki.Api/Services/DownloadQueueService.cs
 #. English: The source you picked could not provide this chapter
+#, fuzzy
 msgid "error.download.pickedSourceUnavailable"
-msgstr ""
+msgstr "你选择的来源无法提供此章节"
 
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.
@@ -2199,8 +2204,9 @@ msgstr "{check} 已恢复"
 
 #: src/Maki.Api/Controllers/HealthController.cs
 #. English: PDFs are read in place and can't be repaired by replacement
+#, fuzzy
 msgid "health.repair.pdfUnsupported"
-msgstr ""
+msgstr "PDF 会原位读取，不能通过替换来修复"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Replacement requested for {count, plural, one {# chapter} other {# chapters}}
