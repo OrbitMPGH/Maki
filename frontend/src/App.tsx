@@ -416,7 +416,7 @@ function AppShellRoutes() {
             <IconBrandMark />
           </span>
           <div>
-            <Text fw={800} fz="lg" lh={1} style={{ letterSpacing: '-0.02em' }}>
+            <Text fz="lg" lh={1} className="brand-wordmark">
               Maki
             </Text>
             <Text fz={10} c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>

@@ -5,6 +5,10 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { BrowserRouter } from 'react-router-dom'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
+// Bundled rather than linked from a font CDN: a self-hosted instance may have no internet, and
+// the theme's font stack named Inter without anything ever loading it.
+import '@fontsource-variable/inter'
+import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './theme.css'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'

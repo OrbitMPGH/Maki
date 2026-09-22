@@ -417,7 +417,7 @@ export default function ActivityPage() {
                           <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
                         </Table.Td>
                         <Table.Td data-priority="low">
-                          <Text size="xs" c="var(--ink-3)" className="tnum">
+                          <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                             {q.completedAt ? formatDateTime(q.completedAt) : '-'}
                           </Text>
                         </Table.Td>
