@@ -934,6 +934,10 @@ msgstr "{unreadChapters, plural, other {#章未読}}"
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{unrecognizedCount, plural, other {#件を認識できません}}"
 
+#: src/pages/SettingsPage.tsx
+msgid "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
@@ -3464,10 +3468,18 @@ msgstr "無効"
 msgid "Disabled"
 msgstr "無効"
 
+#: src/pages/SettingsPage.tsx
+msgid "Discard changes"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Discard download"
 msgstr "ダウンロードを破棄"
+
+#: src/pages/SettingsPage.tsx
+msgid "Discard unsaved changes?"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -5066,6 +5078,10 @@ msgstr "Kavitaの読書"
 msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
 msgstr "Kavita、Makiが同期するトラッカー、外部通知。"
 
+#: src/pages/SettingsPage.tsx
+msgid "Keep editing"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5240,6 +5256,7 @@ msgstr "左から右"
 msgid "Left to right"
 msgstr "左から右"
 
+#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
 msgid "Less"
@@ -5844,6 +5861,7 @@ msgstr "監視：{modeLabel}"
 msgid "Month"
 msgstr "月"
 
+#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
 msgid "More"
@@ -8433,15 +8451,13 @@ msgstr "同じ著者"
 msgid "Sample chapter"
 msgstr "サンプル章"
 
-#: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/components/settings/SecuritySection.tsx
+#: src/components/settings/SaveButton.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Save"
 msgstr "保存"
@@ -8777,6 +8793,10 @@ msgstr "一致するソースを検索中…"
 #, fuzzy
 msgid "Season"
 msgstr "シーズン"
+
+#: src/components/settings/SettingsIndex.tsx
+msgid "Sections on this tab"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
@@ -10482,6 +10502,10 @@ msgstr "未読のみ"
 #, fuzzy
 msgid "Unrecognized"
 msgstr "認識できない"
+
+#: src/components/settings/SaveButton.tsx
+msgid "Unsaved changes"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy

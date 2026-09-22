@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { SettingsHelp } from './SettingsHelp'
 import {
   ActionIcon,
   Button,
@@ -104,12 +105,12 @@ export function ProgressSection() {
       <Title order={4}>
         <Trans>Progress & achievements</Trans>
       </Title>
-      <Text size="sm" c="var(--ink-3)" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
           Levels, badges and streaks worked out from your reading history. All of it is derived, so
           switching this off stores nothing and switching it back on brings everything back.
         </Trans>
-      </Text>
+      </SettingsHelp>
 
       <Stack gap="md">
         <Switch

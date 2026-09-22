@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
+import { SettingsHelp } from './SettingsHelp'
+import { SaveButton } from './SaveButton'
 import {
   Alert,
-  Button,
   Code,
   Group,
   NumberInput,
   Stack,
   Switch,
-  Text,
   TextInput,
   Title,
 } from '@mantine/core'
@@ -51,9 +51,9 @@ export function SecuritySection() {
       <Title order={4} mb="sm">
         <Trans>Security</Trans>
       </Title>
-      <Text size="sm" c="var(--ink-3)" mb="md">
+      <SettingsHelp mb="md">
         <Trans>Changes take effect after Maki restarts.</Trans>
-      </Text>
+      </SettingsHelp>
 
       <Stack gap="md">
         <Switch
@@ -110,9 +110,9 @@ export function SecuritySection() {
         </Group>
 
         <Group justify="flex-end">
-          <Button
+          <SaveButton
+            dirty={dirty}
             loading={save.isPending}
-            disabled={!dirty}
             onClick={() =>
               save.mutate(draft, {
                 onSuccess: () =>
@@ -123,9 +123,7 @@ export function SecuritySection() {
                 onError: (e) => notifications.show({ message: e.message, color: 'red' }),
               })
             }
-          >
-            <Trans>Save</Trans>
-          </Button>
+          />
         </Group>
       </Stack>
     </Panel>
@@ -158,7 +156,7 @@ export function OidcSection() {
       <Title order={4} mb="sm">
         <Trans>Single sign-on</Trans>
       </Title>
-      <Text size="sm" c="var(--ink-3)" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
           Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
           take effect after Maki restarts. Register{' '}
@@ -166,7 +164,7 @@ export function OidcSection() {
           If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
           register that host&apos;s variant as well.
         </Trans>
-      </Text>
+      </SettingsHelp>
 
       <Stack gap="md">
         <Switch
@@ -273,9 +271,9 @@ export function OidcSection() {
         )}
 
         <Group justify="flex-end">
-          <Button
+          <SaveButton
+            dirty={dirty}
             loading={save.isPending}
-            disabled={!dirty}
             onClick={() =>
               save.mutate(draft, {
                 onSuccess: () =>
@@ -286,9 +284,7 @@ export function OidcSection() {
                 onError: (e) => notifications.show({ message: e.message, color: 'red' }),
               })
             }
-          >
-            <Trans>Save</Trans>
-          </Button>
+          />
         </Group>
       </Stack>
     </Panel>

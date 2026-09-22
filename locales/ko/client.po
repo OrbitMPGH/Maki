@@ -934,6 +934,10 @@ msgstr "{unreadChapters, plural, other {읽지 않음 #개}}"
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{unrecognizedCount, plural, other {인식할 수 없음 #개}}"
 
+#: src/pages/SettingsPage.tsx
+msgid "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
@@ -3464,10 +3468,18 @@ msgstr "비활성화됨"
 msgid "Disabled"
 msgstr "비활성화됨"
 
+#: src/pages/SettingsPage.tsx
+msgid "Discard changes"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Discard download"
 msgstr "다운로드 폐기"
+
+#: src/pages/SettingsPage.tsx
+msgid "Discard unsaved changes?"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -5066,6 +5078,10 @@ msgstr "Kavita 읽기"
 msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
 msgstr "Kavita, Maki가 스크로블하는 트래커 및 발신 알림."
 
+#: src/pages/SettingsPage.tsx
+msgid "Keep editing"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5240,6 +5256,7 @@ msgstr "왼쪽에서 오른쪽"
 msgid "Left to right"
 msgstr "왼쪽에서 오른쪽"
 
+#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
 msgid "Less"
@@ -5844,6 +5861,7 @@ msgstr "모니터링: {modeLabel}"
 msgid "Month"
 msgstr "월"
 
+#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 #, fuzzy
 msgid "More"
@@ -8433,15 +8451,13 @@ msgstr "같은 작가"
 msgid "Sample chapter"
 msgstr "샘플 챕터"
 
-#: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/components/settings/SecuritySection.tsx
+#: src/components/settings/SaveButton.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Save"
 msgstr "저장"
@@ -8777,6 +8793,10 @@ msgstr "일치 항목을 찾기 위해 소스 검색 중…"
 #, fuzzy
 msgid "Season"
 msgstr "시즌"
+
+#: src/components/settings/SettingsIndex.tsx
+msgid "Sections on this tab"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
@@ -10482,6 +10502,10 @@ msgstr "읽지 않은 항목만"
 #, fuzzy
 msgid "Unrecognized"
 msgstr "인식되지 않음"
+
+#: src/components/settings/SaveButton.tsx
+msgid "Unsaved changes"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy

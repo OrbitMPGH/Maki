@@ -762,6 +762,10 @@ msgstr "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgid "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{unrecognizedCount, plural, one {# unrecognized} other {# unrecognized}}"
 
+#: src/pages/SettingsPage.tsx
+msgid "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
+msgstr "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
 msgstr "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
@@ -2822,9 +2826,17 @@ msgstr "disabled"
 msgid "Disabled"
 msgstr "Disabled"
 
+#: src/pages/SettingsPage.tsx
+msgid "Discard changes"
+msgstr "Discard changes"
+
 #: src/components/ImportReviewModal.tsx
 msgid "Discard download"
 msgstr "Discard download"
+
+#: src/pages/SettingsPage.tsx
+msgid "Discard unsaved changes?"
+msgstr "Discard unsaved changes?"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Disconnect"
@@ -4126,6 +4138,10 @@ msgstr "Kavita reading"
 msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
 msgstr "Kavita, the trackers Maki scrobbles to, and outbound notifications."
 
+#: src/pages/SettingsPage.tsx
+msgid "Keep editing"
+msgstr "Keep editing"
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Keep folder name, and put new downloads there too"
@@ -4268,6 +4284,7 @@ msgstr "left to right"
 msgid "Left to right"
 msgstr "Left to right"
 
+#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "Less"
 msgstr "Less"
@@ -4761,6 +4778,7 @@ msgstr "Monitoring: {modeLabel}"
 msgid "Month"
 msgstr "Month"
 
+#: src/components/settings/SettingsHelp.tsx
 #: src/pages/stats/ReadingHeatmap.tsx
 msgid "More"
 msgstr "More"
@@ -6866,15 +6884,13 @@ msgstr "same author"
 msgid "Sample chapter"
 msgstr "Sample chapter"
 
-#: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/components/settings/SecuritySection.tsx
+#: src/components/settings/SaveButton.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Save"
 msgstr "Save"
 
@@ -7146,6 +7162,10 @@ msgstr "Searching sources for a match…"
 #: src/components/AnimeCoverageBar.tsx
 msgid "Season"
 msgstr "Season"
+
+#: src/components/settings/SettingsIndex.tsx
+msgid "Sections on this tab"
+msgstr "Sections on this tab"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/registry.ts
@@ -8537,6 +8557,10 @@ msgstr "Unread only"
 #: src/components/ui/status.tsx
 msgid "Unrecognized"
 msgstr "Unrecognized"
+
+#: src/components/settings/SaveButton.tsx
+msgid "Unsaved changes"
+msgstr "Unsaved changes"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "unspecified"

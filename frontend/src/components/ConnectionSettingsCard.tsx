@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { SettingsHelp } from './settings/SettingsHelp'
 import type { ReactNode } from 'react'
-import { Button, Group, PasswordInput, Text, TextInput, Title } from '@mantine/core'
+import { Button, Group, PasswordInput, TextInput, Title } from '@mantine/core'
 import { Panel } from './ui/Panel'
+import { SaveButton } from './settings/SaveButton'
 import { notifications } from '@mantine/notifications'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -46,6 +48,8 @@ export function ConnectionSettingsCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved])
 
+  const dirty = saved !== undefined && fields.some((f) => (values[f.key] ?? '') !== (saved[f.key] ?? ''))
+
   const payload = () =>
     Object.fromEntries(fields.map((f) => [f.key, values[f.key] || null]))
 
@@ -54,9 +58,9 @@ export function ConnectionSettingsCard({
       <Title order={4} mb="sm">
         {title}
       </Title>
-      <Text size="sm" c="var(--ink-3)" mb="md">
+      <SettingsHelp mb="md">
         {description}
-      </Text>
+      </SettingsHelp>
       <Group align="flex-end" wrap="wrap">
         {fields.map((f) =>
           f.secret ? (
@@ -96,16 +100,15 @@ export function ConnectionSettingsCard({
         >
           <Trans>Test</Trans>
         </Button>
-        <Button
+        <SaveButton
+          dirty={dirty}
           loading={save.isPending}
           onClick={() =>
             save.mutate(payload(), {
               onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
             })
           }
-        >
-          <Trans>Save</Trans>
-        </Button>
+        />
       </Group>
       {children}
     </Panel>
