@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
-  Alert,
   Anchor,
   Button,
-  Card,
   Center,
   Checkbox,
   Divider,
@@ -12,10 +10,9 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { IconBrandMark } from '../components/IconBrandMark'
+import { AuthError, AuthFrame } from '../components/auth/AuthFrame'
 import { useLogin, useVerifyTwoFactor } from '../api/auth'
 import { getInitialize } from '../api/client'
 
@@ -90,128 +87,103 @@ export function LoginPage() {
   }
 
   return (
-    <Center mih="100vh" p="md">
-      <Stack w="100%" maw={380} gap="lg">
-        <Stack gap={4} align="center">
-          <span className="brand-mark" style={{ transform: 'scale(1.4)' }}>
-            <IconBrandMark />
-          </span>
-          <Title order={2} mt="sm">
-            Maki
-          </Title>
-          <Text c="var(--ink-3)" fz="sm">
-            {needsCode ? <Trans>Enter your authenticator code</Trans> : <Trans>Sign in to continue</Trans>}
-          </Text>
-        </Stack>
+    <AuthFrame
+      title={needsCode ? t`Two-factor code` : t`Sign in`}
+      subtitle={needsCode ? <Trans>Enter your authenticator code</Trans> : undefined}
+    >
+      {needsCode ? (
+        <form onSubmit={submitCode}>
+          <Stack>
+            <Center>
+              <PinInput
+                length={6}
+                type="number"
+                inputMode="numeric"
+                oneTimeCode
+                autoFocus
+                value={code}
+                onChange={setCode}
+              />
+            </Center>
+            <Checkbox
+              label={t`Trust this device for 30 days`}
+              checked={rememberMachine}
+              onChange={(e) => setRememberMachine(e.currentTarget.checked)}
+            />
+            {error && <AuthError>{error.message}</AuthError>}
+            <Button type="submit" color="brand" loading={busy} disabled={code.length < 6} fullWidth>
+              <Trans>Verify</Trans>
+            </Button>
+            <Anchor
+              fz="sm"
+              ta="center"
+              onClick={() => {
+                setNeedsCode(false)
+                setCode('')
+                verify.reset()
+              }}
+            >
+              <Trans>Start over</Trans>
+            </Anchor>
+          </Stack>
+        </form>
+      ) : (
+        <Stack>
+          {ssoError && <AuthError>{ssoError}</AuthError>}
 
-        <Card withBorder radius="md" p="lg">
-          {needsCode ? (
-            <form onSubmit={submitCode}>
+          {sso.enabled && (
+            <>
+              {/* A link, not a fetch: the browser has to leave this origin entirely, and an
+                  XHR to the challenge endpoint would only follow the redirect in the background
+                  and land back here with nothing to show for it. */}
+              <Button
+                component="a"
+                href={`/api/v1/auth/oidc/challenge?returnUrl=${encodeURIComponent('/')}`}
+                variant="default"
+                fullWidth
+              >
+                <Trans>Continue with {displayName}</Trans>
+              </Button>
+              {!passwordHidden && <Divider label="or" labelPosition="center" />}
+            </>
+          )}
+
+          {passwordHidden ? (
+            <Anchor fz="sm" ta="center" onClick={() => setShowPassword(true)}>
+              <Trans>Sign in with a password</Trans>
+            </Anchor>
+          ) : (
+            <form onSubmit={submitPassword}>
               <Stack>
-                <Center>
-                  <PinInput
-                    length={6}
-                    type="number"
-                    inputMode="numeric"
-                    oneTimeCode
-                    autoFocus
-                    value={code}
-                    onChange={setCode}
-                  />
-                </Center>
-                <Checkbox
-                  label={t`Trust this device for 30 days`}
-                  checked={rememberMachine}
-                  onChange={(e) => setRememberMachine(e.currentTarget.checked)}
-                />
-                {error && (
-                  <Alert color="var(--danger)" variant="light">
-                    {error.message}
-                  </Alert>
+                {sso.enabled && sso.restricted && (
+                  <Text fz="xs" c="var(--ink-3)">
+                    <Trans>Password sign-in is limited to administrators on this instance.</Trans>
+                  </Text>
                 )}
-                <Button type="submit" loading={busy} disabled={code.length < 6} fullWidth>
-                  <Trans>Verify</Trans>
+                <TextInput
+                  label={t`Username`}
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.currentTarget.value)}
+                />
+                <PasswordInput
+                  label={t`Password`}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.currentTarget.value)}
+                />
+                {error && <AuthError>{error.message}</AuthError>}
+                <Button type="submit" color="brand" loading={busy} fullWidth>
+                  <Trans>Sign in</Trans>
                 </Button>
-                <Anchor
-                  fz="sm"
-                  ta="center"
-                  onClick={() => {
-                    setNeedsCode(false)
-                    setCode('')
-                    verify.reset()
-                  }}
-                >
-                  <Trans>Start over</Trans>
-                </Anchor>
               </Stack>
             </form>
-          ) : (
-            <Stack>
-              {ssoError && (
-                <Alert color="var(--danger)" variant="light">
-                  {ssoError}
-                </Alert>
-              )}
-
-              {sso.enabled && (
-                <>
-                  {/* A link, not a fetch: the browser has to leave this origin entirely, and an
-                      XHR to the challenge endpoint would only follow the redirect in the background
-                      and land back here with nothing to show for it. */}
-                  <Button
-                    component="a"
-                    href={`/api/v1/auth/oidc/challenge?returnUrl=${encodeURIComponent('/')}`}
-                    variant="light"
-                    fullWidth
-                  >
-                    <Trans>Continue with {displayName}</Trans>
-                  </Button>
-                  {!passwordHidden && <Divider label="or" labelPosition="center" />}
-                </>
-              )}
-
-              {passwordHidden ? (
-                <Anchor fz="sm" ta="center" onClick={() => setShowPassword(true)}>
-                  <Trans>Sign in with a password</Trans>
-                </Anchor>
-              ) : (
-                <form onSubmit={submitPassword}>
-                  <Stack>
-                    {sso.enabled && sso.restricted && (
-                      <Text fz="xs" c="var(--ink-3)">
-                        <Trans>Password sign-in is limited to administrators on this instance.</Trans>
-                      </Text>
-                    )}
-                    <TextInput
-                      label={t`Username`}
-                      autoComplete="username"
-                      autoFocus
-                      required
-                      value={username}
-                      onChange={(e) => setUsername(e.currentTarget.value)}
-                    />
-                    <PasswordInput
-                      label={t`Password`}
-                      autoComplete="current-password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.currentTarget.value)}
-                    />
-                    {error && (
-                      <Alert color="var(--danger)" variant="light">
-                        {error.message}
-                      </Alert>
-                    )}
-                    <Button type="submit" loading={busy} fullWidth>
-                      <Trans>Sign in</Trans>
-                    </Button>
-                  </Stack>
-                </form>
-              )}
-            </Stack>
           )}
-        </Card>
-      </Stack>
-    </Center>
+        </Stack>
+      )}
+    </AuthFrame>
   )
 }

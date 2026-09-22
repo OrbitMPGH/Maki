@@ -58,6 +58,34 @@
         "MAKI_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Maki\\.e2econfig"
       ],
       "port": 8990
+    },
+    {
+      "name": "backend-dev-alt",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Maki.Api",
+        "-p:OutDir=bin/Debug/alt/",
+        "-e",
+        "MAKI_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Maki\\.devconfig"
+      ],
+      "port": 8991
+    },
+    {
+      "name": "frontend-alt",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev",
+        "--",
+        "--mode",
+        "alt"
+      ],
+      "port": 5174,
+      "autoPort": true
     }
   ]
 }

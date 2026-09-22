@@ -1,18 +1,7 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Center,
-  List,
-  PasswordInput,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core'
+import { Button, List, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { IconBrandMark } from '../components/IconBrandMark'
+import { AuthError, AuthFrame } from '../components/auth/AuthFrame'
 import { useSetup } from '../api/auth'
 
 /** Matches the server's Identity policy, so the failure is shown before a round trip. */
@@ -46,66 +35,16 @@ export function SetupAccountPage() {
   }
 
   return (
-    <Center mih="100vh" p="md">
-      <Stack w="100%" maw={420} gap="lg">
-        <Stack gap={4} align="center">
-          <span className="brand-mark" style={{ transform: 'scale(1.4)' }}>
-            <IconBrandMark />
-          </span>
-          <Title order={2} mt="sm">
-            <Trans>Welcome to Maki</Trans>
-          </Title>
-          <Text c="var(--ink-3)" fz="sm" ta="center">
-            <Trans>
-              Create the administrator account. Your library and reading history, if you have any, are
-              already attached to it.
-            </Trans>
-          </Text>
-        </Stack>
-
-        <Card withBorder radius="md" p="lg">
-          <form onSubmit={submit}>
-            <Stack>
-              <TextInput
-                label={t`Username`}
-                autoComplete="username"
-                autoFocus
-                required
-                value={username}
-                onChange={(e) => setUsername(e.currentTarget.value)}
-              />
-              <PasswordInput
-                label={t`Password`}
-                description={t`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
-                autoComplete="new-password"
-                required
-                error={tooShort ? t`Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
-                value={password}
-                onChange={(e) => setPassword(e.currentTarget.value)}
-              />
-              <PasswordInput
-                label={t`Confirm password`}
-                autoComplete="new-password"
-                required
-                error={mismatch ? t`Passwords do not match` : null}
-                value={confirm}
-                onChange={(e) => setConfirm(e.currentTarget.value)}
-              />
-
-              {setup.error && (
-                <Alert color="var(--danger)" variant="light">
-                  {setup.error.message}
-                </Alert>
-              )}
-
-              <Button type="submit" loading={setup.isPending} disabled={!ready} fullWidth>
-                <Trans>Create account</Trans>
-              </Button>
-            </Stack>
-          </form>
-        </Card>
-
-        <Card withBorder radius="md" p="md" bg="var(--mantine-color-default-hover)">
+    <AuthFrame
+      title={t`Create your account`}
+      subtitle={
+        <Trans>
+          Create the administrator account. Your library and reading history, if you have any, are
+          already attached to it.
+        </Trans>
+      }
+      footer={
+        <div className="auth-note">
           <Text fz="sm" fw={600} mb={6}>
             <Trans>Before exposing Maki to the internet</Trans>
           </Text>
@@ -123,8 +62,44 @@ export function SetupAccountPage() {
               <Trans>Add two-factor authentication under Settings → My account.</Trans>
             </List.Item>
           </List>
-        </Card>
-      </Stack>
-    </Center>
+        </div>
+      }
+    >
+      <form onSubmit={submit}>
+        <Stack>
+          <TextInput
+            label={t`Username`}
+            autoComplete="username"
+            autoFocus
+            required
+            value={username}
+            onChange={(e) => setUsername(e.currentTarget.value)}
+          />
+          <PasswordInput
+            label={t`Password`}
+            description={t`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
+            autoComplete="new-password"
+            required
+            error={tooShort ? t`Use at least ${MIN_PASSWORD_LENGTH} characters` : null}
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+          />
+          <PasswordInput
+            label={t`Confirm password`}
+            autoComplete="new-password"
+            required
+            error={mismatch ? t`Passwords do not match` : null}
+            value={confirm}
+            onChange={(e) => setConfirm(e.currentTarget.value)}
+          />
+
+          {setup.error && <AuthError>{setup.error.message}</AuthError>}
+
+          <Button type="submit" color="brand" loading={setup.isPending} disabled={!ready} fullWidth>
+            <Trans>Create account</Trans>
+          </Button>
+        </Stack>
+      </form>
+    </AuthFrame>
   )
 }
