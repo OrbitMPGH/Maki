@@ -2874,7 +2874,7 @@ export default function SettingsPage() {
   }, [target, setSearchParams])
 
   return (
-    <SurfaceFrame pageStyle="operational">
+    <SurfaceFrame pageStyle="operational" className="settings-surface">
       <PageHeader
         title={t`Settings`}
         description={
@@ -2884,11 +2884,12 @@ export default function SettingsPage() {
         }
       />
       <Tabs
+        className="panel-tabs"
         value={activeTab}
         onChange={(value) => value && setSearchParams({ tab: value })}
         keepMounted={false}
       >
-        <Tabs.List mb="md">
+        <Tabs.List className="panel-tab-list" mb="md">
           {tabs.map((tab) => (
             <Tabs.Tab key={tab.key} value={tab.key}>
               {renderLabel(tab.label)}
@@ -2898,7 +2899,7 @@ export default function SettingsPage() {
 
         {tabs.map((tab) => (
           <Tabs.Panel key={tab.key} value={tab.key}>
-            <Stack maw={820}>
+            <Stack className="settings-content">
               <Text size="sm" c="dimmed">
                 {renderLabel(tab.description)}
               </Text>

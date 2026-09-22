@@ -108,83 +108,85 @@ export function UsersSection() {
         </Trans>
       </Text>
 
-      <Table striped withTableBorder fz="sm">
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th><Trans>User</Trans></Table.Th>
-            <Table.Th><Trans>Permissions</Trans></Table.Th>
-            <Table.Th><Trans>Rating</Trans></Table.Th>
-            <Table.Th><Trans>Last sign-in</Trans></Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {users?.map((user) => {
-            const granted = user.permissionNames.length
-            return (
-              <Table.Tr key={user.id} opacity={user.disabled ? 0.5 : 1}>
-                <Table.Td>
-                  <Group gap={6}>
-                    <Text fz="sm">{user.displayName?.trim() || user.userName}</Text>
-                    {user.id === me?.id && (
-                      <Badge size="xs" variant="outline">
-                        <Trans>you</Trans>
+      <Table.ScrollContainer minWidth={576}>
+        <Table striped withTableBorder fz="sm">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th><Trans>User</Trans></Table.Th>
+              <Table.Th><Trans>Permissions</Trans></Table.Th>
+              <Table.Th><Trans>Rating</Trans></Table.Th>
+              <Table.Th><Trans>Last sign-in</Trans></Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {users?.map((user) => {
+              const granted = user.permissionNames.length
+              return (
+                <Table.Tr key={user.id} opacity={user.disabled ? 0.5 : 1}>
+                  <Table.Td>
+                    <Group gap={6}>
+                      <Text fz="sm">{user.displayName?.trim() || user.userName}</Text>
+                      {user.id === me?.id && (
+                        <Badge size="xs" variant="outline">
+                          <Trans>you</Trans>
+                        </Badge>
+                      )}
+                      {user.disabled && (
+                        <Badge size="xs" color="red" variant="light">
+                          <Trans>disabled</Trans>
+                        </Badge>
+                      )}
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    {user.isAdmin ? (
+                      <Badge size="xs" variant="light">
+                        <Trans>Administrator</Trans>
                       </Badge>
+                    ) : (
+                      <Text fz="xs" c="dimmed">
+                        <Plural value={granted} one="# granted" other="# granted" />
+                      </Text>
                     )}
-                    {user.disabled && (
-                      <Badge size="xs" color="red" variant="light">
-                        <Trans>disabled</Trans>
-                      </Badge>
-                    )}
-                  </Group>
-                </Table.Td>
-                <Table.Td>
-                  {user.isAdmin ? (
-                    <Badge size="xs" variant="light">
-                      <Trans>Administrator</Trans>
-                    </Badge>
-                  ) : (
+                  </Table.Td>
+                  <Table.Td>
                     <Text fz="xs" c="dimmed">
-                      <Plural value={granted} one="# granted" other="# granted" />
+                      {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
                     </Text>
-                  )}
-                </Table.Td>
-                <Table.Td>
-                  <Text fz="xs" c="dimmed">
-                    {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
-                  </Text>
-                </Table.Td>
-                <Table.Td c="dimmed">
-                  {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <Trans>never</Trans>}
-                </Table.Td>
-                <Table.Td ta="right">
-                  <Group gap={4} justify="flex-end">
-                    <Button size="compact-xs" variant="subtle" onClick={() => setEditing(user)}>
-                      <Trans>Edit</Trans>
-                    </Button>
-                    {/* Hidden for your own row: the server refuses it anyway, so offering it would
-                        only produce an error message. */}
-                    {user.id !== me?.id && (
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        color="red"
-                        onClick={() =>
-                          remove.mutate(user.id, {
-                            onError: (e) => notifications.show({ message: e.message, color: 'red' }),
-                          })
-                        }
-                      >
-                        <Trans>Delete</Trans>
+                  </Table.Td>
+                  <Table.Td c="dimmed">
+                    {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <Trans>never</Trans>}
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Group gap={4} justify="flex-end">
+                      <Button size="compact-xs" variant="subtle" onClick={() => setEditing(user)}>
+                        <Trans>Edit</Trans>
                       </Button>
-                    )}
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            )
-          })}
-        </Table.Tbody>
-      </Table>
+                      {/* Hidden for your own row: the server refuses it anyway, so offering it would
+                          only produce an error message. */}
+                      {user.id !== me?.id && (
+                        <Button
+                          size="compact-xs"
+                          variant="subtle"
+                          color="red"
+                          onClick={() =>
+                            remove.mutate(user.id, {
+                              onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                            })
+                          }
+                        >
+                          <Trans>Delete</Trans>
+                        </Button>
+                      )}
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              )
+            })}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
 
       {editing && <UserModal target={editing} onClose={() => setEditing(null)} />}
     </Card>

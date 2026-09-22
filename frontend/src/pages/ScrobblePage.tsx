@@ -78,7 +78,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
         <Box w={10} h={10} bg={dotColor} style={{ borderRadius: '50%' }} />
         <Text fw={700}>{connection.label}</Text>
       </Group>
-      <Text size="sm" c="dimmed" mt={4} style={{ wordBreak: 'break-all' }}>
+      <Text size="sm" c="dimmed" mt={4} style={{ overflowWrap: 'anywhere' }}>
         {state}
       </Text>
       {connection.oAuth && connection.configured && (
@@ -287,7 +287,7 @@ export default function ScrobblePage() {
       </Title>
       {data && data.recent.length > 0 ? (
         <Table.ScrollContainer minWidth={600} mb="lg">
-          <Table striped highlightOnHover>
+          <Table className="panel-table" striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>

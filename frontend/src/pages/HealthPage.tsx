@@ -162,7 +162,7 @@ export default function HealthPage() {
   const failedCount = deleteReport?.failures.length ?? 0
 
   return (
-    <SurfaceFrame pageStyle="operational">
+    <SurfaceFrame pageStyle="operational" className="health-surface">
       <PageHeader
         title={t`Health`}
         description={t`System checks and reviewed library maintenance.`}
@@ -265,8 +265,8 @@ export default function HealthPage() {
         </Alert>
       )}
 
-      <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
-        <Tabs.List>
+      <Tabs className="panel-tabs" value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
+        <Tabs.List className="panel-tab-list">
           <Tabs.Tab value="overview">
             <Trans>Overview</Trans>
           </Tabs.Tab>
@@ -291,7 +291,7 @@ export default function HealthPage() {
 
         <Tabs.Panel value="files" pt="lg">
           <Stack>
-            <Group>
+            <Group className="health-filter-rail">
               <TextInput
                 placeholder={t`Search file paths`}
                 aria-label={t`Search file paths`}

@@ -117,7 +117,7 @@ export default function ActivityPage() {
         }
       />
 
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg" maw={740}>
+      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg">
         <StatTile label={t`In progress`} value={stats.active} icon={IconLoader2} accent="info" />
         <StatTile label={t`Queued`} value={stats.queued} icon={IconClock} accent="gray" />
         <StatTile label={t`Needs review`} value={stats.review} icon={IconAlertTriangle} accent="warn" />
@@ -132,7 +132,7 @@ export default function ActivityPage() {
         />
       ) : (
         <Table.ScrollContainer minWidth={720}>
-          <Table verticalSpacing="sm">
+          <Table className="panel-table" verticalSpacing="sm">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>
@@ -370,7 +370,7 @@ export default function ActivityPage() {
         ) : (
           <>
             <Table.ScrollContainer minWidth={640}>
-              <Table verticalSpacing="sm">
+              <Table className="panel-table" verticalSpacing="sm">
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>
