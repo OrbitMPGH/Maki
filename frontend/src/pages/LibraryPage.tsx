@@ -742,7 +742,7 @@ export default function LibraryPage() {
       />
 
       {series && series.length > 0 && (
-        <Panel edge="brand" p={0} className="library-index layer-sunken">
+        <Panel p={0} className="library-index layer-sunken">
           <SimpleGrid
             className="library-index-metrics"
             cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }}
