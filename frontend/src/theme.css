@@ -941,22 +941,6 @@ body {
   padding-left: 14px;
   border-left: 1px solid var(--border-strong);
 }
-.page-header-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: clamp(20px, 3vw, 40px);
-  margin-bottom: var(--mantine-spacing-lg);
-}
-.page-header-eyebrow {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--ink-4);
-  font-size: var(--type-label);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
 
 /* --- Home dashboard rails ------------------------------------------------ */
 /* The chapter line under the title on a Home card, where the library grid carries have/total. */
@@ -2526,10 +2510,6 @@ body {
   }
   .series-hero:not([data-compact]) .series-hero-glass-panel {
     margin-top: var(--mantine-spacing-lg);
-  }
-  /* Identity first, then the figures across the full width. */
-  .page-header-split {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -75,7 +75,6 @@ export default function StatsPage() {
         description={t`What you read, what the library holds, and how far you have come.`}
         tab={tab}
         onTabChange={setTab}
-        userId={viewUserId}
         actions={
           <>
             {isAdmin && users && users.length > 1 && tab !== 'library' && (
