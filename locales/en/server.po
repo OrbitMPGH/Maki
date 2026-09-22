@@ -101,6 +101,10 @@ msgid "error.auth.usernameRequired"
 msgstr "Username is required"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.alreadyDownloading"
+msgstr "Chapter is already downloading, try again once it finishes"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 msgid "error.chapter.alreadyQueued"
 msgstr "Chapter is already queued"
 
@@ -1132,6 +1136,11 @@ msgstr "The approved source no longer has these pages"
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "error.download.noMoreSources"
 msgstr "Every source failed for this chapter"
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#: src/Maki.Api/Services/DownloadQueueService.cs
+msgid "error.download.pickedSourceUnavailable"
+msgstr "The source you picked could not provide this chapter"
 
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.

@@ -35,6 +35,12 @@ public class DownloadQueueService(
     private readonly ConcurrentDictionary<int, int> _inFlight = new();
     private readonly ConcurrentDictionary<int, byte> _resolving = new();
 
+    /// <summary>
+    /// Rows re-pinned while their previous resolve still owned them. That resolve drives them again
+    /// on the way out, instead of leaving them Resolving until the orphan sweep comes round.
+    /// </summary>
+    private readonly ConcurrentDictionary<int, int> _resolveAgain = new();
+
     // A queue item can be cleared while a worker is fetching pages or a detached resolve is
     // finding a source. Its database row is cancelled or removed, but that alone cannot interrupt
     // the already-running request, which could otherwise write RateLimited or Completed back over
@@ -285,21 +291,29 @@ public class DownloadQueueService(
                 return null;
             }
 
-            if (existing.Status is not (QueueStatus.Resolving or QueueStatus.Queued or QueueStatus.RateLimited))
+            // Conditional, because a worker can claim the row between the read above and this write,
+            // and a plain save would drag an active download back to Resolving. Already fetching or
+            // downloading means the pin is not applied: the caller sees the row's own
+            // PreferredMappingId still differs from what it asked for.
+            var repinned = await db.DownloadQueue
+                .Where(q => q.Id == existing.Id &&
+                            (q.Status == QueueStatus.Resolving || q.Status == QueueStatus.Queued ||
+                             q.Status == QueueStatus.RateLimited))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.PreferredMappingId, preferMappingId)
+                    .SetProperty(q => q.SourceMappingId, (int?)null)
+                    .SetProperty(q => q.SourceChapterId, (string?)null)
+                    .SetProperty(q => q.Status, QueueStatus.Resolving)
+                    .SetProperty(q => q.ErrorKey, (string?)null)
+                    .SetProperty(q => q.ErrorParamsJson, (string?)null)
+                    .SetProperty(q => q.ErrorMessage, (string?)null), ct);
+            await db.Entry(existing).ReloadAsync(ct);
+
+            if (repinned > 0)
             {
-                // Already fetching/downloading/etc. — redirecting it mid-flight isn't cheap, so hand
-                // back what's already running instead of silently ignoring the pin.
-                return existing;
+                _resolveAgain[existing.Id] = chapterId;
+                _ = ResolveAndActivateAsync(existing.Id, chapterId, CancellationToken.None);
             }
-
-            existing.PreferredMappingId = preferMappingId;
-            existing.SourceMappingId = null;
-            existing.SourceChapterId = null;
-            existing.Status = QueueStatus.Resolving;
-            existing.ClearError();
-            await db.SaveChangesAsync(ct);
-
-            _ = ResolveAndActivateAsync(existing.Id, chapterId, CancellationToken.None);
             return existing;
         }
 
@@ -351,6 +365,7 @@ public class DownloadQueueService(
         {
             return;
         }
+        _resolveAgain.TryRemove(itemId, out _);
 
         var workCancellation = WorkCancellationToken(itemId);
 
@@ -395,6 +410,11 @@ public class DownloadQueueService(
         {
             _resolving.TryRemove(itemId, out _);
             ReleaseWorkCancellation(itemId);
+
+            if (_resolveAgain.TryRemove(itemId, out var againChapterId))
+            {
+                _ = ResolveAndActivateAsync(itemId, againChapterId, CancellationToken.None);
+            }
         }
     }
 
@@ -487,42 +507,71 @@ public class DownloadQueueService(
         }
 
         string sourceNameForBroadcast;
-        try
+        var pin = item.PreferredMappingId;
+        while (true)
         {
-            var resolved = await sourceResolver.ResolveAsync(db, chapter, item.PreferredMappingId, ct);
-            var cooldownUntil = CooldownUntil(resolved.Mapping.SourceName);
-
-            item.SourceMappingId = resolved.Mapping.Id;
-            item.SourceChapterId = resolved.SourceChapterId;
-            item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
-            item.NextAttempt = cooldownUntil;
-            if (cooldownUntil is null)
+            ResolvedChapterSource? resolved = null;
+            try
             {
-                item.ClearError();
+                resolved = await sourceResolver.ResolveAsync(db, chapter, pin, ct, onlyPreferred: pin != null);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Resolving queue item {Id} failed", itemId);
+            }
+
+            // A pick can land while this resolve is already running, and the enqueue then leaves the
+            // row to this call. The write lock makes the re-read and the save one step, so a pick
+            // either shows up here and is resolved again, or lands after and re-resolves on its own.
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+            var latestPin = await db.DownloadQueue
+                .Where(q => q.Id == itemId)
+                .Select(q => q.PreferredMappingId)
+                .FirstOrDefaultAsync(ct);
+            if (latestPin != pin)
+            {
+                pin = latestPin;
+                continue;
+            }
+
+            if (resolved is not null)
+            {
+                var cooldownUntil = CooldownUntil(resolved.Mapping.SourceName);
+
+                item.SourceMappingId = resolved.Mapping.Id;
+                item.SourceChapterId = resolved.SourceChapterId;
+                item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
+                item.NextAttempt = cooldownUntil;
+                if (cooldownUntil is null)
+                {
+                    item.ClearError();
+                }
+                else
+                {
+                    item.SetError("error.download.rateLimited", new { source = resolved.Mapping.SourceName });
+                }
+                sourceNameForBroadcast = resolved.Mapping.SourceName;
             }
             else
             {
-                item.SetError("error.download.rateLimited", new { source = resolved.Mapping.SourceName });
+                item.Status = QueueStatus.Failed;
+                item.SetError(pin is null ? "error.download.unexpected" : "error.download.pickedSourceUnavailable");
+                item.RetryCount++;
+                item.NextAttempt = NextRetryAttempt(item.RetryCount);
+                sourceNameForBroadcast = "?";
             }
-            sourceNameForBroadcast = resolved.Mapping.SourceName;
-        }
-        catch (Exception ex)
-        {
-            item.Status = QueueStatus.Failed;
-            item.SetError("error.download.unexpected");
-            item.RetryCount++;
-            item.NextAttempt = NextRetryAttempt(item.RetryCount);
-            sourceNameForBroadcast = "?";
-        }
 
-        try
-        {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Removed (e.g. QueueController.Remove) while this was resolving. Nothing left to update.
-            return;
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Removed (e.g. QueueController.Remove) while this was resolving. Nothing left to update.
+                return;
+            }
+            break;
         }
 
         if (item.Status is QueueStatus.Queued or QueueStatus.RateLimited)

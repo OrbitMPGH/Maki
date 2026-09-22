@@ -126,7 +126,8 @@ public class ChapterDownloadProcessor(
                 if (item.HealthOperationId != null)
                     throw new InvalidOperationException("Approved repair source is no longer available; request a new replacement");
                 var resolved = await sourceResolver.ResolveAsync(
-                    db, chapter, item.SourceMappingId, ct, triedMappingIds);
+                    db, chapter, item.PreferredMappingId ?? item.SourceMappingId, ct, triedMappingIds,
+                    onlyPreferred: item.PreferredMappingId != null);
                 mapping = resolved.Mapping;
                 source = resolved.Source;
                 sourceChapterId = resolved.SourceChapterId;
@@ -336,6 +337,11 @@ public class ChapterDownloadProcessor(
             if (item.HealthOperationId != null)
             {
                 await FailAsync(item, "error.download.approvedSourceNoPages", ct);
+                return DownloadOutcome.Settled;
+            }
+            if (item.PreferredMappingId != null)
+            {
+                await FailAsync(item, "error.download.pickedSourceUnavailable", ct);
                 return DownloadOutcome.Settled;
             }
             logger.LogError(hre, "Download failed for queue item {Id}. Page not found, retrying.", item.Id);

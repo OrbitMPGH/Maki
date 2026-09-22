@@ -63,6 +63,11 @@ msgstr "{0, plural, one {# tanesi {displayName} üzerinde yok, bu yüzden olduğ
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# eşleşme} other {# eşleşme}}"
 
+#. placeholder {0}: panel.pageCount
+#: src/components/SourceCompareModal.tsx
+msgid "{0, plural, one {# page} other {# pages}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -1312,7 +1317,7 @@ msgstr "başarım, rozet, seviye, xp, seri, hedef, lider tablosu, oyunlaştırma
 msgid "achievements"
 msgstr "başarım"
 
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Achievements"
 msgstr "Başarımlar"
@@ -2881,7 +2886,6 @@ msgid "Complete"
 msgstr "Tam"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -2972,6 +2976,7 @@ msgid "connected"
 msgstr "bağlı"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "Bağlı"
@@ -3102,9 +3107,8 @@ msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr "Prowlarr'dan dizinleyiciler yüklenemedi: {indexersErrorMessage}"
 
 #: src/pages/stats/LibraryPanel.tsx
-#, fuzzy
-msgid "Could not load library stats. The server logs will say why."
-msgstr "Kitaplık istatistikleri yüklenemedi. Sunucu günlükleri nedenini söyleyecektir."
+msgid "Could not load library stats"
+msgstr ""
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -3184,6 +3188,10 @@ msgstr "\"Etiketleri yönet\"ten yeni etiketler oluşturun."
 msgid "Create the administrator account. Your library and reading history, if you have any, are already attached to it."
 msgstr "Yönetici hesabını oluşturun. Kitaplığınız ve varsa okuma geçmişiniz zaten ona bağlı."
 
+#: src/pages/SetupAccountPage.tsx
+msgid "Create your account"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Create, rename and assign library tags"
@@ -3213,6 +3221,10 @@ msgstr "Çapraz kimlik"
 #, fuzzy
 msgid "Current"
 msgstr "Mevcut"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current copy"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -3364,6 +3376,10 @@ msgstr "İsteği sil"
 #, fuzzy
 msgid "Delete root folder"
 msgstr "Kök klasörü sil"
+
+#: src/pages/LibraryPage.tsx
+msgid "Delete saved filter"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -4055,6 +4071,10 @@ msgid "Fetching"
 msgstr "Getiriliyor"
 
 #: src/components/SourceCompareModal.tsx
+msgid "Fetching {label} again. The file is replaced when it lands."
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Fetching pages…"
 msgstr "Sayfalar getiriliyor…"
@@ -4104,6 +4124,15 @@ msgstr "Filtreler"
 #, fuzzy
 msgid "Filters ({appliedCount})"
 msgstr "Filtreler ({appliedCount})"
+
+#. placeholder {0}: pick.label
+#: src/components/SourceCompareModal.tsx
+msgid "Find a better copy of {0}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Find better copy"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5233,7 +5262,7 @@ msgstr "Kitaplıklar"
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Library"
 msgstr "Kitaplık"
@@ -5320,8 +5349,8 @@ msgstr "Kaynağı bağla"
 msgid "Link to file"
 msgstr "Dosyaya bağla"
 
-#: src/components/SeriesFilesSection.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Linked"
 msgstr "Bağlandı"
@@ -5357,7 +5386,7 @@ msgstr "Bağlı, ama hiçbiri etkin değil"
 msgid "List view"
 msgstr "Liste görünümü"
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Listed"
 msgstr "Listelendi"
@@ -5737,6 +5766,7 @@ msgid "Missing ({missingFilterCount})"
 msgstr "Eksik ({missingFilterCount})"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Missing from disk"
 msgstr "Diskte eksik"
@@ -5792,6 +5822,10 @@ msgstr "Çok"
 #, fuzzy
 msgid "More actions"
 msgstr "Diğer işlemler"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "More actions for {chapterLbl}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6090,6 +6124,10 @@ msgstr "Sonraki..."
 msgid "No activity in this period."
 msgstr "Bu dönemde etkinlik yok."
 
+#: src/pages/stats/OverviewPanel.tsx
+msgid "no baseline"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "No change: the whole franchise was already hidden."
@@ -6384,12 +6422,17 @@ msgstr "Analiz edilmedi"
 msgid "Not checked yet"
 msgstr "Henüz kontrol edilmedi"
 
+#: src/components/ui/status.tsx
+msgid "Not configured"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "not configured (see Settings)"
 msgstr "yapılandırılmadı (Ayarlar'a bakın)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "Bağlı değil"
@@ -6414,7 +6457,7 @@ msgstr "Bana göre değil"
 msgid "Not imported"
 msgstr "İçe aktarılmadı"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not linked"
 msgstr "Bağlı değil"
@@ -6922,7 +6965,7 @@ msgid "Other sessions signed out"
 msgstr "Diğer oturumlar kapatıldı"
 
 #: src/pages/HealthPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Overview"
 msgstr "Genel bakış"
@@ -7157,7 +7200,7 @@ msgstr "Hangi bölümlerin göründüğünü ve hangi sırayla çalıştığın�
 msgid "Plain title search. Matches from just two characters."
 msgstr "Basit başlık araması. Yalnızca iki karakterden itibaren eşleşir."
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "Okumayı planlıyor"
@@ -7544,7 +7587,7 @@ msgid "Readers like you also recommended this"
 msgstr "Sizin gibi okuyucular bunu da önerdi"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
@@ -8165,6 +8208,7 @@ msgid "Restrict release searches to specific indexers and Torznab categories. Wi
 msgstr "Sürüm aramalarını belirli dizinleyicilerle ve Torznab kategorileriyle sınırlayın. Hiçbir şey seçilmediğinde, her dizinleyici ve kategori aranır."
 
 #: src/components/home/ContinueLead.tsx
+#: src/components/home/ReadingRail.tsx
 msgid "Resume"
 msgstr ""
 
@@ -8780,6 +8824,10 @@ msgstr "Filtrelenenleri seç"
 msgid "Select these chapters"
 msgstr "Bu bölümleri seç"
 
+#: src/components/auth/AuthFrame.tsx
+msgid "Self-hosted manga library and downloader."
+msgstr ""
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "Semantic search and recommendations are off."
@@ -9072,11 +9120,6 @@ msgstr "Oturum aç"
 #, fuzzy
 msgid "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts. Register <0>{redirectUrl}</0> as this client's redirect URI. If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path), register that host's variant as well."
 msgstr "Bir OpenID Connect sağlayıcısı (Authelia, Keycloak, Authentik, Entra ID) üzerinden oturum açın. Değişiklikler Maki yeniden başladıktan sonra etkinleşir. <0>{redirectUrl}</0> adresini bu istemcinin yönlendirme URI'si olarak kaydedin. Maki başka bir ana bilgisayardan da (farklı bir alan adı, LAN IP'si veya ters proxy yolu) erişiliyorsa, o ana bilgisayarın varyantını da kaydedin."
-
-#: src/pages/LoginPage.tsx
-#, fuzzy
-msgid "Sign in to continue"
-msgstr "Devam etmek için oturum açın"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -9377,6 +9420,10 @@ msgstr "b. {maxChapter}'de takıldı kaldı"
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "İçe aktarılan dosyaların içindeki ComicInfo.xml'i standartlaştır (önerilir)"
 
+#: src/components/home/ReadingRail.tsx
+msgid "Start"
+msgstr ""
+
 #: src/components/home/ContinueLead.tsx
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr ""
@@ -9412,7 +9459,7 @@ msgid "State"
 msgstr "Durum"
 
 #: src/nav.ts
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Stats"
 msgstr "İstatistikler"
@@ -9767,6 +9814,10 @@ msgstr "Seçilen seriler Maki'den kaldırılacak ve izlenmeyi bırakacak."
 msgid "the series' sources"
 msgstr "serinin kaynakları"
 
+#: src/pages/stats/LibraryPanel.tsx
+msgid "The server logs will say why."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -9859,6 +9910,10 @@ msgstr "Bu arşiv yalnızca dizinlendi: ne tuttuğunu söylediği biliniyor, hâ
 #, fuzzy
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "Bu arşiv kendi kökündeki hiçbir seri klasörünün içinde değil, bu yüzden içine aktarılacak bir seri yok. Doğru klasöre taşıyıp yeniden tarayın, veya içinde bulunduğu klasörü getirmek için İçe Aktar sayfasını kullanın."
+
+#: src/components/SourceCompareModal.tsx
+msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -10219,6 +10274,7 @@ msgid "Try a shorter or alternative query."
 msgstr "Daha kısa veya alternatif bir sorgu deneyin."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Try again"
 msgstr "Tekrar dene"
@@ -10278,6 +10334,10 @@ msgstr "İki adımlı doğrulama devre dışı bırakıldı"
 #, fuzzy
 msgid "Two-factor authenticator QR code"
 msgstr "İki adımlı doğrulama QR kodu"
+
+#: src/pages/LoginPage.tsx
+msgid "Two-factor code"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -10365,7 +10425,7 @@ msgstr "Okunmamış ({unreadFilterCount})"
 msgid "Unread only"
 msgstr "Yalnızca okunmamış"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Unrecognized"
 msgstr "Tanınmadı"
@@ -10474,6 +10534,10 @@ msgstr "OPDS kullanır"
 #, fuzzy
 msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "Yerel MangaBaka veritabanını kullan (Şiddetle Önerilir)"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Use this copy"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10746,7 +10810,6 @@ msgid "Welcome"
 msgstr "Hoş geldiniz"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Welcome to Maki"
 msgstr "Maki'ye hoş geldiniz"

@@ -137,6 +137,9 @@ public sealed class SourceComparePreviewService(
                 "Another source comparison is already running. Wait for it to finish and try again.");
         }
 
+        // A superseded run is cancelled, not awaited, so its in-flight page writes can still hold
+        // files open. Each run writes under its own token, and a previous run's folder is cleared
+        // here if it can be and by that run itself once it winds down otherwise.
         var seriesDir = Path.Combine(paths.SourcePreviewDir, seriesId.ToString());
         TryDelete(seriesDir);
 
@@ -167,7 +170,12 @@ public sealed class SourceComparePreviewService(
     /// </summary>
     public string? PageFile(int seriesId, string sourceName, int index)
     {
-        var dir = Path.Combine(paths.SourcePreviewDir, seriesId.ToString(), sourceName);
+        if (!_jobs.TryGetValue(seriesId, out var job))
+        {
+            return null;
+        }
+
+        var dir = Path.Combine(JobDir(job), sourceName);
         if (!Directory.Exists(dir))
         {
             return null;
@@ -205,8 +213,16 @@ public sealed class SourceComparePreviewService(
         {
             job.MarkFinished();
             gate.Dispose();
+
+            if (!_jobs.TryGetValue(job.SeriesId, out var current) || current != job)
+            {
+                TryDelete(JobDir(job));
+            }
         }
     }
+
+    private string JobDir(Job job) =>
+        Path.Combine(paths.SourcePreviewDir, job.SeriesId.ToString(), job.Token);
 
     private static async Task WithGate(SemaphoreSlim gate, Func<Task> work, CancellationToken ct)
     {
@@ -384,7 +400,7 @@ public sealed class SourceComparePreviewService(
             // once it has shifted a sequence.
             var depth = Math.Min(job.SampleCount + AlignmentLookahead, pages.Pages.Count);
             var sample = new ChapterPages([.. pages.Pages.Take(depth)]);
-            var dir = Path.Combine(paths.SourcePreviewDir, job.SeriesId.ToString(), panel.SourceName);
+            var dir = Path.Combine(JobDir(job), panel.SourceName);
             var files = await pageDownloader.DownloadAsync(sample, panel.SourceName, dir, null, ct);
 
             var rendered = new List<ComparePage?>();
@@ -587,7 +603,7 @@ public sealed class SourceComparePreviewService(
 
         public readonly CancellationTokenSource Cts = new(JobDeadline);
 
-        /// <summary>Cache-buster on page URLs: a re-run reuses the same paths with different images.</summary>
+        /// <summary>Cache-buster on page URLs, and the run's own folder under the series' preview dir.</summary>
         public readonly string Token = Guid.NewGuid().ToString("N")[..8];
 
         public int SeriesId { get; } = seriesId;

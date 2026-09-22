@@ -450,9 +450,15 @@ public class ChapterController(
         {
             var item = await queue.EnqueueChapterAsync(
                 id, ct, DownloadOrigin.Manual, currentUser.UserId, request.SourceMappingId);
-            return item is null
-                ? this.Conflict(localizer, "error.chapter.alreadyQueued")
-                : Ok(new { queueItemId = item.Id });
+            if (item is null)
+            {
+                return this.Conflict(localizer, "error.chapter.alreadyQueued");
+            }
+
+            // Already fetching or downloading from wherever it resolved to, and not redirected.
+            return item.PreferredMappingId == request.SourceMappingId
+                ? Ok(new { queueItemId = item.Id })
+                : this.Conflict(localizer, "error.chapter.alreadyDownloading");
         }
         catch (InvalidOperationException ex)
         {

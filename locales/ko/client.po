@@ -63,6 +63,11 @@ msgstr "{0, plural, other {{displayName}에 없는 항목 #개를 그대로 두�
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, other {일치 항목 #개}}"
 
+#. placeholder {0}: panel.pageCount
+#: src/components/SourceCompareModal.tsx
+msgid "{0, plural, one {# page} other {# pages}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -1312,7 +1317,7 @@ msgstr "업적, 배지, 레벨, XP, 연속 기록, 목표, 순위표, 게임화,
 msgid "achievements"
 msgstr "업적"
 
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Achievements"
 msgstr "업적"
@@ -2881,7 +2886,6 @@ msgid "Complete"
 msgstr "완료"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -2972,6 +2976,7 @@ msgid "connected"
 msgstr "연결됨"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "연결됨"
@@ -3102,9 +3107,8 @@ msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr "Prowlarr에서 인덱서를 불러오지 못했습니다: {indexersErrorMessage}"
 
 #: src/pages/stats/LibraryPanel.tsx
-#, fuzzy
-msgid "Could not load library stats. The server logs will say why."
-msgstr "라이브러리 통계를 불러오지 못했습니다. 이유는 서버 로그에 기록됩니다."
+msgid "Could not load library stats"
+msgstr ""
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -3184,6 +3188,10 @@ msgstr "\"Manage tags\"에서 새 태그를 만드세요."
 msgid "Create the administrator account. Your library and reading history, if you have any, are already attached to it."
 msgstr "관리자 계정을 만드세요. 라이브러리와 읽기 기록이 있다면 이미 이 계정에 연결되어 있습니다."
 
+#: src/pages/SetupAccountPage.tsx
+msgid "Create your account"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Create, rename and assign library tags"
@@ -3213,6 +3221,10 @@ msgstr "교차 ID"
 #, fuzzy
 msgid "Current"
 msgstr "현재"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current copy"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -3364,6 +3376,10 @@ msgstr "요청 삭제"
 #, fuzzy
 msgid "Delete root folder"
 msgstr "루트 폴더 삭제"
+
+#: src/pages/LibraryPage.tsx
+msgid "Delete saved filter"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -4055,6 +4071,10 @@ msgid "Fetching"
 msgstr "가져오는 중"
 
 #: src/components/SourceCompareModal.tsx
+msgid "Fetching {label} again. The file is replaced when it lands."
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Fetching pages…"
 msgstr "페이지 가져오는 중…"
@@ -4104,6 +4124,15 @@ msgstr "필터"
 #, fuzzy
 msgid "Filters ({appliedCount})"
 msgstr "필터 ({appliedCount})"
+
+#. placeholder {0}: pick.label
+#: src/components/SourceCompareModal.tsx
+msgid "Find a better copy of {0}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Find better copy"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5233,7 +5262,7 @@ msgstr "라이브러리"
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Library"
 msgstr "라이브러리"
@@ -5320,8 +5349,8 @@ msgstr "소스 연결"
 msgid "Link to file"
 msgstr "파일에 연결"
 
-#: src/components/SeriesFilesSection.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Linked"
 msgstr "연결됨"
@@ -5357,7 +5386,7 @@ msgstr "연결됨, 활성화된 항목 없음"
 msgid "List view"
 msgstr "목록 보기"
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Listed"
 msgstr "목록에 있음"
@@ -5737,6 +5766,7 @@ msgid "Missing ({missingFilterCount})"
 msgstr "누락 ({missingFilterCount})"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Missing from disk"
 msgstr "디스크에서 누락"
@@ -5792,6 +5822,10 @@ msgstr "더 보기"
 #, fuzzy
 msgid "More actions"
 msgstr "추가 작업"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "More actions for {chapterLbl}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6090,6 +6124,10 @@ msgstr "다음..."
 msgid "No activity in this period."
 msgstr "이 기간에 활동 없음."
 
+#: src/pages/stats/OverviewPanel.tsx
+msgid "no baseline"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "No change: the whole franchise was already hidden."
@@ -6384,12 +6422,17 @@ msgstr "분석되지 않음"
 msgid "Not checked yet"
 msgstr "아직 확인하지 않음"
 
+#: src/components/ui/status.tsx
+msgid "Not configured"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "not configured (see Settings)"
 msgstr "설정되지 않음 (설정 참조)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "연결되지 않음"
@@ -6414,7 +6457,7 @@ msgstr "취향 아님"
 msgid "Not imported"
 msgstr "가져오지 않음"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not linked"
 msgstr "연결되지 않음"
@@ -6922,7 +6965,7 @@ msgid "Other sessions signed out"
 msgstr "다른 세션에서 로그아웃됨"
 
 #: src/pages/HealthPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Overview"
 msgstr "개요"
@@ -7157,7 +7200,7 @@ msgstr "표시할 섹션과 순서를 선택하세요. Maki에서 읽지 않는�
 msgid "Plain title search. Matches from just two characters."
 msgstr "일반 제목 검색입니다. 두 글자만으로 일치 항목을 찾습니다."
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "읽을 예정"
@@ -7544,7 +7587,7 @@ msgid "Readers like you also recommended this"
 msgstr "나와 비슷한 독자도 이 항목을 추천함"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
@@ -8165,6 +8208,7 @@ msgid "Restrict release searches to specific indexers and Torznab categories. Wi
 msgstr "릴리스 검색을 특정 인덱서와 Torznab 카테고리로 제한합니다. 아무것도 선택하지 않으면 모든 인덱서와 카테고리를 검색합니다."
 
 #: src/components/home/ContinueLead.tsx
+#: src/components/home/ReadingRail.tsx
 msgid "Resume"
 msgstr ""
 
@@ -8780,6 +8824,10 @@ msgstr "필터링된 항목 선택"
 msgid "Select these chapters"
 msgstr "이 챕터 선택"
 
+#: src/components/auth/AuthFrame.tsx
+msgid "Self-hosted manga library and downloader."
+msgstr ""
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "Semantic search and recommendations are off."
@@ -9072,11 +9120,6 @@ msgstr "로그인"
 #, fuzzy
 msgid "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts. Register <0>{redirectUrl}</0> as this client's redirect URI. If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path), register that host's variant as well."
 msgstr "OpenID Connect 제공자(Authelia, Keycloak, Authentik, Entra ID)를 통해 로그인합니다. 변경 사항은 Maki를 다시 시작하면 적용됩니다. 이 클라이언트의 리디렉션 URI로 <0>{redirectUrl}</0>을 등록하세요. 다른 호스트(다른 도메인, LAN IP 또는 리버스 프록시 경로)에서도 Maki에 접속한다면 해당 호스트의 변형도 등록하세요."
-
-#: src/pages/LoginPage.tsx
-#, fuzzy
-msgid "Sign in to continue"
-msgstr "계속하려면 로그인"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -9377,6 +9420,10 @@ msgstr "챕터 {maxChapter}에서 멈춤"
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "가져온 파일 내부의 ComicInfo.xml 표준화 (권장)"
 
+#: src/components/home/ReadingRail.tsx
+msgid "Start"
+msgstr ""
+
 #: src/components/home/ContinueLead.tsx
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr ""
@@ -9412,7 +9459,7 @@ msgid "State"
 msgstr "상태"
 
 #: src/nav.ts
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Stats"
 msgstr "통계"
@@ -9767,6 +9814,10 @@ msgstr "선택한 시리즈는 Maki에서 제거되고 모니터링도 중지됩
 msgid "the series' sources"
 msgstr "시리즈의 소스"
 
+#: src/pages/stats/LibraryPanel.tsx
+msgid "The server logs will say why."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -9859,6 +9910,10 @@ msgstr "이 보관 파일은 색인만 작성되었습니다. 포함한다고 �
 #, fuzzy
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "이 보관 파일은 루트의 어떤 시리즈 폴더에도 없으므로 가져올 시리즈가 없습니다. 올바른 폴더로 이동한 후 다시 스캔하거나 가져오기 페이지에서 해당 폴더를 가져오세요."
+
+#: src/components/SourceCompareModal.tsx
+msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -10219,6 +10274,7 @@ msgid "Try a shorter or alternative query."
 msgstr "더 짧거나 다른 검색어를 사용해 보세요."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Try again"
 msgstr "다시 시도"
@@ -10278,6 +10334,10 @@ msgstr "2단계 인증 비활성화됨"
 #, fuzzy
 msgid "Two-factor authenticator QR code"
 msgstr "2단계 인증 앱 QR 코드"
+
+#: src/pages/LoginPage.tsx
+msgid "Two-factor code"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -10365,7 +10425,7 @@ msgstr "읽지 않음 ({unreadFilterCount})"
 msgid "Unread only"
 msgstr "읽지 않은 항목만"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Unrecognized"
 msgstr "인식되지 않음"
@@ -10474,6 +10534,10 @@ msgstr "OPDS 사용"
 #, fuzzy
 msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "로컬 MangaBaka 데이터베이스 사용 (적극 권장)"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Use this copy"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10746,7 +10810,6 @@ msgid "Welcome"
 msgstr "환영합니다"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Welcome to Maki"
 msgstr "Maki에 오신 것을 환영합니다"

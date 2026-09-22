@@ -63,6 +63,11 @@ msgstr "{0, plural, one {# отсутствует на {displayName}, поэто
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# совпадение} few {# совпадения} many {# совпадений} other {# совпадения}}"
 
+#. placeholder {0}: panel.pageCount
+#: src/components/SourceCompareModal.tsx
+msgid "{0, plural, one {# page} other {# pages}}"
+msgstr ""
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -1312,7 +1317,7 @@ msgstr "достижение, значок, уровень, опыт, серия
 msgid "achievements"
 msgstr "достижения"
 
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Achievements"
 msgstr "Достижения"
@@ -2881,7 +2886,6 @@ msgid "Complete"
 msgstr "Завершено"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -2972,6 +2976,7 @@ msgid "connected"
 msgstr "подключено"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "Подключено"
@@ -3102,9 +3107,8 @@ msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr "Не удалось загрузить индексаторы из Prowlarr: {indexersErrorMessage}"
 
 #: src/pages/stats/LibraryPanel.tsx
-#, fuzzy
-msgid "Could not load library stats. The server logs will say why."
-msgstr "Не удалось загрузить статистику библиотеки. Причина будет указана в журналах сервера."
+msgid "Could not load library stats"
+msgstr ""
 
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
@@ -3184,6 +3188,10 @@ msgstr "Создавайте новые теги из раздела «Упра�
 msgid "Create the administrator account. Your library and reading history, if you have any, are already attached to it."
 msgstr "Создайте аккаунт администратора. Ваша библиотека и история чтения, если они есть, уже привязаны к нему."
 
+#: src/pages/SetupAccountPage.tsx
+msgid "Create your account"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Create, rename and assign library tags"
@@ -3213,6 +3221,10 @@ msgstr "Cross-id"
 #, fuzzy
 msgid "Current"
 msgstr "Текущая"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current copy"
+msgstr ""
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -3364,6 +3376,10 @@ msgstr "Удалить запрос"
 #, fuzzy
 msgid "Delete root folder"
 msgstr "Удалить корневую папку"
+
+#: src/pages/LibraryPage.tsx
+msgid "Delete saved filter"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -4055,6 +4071,10 @@ msgid "Fetching"
 msgstr "Получение"
 
 #: src/components/SourceCompareModal.tsx
+msgid "Fetching {label} again. The file is replaced when it lands."
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Fetching pages…"
 msgstr "Получение страниц…"
@@ -4104,6 +4124,15 @@ msgstr "Фильтры"
 #, fuzzy
 msgid "Filters ({appliedCount})"
 msgstr "Фильтры ({appliedCount})"
+
+#. placeholder {0}: pick.label
+#: src/components/SourceCompareModal.tsx
+msgid "Find a better copy of {0}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Find better copy"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -5233,7 +5262,7 @@ msgstr "Библиотеки"
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Library"
 msgstr "Библиотека"
@@ -5320,8 +5349,8 @@ msgstr "Связать источник"
 msgid "Link to file"
 msgstr "Связать с файлом"
 
-#: src/components/SeriesFilesSection.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Linked"
 msgstr "Связано"
@@ -5357,7 +5386,7 @@ msgstr "Связано, но ничего не включено"
 msgid "List view"
 msgstr "Вид списком"
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Listed"
 msgstr "Перечислено"
@@ -5737,6 +5766,7 @@ msgid "Missing ({missingFilterCount})"
 msgstr "Отсутствует ({missingFilterCount})"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Missing from disk"
 msgstr "Отсутствует на диске"
@@ -5792,6 +5822,10 @@ msgstr "Ещё"
 #, fuzzy
 msgid "More actions"
 msgstr "Другие действия"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "More actions for {chapterLbl}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6090,6 +6124,10 @@ msgstr "Далее..."
 msgid "No activity in this period."
 msgstr "В этом периоде нет активности."
 
+#: src/pages/stats/OverviewPanel.tsx
+msgid "no baseline"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "No change: the whole franchise was already hidden."
@@ -6384,12 +6422,17 @@ msgstr "Не проанализировано"
 msgid "Not checked yet"
 msgstr "Ещё не проверено"
 
+#: src/components/ui/status.tsx
+msgid "Not configured"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "not configured (see Settings)"
 msgstr "не настроено (см. настройки)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "Не подключено"
@@ -6414,7 +6457,7 @@ msgstr "Не моё"
 msgid "Not imported"
 msgstr "Не импортировано"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Not linked"
 msgstr "Не связано"
@@ -6922,7 +6965,7 @@ msgid "Other sessions signed out"
 msgstr "Другие сеансы вышли из аккаунта"
 
 #: src/pages/HealthPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Overview"
 msgstr "Обзор"
@@ -7157,7 +7200,7 @@ msgstr "Выберите разделы и порядок их отображе�
 msgid "Plain title search. Matches from just two characters."
 msgstr "Обычный поиск по названию. Совпадения находятся уже от двух символов."
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
 msgstr "План чтения"
@@ -7544,7 +7587,7 @@ msgid "Readers like you also recommended this"
 msgstr "Читатели вроде вас тоже рекомендовали эту серию"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
@@ -8165,6 +8208,7 @@ msgid "Restrict release searches to specific indexers and Torznab categories. Wi
 msgstr "Ограничьте поиск релизов конкретными индексаторами и категориями Torznab. Если ничего не выбрать, выполняется поиск по всем индексаторам и категориям."
 
 #: src/components/home/ContinueLead.tsx
+#: src/components/home/ReadingRail.tsx
 msgid "Resume"
 msgstr ""
 
@@ -8780,6 +8824,10 @@ msgstr "Выбрать отфильтрованное"
 msgid "Select these chapters"
 msgstr "Выбрать эти главы"
 
+#: src/components/auth/AuthFrame.tsx
+msgid "Self-hosted manga library and downloader."
+msgstr ""
+
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
 msgid "Semantic search and recommendations are off."
@@ -9072,11 +9120,6 @@ msgstr "Войти"
 #, fuzzy
 msgid "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts. Register <0>{redirectUrl}</0> as this client's redirect URI. If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path), register that host's variant as well."
 msgstr "Войдите через поставщика OpenID Connect (Authelia, Keycloak, Authentik, Entra ID). Изменения вступят в силу после перезапуска Maki. Зарегистрируйте <0>{redirectUrl}</0> как URI перенаправления этого клиента. Если Maki также доступен на другом хосте (другой домен, IP-адрес локальной сети или путь обратного прокси), зарегистрируйте и вариант для этого хоста."
-
-#: src/pages/LoginPage.tsx
-#, fuzzy
-msgid "Sign in to continue"
-msgstr "Войдите, чтобы продолжить"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -9377,6 +9420,10 @@ msgstr "зависло на гл. {maxChapter}"
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "Стандартизировать ComicInfo.xml в импортированных файлах (рекомендуется)"
 
+#: src/components/home/ReadingRail.tsx
+msgid "Start"
+msgstr ""
+
 #: src/components/home/ContinueLead.tsx
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr ""
@@ -9412,7 +9459,7 @@ msgid "State"
 msgstr "Состояние"
 
 #: src/nav.ts
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 #, fuzzy
 msgid "Stats"
 msgstr "Статистика"
@@ -9767,6 +9814,10 @@ msgstr "Выбранные серии будут удалены из Maki и п�
 msgid "the series' sources"
 msgstr "источники серии"
 
+#: src/pages/stats/LibraryPanel.tsx
+msgid "The server logs will say why."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
@@ -9859,6 +9910,10 @@ msgstr "Этот архив только проиндексирован: изв�
 #, fuzzy
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "Этот архив не находится ни в одной папке серии в своём корне, поэтому импортировать его некуда. Переместите его в правильную папку и просканируйте снова либо используйте страницу импорта для добавления папки, в которой он находится."
+
+#: src/components/SourceCompareModal.tsx
+msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -10219,6 +10274,7 @@ msgid "Try a shorter or alternative query."
 msgstr "Попробуйте более короткий или другой запрос."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Try again"
 msgstr "Попробовать снова"
@@ -10278,6 +10334,10 @@ msgstr "Двухфакторная аутентификация отключен
 #, fuzzy
 msgid "Two-factor authenticator QR code"
 msgstr "QR-код приложения двухфакторной аутентификации"
+
+#: src/pages/LoginPage.tsx
+msgid "Two-factor code"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -10365,7 +10425,7 @@ msgstr "Непрочитано ({unreadFilterCount})"
 msgid "Unread only"
 msgstr "Только непрочитанные"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 #, fuzzy
 msgid "Unrecognized"
 msgstr "Не распознано"
@@ -10474,6 +10534,10 @@ msgstr "Использовать OPDS"
 #, fuzzy
 msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "Использовать локальную базу MangaBaka (настоятельно рекомендуется)"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Use this copy"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10746,7 +10810,6 @@ msgid "Welcome"
 msgstr "Добро пожаловать"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SetupAccountPage.tsx
 #, fuzzy
 msgid "Welcome to Maki"
 msgstr "Добро пожаловать в Maki"

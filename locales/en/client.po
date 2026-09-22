@@ -54,6 +54,11 @@ msgstr "{0, plural, one {# isn't on {displayName}, so it was left as it is.} oth
 msgid "{0, plural, one {# match} other {# matches}}"
 msgstr "{0, plural, one {# match} other {# matches}}"
 
+#. placeholder {0}: panel.pageCount
+#: src/components/SourceCompareModal.tsx
+msgid "{0, plural, one {# page} other {# pages}}"
+msgstr "{0, plural, one {# page} other {# pages}}"
+
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{0, plural, one {# season} other {# seasons}}"
@@ -1064,7 +1069,7 @@ msgstr "achievement, badge, level, xp, streak, goal, leaderboard, gamification, 
 msgid "achievements"
 msgstr "achievements"
 
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 msgid "Achievements"
 msgstr "Achievements"
 
@@ -2339,7 +2344,6 @@ msgid "Complete"
 msgstr "Complete"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -2414,6 +2418,7 @@ msgid "connected"
 msgstr "connected"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 msgid "Connected"
 msgstr "Connected"
 
@@ -2521,8 +2526,8 @@ msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 
 #: src/pages/stats/LibraryPanel.tsx
-msgid "Could not load library stats. The server logs will say why."
-msgstr "Could not load library stats. The server logs will say why."
+msgid "Could not load library stats"
+msgstr "Could not load library stats"
 
 #: src/pages/stats/AchievementsPanel.tsx
 msgid "Could not load your progress. The server logs will say why."
@@ -2587,6 +2592,10 @@ msgstr "Create new tags from \"Manage tags\"."
 msgid "Create the administrator account. Your library and reading history, if you have any, are already attached to it."
 msgstr "Create the administrator account. Your library and reading history, if you have any, are already attached to it."
 
+#: src/pages/SetupAccountPage.tsx
+msgid "Create your account"
+msgstr "Create your account"
+
 #: src/components/settings/UsersSection.tsx
 msgid "Create, rename and assign library tags"
 msgstr "Create, rename and assign library tags"
@@ -2610,6 +2619,10 @@ msgstr "Cross-id"
 #: src/components/settings/AccountSection.tsx
 msgid "Current"
 msgstr "Current"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current copy"
+msgstr "Current copy"
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -2733,6 +2746,10 @@ msgstr "Delete request"
 #: src/pages/SettingsPage.tsx
 msgid "Delete root folder"
 msgstr "Delete root folder"
+
+#: src/pages/LibraryPage.tsx
+msgid "Delete saved filter"
+msgstr "Delete saved filter"
 
 #: src/components/SeriesFilesSection.tsx
 msgid "Delete selected"
@@ -3292,6 +3309,10 @@ msgid "Fetching"
 msgstr "Fetching"
 
 #: src/components/SourceCompareModal.tsx
+msgid "Fetching {label} again. The file is replaced when it lands."
+msgstr "Fetching {label} again. The file is replaced when it lands."
+
+#: src/components/SourceCompareModal.tsx
 msgid "Fetching pages…"
 msgstr "Fetching pages…"
 
@@ -3332,6 +3353,15 @@ msgstr "Filters"
 #: src/components/CatalogueBrowser.tsx
 msgid "Filters ({appliedCount})"
 msgstr "Filters ({appliedCount})"
+
+#. placeholder {0}: pick.label
+#: src/components/SourceCompareModal.tsx
+msgid "Find a better copy of {0}"
+msgstr "Find a better copy of {0}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Find better copy"
+msgstr "Find better copy"
 
 #: src/pages/HomePage.tsx
 msgid "Find more"
@@ -4250,7 +4280,7 @@ msgstr "Libraries"
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 msgid "Library"
 msgstr "Library"
 
@@ -4321,8 +4351,8 @@ msgstr "Link source"
 msgid "Link to file"
 msgstr "Link to file"
 
-#: src/components/SeriesFilesSection.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/components/ui/status.tsx
 msgid "Linked"
 msgstr "Linked"
 
@@ -4351,7 +4381,7 @@ msgstr "Linked, but nothing enabled"
 msgid "List view"
 msgstr "List view"
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 msgid "Listed"
 msgstr "Listed"
 
@@ -4660,6 +4690,7 @@ msgid "Missing ({missingFilterCount})"
 msgstr "Missing ({missingFilterCount})"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 msgid "Missing from disk"
 msgstr "Missing from disk"
 
@@ -4705,6 +4736,10 @@ msgstr "More"
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "More actions"
 msgstr "More actions"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "More actions for {chapterLbl}"
+msgstr "More actions for {chapterLbl}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "More download options"
@@ -4947,6 +4982,10 @@ msgstr "Next..."
 msgid "No activity in this period."
 msgstr "No activity in this period."
 
+#: src/pages/stats/OverviewPanel.tsx
+msgid "no baseline"
+msgstr "no baseline"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "No change: the whole franchise was already hidden."
 msgstr "No change: the whole franchise was already hidden."
@@ -5183,11 +5222,16 @@ msgstr "Not analyzed"
 msgid "Not checked yet"
 msgstr "Not checked yet"
 
+#: src/components/ui/status.tsx
+msgid "Not configured"
+msgstr "Not configured"
+
 #: src/pages/ScrobblePage.tsx
 msgid "not configured (see Settings)"
 msgstr "not configured (see Settings)"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 msgid "Not connected"
 msgstr "Not connected"
 
@@ -5207,7 +5251,7 @@ msgstr "Not for me"
 msgid "Not imported"
 msgstr "Not imported"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 msgid "Not linked"
 msgstr "Not linked"
 
@@ -5618,7 +5662,7 @@ msgid "Other sessions signed out"
 msgstr "Other sessions signed out"
 
 #: src/pages/HealthPage.tsx
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 msgid "Overview"
 msgstr "Overview"
 
@@ -5808,7 +5852,7 @@ msgstr "Pick which sections appear and what order they run in. Turn Home off ent
 msgid "Plain title search. Matches from just two characters."
 msgstr "Plain title search. Matches from just two characters."
 
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 msgid "Plan to read"
 msgstr "Plan to read"
 
@@ -6123,7 +6167,7 @@ msgid "Readers like you also recommended this"
 msgstr "Readers like you also recommended this"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/SeriesScrobbleSection.tsx
+#: src/components/ui/status.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
@@ -6626,6 +6670,7 @@ msgid "Restrict release searches to specific indexers and Torznab categories. Wi
 msgstr "Restrict release searches to specific indexers and Torznab categories. With nothing selected, every indexer and category is searched."
 
 #: src/components/home/ContinueLead.tsx
+#: src/components/home/ReadingRail.tsx
 msgid "Resume"
 msgstr "Resume"
 
@@ -7128,6 +7173,10 @@ msgstr "Select filtered"
 msgid "Select these chapters"
 msgstr "Select these chapters"
 
+#: src/components/auth/AuthFrame.tsx
+msgid "Self-hosted manga library and downloader."
+msgstr "Self-hosted manga library and downloader."
+
 #: src/components/RecommendationModelCards.tsx
 msgid "Semantic search and recommendations are off."
 msgstr "Semantic search and recommendations are off."
@@ -7366,10 +7415,6 @@ msgstr "Sign in"
 #: src/components/settings/SecuritySection.tsx
 msgid "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts. Register <0>{redirectUrl}</0> as this client's redirect URI. If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path), register that host's variant as well."
 msgstr "Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes take effect after Maki restarts. Register <0>{redirectUrl}</0> as this client's redirect URI. If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path), register that host's variant as well."
-
-#: src/pages/LoginPage.tsx
-msgid "Sign in to continue"
-msgstr "Sign in to continue"
 
 #: src/pages/LoginPage.tsx
 msgid "Sign in with a password"
@@ -7614,6 +7659,10 @@ msgstr "stalled at ch {maxChapter}"
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "Standardize ComicInfo.xml inside the imported files (recommended)"
 
+#: src/components/home/ReadingRail.tsx
+msgid "Start"
+msgstr "Start"
+
 #: src/components/home/ContinueLead.tsx
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Start {seriesTitle}, {chapterLabel}"
@@ -7644,7 +7693,7 @@ msgid "State"
 msgstr "State"
 
 #: src/nav.ts
-#: src/pages/StatsPage.tsx
+#: src/pages/stats/StatsHeader.tsx
 msgid "Stats"
 msgstr "Stats"
 
@@ -7933,6 +7982,10 @@ msgstr "The selected series will be removed from Maki and stop being monitored."
 msgid "the series' sources"
 msgstr "the series' sources"
 
+#: src/pages/stats/LibraryPanel.tsx
+msgid "The server logs will say why."
+msgstr "The server logs will say why."
+
 #: src/components/settings/AccountSection.tsx
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."
@@ -8007,6 +8060,10 @@ msgstr "This archive has only been indexed: what it says it holds is known, whet
 #: src/pages/HealthPage.tsx
 msgid "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
 msgstr "This archive is not inside any series folder in its root, so there is no series to import it into. Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in."
+
+#: src/components/SourceCompareModal.tsx
+msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
+msgstr "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
 
 #: src/pages/reader/ReaderPage.tsx
 msgid "This chapter has no readable file."
@@ -8298,6 +8355,7 @@ msgid "Try a shorter or alternative query."
 msgstr "Try a shorter or alternative query."
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/stats/LibraryPanel.tsx
 msgid "Try again"
 msgstr "Try again"
 
@@ -8345,6 +8403,10 @@ msgstr "Two-factor authentication disabled"
 #: src/components/settings/AccountSection.tsx
 msgid "Two-factor authenticator QR code"
 msgstr "Two-factor authenticator QR code"
+
+#: src/pages/LoginPage.tsx
+msgid "Two-factor code"
+msgstr "Two-factor code"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -8417,7 +8479,7 @@ msgstr "Unread ({unreadFilterCount})"
 msgid "Unread only"
 msgstr "Unread only"
 
-#: src/components/SeriesFilesSection.tsx
+#: src/components/ui/status.tsx
 msgid "Unrecognized"
 msgstr "Unrecognized"
 
@@ -8505,6 +8567,10 @@ msgstr "Use OPDS"
 #: src/components/SetupWizard.tsx
 msgid "Use the local MangaBaka database (Highly Recommended)"
 msgstr "Use the local MangaBaka database (Highly Recommended)"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Use this copy"
+msgstr "Use this copy"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Use this title for taste"
@@ -8725,7 +8791,6 @@ msgid "Welcome"
 msgstr "Welcome"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SetupAccountPage.tsx
 msgid "Welcome to Maki"
 msgstr "Welcome to Maki"
 
