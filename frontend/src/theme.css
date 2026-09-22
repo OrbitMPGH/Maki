@@ -4410,12 +4410,56 @@ body.reader-open {
   .library-index-metrics {
     display: none;
   }
+  /* Search, filter and sort stay reachable while scrolling a long grid: the whole index becomes a
+     full-width bar pinned under the app header. Bleeds past the page padding so it reads as a
+     toolbar rather than a card floating over the covers. */
+  .mantine-Paper-root.library-index {
+    position: sticky;
+    top: var(--app-shell-header-height, 58px);
+    z-index: 20;
+    margin-inline: calc(-1 * var(--mantine-spacing-lg));
+    border-width: 0 0 1px;
+    border-radius: 0;
+    box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  }
+  .library-toolbar,
+  .library-selection-bar {
+    padding: 0.625rem var(--mantine-spacing-lg);
+  }
+  .library-toolbar {
+    gap: 0.5rem;
+  }
+  .library-toolbar-row {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
   .library-toolbar-row .library-search {
-    flex-basis: 100%;
-    min-width: 100%;
+    flex: 1 1 0;
+    min-width: 0;
   }
   .library-toolbar-row .library-sort {
-    flex-basis: 10rem;
+    flex: 0 0 9.75rem;
+  }
+  /* One line that scrolls sideways, and gone entirely when it would hold only the tag gear: the
+     Filters drawer carries "Manage tags" too. */
+  .library-saved-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .library-saved-filters > * {
+    flex-shrink: 0;
+  }
+  .library-saved-filters[data-tools-only] {
+    display: none;
+  }
+  .library-selection-bar > .mantine-Group-root:last-child {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .library-selection-bar > .mantine-Group-root:last-child > * {
+    flex-shrink: 0;
   }
 }
 

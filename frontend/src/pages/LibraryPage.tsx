@@ -8,6 +8,7 @@ import {
   Checkbox,
   Drawer,
   Group,
+  Indicator,
   Loader,
   Modal,
   MultiSelect,
@@ -755,6 +756,16 @@ export default function LibraryPage() {
           {selectMode ? (
             <Group className="library-selection-bar" justify="space-between" wrap="wrap" gap="xs">
               <Group gap="xs">
+                {/* On a phone the action row scrolls sideways, which would bury Done at its far end. */}
+                <ActionIcon
+                  hiddenFrom="sm"
+                  variant="default"
+                  disabled={busy !== null}
+                  onClick={exitSelectMode}
+                  aria-label={t`Done`}
+                >
+                  <IconX size={15} />
+                </ActionIcon>
                 <Text size="sm" c="var(--ink-3)" className="tnum">
                   <Plural value={selectedCount} one="# selected" other="# selected" />
                 </Text>
@@ -824,6 +835,7 @@ export default function LibraryPage() {
                 })}
                 {bulkBtn('Delete', <Trans>Delete</Trans>, <IconTrash size={15} />, () => setDeleteModalOpen(true), 'red')}
                 <Button
+                  visibleFrom="sm"
                   size="xs"
                   variant="default"
                   leftSection={<IconX size={15} />}
@@ -845,6 +857,7 @@ export default function LibraryPage() {
                   onChange={(e) => setQuery(e.currentTarget.value)}
                 />
                 <Button
+                  visibleFrom="sm"
                   variant={activeFilterCount > 0 ? 'light' : 'default'}
                   leftSection={<IconFilter size={16} />}
                   rightSection={
@@ -858,6 +871,23 @@ export default function LibraryPage() {
                 >
                   <Trans>Filters</Trans>
                 </Button>
+                {/* On a phone the bar is one sticky line, so the button gives up its label. */}
+                <Indicator
+                  hiddenFrom="sm"
+                  label={activeFilterCount}
+                  size={16}
+                  disabled={activeFilterCount === 0}
+                  className="library-filter-icon"
+                >
+                  <ActionIcon
+                    size={36}
+                    variant={activeFilterCount > 0 ? 'light' : 'default'}
+                    onClick={() => setFiltersOpen(true)}
+                    aria-label={t`Filters`}
+                  >
+                    <IconFilter size={16} />
+                  </ActionIcon>
+                </Indicator>
                 <Select
                   className="library-sort"
                   data={sortOptions}
@@ -865,7 +895,7 @@ export default function LibraryPage() {
                   onChange={(v) => setSort(v ?? 'added')}
                   comboboxProps={{ withinPortal: true }}
                 />
-                <Text size="sm" c="var(--ink-3)" className="tnum">
+                <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm">
                   {filtersActive ? (
                     <Trans>
                       {visibleCount} of {totalCount} series match
@@ -876,7 +906,12 @@ export default function LibraryPage() {
                 </Text>
               </Group>
 
-              <Group className="library-saved-filters" gap="xs" wrap="wrap">
+              <Group
+                className="library-saved-filters"
+                gap="xs"
+                wrap="wrap"
+                data-tools-only={((savedFilters ?? []).length === 0 && !filtersActive) || undefined}
+              >
                 {(savedFilters ?? []).map((f) => (
                 <Group key={f.id} gap={2}>
                   <TagChip
@@ -973,6 +1008,19 @@ export default function LibraryPage() {
             mode: tagMatch,
             onModeChange: setTagMatch,
           })}
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            color="var(--neutral)"
+            leftSection={<IconSettings size={14} />}
+            style={{ alignSelf: 'flex-start' }}
+            onClick={() => {
+              setFiltersOpen(false)
+              setTagManagerOpen(true)
+            }}
+          >
+            <Trans>Manage tags</Trans>
+          </Button>
           {facetFilter({
             label: t`Genres`,
             data: genreOptions,
