@@ -23,7 +23,7 @@ import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
-import { altTitleLabel } from '../../api/titles'
+import { altTitleLabel, readableTitles } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
 import { formatNumber } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
@@ -71,12 +71,13 @@ export function DiscoverDetailModal({
   // Every one of these is on the card's own row as well as the detail response, so the band is
   // complete from the first frame and the detail request fills in rather than rearranges.
   const renderLabel = useLabel()
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const contentRating = contentRatingVisual(detail?.contentRating ?? null)
   const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item?.rating ?? null
   const band = ratingBandVisual(score ?? 0)
+  const altTitles = readableTitles(detail?.altTitles ?? [], i18n.locale)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
   const figures = [
@@ -179,9 +180,9 @@ export function DiscoverDetailModal({
                         {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
                       </Text>
                     )}
-                    {detail?.altTitles && detail.altTitles.length > 0 && (
+                    {altTitles.length > 0 && (
                       <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
-                        {detail.altTitles.map(altTitleLabel).join(', ')}
+                        {altTitles.map(altTitleLabel).join(', ')}
                       </Text>
                     )}
 

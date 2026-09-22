@@ -93,7 +93,7 @@ import {
   type ChapterReadState,
 } from '../api/reader'
 import { useCreateSeriesRequest } from '../api/requests'
-import { altTitleLabel } from '../api/titles'
+import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import { useAuth } from '../auth/AuthProvider'
 import { queueErrorMessage } from '../api/queue'
@@ -1072,6 +1072,7 @@ export default function SeriesDetailPage() {
 
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
+  const altTitles = readableTitles(series.altTitles, i18n.locale)
   const seriesTitle = series.title
   // Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
   // outcomes that aren't failures but aren't wins either — a download action that found nothing
@@ -1477,9 +1478,9 @@ export default function SeriesDetailPage() {
                         // whenever a title-language preference has moved the heading off it.
                         <RecordRow label={t`Library title`}>{series.title}</RecordRow>
                     )}
-                    {series.altTitles.length > 0 && (
+                    {altTitles.length > 0 && (
                         <RecordRow label={t`Alt titles`}>
-                          {series.altTitles.map(altTitleLabel).join(', ')}
+                          {altTitles.map(altTitleLabel).join(', ')}
                         </RecordRow>
                     )}
                     {series.authorStory && (

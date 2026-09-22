@@ -15,7 +15,7 @@ import {
 } from '@mantine/core'
 import {IconAlertTriangle, IconArrowLeft, IconBook, IconDownload, IconX} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { otherTitles } from '../../api/titles'
+import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
 import {
     contentRatingToken,
@@ -61,7 +61,7 @@ export function SeriesHero({
     actions: ReactNode
     tabs: ReactNode
 }) {
-    const { t } = useLingui()
+    const { t, i18n } = useLingui()
     const readTracking = useReadTracking()
     const status = seriesStatusVisual(series.status)
     const contentRating = contentRatingVisual(series.contentRating)
@@ -134,7 +134,7 @@ export function SeriesHero({
     // otherwise picking "Japanese" makes the name everything else in Maki uses (the folder on disk,
     // the file names, search) disappear from the page entirely.
     const altTitles = otherTitles(
-        series.altTitles,
+        readableTitles(series.altTitles, i18n.locale),
         series.originalTitle,
         series.displayTitle,
     ).concat(series.displayTitle === series.title ? [] : [{ title: series.title, language: null }])
