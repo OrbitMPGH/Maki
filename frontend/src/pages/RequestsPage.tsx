@@ -218,22 +218,13 @@ export default function RequestsPage() {
             const { title, editedBy, resolvedBy } = r
             return (
               <Panel key={r.id} p="sm">
-                <Group wrap="nowrap" align="flex-start">
-                  <div
-                    style={{
-                      width: 48,
-                      height: 72,
-                      flexShrink: 0,
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      background: 'var(--surface-2)',
-                    }}
-                  >
+                <div className="requests-row">
+                  <div className="requests-row-cover">
                     {r.coverUrl && <Image src={r.coverUrl} w={48} h={72} fit="cover" alt="" />}
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <Group gap="xs" wrap="nowrap">
+                  <div className="requests-row-main">
+                    <Group gap="xs">
                       <Text fw={650} lineClamp={1}>
                         {r.title}
                       </Text>
@@ -305,7 +296,7 @@ export default function RequestsPage() {
                     )}
                   </div>
 
-                  <Group gap="xs" wrap="nowrap">
+                  <div className="requests-row-actions">
                     {r.seriesId != null && (
                       <Tooltip label={t`Open series`} withArrow>
                         <ActionIcon
@@ -367,8 +358,8 @@ export default function RequestsPage() {
                         </ActionIcon>
                       </Tooltip>
                     )}
-                  </Group>
-                </Group>
+                  </div>
+                </div>
               </Panel>
             )
           })}
@@ -424,8 +415,9 @@ export default function RequestsPage() {
             </Trans>
           </Text>
 
-          <Group gap="sm" align="flex-end" wrap="nowrap">
+          <Group gap="sm" align="flex-end" className="requests-form-range">
             <NumberInput
+              className="requests-form-field"
               label={t`From`}
               placeholder={t`first`}
               value={editStart}
@@ -433,9 +425,9 @@ export default function RequestsPage() {
               min={0}
               step={1}
               decimalScale={3}
-              w={130}
             />
             <NumberInput
+              className="requests-form-field"
               label={t`To`}
               placeholder={t`latest`}
               value={editEnd}
@@ -443,7 +435,6 @@ export default function RequestsPage() {
               min={0}
               step={1}
               decimalScale={3}
-              w={130}
             />
           </Group>
           <Text size="xs" c="var(--ink-3)">

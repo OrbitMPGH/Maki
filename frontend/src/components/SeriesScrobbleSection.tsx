@@ -75,13 +75,13 @@ function ReviewControls({
           </Anchor>
         </Group>
       ))}
-      <Group gap={6} wrap="nowrap">
+      <Group gap={6}>
         <TextInput
+          className="scrobble-review-input"
           size="xs"
           placeholder={t`Paste id or URL`}
           value={manual}
           onChange={(e) => setManual(e.currentTarget.value)}
-          w={160}
         />
         <Button
           size="compact-xs"
@@ -154,13 +154,13 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
         </Text>
       ) : (
         <Table.ScrollContainer minWidth={560}>
-          <Table verticalSpacing="xs">
+          <Table className="scrobble-table" verticalSpacing="xs">
             <Table.Thead>
               <Table.Tr>
-                <Table.Th w={120}><Trans>Tracker</Trans></Table.Th>
-                <Table.Th w={150}><Trans>Progress</Trans></Table.Th>
+                <Table.Th><Trans>Tracker</Trans></Table.Th>
+                <Table.Th><Trans>Progress</Trans></Table.Th>
                 <Table.Th><Trans>State</Trans></Table.Th>
-                <Table.Th w={140}><Trans>Synced</Trans></Table.Th>
+                <Table.Th><Trans>Synced</Trans></Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>

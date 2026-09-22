@@ -48,8 +48,9 @@ export function RequestForm({
       <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase">
         <Trans>Chapters - leave blank for all</Trans>
       </Text>
-      <Group gap="sm" align="flex-end" wrap="nowrap">
+      <Group gap="sm" align="flex-end" className="requests-form-range">
         <NumberInput
+          className={dense ? undefined : 'requests-form-field'}
           label={t`From`}
           placeholder="1"
           value={chapterStart}
@@ -59,10 +60,10 @@ export function RequestForm({
           step={1}
           decimalScale={3}
           size="sm"
-          w={dense ? undefined : 120}
           style={dense ? { flex: 1, minWidth: 0 } : undefined}
         />
         <NumberInput
+          className={dense ? undefined : 'requests-form-field'}
           label={t`To`}
           placeholder={t`latest`}
           value={chapterEnd}
@@ -71,7 +72,6 @@ export function RequestForm({
           step={1}
           decimalScale={3}
           size="sm"
-          w={dense ? undefined : 120}
           style={dense ? { flex: 1, minWidth: 0 } : undefined}
         />
       </Group>

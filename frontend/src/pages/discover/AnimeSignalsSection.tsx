@@ -318,9 +318,9 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     entry.supersededBy !== 'library' && entry.supersededBy !== 'feedback'
 
   return (
-    <Group gap="sm" wrap="nowrap" align="flex-start" py={8} className="signals-row">
+    <div className="signals-row">
       <SeriesThumb url={entry.mangaCoverUrl} alt={entry.mangaTitle ?? ''} large />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="signals-row-main">
         <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
           <Text size="sm" fw={500} truncate style={{ minWidth: 0 }}>{entry.title}</Text>
           {entry.animeCount > 1 && (
@@ -333,7 +333,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
           {supersededNote ?? entry.mangaTitle ?? t`No manga match`}
         </Text>
       </div>
-      <div style={{ width: 120, flex: 'none' }}>
+      <div className="signals-col signals-col-services">
         <Group gap={4} wrap="wrap">
           {entry.services.map((service) => (
             <Badge key={service} size="sm" variant="light" color="var(--neutral)">
@@ -342,15 +342,15 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
           ))}
         </Group>
       </div>
-      <Text size="sm" className="tnum" style={{ width: 80, flex: 'none' }}>
+      <Text size="sm" className="tnum signals-col signals-col-score">
         {score !== null ? t`★ ${score}` : statusLabel}
       </Text>
-      <div style={{ width: 110, flex: 'none' }}>
+      <div className="signals-col signals-col-role">
         <Badge size="sm" variant="light" color={roleBadge.color}>
           {roleBadge.label}
         </Badge>
       </div>
-      <div style={{ width: 140, flex: 'none', textAlign: 'right' }}>
+      <div className="signals-col signals-col-action">
         {showExclude && entry.supersededBy === 'ignored' && (
           <Button size="xs" variant="subtle" loading={signal.isPending} onClick={() => void setExcluded(false)}>
             <Trans>Include</Trans>
@@ -366,6 +366,6 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
         )}
         {actionError && <Text c="var(--danger)" size="xs">{actionError}</Text>}
       </div>
-    </Group>
+    </div>
   )
 }

@@ -132,7 +132,7 @@ export default function ActivityPage() {
         />
       ) : (
         <Table.ScrollContainer minWidth={720}>
-          <Table className="panel-table" verticalSpacing="sm">
+          <Table className="panel-table activity-queue-table" verticalSpacing="sm">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>
@@ -141,16 +141,16 @@ export default function ActivityPage() {
                 <Table.Th>
                   <Trans>Chapter</Trans>
                 </Table.Th>
-                <Table.Th>
+                <Table.Th data-priority="low">
                   <Trans>Source</Trans>
                 </Table.Th>
-                <Table.Th w={240}>
+                <Table.Th>
                   <Trans>Progress</Trans>
                 </Table.Th>
-                <Table.Th w={150}>
+                <Table.Th>
                   <Trans>Status</Trans>
                 </Table.Th>
-                <Table.Th w={190} />
+                <Table.Th />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -187,7 +187,7 @@ export default function ActivityPage() {
                         {queueItemLabel(q)}
                       </Text>
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td data-priority="low">
                       {q.status === 'Resolving' ? (
                         <Group gap={6} wrap="nowrap">
                           <Loader size="xs" />
@@ -370,7 +370,7 @@ export default function ActivityPage() {
         ) : (
           <>
             <Table.ScrollContainer minWidth={640}>
-              <Table className="panel-table" verticalSpacing="sm">
+              <Table className="panel-table activity-history-table" verticalSpacing="sm">
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>
@@ -379,13 +379,13 @@ export default function ActivityPage() {
                     <Table.Th>
                       <Trans>Chapter</Trans>
                     </Table.Th>
-                    <Table.Th>
+                    <Table.Th data-priority="low">
                       <Trans>Source</Trans>
                     </Table.Th>
-                    <Table.Th w={150}>
+                    <Table.Th>
                       <Trans>Status</Trans>
                     </Table.Th>
-                    <Table.Th w={160}>
+                    <Table.Th data-priority="low">
                       <Trans>Completed</Trans>
                     </Table.Th>
                   </Table.Tr>
@@ -412,7 +412,7 @@ export default function ActivityPage() {
                             {queueItemLabel(q)}
                           </Text>
                         </Table.Td>
-                        <Table.Td>
+                        <Table.Td data-priority="low">
                           <Text size="sm" c="var(--ink-3)">
                             {q.sourceName}
                           </Text>
@@ -427,7 +427,7 @@ export default function ActivityPage() {
                             {renderLabel(visual.label)}
                           </Badge>
                         </Table.Td>
-                        <Table.Td>
+                        <Table.Td data-priority="low">
                           <Text size="xs" c="var(--ink-3)" className="tnum">
                             {q.completedAt ? formatDateTime(q.completedAt) : '-'}
                           </Text>

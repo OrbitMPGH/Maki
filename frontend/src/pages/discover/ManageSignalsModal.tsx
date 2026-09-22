@@ -438,15 +438,15 @@ function SignalRow({ row, busy, onClear, onExclude }: {
     exposure.length === 0 && rating === null
 
   return (
-    <Group gap="sm" wrap="nowrap" align="flex-start" py={10} className="signals-row">
+    <div className="signals-row">
       <SeriesThumb url={row.coverUrl} alt={title} large />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="signals-row-main">
         <Text size="sm" fw={500} truncate>{title}</Text>
         {row.genres.length > 0 && (
           <Text size="xs" c="var(--ink-3)" truncate>{row.genres.join(', ')}</Text>
         )}
       </div>
-      <div style={{ width: 300, flex: 'none' }}>
+      <div className="signals-col signals-col-state">
         <Group gap={6} wrap="wrap">
           {rating !== null && (
             <Badge size="sm" variant="light" color={rating <= 4 ? 'red' : 'teal'}>
@@ -484,7 +484,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
         </Group>
         <Text size="xs" c="var(--ink-3)" mt={4}>{why}</Text>
       </div>
-      <div style={{ width: 140, flex: 'none', textAlign: 'right' }}>
+      <div className="signals-col signals-col-action">
         {action && (
           <Button
             size="xs" variant={action.variant} color={action.color} loading={busy}
@@ -494,7 +494,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
           </Button>
         )}
       </div>
-    </Group>
+    </div>
   )
 }
 

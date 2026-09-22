@@ -221,7 +221,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
           </Reveal>
           {(stats.topGenres.length > 1 || stats.topTags.length > 0) && (
             <Reveal delay={0.7}>
-              <Group gap={8} justify="center" maw={480}>
+              <Group gap={8} justify="center" className="rewind-chip-row">
                 {stats.topGenres.slice(1, 6).map((g) => (
                   <Badge key={g.name} size="lg" variant="white" color="dark">
                     <GenreLabel name={g.name} />
@@ -248,7 +248,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       node: (
         <Stack align="center" gap="lg">
           <Reveal>{eyebrow(<Trans>Your library grew</Trans>)}</Reveal>
-          <Group gap={48} justify="center">
+          <Group justify="center" className="rewind-figure-pair">
             {seriesAdded > 0 && (
               <Reveal delay={0.3}>
                 <BigNumber

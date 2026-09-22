@@ -141,10 +141,10 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           ))}
         </Stack>
       )}
-      <Group mt="sm" gap="xs" wrap="nowrap">
+      <Group mt="sm" gap="xs">
         <TextInput
           size="xs"
-          style={{ flex: 1 }}
+          style={{ flex: '1 1 12rem' }}
           placeholder={t`Paste series URL or numeric id…`}
           value={input}
           onChange={(e) => setInput(e.currentTarget.value)}
@@ -278,13 +278,13 @@ export default function ScrobblePage() {
       </Title>
       {data && data.recent.length > 0 ? (
         <Table.ScrollContainer minWidth={600} mb="lg">
-          <Table className="panel-table" striped highlightOnHover>
+          <Table className="panel-table scrobble-recent-table" striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>
                   <Trans>Series</Trans>
                 </Table.Th>
-                <Table.Th>
+                <Table.Th data-priority="low">
                   <Trans>Service</Trans>
                 </Table.Th>
                 <Table.Th>
@@ -293,7 +293,7 @@ export default function ScrobblePage() {
                 <Table.Th>
                   <Trans>Status</Trans>
                 </Table.Th>
-                <Table.Th>
+                <Table.Th data-priority="low">
                   <Trans>When</Trans>
                 </Table.Th>
               </Table.Tr>
@@ -304,11 +304,11 @@ export default function ScrobblePage() {
                 return (
                   <Table.Tr key={i}>
                     <Table.Td>{title || '#'}</Table.Td>
-                    <Table.Td>{service}</Table.Td>
+                    <Table.Td data-priority="low">{service}</Table.Td>
                     <Table.Td>
                       {error ? (
                         <Tooltip label={error} multiline maw={400}>
-                          <Text size="sm" c="red" lineClamp={1} style={{ maxWidth: 320 }}>
+                          <Text size="sm" c="red" lineClamp={1} className="scrobble-error-text">
                             {error}
                           </Text>
                         </Tooltip>
@@ -338,7 +338,7 @@ export default function ScrobblePage() {
                         '-'
                       )}
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td data-priority="low">
                       <Text size="sm" c="var(--ink-3)">
                         {fmtTime(at)}
                       </Text>

@@ -4567,3 +4567,252 @@ body.reader-open {
 .utility-modal-content[data-edge='danger'] {
   --panel-edge: var(--danger);
 }
+
+/* --- Phone treatment for the pages that had none --------------------------
+   Rewind, Scrobble, Activity, Requests, signal rows and the coverage bar were
+   written desktop-first; everything below is the 47.9375em pass the rest of the
+   app already got. */
+
+/* Rewind. The overlay is the whole viewport, so the controls move off the top
+   corners and onto the bottom edge where a thumb reaches them. */
+.rewind-chip-row {
+  max-width: 480px;
+}
+.rewind-slide .rewind-figure-pair {
+  gap: 48px;
+}
+
+@media (max-width: 47.9375em) {
+  .rewind-overlay {
+    /* Bottom padding clears the progress rail and the close button. */
+    padding: 40px 16px 84px;
+  }
+  .rewind-progress {
+    top: auto;
+    bottom: 18px;
+    left: 16px;
+    right: 16px;
+  }
+  .rewind-close {
+    top: auto;
+    bottom: 34px;
+    right: 8px;
+  }
+  .rewind-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.13em;
+  }
+  /* The desktop clamps floor at 2rem / 3.5rem, which is wider than 360px once a
+     four-digit count is drawn. */
+  .rewind-title {
+    font-size: clamp(1.6rem, 8.5vw, 2.4rem);
+  }
+  .rewind-big-number {
+    font-size: clamp(2.6rem, 15vw, 4rem);
+  }
+  .rewind-sub {
+    font-size: 0.95rem;
+  }
+  .rewind-summary-number {
+    font-size: 1.6rem;
+  }
+  .rewind-slide .rewind-figure-pair {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+/* Scrobble. Both tables keep their scroll container; the fixed column widths are
+   here rather than on the `th` so they can be dropped on a phone, which lets the
+   table fit instead of scrolling. */
+.scrobble-table thead th:nth-child(1) {
+  width: 120px;
+}
+.scrobble-table thead th:nth-child(2) {
+  width: 150px;
+}
+.scrobble-table thead th:nth-child(4) {
+  width: 140px;
+}
+.scrobble-review-input {
+  width: 160px;
+}
+.scrobble-error-text {
+  max-width: 320px;
+}
+
+@media (max-width: 47.9375em) {
+  .scrobble-table thead th {
+    width: auto;
+  }
+  /* The scroll container's inner wrapper carries the `minWidth` prop, not the
+     table, so the table itself cannot relax it. */
+  .mantine-TableScrollContainer-scrollContainerInner:has(> .scrobble-table),
+  .mantine-TableScrollContainer-scrollContainerInner:has(> .scrobble-recent-table) {
+    min-width: 0;
+  }
+  .scrobble-review-input {
+    width: 100%;
+  }
+  .scrobble-error-text {
+    max-width: none;
+  }
+  /* Service and timestamp are recoverable from the row itself; series, progress
+     and status are what the table is read for. */
+  .scrobble-recent-table [data-priority='low'] {
+    display: none;
+  }
+}
+
+/* Activity. Same idea: column widths in CSS so the queue can collapse to the
+   three columns that matter. */
+.activity-queue-table thead th:nth-child(4) {
+  width: 240px;
+}
+.activity-queue-table thead th:nth-child(5) {
+  width: 150px;
+}
+.activity-queue-table thead th:nth-child(6) {
+  width: 190px;
+}
+.activity-history-table thead th:nth-child(4) {
+  width: 150px;
+}
+.activity-history-table thead th:nth-child(5) {
+  width: 160px;
+}
+
+@media (max-width: 47.9375em) {
+  .activity-queue-table thead th,
+  .activity-history-table thead th {
+    width: auto;
+  }
+  .mantine-TableScrollContainer-scrollContainerInner:has(> .activity-queue-table),
+  .mantine-TableScrollContainer-scrollContainerInner:has(> .activity-history-table) {
+    min-width: 0;
+  }
+  .activity-queue-table [data-priority='low'],
+  .activity-history-table [data-priority='low'] {
+    display: none;
+  }
+  .activity-queue-table tbody td,
+  .activity-history-table tbody td {
+    padding-inline: 0.4rem;
+  }
+}
+
+/* Requests. The row is a flex row rather than a Mantine Group because the wrap
+   has to change at a breakpoint, and Group writes its own flex-wrap inline. */
+.requests-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-md);
+}
+.requests-row-cover {
+  width: 48px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.requests-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.requests-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  flex-wrap: nowrap;
+}
+.requests-form-field {
+  width: 120px;
+}
+
+@media (max-width: 47.9375em) {
+  .requests-row {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  /* Cover and text share the first line; approve/reject get the second, where
+     they are wide enough to hit. */
+  .requests-row-main {
+    flex-basis: calc(100% - 48px - 0.75rem);
+  }
+  .requests-row-actions {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .requests-form-field {
+    width: 100%;
+  }
+}
+
+/* Signal rows. Four fixed columns (120 + 80 + 110 + 140 plus gaps) sit beside a
+   thumbnail and a title, which is about 120px wider than a phone on its own. */
+.signals-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-sm);
+  padding-block: 9px;
+}
+.signals-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.signals-col {
+  flex: none;
+}
+.signals-col-services {
+  width: 120px;
+}
+.signals-col-score {
+  width: 80px;
+}
+.signals-col-role {
+  width: 110px;
+}
+.signals-col-state {
+  width: 300px;
+}
+.signals-col-action {
+  width: 140px;
+  text-align: right;
+}
+
+@media (max-width: 47.9375em) {
+  .signals-row {
+    flex-wrap: wrap;
+  }
+  /* Forces every column onto its own line under the title instead of letting
+     them ration what is left of the first one. */
+  /* 34px is `.stats-thumb-lg` at this width. */
+  .signals-row-main {
+    flex-basis: calc(100% - 34px - var(--mantine-spacing-sm));
+  }
+  .signals-col {
+    width: auto;
+    flex: 1 1 auto;
+    text-align: left;
+  }
+  .signals-col-state {
+    flex-basis: 100%;
+  }
+  .signals-col-action {
+    text-align: right;
+  }
+}
+
+/* Coverage bar. The "you" marker is a second label between the two domain
+   endpoints; at 360px the three collide, and the tick itself still shows the
+   position. */
+@media (max-width: 47.9375em) {
+  .anime-coverage-axis-you {
+    display: none;
+  }
+  .anime-coverage-span {
+    padding-inline: 5px;
+  }
+}
