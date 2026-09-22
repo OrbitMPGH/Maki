@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { IconPlayerPlay } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -44,6 +45,10 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
         )}
         <div className="cover-scrim" />
 
+        <span className="discover-corner" data-play="true" aria-hidden="true">
+          <IconPlayerPlay size={18} />
+        </span>
+
         {unreadChapters > 0 && (
           <div className="cover-corner cover-corner-left">
             <span
@@ -59,7 +64,14 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
           <span className="cover-title" title={item.seriesTitle}>
             {item.seriesTitle}
           </span>
-          <span className="home-chapter-label">{item.chapterLabel}</span>
+          <span className="home-chapter-label" data-action>
+            <IconPlayerPlay size={10} />
+            {item.page > 0 ? t`Resume` : t`Start`}
+            <span className="home-chapter-sep" aria-hidden="true">
+              {' · '}
+            </span>
+            {item.chapterLabel}
+          </span>
           {resumePct !== null && (
             <div className="home-resume-bar" data-tip={t`Page ${pageNumber} of ${pageCount}`}>
               <div className="home-resume-fill" style={{ width: `${resumePct}%` }} />

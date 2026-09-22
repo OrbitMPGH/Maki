@@ -1010,6 +1010,35 @@ body {
 .discover-corner[data-add='true']:hover {
   background: var(--mantine-color-brand-filled-hover);
 }
+/* The reading rails open the reader directly, so the cue is a play glyph and it stays visible:
+   a poster with nothing on it reads as a link to the series page. */
+.discover-corner[data-play='true'] {
+  width: 36px;
+  height: 36px;
+  background: var(--brand);
+  color: var(--brand-on);
+  opacity: 0.92;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.cover-card:hover .discover-corner[data-play='true'] {
+  opacity: 1;
+  transform: scale(1.08);
+}
+.home-chapter-label[data-action] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--brand-fg);
+}
+.home-chapter-label[data-action] > svg {
+  flex: none;
+}
+.home-chapter-sep {
+  color: color-mix(in srgb, white 55%, transparent);
+  font-weight: 400;
+}
 .discover-card:hover .discover-corner[data-add='true'],
 .discover-card:focus-within .discover-corner[data-add='true'] {
   opacity: 1;
