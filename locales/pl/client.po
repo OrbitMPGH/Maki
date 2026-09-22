@@ -1775,6 +1775,10 @@ msgstr "Zastosuj {selectedCount}"
 msgid "Apply replacement"
 msgstr "Zastosuj zastąpienie"
 
+#: src/pages/HealthPage.tsx
+msgid "Applying"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approval in progress"
@@ -2261,6 +2265,7 @@ msgstr "Anuluj skanowanie"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Cancelled"
 msgstr "Anulowane"
@@ -2880,6 +2885,7 @@ msgstr "Porównaj z innymi użytkownikami tej instancji"
 msgid "Comparisons against the wider catalogue need the embedding index."
 msgstr "Porównania z szerszym katalogiem wymagają indeksu osadzeń."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Complete"
@@ -2889,6 +2895,7 @@ msgstr "Kompletne"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -3093,6 +3100,10 @@ msgstr "Skopiuj to teraz. Przechowywany jest tylko jego odcisk, więc nie da si�
 #, fuzzy
 msgid "Core"
 msgstr "Kluczowy"
+
+#: src/pages/HealthPage.tsx
+msgid "Corrupt"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -3402,6 +3413,10 @@ msgid "Deleted files are removed from disk and cannot be recovered from Maki."
 msgstr "Usunięte pliki są kasowane z dysku i nie można ich odzyskać z poziomu Maki."
 
 #: src/pages/HealthPage.tsx
+msgid "Deleting"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Deletion review #{opId}"
 msgstr "Przegląd usunięcia #{opId}"
@@ -3654,6 +3669,7 @@ msgid "Downloaded the prebuilt index"
 msgstr "Pobrano gotowy indeks"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Downloading"
 msgstr "Pobieranie"
@@ -3848,6 +3864,7 @@ msgstr "Erotyka"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Error"
 msgstr "Błąd"
@@ -3995,6 +4012,7 @@ msgstr "Rozwiń {spanLabel}"
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "Niepowodzenie"
@@ -4530,6 +4548,10 @@ msgstr "Problemy z kondycją systemu"
 msgid "Health settings"
 msgstr "Ustawienia kondycji"
 
+#: src/pages/HealthPage.tsx
+msgid "Healthy"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Height"
@@ -4721,6 +4743,7 @@ msgid "Ignore this version"
 msgstr "Zignoruj tę wersję"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Ignored"
 msgstr "Zignorowano"
@@ -6023,6 +6046,7 @@ msgstr "Wymaga FlareSolverr"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Needs review"
@@ -6748,6 +6772,10 @@ msgstr "Off pozostawia pliki z torrentów i zaimportowane ręcznie bez zmian. Ro
 msgid "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision"
 msgstr "oidc, openid connect, sso, authelia, authentik, keycloak, wystawca, identyfikator klienta, automatyczne tworzenie kont"
 
+#: src/pages/HealthPage.tsx
+msgid "OK"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7063,6 +7091,10 @@ msgstr "Dopasowane strony"
 msgid "Parsed"
 msgstr "Rozpoznany"
 
+#: src/pages/HealthPage.tsx
+msgid "Partial"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
@@ -7135,6 +7167,7 @@ msgstr "Mapowanie ścieżek - strona qBittorrent"
 msgid "Paused"
 msgstr "Wstrzymane"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Pending"
@@ -8152,6 +8185,7 @@ msgstr "Resetuj"
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Zresetuj zakładki i pozycje wznowienia dla dotkniętych rozdziałów u wszystkich użytkowników. Status ukończenia i historia czytania zostają zachowane."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Resolved"
@@ -8372,6 +8406,10 @@ msgstr "Wiersz {zoomRowNumber} z {zoomTotalPages}"
 #, fuzzy
 msgid "Run setup guide"
 msgstr "Uruchom przewodnik konfiguracji"
+
+#: src/pages/HealthPage.tsx
+msgid "Running"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -10793,6 +10831,10 @@ msgstr "Chciane rozdziały mogą zostać ponownie pobrane przez istniejącą aut
 #, fuzzy
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Chciane dla {spanLabel}: {wantedCount} z {total} rozdziałów"
+
+#: src/pages/HealthPage.tsx
+msgid "Warning"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

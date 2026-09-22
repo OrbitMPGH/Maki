@@ -134,6 +134,7 @@ export default function NotificationsPage() {
   return (
     <SurfaceFrame pageStyle="operational" className="notifications-surface">
       <PageHeader
+        compact
         title={t`Notifications`}
         description={t`What happened in your library while you were away.`}
         actions={

@@ -4005,6 +4005,120 @@ body.reader-open {
   --section-space: clamp(1.5rem, 2.5vw, 2.75rem);
 }
 
+/* --- Operational density --------------------------------------------------- */
+/* Pages people run the server from, not browse: a smaller header, tighter rows, figures in a strip
+   rather than tiles. The cinematic scale stays on the content pages. */
+.page-header[data-compact] .mantine-Title-root {
+  font-size: var(--type-feature);
+  line-height: 1.2;
+}
+.page-header[data-compact] .mantine-Text-root {
+  font-size: var(--type-meta);
+}
+/* Panels take `p="lg"` as a spacing variable, so rescoping the variable tightens every panel on
+   these pages, and the gaps inside them, without touching each call site. */
+.surface-frame--operational .panel {
+  --mantine-spacing-lg: var(--mantine-spacing-md);
+}
+.surface-frame--operational .panel-table tbody td,
+.ops-table tbody td {
+  height: 40px;
+  padding-block: 6px;
+  font-size: var(--type-meta);
+}
+.surface-frame--operational .panel-table thead th,
+.ops-table thead th {
+  padding-block: 8px;
+  color: var(--ink-3);
+}
+
+/* A source's own series id: a slug, a number or a UUID. Kept to one line; the full id is in the
+   title and behind the link. */
+.mono-id {
+  display: inline-block;
+  max-width: 18ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.figure-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  margin-bottom: var(--mantine-spacing-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.figure-strip[data-flush] {
+  margin-bottom: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+/* Hairlines drawn as shadows up and to the left of every cell. The ones on the first row and
+   column fall on the strip's own edge and are clipped, so a wrapped row never starts with a rule. */
+.figure-strip-item {
+  display: grid;
+  gap: 3px;
+  padding: 0.7rem 1.1rem;
+  box-shadow:
+    -1px 0 0 var(--border),
+    0 -1px 0 var(--border);
+}
+.figure-strip-n {
+  color: var(--ink-hi);
+  font-size: var(--type-figure);
+  font-weight: 700;
+  line-height: 1.05;
+}
+.figure-strip-item[data-zero] .figure-strip-n {
+  color: var(--ink-4);
+}
+.figure-strip-l {
+  color: var(--ink-4);
+  font-size: var(--type-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.status-dot::before {
+  content: '';
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dot);
+}
+.status-dot[data-live]::before {
+  animation: status-dot-pulse 1.6s var(--ease) infinite;
+}
+@keyframes status-dot-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dot) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-dot[data-live]::before {
+    animation: none;
+  }
+}
+
 /* --- Import page --- */
 .import-workspace {
   display: grid;
@@ -4180,7 +4294,7 @@ body.reader-open {
   /* Clips the metric grid's cell borders back to the rounded edge. */
   overflow: hidden;
 }
-.library-index-metrics {
+.figure-strip.library-index-metrics {
   padding: 0;
   border-bottom: 1px solid var(--border);
 }

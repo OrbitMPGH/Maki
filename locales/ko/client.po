@@ -1775,6 +1775,10 @@ msgstr "선택한 {selectedCount}개 적용"
 msgid "Apply replacement"
 msgstr "대체 적용"
 
+#: src/pages/HealthPage.tsx
+msgid "Applying"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approval in progress"
@@ -2261,6 +2265,7 @@ msgstr "스캔 취소"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Cancelled"
 msgstr "취소됨"
@@ -2880,6 +2885,7 @@ msgstr "이 인스턴스의 다른 사용자와 비교"
 msgid "Comparisons against the wider catalogue need the embedding index."
 msgstr "더 넓은 카탈로그와 비교하려면 임베딩 인덱스가 필요합니다."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Complete"
@@ -2889,6 +2895,7 @@ msgstr "완료"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -3093,6 +3100,10 @@ msgstr "지금 복사하세요. 지문만 저장되므로 다시 표시할 수 �
 #, fuzzy
 msgid "Core"
 msgstr "핵심"
+
+#: src/pages/HealthPage.tsx
+msgid "Corrupt"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -3402,6 +3413,10 @@ msgid "Deleted files are removed from disk and cannot be recovered from Maki."
 msgstr "삭제한 파일은 디스크에서 제거되며 Maki에서 복구할 수 없습니다."
 
 #: src/pages/HealthPage.tsx
+msgid "Deleting"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Deletion review #{opId}"
 msgstr "삭제 검토 #{opId}"
@@ -3654,6 +3669,7 @@ msgid "Downloaded the prebuilt index"
 msgstr "사전 제작 인덱스 다운로드됨"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Downloading"
 msgstr "다운로드 중"
@@ -3848,6 +3864,7 @@ msgstr "에로티카"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Error"
 msgstr "오류"
@@ -3995,6 +4012,7 @@ msgstr "{spanLabel} 펼치기"
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "실패"
@@ -4530,6 +4548,10 @@ msgstr "상태 문제"
 msgid "Health settings"
 msgstr "상태 설정"
 
+#: src/pages/HealthPage.tsx
+msgid "Healthy"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Height"
@@ -4721,6 +4743,7 @@ msgid "Ignore this version"
 msgstr "이 버전 무시"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Ignored"
 msgstr "무시됨"
@@ -6023,6 +6046,7 @@ msgstr "FlareSolverr 필요"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Needs review"
@@ -6748,6 +6772,10 @@ msgstr "끄면 토렌트와 수동으로 가져온 파일은 그대로 둡니다
 msgid "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision"
 msgstr "OIDC, OpenID Connect, SSO, Authelia, Authentik, Keycloak, issuer, client ID, 자동 프로비저닝"
 
+#: src/pages/HealthPage.tsx
+msgid "OK"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7063,6 +7091,10 @@ msgstr "일치한 페이지"
 msgid "Parsed"
 msgstr "구문 분석됨"
 
+#: src/pages/HealthPage.tsx
+msgid "Partial"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
@@ -7135,6 +7167,7 @@ msgstr "경로 매핑 - qBittorrent 측"
 msgid "Paused"
 msgstr "일시 중지됨"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Pending"
@@ -8152,6 +8185,7 @@ msgstr "초기화"
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "모든 사용자의 영향을 받은 챕터에 대한 북마크와 재개 위치를 초기화합니다. 완료 상태와 읽기 기록은 유지됩니다."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Resolved"
@@ -8372,6 +8406,10 @@ msgstr "확대 행 {zoomRowNumber} / {zoomTotalPages}"
 #, fuzzy
 msgid "Run setup guide"
 msgstr "설정 안내 실행"
+
+#: src/pages/HealthPage.tsx
+msgid "Running"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -10793,6 +10831,10 @@ msgstr "원하는 챕터는 기존 자동화로 다시 다운로드할 수 있�
 #, fuzzy
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "{spanLabel}에 대해 원하는 챕터: {total}개 중 {wantedCount}개"
+
+#: src/pages/HealthPage.tsx
+msgid "Warning"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

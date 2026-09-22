@@ -25,6 +25,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { statusToken, trackerConnectionVisual, trackerStatusVisual } from './ui/status'
+import { StatusDot } from './ui/StatusDot'
 
 /** "-> ch 12" / "ch 12, vol 2" summary for a synced service. */
 function progressLabel(s: SeriesScrobbleServiceDto): string {
@@ -217,17 +218,15 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                       <Table.Td>
                         {s.error ? (
                           <Tooltip label={s.error} withArrow multiline w={280}>
-                            <Badge size="sm" color="red" variant="light">
+                            <StatusDot tone="danger">
                               <Trans>Error</Trans>
-                            </Badge>
+                            </StatusDot>
                           </Tooltip>
                         ) : s.syncedAt ? (
                           (() => {
                             const visual = trackerStatusVisual(s.status ?? '')
                             return (
-                              <Badge size="sm" color={`var(--${statusToken(visual.color)})`} variant="light">
-                                {renderLabel(visual.label)}
-                              </Badge>
+                              <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
                             )
                           })()
                         ) : (

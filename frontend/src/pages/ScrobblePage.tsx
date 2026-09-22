@@ -22,6 +22,8 @@ import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { statusToken, trackerConnectionVisual, trackerStatusVisual } from '../components/ui/status'
+import { StatusDot } from '../components/ui/StatusDot'
+import { useLabel } from '../i18n-context'
 import { TagChip } from '../components/ui/TagChip'
 import {
   useScrobbleAuthStart,
@@ -174,6 +176,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
 
 export default function ScrobblePage() {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data, error } = useScrobbleStatus()
   const syncNow = useScrobbleSyncNow()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -201,6 +204,7 @@ export default function ScrobblePage() {
   return (
     <SurfaceFrame pageStyle="operational">
       <PageHeader
+        compact
         title={t`Scrobble`}
         description={
           <Trans>
@@ -325,13 +329,7 @@ export default function ScrobblePage() {
                         (() => {
                           const visual = trackerStatusVisual(status)
                           return (
-                            <Badge
-                              size="sm"
-                              variant="light"
-                              color={`var(--${statusToken(visual.color)})`}
-                            >
-                              {status}
-                            </Badge>
+                            <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
                           )
                         })()
                       ) : (

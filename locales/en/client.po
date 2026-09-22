@@ -1443,6 +1443,10 @@ msgstr "Apply {selectedCount}"
 msgid "Apply replacement"
 msgstr "Apply replacement"
 
+#: src/pages/HealthPage.tsx
+msgid "Applying"
+msgstr "Applying"
+
 #: src/pages/RequestsPage.tsx
 msgid "Approval in progress"
 msgstr "Approval in progress"
@@ -1838,6 +1842,7 @@ msgstr "Cancel scan"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 msgid "Cancelled"
 msgstr "Cancelled"
 
@@ -2340,6 +2345,7 @@ msgstr "Compare with other users on this instance"
 msgid "Comparisons against the wider catalogue need the embedding index."
 msgstr "Comparisons against the wider catalogue need the embedding index."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Complete"
 msgstr "Complete"
@@ -2348,6 +2354,7 @@ msgstr "Complete"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 msgid "Completed"
 msgstr "Completed"
@@ -2515,6 +2522,10 @@ msgstr "Copy this now. Only its fingerprint is stored, so it cannot be shown aga
 #: src/components/TagBuckets.tsx
 msgid "Core"
 msgstr "Core"
+
+#: src/pages/HealthPage.tsx
+msgid "Corrupt"
+msgstr "Corrupt"
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -2769,6 +2780,10 @@ msgid "Deleted files are removed from disk and cannot be recovered from Maki."
 msgstr "Deleted files are removed from disk and cannot be recovered from Maki."
 
 #: src/pages/HealthPage.tsx
+msgid "Deleting"
+msgstr "Deleting"
+
+#: src/pages/HealthPage.tsx
 msgid "Deletion review #{opId}"
 msgstr "Deletion review #{opId}"
 
@@ -2974,6 +2989,7 @@ msgid "Downloaded the prebuilt index"
 msgstr "Downloaded the prebuilt index"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 msgid "Downloading"
 msgstr "Downloading"
 
@@ -3131,6 +3147,7 @@ msgstr "Erotica"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/HealthPage.tsx
 msgid "Error"
 msgstr "Error"
 
@@ -3249,6 +3266,7 @@ msgstr "Expand {spanLabel}"
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 msgid "Failed"
 msgstr "Failed"
 
@@ -3687,6 +3705,10 @@ msgstr "Health issues"
 msgid "Health settings"
 msgstr "Health settings"
 
+#: src/pages/HealthPage.tsx
+msgid "Healthy"
+msgstr "Healthy"
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Height"
 msgstr "Height"
@@ -3842,6 +3864,7 @@ msgid "Ignore this version"
 msgstr "Ignore this version"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/HealthPage.tsx
 msgid "Ignored"
 msgstr "Ignored"
 
@@ -4903,6 +4926,7 @@ msgstr "Needs FlareSolverr"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 msgid "Needs review"
 msgstr "Needs review"
@@ -5490,6 +5514,10 @@ msgstr "Off leaves torrent and manually imported files untouched. Chapters Maki 
 msgid "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision"
 msgstr "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision"
 
+#: src/pages/HealthPage.tsx
+msgid "OK"
+msgstr "OK"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "OLED black"
@@ -5745,6 +5773,10 @@ msgstr "Pages matched"
 msgid "Parsed"
 msgstr "Parsed"
 
+#: src/pages/HealthPage.tsx
+msgid "Partial"
+msgstr "Partial"
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
@@ -5804,6 +5836,7 @@ msgstr "Path mapping - qBittorrent side"
 msgid "Paused"
 msgstr "Paused"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Pending"
 msgstr "Pending"
@@ -6629,6 +6662,7 @@ msgstr "Reset"
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Resolved"
 msgstr "Resolved"
@@ -6809,6 +6843,10 @@ msgstr "Row {zoomRowNumber} of {zoomTotalPages}"
 #: src/pages/SettingsPage.tsx
 msgid "Run setup guide"
 msgstr "Run setup guide"
+
+#: src/pages/HealthPage.tsx
+msgid "Running"
+msgstr "Running"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -8782,6 +8820,10 @@ msgstr "Wanted chapters may be downloaded again by existing automation."
 #: src/pages/SeriesDetailPage.tsx
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
+
+#: src/pages/HealthPage.tsx
+msgid "Warning"
+msgstr "Warning"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Watched"

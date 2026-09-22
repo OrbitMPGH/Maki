@@ -1775,6 +1775,10 @@ msgstr "Appliquer {selectedCount}"
 msgid "Apply replacement"
 msgstr "Appliquer le remplacement"
 
+#: src/pages/HealthPage.tsx
+msgid "Applying"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approval in progress"
@@ -2261,6 +2265,7 @@ msgstr "Annuler l'analyse"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Cancelled"
 msgstr "Annulé"
@@ -2880,6 +2885,7 @@ msgstr "Comparer avec d'autres utilisateurs de cette instance"
 msgid "Comparisons against the wider catalogue need the embedding index."
 msgstr "Les comparaisons avec le catalogue général nécessitent l'index d'embeddings."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Complete"
@@ -2889,6 +2895,7 @@ msgstr "Complet"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -3093,6 +3100,10 @@ msgstr "Copiez ceci maintenant. Seule son empreinte est conservée, il ne pourra
 #, fuzzy
 msgid "Core"
 msgstr "Noyau"
+
+#: src/pages/HealthPage.tsx
+msgid "Corrupt"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -3402,6 +3413,10 @@ msgid "Deleted files are removed from disk and cannot be recovered from Maki."
 msgstr "Les fichiers supprimés sont retirés du disque et ne peuvent pas être récupérés depuis Maki."
 
 #: src/pages/HealthPage.tsx
+msgid "Deleting"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Deletion review #{opId}"
 msgstr "Examen de suppression n°{opId}"
@@ -3654,6 +3669,7 @@ msgid "Downloaded the prebuilt index"
 msgstr "Index préconstruit téléchargé"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Downloading"
 msgstr "Téléchargement"
@@ -3848,6 +3864,7 @@ msgstr "Érotisme"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Error"
 msgstr "Erreur"
@@ -3995,6 +4012,7 @@ msgstr "Développer {spanLabel}"
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "Échec"
@@ -4530,6 +4548,10 @@ msgstr "Problèmes d'intégrité"
 msgid "Health settings"
 msgstr "Réglages d'intégrité"
 
+#: src/pages/HealthPage.tsx
+msgid "Healthy"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Height"
@@ -4721,6 +4743,7 @@ msgid "Ignore this version"
 msgstr "Ignorer cette version"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Ignored"
 msgstr "Ignoré"
@@ -6023,6 +6046,7 @@ msgstr "Nécessite FlareSolverr"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Needs review"
@@ -6748,6 +6772,10 @@ msgstr "Désactivé laisse intacts les fichiers torrent et importés manuellemen
 msgid "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision"
 msgstr "oidc, connexion openid, sso, authelia, authentik, keycloak, émetteur, ID client, provisionnement automatique"
 
+#: src/pages/HealthPage.tsx
+msgid "OK"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7063,6 +7091,10 @@ msgstr "Pages correspondantes"
 msgid "Parsed"
 msgstr "Analysé"
 
+#: src/pages/HealthPage.tsx
+msgid "Partial"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
@@ -7135,6 +7167,7 @@ msgstr "Correspondance de chemin, côté qBittorrent"
 msgid "Paused"
 msgstr "En pause"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Pending"
@@ -8152,6 +8185,7 @@ msgstr "Réinitialiser"
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Réinitialise les favoris et les positions de reprise pour les chapitres concernés pour tous les utilisateurs. Le statut terminé et l'historique de lecture sont conservés."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Resolved"
@@ -8372,6 +8406,10 @@ msgstr "Ligne {zoomRowNumber} sur {zoomTotalPages}"
 #, fuzzy
 msgid "Run setup guide"
 msgstr "Lancer le guide de configuration"
+
+#: src/pages/HealthPage.tsx
+msgid "Running"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -10793,6 +10831,10 @@ msgstr "Les chapitres souhaités peuvent être téléchargés à nouveau par l'a
 #, fuzzy
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "Souhaité pour {spanLabel} : {wantedCount} sur {total} chapitres"
+
+#: src/pages/HealthPage.tsx
+msgid "Warning"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

@@ -24,10 +24,7 @@ import {
 } from '@mantine/core'
 import {
   IconBookmark,
-  IconCircleCheck,
-  IconClock,
   IconDeviceFloppy,
-  IconDownload,
   IconEye,
   IconFileText,
   IconFilter,
@@ -86,7 +83,7 @@ import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
-import { StatTile } from '../components/ui/StatTile'
+import { FigureStrip } from '../components/ui/FigureStrip'
 import { TagChip } from '../components/ui/TagChip'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
@@ -743,19 +740,17 @@ export default function LibraryPage() {
 
       {series && series.length > 0 && (
         <Panel p={0} className="library-index layer-sunken">
-          <SimpleGrid
+          <FigureStrip
+            flush
             className="library-index-metrics"
-            cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }}
-            spacing="sm"
-          >
-            <StatTile label={t`Series`} value={stats.total} icon={IconLibrary} accent="brand" />
-            <StatTile label={t`Monitored`} value={stats.monitored} icon={IconEye} accent="info" />
-            <StatTile label={t`On disk`} value={stats.downloaded} icon={IconCircleCheck} accent="ok" />
-            <StatTile label={t`Missing`} value={stats.missing} icon={IconDownload} accent="warn" />
-            {stats.inQueue > 0 && (
-              <StatTile label={t`In queue`} value={stats.inQueue} icon={IconClock} accent="brand" />
-            )}
-          </SimpleGrid>
+            figures={[
+              { label: t`Series`, value: stats.total },
+              { label: t`Monitored`, value: stats.monitored },
+              { label: t`On disk`, value: stats.downloaded, tone: 'ok' },
+              { label: t`Missing`, value: stats.missing, tone: 'warn' },
+              ...(stats.inQueue > 0 ? [{ label: t`In queue`, value: stats.inQueue, tone: 'info' as const }] : []),
+            ]}
+          />
 
           {selectMode ? (
             <Group className="library-selection-bar" justify="space-between" wrap="wrap" gap="xs">

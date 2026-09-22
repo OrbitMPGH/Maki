@@ -170,7 +170,7 @@ function RootFoldersSection() {
             <Table.Tbody>
               {rootFolders.map((f) => (
                 <Table.Tr key={f.id}>
-                  <Table.Td>
+                  <Table.Td ff="monospace">
                     {f.path}
                     {!f.accessible && (
                       <Text span c="var(--danger)" size="xs" ml="xs">
@@ -2876,6 +2876,7 @@ export default function SettingsPage() {
   return (
     <SurfaceFrame pageStyle="operational" className="settings-surface">
       <PageHeader
+        compact
         title={t`Settings`}
         description={
           isAdmin

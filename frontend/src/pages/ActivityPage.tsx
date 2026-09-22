@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Button,
   Group,
   Loader,
   Modal,
   Pagination,
   Progress,
-  SimpleGrid,
   Stack,
   Table,
   Text,
@@ -19,11 +17,8 @@ import {
   IconArrowBarToUp,
   IconArrowDown,
   IconArrowUp,
-  IconAlertTriangle,
-  IconClock,
   IconHistory,
   IconInbox,
-  IconLoader2,
   IconRefresh,
   IconTrash,
   IconX,
@@ -42,8 +37,9 @@ import { useAuth } from '../auth/AuthProvider'
 import { ImportReviewModal } from '../components/ImportReviewModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
-import { isQueueActive, needsImportReview, queueStatusVisual } from '../components/ui/status'
+import { FigureStrip } from '../components/ui/FigureStrip'
+import { StatusDot } from '../components/ui/StatusDot'
+import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
 import { queueErrorMessage, queueItemLabel } from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { formatDateTime, formatTime } from '../format'
@@ -106,6 +102,7 @@ export default function ActivityPage() {
   return (
     <SurfaceFrame pageStyle="operational">
       <PageHeader
+        compact
         title={t`Activity`}
         description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
@@ -117,15 +114,18 @@ export default function ActivityPage() {
         }
       />
 
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg">
-        <StatTile label={t`In progress`} value={stats.active} icon={IconLoader2} accent="info" />
-        <StatTile label={t`Queued`} value={stats.queued} icon={IconClock} accent="gray" />
-        <StatTile label={t`Needs review`} value={stats.review} icon={IconAlertTriangle} accent="warn" />
-        <StatTile label={t`Failed`} value={stats.failed} icon={IconX} accent="danger" />
-      </SimpleGrid>
+      <FigureStrip
+        figures={[
+          { label: t`In progress`, value: stats.active, tone: 'info' },
+          { label: t`Queued`, value: stats.queued },
+          { label: t`Needs review`, value: stats.review, tone: 'warn' },
+          { label: t`Failed`, value: stats.failed, tone: 'danger' },
+        ]}
+      />
 
       {queueItems.length === 0 ? (
         <EmptyState
+          compact
           icon={IconInbox}
           title={t`Nothing in the queue`}
           description={t`Queued and downloading chapters show up here. Trigger a search from a series page or the library.`}
@@ -223,14 +223,9 @@ export default function ActivityPage() {
                     </Table.Td>
                     <Table.Td>
                       <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo}>
-                        <Badge
-                          size="sm"
-                          color={visual.color}
-                          variant="light"
-                          leftSection={<visual.Icon size={12} />}
-                        >
+                        <StatusDot tone={statusToken(visual.color)} live={isQueueActive(q.status)}>
                           {renderLabel(visual.label)}
-                        </Badge>
+                        </StatusDot>
                       </Tooltip>
                     </Table.Td>
                     <Table.Td>
@@ -363,6 +358,7 @@ export default function ActivityPage() {
 
         {!history || history.items.length === 0 ? (
           <EmptyState
+            compact
             icon={IconHistory}
             title={t`No history yet`}
             description={t`Completed and cancelled downloads show up here.`}
@@ -418,14 +414,7 @@ export default function ActivityPage() {
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Badge
-                            size="sm"
-                            color={visual.color}
-                            variant="light"
-                            leftSection={<visual.Icon size={12} />}
-                          >
-                            {renderLabel(visual.label)}
-                          </Badge>
+                          <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
                         </Table.Td>
                         <Table.Td data-priority="low">
                           <Text size="xs" c="var(--ink-3)" className="tnum">

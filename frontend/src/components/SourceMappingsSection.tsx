@@ -305,7 +305,7 @@ export function SourceMappingsSection({
         )
       ) : (
         <Table.ScrollContainer minWidth={720}>
-          <Table>
+          <Table className="ops-table">
             <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Source</Trans></Table.Th>
@@ -353,7 +353,7 @@ export function SourceMappingsSection({
                   </Group>
                 </Table.Td>
                 <Table.Td>
-                  <Anchor href={m.url} target="_blank" size="sm">
+                  <Anchor href={m.url} target="_blank" size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
                     {m.sourceSeriesId}
                   </Anchor>
                 </Table.Td>

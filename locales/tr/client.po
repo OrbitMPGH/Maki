@@ -1775,6 +1775,10 @@ msgstr "{selectedCount} tanesini uygula"
 msgid "Apply replacement"
 msgstr "Değiştirmeyi uygula"
 
+#: src/pages/HealthPage.tsx
+msgid "Applying"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approval in progress"
@@ -2261,6 +2265,7 @@ msgstr "Taramayı iptal et"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Cancelled"
 msgstr "İptal Edildi"
@@ -2880,6 +2885,7 @@ msgstr "Bu kurulumdaki diğer kullanıcılarla karşılaştır"
 msgid "Comparisons against the wider catalogue need the embedding index."
 msgstr "Daha geniş katalogla karşılaştırmalar gömme dizinini gerektirir."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Complete"
@@ -2889,6 +2895,7 @@ msgstr "Tam"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Completed"
@@ -3093,6 +3100,10 @@ msgstr "Bunu şimdi kopyalayın. Yalnızca parmak izi saklanır, bu yüzden tekr
 #, fuzzy
 msgid "Core"
 msgstr "Çekirdek"
+
+#: src/pages/HealthPage.tsx
+msgid "Corrupt"
+msgstr ""
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -3402,6 +3413,10 @@ msgid "Deleted files are removed from disk and cannot be recovered from Maki."
 msgstr "Silinen dosyalar diskten kaldırılır ve Maki üzerinden geri getirilemez."
 
 #: src/pages/HealthPage.tsx
+msgid "Deleting"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Deletion review #{opId}"
 msgstr "Silme incelemesi #{opId}"
@@ -3654,6 +3669,7 @@ msgid "Downloaded the prebuilt index"
 msgstr "Hazır dizin indirildi"
 
 #: src/components/ui/status.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Downloading"
 msgstr "İndiriliyor"
@@ -3848,6 +3864,7 @@ msgstr "Erotika"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Error"
 msgstr "Hata"
@@ -3995,6 +4012,7 @@ msgstr "{spanLabel} genişlet"
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "Başarısız"
@@ -4530,6 +4548,10 @@ msgstr "Sağlık sorunları"
 msgid "Health settings"
 msgstr "Sağlık ayarları"
 
+#: src/pages/HealthPage.tsx
+msgid "Healthy"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Height"
@@ -4721,6 +4743,7 @@ msgid "Ignore this version"
 msgstr "Bu sürümü yok say"
 
 #: src/components/SeriesScrobbleSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Ignored"
 msgstr "Yok sayıldı"
@@ -6023,6 +6046,7 @@ msgstr "FlareSolverr gerekli"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Needs review"
@@ -6748,6 +6772,10 @@ msgstr "Kapalı, torrent ve elle içe aktarılan dosyaları olduğu gibi bırak�
 msgid "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, client id, auto provision"
 msgstr "oidc, openid connect, sso, authelia, authentik, keycloak, issuer, istemci kimliği, otomatik oluşturma"
 
+#: src/pages/HealthPage.tsx
+msgid "OK"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7063,6 +7091,10 @@ msgstr "Eşleşen sayfalar"
 msgid "Parsed"
 msgstr "Ayrıştırıldı"
 
+#: src/pages/HealthPage.tsx
+msgid "Partial"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
@@ -7135,6 +7167,7 @@ msgstr "Yol eşleme - qBittorrent tarafı"
 msgid "Paused"
 msgstr "Duraklatıldı"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Pending"
@@ -8152,6 +8185,7 @@ msgstr "Sıfırla"
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Etkilenen bölümler için tüm kullanıcılarda yer imlerini ve devam pozisyonlarını sıfırlar. Tamamlandı durumu ve okuma geçmişi korunur."
 
+#: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Resolved"
@@ -8372,6 +8406,10 @@ msgstr "Satır {zoomRowNumber} / {zoomTotalPages}"
 #, fuzzy
 msgid "Run setup guide"
 msgstr "Kurulum kılavuzunu çalıştır"
+
+#: src/pages/HealthPage.tsx
+msgid "Running"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -10793,6 +10831,10 @@ msgstr "İstenen bölümler mevcut otomasyon tarafından yeniden indirilebilir."
 #, fuzzy
 msgid "Wanted for {spanLabel}: {wantedCount} of {total} chapters"
 msgstr "{spanLabel} için isteniyor: {total} bölümden {wantedCount} tanesi"
+
+#: src/pages/HealthPage.tsx
+msgid "Warning"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

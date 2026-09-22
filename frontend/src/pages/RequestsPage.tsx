@@ -174,6 +174,7 @@ export default function RequestsPage() {
   return (
     <SurfaceFrame pageStyle="operational">
       <PageHeader
+        compact
         title={t`Requests`}
         description={
           isAdmin

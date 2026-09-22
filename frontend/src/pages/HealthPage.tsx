@@ -24,14 +24,11 @@ import {
   Title,
 } from '@mantine/core'
 import {
-  IconAlertTriangle,
-  IconArchive,
   IconBooks,
   IconChevronDown,
   IconClockPlay,
   IconDatabase,
   IconDownload,
-  IconFileAlert,
   IconFileImport,
   IconPlugConnected,
   IconPhotoScan,
@@ -60,10 +57,13 @@ import {
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
-import { StatTile } from '../components/ui/StatTile'
+import { FigureStrip } from '../components/ui/FigureStrip'
+import { StatusDot } from '../components/ui/StatusDot'
 import { formatDateTime, formatNumber } from '../format'
+import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
@@ -86,23 +86,51 @@ const CATEGORY_ICON: Record<string, Icon> = {
   job: IconClockPlay,
 }
 
-const color = (status: string) =>
-  status === 'error' || status === 'failed'
-    ? 'var(--danger)'
-    : ['warning', 'partial', 'open'].includes(status)
-      ? 'var(--warn)'
-      : ['healthy', 'complete', 'completed'].includes(status)
-        ? 'var(--ok)'
-        : 'var(--neutral)'
+const tone = (status: string) =>
+  status === 'error' || status === 'failed' || status === 'corrupt'
+    ? 'danger'
+    : ['warning', 'partial', 'open', 'review'].includes(status)
+      ? 'warn'
+      : ['healthy', 'complete', 'completed', 'resolved', 'ok'].includes(status)
+        ? 'ok'
+        : ['running', 'applying', 'deleting', 'downloading'].includes(status)
+          ? 'info'
+          : 'neutral'
+
+const color = (status: string) => `var(--${tone(status)})`
+
+/** The wire values HealthMonitor and the scan/operation services send. Anything else shows as sent. */
+const STATUS_LABEL: Record<string, MessageDescriptor> = {
+  healthy: msg`Healthy`,
+  ok: msg`OK`,
+  warning: msg`Warning`,
+  error: msg`Error`,
+  failed: msg`Failed`,
+  corrupt: msg`Corrupt`,
+  partial: msg`Partial`,
+  open: msg`Open`,
+  review: msg`Needs review`,
+  resolved: msg`Resolved`,
+  ignored: msg`Ignored`,
+  pending: msg`Pending`,
+  running: msg`Running`,
+  applying: msg`Applying`,
+  deleting: msg`Deleting`,
+  downloading: msg`Downloading`,
+  complete: msg`Complete`,
+  completed: msg`Completed`,
+  cancelled: msg`Cancelled`,
+}
 
 const bytes = (size: number, missing: string) =>
   size < 0 ? missing : `${(size / 1024 / 1024).toFixed(1)} MiB`
 
 function Status({ value }: { value: string }) {
+  const renderLabel = useLabel()
   return (
-    <Badge color={color(value)} variant="light">
-      {value}
-    </Badge>
+    <StatusDot tone={tone(value)} live={value === 'running'}>
+      {renderLabel(STATUS_LABEL[value] ?? value)}
+    </StatusDot>
   )
 }
 
@@ -164,6 +192,7 @@ export default function HealthPage() {
   return (
     <SurfaceFrame pageStyle="operational" className="health-surface">
       <PageHeader
+        compact
         title={t`Health`}
         description={t`System checks and reviewed library maintenance.`}
         actions={
@@ -221,21 +250,13 @@ export default function HealthPage() {
       )}
       {overview.isPending && <Loader mb="lg" />}
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mb="lg">
-        <StatTile
-          label={t`System issues`}
-          value={issues}
-          icon={IconAlertTriangle}
-          accent={issues > 0 ? 'danger' : 'ok'}
-        />
-        <StatTile
-          label={t`Open file findings`}
-          value={overview.data?.openFindings ?? 0}
-          icon={IconFileAlert}
-          accent={(overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok'}
-        />
-        <StatTile label={t`Archives inventoried`} value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
-      </SimpleGrid>
+      <FigureStrip
+        figures={[
+          { label: t`System issues`, value: issues, tone: 'danger' },
+          { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
+          { label: t`Archives inventoried`, value: overview.data?.files ?? 0 },
+        ]}
+      />
 
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
@@ -469,7 +490,7 @@ export default function HealthPage() {
                             />
                           </Table.Td>
                           <Table.Td>
-                            <Text size="sm" style={{ overflowWrap: 'anywhere' }}>
+                            <Text fz="var(--type-meta)" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
                               {file.relativePath}
                             </Text>
                             <Text size="xs" c="var(--ink-3)">
@@ -859,7 +880,7 @@ function FileReview({
           <div className="health-review">
             <div className="health-review-column">
               <Panel p="md">
-                <Text fw={600} style={{ overflowWrap: 'anywhere' }}>
+                <Text fw={600} ff="monospace" style={{ overflowWrap: 'anywhere' }}>
                   {data.file.relativePath}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
@@ -1442,7 +1463,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             <div className="health-review-column">
               <Panel p="md">
                 <Status value={data.operation.status} />
-                <Text fw={600} mt="sm" style={{ overflowWrap: 'anywhere' }}>
+                <Text fw={600} mt="sm" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
                   {data.file.relativePath}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
