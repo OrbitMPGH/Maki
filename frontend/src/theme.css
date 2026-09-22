@@ -4522,3 +4522,48 @@ body.reader-open {
   border-color: var(--brand);
   background: var(--surface-sunken);
 }
+
+/* --- Utility modal tier --------------------------------------------------- */
+/* The middle tier between the immersive Discover band and stock Mantine chrome. The theme's
+   Modal defaults hang these classes on every dialog, so an ordinary one needs no styling of its
+   own. A modal with neither title nor close button renders no header element, which is how the
+   immersive tier stays exactly as it was. */
+.utility-modal-content {
+  max-height: min(90dvh, 1000px);
+}
+.utility-modal-header {
+  border-bottom: 1px solid var(--hairline);
+}
+.utility-modal-title {
+  color: var(--ink-hi);
+  font-size: var(--type-section);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.utility-modal-close {
+  color: var(--ink-3);
+  background-color: transparent;
+}
+.utility-modal-close:hover {
+  color: var(--ink-hi);
+  background-color: var(--surface-hover);
+}
+
+/* Same accent-edge grammar the Panel uses, so a destructive confirm reads the same way a
+   destructive panel does. */
+.utility-modal-content[data-edge] {
+  --panel-edge: var(--border-strong);
+  border-top: 2px solid var(--panel-edge);
+}
+.utility-modal-content[data-edge='brand'] {
+  --panel-edge: var(--brand);
+}
+.utility-modal-content[data-edge='info'] {
+  --panel-edge: var(--info);
+}
+.utility-modal-content[data-edge='warn'] {
+  --panel-edge: var(--warn);
+}
+.utility-modal-content[data-edge='danger'] {
+  --panel-edge: var(--danger);
+}

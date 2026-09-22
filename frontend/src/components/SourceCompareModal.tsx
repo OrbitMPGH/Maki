@@ -337,7 +337,7 @@ export function SourceCompareModal({
       <Modal
         opened={opened}
         onClose={onClose}
-        size="95%"
+        size="min(1180px, calc(100vw - 3rem))"
         title={t`Compare sources`}
         styles={{ body: { paddingTop: 0 } }}
         // Both modals hear the same Escape, so without this one keypress closes the zoom *and*

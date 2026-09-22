@@ -132,7 +132,6 @@ export function ImportReviewModal({
       onClose={onClose}
       title={t`Review import`}
       size="lg"
-      radius="md"
     >
       {isLoading || !plan ? (
         <Group justify="center" py="xl">

@@ -672,7 +672,7 @@ function BulkDeleteModal({
       title={title}
       centered
       size="lg"
-      scrollAreaComponent={ScrollArea.Autosize}
+      attributes={{ content: { 'data-edge': 'danger' } }}
     >
       <Stack gap="md">
         <Alert color="var(--danger)">

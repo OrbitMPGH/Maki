@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import {
   Badge,
   Box,
@@ -45,6 +45,16 @@ import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
+
+/**
+ * The theme gives every utility modal a `ScrollArea.Autosize` so its body scrolls under the
+ * header. This modal scrolls `.discover-body` instead, through a flex chain that runs from the
+ * content element down; the extra scroll-area wrappers would break that chain, so it opts back
+ * out to Mantine's own pass-through.
+ */
+function NoScrollArea({ children }: { children: ReactNode }) {
+  return <>{children}</>
+}
 
 export function DiscoverDetailModal({
   item,
@@ -123,6 +133,7 @@ export function DiscoverDetailModal({
       title={null}
       padding={0}
       withCloseButton={false}
+      scrollAreaComponent={NoScrollArea}
       zIndex={1000}
       // Mantine reserves 5vh above and below by default, and caps the card at what is left. Two
       // gives the modal most of the screen and still keeps it a card rather than a page.

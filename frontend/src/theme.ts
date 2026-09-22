@@ -6,6 +6,7 @@ import {
   type MantineThemeOverride,
   Modal,
   Paper,
+  ScrollArea,
   Table,
   createTheme,
 } from '@mantine/core'
@@ -138,8 +139,26 @@ const themeBase: MantineThemeOverride = {
     Badge: Badge.extend({
       defaultProps: { radius: 'sm', fw: 600 },
     }),
+    /**
+     * The utility tier: every ordinary dialog gets the raised card, the sectioned header over a
+     * hairline and a body that scrolls under it, without touching the call site. The immersive
+     * Discover modal opts out by passing `padding={0} title={null} withCloseButton={false}` (no
+     * header renders at all) and its own content styles.
+     */
     Modal: Modal.extend({
-      defaultProps: { radius: 'lg', centered: true, overlayProps: { blur: 3, backgroundOpacity: 0.55 } },
+      defaultProps: {
+        radius: 'lg',
+        padding: 'lg',
+        centered: true,
+        scrollAreaComponent: ScrollArea.Autosize,
+        overlayProps: { blur: 3, backgroundOpacity: 0.55 },
+        classNames: {
+          content: 'utility-modal-content',
+          header: 'utility-modal-header',
+          title: 'utility-modal-title',
+          close: 'utility-modal-close',
+        },
+      },
     }),
     Table: Table.extend({
       defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md' },

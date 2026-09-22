@@ -267,6 +267,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             onClose={() => setConfirmOpen(false)}
             title={t`Delete files from disk?`}
             centered
+            attributes={{ content: { 'data-edge': 'danger' } }}
           >
             <Stack gap="md">
               <Text size="sm" c="var(--ink-3)">
@@ -285,7 +286,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   <Trans>Cancel</Trans>
                 </Button>
                 <Button
-                  color="red"
+                  color="var(--danger)"
                   leftSection={<IconTrash size={16} />}
                   loading={deleteFiles.isPending}
                   onClick={() =>
