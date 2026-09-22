@@ -2260,6 +2260,39 @@ body {
   border-radius: 50%;
   background: var(--bucket, var(--neutral));
 }
+/* Interactive chips (TagChip with onClick/href) and the brand-tinted active state. */
+.tag-chip-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tag-chip[data-size='sm'] {
+  padding: 2px 8px;
+  font-size: var(--type-micro);
+}
+.tag-chip[data-interactive] {
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+.tag-chip[data-interactive]:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+.tag-chip[data-interactive]:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.tag-chip[data-active] {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
+  color: var(--ink-hi);
+}
+.tag-chip[data-active] > .tag-dot {
+  background: var(--brand);
+}
 /* The blur is for the tag's name. A 6px dot rendered through it is just a smudge, and it gives
    away nothing anyway. */
 .tag-chip.spoiler-tag > .tag-dot {
@@ -3874,8 +3907,6 @@ body.reader-open {
 /* --- Library index: ruled, overflow-clipped block merging stats + toolbar --- */
 .library-index {
   margin-bottom: var(--mantine-spacing-lg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
   /* Clips the metric grid's cell borders back to the rounded edge. */
   overflow: hidden;
 }
@@ -3936,6 +3967,37 @@ body.reader-open {
   border-left: 2px solid var(--border-strong);
   border-right: 0;
 }
+/* --- Panel: shared accent-edge panel grammar (components/ui/Panel.tsx) --- */
+
+.panel {
+  box-shadow: none;
+}
+.panel[data-edge] {
+  --panel-edge: var(--border-strong);
+}
+.panel[data-edge='brand'] {
+  --panel-edge: var(--brand);
+}
+.panel[data-edge='info'] {
+  --panel-edge: var(--info);
+}
+.panel[data-edge='ok'] {
+  --panel-edge: var(--ok);
+}
+.panel[data-edge='warn'] {
+  --panel-edge: var(--warn);
+}
+.panel[data-edge='danger'] {
+  --panel-edge: var(--danger);
+}
+.panel[data-edge][data-edge-side='top'] {
+  border-top: 2px solid var(--panel-edge);
+}
+.panel[data-edge][data-edge-side='left'] {
+  border-left: 2px solid var(--panel-edge);
+  border-right: 0;
+}
+
 .series-detail-chapter-toolbar {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);

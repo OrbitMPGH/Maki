@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import {
   Alert,
   Button,
-  Card,
   Code,
   Group,
   NumberInput,
@@ -23,6 +22,7 @@ import {
 } from '../../api/auth'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
+import { Panel } from '../ui/Panel'
 
 /**
  * Instance security settings. Admin-only.
@@ -47,7 +47,7 @@ export function SecuritySection() {
   const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
 
   return (
-    <Card withBorder radius="md" padding="md" id="security">
+    <Panel edge="warn" id="security">
       <Title order={4} mb="sm">
         <Trans>Security</Trans>
       </Title>
@@ -128,7 +128,7 @@ export function SecuritySection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -154,7 +154,7 @@ export function OidcSection() {
   const redirectUrl = `${window.location.origin}${draft.redirectPath}`
 
   return (
-    <Card withBorder radius="md" padding="md" id="oidc">
+    <Panel id="oidc">
       <Title order={4} mb="sm">
         <Trans>Single sign-on</Trans>
       </Title>
@@ -291,6 +291,6 @@ export function OidcSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }

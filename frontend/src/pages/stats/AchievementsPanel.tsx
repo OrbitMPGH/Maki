@@ -24,6 +24,7 @@ import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useAchievements, useProgressSummary, useLeaderboard } from '../../api/hooks'
 import type { ReadingGoal } from '../../api/hooks'
+import { Panel } from '../../components/ui/Panel'
 import { StatTile } from '../../components/ui/StatTile'
 import { formatNumber, formatReadingTime } from '../../format'
 import { useLabel } from '../../i18n-context'
@@ -128,7 +129,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
 
   return (
     <Stack gap="lg">
-      <Card withBorder radius="md" padding="md">
+      <Panel edge="ok" p="md">
         <Group justify="space-between" wrap="wrap" gap="lg">
           <Group gap="md" wrap="nowrap">
             <RingProgress
@@ -181,7 +182,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
             </Group>
           )}
         </Group>
-      </Card>
+      </Panel>
 
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
         <StatTile label={t`Chapters read`} value={summary.chaptersRead} icon={IconBook2} />
@@ -210,7 +211,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
       {achievements && achievements.length > 0 && <AchievementGrid achievements={achievements} />}
 
       {leaderboard && leaderboard.length > 0 && (
-        <Card withBorder radius="md" padding="md">
+        <Panel p="md">
           <Title order={4} mb="xs">
             <Trans>Around the house</Trans>
           </Title>
@@ -248,7 +249,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
               ))}
             </Table.Tbody>
           </Table>
-        </Card>
+        </Panel>
       )}
     </Stack>
   )

@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Group, Paper, Skeleton, Text } from '@mantine/core'
+import { Box, Button, Paper, Skeleton } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import {
   IconBook,
@@ -339,28 +339,25 @@ function RailSkeleton() {
  * tracking configured the rails would stay empty no matter how much the user reads elsewhere.
  */
 function StartReadingPrompt({ tracking }: { tracking: boolean }) {
+  const { t } = useLingui()
   return (
-    <Paper withBorder radius="lg" p="lg" mt="xl">
-      <Group gap="sm" justify="space-between" wrap="wrap">
-        <div style={{ minWidth: 0 }}>
-          <Text fw={700} c="var(--ink-hi)">
-            <Trans>Nothing to pick up yet</Trans>
-          </Text>
-          <Text size="sm" c="var(--ink-3)" mt={4}>
-            {tracking ? (
-              <Trans>Open a chapter and it will show up here, ready to resume.</Trans>
-            ) : (
-              <Trans>
-                Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where
-                you are.
-              </Trans>
-            )}
-          </Text>
-        </div>
-        <Button component={Link} to="/library" variant="light" leftSection={<IconClock size={16} />}>
-          <Trans>Browse library</Trans>
-        </Button>
-      </Group>
-    </Paper>
+    <Box mt="xl">
+      <EmptyState
+        icon={IconClock}
+        title={t`Nothing to pick up yet`}
+        description={
+          tracking ? (
+            <Trans>Open a chapter and it will show up here, ready to resume.</Trans>
+          ) : (
+            <Trans>
+              Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking
+              where you are.
+            </Trans>
+          )
+        }
+        actionLabel={t`Browse library`}
+        actionTo="/library"
+      />
+    </Box>
   )
 }

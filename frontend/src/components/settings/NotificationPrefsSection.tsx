@@ -1,4 +1,5 @@
-import { Card, Divider, Group, SegmentedControl, Stack, Switch, Text, Title } from '@mantine/core'
+import { Divider, Group, SegmentedControl, Stack, Switch, Text, Title } from '@mantine/core'
+import { Panel } from '../ui/Panel'
 import {
   INBOX_ADMIN_ONLY,
   INBOX_CATEGORIES,
@@ -42,7 +43,7 @@ export function NotificationPrefsSection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="lg">
+    <Panel>
       <Title order={4}>
         <Trans>Notifications</Trans>
       </Title>
@@ -104,6 +105,6 @@ export function NotificationPrefsSection() {
           </Stack>
         </div>
       ))}
-    </Card>
+    </Panel>
   )
 }

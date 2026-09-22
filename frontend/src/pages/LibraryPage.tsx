@@ -85,7 +85,9 @@ import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { StatTile } from '../components/ui/StatTile'
+import { TagChip } from '../components/ui/TagChip'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
@@ -740,7 +742,7 @@ export default function LibraryPage() {
       />
 
       {series && series.length > 0 && (
-        <div className="library-index layer-sunken">
+        <Panel edge="brand" p={0} className="library-index layer-sunken">
           <SimpleGrid
             className="library-index-metrics"
             cols={{ base: 2, sm: stats.inQueue > 0 ? 5 : 4 }}
@@ -881,27 +883,27 @@ export default function LibraryPage() {
 
               <Group className="library-saved-filters" gap="xs" wrap="wrap">
                 {(savedFilters ?? []).map((f) => (
-                <Badge
-                  key={f.id}
-                  variant={activeFilterId === f.id ? 'filled' : 'light'}
-                  color={activeFilterId === f.id ? 'brand' : 'gray'}
-                  leftSection={<IconBookmark size={11} />}
-                  rightSection={
-                    <IconX
-                      size={11}
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteSavedFilter.mutate(f.id)
-                        if (activeFilterId === f.id) setActiveFilterId(null)
-                      }}
-                    />
-                  }
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => applySpec(f.spec, f.id)}
-                >
-                  {f.name}
-                </Badge>
+                <Group key={f.id} gap={2}>
+                  <TagChip
+                    active={activeFilterId === f.id}
+                    onClick={() => applySpec(f.spec, f.id)}
+                  >
+                    <IconBookmark size={11} />
+                    {f.name}
+                  </TagChip>
+                  <ActionIcon
+                    size="xs"
+                    variant="subtle"
+                    color="var(--ink-4)"
+                    aria-label={t`Delete saved filter`}
+                    onClick={() => {
+                      deleteSavedFilter.mutate(f.id)
+                      if (activeFilterId === f.id) setActiveFilterId(null)
+                    }}
+                  >
+                    <IconX size={11} />
+                  </ActionIcon>
+                </Group>
               ))}
               {filtersActive && (
                 <Button
@@ -941,7 +943,7 @@ export default function LibraryPage() {
               </Group>
             </Stack>
           )}
-        </div>
+        </Panel>
       )}
 
       <Drawer

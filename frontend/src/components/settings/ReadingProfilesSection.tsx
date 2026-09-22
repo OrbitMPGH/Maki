@@ -28,6 +28,7 @@ import {
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
 import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
+import { Panel } from '../ui/Panel'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
@@ -70,7 +71,7 @@ export function ReadingProfilesSection() {
   const [creating, setCreating] = useState(false)
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Group justify="space-between" mb="sm">
         <Title order={4}>
           <Trans>Reading profiles</Trans>
@@ -123,7 +124,7 @@ export function ReadingProfilesSection() {
           </Text>
         )}
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 

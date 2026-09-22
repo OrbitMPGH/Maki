@@ -3,7 +3,6 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Checkbox,
   Group,
   Modal,
@@ -36,6 +35,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { Panel } from '../ui/Panel'
 
 /**
  * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
@@ -92,7 +92,7 @@ export function UsersSection() {
   const remove = useDeleteUser()
 
   return (
-    <Card withBorder radius="md" padding="md" id="users">
+    <Panel edge="brand" id="users" p="md">
       <Group justify="space-between" mb="sm">
         <Title order={4}>
           <Trans>Users</Trans>
@@ -189,7 +189,7 @@ export function UsersSection() {
       </Table.ScrollContainer>
 
       {editing && <UserModal target={editing} onClose={() => setEditing(null)} />}
-    </Card>
+    </Panel>
   )
 }
 

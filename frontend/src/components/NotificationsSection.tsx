@@ -3,7 +3,6 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Card,
   Group,
   Modal,
   PasswordInput,
@@ -28,6 +27,7 @@ import type { NotificationDto, NotificationRequest, NotificationType } from '../
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { Panel } from './ui/Panel'
 import { useLabel } from '../i18n-context'
 
 const EVENT_FIELDS: { key: keyof NotificationRequest['events']; label: MessageDescriptor; description: MessageDescriptor }[] = [
@@ -130,7 +130,7 @@ export function NotificationsSection() {
   const form = editing?.form
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Group justify="space-between" mb="sm">
         <Title order={4}><Trans>Notifications</Trans></Title>
         <Button size="xs" leftSection={<IconBellPlus size={16} />} onClick={openNew}>
@@ -274,6 +274,6 @@ export function NotificationsSection() {
           </Stack>
         )}
       </Modal>
-    </Card>
+    </Panel>
   )
 }

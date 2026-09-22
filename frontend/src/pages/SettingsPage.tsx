@@ -9,7 +9,6 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Checkbox,
   Code,
   FileButton,
@@ -46,6 +45,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { Panel } from '../components/ui/Panel'
 import { RecommendationModelCards } from '../components/RecommendationModelCards'
 import { NamingFormatInput } from '../components/NamingFormatInput'
 import { PriorityList } from '../components/PriorityList'
@@ -150,7 +150,7 @@ function RootFoldersSection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Root Folders</Trans>
       </Title>
@@ -209,7 +209,7 @@ function RootFoldersSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -236,7 +236,7 @@ function SourceLanguageSection() {
   const noneEnabled = order !== null && disabled !== null && order.every((c) => disabled.includes(c))
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Languages</Trans>
       </Title>
@@ -290,7 +290,7 @@ function SourceLanguageSection() {
       >
         <Trans>Save</Trans>
       </Button>
-    </Card>
+    </Panel>
   )
 }
 
@@ -318,7 +318,7 @@ function SourcePrioritySection() {
     (order.join(',') !== priority.order.join(',') || key(disabled) !== key(priority.disabled))
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Sources</Trans>
       </Title>
@@ -399,7 +399,7 @@ function SourcePrioritySection() {
       >
         <Trans>Save</Trans>
       </Button>
-    </Card>
+    </Panel>
   )
 }
 
@@ -419,7 +419,7 @@ function MetadataSection() {
     : undefined
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Metadata</Trans>
       </Title>
@@ -484,7 +484,7 @@ function MetadataSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -507,7 +507,7 @@ function RecommendationIndexSection() {
     })
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Recommendations</Trans>
       </Title>
@@ -521,7 +521,7 @@ function RecommendationIndexSection() {
       </Text>
 
       <RecommendationModelCards status={status} busy={setModel.isPending} onSelect={selectModel} />
-    </Card>
+    </Panel>
   )
 }
 
@@ -531,7 +531,7 @@ function MonitoringSection() {
   const save = useSaveMonitoringSettings()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Monitoring</Trans>
       </Title>
@@ -552,7 +552,7 @@ function MonitoringSection() {
           })
         }
       />
-    </Card>
+    </Panel>
   )
 }
 
@@ -561,7 +561,7 @@ function DiscoverSection() {
   const save = useSaveDiscoverSettings()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         Discover
       </Title>
@@ -576,7 +576,7 @@ function DiscoverSection() {
         value={settings?.maxContentRating ?? 'erotica'}
         onChange={(rating) => save.mutate(rating)}
       />
-    </Card>
+    </Panel>
   )
 }
 
@@ -633,7 +633,7 @@ function LibrarySection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Library files</Trans>
       </Title>
@@ -870,7 +870,7 @@ function LibrarySection() {
           </Group>
         ))}
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -895,7 +895,7 @@ function ReaderSection() {
     )
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Reader</Trans>
       </Title>
@@ -1003,7 +1003,7 @@ function ReaderSection() {
 
         {ownsKavita ? <KavitaReadImportControl /> : null}
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1049,7 +1049,7 @@ function OpdsSection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         OPDS
       </Title>
@@ -1176,7 +1176,7 @@ function OpdsSection() {
           </Group>
         </Stack>
       </Modal>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1285,7 +1285,7 @@ function DownloadSection() {
       useHardlinks !== settings.useHardlinks)
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Downloads</Trans>
       </Title>
@@ -1432,7 +1432,7 @@ function DownloadSection() {
       >
         <Trans>Save</Trans>
       </Button>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1484,7 +1484,7 @@ function BackupSection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Backup &amp; Restore</Trans>
       </Title>
@@ -1627,7 +1627,7 @@ function BackupSection() {
           </Group>
         </Stack>
       </Modal>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1750,7 +1750,7 @@ function FlareSolverrSection() {
   }, [settings?.url])
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         FlareSolverr
       </Title>
@@ -1790,7 +1790,7 @@ function FlareSolverrSection() {
           <Trans>Save</Trans>
         </Button>
       </Group>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1813,7 +1813,7 @@ function ScrobbleSection() {
   const origin = window.location.origin
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="xs">
         <Trans>Scrobbling</Trans>
       </Title>
@@ -1947,7 +1947,7 @@ function ScrobbleSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1977,7 +1977,7 @@ function StartPageSection() {
   const homeEnabled = ui?.homeLayout.enabled ?? true
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Start page</Trans>
       </Title>
@@ -1998,7 +1998,7 @@ function StartPageSection() {
         allowDeselect={false}
         maw={260}
       />
-    </Card>
+    </Panel>
   )
 }
 
@@ -2023,7 +2023,7 @@ function LanguageSection() {
   const currentLocaleLabel = locales.find((l) => l.code === locale)?.label ?? locale
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Language</Trans>
       </Title>
@@ -2048,7 +2048,7 @@ function LanguageSection() {
           corrected over time; anything still untranslated falls back to English.
         </Trans>
       </Text>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2086,7 +2086,7 @@ function TitleLanguageSection() {
   const primary = stored.split(',')[0] ?? ''
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Title language</Trans>
       </Title>
@@ -2106,7 +2106,7 @@ function TitleLanguageSection() {
         allowDeselect={false}
         maw={260}
       />
-    </Card>
+    </Panel>
   )
 }
 
@@ -2126,7 +2126,7 @@ function SeriesPageSection() {
     patch?.({ seriesSections: { related, similar, ...next } })
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Series page</Trans>
       </Title>
@@ -2151,7 +2151,7 @@ function SeriesPageSection() {
           description={t`Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index.`}
         />
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2210,7 +2210,7 @@ function HomeSectionsSection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <div>
           <Title order={4} mb={4}>
@@ -2317,7 +2317,7 @@ function HomeSectionsSection() {
           })}
         </Stack>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -2326,7 +2326,7 @@ function AppearanceSection() {
   const { themeId, setThemeId, presets } = useThemeChoice()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Appearance</Trans>
       </Title>
@@ -2373,7 +2373,7 @@ function AppearanceSection() {
           )
         })}
       </Group>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2382,7 +2382,7 @@ function GeneralSection() {
   const completeSetup = useCompleteSetup()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>General</Trans>
       </Title>
@@ -2410,7 +2410,7 @@ function GeneralSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2424,7 +2424,7 @@ function UpdatesSection() {
   const checkedAtLabel = status?.checkedAt ? formatDateTime(status.checkedAt) : undefined
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Updates</Trans>
       </Title>
@@ -2483,7 +2483,7 @@ function UpdatesSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2551,7 +2551,7 @@ function ImageCacheSection() {
     })
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Image cache</Trans>
       </Title>
@@ -2667,7 +2667,7 @@ function ImageCacheSection() {
           </Group>
         </Stack>
       </Modal>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2689,7 +2689,7 @@ function KavitaUserSection() {
     .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Kavita reading</Trans>
       </Title>
@@ -2712,7 +2712,7 @@ function KavitaUserSection() {
           })
         }
       />
-    </Card>
+    </Panel>
   )
 }
 

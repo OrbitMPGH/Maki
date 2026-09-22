@@ -1,8 +1,6 @@
 import { useMemo } from 'react'
 import {
   Alert,
-  Badge,
-  Card,
   Group,
   Loader,
   Progress,
@@ -28,8 +26,10 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useLibraryComposition } from '../../api/hooks'
 import type { NamedCount } from '../../api/hooks'
+import { Panel } from '../../components/ui/Panel'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
+import { TagChip, TagChips } from '../../components/ui/TagChip'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 import { formatBytes, formatMonthBucket, formatNumber } from '../../format'
 
@@ -55,7 +55,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
   }))
 
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel edge="info" p="md">
       <Text fw={650} mb="md">
         {title}
       </Text>
@@ -89,7 +89,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
           </Stack>
         </Group>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -162,7 +162,7 @@ export function LibraryPanel() {
       {growthData.length > 0 && (
         <div>
           <SectionHeader icon={IconTrendingUp} title={t`Growth`} />
-          <Card padding="md" radius="lg" withBorder>
+          <Panel p="md">
             <AreaChart
               h={240}
               data={growthData}
@@ -177,7 +177,7 @@ export function LibraryPanel() {
                 { name: 'Added', label: t`Added`, color: 'var(--ok)' },
               ]}
             />
-          </Card>
+          </Panel>
         </div>
       )}
 
@@ -192,7 +192,7 @@ export function LibraryPanel() {
       <div>
         <SectionHeader icon={IconServer} title={t`Where it came from`} />
         <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-          <Card padding="md" radius="lg" withBorder>
+          <Panel p="md">
             <Text fw={650} mb="xs">
               <Trans>Sources</Trans>
             </Text>
@@ -229,9 +229,9 @@ export function LibraryPanel() {
                 </Table.Tbody>
               </Table>
             )}
-          </Card>
+          </Panel>
 
-          <Card padding="md" radius="lg" withBorder>
+          <Panel p="md">
             <Text fw={650} mb="xs">
               <Trans>Biggest series</Trans>
             </Text>
@@ -262,22 +262,22 @@ export function LibraryPanel() {
                 ))}
               </Stack>
             )}
-          </Card>
+          </Panel>
         </SimpleGrid>
       </div>
 
       {stats.topGenres.length > 0 && (
         <div>
           <SectionHeader icon={IconBooks} title={t`Genres in the library`} />
-          <Card padding="md" radius="lg" withBorder>
-            <Group gap={6}>
+          <Panel p="md">
+            <TagChips>
               {stats.topGenres.map((g) => (
-                <Badge key={g.name} variant="default" color="var(--neutral)" fw={500}>
+                <TagChip key={g.name}>
                   {g.name} <span className="tnum">{g.count}</span>
-                </Badge>
+                </TagChip>
               ))}
-            </Group>
-          </Card>
+            </TagChips>
+          </Panel>
         </div>
       )}
     </Stack>

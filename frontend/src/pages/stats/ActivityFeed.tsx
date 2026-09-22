@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Anchor, Card, Group, Stack, Text, ThemeIcon } from '@mantine/core'
+import { Anchor, Group, Stack, Text, ThemeIcon } from '@mantine/core'
 import {
   IconChecks,
   IconClockPause,
@@ -12,6 +12,7 @@ import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useRootFolders, type ActivityStats, type RecommendationItem } from '../../api/hooks'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
+import { Panel } from '../../components/ui/Panel'
 import { formatDate } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
@@ -149,7 +150,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
   const shown = expanded ? entries : entries.slice(0, PAGE)
 
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel p="md">
       <Stack gap={2}>
         {shown.map((e, i) => {
           const kind = KIND[e.kind]
@@ -204,6 +205,6 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
         rootFolders={rootFolders}
         onClose={() => setSelectedRemoved(null)}
       />
-    </Card>
+    </Panel>
   )
 }

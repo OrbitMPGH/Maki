@@ -5,9 +5,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
-  Badge,
   Button,
-  Card,
   Collapse,
   Group,
   Modal,
@@ -99,7 +97,9 @@ import {
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
 import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -562,7 +562,7 @@ function RecommendedTab() {
       </Group>
 
       <Collapse expanded={customizeOpen}>
-        <Card withBorder radius="md" padding="md" mb="md">
+        <Panel edge="brand" p="md" mb="md">
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}
@@ -777,17 +777,15 @@ function RecommendedTab() {
               </Group>
             </Group>
           </Stack>
-        </Card>
+        </Panel>
       </Collapse>
 
       {isCustomized && !customizeOpen && (
-        <Group gap={6} mb="md">
+        <TagChips style={{ marginBottom: 'var(--mantine-spacing-md)' }}>
           {activeFilterChips.map((chip) => (
-            <Badge key={chip} variant="light" color="brand" size="sm" radius="sm">
-              {chip}
-            </Badge>
+            <TagChip key={chip}>{chip}</TagChip>
           ))}
-        </Group>
+        </TagChips>
       )}
 
       {error && (
@@ -1018,7 +1016,7 @@ function FeedExpandModal({
       }
       styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
     >
-      <Card withBorder radius="md" padding="md" mb="md">
+      <Panel edge="brand" p="md" mb="md">
         <Stack gap="md">
           <CatalogueFilters controls={catalogue.controls} />
           <CatalogueFilterActions
@@ -1030,7 +1028,7 @@ function FeedExpandModal({
             onApply={() => setApplied(catalogue.build())}
           />
         </Stack>
-      </Card>
+      </Panel>
 
       {error && (
         <Alert color="var(--warn)" variant="light">

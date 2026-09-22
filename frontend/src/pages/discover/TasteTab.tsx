@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Alert,
   Anchor,
-  Badge,
   Button,
   Card,
   Center,
@@ -56,6 +55,8 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
+import { Panel } from '../../components/ui/Panel'
+import { TagChip } from '../../components/ui/TagChip'
 import { SignalsCard } from './FeedbackLab'
 import { formatNumber, formatReadingTime } from '../../format'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
@@ -112,7 +113,7 @@ function GroupCard({
   })
 
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel edge="brand" p="md">
       <Group justify="space-between" align="center" wrap="wrap" gap="xs" mb="xs">
         <Text fw={650} style={{ minWidth: 0 }}>
           {group.label}
@@ -141,7 +142,7 @@ function GroupCard({
           <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} />
         </>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -299,9 +300,9 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
             </Text>
             <Group gap={4} style={{ flexShrink: 0 }}>
               {point.distinctiveTags.slice(0, 2).map((tag) => (
-                <Badge key={tag} variant="light" color="var(--watched)" size="xs">
+                <TagChip key={tag} dot="var(--watched)" size="sm">
                   {tag}
-                </Badge>
+                </TagChip>
               ))}
             </Group>
             <Text c="var(--ink-3)" size="xs" truncate style={{ flex: 1, minWidth: 0 }}>
@@ -327,9 +328,9 @@ function OverIndex({ facet }: { facet: TasteFacet }) {
   const label = t`Reached for ${ratioValue} more than owning it would predict, across ${seriesPhrase}`
   return (
     <Tooltip label={label} multiline w={260}>
-      <Badge variant="light" color="brand" size="sm" style={{ flexShrink: 0 }}>
+      <TagChip dot="var(--brand)" size="sm" style={{ flexShrink: 0 }}>
         {ratioValue}
-      </Badge>
+      </TagChip>
     </Tooltip>
   )
 }
@@ -342,9 +343,9 @@ function AgainstCatalogue({ facet }: { facet: TasteFacet }) {
   const label = t`${ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read`
   return (
     <Tooltip label={label} multiline w={260}>
-      <Badge variant="outline" color="var(--neutral)" size="sm" style={{ flexShrink: 0 }}>
+      <TagChip dot="var(--neutral)" size="sm" style={{ flexShrink: 0 }}>
         <Trans>cat {ratioValue}</Trans>
-      </Badge>
+      </TagChip>
     </Tooltip>
   )
 }
@@ -370,7 +371,7 @@ function CompositionCard({
   const byName = new Map(facets.map((f) => [f.name, f]))
 
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel edge="info" p="md">
       <Text fw={650} mb="md">
         {title}
       </Text>
@@ -405,7 +406,7 @@ function CompositionCard({
           </Stack>
         </Group>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -457,7 +458,7 @@ function TagsCard({
   onExplore: (tag: string) => void
 }) {
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel edge="strong" p="md">
       <Group gap={8} mb="xs" wrap="nowrap">
         <IconTags size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
         <Text fw={650}>
@@ -473,15 +474,14 @@ function TagsCard({
         <Stack gap={8}>
           {facets.slice(0, HEAD).map((f) => (
             <Group key={f.name} gap={8} wrap="nowrap">
-              <Badge
-                variant="light"
-                color="var(--watched)"
+              <TagChip
+                dot="var(--watched)"
                 size="sm"
-                style={{ cursor: 'pointer', flexShrink: 0 }}
+                style={{ flexShrink: 0 }}
                 onClick={() => onExplore(f.name)}
               >
                 {f.name}
-              </Badge>
+              </TagChip>
               <div style={{ flex: 1 }} />
               <OverIndex facet={f} />
               <AgainstCatalogue facet={f} />
@@ -492,7 +492,7 @@ function TagsCard({
           ))}
         </Stack>
       )}
-    </Card>
+    </Panel>
   )
 }
 

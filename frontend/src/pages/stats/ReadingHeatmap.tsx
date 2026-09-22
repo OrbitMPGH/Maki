@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import { Box, Card, Group, Text, Title, Tooltip } from '@mantine/core'
+import { Box, Group, Text, Title, Tooltip } from '@mantine/core'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import type { HeatmapDay } from '../../api/hooks'
+import { Panel } from '../../components/ui/Panel'
 import { formatDate, monthName } from '../../format'
 
 const WEEKS = 53
@@ -76,7 +77,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
   }, [days, i18n.locale])
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel p="md">
       <Title order={4} mb="xs">
         <Trans>Reading days</Trans>
       </Title>
@@ -141,6 +142,6 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
           <Trans>More</Trans>
         </Text>
       </Group>
-    </Card>
+    </Panel>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Button, Card, Group, PasswordInput, Text, TextInput, Title } from '@mantine/core'
+import { Button, Group, PasswordInput, Text, TextInput, Title } from '@mantine/core'
+import { Panel } from './ui/Panel'
 import { notifications } from '@mantine/notifications'
 import { Trans } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -49,7 +50,7 @@ export function ConnectionSettingsCard({
     Object.fromEntries(fields.map((f) => [f.key, values[f.key] || null]))
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel edge="info">
       <Title order={4} mb="sm">
         {title}
       </Title>
@@ -107,6 +108,6 @@ export function ConnectionSettingsCard({
         </Button>
       </Group>
       {children}
-    </Card>
+    </Panel>
   )
 }

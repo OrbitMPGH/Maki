@@ -37,6 +37,7 @@ import {
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
+import { TagChip, TagChips } from '../ui/TagChip'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
@@ -405,13 +406,13 @@ export function DiscoverDetailModal({
                         <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase" mb={6}>
                           <Trans>Genres</Trans>
                         </Text>
-                        <Group gap={6}>
+                        <TagChips>
                           {genres.map((g) => (
-                            <Badge key={g} variant="dot" color="blue">
+                            <TagChip key={g} dot="var(--info)">
                               {genreLabel(g)}
-                            </Badge>
+                            </TagChip>
                           ))}
-                        </Group>
+                        </TagChips>
                       </div>
                     )}
 

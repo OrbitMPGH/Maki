@@ -3,7 +3,6 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Code,
   CopyButton,
   Divider,
@@ -38,6 +37,7 @@ import {
 import { useAuth } from '../../auth/AuthProvider'
 import { getInitialize } from '../../api/client'
 import { formatDateTime } from '../../format'
+import { Panel } from '../ui/Panel'
 
 /**
  * Self-service account management: password, two-factor, API keys, sessions.
@@ -49,7 +49,7 @@ export function AccountSection() {
   const { me } = useAuth()
 
   return (
-    <Card withBorder radius="md" padding="md" id="account">
+    <Panel id="account">
       <Title order={4} mb="sm">
         <Trans>My account</Trans>
       </Title>
@@ -76,7 +76,7 @@ export function AccountSection() {
         <Divider />
         <SessionsCard />
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 

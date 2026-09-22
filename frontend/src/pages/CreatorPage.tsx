@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
-  Badge,
   Button,
-  Card,
   Collapse,
   Group,
   Select,
@@ -33,7 +31,9 @@ import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { TagChip } from '../components/ui/TagChip'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
@@ -146,9 +146,9 @@ export default function CreatorPage() {
         actions={
           <Group gap="xs">
             {(data?.roles ?? []).map((r) => (
-              <Badge key={r} variant="light" size="sm">
+              <TagChip key={r} size="sm">
                 {renderLabel(ROLE_LABELS[r] ?? r)}
-              </Badge>
+              </TagChip>
             ))}
           </Group>
         }
@@ -177,7 +177,7 @@ export default function CreatorPage() {
       </Group>
 
       <Collapse expanded={filtersOpen}>
-        <Card withBorder radius="md" padding="md" mb="md">
+        <Panel edge="strong" p="md" mb="md">
           <Stack gap="md">
             <CatalogueFilters controls={catalogue.controls} />
             <CatalogueFilterActions
@@ -192,7 +192,7 @@ export default function CreatorPage() {
               }}
             />
           </Stack>
-        </Card>
+        </Panel>
       </Collapse>
 
       {isFetching && !data && (

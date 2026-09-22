@@ -1,5 +1,6 @@
-import { Card, Group, Stack, Text } from '@mantine/core'
+import { Group, Stack, Text } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
+import { Panel } from '../../components/ui/Panel'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 export interface RankItem {
@@ -29,7 +30,7 @@ export function RankList({
   emptyText: string
 }) {
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel p="md">
       <Group gap={8} mb="xs" wrap="nowrap">
         <RankIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
         <Text fw={650}>{title}</Text>
@@ -56,6 +57,6 @@ export function RankList({
           ))}
         </Stack>
       )}
-    </Card>
+    </Panel>
   )
 }

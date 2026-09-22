@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
   Alert,
-  Badge,
-  Card,
   Group,
   Loader,
   SegmentedControl,
@@ -29,8 +27,10 @@ import { plural } from '@lingui/core/macro'
 import { useProgressSummary, useReadingHeatmap, useActivityStats } from '../../api/hooks'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLabel } from '../../i18n-context'
+import { Panel } from '../../components/ui/Panel'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
+import { TagChip, TagChips } from '../../components/ui/TagChip'
 import { formatReadingTime, monthName } from '../../format'
 import { ActivityFeed } from './ActivityFeed'
 import { ProgressStrip } from './ProgressStrip'
@@ -278,7 +278,7 @@ export function OverviewPanel({
 
         <div>
           <SectionHeader icon={IconCalendarStats} title={t`Activity`} />
-          <Card padding="md" radius="lg" withBorder>
+          <Panel edge="brand" p="md">
             <Group justify="flex-end" mb="sm">
               <SegmentedControl
                 size="xs"
@@ -316,7 +316,7 @@ export function OverviewPanel({
                 }
               />
             )}
-          </Card>
+          </Panel>
         </div>
 
         {progressOn && heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
@@ -357,7 +357,7 @@ export function OverviewPanel({
           <div>
             <SectionHeader icon={IconChecks} title={t`Taste`} />
             <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-              <Card padding="md" radius="lg" withBorder>
+              <Panel p="md">
                 <Text fw={650} mb="md">
                   <Trans>Top genres</Trans>
                 </Text>
@@ -391,8 +391,8 @@ export function OverviewPanel({
                     </Stack>
                   </Group>
                 )}
-              </Card>
-              <Card padding="md" radius="lg" withBorder>
+              </Panel>
+              <Panel p="md">
                 <Text fw={650} mb="md">
                   <Trans>Favorite tags</Trans>
                 </Text>
@@ -401,15 +401,13 @@ export function OverviewPanel({
                     <Trans>No tag data yet.</Trans>
                   </Text>
                 ) : (
-                  <Group gap={6}>
+                  <TagChips>
                     {stats.topTags.map((t) => (
-                      <Badge key={t.name} variant="default" color="var(--neutral)" fw={500}>
-                        {t.name}
-                      </Badge>
+                      <TagChip key={t.name}>{t.name}</TagChip>
                     ))}
-                  </Group>
+                  </TagChips>
                 )}
-              </Card>
+              </Panel>
             </SimpleGrid>
           </div>
         )}

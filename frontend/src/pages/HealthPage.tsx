@@ -12,7 +12,6 @@ import {
   Modal,
   NumberInput,
   Pagination,
-  Paper,
   ScrollArea,
   Select,
   SimpleGrid,
@@ -60,6 +59,7 @@ import {
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { StatTile } from '../components/ui/StatTile'
 import { formatDateTime, formatNumber } from '../format'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -332,7 +332,7 @@ export default function HealthPage() {
             </Group>
 
             {selectedCount > 0 && (
-              <Paper withBorder radius="md" p="xs" className="health-bulk-bar">
+              <Panel p="xs" className="health-bulk-bar">
                 <Text size="sm" fw={600} className="tnum">
                   <Trans>{selectedCount} selected</Trans>
                 </Text>
@@ -391,7 +391,7 @@ export default function HealthPage() {
                     <Trans>Clear</Trans>
                   </Button>
                 </Group>
-              </Paper>
+              </Panel>
             )}
 
             {deleteReport && failedCount > 0 && (
@@ -520,7 +520,7 @@ export default function HealthPage() {
             {operations.data?.items.map((op) => {
               const { id: opId, kind: opKind } = op
               return (
-                <Paper withBorder radius="lg" p="md" key={op.id}>
+                <Panel p="md" key={op.id}>
                   <Group justify="space-between">
                     <div>
                       <Group>
@@ -541,7 +541,7 @@ export default function HealthPage() {
                       <Trans>Review</Trans>
                     </Button>
                   </Group>
-                </Paper>
+                </Panel>
               )
             })}
             {operations.data?.items.length === 0 && (
@@ -683,7 +683,7 @@ function BulkDeleteModal({
             clears the record that still says their chapters are downloaded.
           </Trans>
         </Alert>
-        <Paper withBorder radius="md" p="sm">
+        <Panel p="sm">
           <Stack gap={4}>
             {named.map((path) => (
               <Text key={path} size="xs" c="var(--ink-3)" style={{ overflowWrap: 'anywhere' }}>
@@ -696,7 +696,7 @@ function BulkDeleteModal({
               </Text>
             )}
           </Stack>
-        </Paper>
+        </Panel>
         <Checkbox
           checked={confirmed}
           onChange={(e) => setConfirmed(e.currentTarget.checked)}
@@ -730,7 +730,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
   const totalChecks = checks.length
 
   return (
-    <Paper className="health-area-checks" withBorder radius="lg" p="lg">
+    <Panel edge="ok" className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
         <Title order={3} fz={17}>
           <Trans>System checks</Trans>
@@ -806,7 +806,7 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
           </div>
         )
       })}
-    </Paper>
+    </Panel>
   )
 }
 
@@ -858,7 +858,7 @@ function FileReview({
           )}
           <div className="health-review">
             <div className="health-review-column">
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Text fw={600} style={{ overflowWrap: 'anywhere' }}>
                   {data.file.relativePath}
                 </Text>
@@ -906,10 +906,10 @@ function FileReview({
                     </Button>
                   )}
                 </Group>
-              </Paper>
+              </Panel>
 
               {data.findings.map((f) => (
-                <Paper key={f.id} withBorder radius="md" p="md">
+                <Panel key={f.id} p="md">
                   <Group gap="sm" align="flex-start" wrap="nowrap">
                     <Status value={f.severity} />
                     <Text size="sm">{f.message}</Text>
@@ -939,7 +939,7 @@ function FileReview({
                         </Button>
                       ))}
                   </Group>
-                </Paper>
+                </Panel>
               ))}
 
               {!data.analysis.verified && (
@@ -955,7 +955,7 @@ function FileReview({
             </div>
 
             <div className="health-review-column">
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Title order={4} fz={15} mb="sm">
                   <Trans>Request replacement</Trans>
                 </Title>
@@ -1012,9 +1012,9 @@ function FileReview({
                     you approve application.
                   </Trans>
                 </Text>
-              </Paper>
+              </Panel>
 
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Title order={4} fz={15} mb="sm">
                   {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
@@ -1042,7 +1042,7 @@ function FileReview({
                 >
                   {gone ? <Trans>Review record removal</Trans> : <Trans>Review permanent deletion</Trans>}
                 </Button>
-              </Paper>
+              </Panel>
             </div>
           </div>
           </>
@@ -1079,7 +1079,7 @@ function UnlinkedPanel({
   const importable = seriesId != null && chapterCount > 0 && counterparts.length === 0
 
   return (
-    <Paper withBorder radius="md" p="md">
+    <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
         <Title order={4} fz={15}>
           <Trans>Not linked to any chapter</Trans>
@@ -1187,7 +1187,7 @@ function UnlinkedPanel({
           ))}
         </Stack>
       )}
-    </Paper>
+    </Panel>
   )
 }
 
@@ -1251,7 +1251,7 @@ function CompareArchives({
   ]
 
   return (
-    <Paper withBorder radius="md" p="md">
+    <Panel p="md">
       <div className="health-compare">
         <div />
         <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
@@ -1354,7 +1354,7 @@ function CompareArchives({
           </Trans>
         </Alert>
       )}
-    </Paper>
+    </Panel>
   )
 }
 
@@ -1407,7 +1407,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                     const { chapterId } = candidate
                     const pageCount = candidate.analysis.pages.length
                     return (
-                      <Paper key={candidate.chapterId} withBorder radius="md" p="md">
+                      <Panel key={candidate.chapterId} p="md">
                         <Group justify="space-between" wrap="nowrap" mb="sm">
                           <Text fw={600}>
                             <Trans>
@@ -1432,7 +1432,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                             />
                           ))}
                         </SimpleGrid>
-                      </Paper>
+                      </Panel>
                     )
                   })}
                 </>
@@ -1440,7 +1440,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             </div>
 
             <div className="health-review-column">
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Status value={data.operation.status} />
                 <Text fw={600} mt="sm" style={{ overflowWrap: 'anywhere' }}>
                   {data.file.relativePath}
@@ -1449,9 +1449,9 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                   {bytes(data.file.size, t`Missing`)} ·{' '}
                   <Plural value={chaptersCount} one="# affected chapter" other="# affected chapters" />
                 </Text>
-              </Paper>
+              </Panel>
 
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Stack gap="sm">
                   {data.operation.kind === 'repair' && data.requiresReset && (
                     <Checkbox
@@ -1512,7 +1512,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                       </Text>
                     )}
                 </Stack>
-              </Paper>
+              </Panel>
             </div>
           </div>
         )}
@@ -1531,7 +1531,7 @@ function OptionsPanel() {
   const update = (patch: Partial<HealthOptions>) => setDraft({ ...value, ...patch })
 
   return (
-    <Paper className="health-area-options" withBorder radius="lg" p="lg">
+    <Panel edge="strong" className="health-area-options" p="lg">
       <Stack>
         <Title order={3} fz={17}>
           <Trans>Health settings</Trans>
@@ -1591,7 +1591,7 @@ function OptionsPanel() {
           <Trans>Save health settings</Trans>
         </Button>
       </Stack>
-    </Paper>
+    </Panel>
   )
 }
 
@@ -1601,7 +1601,7 @@ function CachePanel() {
   const rebuild = useRebuildImageCache()
 
   return (
-    <Paper className="health-area-cache" withBorder radius="lg" p="lg">
+    <Panel edge="info" className="health-area-cache" p="lg">
       <Stack>
         <Title order={3} fz={17}>
           <Trans>Image cache and backups</Trans>
@@ -1640,6 +1640,6 @@ function CachePanel() {
           </Button>
         </Group>
       </Stack>
-    </Paper>
+    </Panel>
   )
 }

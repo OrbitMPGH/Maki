@@ -3,13 +3,10 @@ import { useLocation } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
-import { Link } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
-  Badge,
   Button,
-  Card,
   Collapse,
   Group,
   SegmentedControl,
@@ -25,6 +22,8 @@ import {
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/icons-react'
+import { Panel } from './ui/Panel'
+import { TagChip } from './ui/TagChip'
 import {
   BROWSE_SORTS,
   useDiscoverFeed,
@@ -330,7 +329,7 @@ export function CatalogueBrowser({
           </Group>
 
           <Collapse expanded={filtersOpen}>
-            <Card withBorder radius="md" padding="md" mb="md">
+            <Panel edge="strong" p="md" mb="md">
               <Stack gap="md">
                 <CatalogueFilters controls={catalogue.controls} />
                 <CatalogueFilterActions
@@ -344,7 +343,7 @@ export function CatalogueBrowser({
                   onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
                 />
               </Stack>
-            </Card>
+            </Panel>
           </Collapse>
         </>
       )}
@@ -375,9 +374,9 @@ export function CatalogueBrowser({
                 <CreditChip key={`${credit.name}-${credit.roles.join()}`} credit={credit} />
               ))}
               {search.data?.mode === 'title' && mode === 'smart' && (
-                <Badge variant="light" color="var(--neutral)" size="sm">
+                <TagChip size="sm" dot="var(--warn)">
                   <Trans>title match only, build the recommendation index for search by meaning</Trans>
-                </Badge>
+                </TagChip>
               )}
             </Group>
             <Group gap="xs">
@@ -449,16 +448,10 @@ export function CatalogueBrowser({
 /** A creator the query resolved to, linking through to everything they made. */
 function CreditChip({ credit }: { credit: ResolvedCredit }) {
   return (
-    <Badge
-      variant="light"
-      size="sm"
-      leftSection={<IconUser size={11} />}
-      component={Link}
-      to={`/creator/${encodeURIComponent(credit.name)}`}
-      style={{ cursor: 'pointer' }}
-    >
+    <TagChip href={`/creator/${encodeURIComponent(credit.name)}`} size="sm">
+      <IconUser size={11} />
       {credit.name} ({credit.workCount})
-    </Badge>
+    </TagChip>
   )
 }
 

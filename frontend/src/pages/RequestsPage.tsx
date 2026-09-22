@@ -9,7 +9,6 @@ import {
   Image,
   Modal,
   NumberInput,
-  Paper,
   SegmentedControl,
   Select,
   Stack,
@@ -44,6 +43,7 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { useLabel } from '../i18n-context'
 import { formatDate } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -217,7 +217,7 @@ export default function RequestsPage() {
             const askedFor = chapterRangeInline(r.originalChapterStart, r.originalChapterEnd)
             const { title, editedBy, resolvedBy } = r
             return (
-              <Paper key={r.id} withBorder radius="lg" p="sm">
+              <Panel key={r.id} p="sm">
                 <Group wrap="nowrap" align="flex-start">
                   <div
                     style={{
@@ -369,7 +369,7 @@ export default function RequestsPage() {
                     )}
                   </Group>
                 </Group>
-              </Paper>
+              </Panel>
             )
           })}
         </Stack>

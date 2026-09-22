@@ -1,7 +1,8 @@
-import { Anchor, Card, Group, RingProgress, Stack, Text } from '@mantine/core'
+import { Anchor, Group, RingProgress, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { ProgressSummary } from '../../api/hooks'
+import { Panel } from '../../components/ui/Panel'
 import { formatNumber } from '../../format'
 
 function Figure({ value, label, icon: FigIcon }: { value: string | number; label: string; icon?: typeof IconFlame }) {
@@ -42,7 +43,7 @@ export function ProgressStrip({
   const levelSpan = formatNumber(level.levelSpan)
 
   return (
-    <Card padding="md" radius="lg" withBorder>
+    <Panel p="md">
       <Group justify="space-between" wrap="wrap" gap="lg">
         <Group gap="md" wrap="nowrap">
           <RingProgress
@@ -81,6 +82,6 @@ export function ProgressStrip({
           </Anchor>
         </Group>
       </Group>
-    </Card>
+    </Panel>
   )
 }

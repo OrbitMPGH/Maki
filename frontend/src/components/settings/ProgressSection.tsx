@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Button,
-  Card,
   Group,
   NumberInput,
   Select,
@@ -24,6 +23,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { Panel } from '../ui/Panel'
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -100,7 +100,7 @@ export function ProgressSection() {
   const zone = browserTimeZone()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4}>
         <Trans>Progress & achievements</Trans>
       </Title>
@@ -213,6 +213,6 @@ export function ProgressSection() {
           </Group>
         </Stack>
       </Stack>
-    </Card>
+    </Panel>
   )
 }

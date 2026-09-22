@@ -4,7 +4,6 @@ import {
   Badge,
   Box,
   Button,
-  Card,
   Group,
   ScrollArea,
   SimpleGrid,
@@ -21,7 +20,9 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { statusToken, trackerConnectionVisual, trackerStatusVisual } from '../components/ui/status'
+import { TagChip } from '../components/ui/TagChip'
 import {
   useScrobbleAuthStart,
   useScrobbleDisconnect,
@@ -61,7 +62,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel edge="info" p="md">
       <Group gap="xs">
         <Box
           w={10}
@@ -94,7 +95,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
           )}
         </Group>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -118,12 +119,10 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel edge="warn" p="md">
       <Group gap="xs">
         <Text fw={700}>{item.title}</Text>
-        <Badge size="sm" variant="light">
-          {item.service}
-        </Badge>
+        <TagChip size="sm">{item.service}</TagChip>
       </Group>
       <Text size="sm" c="var(--ink-3)">
         {item.reason}
@@ -169,7 +168,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           <Trans>Ignore</Trans>
         </Button>
       </Group>
-    </Card>
+    </Panel>
   )
 }
 
@@ -359,7 +358,7 @@ export default function ScrobblePage() {
       <Title order={4} mb="sm">
         <Trans>Activity log</Trans>
       </Title>
-      <Card withBorder radius="md" padding="sm">
+      <Panel p="sm">
         <ScrollArea.Autosize mah={320}>
           {data && data.log.length > 0 ? (
             <Stack gap={2}>
@@ -394,7 +393,7 @@ export default function ScrobblePage() {
             </Text>
           )}
         </ScrollArea.Autosize>
-      </Card>
+      </Panel>
     </SurfaceFrame>
   )
 }

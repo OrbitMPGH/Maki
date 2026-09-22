@@ -2,7 +2,6 @@ import {
   ActionIcon,
   Box,
   Button,
-  Card,
   Chip,
   Group,
   Loader,
@@ -33,6 +32,7 @@ import { useLabel } from '../i18n-context'
 import { NotificationVisual } from '../components/NotificationBell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { relativeTime } from '../components/ui/time'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
@@ -205,7 +205,7 @@ export default function NotificationsPage() {
           }
         />
       ) : (
-        <Card className="notifications-feed" withBorder p={0} radius="md">
+        <Panel className="notifications-feed" p={0}>
           <Stack gap={0}>
             {groups.map((group) => (
               <section
@@ -226,7 +226,7 @@ export default function NotificationsPage() {
               </section>
             ))}
           </Stack>
-        </Card>
+        </Panel>
       )}
 
       {hasNextPage && (
