@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Box, Button, Paper, Skeleton } from '@mantine/core'
+import { Box, Button, Skeleton } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import {
   IconBook,
@@ -37,15 +37,13 @@ import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
 import { ContinueRail } from '../components/home/ContinueRail'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
-import { ProgressCard } from '../components/home/ProgressCard'
+import { HomeHero, type HomeHeroFigure } from '../components/home/HomeHero'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
-import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
-import { formatNumber } from '../format'
 
 /** How many catalogue picks each borrowed Discover rail shows before "Find more". */
 const RAIL_SIZE = 20
@@ -123,10 +121,45 @@ export default function HomePage() {
   const popular = rails?.find((r) => r.key === 'popular')?.items ?? []
   const youMightLike = recommendations.data?.pages[0]?.similar?.slice(0, RAIL_SIZE) ?? []
 
+  // Every figure the band carries, gated the same way the glance panels were: each of these three
+  // groups is still its own switch in Settings, they just share the band's panel now instead of a
+  // row of panels of their own.
+  const libraryFigures: HomeHeroFigure[] = on('stats')
+    ? [
+        { label: t`Series`, value: stats.total },
+        { label: t`Monitored`, value: stats.monitored },
+        { label: t`On disk`, value: stats.downloaded, tone: 'ok' },
+        { label: t`Missing`, value: stats.missing, tone: 'warn' },
+      ]
+    : []
+
+  // Only ever with tracking on: without it every downloaded chapter reads as unread, and the band
+  // would tell a Kavita-less library that it has 12,000 chapters waiting.
+  const readingFigures: HomeHeroFigure[] =
+    on('toread') && readTracking
+      ? [
+          { label: t`Unread`, value: waiting.unread },
+          { label: t`Started`, value: waiting.started },
+          { label: t`Finished`, value: waiting.finished, tone: 'ok' },
+        ]
+      : []
+
+  // First cover the page already holds, in the order the sections read in: what you are part-way
+  // through, then what you put down, then what just arrived.
+  const heroCover =
+    continueReading.find((i) => i.coverUrl)?.coverUrl ??
+    jumpBackIn.find((i) => i.coverUrl)?.coverUrl ??
+    (recent ?? []).find((i) => i.coverUrl)?.coverUrl ??
+    null
+
   const header = (
-    <PageHeader
-      title={t`Home`}
-      description={t`Pick up where you left off.`}
+    <HomeHero
+      coverUrl={heroCover}
+      greeting={t`Pick up where you left off.`}
+      loading={seriesLoading}
+      figures={libraryFigures}
+      readingFigures={readingFigures}
+      progress={progress?.enabled ? progress : undefined}
       actions={
         <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
           <Trans>Add series</Trans>
@@ -149,49 +182,6 @@ export default function HomePage() {
       </SurfaceFrame>
     )
   }
-
-  // The panels that are just labelled numbers. Each is its own bordered panel, because each is
-  // switched on and off separately in Settings, but they share one wrapping row rather than each
-  // taking a heading and the full page width — see `.home-glance`. The row renders at the position
-  // of whichever member the user's order puts first, in their order; every other member's key
-  // renders nothing.
-  const glancePanels: Partial<Record<HomeSectionKey, React.ReactNode>> = {
-    stats: on('stats') && (
-      <GlancePanel key="stats">
-        <LibraryFigure label={t`Series`} value={stats.total} />
-        <LibraryFigure label={t`Monitored`} value={stats.monitored} />
-        <LibraryFigure label={t`On disk`} value={stats.downloaded} tone="ok" />
-        <LibraryFigure label={t`Missing`} value={stats.missing} tone="warn" />
-      </GlancePanel>
-    ),
-
-    // Nothing at all when the user has switched progression off: the section stays in their layout
-    // list, so turning it back on restores its position.
-    progress: progress?.enabled && (
-      <GlancePanel key="progress" wide>
-        <ProgressCard summary={progress} />
-      </GlancePanel>
-    ),
-
-    // Only ever with tracking on: without it every downloaded chapter reads as unread, and the
-    // panel would tell a Kavita-less library that it has 12,000 chapters waiting.
-    toread: on('toread') && readTracking && (
-      <GlancePanel key="toread">
-        <LibraryFigure label={t`Unread`} value={waiting.unread} />
-        <LibraryFigure label={t`Started`} value={waiting.started} />
-        <LibraryFigure label={t`Finished`} value={waiting.finished} tone="ok" />
-      </GlancePanel>
-    ),
-  }
-
-  const glanceOrder = layout.filter((s) => s.enabled && glancePanels[s.key])
-  const glanceRow =
-    glanceOrder.length > 0 ? (
-      <div className="home-glance" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
-        {glanceOrder.map((s) => glancePanels[s.key])}
-      </div>
-    ) : null
-  const glanceLead = glanceOrder[0]?.key
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
   // yields null and takes up no space, exactly as when it is switched off.
@@ -254,9 +244,10 @@ export default function HomePage() {
       </>
     ),
 
-    stats: glanceLead === 'stats' ? glanceRow : null,
-    progress: glanceLead === 'progress' ? glanceRow : null,
-    toread: glanceLead === 'toread' ? glanceRow : null,
+    // All three live in the page band above, not in the ordered list.
+    stats: null,
+    progress: null,
+    toread: null,
   }
 
   const visible = layout.filter((s) => s.enabled)
@@ -285,40 +276,6 @@ export default function HomePage() {
         onClose={() => setDetailItem(null)}
       />
     </SurfaceFrame>
-  )
-}
-
-/** One panel on the glance row: a border, a padding, and a row of figures. */
-function GlancePanel({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
-  return (
-    <Paper withBorder radius="lg" p="md" className={wide ? 'home-glance-wide' : undefined}>
-      {wide ? children : <div className="home-figures">{children}</div>}
-    </Paper>
-  )
-}
-
-/**
- * One number on the glance row. The same hairline-separated figures the series band and the
- * Discover modal use, rather than a row of bordered tiles: none of these is a state anyone acts
- * on, so only the ones that carry a judgement take a colour.
- */
-function LibraryFigure({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  /** A status token name (`ok`, `warn`, `danger`); omitted leaves the figure at `--ink-hi`. */
-  tone?: 'ok' | 'warn' | 'danger'
-}) {
-  return (
-    <div className="home-figure">
-      <span className="hero-stat-n tnum" style={tone ? { color: `var(--${tone})` } : undefined}>
-        {formatNumber(value)}
-      </span>
-      <span className="hero-stat-l">{label}</span>
-    </div>
   )
 }
 

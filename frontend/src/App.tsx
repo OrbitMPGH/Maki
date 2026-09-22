@@ -415,12 +415,13 @@ function AppShellRoutes() {
       </AppShell.Navbar>
 
       {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
-          series page, and Discover's browse tab. Written as "Discover, but not its other two tabs"
+          series page, Home, and Discover's browse tab. Written as "Discover, but not its other two tabs"
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
           unrecognised :tab — a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
       <AppShell.Main
         className={
+          location.pathname === '/home' ||
           /^\/series\/\d+(?:\/|$)/.test(location.pathname) ||
           /^\/discover(?!\/(?:recommended|taste)(?:\/|$))/.test(location.pathname)
             ? 'app-main-hero'
