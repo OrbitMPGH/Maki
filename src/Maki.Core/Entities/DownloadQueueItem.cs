@@ -47,6 +47,17 @@ public class DownloadQueueItem
     public SourceMapping? SourceMapping { get; set; }
 
     /// <summary>
+    /// A mapping the user pinned this download to (e.g. "download this chapter from this specific
+    /// source"), passed through to <c>ChapterSourceResolver.ResolveAsync</c> whenever this item (re-)
+    /// resolves. Distinct from <see cref="SourceMappingId"/>, which is the mapping resolution actually
+    /// landed on — that gets overwritten if a re-resolve moves to a different source, this doesn't.
+    /// Persisted rather than passed only in memory because resolution can happen long after enqueue
+    /// (the item sits in <see cref="QueueStatus.Resolving"/> across a restart) and the preference has
+    /// to survive that.
+    /// </summary>
+    public int? PreferredMappingId { get; set; }
+
+    /// <summary>
     /// The source's own chapter id, resolved once at enqueue time (<c>ChapterSourceResolver</c>)
     /// so the worker doesn't need to re-list the source's chapters before every download. Null for
     /// torrent items. Re-resolved and overwritten if it 404s by the time the item is actually dispatched.

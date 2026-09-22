@@ -242,11 +242,27 @@ public class DownloadQueueService(
         await SignalAsync(item.Id, ct);
     }
 
+    /// <param name="preferMappingId">
+    /// Pins the download to one of the series' enabled source mappings, e.g. a user picking a
+    /// specific source copy of the chapter from the compare view. Tried first regardless of priority
+    /// when this item (re-)resolves — see <see cref="ChapterSourceResolver.ResolveAsync"/>. Persisted
+    /// on the row (<see cref="DownloadQueueItem.PreferredMappingId"/>) so it survives resolution
+    /// happening later, possibly across a restart.
+    /// <para>
+    /// Also changes the dedupe outcome: a pinned request for a chapter that is already queued but not
+    /// yet actively fetching (still <see cref="QueueStatus.Resolving"/>, <see cref="QueueStatus.Queued"/>,
+    /// or <see cref="QueueStatus.RateLimited"/>) overrides that row's preference in place and re-resolves
+    /// it, rather than being dropped like a second plain enqueue is. An item already past that point
+    /// (fetching pages, downloading, etc.) is not cheap to redirect mid-flight, so the existing row is
+    /// returned unchanged instead.
+    /// </para>
+    /// </param>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(
         int chapterId,
         CancellationToken ct = default,
         DownloadOrigin origin = DownloadOrigin.Unknown,
-        int? queuedByUserId = null)
+        int? queuedByUserId = null,
+        int? preferMappingId = null)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -257,14 +273,34 @@ public class DownloadQueueService(
             && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new InvalidOperationException("A health review is active for this series");
 
-        var alreadyQueued = await db.DownloadQueue.AnyAsync(q =>
+        var existing = await db.DownloadQueue.FirstOrDefaultAsync(q =>
             q.ChapterId == chapterId &&
             q.Status != QueueStatus.Completed &&
             q.Status != QueueStatus.Failed &&
             q.Status != QueueStatus.Cancelled, ct);
-        if (alreadyQueued)
+        if (existing is not null)
         {
-            return null;
+            if (preferMappingId is null)
+            {
+                return null;
+            }
+
+            if (existing.Status is not (QueueStatus.Resolving or QueueStatus.Queued or QueueStatus.RateLimited))
+            {
+                // Already fetching/downloading/etc. — redirecting it mid-flight isn't cheap, so hand
+                // back what's already running instead of silently ignoring the pin.
+                return existing;
+            }
+
+            existing.PreferredMappingId = preferMappingId;
+            existing.SourceMappingId = null;
+            existing.SourceChapterId = null;
+            existing.Status = QueueStatus.Resolving;
+            existing.ClearError();
+            await db.SaveChangesAsync(ct);
+
+            _ = ResolveAndActivateAsync(existing.Id, chapterId, CancellationToken.None);
+            return existing;
         }
 
         // Cheap, DB-only check: a series with literally no enabled mapping can be rejected
@@ -283,7 +319,8 @@ public class DownloadQueueService(
             QueuedAt = time.GetUtcNow().UtcDateTime,
             SortOrder = await NextSortOrderAsync(db, ct),
             Origin = origin,
-            QueuedByUserId = queuedByUserId
+            QueuedByUserId = queuedByUserId,
+            PreferredMappingId = preferMappingId
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);
@@ -452,7 +489,7 @@ public class DownloadQueueService(
         string sourceNameForBroadcast;
         try
         {
-            var resolved = await sourceResolver.ResolveAsync(db, chapter, preferMappingId: null, ct);
+            var resolved = await sourceResolver.ResolveAsync(db, chapter, item.PreferredMappingId, ct);
             var cooldownUntil = CooldownUntil(resolved.Mapping.SourceName);
 
             item.SourceMappingId = resolved.Mapping.Id;

@@ -19,6 +19,8 @@ public record SetChaptersWantedRequest(int[] ChapterIds, bool Wanted);
 
 public record DownloadChaptersRequest(int[] ChapterIds);
 
+public record DownloadChapterFromRequest(int SourceMappingId);
+
 public record RedownloadRequest(int SeriesId, string SourceName);
 
 [ApiController]
@@ -400,6 +402,54 @@ public class ChapterController(
         try
         {
             var item = await queue.EnqueueChapterAsync(id, ct, DownloadOrigin.Manual, currentUser.UserId);
+            return item is null
+                ? this.Conflict(localizer, "error.chapter.alreadyQueued")
+                : Ok(new { queueItemId = item.Id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Queues this chapter pinned to one specific source mapping — the user picked a particular
+    /// source's copy, e.g. from the compare view, rather than letting priority order decide.
+    /// <see cref="DownloadQueueService.EnqueueChapterAsync"/> carries the pin through to resolution
+    /// and, if the chapter is already queued but not yet actively fetching, overrides that row's
+    /// pin in place instead of being dropped like a duplicate plain enqueue.
+    /// </summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
+    [HttpPost("{id:int}/download-from")]
+    public async Task<IActionResult> DownloadFrom(
+        int id, [FromBody] DownloadChapterFromRequest request, CancellationToken ct)
+    {
+        var chapter = await db.Chapters.FindAsync([id], ct);
+        if (chapter is null)
+        {
+            return NotFound();
+        }
+
+        var mapping = await db.SourceMappings.FindAsync([request.SourceMappingId], ct);
+        if (mapping is null)
+        {
+            return this.Fail(localizer, "error.chapter.mappingNotFound");
+        }
+
+        if (mapping.SeriesId != chapter.SeriesId)
+        {
+            return this.Fail(localizer, "error.chapter.mappingWrongSeries");
+        }
+
+        if (!mapping.Enabled)
+        {
+            return this.Fail(localizer, "error.chapter.mappingDisabled");
+        }
+
+        try
+        {
+            var item = await queue.EnqueueChapterAsync(
+                id, ct, DownloadOrigin.Manual, currentUser.UserId, request.SourceMappingId);
             return item is null
                 ? this.Conflict(localizer, "error.chapter.alreadyQueued")
                 : Ok(new { queueItemId = item.Id });

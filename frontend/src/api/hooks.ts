@@ -1434,6 +1434,26 @@ export function useDownloadChapters() {
   })
 }
 
+/**
+ * Re-downloads one chapter from a specific source mapping, overwriting the file on disk. Used by
+ * the "find better copy" pick, where the user has looked at every source's scan of that chapter.
+ */
+export function useDownloadChapterFrom() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ chapterId, sourceMappingId }: { chapterId: number; sourceMappingId: number }) =>
+      api<{ queueItemId: number }>(`/chapter/${chapterId}/download-from`, {
+        method: 'POST',
+        body: JSON.stringify({ sourceMappingId }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 /** Queues the next N wanted, undownloaded chapters of a series, lowest number first. */
 export function useDownloadNext() {
   const queryClient = useQueryClient()

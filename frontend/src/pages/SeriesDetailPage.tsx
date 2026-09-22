@@ -53,6 +53,7 @@ import {
   IconX,
   IconDeviceTv,
   IconDotsVertical,
+  IconPhotoSearch,
   IconEyeOff,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
@@ -60,6 +61,7 @@ import { notifications } from '@mantine/notifications'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   useChapters,
+  useSourceMappings,
   useSources,
   useDeleteSeries,
   useMoveSeries,
@@ -114,6 +116,8 @@ import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
 import { SourceMappingsSection } from '../components/SourceMappingsSection'
+import { SourceCompareModal } from '../components/SourceCompareModal'
+import type { PickChapter } from '../components/SourceCompareModal'
 import { formatDate, formatReadingTime } from '../format'
 import {
   contentRatingVisual,
@@ -401,6 +405,11 @@ export default function SeriesDetailPage() {
   const { can } = useAuth()
   const canDownload = can('DownloadChapters')
   const createRequest = useCreateSeriesRequest()
+  // Already in cache: the sources section below this page fetches the same query. Two enabled
+  // mappings is the floor for "find better copy" having anything to show.
+  const { data: sourceMappings } = useSourceMappings(seriesId)
+  const enabledMappings = (sourceMappings ?? []).filter((m) => m.enabled).length
+  const [pickChapter, setPickChapter] = useState<PickChapter | null>(null)
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [requestStart, setRequestStart] = useState<number | ''>('')
   const [requestEnd, setRequestEnd] = useState<number | ''>('')
@@ -1992,7 +2001,7 @@ export default function SeriesDetailPage() {
                         ref={setChapterTable}
                         style={{ '--chapter-marker-slot': `${markerSlot}px` } as React.CSSProperties}
                     >
-                      <Table.ScrollContainer minWidth={isMobile ? 0 : 670}>
+                      <Table.ScrollContainer minWidth={isMobile ? 0 : 700}>
                         <Table className="chapter-table" highlightOnHover verticalSpacing="xs">
                           <Table.Thead>
                             <Table.Tr>
@@ -2002,7 +2011,7 @@ export default function SeriesDetailPage() {
                               <Table.Th w={120}><Trans>Released</Trans></Table.Th>
                               <Table.Th w={110}><Trans>Source</Trans></Table.Th>
                               <Table.Th w={240}><Trans>Status</Trans></Table.Th>
-                              <Table.Th w={92} />
+                              <Table.Th w={124} />
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
@@ -2277,6 +2286,34 @@ export default function SeriesDetailPage() {
                                               </ActionIcon>
                                             </Tooltip>
                                         )}
+                                        {canDownload && c.hasFile && c.number !== null && enabledMappings > 1 && (
+                                            <Menu shadow="md" position="bottom-end" withinPortal>
+                                              <Menu.Target>
+                                                <ActionIcon
+                                                    variant="subtle"
+                                                    color="gray"
+                                                    aria-label={t`More actions for ${chapterLbl}`}
+                                                >
+                                                  <IconDotsVertical size={17} />
+                                                </ActionIcon>
+                                              </Menu.Target>
+                                              <Menu.Dropdown>
+                                                <Menu.Item
+                                                    leftSection={<IconPhotoSearch size={14} />}
+                                                    onClick={() =>
+                                                        setPickChapter({
+                                                          id: c.id,
+                                                          number: c.number!,
+                                                          label: chapterLbl,
+                                                          currentSourceName: c.fileSourceName,
+                                                        })
+                                                    }
+                                                >
+                                                  <Trans>Find better copy</Trans>
+                                                </Menu.Item>
+                                              </Menu.Dropdown>
+                                            </Menu>
+                                        )}
                                       </Group>
                                     </Table.Td>
                                   </Table.Tr>
@@ -2420,6 +2457,19 @@ export default function SeriesDetailPage() {
               }
           />
         </Modal>
+
+        {/* Keyed on the chapter so each open starts a fresh comparison rather than reusing the
+            previous chapter's panels. */}
+        {pickChapter && (
+            <SourceCompareModal
+                key={pickChapter.id}
+                seriesId={seriesId}
+                mode="pick"
+                chapter={pickChapter}
+                opened
+                onClose={() => setPickChapter(null)}
+            />
+        )}
       </Tabs>
     </SurfaceFrame>
   )

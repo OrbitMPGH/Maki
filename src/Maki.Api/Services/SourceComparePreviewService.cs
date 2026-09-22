@@ -27,6 +27,13 @@ public record ComparePanel(
     string? Error,
     string? ChapterLabel,
     /// <summary>
+    /// Total pages this source's own listing reports for the target chapter, from the same
+    /// <c>GetPagesAsync</c> call the sample is drawn from — not the (smaller) number of pages
+    /// actually sampled and shown. Null when the chapter was never successfully fetched (failed
+    /// before or during that call).
+    /// </summary>
+    int? PageCount,
+    /// <summary>
     /// This source's pages were matched against the others' by image content. False for a source
     /// carrying a different edition, whose column is shown for ranking but lines up with nothing.
     /// </summary>
@@ -417,6 +424,7 @@ public sealed class SourceComparePreviewService(
                 // is nothing to align against until the last one is in. AlignPages trims this.
                 panel.Pages = rendered;
                 panel.Hashes = hashes;
+                panel.PageCount = pages.Pages.Count;
                 panel.Status = PanelStatus.Ready;
             }
         }
@@ -519,6 +527,7 @@ public sealed class SourceComparePreviewService(
                     // Invariant: a decimal chapter renders "6,5" on a comma-decimal server, which
                     // then sits next to the "6.5" the chapter picker shows.
                     p.Target?.Number?.ToString(CultureInfo.InvariantCulture) ?? p.Target?.NumberRaw,
+                    p.PageCount,
                     p.Aligned,
                     p.Pages))]);
         }
@@ -559,6 +568,7 @@ public sealed class SourceComparePreviewService(
         public string? Error { get; set; }
         public IReadOnlyList<SourceChapter>? Chapters { get; set; }
         public SourceChapter? Target { get; set; }
+        public int? PageCount { get; set; }
         public List<ComparePage?> Pages { get; set; } = [];
 
         /// <summary>

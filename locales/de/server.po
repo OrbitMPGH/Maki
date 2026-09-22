@@ -157,6 +157,21 @@ msgid "error.chapter.fileNotFound"
 msgstr "Datei auf dem Datenträger nicht gefunden"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping is disabled
+msgid "error.chapter.mappingDisabled"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping not found
+msgid "error.chapter.mappingNotFound"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping does not belong to this series
+msgid "error.chapter.mappingWrongSeries"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
 #, fuzzy
 msgid "error.chapter.noChaptersSelected"

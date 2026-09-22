@@ -157,6 +157,21 @@ msgid "error.chapter.fileNotFound"
 msgstr "디스크에서 파일을 찾을 수 없습니다"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping is disabled
+msgid "error.chapter.mappingDisabled"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping not found
+msgid "error.chapter.mappingNotFound"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping does not belong to this series
+msgid "error.chapter.mappingWrongSeries"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
 #, fuzzy
 msgid "error.chapter.noChaptersSelected"

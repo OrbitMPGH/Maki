@@ -398,6 +398,8 @@ export interface ComparePanel {
   aligned: boolean
   /** One entry per grid row, null where this source has no page for that row. */
   pages: (ComparePage | null)[]
+  /** Pages in the whole chapter, not just the sampled rows. Null when the source didn't say. */
+  pageCount: number | null
 }
 
 /**
