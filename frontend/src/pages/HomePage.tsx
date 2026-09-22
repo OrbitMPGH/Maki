@@ -229,10 +229,7 @@ export default function HomePage() {
     jumpback: jumpBackIn.length > 0 && (
       <>
         <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-        <ContinueLead items={jumpBackIn.slice(0, CONTINUE_LEAD_MAX)} />
-        {jumpBackIn.length > CONTINUE_LEAD_MAX && (
-          <ContinueRail items={jumpBackIn.slice(CONTINUE_LEAD_MAX)} />
-        )}
+        <ContinueRail items={jumpBackIn} />
       </>
     ),
 
