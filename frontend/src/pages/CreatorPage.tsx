@@ -33,6 +33,7 @@ import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
@@ -122,7 +123,7 @@ export default function CreatorPage() {
 
   if (error) {
     return (
-      <>
+      <SurfaceFrame width="full" pageStyle="editorial">
         <PageHeader title={decoded} />
         <EmptyState
           icon={IconUser}
@@ -131,12 +132,12 @@ export default function CreatorPage() {
           actionLabel={t`Back to Discover`}
           actionTo="/discover"
         />
-      </>
+      </SurfaceFrame>
     )
   }
 
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={data?.name ?? decoded}
         description={
@@ -238,6 +239,6 @@ export default function CreatorPage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </SurfaceFrame>
   )
 }

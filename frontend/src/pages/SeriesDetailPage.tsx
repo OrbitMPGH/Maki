@@ -122,6 +122,7 @@ import {
   seriesStatusVisual,
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 
 function chapterLabel(c: ChapterDto): string {
@@ -1143,6 +1144,7 @@ export default function SeriesDetailPage() {
       )
 
   return (
+    <SurfaceFrame width="full" pageStyle="editorial">
       <Tabs
           value={tab}
           onChange={changeTab}
@@ -2415,6 +2417,7 @@ export default function SeriesDetailPage() {
           />
         </Modal>
       </Tabs>
+    </SurfaceFrame>
   )
 }
 

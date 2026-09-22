@@ -162,7 +162,7 @@ export default function HealthPage() {
   const failedCount = deleteReport?.failures.length ?? 0
 
   return (
-    <SurfaceFrame>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
         title={t`Health`}
         description={t`System checks and reviewed library maintenance.`}

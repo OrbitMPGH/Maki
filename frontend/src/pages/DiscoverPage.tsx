@@ -99,6 +99,7 @@ import {
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { usePageState } from '../lib/pageState'
 import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -1411,7 +1412,7 @@ export default function DiscoverPage() {
   const browseDensity = useDensityPref('discover-browse')
 
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={t`Discover`}
         description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
@@ -1469,6 +1470,6 @@ export default function DiscoverPage() {
           density={browseDensity}
         />
       )}
-    </>
+    </SurfaceFrame>
   )
 }

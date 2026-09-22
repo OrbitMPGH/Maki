@@ -87,6 +87,7 @@ import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { StatTile } from '../components/ui/StatTile'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY, useDensityOptions } from '../components/ui/viewPrefs'
@@ -684,7 +685,7 @@ export default function LibraryPage() {
   const loadErrorMessage = error ? String(error) : null
 
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={t`Library`}
         description={t`Every series Maki watches: cover art, download progress and status at a glance.`}
@@ -1521,6 +1522,6 @@ export default function LibraryPage() {
           </Stack>
         </div>
       )}
-    </>
+    </SurfaceFrame>
   )
 }

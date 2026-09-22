@@ -42,6 +42,7 @@ import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
 import { formatNumber } from '../format'
 
@@ -135,7 +136,7 @@ export default function HomePage() {
 
   if (!seriesLoading && !hasLibrary) {
     return (
-      <>
+      <SurfaceFrame width="full" pageStyle="editorial">
         {header}
         <EmptyState
           icon={IconLibrary}
@@ -144,7 +145,7 @@ export default function HomePage() {
           actionLabel={t`Add series`}
           actionTo="/add"
         />
-      </>
+      </SurfaceFrame>
     )
   }
 
@@ -254,7 +255,7 @@ export default function HomePage() {
   const visible = layout.filter((s) => s.enabled)
 
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       {header}
 
       {visible.length === 0 ? (
@@ -276,7 +277,7 @@ export default function HomePage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </SurfaceFrame>
   )
 }
 

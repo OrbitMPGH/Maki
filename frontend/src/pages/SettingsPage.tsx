@@ -2874,7 +2874,7 @@ export default function SettingsPage() {
   }, [target, setSearchParams])
 
   return (
-    <SurfaceFrame>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
         title={t`Settings`}
         description={

@@ -157,7 +157,7 @@ export default function ImportPage() {
   ] as const
 
   return (
-    <SurfaceFrame className="import-surface">
+    <SurfaceFrame className="import-surface" pageStyle="operational">
       <PageHeader
         title={t`Import library`}
         description={t`Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted.`}

@@ -74,7 +74,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <SurfaceFrame>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
         title={t`Notifications`}
         description={t`What happened in your library while you were away.`}

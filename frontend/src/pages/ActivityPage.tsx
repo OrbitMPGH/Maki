@@ -104,7 +104,7 @@ export default function ActivityPage() {
   )
 
   return (
-    <SurfaceFrame>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
         title={t`Activity`}
         description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}

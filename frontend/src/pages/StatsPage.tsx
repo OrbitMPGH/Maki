@@ -9,6 +9,7 @@ import { useActivityStats, useActivityYears } from '../api/hooks'
 import { useUsers } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
 import { PageHeader } from '../components/ui/PageHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { RewindIntro } from './rewind/RewindIntro'
 import { AchievementsPanel } from './stats/AchievementsPanel'
 import { LibraryPanel } from './stats/LibraryPanel'
@@ -63,7 +64,7 @@ export default function StatsPage() {
       rewindStats.totals.seriesRemoved > 0)
 
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       {introOpen && rewindStats && (
         <RewindIntro
           stats={rewindStats}
@@ -132,6 +133,6 @@ export default function StatsPage() {
       )}
       {tab === 'library' && <LibraryPanel />}
       {tab === 'achievements' && <AchievementsPanel userId={viewUserId} />}
-    </>
+    </SurfaceFrame>
   )
 }

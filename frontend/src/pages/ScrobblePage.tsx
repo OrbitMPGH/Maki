@@ -208,7 +208,7 @@ export default function ScrobblePage() {
   const nextSync = fmtTime(data?.nextSyncAt)
 
   return (
-    <SurfaceFrame>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
         title={t`Scrobble`}
         description={

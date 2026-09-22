@@ -172,7 +172,7 @@ export default function RequestsPage() {
   )
 
   return (
-    <SurfaceFrame>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
         title={t`Requests`}
         description={
