@@ -21,16 +21,19 @@ public class HealthJobListener(IServiceScopeFactory scopes, ILogger<HealthJobLis
             var row = await db.HealthChecks.FindAsync([id], cancellationToken);
             if (row == null) { row = new HealthCheckRecord { Id = id, Category = "job" }; db.HealthChecks.Add(row); }
             var status = jobException == null ? "healthy" : "error";
+            var previous = row.Status;
             var notify = HealthTransitions.Observe(row, status, false, DateTime.UtcNow);
             row.MessageKey = jobException == null ? "health.check.jobSucceeded" : "health.check.jobFailed";
             row.ParamsJson = JsonSerializer.Serialize(new { job = context.JobDetail.Key.ToString() });
             row.Message = string.Empty;
-            db.HealthHistory.Add(new()
-            {
-                Kind = "job",
-                MessageKey = row.MessageKey,
-                ParamsJson = row.ParamsJson,
-            });
+            // Some jobs run every 15 seconds; a row per run buried the history in thousands of pages.
+            if (previous != status && !(previous == "unchecked" && status == "healthy"))
+                db.HealthHistory.Add(new()
+                {
+                    Kind = "job",
+                    MessageKey = row.MessageKey,
+                    ParamsJson = row.ParamsJson,
+                });
             await db.SaveChangesAsync(cancellationToken);
             if (notify)
             {
