@@ -19,7 +19,6 @@ import {
   Progress,
   Radio,
   Select,
-  Slider,
   Stack,
   Switch,
   Table,
@@ -129,7 +128,6 @@ import {
   type ScrobbleSettings,
 } from '../api/hooks'
 import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '../api/reader'
-import { DEFAULT_PREFS, type ReaderPrefs } from './reader/prefs'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
 import { SaveButton, UnsavedSettingsContext } from '../components/settings/SaveButton'
 import { SettingsHelp } from '../components/settings/SettingsHelp'
@@ -852,114 +850,40 @@ function LibrarySection() {
   )
 }
 
-function ReaderSection() {
+/**
+ * Keeping Maki's reader and Kavita in step. The reader's own settings live on the Reader card
+ * (ReadingProfilesSection); this is only the two Kavita actions that used to sit underneath them.
+ */
+function KavitaSyncSection() {
   const { t } = useLingui()
   const { data: settings } = useReaderSettings()
   const save = useSaveReaderSettings()
   const { me } = useAuth()
-  const defaults = settings?.defaults ?? DEFAULT_PREFS
-  const [scale, setScale] = useState(defaults.scale)
-  useEffect(() => setScale(defaults.scale), [defaults.scale])
 
   // Push-back and the read-status import are only meaningful for the account Kavita is bound to:
   // pushing somebody else's read would land the echo in a different high-water row and count every
   // chapter into Rewind twice.
   const ownsKavita = settings?.kavitaUserId != null && settings.kavitaUserId === me?.id
 
-  const saveWith = (patch: Partial<typeof defaults>, pushToKavita?: boolean) =>
-    save.mutate(
-      { defaults: { ...defaults, ...patch }, pushToKavita: pushToKavita ?? settings?.pushToKavita ?? false },
-      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-    )
-
   return (
     <Panel>
       <Title order={4} mb="sm">
-        <Trans>Reader</Trans>
+        <Trans>Kavita sync</Trans>
       </Title>
-      <SettingsHelp mb="md">
-        <Trans>
-          The fallback for Maki's built-in reader: what a series gets when no reading profile
-          covers its type and nothing is pinned or overridden on the series itself.
-        </Trans>
-      </SettingsHelp>
 
       <Stack gap="md">
-        <Radio.Group
-          label={t`Layout`}
-          value={defaults.mode}
-          onChange={(value) => saveWith({ mode: value as ReaderPrefs['mode'] })}
-        >
-          <Stack gap="xs" mt="xs">
-            <Radio value="paged" label={t`Single page`} />
-            <Radio value="double" label={t`Two pages side by side`} />
-            <Radio value="vertical" label={t`Continuous vertical (webtoon)`} />
-          </Stack>
-        </Radio.Group>
-
-        <Radio.Group
-          label={t`Reading direction`}
-          value={defaults.direction}
-          onChange={(value) => saveWith({ direction: value as ReaderPrefs['direction'] })}
-        >
-          <Stack gap="xs" mt="xs">
-            <Radio value="rtl" label={t`Right to left (manga)`} />
-            <Radio value="ltr" label={t`Left to right`} />
-          </Stack>
-        </Radio.Group>
-
-        <Radio.Group
-          label={t`Page fit`}
-          value={defaults.fit}
-          onChange={(value) => saveWith({ fit: value as ReaderPrefs['fit'] })}
-        >
-          <Stack gap="xs" mt="xs">
-            <Radio value="height" label={t`Fit height`} />
-            <Radio value="width" label={t`Fit width`} />
-            <Radio value="screen" label={t`Fit screen`} />
-            <Radio value="original" label={t`Original size`} />
-          </Stack>
-        </Radio.Group>
-
-        {defaults.fit === 'original' && (
-          <div>
-            <Text size="sm" fw={500} mb={4}>
-              <Trans>Scale ({scale}%)</Trans>
-            </Text>
-            <Slider min={25} max={400} step={5} value={scale} onChange={setScale} onChangeEnd={(value) => saveWith({ scale: value })} />
-          </div>
-        )}
-
-        <Switch
-          label={t`Advance to the next chapter at the end`}
-          checked={defaults.autoNextChapter}
-          onChange={(e) => saveWith({ autoNextChapter: e.currentTarget.checked })}
-        />
-        <Switch
-          label={t`Tap zones (click the page edges to turn)`}
-          checked={defaults.tapZones}
-          onChange={(e) => saveWith({ tapZones: e.currentTarget.checked })}
-        />
-        <div>
-          <Switch
-            label={t`Flash the chapter name on chapter change`}
-            checked={defaults.chapterBanner}
-            onChange={(e) => saveWith({ chapterBanner: e.currentTarget.checked })}
-          />
-          <Text size="xs" c="var(--ink-3)" mt={4}>
-            <Trans>
-              Credit pages and the next chapter's first pages often look alike. This shows the
-              chapter name for a couple of seconds when you enter a new one.
-            </Trans>
-          </Text>
-        </div>
-
         <div>
           <Switch
             label={t`Mark chapters read in Kavita too`}
             checked={settings?.pushToKavita ?? false}
-            disabled={!ownsKavita}
-            onChange={(e) => saveWith({}, e.currentTarget.checked)}
+            disabled={!ownsKavita || !settings}
+            onChange={(e) =>
+              settings &&
+              save.mutate(
+                { defaults: settings.defaults, pushToKavita: e.currentTarget.checked },
+                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+              )
+            }
           />
           <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
@@ -2730,8 +2654,8 @@ function useSectionNodes(): Record<string, ReactNode> {
       'home-screen': <HomeSectionsSection />,
       'series-page': <SeriesPageSection />,
 
-      reader: <ReaderSection />,
-      'reading-profiles': <ReadingProfilesSection />,
+      reader: <ReadingProfilesSection />,
+      'kavita-sync': <KavitaSyncSection />,
       progress: <ProgressSection />,
       opds: <OpdsSection />,
       'discover-rating': <DiscoverSection />,

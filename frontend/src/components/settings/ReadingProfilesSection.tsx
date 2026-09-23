@@ -28,6 +28,7 @@ import {
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
 import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
+import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { Panel } from '../ui/Panel'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -58,7 +59,9 @@ function summarize(prefs: ReaderPrefs, renderLabel: (label: MessageDescriptor) =
 }
 
 /**
- * A user's named reader presets, and which series types each one is picked for automatically.
+ * The built-in reader's settings: the Default every series falls back to, then the user's named
+ * presets and which series types each one is picked for automatically. Default is edited with the
+ * same form as a profile, so the two can't drift apart in which options they offer.
  * <p>
  * The type claim is the whole point: a manhwa opens as a continuous left-to-right strip and a manga
  * stays single-page right-to-left with nothing configured per series. A type belongs to at most one
@@ -74,7 +77,7 @@ export function ReadingProfilesSection() {
     <Panel>
       <Group justify="space-between" mb="sm">
         <Title order={4}>
-          <Trans>Reading profiles</Trans>
+          <Trans>Reader</Trans>
         </Title>
         <Button
           size="xs"
@@ -88,9 +91,10 @@ export function ReadingProfilesSection() {
 
       <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
-          Named reader settings, picked automatically by series type. Types no profile covers use
-          the Reader defaults above, as do series whose metadata hasn't been refreshed since
-          upgrading. You can pin a profile or override settings from inside the reader.
+          How the built-in reader opens a series. A profile applies automatically to the series
+          types it covers; everything else uses Default, including series whose metadata hasn't
+          been refreshed since upgrading. You can pin a profile or override settings from inside
+          the reader.
         </Trans>
       </Text>
 
@@ -114,16 +118,69 @@ export function ReadingProfilesSection() {
       )}
 
       <Stack gap="xs" mt={creating ? 'md' : undefined}>
+        <DefaultRow />
         {(profiles ?? []).map((profile) => (
           <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
         ))}
-        {profiles?.length === 0 && !creating && (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>No profiles. Every series uses the reader defaults.</Trans>
-          </Text>
-        )}
       </Stack>
     </Panel>
+  )
+}
+
+/** The fallback under every profile. Stored with the reader settings, not as a profile row. */
+function DefaultRow() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const [open, setOpen] = useState(false)
+  const { data: settings } = useReaderSettings()
+  const save = useSaveReaderSettings()
+  const prefs = settings?.defaults ?? DEFAULT_PREFS
+  const name = t`Default`
+
+  return (
+    <Card withBorder radius="sm" padding="xs">
+      <Group justify="space-between" wrap="nowrap">
+        <div style={{ minWidth: 0 }}>
+          <Group gap="xs" wrap="nowrap">
+            <Text fw={600} fz="sm" truncate>
+              {name}
+            </Text>
+            <Badge size="xs" variant="outline" color="var(--neutral)">
+              <Trans>Everything else</Trans>
+            </Badge>
+          </Group>
+          <Text fz="xs" c="var(--ink-3)">
+            {summarize(prefs, renderLabel)}
+          </Text>
+        </div>
+        <ActionIcon
+          variant="subtle"
+          color="var(--neutral)"
+          onClick={() => setOpen((value) => !value)}
+          aria-label={open ? t`Collapse` : t`Edit profile`}
+          disabled={!settings}
+        >
+          {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+        </ActionIcon>
+      </Group>
+
+      {open && settings && (
+        <ProfileEditor
+          fixed
+          initial={{ name, prefs, seriesTypes: [] }}
+          taken={[]}
+          submitLabel={t`Save`}
+          busy={save.isPending}
+          onCancel={() => setOpen(false)}
+          onSubmit={(input) =>
+            save.mutate(
+              { defaults: input.prefs, pushToKavita: settings.pushToKavita },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+            )
+          }
+        />
+      )}
+    </Card>
   )
 }
 
@@ -205,6 +262,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
 }
 
 function ProfileEditor({
+  fixed = false,
   initial,
   taken,
   submitLabel,
@@ -212,6 +270,8 @@ function ProfileEditor({
   onSubmit,
   onCancel,
 }: {
+  /** The Default row: no name to edit and no series types to claim. */
+  fixed?: boolean
   initial: ReadingProfileInput
   /** Series types another profile already covers; offered but disabled. */
   taken: string[]
@@ -229,27 +289,31 @@ function ProfileEditor({
 
   return (
     <Stack gap="sm" mt="sm">
-      <TextInput
-        label={t`Name`}
-        value={name}
-        maxLength={60}
-        onChange={(e) => setName(e.currentTarget.value)}
-      />
+      {!fixed && (
+        <>
+          <TextInput
+            label={t`Name`}
+            value={name}
+            maxLength={60}
+            onChange={(e) => setName(e.currentTarget.value)}
+          />
 
-      <MultiSelect
-        label={t`Applies automatically to`}
-        description={t`Leave empty to use this profile only where you pin it to a series.`}
-        value={types}
-        onChange={setTypes}
-        data={SERIES_TYPES.map((type) => {
-          const typeLabel = renderLabel(SERIES_TYPE_LABELS[type])
-          return {
-            value: type,
-            label: taken.includes(type) ? t`${typeLabel} (another profile)` : typeLabel,
-            disabled: taken.includes(type),
-          }
-        })}
-      />
+          <MultiSelect
+            label={t`Applies automatically to`}
+            description={t`Leave empty to use this profile only where you pin it to a series.`}
+            value={types}
+            onChange={setTypes}
+            data={SERIES_TYPES.map((type) => {
+              const typeLabel = renderLabel(SERIES_TYPE_LABELS[type])
+              return {
+                value: type,
+                label: taken.includes(type) ? t`${typeLabel} (another profile)` : typeLabel,
+                disabled: taken.includes(type),
+              }
+            })}
+          />
+        </>
+      )}
 
       <Group grow align="flex-start">
         <Select
@@ -350,6 +414,7 @@ function ProfileEditor({
       <Switch
         size="sm"
         label={t`Flash the chapter name on chapter change`}
+        description={t`Credit pages and the next chapter's first pages often look alike, so this marks the turn.`}
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
       />
@@ -367,7 +432,7 @@ function ProfileEditor({
         <Button
           size="xs"
           loading={busy}
-          disabled={name.trim().length === 0}
+          disabled={!fixed && name.trim().length === 0}
           onClick={() => onSubmit({ name: name.trim(), prefs, seriesTypes: types })}
         >
           {submitLabel}

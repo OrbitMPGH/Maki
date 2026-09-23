@@ -9,7 +9,6 @@ import {
   Group,
   Modal,
   PasswordInput,
-  Select,
   Stack,
   Table,
   Text,
@@ -31,7 +30,6 @@ import {
   useRevokeSessions,
   useStartTwoFactorSetup,
   useTwoFactorStatus,
-  type ApiKeyScope,
   type CreatedApiKey,
 } from '../../api/auth'
 import { useAuth } from '../../auth/AuthProvider'
@@ -387,14 +385,12 @@ function ApiKeysCard() {
   const { data: keys } = useApiKeys()
   const create = useCreateApiKey()
   const revoke = useRevokeApiKey()
-  const { can } = useAuth()
 
   const [name, setName] = useState('')
-  const [scope, setScope] = useState<ApiKeyScope>('Full')
   const [created, setCreated] = useState<CreatedApiKey | null>(null)
 
-  const secretUrl =
-    created?.key.scope === 'Opds' ? `/api/v1/opds/${created.secret}` : created?.secret
+  // The OPDS feed token is a key row too, but it is minted, shown and rotated on the OPDS card.
+  const fullKeys = keys?.filter((key) => key.scope === 'Full')
 
   return (
     <Stack gap="xs">
@@ -403,9 +399,8 @@ function ApiKeysCard() {
       </Text>
       <Text size="xs" c="var(--ink-3)">
         <Trans>
-          For scripts and third-party clients. A <Code>Full</Code> key acts as you through the{' '}
-          <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL and cannot reach
-          the management API.
+          For scripts and third-party clients. A key acts as you through the{' '}
+          <Code>X-Api-Key</Code> header. Your OPDS feed URL is managed on the OPDS card.
         </Trans>
       </Text>
 
@@ -417,23 +412,12 @@ function ApiKeysCard() {
           onChange={(e) => setName(e.currentTarget.value)}
           w={200}
         />
-        <Select
-          label={t`Scope`}
-          data={[
-            { value: 'Full', label: t`Full API` },
-            { value: 'Opds', label: t`OPDS feed only`, disabled: !can('UseOpds') },
-          ]}
-          value={scope}
-          onChange={(v) => setScope((v as ApiKeyScope) ?? 'Full')}
-          w={170}
-          allowDeselect={false}
-        />
         <Button
           loading={create.isPending}
           disabled={!name.trim()}
           onClick={() =>
             create.mutate(
-              { name: name.trim(), scope },
+              { name: name.trim() },
               {
                 onSuccess: (result) => {
                   setCreated(result)
@@ -448,26 +432,20 @@ function ApiKeysCard() {
         </Button>
       </Group>
 
-      {keys && keys.length > 0 && (
+      {fullKeys && fullKeys.length > 0 && (
         <Table striped withTableBorder mt="xs" fz="sm">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Name</Trans></Table.Th>
-              <Table.Th><Trans>Scope</Trans></Table.Th>
               <Table.Th><Trans>Prefix</Trans></Table.Th>
               <Table.Th><Trans>Last used</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {keys.map((key) => (
+            {fullKeys.map((key) => (
               <Table.Tr key={key.id} opacity={key.revokedAt ? 0.5 : 1}>
                 <Table.Td>{key.name}</Table.Td>
-                <Table.Td>
-                  <Badge size="xs" variant="light">
-                    {key.scope}
-                  </Badge>
-                </Table.Td>
                 <Table.Td>
                   <Code>{key.prefix}…</Code>
                 </Table.Td>
@@ -499,7 +477,7 @@ function ApiKeysCard() {
       <Modal
         opened={created !== null}
         onClose={() => setCreated(null)}
-        title={created?.key.scope === 'Opds' ? t`Your OPDS feed URL` : t`Your new API key`}
+        title={t`Your new API key`}
         centered
         size="lg"
       >
@@ -511,9 +489,9 @@ function ApiKeysCard() {
             </Trans>
           </Alert>
           <Code block style={{ wordBreak: 'break-all' }}>
-            {secretUrl}
+            {created?.secret}
           </Code>
-          <CopyButton value={secretUrl ?? ''}>
+          <CopyButton value={created?.secret ?? ''}>
             {({ copied, copy }) => (
               <Button variant="default" onClick={copy}>
                 {copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}

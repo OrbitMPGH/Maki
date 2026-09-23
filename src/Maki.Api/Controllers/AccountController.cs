@@ -212,11 +212,11 @@ public class AccountController(
             return this.Fail(localizer, "error.account.nameRequired");
         }
 
-        // An OPDS token hands out the whole library to a third-party app, so it is gated on the same
-        // permission as using OPDS at all rather than being available to anyone with an account.
-        if (request.Scope == UserApiKeyScope.Opds && !currentUser.Has(MakiPermission.UseOpds))
+        // The OPDS token has one home, the OPDS settings card (settings/opds), which mints, reveals and
+        // rotates it. A second way to create one here left keys the card didn't know about.
+        if (request.Scope == UserApiKeyScope.Opds)
         {
-            return Forbid();
+            return this.Fail(localizer, "error.account.opdsKeyOnOpdsCard");
         }
 
         var secret = ApiKeyCrypto.Generate();

@@ -1524,7 +1524,6 @@ msgid "Administrator"
 msgstr "Administrador"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Advance to the next chapter at the end"
 msgstr "Avanzar al capítulo siguiente al terminar"
@@ -3128,7 +3127,6 @@ msgid "Continuous layout only, in pixels."
 msgstr "Solo para el diseño continuo, en píxeles."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Continuous vertical (webtoon)"
 msgstr "Vertical continuo (webtoon)"
@@ -3294,8 +3292,8 @@ msgstr "Creado"
 msgid "Creators"
 msgstr "Creadores"
 
-#: src/pages/SettingsPage.tsx
-msgid "Credit pages and the next chapter's first pages often look alike. This shows the chapter name for a couple of seconds when you enter a new one."
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
@@ -3380,6 +3378,7 @@ msgstr "Determina cuándo termina tu día de lectura, que es lo que se usa para 
 msgid "Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never downloaded or counted in the chapter total. Specials released later are covered too. Existing chapters are unchanged; edit them from a series' Chapters tab."
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
@@ -3585,11 +3584,15 @@ msgstr "¿Descartar los cambios sin guardar?"
 msgid "Disconnect"
 msgstr "Desconectar"
 
+#: src/components/NotificationsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Discord & webhooks"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "discord, webhook, apprise, alerts, events"
-msgstr "discord, webhook, apprise, alertas, eventos"
+msgid "discord, webhook, apprise, alerts, events, notifications, outbound"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
@@ -4071,6 +4074,10 @@ msgstr "Cada semana"
 msgid "Every year"
 msgstr "Cada año"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Everything else"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
@@ -4347,7 +4354,6 @@ msgid "fit height"
 msgstr "ajustar altura"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Fit height"
 msgstr "Ajustar altura"
@@ -4358,7 +4364,6 @@ msgid "fit screen"
 msgstr "ajustar pantalla"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Fit screen"
 msgstr "Ajustar pantalla"
@@ -4369,7 +4374,6 @@ msgid "fit width"
 msgstr "ajustar ancho"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Fit width"
 msgstr "Ajustar ancho"
@@ -4396,7 +4400,6 @@ msgid "Flash chapter name on chapter change"
 msgstr "Mostrar brevemente el nombre del capítulo al cambiar de capítulo"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Flash the chapter name on chapter change"
 msgstr "Mostrar brevemente el nombre del capítulo al cambiar de capítulo"
@@ -4433,7 +4436,7 @@ msgid "For readers like Komga and Kavita that pick up a poster from the folder. 
 msgstr ""
 
 #: src/components/settings/AccountSection.tsx
-msgid "For scripts and third-party clients. A <0>Full</0> key acts as you through the <1>X-Api-Key</1> header. An <2>OPDS</2> key is only a feed URL and cannot reach the management API."
+msgid "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -4507,11 +4510,6 @@ msgstr "Acceso completo, incluidos ajustes, carpetas raíz, copias de seguridad 
 #, fuzzy
 msgid "Full also excludes this series from Rewind stats and reading history."
 msgstr "Completo también excluye esta serie de las estadísticas y del historial de lectura de Rewind."
-
-#: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "Full API"
-msgstr "API completa"
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -4864,6 +4862,10 @@ msgstr "Cuánto cuentan"
 #, fuzzy
 msgid "How signals work"
 msgstr "Cómo funcionan las señales"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default, including series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5247,9 +5249,13 @@ msgid "Kavita series you haven't started are added as plan to read. Entries alre
 msgstr ""
 
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
-msgstr "Kavita, los rastreadores a los que Maki hace scrobble y las notificaciones salientes."
+#: src/pages/SettingsPage.tsx
+msgid "Kavita sync"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita reading."
@@ -5391,7 +5397,6 @@ msgstr "más reciente"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Layout"
 msgstr "Diseño"
@@ -5437,7 +5442,6 @@ msgstr "de izquierda a derecha"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Left to right"
 msgstr "De izquierda a derecha"
@@ -5854,6 +5858,11 @@ msgstr "Marcar también como leídos los capítulos de Kavita"
 msgid "Mark read"
 msgstr "Marcar como leído"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "mark read in kavita, push to kavita, import read status, kavita progress"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
@@ -6232,10 +6241,6 @@ msgstr "Nombre"
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 msgstr "Nombra tu proxy inverso en Proxies de confianza, o el límite de velocidad y el registro de auditoría verán el proxy en lugar del cliente."
 
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Named reader settings, picked automatically by series type. Types no profile covers use the Reader defaults above, as do series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
-msgstr ""
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Naming"
@@ -6539,11 +6544,6 @@ msgstr "Sin páginas"
 #, fuzzy
 msgid "No pending requests"
 msgstr "No hay solicitudes pendientes"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "No profiles. Every series uses the reader defaults."
-msgstr "No hay perfiles. Todas las series usan los valores predeterminados del lector."
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -6934,7 +6934,6 @@ msgid "Notification settings"
 msgstr "Ajustes de notificaciones"
 
 #: src/components/NotificationBell.tsx
-#: src/components/NotificationsSection.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
@@ -7126,11 +7125,6 @@ msgstr "Solo tú puedes verlo."
 msgid "OPDS"
 msgstr "OPDS"
 
-#: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "OPDS feed only"
-msgstr "Solo feed OPDS"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Open"
@@ -7226,11 +7220,6 @@ msgstr "Opcional y lo configuras tú. Maki nunca añade uno por ti."
 msgid "Original script"
 msgstr "Guion original"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Original size"
-msgstr "Tamaño original"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Original size (1:1)"
@@ -7286,7 +7275,6 @@ msgid "Page {pageNumber} of {pageCount}"
 msgstr "Página {pageNumber} de {pageCount}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Page fit"
 msgstr "Ajuste de página"
@@ -7621,12 +7609,6 @@ msgstr "Prioridad"
 msgid "Profile created"
 msgstr "Perfil creado"
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series"
-msgstr "perfil, manga, manhwa, manhua, webtoon, oel, tipo de serie, selección automática, por serie"
-
 #: src/api/inbox.ts
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -7872,8 +7854,8 @@ msgstr "Leí el manga en otro sitio"
 msgid "Read next chapter"
 msgstr "Leer capítulo siguiente"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 #: src/pages/StatsPage.tsx
 #, fuzzy
@@ -7921,16 +7903,10 @@ msgstr "Leyendo"
 msgid "Reading days"
 msgstr "Días de lectura"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Reading direction"
-msgstr "Dirección de lectura"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, mark read in kavita, import read status"
-msgstr "dirección de lectura, de derecha a izquierda, rtl, ltr, webtoon, vertical, doble página, ajuste de página, zonas de toque, capítulo siguiente automático, marcar como leído en Kavita, importar estado de lectura"
+msgid "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, reader defaults, reading profiles, profile, manga, manhwa, manhua, oel, series type, auto select, per series"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -7946,12 +7922,6 @@ msgstr "El historial de lectura sigue visible cuando una fuente está excluida d
 #, fuzzy
 msgid "Reading profile"
 msgstr "Perfil de lectura"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "Reading profiles"
-msgstr "Perfiles de lectura"
 
 #: src/components/home/ContinueLead.tsx
 #, fuzzy
@@ -8655,7 +8625,6 @@ msgid "Right to left"
 msgstr "De derecha a izquierda"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Right to left (manga)"
 msgstr "De derecha a izquierda (manga)"
@@ -8829,7 +8798,6 @@ msgid "Scale"
 msgstr "Escala"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Scale ({scale}%)"
 msgstr "Escala ({scale}%)"
@@ -8900,11 +8868,6 @@ msgstr ""
 #, fuzzy
 msgid "Sci-Fi"
 msgstr "Ciencia ficción"
-
-#: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "Scope"
-msgstr "Ámbito"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -9570,7 +9533,6 @@ msgid "Single"
 msgstr "Único"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Single page"
 msgstr "Página única"
@@ -10052,7 +10014,6 @@ msgid "Tap zones"
 msgstr "Zonas de toque"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Tap zones (click the page edges to turn)"
 msgstr "Zonas de toque (haz clic en los bordes de la página para pasarla)"
@@ -10147,11 +10108,6 @@ msgstr "Los raíles del catálogo necesitan la base de datos local de MangaBaka 
 #: src/pages/SettingsPage.tsx
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr ""
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "The fallback for Maki's built-in reader: what a series gets when no reading profile covers its type and nothing is pinned or overridden on the series itself."
-msgstr "El lector integrado de Maki usa este valor predeterminado: lo que obtiene una serie cuando ningún perfil de lectura cubre su tipo y no hay nada fijado ni sobrescrito en la propia serie."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10773,7 +10729,6 @@ msgid "Two pages"
 msgstr "Dos páginas"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Two pages side by side"
 msgstr "Dos páginas una al lado de la otra"
@@ -11296,9 +11251,8 @@ msgid "What happens to chapters released later"
 msgstr "Qué ocurre con los capítulos publicados después"
 
 #: src/components/settings/NotificationPrefsSection.tsx
-#, fuzzy
-msgid "What lands in your bell. These are yours alone, they don't affect the Discord and webhook connections on the Integrations tab."
-msgstr "Lo que llega a tu campana. Solo te afecta a ti, no cambia las conexiones de Discord y webhook de la pestaña Integraciones."
+msgid "What lands in your bell. These settings only affect you."
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -11611,11 +11565,6 @@ msgstr "Tu nueva clave API"
 #, fuzzy
 msgid "Your next read"
 msgstr "Tu próxima lectura"
-
-#: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "Your OPDS feed URL"
-msgstr "Tu URL de feed OPDS"
 
 #: src/api/hooks.ts
 #, fuzzy

@@ -80,7 +80,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'integrations',
     label: msg`Integrations`,
-    description: msg`Kavita, the trackers Maki scrobbles to, and outbound notifications.`,
+    description: msg`Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts.`,
   },
   {
     key: 'users',
@@ -175,16 +175,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'reading',
     title: msg`Reader`,
     keywords: msg({
-      message: `reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, mark read in kavita, import read status`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
-    id: 'reading-profiles',
-    tab: 'reading',
-    title: msg`Reading profiles`,
-    keywords: msg({
-      message: `profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series`,
+      message: `reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, reader defaults, reading profiles, profile, manga, manhwa, manhua, oel, series type, auto select, per series`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -214,6 +205,15 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     permission: 'ChangeContentRating',
     keywords: msg({
       message: `content rating, nsfw, erotica, mature, safe, adult`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'kavita-sync',
+    tab: 'reading',
+    title: msg`Kavita sync`,
+    keywords: msg({
+      message: `mark read in kavita, push to kavita, import read status, kavita progress`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -353,10 +353,10 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'notifications',
     tab: 'integrations',
-    title: msg`Notifications`,
+    title: msg`Discord & webhooks`,
     admin: true,
     keywords: msg({
-      message: `discord, webhook, apprise, alerts, events`,
+      message: `discord, webhook, apprise, alerts, events, notifications, outbound`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

@@ -49,6 +49,11 @@ msgstr "Die Bewertung muss eine der folgenden sein: {ratings}"
 msgid "error.account.nameRequired"
 msgstr "Name ist erforderlich"
 
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: OPDS feed URLs are created on the OPDS card in Settings
+msgid "error.account.opdsKeyOnOpdsCard"
+msgstr ""
+
 #. Shared by both SetupTwoFactor and EnableTwoFactor: an account with no working password login
 #. (SSO-provisioned, or refused by auth.oidconly) has nothing for a second factor to protect.
 #: src/Maki.Api/Controllers/AccountController.cs

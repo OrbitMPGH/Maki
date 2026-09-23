@@ -16,7 +16,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 /**
  * Per-event switches for the in-app notification inbox.
  * <p>
- * Not to be confused with the Notifications card on the Integrations tab, which manages the
+ * Not to be confused with the Discord & webhooks card on the Integrations tab, which manages the
  * instance-wide Discord and webhook connections. Those are admin-only and unaffected by anything
  * here — the two systems are deliberately separate so a chat channel isn't flooded with one
  * person's achievements.
@@ -48,10 +48,7 @@ export function NotificationPrefsSection() {
         <Trans>Notifications</Trans>
       </Title>
       <Text size="sm" c="var(--ink-3)" mt={4}>
-        <Trans>
-          What lands in your bell. These are yours alone, they don't affect the Discord and webhook
-          connections on the Integrations tab.
-        </Trans>
+        <Trans>What lands in your bell. These settings only affect you.</Trans>
       </Text>
 
       <Switch

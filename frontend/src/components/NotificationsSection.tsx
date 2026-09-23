@@ -132,7 +132,7 @@ export function NotificationsSection() {
   return (
     <Panel>
       <Group justify="space-between" mb="sm">
-        <Title order={4}><Trans>Notifications</Trans></Title>
+        <Title order={4}><Trans>Discord & webhooks</Trans></Title>
         <Button size="xs" leftSection={<IconBellPlus size={16} />} onClick={openNew}>
           <Trans>Add connection</Trans>
         </Button>

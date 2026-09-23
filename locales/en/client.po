@@ -1246,7 +1246,6 @@ msgid "Administrator"
 msgstr "Administrator"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Advance to the next chapter at the end"
 msgstr "Advance to the next chapter at the end"
 
@@ -2560,7 +2559,6 @@ msgid "Continuous layout only, in pixels."
 msgstr "Continuous layout only, in pixels."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Continuous vertical (webtoon)"
 msgstr "Continuous vertical (webtoon)"
 
@@ -2697,9 +2695,9 @@ msgstr "Created"
 msgid "Creators"
 msgstr "Creators"
 
-#: src/pages/SettingsPage.tsx
-msgid "Credit pages and the next chapter's first pages often look alike. This shows the chapter name for a couple of seconds when you enter a new one."
-msgstr "Credit pages and the next chapter's first pages often look alike. This shows the chapter name for a couple of seconds when you enter a new one."
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
+msgstr "Credit pages and the next chapter's first pages often look alike, so this marks the turn."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Cross-id"
@@ -2769,6 +2767,7 @@ msgstr "Decides when your reading day ends, which is what streaks and daily goal
 msgid "Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never downloaded or counted in the chapter total. Specials released later are covered too. Existing chapters are unchanged; edit them from a series' Chapters tab."
 msgstr "Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never downloaded or counted in the chapter total. Specials released later are covered too. Existing chapters are unchanged; edit them from a series' Chapters tab."
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
 msgid "Default"
@@ -2937,10 +2936,15 @@ msgstr "Discard unsaved changes?"
 msgid "Disconnect"
 msgstr "Disconnect"
 
+#: src/components/NotificationsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Discord & webhooks"
+msgstr "Discord & webhooks"
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "discord, webhook, apprise, alerts, events"
-msgstr "discord, webhook, apprise, alerts, events"
+msgid "discord, webhook, apprise, alerts, events, notifications, outbound"
+msgstr "discord, webhook, apprise, alerts, events, notifications, outbound"
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
@@ -3336,6 +3340,10 @@ msgstr "Every week"
 msgid "Every year"
 msgstr "Every year"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Everything else"
+msgstr "Everything else"
+
 #: src/pages/HealthPage.tsx
 msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
 msgstr "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
@@ -3563,7 +3571,6 @@ msgid "fit height"
 msgstr "fit height"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Fit height"
 msgstr "Fit height"
 
@@ -3572,7 +3579,6 @@ msgid "fit screen"
 msgstr "fit screen"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Fit screen"
 msgstr "Fit screen"
 
@@ -3581,7 +3587,6 @@ msgid "fit width"
 msgstr "fit width"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Fit width"
 msgstr "Fit width"
 
@@ -3603,7 +3608,6 @@ msgid "Flash chapter name on chapter change"
 msgstr "Flash chapter name on chapter change"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Flash the chapter name on chapter change"
 msgstr "Flash the chapter name on chapter change"
 
@@ -3634,8 +3638,8 @@ msgid "For readers like Komga and Kavita that pick up a poster from the folder. 
 msgstr "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
 
 #: src/components/settings/AccountSection.tsx
-msgid "For scripts and third-party clients. A <0>Full</0> key acts as you through the <1>X-Api-Key</1> header. An <2>OPDS</2> key is only a feed URL and cannot reach the management API."
-msgstr "For scripts and third-party clients. A <0>Full</0> key acts as you through the <1>X-Api-Key</1> header. An <2>OPDS</2> key is only a feed URL and cannot reach the management API."
+msgid "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
+msgstr "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Formats"
@@ -3695,10 +3699,6 @@ msgstr "Full access, including settings, root folders, backups and user manageme
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Full also excludes this series from Rewind stats and reading history."
 msgstr "Full also excludes this series from Rewind stats and reading history."
-
-#: src/components/settings/AccountSection.tsx
-msgid "Full API"
-msgstr "Full API"
 
 #: src/components/discover/DiscoverReviews.tsx
 msgid "Full review"
@@ -3993,6 +3993,10 @@ msgstr "How much they count"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "How signals work"
 msgstr "How signals work"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default, including series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
+msgstr "How the built-in reader opens a series. A profile applies automatically to the series types it covers; everything else uses Default, including series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "How you read"
@@ -4305,8 +4309,13 @@ msgid "Kavita series you haven't started are added as plan to read. Entries alre
 msgstr "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
 
 #: src/pages/settings/registry.ts
-msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
-msgstr "Kavita, the trackers Maki scrobbles to, and outbound notifications."
+#: src/pages/SettingsPage.tsx
+msgid "Kavita sync"
+msgstr "Kavita sync"
+
+#: src/pages/settings/registry.ts
+msgid "Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts."
+msgstr "Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts."
 
 #: src/pages/SettingsPage.tsx
 msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita reading."
@@ -4424,7 +4433,6 @@ msgstr "latest"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Layout"
 msgstr "Layout"
 
@@ -4462,7 +4470,6 @@ msgstr "left to right"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Left to right"
 msgstr "Left to right"
 
@@ -4802,6 +4809,11 @@ msgstr "Mark chapters read in Kavita too"
 msgid "Mark read"
 msgstr "Mark read"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "mark read in kavita, push to kavita, import read status, kavita progress"
+msgstr "mark read in kavita, push to kavita, import read status, kavita progress"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark unread"
 msgstr "Mark unread"
@@ -5112,10 +5124,6 @@ msgstr "Name"
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 msgstr "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Named reader settings, picked automatically by series type. Types no profile covers use the Reader defaults above, as do series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
-msgstr "Named reader settings, picked automatically by series type. Types no profile covers use the Reader defaults above, as do series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
-
 #: src/pages/SettingsPage.tsx
 msgid "Naming"
 msgstr "Naming"
@@ -5363,10 +5371,6 @@ msgstr "No pages"
 #: src/pages/RequestsPage.tsx
 msgid "No pending requests"
 msgstr "No pending requests"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "No profiles. Every series uses the reader defaults."
-msgstr "No profiles. Every series uses the reader defaults."
 
 #: src/pages/stats/OverviewPanel.tsx
 msgid "No reading time recorded."
@@ -5685,7 +5689,6 @@ msgid "Notification settings"
 msgstr "Notification settings"
 
 #: src/components/NotificationBell.tsx
-#: src/components/NotificationsSection.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
@@ -5844,10 +5847,6 @@ msgstr "Only you can see this."
 msgid "OPDS"
 msgstr "OPDS"
 
-#: src/components/settings/AccountSection.tsx
-msgid "OPDS feed only"
-msgstr "OPDS feed only"
-
 #: src/pages/HealthPage.tsx
 msgid "Open"
 msgstr "Open"
@@ -5925,10 +5924,6 @@ msgstr "Optional, and yours to set. Maki never adds one for you."
 msgid "Original script"
 msgstr "Original script"
 
-#: src/pages/SettingsPage.tsx
-msgid "Original size"
-msgstr "Original size"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Original size (1:1)"
 msgstr "Original size (1:1)"
@@ -5974,7 +5969,6 @@ msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} of {pageCount}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Page fit"
 msgstr "Page fit"
 
@@ -6246,11 +6240,6 @@ msgstr "Priority"
 msgid "Profile created"
 msgstr "Profile created"
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-msgid "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series"
-msgstr "profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series"
-
 #: src/api/inbox.ts
 #: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -6456,8 +6445,8 @@ msgstr "Read manga elsewhere"
 msgid "Read next chapter"
 msgstr "Read next chapter"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #: src/pages/stats/AchievementsPanel.tsx
 #: src/pages/StatsPage.tsx
 msgid "Reader"
@@ -6497,14 +6486,10 @@ msgstr "Reading"
 msgid "Reading days"
 msgstr "Reading days"
 
-#: src/pages/SettingsPage.tsx
-msgid "Reading direction"
-msgstr "Reading direction"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, mark read in kavita, import read status"
-msgstr "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, mark read in kavita, import read status"
+msgid "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, reader defaults, reading profiles, profile, manga, manhwa, manhua, oel, series type, auto select, per series"
+msgstr "reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, reader defaults, reading profiles, profile, manga, manhwa, manhua, oel, series type, auto select, per series"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Reading goals"
@@ -6517,11 +6502,6 @@ msgstr "Reading history stays visible when a source is excluded from recommendat
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Reading profile"
 msgstr "Reading profile"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/settings/registry.ts
-msgid "Reading profiles"
-msgstr "Reading profiles"
 
 #: src/components/home/ContinueLead.tsx
 msgid "Reading progress"
@@ -7093,7 +7073,6 @@ msgid "Right to left"
 msgstr "Right to left"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Right to left (manga)"
 msgstr "Right to left (manga)"
 
@@ -7241,7 +7220,6 @@ msgid "Scale"
 msgstr "Scale"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Scale ({scale}%)"
 msgstr "Scale ({scale}%)"
 
@@ -7299,10 +7277,6 @@ msgstr "School romance, no adult cast"
 #: src/components/CatalogueFilters.tsx
 msgid "Sci-Fi"
 msgstr "Sci-Fi"
-
-#: src/components/settings/AccountSection.tsx
-msgid "Scope"
-msgstr "Scope"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Scopes"
@@ -7851,7 +7825,6 @@ msgid "Single"
 msgstr "Single"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Single page"
 msgstr "Single page"
 
@@ -8248,7 +8221,6 @@ msgid "Tap zones"
 msgstr "Tap zones"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Tap zones (click the page edges to turn)"
 msgstr "Tap zones (click the page edges to turn)"
 
@@ -8326,10 +8298,6 @@ msgstr "The catalogue rails need the local MangaBaka database (Settings → Meta
 #: src/pages/SettingsPage.tsx
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "The current feed URL stops working immediately. Every app using it needs the new one."
-
-#: src/pages/SettingsPage.tsx
-msgid "The fallback for Maki's built-in reader: what a series gets when no reading profile covers its type and nothing is pinned or overridden on the series itself."
-msgstr "The fallback for Maki's built-in reader: what a series gets when no reading profile covers its type and nothing is pinned or overridden on the series itself."
 
 #: src/pages/HealthPage.tsx
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
@@ -8839,7 +8807,6 @@ msgid "Two pages"
 msgstr "Two pages"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#: src/pages/SettingsPage.tsx
 msgid "Two pages side by side"
 msgstr "Two pages side by side"
 
@@ -9262,8 +9229,8 @@ msgid "What happens to chapters released later"
 msgstr "What happens to chapters released later"
 
 #: src/components/settings/NotificationPrefsSection.tsx
-msgid "What lands in your bell. These are yours alone, they don't affect the Discord and webhook connections on the Integrations tab."
-msgstr "What lands in your bell. These are yours alone, they don't affect the Discord and webhook connections on the Integrations tab."
+msgid "What lands in your bell. These settings only affect you."
+msgstr "What lands in your bell. These settings only affect you."
 
 #: src/pages/RequestsPage.tsx
 msgid "What readers without add or download permissions have asked for. Approving adds the series and queues the chapters."
@@ -9518,10 +9485,6 @@ msgstr "Your new API key"
 #: src/components/discover/DiscoverHero.tsx
 msgid "Your next read"
 msgstr "Your next read"
-
-#: src/components/settings/AccountSection.tsx
-msgid "Your OPDS feed URL"
-msgstr "Your OPDS feed URL"
 
 #: src/api/hooks.ts
 msgid "Your progress"
