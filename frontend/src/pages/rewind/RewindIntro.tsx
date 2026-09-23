@@ -70,8 +70,49 @@ export function RewindIntro({
     else next()
   }
 
+  const slide = slides[index]
+  // Keyed by what is drawn rather than by slide, so two slides on the same cover hold it instead of
+  // flashing it out and back in.
+  const backdropKey = slide.mosaic ? 'mosaic' : (slide.backdrop ?? 'none')
+
   return createPortal(
     <div className="rewind-overlay" role="dialog" aria-label={t`${label} Rewind`} onClick={onTap}>
+      <AnimatePresence>
+        {backdropKey !== 'none' && (
+          <motion.div
+            key={backdropKey}
+            className="rewind-stage"
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduced ? 0 : 0.9, ease: 'easeOut' }}
+          >
+            {slide.mosaic ? (
+              <motion.div
+                className="rewind-mosaic"
+                initial={reduced ? false : { y: 0 }}
+                animate={reduced ? undefined : { y: -120 }}
+                transition={{ duration: SLIDE_MS / 1000 + 2, ease: 'linear' }}
+              >
+                {Array.from({ length: 54 }, (_, i) => (
+                  <img key={i} src={slide.mosaic![i % slide.mosaic!.length]} alt="" />
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                className="rewind-backdrop"
+                style={{ backgroundImage: `url("${slide.backdrop}")` }}
+                initial={reduced ? false : { scale: 1.12 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: SLIDE_MS / 1000 + 1, ease: 'easeOut' }}
+              />
+            )}
+            <div className="rewind-scrim" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="rewind-progress" aria-hidden>
         {slides.map((s, i) => (
           <div key={s.key} className="rewind-progress-track">
@@ -108,14 +149,14 @@ export function RewindIntro({
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={slides[index].key}
+          key={slide.key}
           className="rewind-slide"
           initial={reduced ? false : { opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduced ? undefined : { opacity: 0, y: -40 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          {slides[index].node}
+          {slide.node}
         </motion.div>
       </AnimatePresence>
     </div>,

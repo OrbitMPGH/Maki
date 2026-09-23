@@ -62,9 +62,63 @@ function GenreLabel({ name }: { name: string }) {
   return <>{renderLabel(GENRE_LABELS[name] ?? name)}</>
 }
 
+/** The sharp cover over a slide's blurred one: the series-page arrangement, centred. */
+function Poster({ url, delay = 0 }: { url: string | null; delay?: number }) {
+  if (!url) return null
+  return (
+    <Reveal delay={delay}>
+      <img className="rewind-poster" src={url} alt="" />
+    </Reveal>
+  )
+}
+
+/** A handful of covers fanned like a hand of cards, for slides about several series at once. */
+function CoverFan({ urls, muted }: { urls: (string | null)[]; muted?: boolean }) {
+  const shown = urls.filter((u): u is string => !!u).slice(0, 5)
+  if (shown.length < 2) return null
+  const mid = (shown.length - 1) / 2
+  // Fewer cards fan wider, or two of them overlap into what reads as one book.
+  const step = shown.length <= 3 ? 9 : 6
+  return (
+    <div className="rewind-fan" data-muted={muted || undefined} aria-hidden>
+      {shown.map((url, i) => (
+        <img
+          key={url}
+          src={url}
+          alt=""
+          style={{
+            transform: `rotate(${(i - mid) * step}deg) translateY(${Math.abs(i - mid) * 8}px)`,
+            zIndex: 10 - Math.abs(Math.round(i - mid)),
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+function Thumb({ url }: { url: string | null }) {
+  return url ? <img className="rewind-thumb" src={url} alt="" /> : <span className="rewind-thumb" />
+}
+
+/** Every distinct cover in the period, most-read first, for the opening wall. */
+function coversOf(stats: ActivityStats): string[] {
+  const all = [
+    ...stats.topRead,
+    ...stats.topByTime,
+    ...stats.finished,
+    ...stats.added,
+    ...stats.dropped,
+  ].map((s) => s.coverUrl)
+  return [...new Set(all.filter((u): u is string => !!u))]
+}
+
 export interface RewindSlide {
   key: string
   node: ReactNode
+  /** A cover blurred full-bleed behind the slide. Slides without one keep the plain brand dark. */
+  backdrop?: string | null
+  /** Covers tiled into a slow wall behind the slide instead of one blurred cover. */
+  mosaic?: string[]
 }
 
 /** Builds the intro slide deck; slides with nothing to show are skipped. */
@@ -72,8 +126,10 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
   const slides: RewindSlide[] = []
   const t = stats.totals
 
+  const covers = coversOf(stats)
   slides.push({
     key: 'title',
+    mosaic: covers.length >= 4 ? covers : undefined,
     node: (
       <Stack align="center" gap="xs">
         <Reveal>{eyebrow('Maki Rewind')}</Reveal>
@@ -129,8 +185,10 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
     const topByTimeTitle = topByTime ? topByTime.title : ''
     slides.push({
       key: 'time',
+      backdrop: topByTime?.coverUrl,
       node: (
         <Stack align="center" gap="xs">
+          <Poster url={topByTime?.coverUrl ?? null} />
           <Reveal>{eyebrow(<Trans>Time spent in the reader</Trans>)}</Reveal>
           <Reveal delay={0.3}>
             <Text className="rewind-title">{formatReadingTime(t.readingSeconds)}</Text>
@@ -180,8 +238,10 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
     const topReadCount = stats.topRead[0].count
     slides.push({
       key: 'top-read',
+      backdrop: stats.topRead[0].coverUrl,
       node: (
         <Stack align="center" gap="sm">
+          <Poster url={stats.topRead[0].coverUrl} />
           <Reveal>{eyebrow(<Trans>Your most read series</Trans>)}</Reveal>
           <Reveal delay={0.3}>
             <Text className="rewind-title">{topReadTitle}</Text>
@@ -193,10 +253,12 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
           </Reveal>
           {stats.topRead.length > 1 && (
             <Reveal delay={0.95}>
-              <Stack gap={4} mt="md" align="center">
+              <Stack gap={6} mt="md" align="flex-start" className="rewind-list">
                 {stats.topRead.slice(1, 5).map((s, i) => (
                   <Text key={s.title} className="rewind-list-line">
-                    <span className="rewind-rank tnum">{i + 2}</span> {s.title}
+                    <span className="rewind-rank tnum">{i + 2}</span>
+                    <Thumb url={s.coverUrl} />
+                    <span className="rewind-list-title">{s.title}</span>
                   </Text>
                 ))}
               </Stack>
@@ -279,10 +341,19 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
 
   if (stats.finished.length > 0) {
     const finishedCount = stats.finished.length
+    const onlyFinished = finishedCount === 1 ? stats.finished[0] : null
     slides.push({
       key: 'finished',
+      backdrop: onlyFinished?.coverUrl,
       node: (
         <Stack align="center" gap="sm">
+          {onlyFinished ? (
+            <Poster url={onlyFinished.coverUrl} />
+          ) : (
+            <Reveal>
+              <CoverFan urls={stats.finished.map((s) => s.coverUrl)} />
+            </Reveal>
+          )}
           <Reveal>{eyebrow(<Trans>Seen through to the end</Trans>)}</Reveal>
           <Reveal delay={0.3}>
             <Text className="rewind-title">
@@ -315,6 +386,9 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
       key: 'dropped',
       node: (
         <Stack align="center" gap="sm">
+          <Reveal>
+            <CoverFan urls={stats.dropped.map((s) => s.coverUrl)} muted />
+          </Reveal>
           <Reveal>{eyebrow(<Trans>Maybe next year</Trans>)}</Reveal>
           <Reveal delay={0.3}>
             <Text className="rewind-title">

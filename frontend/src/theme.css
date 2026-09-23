@@ -3858,6 +3858,7 @@ body {
 }
 .rewind-dim {
   opacity: 0.55;
+  white-space: nowrap;
 }
 .rewind-summary-number {
   font-size: 2rem;
@@ -3870,6 +3871,108 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.7;
+}
+
+/* The covers. A slide about one series puts its art behind it the way the series page does,
+   blurred and pushed into the dark; the opening slide tiles the whole period's covers into a
+   tilted wall that drifts. Slides about numbers keep the plain brand dark, which is what gives the
+   cover slides their weight. */
+.rewind-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rewind-backdrop {
+  position: absolute;
+  inset: -8%;
+  background-size: cover;
+  background-position: center 25%;
+  filter: blur(30px) saturate(1.2) brightness(0.48);
+  will-change: transform;
+}
+.rewind-mosaic {
+  position: absolute;
+  top: -20%;
+  left: -15%;
+  width: 130%;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 14px;
+  transform: rotate(-9deg);
+  opacity: 0.36;
+}
+.rewind-mosaic img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.rewind-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 50%, rgba(11, 13, 18, 0.55), rgba(11, 13, 18, 0.2) 70%, transparent),
+    linear-gradient(180deg, rgba(11, 13, 18, 0.55), rgba(11, 13, 18, 0.1) 35%, rgba(11, 13, 18, 0.1) 65%, rgba(11, 13, 18, 0.8));
+}
+.rewind-slide,
+.rewind-progress,
+.rewind-close {
+  z-index: 1;
+}
+.rewind-slide {
+  position: relative;
+}
+.rewind-poster {
+  display: block;
+  width: clamp(120px, 20vw, 172px);
+  aspect-ratio: 2 / 3;
+  margin: 0 auto 18px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 30px 60px -18px rgba(0, 0, 0, 0.9);
+}
+.rewind-fan {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 26px;
+}
+.rewind-fan img {
+  width: clamp(72px, 12vw, 104px);
+  aspect-ratio: 2 / 3;
+  margin-inline: -8px;
+  object-fit: cover;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.85);
+}
+.rewind-fan[data-muted] img {
+  filter: grayscale(0.75) brightness(0.8);
+}
+.rewind-list {
+  margin-inline: auto;
+}
+.rewind-list-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: start;
+}
+.rewind-thumb {
+  width: 26px;
+  height: 38px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.rewind-list-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 28ch;
 }
 
 /* --- Reader --------------------------------------------------------------- */
@@ -5838,6 +5941,10 @@ body.reader-open {
   }
   .rewind-summary-number {
     font-size: 1.6rem;
+  }
+  .rewind-mosaic {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
   }
   .rewind-slide .rewind-figure-pair {
     flex-direction: column;
