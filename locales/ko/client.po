@@ -3344,6 +3344,10 @@ msgstr "신호를 불러오지 못했습니다: {loadError}"
 msgid "Could not read your profile"
 msgstr "프로필을 읽을 수 없습니다"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not remove {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
@@ -6342,6 +6346,10 @@ msgstr "이와 비슷한 항목"
 msgid "More of this"
 msgstr "이 항목 더 보기"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "More options for {seriesTitle}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -7452,6 +7460,7 @@ msgstr "{label}에서 열기"
 msgid "Open Recommended with these filters from now on"
 msgstr "앞으로 이 필터로 Recommended 열기"
 
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8502,6 +8511,14 @@ msgstr "보관 파일 제거"
 msgid "Remove bookmark"
 msgstr "북마크 제거"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Continue reading"
+msgstr ""
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Jump back in"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Remove from library"
@@ -8580,6 +8597,10 @@ msgstr "좋아요 취소"
 #, fuzzy
 msgid "Removed"
 msgstr "제거됨"
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Removed {seriesTitle}. It comes back when you read it again."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -11197,6 +11218,7 @@ msgid "Underscore (_)"
 msgstr "밑줄 (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "Undo"

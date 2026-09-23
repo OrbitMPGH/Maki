@@ -1083,9 +1083,62 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
 }
-.cover-card:hover .discover-corner[data-play='true'] {
+.cover-card:hover .discover-corner[data-play='true'],
+.reading-card:hover .discover-corner[data-play='true'] {
   opacity: 1;
   transform: scale(1.08);
+}
+/* A reading-rail card is its link plus a menu button beside it, not inside it. The wrapper owns
+   the hover lift so pointing at the button doesn't drop the card out from under it. */
+.reading-card {
+  position: relative;
+}
+.reading-card:hover > .cover-card {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: var(--mantine-shadow-lg);
+}
+.reading-card:hover > .cover-card .cover-poster img {
+  transform: scale(1.05);
+}
+.reading-card-menu,
+.continue-tile-menu {
+  position: absolute;
+  z-index: 3;
+  color: #fff;
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.15s var(--ease), transform 0.18s var(--ease), background 0.15s var(--ease);
+}
+.reading-card-menu:hover,
+.continue-tile-menu:hover {
+  background: rgba(6, 7, 11, 0.85);
+}
+/* Left of the play cue, centred on it. */
+.reading-card-menu {
+  top: 11px;
+  right: 49px;
+}
+.reading-card:hover > .reading-card-menu {
+  transform: translateY(-4px);
+}
+.continue-tile-menu {
+  top: 10px;
+  right: 10px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .reading-card-menu,
+  .continue-tile-menu {
+    opacity: 0;
+  }
+  .reading-card:hover > .reading-card-menu,
+  .reading-card-menu:focus-visible,
+  .reading-card-menu[data-expanded],
+  .continue-tile:hover > .continue-tile-menu,
+  .continue-tile-menu:focus-visible,
+  .continue-tile-menu[data-expanded] {
+    opacity: 1;
+  }
 }
 .home-chapter-label[data-action] {
   display: flex;
@@ -4110,7 +4163,9 @@ body.reader-open {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  .cover-card:hover {
+  .cover-card:hover,
+  .reading-card:hover > .cover-card,
+  .reading-card:hover > .reading-card-menu {
     transform: none;
   }
   /* The chapter flash is information, not decoration: collapsing its animation to nothing would

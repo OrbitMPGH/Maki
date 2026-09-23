@@ -47,6 +47,7 @@ import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
 import { ContinueRail } from '../components/home/ContinueRail'
+import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
@@ -258,7 +259,7 @@ export default function HomePage() {
     ) : continueReading.length > 0 ? (
       <>
         <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
-        <ReadingSection items={continueReading} hero={heroOn('continue')} />
+        <ReadingSection items={continueReading} rail="continue" hero={heroOn('continue')} />
       </>
     ) : (
       // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
@@ -283,7 +284,7 @@ export default function HomePage() {
     jumpback: jumpBackIn.length > 0 && (
       <>
         <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-        <ReadingSection items={jumpBackIn} hero={heroOn('jumpback')} />
+        <ReadingSection items={jumpBackIn} rail="jumpback" hero={heroOn('jumpback')} />
       </>
     ),
 
@@ -357,12 +358,22 @@ export default function HomePage() {
  * A reading list, optionally led by large tiles: the first few as `ContinueLead`'s cover tiles and
  * the rest as a rail, or everything as a rail.
  */
-function ReadingSection({ items, hero }: { items: HomeReadingItem[]; hero: boolean }) {
-  if (!hero) return <ContinueRail items={items} />
+function ReadingSection({
+  items,
+  rail,
+  hero,
+}: {
+  items: HomeReadingItem[]
+  rail: ReadingRailKind
+  hero: boolean
+}) {
+  if (!hero) return <ContinueRail items={items} rail={rail} />
   return (
     <>
-      <ContinueLead items={items.slice(0, CONTINUE_LEAD_MAX)} />
-      {items.length > CONTINUE_LEAD_MAX && <ContinueRail items={items.slice(CONTINUE_LEAD_MAX)} />}
+      <ContinueLead items={items.slice(0, CONTINUE_LEAD_MAX)} rail={rail} />
+      {items.length > CONTINUE_LEAD_MAX && (
+        <ContinueRail items={items.slice(CONTINUE_LEAD_MAX)} rail={rail} />
+      )}
     </>
   )
 }

@@ -6,6 +6,7 @@ import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { relativeTime } from '../ui/time'
+import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
 
 /** How many chapters get the hero treatment before the rest fall back to the rail. */
 export const CONTINUE_LEAD_MAX = 3
@@ -22,19 +23,19 @@ export const CONTINUE_LEAD_MAX = 3
  * modal use. Those gradients are tuned as one recipe, so a local copy drifts the moment any of
  * them is touched.
  */
-export function ContinueLead({ items }: { items: HomeReadingItem[] }) {
+export function ContinueLead({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
   return (
     // The count drives how much the tile can spend on its title: one tile across the full row
     // carries a feature-sized title, three sharing it cannot.
     <div className="continue-lead-grid" data-count={Math.min(items.length, CONTINUE_LEAD_MAX)}>
       {items.map((item) => (
-        <ContinueTile key={item.chapterId} item={item} />
+        <ContinueTile key={item.chapterId} item={item} rail={rail} />
       ))}
     </div>
   )
 }
 
-function ContinueTile({ item }: { item: HomeReadingItem }) {
+function ContinueTile({ item, rail }: { item: HomeReadingItem; rail: ReadingRailKind }) {
   const { t } = useLingui()
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
   // Same rule as ReadingRail's card: no pageCount means no bar and no "page x of y".
@@ -49,6 +50,7 @@ function ContinueTile({ item }: { item: HomeReadingItem }) {
   return (
     <div className="continue-tile">
       <HeroBackdrop coverUrl={item.coverUrl} />
+      <ReadingCardMenu item={item} rail={rail} className="continue-tile-menu" />
 
       <div className="continue-tile-content">
         {/* The mount reveal is CSS-only (`.continue-tile-motion img`), staggered by nth-child so

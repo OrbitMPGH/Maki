@@ -816,6 +816,30 @@ export function useHomeReading(limit = 12, enabled = true) {
   })
 }
 
+/**
+ * Takes a series off both reading rails (or puts it back, for Undo). The server keeps it off until
+ * the series is next read. Removal is applied to the cached rails straight away so the card leaves
+ * on click rather than after a round trip.
+ */
+export function useHideHomeReading() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, hidden }: { seriesId: number; hidden: boolean }) =>
+      api(`/home/reading/${seriesId}/hide`, { method: hidden ? 'POST' : 'DELETE' }),
+    onMutate: async ({ seriesId, hidden }) => {
+      if (!hidden) return
+      await queryClient.cancelQueries({ queryKey: ['home', 'reading'] })
+      queryClient.setQueriesData<HomeReadingResponse>({ queryKey: ['home', 'reading'] }, (data) =>
+        data && {
+          continueReading: data.continueReading.filter((i) => i.seriesId !== seriesId),
+          jumpBackIn: data.jumpBackIn.filter((i) => i.seriesId !== seriesId),
+        },
+      )
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['home', 'reading'] }),
+  })
+}
+
 /** Series that recently gained chapter files. Invalidated live by the `chapterImported` event. */
 export function useHomeRecentlyAdded(limit = 12, enabled = true) {
   return useQuery({

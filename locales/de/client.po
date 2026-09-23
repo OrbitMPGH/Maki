@@ -3344,6 +3344,10 @@ msgstr "Deine Signale konnten nicht geladen werden: {loadError}"
 msgid "Could not read your profile"
 msgstr "Dein Profil konnte nicht gelesen werden"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not remove {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
@@ -6342,6 +6346,10 @@ msgstr "Mehr wie dieses"
 msgid "More of this"
 msgstr "Mehr davon"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "More options for {seriesTitle}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -7452,6 +7460,7 @@ msgstr "Auf {label} öffnen"
 msgid "Open Recommended with these filters from now on"
 msgstr "Empfohlene Suche ab jetzt mit diesen Filtern öffnen"
 
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8502,6 +8511,14 @@ msgstr "Archiv entfernen"
 msgid "Remove bookmark"
 msgstr "Lesezeichen entfernen"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Continue reading"
+msgstr ""
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Jump back in"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Remove from library"
@@ -8580,6 +8597,10 @@ msgstr "Daumen hoch entfernen"
 #, fuzzy
 msgid "Removed"
 msgstr "Entfernt"
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Removed {seriesTitle}. It comes back when you read it again."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -11197,6 +11218,7 @@ msgid "Underscore (_)"
 msgstr "Unterstrich (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "Undo"

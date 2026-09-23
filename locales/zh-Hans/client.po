@@ -3344,6 +3344,10 @@ msgstr "无法加载你的信号：{loadError}"
 msgid "Could not read your profile"
 msgstr "无法读取你的资料"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not remove {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
@@ -6342,6 +6346,10 @@ msgstr "更多类似内容"
 msgid "More of this"
 msgstr "更多此类内容"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "More options for {seriesTitle}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -7452,6 +7460,7 @@ msgstr "在 {label} 中打开"
 msgid "Open Recommended with these filters from now on"
 msgstr "以后使用这些筛选条件打开推荐内容"
 
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8502,6 +8511,14 @@ msgstr "移除归档"
 msgid "Remove bookmark"
 msgstr "移除书签"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Continue reading"
+msgstr ""
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Jump back in"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Remove from library"
@@ -8580,6 +8597,10 @@ msgstr "移除你的点赞"
 #, fuzzy
 msgid "Removed"
 msgstr "已移除"
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Removed {seriesTitle}. It comes back when you read it again."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -11197,6 +11218,7 @@ msgid "Underscore (_)"
 msgstr "下划线（_）"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "Undo"

@@ -2772,6 +2772,10 @@ msgstr "Could not load your signals: {loadError}"
 msgid "Could not read your profile"
 msgstr "Could not read your profile"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not remove {seriesTitle}: {reason}"
+msgstr "Could not remove {seriesTitle}: {reason}"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "Could not update {surface} feedback: {reason}"
@@ -5282,6 +5286,10 @@ msgstr "More like this"
 msgid "More of this"
 msgstr "More of this"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "More options for {seriesTitle}"
+msgstr "More options for {seriesTitle}"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "More recommendation feedback actions"
 msgstr "More recommendation feedback actions"
@@ -6200,6 +6208,7 @@ msgstr "Open on {label}"
 msgid "Open Recommended with these filters from now on"
 msgstr "Open Recommended with these filters from now on"
 
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Open series"
@@ -7077,6 +7086,14 @@ msgstr "Remove archive"
 msgid "Remove bookmark"
 msgstr "Remove bookmark"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Continue reading"
+msgstr "Remove from Continue reading"
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Jump back in"
+msgstr "Remove from Jump back in"
+
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Remove from library"
 msgstr "Remove from library"
@@ -7140,6 +7157,10 @@ msgstr "Remove your thumbs up"
 #: src/pages/stats/ActivityFeed.tsx
 msgid "Removed"
 msgstr "Removed"
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Removed {seriesTitle}. It comes back when you read it again."
+msgstr "Removed {seriesTitle}. It comes back when you read it again."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Removed from recommendations. Only this title: its genres and author are unaffected."
@@ -9316,6 +9337,7 @@ msgid "Underscore (_)"
 msgstr "Underscore (_)"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Undo"
 msgstr "Undo"

@@ -2,6 +2,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Reading;
 using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -96,6 +97,22 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
             .ToListAsync(ct);
+
+        // A removed series stays off both rails until any of its progress rows moves past the
+        // removal. The scan is newest-first, so its first row per series is that series' latest.
+        var hiddenAt = await db.UserSeriesStates
+            .AsNoTracking()
+            .Where(s => s.HiddenFromHomeAt != null)
+            .ToDictionaryAsync(s => s.SeriesId, s => s.HiddenFromHomeAt!.Value, ct);
+        if (hiddenAt.Count > 0)
+        {
+            var lastTouched = recent
+                .GroupBy(p => p.SeriesId)
+                .ToDictionary(g => g.Key, g => g.First().UpdatedAt);
+            recent = recent
+                .Where(p => !hiddenAt.TryGetValue(p.SeriesId, out var at) || lastTouched[p.SeriesId] > at)
+                .ToList();
+        }
 
         // Tombstones excluded: a chapter the user just marked unread is the most recently touched
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
@@ -198,6 +215,41 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         }
 
         return Ok(new HomeReadingResponse(continueRail, jumpRail));
+    }
+
+    /// <summary>Takes a series off this user's reading rails until they next read it.</summary>
+    [HttpPost("reading/{seriesId:int}/hide")]
+    public Task<IActionResult> HideFromReading(int seriesId, CancellationToken ct) =>
+        SetHiddenFromHomeAsync(seriesId, DateTime.UtcNow, ct);
+
+    /// <summary>Undoes <see cref="HideFromReading"/>.</summary>
+    [HttpDelete("reading/{seriesId:int}/hide")]
+    public Task<IActionResult> UnhideFromReading(int seriesId, CancellationToken ct) =>
+        SetHiddenFromHomeAsync(seriesId, null, ct);
+
+    private async Task<IActionResult> SetHiddenFromHomeAsync(int seriesId, DateTime? at, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
+        if (state is null)
+        {
+            if (at is null)
+            {
+                return NoContent();
+            }
+
+            state = new UserSeriesState { SeriesId = seriesId };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.HiddenFromHomeAt = at;
+        state.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return NoContent();
     }
 
     /// <summary>

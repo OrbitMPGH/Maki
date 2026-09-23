@@ -335,4 +335,66 @@ public class HomeControllerTests : IDisposable
             Assert.Equal(0, data.page);
         }
     }
+
+    // Hiding writes a UserSeriesState row, which needs a user on the scope to stamp its owner.
+    private HomeController UserController()
+    {
+        var context = _db.NewContext(userId: 1);
+        return new HomeController(context, new ContinueReadingService(context));
+    }
+
+    [Fact]
+    public async Task Hidden_series_drop_out_of_both_rails()
+    {
+        var continued = _db.SeedSeries("Continued");
+        var finished = _db.SeedSeries("Finished");
+        var kept = _db.SeedSeries("Kept");
+        SeedProgress(continued, SeedChapter(continued, 1), 5, false, Base);
+        SeedProgress(finished, SeedChapter(finished, 1), 0, true, Base);
+        SeedChapter(finished, 2);
+        SeedProgress(kept, SeedChapter(kept, 1), 5, false, Base);
+
+        Assert.IsType<NoContentResult>(await UserController().HideFromReading(continued, CancellationToken.None));
+        Assert.IsType<NoContentResult>(await UserController().HideFromReading(finished, CancellationToken.None));
+
+        var response = Reading(await UserController().Reading(ct: CancellationToken.None));
+
+        Assert.Equal(["Kept"], response.ContinueReading.Select(i => i.SeriesTitle));
+        Assert.Empty(response.JumpBackIn);
+    }
+
+    [Fact]
+    public async Task Reading_a_hidden_series_again_brings_it_back()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var first = SeedChapter(seriesId, 1);
+        var second = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, first, 5, false, Base);
+        await UserController().HideFromReading(seriesId, CancellationToken.None);
+
+        SeedProgress(seriesId, second, 3, false, DateTime.UtcNow.AddMinutes(1));
+
+        var response = Reading(await UserController().Reading(ct: CancellationToken.None));
+
+        Assert.Equal(second, Assert.Single(response.ContinueReading).ChapterId);
+    }
+
+    [Fact]
+    public async Task Unhiding_restores_the_series()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        SeedProgress(seriesId, SeedChapter(seriesId, 1), 5, false, Base);
+        await UserController().HideFromReading(seriesId, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(await UserController().UnhideFromReading(seriesId, CancellationToken.None));
+
+        var response = Reading(await UserController().Reading(ct: CancellationToken.None));
+        Assert.Single(response.ContinueReading);
+    }
+
+    [Fact]
+    public async Task Hiding_an_unknown_series_is_not_found()
+    {
+        Assert.IsType<NotFoundResult>(await UserController().HideFromReading(999, CancellationToken.None));
+    }
 }

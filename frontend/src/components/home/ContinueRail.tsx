@@ -4,6 +4,7 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { useLingui } from '@lingui/react/macro'
 import type { HomeReadingItem } from '../../api/hooks'
 import { ReadingRail } from './ReadingRail'
+import type { ReadingRailKind } from './ReadingCardMenu'
 
 /**
  * The spill-over rail under {@link ContinueLead}: the same `ReadingRail` with scroll-aware
@@ -13,7 +14,7 @@ import { ReadingRail } from './ReadingRail'
  * (Home's Jump back in) is untouched. The scroller is found by class instead of by ref for the
  * same reason.
  */
-export function ContinueRail({ items }: { items: HomeReadingItem[] }) {
+export function ContinueRail({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
   const { t } = useLingui()
   const shellRef = useRef<HTMLDivElement>(null)
   // A rail that fits gets no arrows at all, and an arrow at the end of its travel is disabled
@@ -87,7 +88,7 @@ export function ContinueRail({ items }: { items: HomeReadingItem[] }) {
           </ActionIcon>
         </Group>
       )}
-      <ReadingRail items={items} />
+      <ReadingRail items={items} rail={rail} />
     </div>
   )
 }

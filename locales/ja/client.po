@@ -3344,6 +3344,10 @@ msgstr "シグナルを読み込めませんでした: {loadError}"
 msgid "Could not read your profile"
 msgstr "プロフィールを読み込めませんでした"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Could not remove {seriesTitle}: {reason}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
@@ -6342,6 +6346,10 @@ msgstr "これに似た作品"
 msgid "More of this"
 msgstr "これをもっと"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "More options for {seriesTitle}"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "More recommendation feedback actions"
@@ -7452,6 +7460,7 @@ msgstr "{label}で開く"
 msgid "Open Recommended with these filters from now on"
 msgstr "今後はこれらのフィルターでRecommendedを開く"
 
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8502,6 +8511,14 @@ msgstr "アーカイブを削除"
 msgid "Remove bookmark"
 msgstr "ブックマークを削除"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Continue reading"
+msgstr ""
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Remove from Jump back in"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Remove from library"
@@ -8580,6 +8597,10 @@ msgstr "高評価を取り消す"
 #, fuzzy
 msgid "Removed"
 msgstr "削除済み"
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Removed {seriesTitle}. It comes back when you read it again."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -11197,6 +11218,7 @@ msgid "Underscore (_)"
 msgstr "アンダースコア（_）"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "Undo"

@@ -3,6 +3,7 @@ import { IconPlayerPlay } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
 
 /**
  * Horizontal rail of "open this chapter" posters, for Home's Continue reading and Jump back in.
@@ -11,12 +12,13 @@ import { plural } from '@lingui/core/macro'
  * series page, whereas these link straight into the reader and carry a chapter label rather than
  * download counts. It reuses that card's CSS classes, so the two match without new layout rules.
  */
-export function ReadingRail({ items }: { items: HomeReadingItem[] }) {
+export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
   return (
     <div className="discover-rail">
       {items.map((item) => (
-        <div key={item.chapterId} className="discover-rail-item">
+        <div key={item.chapterId} className="discover-rail-item reading-card">
           <ReadingCard item={item} />
+          <ReadingCardMenu item={item} rail={rail} className="reading-card-menu" />
         </div>
       ))}
     </div>
