@@ -2178,6 +2178,7 @@ msgstr "Volver a la biblioteca"
 
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Back to series"
 msgstr "Volver a la serie"
@@ -2339,6 +2340,7 @@ msgid "Blocks sign-in and kills existing sessions. Keeps the account and its his
 msgstr "Bloquea el inicio de sesión y cierra las sesiones existentes. Conserva la cuenta y su historial."
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Bookmark this page"
 msgstr "Añadir esta página a marcadores"
@@ -3063,6 +3065,7 @@ msgstr "Secreto de cliente"
 #: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Close"
 msgstr "Cerrar"
@@ -3348,6 +3351,7 @@ msgstr "Continuar sin guardar"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Continuous"
 msgstr "Continuo"
@@ -3953,6 +3957,10 @@ msgstr "Listo"
 msgid "Double"
 msgstr "Doble"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Double page"
+msgstr ""
+
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
 msgid "Down"
@@ -4274,6 +4282,10 @@ msgstr "Activar el catálogo OPDS"
 msgid "Enabled"
 msgstr "Activado"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "End"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -4306,6 +4318,10 @@ msgstr "Erotismo"
 #, fuzzy
 msgid "Error"
 msgstr "Error"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Esc"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4394,6 +4410,7 @@ msgid "Every year"
 msgstr "Cada año"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Everything else"
 msgstr "Todo lo demás"
@@ -4688,6 +4705,10 @@ msgstr "primero"
 msgid "First download in progress"
 msgstr "Primera descarga en curso"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "First page"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Fit"
@@ -4870,6 +4891,7 @@ msgid "Full review"
 msgstr "Revisión completa"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Full screen"
 msgstr "Pantalla completa"
@@ -5196,6 +5218,7 @@ msgstr "Conserva un token de feed y lee mediante una aplicación OPDS"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
@@ -5703,6 +5726,15 @@ msgstr "Conservar el nombre y descargar también en esa carpeta"
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "Mantiene esta serie fuera de los envíos a los rastreadores y, en Completo, también la excluye por completo de las estadísticas."
 
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Keyboard shortcuts"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Keyboard shortcuts (?)"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Kind"
@@ -5779,6 +5811,10 @@ msgstr "Última descarga fallida: {lastError}. La próxima ejecución programada
 msgid "Last error: {lastError}"
 msgstr "Último error: {lastError}"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Last page"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
@@ -5827,6 +5863,7 @@ msgstr "más reciente"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Layout"
 msgstr "Diseño"
@@ -6884,6 +6921,10 @@ msgstr "Más recientes"
 msgid "Next chapter"
 msgstr "Capítulo siguiente"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Next page"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Next source"
@@ -7855,6 +7896,7 @@ msgid "Page not found"
 msgstr "Página no encontrada"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Page thumbnails"
 msgstr "Miniaturas de páginas"
@@ -8177,6 +8219,10 @@ msgstr "Pulsa Intro para crear una etiqueta nueva"
 #, fuzzy
 msgid "Previous chapter"
 msgstr "Capítulo anterior"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous page"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -9100,6 +9146,10 @@ msgstr "Restablecer"
 #, fuzzy
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Restablece los marcadores y las posiciones de reanudación de los capítulos afectados para todos los usuarios. El estado de completado y el historial de lectura se conservan."
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Reset zoom"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -10121,6 +10171,10 @@ msgstr "Da forma a las recomendaciones"
 msgid "Share of the series you've read."
 msgstr "Parte de las series que has leído."
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Shift + Space"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Shoujo"
@@ -10176,6 +10230,10 @@ msgstr "Mostrar más"
 #, fuzzy
 msgid "Show on"
 msgstr "Mostrar en"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Show or hide this list"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -10309,6 +10367,7 @@ msgid "Single"
 msgstr "Único"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Single page"
 msgstr "Página única"
@@ -10494,6 +10553,10 @@ msgstr "Las fuentes no coinciden en la numeración de capítulos"
 #, fuzzy
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "Las fuentes no coinciden en dónde empieza un capítulo: aquí una página de créditos, allí una portada en color. Las páginas se comparan por su contenido de imagen, así que cada fila muestra el mismo dibujo en todas las columnas. Una fuente cuyo análisis no coincide con nada se deja en su propia primera página."
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Space"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -10708,6 +10771,10 @@ msgstr "Sugerente"
 #, fuzzy
 msgid "Supernatural"
 msgstr "Sobrenatural"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Switch reading direction"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -11577,6 +11644,10 @@ msgstr "Desactiva esto para verlos solo en la campana."
 #, fuzzy
 msgid "Turning embeddings off…"
 msgstr "Desactivando embeddings…"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Turning pages"
+msgstr ""
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -12616,3 +12687,7 @@ msgstr "Solo para ti: esto cambia lo que llega a tu campana, no a la de nadie m�
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (opcional)"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Zoom in and out"
+msgstr ""

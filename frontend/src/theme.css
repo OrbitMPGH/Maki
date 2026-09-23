@@ -4313,6 +4313,94 @@ body.reader-open {
   }
 }
 
+.reader-shortcuts {
+  position: fixed;
+  inset: 0;
+  z-index: var(--reader-overlay-z-index);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(3px);
+}
+.reader-shortcuts-panel {
+  width: min(800px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: #121215;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
+  color: #fff;
+  outline: none;
+}
+.reader-shortcuts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.reader-shortcuts-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.reader-shortcuts-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px 28px;
+}
+.reader-shortcuts-groups h3 {
+  margin: 0 0 8px;
+  font-size: var(--type-label);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.reader-shortcuts-groups dl {
+  margin: 0;
+}
+.reader-shortcuts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 0.875rem;
+}
+.reader-shortcuts-row dt {
+  color: rgba(255, 255, 255, 0.78);
+}
+.reader-shortcuts-row dd {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  margin: 0;
+}
+.reader-shortcuts-row kbd {
+  min-width: 24px;
+  padding: 1px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: inherit;
+  font-size: var(--type-micro);
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  color: #fff;
+}
+@media (hover: none) {
+  .reader-shortcuts-button {
+    display: none;
+  }
+}
+
 .reader-page-badge {
   position: absolute;
   right: 12px;

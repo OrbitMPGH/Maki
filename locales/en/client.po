@@ -1770,6 +1770,7 @@ msgstr "Back to library"
 
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Back to series"
 msgstr "Back to series"
 
@@ -1900,6 +1901,7 @@ msgid "Blocks sign-in and kills existing sessions. Keeps the account and its his
 msgstr "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Bookmark this page"
 msgstr "Bookmark this page"
 
@@ -2491,6 +2493,7 @@ msgstr "Client secret"
 #: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Close"
 msgstr "Close"
 
@@ -2724,6 +2727,7 @@ msgstr "Continue without saving"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Continuous"
 msgstr "Continuous"
 
@@ -3215,6 +3219,10 @@ msgstr "Done"
 msgid "Double"
 msgstr "Double"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Double page"
+msgstr "Double page"
+
 #: src/components/layout/SectionProperties.tsx
 msgid "Down"
 msgstr "Down"
@@ -3475,6 +3483,10 @@ msgstr "Enable the OPDS catalogue"
 msgid "Enabled"
 msgstr "Enabled"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "End"
+msgstr "End"
+
 #: src/components/AnimeCoverageBar.tsx
 msgid "ends at ch. {num}"
 msgstr "ends at ch. {num}"
@@ -3501,6 +3513,10 @@ msgstr "Erotica"
 #: src/pages/HealthPage.tsx
 msgid "Error"
 msgstr "Error"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Esc"
+msgstr "Esc"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Esc closes"
@@ -3572,6 +3588,7 @@ msgid "Every year"
 msgstr "Every year"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Everything else"
 msgstr "Everything else"
 
@@ -3811,6 +3828,10 @@ msgstr "first"
 msgid "First download in progress"
 msgstr "First download in progress"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "First page"
+msgstr "First page"
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Fit"
 msgstr "Fit"
@@ -3958,6 +3979,7 @@ msgid "Full review"
 msgstr "Full review"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Full screen"
 msgstr "Full screen"
 
@@ -4222,6 +4244,7 @@ msgstr "Hold a feed token and read through an OPDS app"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Home"
 msgstr "Home"
@@ -4631,6 +4654,15 @@ msgstr "Keep the name, download into it too"
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Keyboard shortcuts"
+msgstr "Keyboard shortcuts"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Keyboard shortcuts (?)"
+msgstr "Keyboard shortcuts (?)"
+
 #: src/pages/SettingsPage.tsx
 msgid "Kind"
 msgstr "Kind"
@@ -4694,6 +4726,10 @@ msgstr "Last download failed: {lastError}. The next scheduled run retries."
 msgid "Last error: {lastError}"
 msgstr "Last error: {lastError}"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Last page"
+msgstr "Last page"
+
 #: src/pages/HealthPage.tsx
 msgid "Last partial scan: {partialScanError}"
 msgstr "Last partial scan: {partialScanError}"
@@ -4733,6 +4769,7 @@ msgstr "latest"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Layout"
 msgstr "Layout"
 
@@ -5592,6 +5629,10 @@ msgstr "Newest"
 msgid "Next chapter"
 msgstr "Next chapter"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Next page"
+msgstr "Next page"
+
 #: src/components/SourceCompareModal.tsx
 msgid "Next source"
 msgstr "Next source"
@@ -6375,6 +6416,7 @@ msgid "Page not found"
 msgstr "Page not found"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Page thumbnails"
 msgstr "Page thumbnails"
 
@@ -6635,6 +6677,10 @@ msgstr "Press Enter to create a new tag"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Previous chapter"
 msgstr "Previous chapter"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous page"
+msgstr "Previous page"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Previous source"
@@ -7384,6 +7430,10 @@ msgstr "Reset"
 #: src/pages/HealthPage.tsx
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Reset zoom"
+msgstr "Reset zoom"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -8210,6 +8260,10 @@ msgstr "Shapes recommendations"
 msgid "Share of the series you've read."
 msgstr "Share of the series you've read."
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Shift + Space"
+msgstr "Shift + Space"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Shoujo"
 msgstr "Shoujo"
@@ -8255,6 +8309,10 @@ msgstr "Show more"
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Show on"
 msgstr "Show on"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Show or hide this list"
+msgstr "Show or hide this list"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -8362,6 +8420,7 @@ msgid "Single"
 msgstr "Single"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 msgid "Single page"
 msgstr "Single page"
 
@@ -8513,6 +8572,10 @@ msgstr "Sources disagree on chapter numbering"
 #: src/components/SourceCompareModal.tsx
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Space"
+msgstr "Space"
 
 #: src/components/NamingTokenModal.tsx
 msgid "Space ( )"
@@ -8687,6 +8750,10 @@ msgstr "Suggestive"
 #: src/components/CatalogueFilters.tsx
 msgid "Supernatural"
 msgstr "Supernatural"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Switch reading direction"
+msgstr "Switch reading direction"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Switching model… downloading the model and its index."
@@ -9388,6 +9455,10 @@ msgstr "Turn this off to only see them in the bell."
 #: src/pages/SettingsPage.tsx
 msgid "Turning embeddings off…"
 msgstr "Turning embeddings off…"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Turning pages"
+msgstr "Turning pages"
 
 #: src/components/RenameSeriesModal.tsx
 msgid "Two chapters want one name"
@@ -10227,3 +10298,7 @@ msgstr "Yours alone - this changes what lands in your bell, not anybody else's."
 #: src/pages/SettingsPage.tsx
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (optional)"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Zoom in and out"
+msgstr "Zoom in and out"

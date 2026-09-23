@@ -18,6 +18,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconEyeOff,
+  IconKeyboard,
   IconLayoutGrid,
   IconMaximize,
   IconMinimize,
@@ -60,6 +61,7 @@ export default function ReaderToolbar({
   onToggleStrip,
   visible,
   onHold,
+  onShortcuts,
 }: {
   manifest: ReaderManifest
   page: number
@@ -84,6 +86,7 @@ export default function ReaderToolbar({
   visible: boolean
   /** Keeps the auto-hide from pulling the chrome out from under an open menu or the cursor. */
   onHold: (held: boolean) => void
+  onShortcuts: () => void
 }) {
   const { t } = useLingui()
   const { scale } = prefs
@@ -465,6 +468,19 @@ export default function ReaderToolbar({
               </Stack>
             </Popover.Dropdown>
           </Popover>
+
+          {/* No keyboard on a touch screen, so nothing for this to list there. */}
+          <Tooltip label={t`Keyboard shortcuts (?)`} withArrow zIndex={OVERLAY_Z}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              className="reader-shortcuts-button"
+              onClick={onShortcuts}
+              aria-label={t`Keyboard shortcuts`}
+            >
+              <IconKeyboard size={18} />
+            </ActionIcon>
+          </Tooltip>
 
           <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon

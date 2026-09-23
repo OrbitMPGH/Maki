@@ -16,6 +16,7 @@ import type { UnlockedAchievement } from '../../api/reader'
 import { useMarkAchievementsSeen } from '../../api/hooks'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
+import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -67,6 +68,7 @@ export default function ReaderPage() {
   const [zoom, setZoom] = useState(1)
   const [incognito, setIncognito] = useState(false)
   const [atEnd, setAtEnd] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   const pageCount = manifest?.pageCount ?? 0
   const urls = usePageUrls(chapterId, pageCount)
@@ -240,6 +242,15 @@ export default function ReaderPage() {
       const target = event.target as HTMLElement | null
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
 
+      // The sheet is read, not driven: while it is up the only keys that do anything close it.
+      if (shortcutsOpen) {
+        if (event.key === 'Escape' || event.key === '?') {
+          event.preventDefault()
+          setShortcutsOpen(false)
+        }
+        return
+      }
+
       // In right-to-left reading the left arrow advances; in left-to-right it goes back.
       const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
       const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
@@ -301,6 +312,9 @@ export default function ReaderPage() {
         case '0':
           setZoom(1)
           break
+        case '?':
+          setShortcutsOpen(true)
+          break
         case 'Escape':
           if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
           break
@@ -310,6 +324,7 @@ export default function ReaderPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [
+    shortcutsOpen,
     atEnd,
     next,
     previous,
@@ -398,6 +413,7 @@ export default function ReaderPage() {
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
         onHold={setChromeHeld}
+        onShortcuts={() => setShortcutsOpen(true)}
       />
 
       {atEnd ? (
@@ -474,6 +490,10 @@ export default function ReaderPage() {
           label={manifest.label}
           pageCount={manifest.pageCount}
         />
+      )}
+
+      {shortcutsOpen && (
+        <ShortcutSheet rtl={prefs.direction === 'rtl'} onClose={() => setShortcutsOpen(false)} />
       )}
 
       {prefs.showPageNumber && !chrome && !atEnd && (

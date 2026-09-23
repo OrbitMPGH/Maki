@@ -2178,6 +2178,7 @@ msgstr "ライブラリに戻る"
 
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Back to series"
 msgstr "シリーズに戻る"
@@ -2339,6 +2340,7 @@ msgid "Blocks sign-in and kills existing sessions. Keeps the account and its his
 msgstr "サインインをブロックし既存セッションを終了します。アカウントと履歴は保持されます。"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Bookmark this page"
 msgstr "このページをブックマーク"
@@ -3063,6 +3065,7 @@ msgstr "クライアントシークレット"
 #: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Close"
 msgstr "閉じる"
@@ -3348,6 +3351,7 @@ msgstr "保存せずに続ける"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Continuous"
 msgstr "連続"
@@ -3953,6 +3957,10 @@ msgstr "完了"
 msgid "Double"
 msgstr "ダブル"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Double page"
+msgstr ""
+
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
 msgid "Down"
@@ -4274,6 +4282,10 @@ msgstr "OPDSカタログを有効化"
 msgid "Enabled"
 msgstr "有効"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "End"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -4306,6 +4318,10 @@ msgstr "エロティカ"
 #, fuzzy
 msgid "Error"
 msgstr "エラー"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Esc"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4394,6 +4410,7 @@ msgid "Every year"
 msgstr "毎年"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Everything else"
 msgstr "その他すべて"
@@ -4688,6 +4705,10 @@ msgstr "最初"
 msgid "First download in progress"
 msgstr "初回ダウンロード中"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "First page"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Fit"
@@ -4870,6 +4891,7 @@ msgid "Full review"
 msgstr "レビュー全文"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Full screen"
 msgstr "全画面"
@@ -5196,6 +5218,7 @@ msgstr "フィードトークンを保持してOPDSアプリで読む"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
@@ -5703,6 +5726,15 @@ msgstr "名前をそのまま使い、そのフォルダーにもダウンロー
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "トラッカーへの送信からこのシリーズを除外し、Fullでは統計からも完全に除外します。"
 
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Keyboard shortcuts"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Keyboard shortcuts (?)"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Kind"
@@ -5779,6 +5811,10 @@ msgstr "前回のダウンロードに失敗：{lastError}。次の予定実行�
 msgid "Last error: {lastError}"
 msgstr "前回のエラー：{lastError}"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Last page"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
@@ -5827,6 +5863,7 @@ msgstr "最新"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Layout"
 msgstr "レイアウト"
@@ -6884,6 +6921,10 @@ msgstr "新着"
 msgid "Next chapter"
 msgstr "次の章"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Next page"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Next source"
@@ -7855,6 +7896,7 @@ msgid "Page not found"
 msgstr "ページが見つかりません"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Page thumbnails"
 msgstr "ページサムネイル"
@@ -8177,6 +8219,10 @@ msgstr "Enterを押して新しいタグを作成"
 #, fuzzy
 msgid "Previous chapter"
 msgstr "前の章"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous page"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -9100,6 +9146,10 @@ msgstr "リセット"
 #, fuzzy
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "影響を受ける章のブックマークと再開位置を全ユーザーでリセットします。完了状態と読書履歴は保持されます。"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Reset zoom"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -10121,6 +10171,10 @@ msgstr "おすすめに反映"
 msgid "Share of the series you've read."
 msgstr "読んだシリーズの割合。"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Shift + Space"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Shoujo"
@@ -10176,6 +10230,10 @@ msgstr "もっと表示"
 #, fuzzy
 msgid "Show on"
 msgstr "表示先"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Show or hide this list"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -10309,6 +10367,7 @@ msgid "Single"
 msgstr "単一"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Single page"
 msgstr "単一ページ"
@@ -10494,6 +10553,10 @@ msgstr "ソース間で章番号が一致しません"
 #, fuzzy
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "ソースによって章の開始位置が異なります。こちらにはクレジットページ、あちらにはカラー表紙があります。ページは画像内容で照合されるため、各列の各行は同じ絵です。どのページとも一致しないスキャンは、そのソース自身の最初のページのままになります。"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Space"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -10708,6 +10771,10 @@ msgstr "きわどい"
 #, fuzzy
 msgid "Supernatural"
 msgstr "超自然"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Switch reading direction"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -11577,6 +11644,10 @@ msgstr "オフにするとベルでのみ表示します。"
 #, fuzzy
 msgid "Turning embeddings off…"
 msgstr "埋め込みをオフにしています…"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Turning pages"
+msgstr ""
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -12616,3 +12687,7 @@ msgstr "自分だけの設定です。ベルに届く内容が変わりますが
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads（任意）"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Zoom in and out"
+msgstr ""

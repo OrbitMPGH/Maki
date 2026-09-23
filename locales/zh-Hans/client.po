@@ -2178,6 +2178,7 @@ msgstr "返回资料库"
 
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Back to series"
 msgstr "返回系列"
@@ -2339,6 +2340,7 @@ msgid "Blocks sign-in and kills existing sessions. Keeps the account and its his
 msgstr "阻止登录并终止现有会话。账户及其历史记录会保留。"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Bookmark this page"
 msgstr "为此页添加书签"
@@ -3063,6 +3065,7 @@ msgstr "客户端密钥"
 #: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Close"
 msgstr "关闭"
@@ -3348,6 +3351,7 @@ msgstr "不保存并继续"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Continuous"
 msgstr "连续"
@@ -3953,6 +3957,10 @@ msgstr "完成"
 msgid "Double"
 msgstr "双页"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Double page"
+msgstr ""
+
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
 msgid "Down"
@@ -4274,6 +4282,10 @@ msgstr "启用 OPDS 目录"
 msgid "Enabled"
 msgstr "已启用"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "End"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -4306,6 +4318,10 @@ msgstr "情色"
 #, fuzzy
 msgid "Error"
 msgstr "错误"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Esc"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4394,6 +4410,7 @@ msgid "Every year"
 msgstr "每年"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Everything else"
 msgstr "其他所有内容"
@@ -4688,6 +4705,10 @@ msgstr "第一个"
 msgid "First download in progress"
 msgstr "首次下载进行中"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "First page"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Fit"
@@ -4870,6 +4891,7 @@ msgid "Full review"
 msgstr "完整评论"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Full screen"
 msgstr "全屏"
@@ -5196,6 +5218,7 @@ msgstr "持有订阅源令牌并通过 OPDS 应用阅读"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Home"
@@ -5703,6 +5726,15 @@ msgstr "保留名称，也下载到该文件夹"
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "让此系列不出现在跟踪器推送中，完整模式下还会将其完全排除在统计之外。"
 
+#: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Keyboard shortcuts"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Keyboard shortcuts (?)"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Kind"
@@ -5779,6 +5811,10 @@ msgstr "上次下载失败：{lastError}。下次计划运行时会重试。"
 msgid "Last error: {lastError}"
 msgstr "上次错误：{lastError}"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Last page"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Last partial scan: {partialScanError}"
@@ -5827,6 +5863,7 @@ msgstr "最新"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Layout"
 msgstr "布局"
@@ -6884,6 +6921,10 @@ msgstr "最新"
 msgid "Next chapter"
 msgstr "下一章"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Next page"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Next source"
@@ -7855,6 +7896,7 @@ msgid "Page not found"
 msgstr "未找到页面"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Page thumbnails"
 msgstr "页面缩略图"
@@ -8177,6 +8219,10 @@ msgstr "按 Enter 创建新标签"
 #, fuzzy
 msgid "Previous chapter"
 msgstr "上一章"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous page"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -9100,6 +9146,10 @@ msgstr "重置"
 #, fuzzy
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "重置所有用户受影响章节的书签和继续阅读位置。完成状态和阅读历史会保留。"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Reset zoom"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -10121,6 +10171,10 @@ msgstr "影响推荐"
 msgid "Share of the series you've read."
 msgstr "你读过的系列占比。"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Shift + Space"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Shoujo"
@@ -10176,6 +10230,10 @@ msgstr "显示更多"
 #, fuzzy
 msgid "Show on"
 msgstr "显示于"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Show or hide this list"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -10309,6 +10367,7 @@ msgid "Single"
 msgstr "单页"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Single page"
 msgstr "单页"
@@ -10494,6 +10553,10 @@ msgstr "来源的章节编号不一致"
 #, fuzzy
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "来源对章节起始位置意见不一：这里是致谢页，那里是彩色封面。页面按图像内容匹配，因此每一行在每列都是同一幅图。扫描内容完全无法匹配的来源会停留在自己的第一页。"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Space"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -10708,6 +10771,10 @@ msgstr "暗示性"
 #, fuzzy
 msgid "Supernatural"
 msgstr "超自然"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Switch reading direction"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -11577,6 +11644,10 @@ msgstr "关闭此选项后，只能在铃铛中看到它们。"
 #, fuzzy
 msgid "Turning embeddings off…"
 msgstr "正在关闭嵌入……"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Turning pages"
+msgstr ""
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -12616,3 +12687,7 @@ msgstr "仅你可见 - 这会改变出现在你铃铛中的内容，不会影响
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads（可选）"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Zoom in and out"
+msgstr ""
