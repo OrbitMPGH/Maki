@@ -12,6 +12,7 @@ built-in reader.
 [![Latest Tag](https://badgen.net/github/tag/OrbitMPGH/Maki)](https://github.com/OrbitMPGH/Maki/releases)
 [![CI](https://github.com/OrbitMPGH/Maki/actions/workflows/ci.yml/badge.svg)](https://github.com/OrbitMPGH/Maki/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Translation status](https://hosted.weblate.org/widget/maki/svg-badge.svg)](https://hosted.weblate.org/engage/maki/)
 
 > Maki is almost entirely AI-slop-built, developed with Anthropic's latest Claude models.
 
@@ -208,10 +209,15 @@ English is the source. **Everything else was machine-translated and is marked as
 so expect some awkward phrasing and please do not read a clumsy sentence as a considered choice.
 Anything still untranslated falls back to English rather than showing a blank.
 
-Corrections are very welcome and are the easiest possible contribution: the catalogues are gettext
-PO files under `locales/`, one directory per language, and a fix is a one-line edit. If you would
-rather not touch the repo, open an issue quoting the string and what it should say. `scripts/i18n/
-glossary.md` records the terms that stay in English and why.
+Corrections are very welcome and are the easiest possible contribution. The simplest way is
+[Maki on Hosted Weblate](https://hosted.weblate.org/engage/maki/): sign in, pick your language, and
+fix or approve strings in the browser. Weblate sends the changes back here as a pull request. The
+translated percentage only counts strings a person has approved, so it starts low even though every
+string already has a machine translation.
+
+If you would rather work in the repo, the catalogues are gettext PO files under `locales/`, one
+directory per language, and a fix is a one-line edit. Or open an issue quoting the string and what
+it should say. `scripts/i18n/glossary.md` records the terms that stay in English and why.
 
 ## Multiple readers
 
