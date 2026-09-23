@@ -1229,6 +1229,10 @@ msgstr "선택 항목이 많으면 시간이 걸릴 수 있습니다."
 msgid "A library import folder finished."
 msgstr "라이브러리 가져오기 폴더 작업이 완료되었습니다."
 
+#: src/components/SetupWizard.tsx
+msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Off turns both off. You can change this any time in Settings."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "A local embedding model lets Discover recommend by feel and search by description. The vectors download prebuilt, so this normally needs no attention. While it's off or still downloading, search falls back to titles and recommendations to genres."
 msgstr ""
@@ -3598,11 +3602,6 @@ msgstr "탐색"
 #, fuzzy
 msgid "Discover and offline search are available now."
 msgstr "탐색 및 오프라인 검색을 지금 사용할 수 있습니다."
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
-msgstr "탐색은 로컬 임베딩 모델을 사용하여 의미상의 \"느낌\"을 기준으로 추천하고 설명으로 검색합니다. Base는 더 가볍고(~240 MB RAM), Large는 더 정확하지만 더 무겁습니다(~500 MB). Large는 일회성 다운로드도 더 큽니다. Off는 둘 다 비활성화합니다. 두 모델 모두 사전 제작되어 다운로드되므로 컴퓨터에서 무거운 작업을 수행하지 않으며, 언제든지 설정에서 변경할 수 있습니다."
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy

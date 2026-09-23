@@ -93,11 +93,15 @@ public class SettingsController(
     /// filled in, and a non-null default here would blank the format every time it did.
     /// </param>
     /// <param name="ChapterFormat">Naming format for a downloaded chapter's file, extension excluded.</param>
+    /// <param name="WriteCoverToFolder">
+    /// Null on a write leaves the stored switch alone. It used to default to false, so every setup
+    /// wizard save (which sends only its two fields) silently switched cover.jpg off again.
+    /// </param>
     public record LibrarySettings(
         bool WriteComicInfo,
         string FolderNamingMode,
         Dictionary<string, string>? IncognitoByRating = null,
-        bool WriteCoverToFolder = false,
+        bool? WriteCoverToFolder = null,
         string? SeriesFolderFormat = null,
         string? ChapterFormat = null,
         bool? RenameImportedFiles = null);
@@ -566,8 +570,11 @@ public class SettingsController(
 
         await settings.SetAsync(SettingKeys.LibraryWriteComicInfo, request.WriteComicInfo ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.LibraryFolderNamingMode, request.FolderNamingMode, ct);
-        await settings.SetAsync(
-            SettingKeys.LibraryWriteCoverToFolder, request.WriteCoverToFolder ? "true" : "false", ct);
+        if (request.WriteCoverToFolder is { } writeCoverToFolder)
+        {
+            await settings.SetAsync(
+                SettingKeys.LibraryWriteCoverToFolder, writeCoverToFolder ? "true" : "false", ct);
+        }
         if (request.RenameImportedFiles is { } renameImportedFiles)
         {
             await settings.SetAsync(
@@ -588,7 +595,7 @@ public class SettingsController(
         // have to wait for their next cover refresh. Detached rather than a Quartz job: it's pure
         // local file copies off the already-downloaded MediaCover cache, no network involved, so it
         // needs no durability or status tracking, just its own DI scope past the request lifetime.
-        if (request.WriteCoverToFolder && coverToFolderWasOff)
+        if (request.WriteCoverToFolder == true && coverToFolderWasOff)
         {
             _ = Task.Run(async () =>
             {

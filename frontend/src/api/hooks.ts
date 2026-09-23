@@ -2653,7 +2653,8 @@ export interface LibrarySettings {
    */
   incognitoByRating?: Record<string, IncognitoMode>
   /** Also copy the downloaded poster into the series' library folder as "cover.jpg", for other
-   * tools (Komga, Kavita) that read a cover placed directly in the folder. Default off. */
+   * tools (Komga, Kavita) that read a cover placed directly in the folder. Default off. Leave it
+   * out of a write to keep the stored value. */
   writeCoverToFolder?: boolean
   /**
    * Naming format for a series' folder, e.g. "{Series TitleYear}". Always filled in on read.
