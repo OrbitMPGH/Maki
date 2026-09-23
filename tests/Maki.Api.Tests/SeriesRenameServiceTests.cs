@@ -43,6 +43,7 @@ public class SeriesRenameServiceTests : IDisposable
             _db.NewContext(),
             new NamingService(_settings),
             scans,
+            new TestLocalizer(),
             NullLogger<SeriesRenameService>.Instance);
     }
 
@@ -185,7 +186,7 @@ public class SeriesRenameServiceTests : IDisposable
         var result = await Service().RenameAsync(id, CancellationToken.None);
 
         Assert.False(result.Applied);
-        Assert.Contains("active download", result.Error);
+        Assert.Equal("error.seriesRename.activeDownload", result.Error);
         Assert.True(Directory.Exists(Path.Combine(_root, "Berserk")));
     }
 
@@ -221,7 +222,7 @@ public class SeriesRenameServiceTests : IDisposable
         var result = await Service().RenameAsync(id, CancellationToken.None);
 
         Assert.False(result.Applied);
-        Assert.Contains("same file name", result.Error);
+        Assert.Equal("error.seriesRename.formatCollision", result.Error);
         Assert.NotEmpty(result.Warnings);
     }
 
@@ -263,7 +264,7 @@ public class SeriesRenameServiceTests : IDisposable
         var result = await Service().RenameAsync(id, CancellationToken.None);
 
         Assert.False(result.Applied);
-        Assert.Contains("already exists", result.Error);
+        Assert.Contains("error.series.destinationExists", result.Error);
     }
 
     [Fact]
@@ -287,7 +288,7 @@ public class SeriesRenameServiceTests : IDisposable
         var result = await Service().RenameAsync(id, CancellationToken.None);
 
         Assert.True(result.Applied);
-        Assert.Contains(result.Warnings, w => w.Contains("missing from disk"));
+        Assert.Contains(result.Warnings, w => w.Contains("error.seriesRename.fileMissingUpdated"));
 
         // The row has to follow the format either way: leaving it pointing at a name nothing will
         // ever be written under is worse than recording where the file should be.
@@ -436,7 +437,7 @@ public class SeriesRenameServiceTests : IDisposable
         var result = await Service().RenameFilesAsync(id, [imported], CancellationToken.None);
 
         Assert.True(result.Applied);
-        Assert.Contains(result.Warnings, w => w.Contains("already exists"));
+        Assert.Contains(result.Warnings, w => w.Contains("error.seriesRename.fileSkippedExists"));
         Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk.v03.c25.cbz")));
 
         using var db = _db.NewContext();
@@ -459,7 +460,7 @@ public class SeriesRenameServiceTests : IDisposable
         var result = await Service().RenameFilesAsync(id, [missing], CancellationToken.None);
 
         Assert.True(result.Applied);
-        Assert.Contains(result.Warnings, w => w.Contains("already exists"));
+        Assert.Contains(result.Warnings, w => w.Contains("error.seriesRename.fileSkippedExists"));
 
         using var db = _db.NewContext();
         Assert.Equal(Path.Combine("Berserk (1989)", "Berserk.v03.c25.cbz"),

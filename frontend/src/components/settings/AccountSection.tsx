@@ -81,6 +81,7 @@ export function AccountSection() {
 }
 
 function SsoCard() {
+  const { t } = useLingui()
   const { me } = useAuth()
   const [sso, setSso] = useState<{ enabled: boolean; displayName: string } | null>(null)
 
@@ -112,7 +113,9 @@ function SsoCard() {
     return null
   }
 
-  const { displayName } = sso
+  // Empty when no admin has typed a button label; the client supplies its own translated copy of
+  // the English default rather than showing the server's raw literal.
+  const displayName = sso.displayName || t`Single sign-on`
   const oidcUserName = me?.oidcUserName
 
   return (

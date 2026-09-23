@@ -263,13 +263,14 @@ function ActivityButton() {
 }
 
 function VersionFooter() {
+  const { t } = useLingui()
   const { data: version } = useAppVersion()
   if (!version) return null
   // A -dev / -nightly suffix means the build was not cut from a release tag; flag it so a local or
   // CI-of-main image is never mistaken for a published version.
   const unofficial = /-(dev|nightly)/.test(version)
   return (
-    <Tooltip label={unofficial ? 'Unofficial build (not a tagged release)' : `Maki ${version}`} withArrow>
+    <Tooltip label={unofficial ? t`Unofficial build (not a tagged release)` : `Maki ${version}`} withArrow>
       <Text
         fz={10}
         c="var(--ink-3)"
@@ -420,7 +421,7 @@ function AppShellRoutes() {
               Maki
             </Text>
             <Text fz={10} c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
-              Manga manager
+              <Trans>Manga manager</Trans>
             </Text>
           </div>
         </Group>

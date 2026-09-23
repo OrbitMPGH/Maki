@@ -78,6 +78,7 @@ public class SeriesRequestsControllerTests : IDisposable
 
         return new SeriesRequestsController(
             new TestLocalizer(),
+            new TestUserLocaleResolver(),
             db, [_metadata], creation, _queue, _batches, _events, _inbox,
             new TestCurrentUser(userId, userName, permissions),
             NullLogger<SeriesRequestsController>.Instance);

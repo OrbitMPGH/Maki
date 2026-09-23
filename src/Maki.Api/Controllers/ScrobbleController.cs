@@ -197,12 +197,12 @@ public class ScrobbleController(
     {
         if (scrobbler.Running)
         {
-            return Ok(new { message = "sync already running" });
+            return Ok(new { message = localizer.Get("scrobble.action.syncRunning") });
         }
 
         var scheduler = await schedulerFactory.GetScheduler(ct);
         await scheduler.TriggerJob(ScrobbleJob.Key, new JobDataMap { { ScrobbleJob.ForceKey, true } }, ct);
-        return Ok(new { message = "sync started" });
+        return Ok(new { message = localizer.Get("scrobble.action.syncStarted") });
     }
 
     /// <summary>Manually maps a Kavita series to a tracker id (accepts a pasted series URL too).</summary>
@@ -230,7 +230,7 @@ public class ScrobbleController(
             .FirstOrDefaultAsync(ct) ?? "";
         await scrobbler.SaveMappingAsync(
             UserId, request.KavitaSeriesId, request.Service, remoteId, "manual", title, ct);
-        return Ok(new { message = $"mapped to {remoteId} — will sync on the next run" });
+        return Ok(new { message = localizer.Get("scrobble.action.mapped", new { remoteId }) });
     }
 
     /// <summary>Ignores a series for one service (stored as a mapping with an empty remote id).</summary>
@@ -238,7 +238,7 @@ public class ScrobbleController(
     public async Task<IActionResult> Ignore([FromBody] IgnoreRequest request, CancellationToken ct)
     {
         await scrobbler.SaveMappingAsync(UserId, request.KavitaSeriesId, request.Service, "", "ignored", "", ct);
-        return Ok(new { message = "ignored" });
+        return Ok(new { message = localizer.Get("scrobble.action.ignored") });
     }
 
     // ---- per-tracker preferences ----
@@ -444,6 +444,6 @@ public class ScrobbleController(
         }
 
         await tokens.DeleteAsync(UserId, service, ct);
-        return Ok(new { message = "disconnected" });
+        return Ok(new { message = localizer.Get("scrobble.action.disconnected") });
     }
 }

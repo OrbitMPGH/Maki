@@ -15,11 +15,13 @@ import {
 import { IconFolderSearch, IconPackageImport } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLibrarySettings, useRootFolders } from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
+import { useLabel } from '../i18n-context'
 import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -28,6 +30,25 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */
 const IMPORT_BATCH_SIZE = 50
+
+/**
+ * Words the import stage keys the server sends (`Maki.Api.Services.ImportStage`). The broadcast
+ * reaches every admin connection at once and they don't share a language, so the server sends a
+ * machine key rather than prose and this is where it becomes words. Descriptors, not rendered
+ * strings: this list is built once when the module loads, see {@link useIncognitoOptions} for why.
+ */
+const STAGE_LABELS: Record<string, MessageDescriptor> = {
+  fetchingMetadata: msg`Fetching metadata`,
+  renamingFolder: msg`Renaming folder`,
+  mergingFolder: msg`Merging folder`,
+  downloadingCover: msg`Downloading cover`,
+  findingSources: msg`Finding sources`,
+  syncingChapters: msg`Syncing chapters`,
+  updatingComicInfo: msg`Updating ComicInfo`,
+  linkingFiles: msg`Linking files`,
+  imported: msg`Imported`,
+  failed: msg`Failed`,
+}
 
 interface ScanCandidate {
   folderName: string
@@ -59,6 +80,7 @@ interface ImportProgressEvent {
 
 export default function ImportPage() {
   const { t } = useLingui()
+  const label = useLabel()
   const { data: rootFolders } = useRootFolders()
   const { data: librarySettings } = useLibrarySettings()
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
@@ -383,7 +405,11 @@ export default function ImportPage() {
                                 size="xs"
                                 c={rowProgress.done && !rowProgress.success ? 'var(--danger)' : 'var(--ink-3)'}
                               >
-                                {rowProgress.stage === 'Queued' ? <Trans>Queued</Trans> : rowProgress.stage}
+                                {rowProgress.stage === 'Queued' ? (
+                                  <Trans>Queued</Trans>
+                                ) : (
+                                  label(STAGE_LABELS[rowProgress.stage] ?? rowProgress.stage)
+                                )}
                                 {rowProgress.total
                                   ? ` (${rowProgress.current}/${rowProgress.total})`
                                   : ''}

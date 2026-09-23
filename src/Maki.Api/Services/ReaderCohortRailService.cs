@@ -96,11 +96,11 @@ public class ReaderCohortRailService(
 
         return new DiscoverRail(
             RailKey,
-            "Readers like you also finished",
+            "discover.rail.readerCohorts",
             RailFeed,
             Genre: null,
             Items: items,
-            Subtitle: "From readers whose finished series look like yours.");
+            Subtitle: "discover.rail.readerCohortsSubtitle");
     }
 
     public Task<DiscoverRail?> GetAsync(ICurrentUser scope, CancellationToken ct = default) =>

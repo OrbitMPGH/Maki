@@ -530,6 +530,10 @@ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP para el nivel {nextLevel}
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, one {# archivo pendiente de vincular} many {# archivos pendientes de vincular} other {# archivos pendientes de vincular}}"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "{kind} to {relatedTo}"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -749,17 +753,6 @@ msgstr "{readValue, plural, one {capítulo leído} many {capítulos leídos} oth
 #, fuzzy
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, one {volumen leído} many {volúmenes leídos} other {volúmenes leídos}}"
-
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{relationKind} of {relatedTo}"
-msgstr "{relationKind} de {relatedTo}"
-
-#: src/components/discover/DiscoverHero.tsx
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{relationKind} to {relatedToTitle}"
-msgstr "{relationKind} con {relatedToTitle}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
@@ -1842,6 +1835,7 @@ msgstr "Cobertura del anime"
 msgid "Anime you've watched"
 msgstr "Anime que has visto"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "any"
@@ -2435,6 +2429,10 @@ msgstr ""
 msgid "Cancelled"
 msgstr "Cancelado"
 
+#: src/pages/HealthPage.tsx
+msgid "Candidate page {pageNumber}"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 msgid "Caps what search, Discover and recommendations show this account."
 msgstr ""
@@ -2679,6 +2677,14 @@ msgstr "Capítulo {chapterId}: {pageCount, plural, one {# página} many {# pági
 msgid "Chapter {n}"
 msgstr "Capítulo {n}"
 
+#: src/pages/HealthPage.tsx
+msgid "chapter {number}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Chapter {number}"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chapter downloaded"
@@ -2806,6 +2812,10 @@ msgstr "Capítulos sin leer antes de activar"
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "Capítulos: {chapterRangeMin}–{chapterRangeMax}"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters: {chaptersMin}–{chaptersMax}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -3944,6 +3954,10 @@ msgstr "Descargando"
 msgid "Downloading {outstanding}"
 msgstr "Descargando {outstanding}"
 
+#: src/pages/ImportPage.tsx
+msgid "Downloading cover"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Downloading metadata database"
@@ -4336,6 +4350,7 @@ msgstr "Expandir {spanLabel}"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "Fallido"
@@ -4348,6 +4363,10 @@ msgstr ""
 #, fuzzy
 msgid "Failed sign-ins before lockout"
 msgstr "Inicios de sesión fallidos antes del bloqueo"
+
+#: src/api/client.ts
+msgid "Failed to initialize"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4414,6 +4433,10 @@ msgstr "Obteniendo"
 #, fuzzy
 msgid "Fetching {label} again. The file is replaced when it lands."
 msgstr "Volviendo a obtener {label}. El archivo se sustituirá cuando llegue."
+
+#: src/pages/ImportPage.tsx
+msgid "Fetching metadata"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4499,6 +4522,10 @@ msgstr "Buscar más"
 #, fuzzy
 msgid "Finding source"
 msgstr "Buscando fuente"
+
+#: src/pages/ImportPage.tsx
+msgid "Finding sources"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5224,6 +5251,7 @@ msgstr "Importar desvinculados"
 msgid "Import what you have"
 msgstr ""
 
+#: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Imported"
@@ -5850,6 +5878,10 @@ msgstr "Vinculado a la serie, esté habilitado o no"
 msgid "Linked, but nothing enabled"
 msgstr "Vinculado, pero nada está habilitado"
 
+#: src/pages/ImportPage.tsx
+msgid "Linking files"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5975,6 +6007,10 @@ msgstr "Solo Main"
 msgid "Main only, no specials"
 msgstr "Solo Main, sin especiales"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Main story of {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "mainstream"
@@ -6050,6 +6086,10 @@ msgstr "manga"
 #, fuzzy
 msgid "Manga"
 msgstr "Manga"
+
+#: src/App.tsx
+msgid "Manga manager"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
@@ -6187,6 +6227,10 @@ msgstr "Quizá el año que viene"
 msgid "Mecha"
 msgstr "Mecha"
 
+#: src/pages/ImportPage.tsx
+msgid "Merging folder"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -6232,6 +6276,10 @@ msgstr "Mín."
 #, fuzzy
 msgid "Minimum chapters"
 msgstr "Mínimo de capítulos"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Minimum rating: {ratingLabel}"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -7877,6 +7925,10 @@ msgstr "Precargar"
 msgid "Preparing model…"
 msgstr "Preparando el modelo…"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Prequel to {relatedTo}"
+msgstr ""
+
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
 msgid "Press Enter to create a new tag"
@@ -8661,6 +8713,10 @@ msgstr "Renombrado"
 #, fuzzy
 msgid "Renamed {renamed}, {failed} failed"
 msgstr "Renombradas {renamed}, {failed} fallidas"
+
+#: src/pages/ImportPage.tsx
+msgid "Renaming folder"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9561,6 +9617,10 @@ msgstr "Enviar solicitud"
 msgid "Sent to qBittorrent: {title}"
 msgstr "Enviado a qBittorrent: {title}"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Sequel to {relatedTo}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
@@ -9731,6 +9791,10 @@ msgstr "Ajustes"
 msgid "Settings › {tabName}"
 msgstr "Ajustes › {tabName}"
 
+#: src/api/hooks.ts
+msgid "Settings not loaded"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Setup"
 msgstr ""
@@ -9870,6 +9934,10 @@ msgstr "Muestra tu nombre, nivel, capítulos leídos y racha a todos los que tam
 msgid "Side interests"
 msgstr ""
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Side story of {relatedTo}"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in"
@@ -9936,6 +10004,7 @@ msgstr "Página única"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/LoginPage.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Single sign-on"
@@ -10147,6 +10216,10 @@ msgstr ""
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr ""
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Spin-off of {relatedTo}"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Split double-width pages"
@@ -10353,6 +10426,10 @@ msgstr "sincronización en curso… · última {lastSync} · próxima {nextSync}
 #, fuzzy
 msgid "Synced"
 msgstr "Sincronizado"
+
+#: src/pages/ImportPage.tsx
+msgid "Syncing chapters"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11207,6 +11284,10 @@ msgstr "Escribe para buscar…"
 msgid "Typical chapter"
 msgstr "Capítulo típico"
 
+#: src/api/client.ts
+msgid "Unauthorized"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Unavailable"
@@ -11256,6 +11337,10 @@ msgstr "Sin coincidencia"
 msgid "Unmonitored"
 msgstr "Sin supervisión"
 
+#: src/App.tsx
+msgid "Unofficial build (not a tagged release)"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Unofficial build, update checks are skipped."
@@ -11280,6 +11365,14 @@ msgstr "Solo no leídos"
 #, fuzzy
 msgid "Unrecognized"
 msgstr "No reconocido"
+
+#: src/pages/HealthPage.tsx
+msgid "unrecognized name"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Unrecognized name"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy
@@ -11350,6 +11443,14 @@ msgstr "Actualizado. Este título queda fuera de las recomendaciones."
 #, fuzzy
 msgid "Updates"
 msgstr "Actualizaciones"
+
+#: src/pages/ImportPage.tsx
+msgid "Updating ComicInfo"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "Upload failed: {status}"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -11594,6 +11695,14 @@ msgstr "Vol.{volNum} Cap.{chapterNumber}"
 msgid "Vol.{volume} Ch.{chapter}"
 msgstr "Vol.{volume} Cap.{chapter}"
 
+#: src/pages/HealthPage.tsx
+msgid "volume {number}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Volume {number}"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -11601,6 +11710,14 @@ msgstr "Vol.{volume} Cap.{chapter}"
 #, fuzzy
 msgid "Volumes"
 msgstr "Volúmenes"
+
+#: src/pages/HealthPage.tsx
+msgid "volumes {number}-{volumeEnd}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Volumes {number}-{volumeEnd}"
+msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -11890,6 +12007,10 @@ msgstr "Escrito <0>claim=value</0>, por ejemplo, <1>groups=maki-admins</1>."
 #, fuzzy
 msgid "Year"
 msgstr "Año"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Year: {yearMin}–{yearMax}"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

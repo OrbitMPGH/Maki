@@ -116,8 +116,7 @@ public class RecommendationService(
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            throw new InvalidOperationException(
-                "Recommendations need the local MangaBaka database (Settings → Metadata → local DB)");
+            throw new LocalCatalogueUnavailableException("error.recommendation.needsLocalDb");
         }
 
         // MangaBaka id -> seed weight. A series rated 5 or better gets rating/5.0 (10→2.0, 5→1.0

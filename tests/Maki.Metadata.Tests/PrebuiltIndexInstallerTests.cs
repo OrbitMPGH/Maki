@@ -75,7 +75,8 @@ public class PrebuiltIndexInstallerTests : IDisposable
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("different embedding model", result.Reason);
+        // A catalogue key, not display text; see PrebuiltIndexResult's doc.
+        Assert.Equal("install.prebuiltIndex.wrongModel", result.Reason);
         Assert.False(File.Exists(_vectorPath));
     }
 
@@ -87,7 +88,8 @@ public class PrebuiltIndexInstallerTests : IDisposable
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("dimensional", result.Reason);
+        Assert.Equal("install.prebuiltIndex.wrongDimensions", result.Reason);
+        Assert.Equivalent(new { published = Dimensions * 2, needed = Dimensions }, result.ReasonArgs);
         Assert.False(File.Exists(_vectorPath));
     }
 
@@ -113,7 +115,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
         var result = await Installer().InstallAsync(ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("indexing pass", result.Reason);
+        Assert.Equal("install.prebuiltIndex.indexingRunning", result.Reason);
     }
 
     [Fact]
@@ -126,7 +128,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
         var second = await installer.InstallAsync(ct: CancellationToken.None);
 
         Assert.False(second.Installed);
-        Assert.Contains("already current", second.Reason);
+        Assert.Equal("install.prebuiltIndex.current", second.Reason);
     }
 
     [Fact]
@@ -150,7 +152,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
         var result = await Installer().InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("different embedding model", result.Reason);
+        Assert.Equal("install.prebuiltIndex.wrongModel", result.Reason);
     }
 
     [Fact]
@@ -163,7 +165,7 @@ public class PrebuiltIndexInstallerTests : IDisposable
         var result = await Installer(enabled: false).InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("turned off", result.Reason);
+        Assert.Equal("install.prebuiltIndex.embeddingsDisabled", result.Reason);
         Assert.False(File.Exists(_vectorPath));
     }
 

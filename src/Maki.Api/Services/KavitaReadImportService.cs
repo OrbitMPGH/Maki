@@ -35,12 +35,31 @@ public class KavitaReadImportService(
 {
     public record ImportResult(int SeriesMatched, int ChaptersMarked, int SeriesUnmatched);
 
+    /// <summary>
+    /// A failure this service worded itself, as a catalogue key rather than rendered text: this is a
+    /// singleton with no <c>ILocalizer</c>; the caller renders it with the request's own localizer
+    /// when it reads <see cref="ImportState"/>.
+    /// </summary>
+    private sealed class KavitaImportError(string key) : Exception
+    {
+        public string Key { get; } = key;
+    }
+
     public sealed class ImportState
     {
         public bool Running { get; set; }
         public DateTime? FinishedAt { get; set; }
         public ImportResult? Result { get; set; }
-        public string? Error { get; set; }
+
+        /// <summary>Set together with <see cref="RawError"/> always null. See <see cref="KavitaImportError"/>.</summary>
+        public string? ErrorKey { get; set; }
+
+        /// <summary>
+        /// Set together with <see cref="ErrorKey"/> always null: text from outside Maki (an HTTP
+        /// failure talking to Kavita, an unexpected exception), left as-is like every other raw
+        /// <c>ex.Message</c> here rather than half-converted behind a generic key.
+        /// </summary>
+        public string? RawError { get; set; }
     }
 
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -56,16 +75,22 @@ public class KavitaReadImportService(
         }
 
         State.Running = true;
-        State.Error = null;
+        State.ErrorKey = null;
+        State.RawError = null;
         _ = Task.Run(async () =>
         {
             try
             {
                 State.Result = await RunAsync(CancellationToken.None);
             }
+            catch (KavitaImportError ke)
+            {
+                State.ErrorKey = ke.Key;
+                logger.LogWarning(ke, "Kavita read-status import failed");
+            }
             catch (Exception e)
             {
-                State.Error = e.Message;
+                State.RawError = e.Message;
                 logger.LogWarning(e, "Kavita read-status import failed");
             }
             finally
@@ -85,15 +110,14 @@ public class KavitaReadImportService(
         var apiKey = await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException("Kavita is not configured (Settings → Kavita)");
+            throw new KavitaImportError("error.reader.kavitaNotConfigured");
         }
 
         // One import for one user, because Kavita is one account — see KavitaUserResolver. Attributing
         // the back catalogue to the wrong reader would be worse than not importing it, so this throws
         // rather than falling back to "whoever asked".
         var userId = await kavitaUser.ResolveAsync(ct)
-                     ?? throw new InvalidOperationException(
-                         "No Maki user is bound to Kavita (Settings → Reader → Kavita user)");
+                     ?? throw new KavitaImportError("error.reader.kavitaNoBoundUser");
 
         var index = await BuildLibraryIndexAsync(ct);
         var kavitaSeries = await kavita.GetAllSeriesAsync(url, apiKey, ct);

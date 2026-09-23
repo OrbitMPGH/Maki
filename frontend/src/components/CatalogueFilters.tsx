@@ -1,5 +1,5 @@
 import { useCallback, useMemo, type ReactNode } from 'react'
-import { useLingui } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -308,6 +308,12 @@ export function CatalogueFilters({
     [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
+  const chaptersMin = chapters[0]
+  const chaptersMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
+  const yearMin = years[0]
+  const yearMax = years[1]
+  const ratingLabel = minRating > 0 ? `★ ${minRating.toFixed(1)}` : t`any`
+
   return (
     <Stack gap="lg">
       <TermFilters controls={terms} />
@@ -338,7 +344,9 @@ export function CatalogueFilters({
         />
         <div>
           <Text size="sm" fw={500} mb={4}>
-            Chapters: {chapters[0]}–{chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
+            <Trans>
+              Chapters: {chaptersMin}–{chaptersMax}
+            </Trans>
           </Text>
           <RangeSlider
             min={CHAPTER_MIN}
@@ -356,7 +364,9 @@ export function CatalogueFilters({
         </div>
         <div>
           <Text size="sm" fw={500} mb={4}>
-            Year: {years[0]}–{years[1]}
+            <Trans>
+              Year: {yearMin}–{yearMax}
+            </Trans>
           </Text>
           <RangeSlider
             min={YEAR_MIN}
@@ -372,7 +382,7 @@ export function CatalogueFilters({
         </div>
         <div>
           <Text size="sm" fw={500} mb={4}>
-            Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
+            <Trans>Minimum rating: {ratingLabel}</Trans>
           </Text>
           <Slider
             min={0}
@@ -380,9 +390,9 @@ export function CatalogueFilters({
             step={0.5}
             value={minRating}
             onChange={setMinRating}
-            label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : 'any')}
+            label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : t`any`)}
             marks={[
-              { value: 0, label: 'any' },
+              { value: 0, label: t`any` },
               { value: 7, label: '7' },
               { value: 9, label: '9' },
             ]}

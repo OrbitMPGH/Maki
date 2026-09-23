@@ -14,6 +14,7 @@ import {
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
+import { relationPhrase } from '../ui/DiscoverRail'
 import { useLabel } from '../../i18n-context'
 
 /** How long one pick holds the band before the next takes it. */
@@ -119,7 +120,7 @@ export function DiscoverHero({
     item.tasteMatch ? { id: 'taste-match', text: t`Close to your reading in taste space` } : null,
     becauseOfTitle ? { id: 'because-of-title', text: t`Because you read ${becauseOfTitle}` } : null,
     relationKind && relatedToTitle
-      ? { id: 'relation', text: t`${relationKind} to ${relatedToTitle}` }
+      ? { id: 'relation', text: relationPhrase(relationKind, relatedToTitle) }
       : null,
   ].filter((r): r is { id: string; text: string } => r != null)
 

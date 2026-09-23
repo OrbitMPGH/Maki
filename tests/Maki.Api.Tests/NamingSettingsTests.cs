@@ -138,7 +138,7 @@ public class NamingSettingsTests : IDisposable
         var preview = Assert.IsType<SettingsController.NamingPreviewResponse>(
             Assert.IsType<OkObjectResult>(result).Value);
 
-        Assert.Contains(preview.Errors, e => e.StartsWith("Series folder format:"));
+        Assert.Contains(preview.Errors, e => e.Contains("field=error.naming.fieldSeriesFolder"));
     }
 
     [Fact]

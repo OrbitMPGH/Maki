@@ -530,6 +530,10 @@ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP, 레벨 {nextLevel}까지
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, other {연결되지 않은 파일 #개 남음}}"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "{kind} to {relatedTo}"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -749,17 +753,6 @@ msgstr "{readValue, plural, other {챕터 읽음}}"
 #, fuzzy
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, other {볼륨 읽음}}"
-
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{relationKind} of {relatedTo}"
-msgstr "{relatedTo} 중 {relationKind}"
-
-#: src/components/discover/DiscoverHero.tsx
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{relationKind} to {relatedToTitle}"
-msgstr "{relatedToTitle}의 {relationKind}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
@@ -1842,6 +1835,7 @@ msgstr "애니메이션 적용 범위"
 msgid "Anime you've watched"
 msgstr "시청한 애니메이션"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "any"
@@ -2435,6 +2429,10 @@ msgstr ""
 msgid "Cancelled"
 msgstr "취소됨"
 
+#: src/pages/HealthPage.tsx
+msgid "Candidate page {pageNumber}"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 msgid "Caps what search, Discover and recommendations show this account."
 msgstr ""
@@ -2679,6 +2677,14 @@ msgstr "챕터 {chapterId}: {pageCount, plural, other {페이지 #개}}"
 msgid "Chapter {n}"
 msgstr "챕터 {n}"
 
+#: src/pages/HealthPage.tsx
+msgid "chapter {number}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Chapter {number}"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chapter downloaded"
@@ -2806,6 +2812,10 @@ msgstr "트리거 전 읽지 않은 챕터 수"
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "챕터: {chapterRangeMin}–{chapterRangeMax}"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters: {chaptersMin}–{chaptersMax}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -3944,6 +3954,10 @@ msgstr "다운로드 중"
 msgid "Downloading {outstanding}"
 msgstr "{outstanding} 다운로드 중"
 
+#: src/pages/ImportPage.tsx
+msgid "Downloading cover"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Downloading metadata database"
@@ -4336,6 +4350,7 @@ msgstr "{spanLabel} 펼치기"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "실패"
@@ -4348,6 +4363,10 @@ msgstr ""
 #, fuzzy
 msgid "Failed sign-ins before lockout"
 msgstr "잠금 전 로그인 실패 횟수"
+
+#: src/api/client.ts
+msgid "Failed to initialize"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4414,6 +4433,10 @@ msgstr "가져오는 중"
 #, fuzzy
 msgid "Fetching {label} again. The file is replaced when it lands."
 msgstr "{label} 다시 가져오는 중입니다. 파일이 도착하면 교체됩니다."
+
+#: src/pages/ImportPage.tsx
+msgid "Fetching metadata"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4499,6 +4522,10 @@ msgstr "더 찾기"
 #, fuzzy
 msgid "Finding source"
 msgstr "소스 찾는 중"
+
+#: src/pages/ImportPage.tsx
+msgid "Finding sources"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5224,6 +5251,7 @@ msgstr "연결되지 않은 항목 가져오기"
 msgid "Import what you have"
 msgstr ""
 
+#: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Imported"
@@ -5850,6 +5878,10 @@ msgstr "시리즈에 연결됨, 활성화 여부와 관계없음"
 msgid "Linked, but nothing enabled"
 msgstr "연결됨, 활성화된 항목 없음"
 
+#: src/pages/ImportPage.tsx
+msgid "Linking files"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5975,6 +6007,10 @@ msgstr "Main만"
 msgid "Main only, no specials"
 msgstr "Main만, 스페셜 없음"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Main story of {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "mainstream"
@@ -6050,6 +6086,10 @@ msgstr "만화"
 #, fuzzy
 msgid "Manga"
 msgstr "Manga"
+
+#: src/App.tsx
+msgid "Manga manager"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
@@ -6187,6 +6227,10 @@ msgstr "아마 내년"
 msgid "Mecha"
 msgstr "메카"
 
+#: src/pages/ImportPage.tsx
+msgid "Merging folder"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -6232,6 +6276,10 @@ msgstr "최소"
 #, fuzzy
 msgid "Minimum chapters"
 msgstr "최소 챕터 수"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Minimum rating: {ratingLabel}"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -7877,6 +7925,10 @@ msgstr "미리 로드"
 msgid "Preparing model…"
 msgstr "모델 준비 중…"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Prequel to {relatedTo}"
+msgstr ""
+
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
 msgid "Press Enter to create a new tag"
@@ -8661,6 +8713,10 @@ msgstr "이름 변경됨"
 #, fuzzy
 msgid "Renamed {renamed}, {failed} failed"
 msgstr "{renamed}개 이름 변경됨, {failed}개 실패"
+
+#: src/pages/ImportPage.tsx
+msgid "Renaming folder"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9561,6 +9617,10 @@ msgstr "요청 보내기"
 msgid "Sent to qBittorrent: {title}"
 msgstr "qBittorrent로 전송됨: {title}"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Sequel to {relatedTo}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
@@ -9731,6 +9791,10 @@ msgstr "설정"
 msgid "Settings › {tabName}"
 msgstr "설정 › {tabName}"
 
+#: src/api/hooks.ts
+msgid "Settings not loaded"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Setup"
 msgstr ""
@@ -9870,6 +9934,10 @@ msgstr "참여를 선택한 모든 사용자에게 내 이름, 레벨, 읽은 �
 msgid "Side interests"
 msgstr ""
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Side story of {relatedTo}"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in"
@@ -9936,6 +10004,7 @@ msgstr "단일 페이지"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/LoginPage.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Single sign-on"
@@ -10147,6 +10216,10 @@ msgstr ""
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr ""
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Spin-off of {relatedTo}"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Split double-width pages"
@@ -10353,6 +10426,10 @@ msgstr "동기화 실행 중… · 마지막 {lastSync} · 다음 {nextSync}"
 #, fuzzy
 msgid "Synced"
 msgstr "동기화됨"
+
+#: src/pages/ImportPage.tsx
+msgid "Syncing chapters"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11207,6 +11284,10 @@ msgstr "입력하여 검색…"
 msgid "Typical chapter"
 msgstr "일반적인 챕터"
 
+#: src/api/client.ts
+msgid "Unauthorized"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Unavailable"
@@ -11256,6 +11337,10 @@ msgstr "일치하지 않음"
 msgid "Unmonitored"
 msgstr "모니터링하지 않음"
 
+#: src/App.tsx
+msgid "Unofficial build (not a tagged release)"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Unofficial build, update checks are skipped."
@@ -11280,6 +11365,14 @@ msgstr "읽지 않은 항목만"
 #, fuzzy
 msgid "Unrecognized"
 msgstr "인식되지 않음"
+
+#: src/pages/HealthPage.tsx
+msgid "unrecognized name"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Unrecognized name"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy
@@ -11350,6 +11443,14 @@ msgstr "업데이트되었습니다. 이 작품은 계속 추천에서 제외됩
 #, fuzzy
 msgid "Updates"
 msgstr "업데이트"
+
+#: src/pages/ImportPage.tsx
+msgid "Updating ComicInfo"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "Upload failed: {status}"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -11594,6 +11695,14 @@ msgstr "{volNum}권 {chapterNumber}화"
 msgid "Vol.{volume} Ch.{chapter}"
 msgstr "{volume}권 {chapter}화"
 
+#: src/pages/HealthPage.tsx
+msgid "volume {number}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Volume {number}"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -11601,6 +11710,14 @@ msgstr "{volume}권 {chapter}화"
 #, fuzzy
 msgid "Volumes"
 msgstr "권"
+
+#: src/pages/HealthPage.tsx
+msgid "volumes {number}-{volumeEnd}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Volumes {number}-{volumeEnd}"
+msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -11890,6 +12007,10 @@ msgstr "<0>claim=value</0> 작성됨. 예: <1>groups=maki-admins</1>."
 #, fuzzy
 msgid "Year"
 msgstr "연도"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Year: {yearMin}–{yearMax}"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

@@ -40,9 +40,11 @@ public class LibraryImportController(
             var candidates = await importService.ScanAsync(rootFolderId, ct);
             return Ok(candidates);
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return BadRequest(new { error = ex.Message });
+            // The only thing ScanAsync throws this for. Reusing SeriesController's key rather than
+            // minting a near-duplicate: same English, same meaning, just a different caller.
+            return this.Fail(localizer, "error.series.rootFolderNotFound");
         }
     }
 
@@ -74,7 +76,7 @@ public class LibraryImportController(
             }
 
             results.Add(result);
-            await events.ImportProgress(item.FolderName, result.Success ? "Imported" : "Failed",
+            await events.ImportProgress(item.FolderName, result.Success ? ImportStage.Imported : ImportStage.Failed,
                 done: true, success: result.Success, error: result.Error);
 
             if (result.Success)

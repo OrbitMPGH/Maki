@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Maki.Core.Configuration;
 using Maki.Core.Localization;
+using Maki.Core.Naming;
 using Maki.Core.Progress;
 
 namespace Maki.Api.Tests;
@@ -204,16 +205,17 @@ public class LocalizationCatalogTests
         // helper like AuthController.AuthUnauthorized, or picked by a ternary. Matching only the
         // call shape missed all three, which made this test claim seven live keys were orphans.
         //
-        // `opds.`, `scrobble.` and `health.` are also SettingKeys prefixes ("opds.enabled",
-        // "health.options"). Scanning one of those used to mean reading every setting under it as a
-        // missing catalogue key, so the setting names are subtracted below rather than the whole
-        // namespace being dropped: otherwise the OPDS shelves, the scrobble log and every health
-        // check would be the parts of the catalogue nothing checks. `queue.` stays out because
-        // nothing keys under it; the queue's reasons live under `error.download.`. `notify.` never
-        // collided at all, the setting prefix there being `notifications.`, and neither does
-        // `feedback.`, whose settings live under `recommendations.`.
+        // `opds.`, `scrobble.`, `health.` and `discover.` are also SettingKeys prefixes
+        // ("opds.enabled", "health.options", "discover.searchdefaults"). Scanning one of those used
+        // to mean reading every setting under it as a missing catalogue key, so the setting names are
+        // subtracted below rather than the whole namespace being dropped: otherwise the OPDS shelves,
+        // the scrobble log, every health check and the Discover/taste rail prose would be the parts
+        // of the catalogue nothing checks. `queue.` stays out because nothing keys under it; the
+        // queue's reasons live under `error.download.`. `notify.` never collided at all, the setting
+        // prefix there being `notifications.`, and neither does `feedback.`, whose settings live
+        // under `recommendations.`, nor `install.` or `naming.`, which name no setting at all.
         var pattern = new Regex(
-            @"""((?:error|inbox|achievement|notify|opds|scrobble|health|feedback)\.[A-Za-z0-9_.]+)""",
+            @"""((?:error|inbox|achievement|notify|opds|scrobble|health|feedback|discover|install|naming)\.[A-Za-z0-9_.]+)""",
             RegexOptions.Compiled);
 
         var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -238,10 +240,13 @@ public class LocalizationCatalogTests
     /// Adds the keys that code names indirectly, so they are neither reported missing nor reported
     /// as orphans.
     /// <para>
-    /// Two families. A notification's <c>InboxMessage.Key</c> is half a key: the catalogue holds
-    /// <c>{key}.title</c> and <c>{key}.body</c>, and the literal in C# names neither. And every
+    /// Three families. A notification's <c>InboxMessage.Key</c> is half a key: the catalogue holds
+    /// <c>{key}.title</c> and <c>{key}.body</c>, and the literal in C# names neither. Every
     /// achievement's name, description and tier is looked up through an interpolated key built from
     /// <see cref="AchievementCatalog"/>, so the catalogue itself is the list, not the source text.
+    /// And every <see cref="NamingToken.DescriptionKey"/> is <c>$"naming.token.{key}.description"</c>,
+    /// built from the token's own normalized key, so it is never a literal for the regex above to
+    /// find either.
     /// </para>
     /// </summary>
     private static HashSet<string> Expand(HashSet<string> literal)
@@ -275,6 +280,11 @@ public class LocalizationCatalogTests
         for (var tier = 1; tier <= AchievementCatalog.TierNames.Length; tier++)
         {
             all.Add($"achievement.tier.{tier}");
+        }
+
+        foreach (var token in NamingTokens.All)
+        {
+            all.Add(token.DescriptionKey);
         }
 
         return all;

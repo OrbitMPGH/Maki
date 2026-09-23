@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { msg } from '@lingui/core/macro'
+import { msg, t } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
@@ -1019,7 +1019,7 @@ export function useSavePageLayout() {
   return useMutation({
     mutationFn: ({ page, sections }: { page: 'home' | 'discover'; sections: PageSection[] }) => {
       const ui = queryClient.getQueryData<UiSettings>(['settings', 'ui'])
-      if (!ui) throw new Error('Settings not loaded')
+      if (!ui) throw new Error(t`Settings not loaded`)
       const next: UiSettings =
         page === 'home'
           ? { ...ui, homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] }, discoverLayout: null }
@@ -3389,7 +3389,8 @@ export function useUploadRestore() {
       })
       if (!res.ok) {
         const body = await res.text()
-        throw new Error(body || `Upload failed: ${res.status}`)
+        const status = res.status
+        throw new Error(body || t`Upload failed: ${status}`)
       }
       return (await res.json()) as { message: string }
     },

@@ -33,8 +33,16 @@ public record CoReadManifest
     [JsonPropertyName("url")] public string? Url { get; init; }
 }
 
-/// <summary>Outcome of one install attempt, for logs and the settings UI.</summary>
-public record CoReadResult(bool Installed, string Reason, long? PairCount = null);
+/// <summary>
+/// Outcome of one install attempt, for logs and the settings UI.
+/// <para>
+/// <see cref="Reason"/> is a server message catalogue key, not display text; this project has no
+/// <c>ILocalizer</c> (see <c>CLAUDE.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
+/// renders it. <c>Install failed: {ex.Message}</c> is the one exception: it embeds a raw exception
+/// message and stays unconverted, same as every other site in this codebase that does that.
+/// </para>
+/// </summary>
+public record CoReadResult(bool Installed, string Reason, long? PairCount = null, object? ReasonArgs = null);
 
 /// <summary>
 /// Downloads and installs the co-read graph published alongside Maki. Deliberately shaped like
@@ -96,7 +104,7 @@ public class CoReadInstaller(
     {
         if (!await IsEnabledAsync(ct))
         {
-            return new CoReadResult(false, "The co-read channel is turned off.");
+            return new CoReadResult(false, "install.coread.disabled");
         }
 
         var manifestUrl = await settings.GetAsync(SettingKeys.RecommendationsCoReadUrl, ct);
@@ -116,12 +124,12 @@ public class CoReadInstaller(
             // Debug, not warning: until an artifact is published this is the normal state of every
             // install, and it must not fill logs with something nobody can act on.
             logger.LogDebug(ex, "Co-read graph manifest unavailable at {Url}", manifestUrl);
-            return new CoReadResult(false, "Could not read the co-read graph manifest.");
+            return new CoReadResult(false, "install.coread.manifestUnavailable");
         }
 
         if (manifest is null || string.IsNullOrWhiteSpace(manifest.Url))
         {
-            return new CoReadResult(false, "The co-read graph manifest is malformed.");
+            return new CoReadResult(false, "install.coread.manifestMalformed");
         }
 
         if (manifest.SchemaVersion > SupportedSchemaVersion)
@@ -129,17 +137,17 @@ public class CoReadInstaller(
             logger.LogInformation(
                 "Ignoring the published co-read graph: schema {Theirs}, this build reads {Ours}",
                 manifest.SchemaVersion, SupportedSchemaVersion);
-            return new CoReadResult(false, "The published graph uses a newer schema than this build reads.");
+            return new CoReadResult(false, "install.graph.schemaNewer");
         }
 
         if (manifest.PairCount < MinPairs)
         {
-            return new CoReadResult(false, "The published graph looks truncated; ignoring it.");
+            return new CoReadResult(false, "install.graph.truncated");
         }
 
         if (!force && !await IsNewerThanLocalAsync(manifest, ct))
         {
-            return new CoReadResult(false, "The local co-read graph is already current.");
+            return new CoReadResult(false, "install.coread.current");
         }
 
         Directory.CreateDirectory(options.StagingDirectory);
@@ -157,9 +165,7 @@ public class CoReadInstaller(
 
             logger.LogInformation("Installed the co-read graph ({Pairs} pairs)", pairs);
 
-            // Unformatted on purpose: the UI has the raw count and localizes it itself, and
-            // server-side grouping picks up the host's locale (non-breaking spaces and all).
-            return new CoReadResult(true, $"Installed {pairs} co-read pairs.", pairs);
+            return new CoReadResult(true, "install.coread.installed", pairs, new { pairs });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

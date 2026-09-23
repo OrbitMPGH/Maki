@@ -149,7 +149,8 @@ public class CoReadInstallerTests : IDisposable
         var result = await Installer().InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("newer schema", result.Reason);
+        // A catalogue key, not display text; see CoReadResult's doc.
+        Assert.Equal("install.graph.schemaNewer", result.Reason);
         Assert.False(File.Exists(_graphPath));
     }
 
@@ -175,7 +176,7 @@ public class CoReadInstallerTests : IDisposable
         var second = await installer.InstallAsync(ct: CancellationToken.None);
 
         Assert.False(second.Installed);
-        Assert.Contains("already current", second.Reason);
+        Assert.Equal("install.coread.current", second.Reason);
     }
 
     [Fact]
@@ -209,7 +210,7 @@ public class CoReadInstallerTests : IDisposable
         var result = await Installer().InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("turned off", result.Reason);
+        Assert.Equal("install.coread.disabled", result.Reason);
         Assert.False(File.Exists(_graphPath));
     }
 

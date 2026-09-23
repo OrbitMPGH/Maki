@@ -39,7 +39,7 @@ public class BackupServiceTests : IDisposable
     }
 
     private BackupService Build() =>
-        new(_paths, _db, _settings, NullLogger<BackupService>.Instance);
+        new(_paths, _db, _settings, new TestLocalizer(), NullLogger<BackupService>.Instance);
 
     public void Dispose()
     {
@@ -119,7 +119,7 @@ public class BackupServiceTests : IDisposable
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => Build().StagePendingRestoreFromUploadAsync(new MemoryStream(zip), CancellationToken.None));
-        Assert.Contains("maki.db", ex.Message);
+        Assert.Equal("error.system.backupMissingDb", ex.Message);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class BackupServiceTests : IDisposable
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => Build().StagePendingRestoreFromUploadAsync(new MemoryStream(zip), CancellationToken.None));
-        Assert.Contains("newer version", ex.Message);
+        Assert.Contains("error.system.backupTooNew", ex.Message);
     }
 
     [Fact]

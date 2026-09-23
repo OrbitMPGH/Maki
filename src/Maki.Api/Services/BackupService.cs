@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using Maki.Api.Configuration;
+using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Data;
 using Microsoft.Data.Sqlite;
@@ -30,6 +31,7 @@ public class BackupService(
     AppPaths paths,
     MakiDbContext db,
     IAppSettings settings,
+    ILocalizer localizer,
     ILogger<BackupService> logger)
 {
     private const string DbEntry = "maki.db";
@@ -180,7 +182,7 @@ public class BackupService(
         using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
 
         var dbEntry = archive.GetEntry(DbEntry)
-            ?? throw new InvalidOperationException("Backup is missing maki.db — not a Maki backup.");
+            ?? throw new InvalidOperationException(localizer.Get("error.system.backupMissingDb"));
 
         // Downgrade guard: refuse a backup whose schema is newer than this binary knows. Migrations
         // are forward-only, so restoring a newer DB into an older build would leave it unmigratable.
@@ -190,8 +192,7 @@ public class BackupService(
             var known = db.Database.GetMigrations().ToHashSet();
             if (!known.Contains(last))
                 throw new InvalidOperationException(
-                    $"Backup is from a newer version (migration '{last}' unknown to this build). " +
-                    "Upgrade Maki before restoring it.");
+                    localizer.Get("error.system.backupTooNew", new { migration = last }));
         }
 
         if (Directory.Exists(paths.RestorePendingDir))

@@ -47,6 +47,10 @@ public class RecommendationController(
                 ? result
                 : result with { Related = HiddenContentService.Without(result.Related, isHidden) });
         }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
@@ -98,7 +102,7 @@ public class RecommendationController(
         {
             return Ok(new
             {
-                unavailable = "Needs the local MangaBaka database (Settings → Metadata → local DB)",
+                unavailable = localizer.Get("error.recommendation.tasteInsightsNeedsLocalDb"),
                 groups = Array.Empty<object>(),
                 drift = Array.Empty<object>(),
             });
@@ -107,7 +111,20 @@ public class RecommendationController(
         var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
             ? TasteView.Shelf
             : TasteView.Read;
-        return Ok(await tasteInsights.GetAsync(currentUser, parsed, refresh, ct));
+        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, ct);
+
+        // Groups/DriftUnavailable/Unavailable are catalogue keys, not display text; see the
+        // TasteInsights doc. TasteInsightsService is a singleton whose result is cached per user,
+        // so it renders nothing itself; this is the one place that does, with the caller's locale.
+        return Ok(insights with
+        {
+            Unavailable = insights.Unavailable is null
+                ? null : localizer.Get(insights.Unavailable, insights.UnavailableArgs),
+            GroupsUnavailable = insights.GroupsUnavailable is null
+                ? null : localizer.Get(insights.GroupsUnavailable),
+            DriftUnavailable = insights.DriftUnavailable is null
+                ? null : localizer.Get(insights.DriftUnavailable),
+        });
     }
 
     /// <summary>
@@ -132,7 +149,11 @@ public class RecommendationController(
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetFeedsAsync(
                 refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
-            return Ok(FilterRails(rails, suppressed, isHidden));
+            return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -148,7 +169,8 @@ public class RecommendationController(
         {
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await sideInterests.GetAsync(currentUser, refresh, ct);
-            return Ok(rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList());
+            return Ok(LocalizeRails(
+                rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
         catch (InvalidOperationException ex)
         {
@@ -174,7 +196,9 @@ public class RecommendationController(
         {
             var isHidden = await hidden.PredicateAsync(ct);
             var rail = await recentActivity.GetAsync(currentUser, refresh, ct);
-            return Ok(rail is null ? null : rail with { Items = HiddenContentService.Without(rail.Items, isHidden) });
+            return Ok(rail is null
+                ? null
+                : LocalizeRail(rail with { Items = HiddenContentService.Without(rail.Items, isHidden) }));
         }
         catch (InvalidOperationException ex)
         {
@@ -198,7 +222,8 @@ public class RecommendationController(
         {
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await recentActivity.GetGroupedAsync(currentUser, refresh, ct);
-            return Ok(rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList());
+            return Ok(LocalizeRails(
+                rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
         catch (InvalidOperationException ex)
         {
@@ -216,7 +241,11 @@ public class RecommendationController(
             var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetGenreFeedsAsync(
                 refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
-            return Ok(FilterRails(rails, suppressed, isHidden));
+            return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -237,6 +266,10 @@ public class RecommendationController(
             var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
             return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct, exclude));
         }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
@@ -255,6 +288,10 @@ public class RecommendationController(
         {
             var clamped = await ScopeAsync(request.Filters, ct);
             return Ok(await discover.SearchAsync(request with { Filters = clamped }, ct));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -281,6 +318,10 @@ public class RecommendationController(
 
             var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
             return profile is null ? this.NotFoundMessage(localizer, "error.recommendation.creatorNotFound") : Ok(profile);
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -468,7 +509,8 @@ public class RecommendationController(
         }
 
         var limit = Math.Clamp(request?.Limit ?? 40, 1, 120);
-        return Ok(await readerCohortRail.GetAsync(currentUser, filters, limit, ct));
+        var rail = await readerCohortRail.GetAsync(currentUser, filters, limit, ct);
+        return Ok(rail is null ? null : LocalizeRail(rail));
     }
 
     public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
@@ -486,6 +528,22 @@ public class RecommendationController(
 
     private static RecommendationFilters Sanitize(RecommendationFilters? filters) =>
         HiddenContentService.Sanitize(filters);
+
+    /// <summary>
+    /// Renders a rail's <see cref="DiscoverRail.Title"/> and <see cref="DiscoverRail.Subtitle"/> from
+    /// catalogue keys into the caller's language. Every rail producer on this controller is a
+    /// singleton whose output is cached instance-wide or across a locale-agnostic key, so none of
+    /// them can render prose themselves without freezing one language into the cache; see the
+    /// <see cref="DiscoverRail"/> doc.
+    /// </summary>
+    private DiscoverRail LocalizeRail(DiscoverRail rail) => rail with
+    {
+        Title = localizer.Get(rail.Title, rail.TitleArgs),
+        Subtitle = rail.Subtitle is null ? null : localizer.Get(rail.Subtitle, rail.SubtitleArgs),
+    };
+
+    private IReadOnlyList<DiscoverRail> LocalizeRails(IReadOnlyList<DiscoverRail> rails) =>
+        rails.Select(LocalizeRail).ToList();
 
     /// <summary>
     /// The viewer's suppression over a shared rail. Returns a new list every time: the cached rail
@@ -533,6 +591,16 @@ public class RecommendationController(
 
     /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>
     [HttpGet("reviews/{malId:int}")]
-    public async Task<IActionResult> Reviews(int malId, CancellationToken ct) =>
-        Ok(await reviews.GetReviewsAsync(malId, ct));
+    public async Task<IActionResult> Reviews(int malId, CancellationToken ct)
+    {
+        var found = await reviews.GetReviewsAsync(malId, ct);
+
+        // Author and Tags are catalogue keys, not display text; MalReviewClient caches reviews per
+        // MAL id across every caller, so it cannot render "Anonymous" or a sentiment label itself.
+        return Ok(found?.Select(r => r with
+        {
+            Author = r.Author ?? localizer.Get("discover.review.anonymousAuthor"),
+            Tags = r.Tags.Select(t => localizer.Get(t)).ToList(),
+        }).ToList());
+    }
 }

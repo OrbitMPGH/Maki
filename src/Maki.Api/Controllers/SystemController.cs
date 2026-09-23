@@ -1,6 +1,7 @@
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Jobs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -189,7 +190,7 @@ public class SystemController(
     public async Task<IActionResult> RestoreUpload(IFormFile file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
-            return BadRequest(new { message = "No file uploaded." });
+            return this.Fail(localizer, "error.system.noFileUploaded");
 
         try
         {

@@ -1,4 +1,5 @@
 import { i18n } from '@lingui/core'
+import { t } from '@lingui/core/macro'
 
 interface InitializeInfo {
   apiRoot: string
@@ -27,7 +28,7 @@ let initialize: InitializeInfo | null = null
 export async function getInitialize(): Promise<InitializeInfo> {
   if (!initialize) {
     const res = await fetch('/initialize.json', { cache: 'no-cache' })
-    if (!res.ok) throw new Error('Failed to initialize')
+    if (!res.ok) throw new Error(t`Failed to initialize`)
     initialize = (await res.json()) as InitializeInfo
   }
   return initialize
@@ -40,7 +41,7 @@ export function invalidateInitialize(): void {
 /** Raised for a 401 so callers can distinguish "signed out" from a genuine request failure. */
 export class UnauthorizedError extends Error {
   constructor() {
-    super('Unauthorized')
+    super(t`Unauthorized`)
     this.name = 'UnauthorizedError'
   }
 }

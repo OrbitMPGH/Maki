@@ -1,3 +1,4 @@
+using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -142,7 +143,11 @@ public class ChapterSyncService(
                     "Rate limited by {Source} during chapter sync of series {SeriesId}; " +
                     "pausing its downloads until {Until:o}",
                     mapping.SourceName, seriesId, until);
-                mapping.LastError = $"Rate limited — downloads paused until {until.ToLocalTime():HH:mm:ss}";
+                // Not yet keyed, like the rest of LastError; see the property's doc comment. Just
+                // the wording (no em dash) and an explicit culture for the time, consistent with
+                // every other formatted time/number in the app.
+                mapping.LastError =
+                    $"Rate limited, downloads paused until {until.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)}";
             }
             catch (Exception ex)
             {

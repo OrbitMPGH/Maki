@@ -260,7 +260,7 @@ public class OidcTests
         var result = await service.SignInAsync("oidc", "sub-1", Claims(), default);
 
         Assert.Null(result.User);
-        Assert.NotNull(result.Error);
+        Assert.NotNull(result.ErrorKey);
     }
 
     [Fact]
@@ -436,7 +436,7 @@ public class OidcTests
         // Linking would hand a new subject an existing person's library; a silent "ada2" is a support
         // question nobody can answer six months later.
         Assert.Null(result.User);
-        Assert.Contains("already exists", result.Error);
+        Assert.Equal("error.auth.ssoUsernameExists", result.ErrorKey);
     }
 
     [Fact]

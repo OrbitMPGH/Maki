@@ -209,10 +209,10 @@ public class CompletedDownloadJob(
         var contentPath = PathRemapper.Map(torrent.ContentPath, pathMap.From, pathMap.To);
 
         var plan = await importer.PlanAsync(item, series, contentPath, ct);
-        if (plan.Error is not null)
+        if (plan.ErrorKey is not null)
         {
             item.Status = QueueStatus.Failed;
-            item.SetRawError(plan.Error);
+            item.SetError(plan.ErrorKey, plan.ErrorArgs);
             return;
         }
 
@@ -237,7 +237,8 @@ public class CompletedDownloadJob(
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
-            item.SetRawError(outcome.Error);
+            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs);
+            else item.SetRawError(outcome.Error);
             return;
         }
 

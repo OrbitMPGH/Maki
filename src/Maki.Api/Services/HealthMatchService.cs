@@ -1,4 +1,3 @@
-using System.Globalization;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Data;
@@ -38,8 +37,15 @@ public class HealthMatchService(MakiDbContext db)
         int? HealthFileId, string? Version, string? Status, int Pages, long PixelHeight,
         string? ContentHash, List<int> ChapterIds);
 
+    /// <param name="LabelKind">
+    /// What the file name parsed to: <c>"chapter"</c>, <c>"volume"</c>, <c>"volumes"</c> (a range) or
+    /// <c>"unrecognized"</c>. A plain discriminator rather than rendered text, because the frontend
+    /// needs the label in two grammatical forms - title case for the badge, lower case mid-sentence -
+    /// and lowercasing a translation is wrong for a language that capitalizes the noun regardless of
+    /// position. <see cref="Number"/> is the chapter number or the volume's start.
+    /// </param>
     public record UnlinkedMatch(
-        bool Recognized, string Label, int? SeriesId, string? SeriesTitle,
+        bool Recognized, string LabelKind, decimal? Number, int? VolumeEnd, int? SeriesId, string? SeriesTitle,
         List<MatchChapter> Chapters, List<MatchCounterpart> Counterparts);
 
     /// <summary>
@@ -60,9 +66,9 @@ public class HealthMatchService(MakiDbContext db)
         if (file.ChapterFileId != null) return null;
         var parsed = ReleaseNameParser.ParseFileName(file.RelativePath);
         var owner = await OwnerAsync(file, ct);
-        var label = Label(parsed);
+        var (labelKind, number, volumeEnd) = Label(parsed);
         if (owner == null)
-            return new UnlinkedMatch(parsed.IsRecognized, label, null, null, [], []);
+            return new UnlinkedMatch(parsed.IsRecognized, labelKind, number, volumeEnd, null, null, [], []);
 
         var chapters = await db.Chapters.Where(c => c.SeriesId == owner.Id).ToListAsync(ct);
         var matched = parsed.IsChapter
@@ -89,7 +95,7 @@ public class HealthMatchService(MakiDbContext db)
                 matched.Where(c => c.ChapterFileId == chapterFileId).Select(c => c.Id).ToList()));
         }
 
-        return new UnlinkedMatch(parsed.IsRecognized, label, owner.Id, owner.Title,
+        return new UnlinkedMatch(parsed.IsRecognized, labelKind, number, volumeEnd, owner.Id, owner.Title,
             matched.Select(c => new MatchChapter(c.Id, c.Number, c.Title, c.ChapterFileId != null)).ToList(),
             counterparts);
     }
@@ -99,8 +105,8 @@ public class HealthMatchService(MakiDbContext db)
         relativePath.StartsWith(folderName, Compare) &&
         (relativePath[folderName.Length] == Path.DirectorySeparatorChar || relativePath[folderName.Length] == '/');
 
-    private static string Label(ParsedReleaseFile parsed) =>
-        parsed.IsChapter ? $"Chapter {parsed.Number!.Value.ToString("0.###", CultureInfo.InvariantCulture)}"
-        : parsed.IsVolume ? parsed.VolumeEnd is { } end ? $"Volumes {parsed.Volume}-{end}" : $"Volume {parsed.Volume}"
-        : "Unrecognized name";
+    private static (string Kind, decimal? Number, int? VolumeEnd) Label(ParsedReleaseFile parsed) =>
+        parsed.IsChapter ? ("chapter", parsed.Number, null)
+        : parsed.IsVolume ? parsed.VolumeEnd is { } end ? ("volumes", parsed.Volume, end) : ("volume", parsed.Volume, null)
+        : ("unrecognized", null, null);
 }

@@ -2,11 +2,16 @@ using Maki.Core.Io;
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using System.Text.Json;
 using SixLabors.ImageSharp;
 
 namespace Maki.Core.Reading;
 
-public record ArchiveProblem(string Kind, string Severity, string Message);
+/// <param name="MessageKey">The catalogue key for what was found. Maki's own wording, so no raw
+/// text travels with the record; the API renders it in the reader's language.</param>
+/// <param name="ParamsJson">JSON object of the values filling the message's placeholders, or null
+/// when it has none.</param>
+public record ArchiveProblem(string Kind, string Severity, string MessageKey, string? ParamsJson = null);
 /// <param name="RawHash">SHA-256 of the entry's bytes, or null when the archive was only indexed.
 /// Page previews are served against it, so a preview can never hand back content the analysis did
 /// not see - and an indexed file has no preview until it is verified.</param>
@@ -99,19 +104,19 @@ public static class ArchiveHealthAnalyzer
             if (verify)
                 result = result with { Hash = knownHash ?? Convert.ToHexString(await SHA256.HashDataAsync(file, token)) };
             if (file.Length == 0)
-                return result with { Problems = [new("empty", "error", "Archive is empty")] };
+                return result with { Problems = [new("empty", "error", "health.finding.empty")] };
             file.Position = 0;
             if (ComicFile.IsPdf(path)) return await AnalyzePdfAsync(path, result, verify, token);
             // Constructing this reads the central directory and nothing else, which is the whole
             // index layer. An archive that is not a zip throws here and is reported as corrupt.
             using var archive = new ZipArchive(file, ZipArchiveMode.Read, true);
             if (archive.Entries.Count > 10000 || archive.Entries.Sum(e => (double)e.Length) > MaxExpandedBytes)
-                return Partial(result, "Archive exceeds analysis limits");
+                return Partial(result, "health.finding.analysisLimits");
             var names = CbzReader.PageNames(archive);
-            if (names.Count == 0) result.Problems.Add(new("noPages", "error", "Archive contains no reader pages"));
-            if (names.Count > MaxPages) return Partial(result, "Archive exceeds page limit");
+            if (names.Count == 0) result.Problems.Add(new("noPages", "error", "health.finding.noPages"));
+            if (names.Count > MaxPages) return Partial(result, "health.finding.pageLimit");
             if (names.Distinct(StringComparer.OrdinalIgnoreCase).Count() != names.Count)
-                result.Problems.Add(new("ambiguousNames", "error", "Archive contains duplicate page names"));
+                result.Problems.Add(new("ambiguousNames", "error", "health.finding.ambiguousNames"));
 
             if (!verify)
             {
@@ -141,13 +146,13 @@ public static class ArchiveHealthAnalyzer
                     token.ThrowIfCancellationRequested();
                     if (entry.Length > MaxEntryBytes)
                     {
-                        stopped = "An entry exceeds the analysis limit";
+                        stopped = "health.finding.entryTooLarge";
                         yield break;
                     }
                     expanded += entry.Length;
                     if (expanded > MaxExpandedBytes)
                     {
-                        stopped = "Expanded archive exceeds analysis limits";
+                        stopped = "health.finding.expandedTooLarge";
                         yield break;
                     }
                     // One buffer of exactly the declared size. Filling a MemoryStream that doubles
@@ -167,12 +172,12 @@ public static class ArchiveHealthAnalyzer
                     // damaged archive, and saying so beats failing the read.
                     if (filled != bytes.Length || overrun)
                     {
-                        problems.Add(new("corrupt", "error", $"Entry size does not match the archive index: {entry.FullName}"));
+                        problems.Add(new("corrupt", "error", "health.finding.entrySizeMismatch", Params(new { entry = entry.FullName })));
                         continue;
                     }
                     uint crc = uint.MaxValue;
                     foreach (var b in bytes) crc = CrcTable[(crc ^ b) & 255] ^ (crc >> 8);
-                    if (~crc != entry.Crc32) problems.Add(new("corrupt", "error", $"Entry checksum failed: {entry.FullName}"));
+                    if (~crc != entry.Crc32) problems.Add(new("corrupt", "error", "health.finding.entryChecksumFailed", Params(new { entry = entry.FullName })));
                     if (!CbzReader.IsImage(entry.Name)) continue;
                     yield return (entry.FullName, bytes);
                 }
@@ -202,15 +207,15 @@ public static class ArchiveHealthAnalyzer
                     {
                         var info = await Image.IdentifyAsync(stream, cancel);
                         if ((long)info.Width * info.Height > MaxPixels)
-                            incomplete.Add("An image exceeds the pixel limit");
+                            incomplete.Add("health.finding.pixelLimit");
                         fingerprints.Add(new(name, rawHash, info.Width, info.Height));
                     }
                     catch (Exception ex) when (ex is UnknownImageFormatException or InvalidImageContentException)
                     {
                         if (ex is UnknownImageFormatException &&
                             Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))
-                            incomplete.Add("Some pages use an unsupported image decoder");
-                        else problems.Add(new("damagedImage", "error", $"Cannot read {name}"));
+                            incomplete.Add("health.finding.unsupportedDecoder");
+                        else problems.Add(new("damagedImage", "error", "health.finding.cannotRead", Params(new { name })));
                         fingerprints.Add(new(name, rawHash, 0, 0));
                     }
                 });
@@ -218,15 +223,15 @@ public static class ArchiveHealthAnalyzer
             result.Problems.AddRange(problems);
             result.Pages.AddRange(fingerprints);
             result.Pages.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
-            foreach (var message in incomplete.Distinct()) result = Partial(result, message);
+            foreach (var key in incomplete.Distinct()) result = Partial(result, key);
             if (stopped != null) return Partial(result, stopped);
         }
-        catch (FileNotFoundException) { result.Problems.Add(new("missing", "error", "File is missing")); }
-        catch (DirectoryNotFoundException) { result.Problems.Add(new("missing", "error", "File is missing")); }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return Partial(result, "Analysis time limit reached"); }
-        catch (InvalidDataException) { result.Problems.Add(new("corrupt", "error", "Archive structure or entry data is corrupt")); }
-        catch (IOException) { return Partial(result, "File could not be read; rescan when available"); }
-        catch (UnauthorizedAccessException) { return Partial(result, "File cannot be accessed"); }
+        catch (FileNotFoundException) { result.Problems.Add(new("missing", "error", "health.finding.missing")); }
+        catch (DirectoryNotFoundException) { result.Problems.Add(new("missing", "error", "health.finding.missing")); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return Partial(result, "health.finding.timeLimit"); }
+        catch (InvalidDataException) { result.Problems.Add(new("corrupt", "error", "health.finding.corrupt")); }
+        catch (IOException) { return Partial(result, "health.finding.unreadable"); }
+        catch (UnauthorizedAccessException) { return Partial(result, "health.finding.accessDenied"); }
         finally
         {
             // A verify reads the whole archive - SHA256 over the file, then every entry - and a
@@ -254,17 +259,17 @@ public static class ArchiveHealthAnalyzer
     {
         if (!PdfReader.TryPageCount(path, out var count))
         {
-            result.Problems.Add(new("corrupt", "error", "Document structure or page data is corrupt"));
+            result.Problems.Add(new("corrupt", "error", "health.finding.pdfCorrupt"));
             return result;
         }
 
         if (count == 0)
         {
-            result.Problems.Add(new("noPages", "error", "Archive contains no reader pages"));
+            result.Problems.Add(new("noPages", "error", "health.finding.noPages"));
             return result;
         }
 
-        if (count > MaxPages) return Partial(result, "Archive exceeds page limit");
+        if (count > MaxPages) return Partial(result, "health.finding.pageLimit");
 
         if (!verify)
         {
@@ -292,7 +297,7 @@ public static class ArchiveHealthAnalyzer
             catch (OperationCanceledException) { throw; }
             catch
             {
-                result.Problems.Add(new("damagedImage", "error", $"Cannot read {name}"));
+                result.Problems.Add(new("damagedImage", "error", "health.finding.cannotRead", Params(new { name })));
                 result.Pages.Add(new(name, null, 0, 0));
             }
         }
@@ -300,11 +305,13 @@ public static class ArchiveHealthAnalyzer
         return result;
     }
 
-    private static ArchiveAnalysis Partial(ArchiveAnalysis result, string message)
+    private static ArchiveAnalysis Partial(ArchiveAnalysis result, string key)
     {
-        if (!result.Problems.Any(x => x.Message == message)) result.Problems.Add(new("incomplete", "warning", message));
+        if (!result.Problems.Any(x => x.MessageKey == key)) result.Problems.Add(new("incomplete", "warning", key));
         return result with { Status = "partial" };
     }
+
+    private static string Params(object args) => JsonSerializer.Serialize(args);
 
     private static readonly uint[] CrcTable = Enumerable.Range(0, 256).Select(value =>
     {

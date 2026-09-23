@@ -57,7 +57,8 @@ public class HealthWorkspaceTests : IDisposable
         db.HealthFiles.Add(rival); await db.SaveChangesAsync();
         var match = await new HealthMatchService(db).MatchAsync(rival, default);
         Assert.Equal(series.Id, match!.SeriesId);
-        Assert.Equal("Chapter 3", match.Label);
+        Assert.Equal("chapter", match.LabelKind);
+        Assert.Equal(3m, match.Number);
         Assert.Equal(linked.Id, Assert.Single(match.Counterparts).ChapterFileId);
     }
     [Fact] public async Task Unlinked_archive_for_a_chapter_with_no_file_offers_no_comparison()

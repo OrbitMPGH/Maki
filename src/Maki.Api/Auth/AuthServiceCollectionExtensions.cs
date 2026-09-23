@@ -220,9 +220,17 @@ public static class AuthServiceCollectionExtensions
                 {
                     // Otherwise the handler rethrows and the user sees the developer exception page
                     // or a bare 500 — on a URL they arrived at from another site, with no way back.
+                    //
+                    // ctx.Failure is an exception the OpenID Connect handler itself threw (a protocol
+                    // error, a correlation failure) and its Message is that library's own wording, not
+                    // Maki's; left as-is like every other raw ex.Message here. Only the fallback for
+                    // when there is no message at all is Maki's own text, so only that goes through
+                    // the catalogue.
                     ctx.HandleResponse();
-                    ctx.Response.Redirect(
-                        "/login?ssoError=" + Uri.EscapeDataString(ctx.Failure?.Message ?? "Sign-in failed"));
+                    var localizer = ctx.HttpContext.RequestServices
+                        .GetRequiredService<Maki.Api.Localization.ILocalizer>();
+                    ctx.Response.Redirect("/login?ssoError=" + Uri.EscapeDataString(
+                        ctx.Failure?.Message ?? localizer.Get("error.auth.ssoSignInFailed")));
                     return Task.CompletedTask;
                 };
             });

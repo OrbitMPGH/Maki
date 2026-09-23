@@ -94,6 +94,63 @@ msgstr "Setup has already been completed"
 msgid "error.auth.signInFailed"
 msgstr "Invalid username or password"
 
+#: src/Maki.Api/Auth/OidcSignInService.cs
+msgid "error.auth.ssoAccountDisabled"
+msgstr "That account is disabled"
+
+#. The unclaimed placeholder account: only POST auth/setup may claim it.
+#: src/Maki.Api/Auth/OidcSignInService.cs
+msgid "error.auth.ssoAccountNotSetUp"
+msgstr "That account has not been set up yet"
+
+#. Self-service linking (settings page), not the automatic linking a verified email does at
+#. sign-in: this subject is already linked to a different Maki account.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoAlreadyLinkedOther"
+msgstr "That single sign-on account is already linked to a different user"
+
+#. The provider's own authorize endpoint refused the request outright (e.g. a bad client id) before
+#. any redirect happened.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoChallengeRejected"
+msgstr "The identity provider rejected the sign-in request. Check the OIDC client configuration."
+
+#. The external cookie the OIDC handler deposits was missing or unauthenticated when the callback
+#. ran: an expired correlation, a second reload of the callback URL.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoIncomplete"
+msgstr "The sign-in did not complete. Please try again."
+
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoLinkFailed"
+msgstr "Could not link that single sign-on account"
+
+#: src/Maki.Api/Auth/OidcSignInService.cs
+msgid "error.auth.ssoLinkNewAccountFailed"
+msgstr "Could not link that login to a new account"
+
+#: src/Maki.Api/Auth/OidcSignInService.cs
+msgid "error.auth.ssoNoAccountLinked"
+msgstr "No Maki account is linked to that login"
+
+#. Shared by AuthController (the sign-in and link callbacks) and OidcSignInService: the provider's
+#. token carried no "sub" claim to identify the account by.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoNoSubject"
+msgstr "The identity provider returned no subject"
+
+#. The generic fallback when a single sign-on failure has neither a catalogue key
+#. (OidcSignInResult.ErrorKey) nor text the identity provider library worded itself
+#. (OidcSignInResult.RawError, RemoteFailureContext.Failure.Message in AuthServiceCollectionExtensions).
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoSignInFailed"
+msgstr "Sign-in failed"
+
+#. A provisioned account collides with an existing local username.
+#: src/Maki.Api/Auth/OidcSignInService.cs
+msgid "error.auth.ssoUsernameExists"
+msgstr "An account with that username already exists"
+
 #. Shown by GET auth/me when the session's own user id no longer resolves to a usable account
 #. (e.g. it was deleted or disabled in the moment between the request arriving and this check).
 #: src/Maki.Api/Controllers/AuthController.cs
@@ -245,9 +302,27 @@ msgstr "Library rails can only go on Home"
 msgid "error.customRails.tooMany"
 msgstr "You can keep at most {max} rails"
 
+#. {title} is the metadata provider's title for the series, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.alreadyInLibrary"
+msgstr "'{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch."
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.folderGone"
+msgstr "Folder no longer exists"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.metadataLookupFailed"
+msgstr "Metadata lookup failed"
+
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 msgid "error.libraryImport.noItemsToImport"
 msgstr "No items to import"
+
+#. {name} is the standardized folder name Maki would rename to, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.renameTargetExists"
+msgstr "Cannot rename: '{name}' already exists in the root folder"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -314,6 +389,15 @@ msgstr "An import is already running"
 msgid "error.reader.invalidState"
 msgstr "State must be one of read, watched, unread"
 
+#. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
+#: src/Maki.Api/Services/KavitaReadImportService.cs
+msgid "error.reader.kavitaNoBoundUser"
+msgstr "No Maki user is bound to Kavita (Settings → Reader → Kavita user)"
+
+#: src/Maki.Api/Services/KavitaReadImportService.cs
+msgid "error.reader.kavitaNotConfigured"
+msgstr "Kavita is not configured (Settings → Kavita)"
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.nothingToRead"
 msgstr "Nothing left to read"
@@ -351,6 +435,12 @@ msgstr "\"{type}\" is not a series type. Known types: {knownTypes}"
 msgid "error.recommendation.creatorNotFound"
 msgstr "No such creator"
 
+#. Thrown by DiscoverService.EnsureAvailableAsync, a singleton with no request locale of its own;
+#. see LocalCatalogueUnavailableException.
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "error.recommendation.discoverNeedsLocalDb"
+msgstr "Discover needs the local MangaBaka database (Settings → Metadata → local DB)"
+
 #: src/Maki.Api/Controllers/RecommendationController.cs
 msgid "error.recommendation.localDbUnavailable"
 msgstr "The local MangaBaka database is not available."
@@ -359,9 +449,28 @@ msgstr "The local MangaBaka database is not available."
 msgid "error.recommendation.nameRequired"
 msgstr "Name is required"
 
+#. Thrown by RecommendationService.GetAsync, a singleton with no request locale of its own; see
+#. LocalCatalogueUnavailableException.
+#: src/Maki.Api/Services/RecommendationService.cs
+msgid "error.recommendation.needsLocalDb"
+msgstr "Recommendations need the local MangaBaka database (Settings → Metadata → local DB)"
+
+#. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
+#. sections that still work with no local database.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+msgid "error.recommendation.tasteInsightsNeedsLocalDb"
+msgstr "Needs the local MangaBaka database (Settings → Metadata → local DB)"
+
 #: src/Maki.Api/Controllers/RecommendationController.cs
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)"
+
+#. Auto-resolution note when an admin approves a request but somebody else already added the
+#. series first: stored on SeriesRequest.ResolutionNote and shown verbatim next to the admin's own
+#. free-text rejection notes, so it is rendered once, in the requester's language, at write time.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+msgid "error.requests.alreadyInLibrary"
+msgstr "Already in the library."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "error.requests.alreadyPending"
@@ -514,6 +623,11 @@ msgstr "Destination folder already exists: {folder}"
 msgid "error.series.filesNotMoved"
 msgstr "Files not moved: {folder} doesn't exist. Move the files there first, or let Maki move them."
 
+#. Not an error: a plain confirmation carried in the move response's Warnings list.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.folderMoved"
+msgstr "Series folder moved from {from} to {to}"
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.invalidDownloadCount"
 msgstr "Count must be at least 1."
@@ -583,10 +697,44 @@ msgstr "Unsupported add origin"
 msgid "error.series.unknownTagIds"
 msgstr "One or more tag ids do not exist"
 
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.activeDownload"
+msgstr "Series has an active download, wait for it to finish before renaming"
+
+#. {file} is a filesystem path relative to the root folder, never translated.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.fileMissingUpdated"
+msgstr "{file} was missing from disk; its entry was updated anyway"
+
+#. {from}/{to} are file names, never translated.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.fileSkippedExists"
+msgstr "Skipped {from}: {to} already exists"
+
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.formatCollision"
+msgstr "The current chapter format gives two chapters the same file name"
+
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.notFound"
+msgstr "Series not found"
+
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.unknownStartPage"
 msgstr "Unknown start page: {page}"
+
+msgid "error.settings.unknownFolderNamingMode"
+msgstr "Unknown folder naming mode: {mode}"
+
+msgid "error.settings.unknownContentRating"
+msgstr "Unknown content rating: {rating}"
+
+msgid "error.settings.unknownIncognitoMode"
+msgstr "Unknown incognito mode: {mode}"
+
+msgid "error.settings.unknownSources"
+msgstr "Unknown source(s): {sources}"
 
 #. Shown when a client asks for an interface language Maki ships no translation for.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -603,6 +751,34 @@ msgstr ""
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 msgid "error.sourceMapping.alreadyMapped"
 msgstr "Series already has a mapping for this source"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.compareAlreadyRunning"
+msgstr "Another source comparison is already running. Wait for it to finish and try again."
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+msgid "error.sourceMapping.compareChapterNotListed"
+msgstr "Chapter not listed by this source"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+msgid "error.sourceMapping.compareNoChaptersListed"
+msgstr "Source lists no chapters for this series"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+msgid "error.sourceMapping.compareNoPages"
+msgstr "Source returned no pages"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+msgid "error.sourceMapping.compareRateLimited"
+msgstr "Rate limited, try again shortly"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+msgid "error.sourceMapping.compareSourceUnregistered"
+msgstr "Source is no longer registered"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+msgid "error.sourceMapping.compareTimedOut"
+msgstr "Timed out"
 
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 msgid "error.sourceMapping.mappingMismatch"
@@ -658,6 +834,23 @@ msgstr "Label is required"
 #: src/Maki.Api/Controllers/TagsController.cs
 msgid "error.tags.unknownTagIds"
 msgstr "One or more tag ids do not exist"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+msgid "error.torrentImport.noComicsFound"
+msgstr "No comics found in the completed download ({detail})"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+msgid "error.torrentImport.noRootFolder"
+msgstr "Series has no root folder"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+msgid "error.torrentImport.notInQbittorrent"
+msgstr "The download is no longer in qBittorrent"
+
+#. {path} is a filesystem path and is never translated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+msgid "error.torrentImport.pathNotAccessible"
+msgstr "Download path not accessible from Maki: {path}"
 
 #: src/Maki.Api/Controllers/UsersController.cs
 msgid "error.users.cannotDeleteSelf"
@@ -769,6 +962,173 @@ msgstr "No FlareSolverr URL configured"
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.flaresolverrNoResponse"
 msgstr "FlareSolverr did not respond"
+
+#. {token} is the offending {Token Name} as the caller wrote it, braces included.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.braceInsideToken"
+msgstr "Format has a \"{\" inside a token"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.doubleDot"
+msgstr "Format cannot contain \"..\""
+
+#. The library settings save's field label for a bad chapter format, used as {field} in
+#. error.naming.formatInvalid.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.naming.fieldChapterFormat"
+msgstr "Chapter format"
+
+#. Same, for the series folder format.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.naming.fieldSeriesFolder"
+msgstr "Series folder format"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.formatEmpty"
+msgstr "Format cannot be empty"
+
+#. {field} is a rendered error.naming.field* label; {reason} is one or more rendered
+#. NamingValidationError entries joined with "; ". Maki.Core.Naming has no ILocalizer, so
+#. NamingFormatter.Validate returns keys and this is where they get rendered and combined.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.naming.formatInvalid"
+msgstr "{field}: {reason}"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.noPadding"
+msgstr "{token} does not take a padding pattern"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.noTokens"
+msgstr "Format must contain at least one token, or every series would get the same name"
+
+#. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
+#. caller wrote the token name.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.paddingNotZero"
+msgstr "Padding for {token} must be zeroes, e.g. {example}"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.pathSeparators"
+msgstr "Format cannot contain path separators. Names are a single folder or file deep."
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unknownToken"
+msgstr "Unknown token: {token}"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedCloseBrace"
+msgstr "Format has a \"}\" with no matching \"{\""
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedOpenBrace"
+msgstr "Format has a \"{\" with no matching \"}\""
+
+#. Not an error: a group heading in the naming token picker (GET settings/naming/tokens).
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.category.chapter"
+msgstr "Chapter"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.category.series"
+msgstr "Series"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.category.seriesId"
+msgstr "Series ID"
+
+#. Every naming.token.*.description entry below is a token's explanation in the token picker
+#. (GET settings/naming/tokens), shown as SettingsController.NamingTokenDto.Description. The key
+#. is derived from the token's own normalized name (NamingTokens.Token), so it is expanded rather
+#. than matched literally in LocalizationCatalogTests; see the comment on Expand() there.
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.anilistid.description"
+msgstr "AniList id; blank when unmatched"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapterlanguage.description"
+msgstr "BCP-47 language tag, e.g. en"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapternumber.description"
+msgstr "24, or 10.5 for a sub-chapter. Blank when the chapter has no number"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapteroneshotsuffix.description"
+msgstr "\" - \" plus the chapter title, for a one-shot titled differently to its series. Blank otherwise"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptertitle.description"
+msgstr "The chapter's own title; blank when it just repeats the series title"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptervolchap.description"
+msgstr "Vol.3 Ch.24, or Ch.24 when the source has no volumes. Blank for a one-shot"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptervolume.description"
+msgstr "3; blank when the source doesn't group into volumes"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.kitsuid.description"
+msgstr "Kitsu id; blank when unmatched"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.malid.description"
+msgstr "MyAnimeList id; blank when unmatched"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.mangabakaid.description"
+msgstr "MangaBaka id; blank when unmatched"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.mangadexid.description"
+msgstr "MangaDex UUID; blank when unmatched"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.mangaupdatesid.description"
+msgstr "MangaUpdates id; blank when unmatched"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriescleantitle.description"
+msgstr "Title with punctuation removed: letters, digits and spaces only"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesoriginaltitle.description"
+msgstr "The native-language title; blank when the provider has none"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriessorttitle.description"
+msgstr "The sort title, e.g. leading article moved to the end"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriestitle.description"
+msgstr "The series title as Maki has it"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriestitleyear.description"
+msgstr "Title with the release year in brackets; just the title when the year is unknown"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriestype.description"
+msgstr "manga, manhwa, manhua and so on; blank when unknown"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesyear.description"
+msgstr "Release year; blank when unknown"
+
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupMissingDb"
+msgstr "Backup is missing maki.db. This is not a Maki backup."
+
+#. {migration} is the unrecognised EF migration name the backup's manifest carries.
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupTooNew"
+msgstr "Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it."
+
+#: src/Maki.Api/Controllers/SystemController.cs
+msgid "error.system.noFileUploaded"
+msgstr "No file uploaded."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -1436,6 +1796,63 @@ msgstr "plan to read"
 msgid "scrobble.status.other"
 msgstr "other"
 
+#. Confirmations shown after a tracker action on the series page.
+msgid "scrobble.action.syncRunning"
+msgstr "A sync is already running"
+
+msgid "scrobble.action.syncStarted"
+msgstr "Sync started"
+
+msgid "scrobble.action.mapped"
+msgstr "Matched to {remoteId}. It will sync on the next run."
+
+msgid "scrobble.action.ignored"
+msgstr "Ignored"
+
+msgid "scrobble.action.disconnected"
+msgstr "Disconnected"
+
+#. The health workspace's own request failures. Admin-only.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.invalidThresholds"
+msgstr "Invalid health thresholds or schedule"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.unknownTimezone"
+msgstr "Unknown timezone"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.previewStale"
+msgstr "Preview is stale"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.previewUnavailable"
+msgstr "Preview is unavailable; rescan"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.previewContentChanged"
+msgstr "Preview content changed"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.candidatePreviewUnavailable"
+msgstr "Candidate preview is unavailable"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.unknownFindingState"
+msgstr "Unknown finding state"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.selectUpTo500"
+msgstr "Select between 1 and 500 files"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.selectUpTo100"
+msgstr "Select between 1 and 100 files"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.confirmationRequired"
+msgstr "Explicit confirmation is required"
+
 #. The health page's own checks. Admin-only. Each ran on a timer with nobody attached, so nothing
 #. here was worded at the moment it was found: the row stores a key and its values and is rendered
 #. when somebody opens the page.
@@ -1616,11 +2033,122 @@ msgstr ""
 "Bulk deletion: {deleted, plural, one {# archive removed} other {# archives removed}}, "
 "{refused} refused"
 
-#. What a scan found in a file. Most findings are worded by the analyzer itself and are not
-#. translated; this one is Maki's own.
+#. What a scan found in a file. ArchiveHealthAnalyzer is Maki's own code, so its problems are
+#. Maki-worded like everything else here, not third-party text.
 #: src/Maki.Api/Services/HealthScanService.cs
 msgid "health.finding.duplicate"
 msgstr "Byte-identical archives exist in the library"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.empty"
+msgstr "Archive is empty"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.analysisLimits"
+msgstr "Archive exceeds analysis limits"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.noPages"
+msgstr "Archive contains no reader pages"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.pageLimit"
+msgstr "Archive exceeds page limit"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.ambiguousNames"
+msgstr "Archive contains duplicate page names"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.entryTooLarge"
+msgstr "An entry exceeds the analysis limit"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.expandedTooLarge"
+msgstr "Expanded archive exceeds analysis limits"
+
+#. {entry} is a page's name inside the archive and is never translated.
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.entrySizeMismatch"
+msgstr "Entry size does not match the archive index: {entry}"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.entryChecksumFailed"
+msgstr "Entry checksum failed: {entry}"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.pixelLimit"
+msgstr "An image exceeds the pixel limit"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.unsupportedDecoder"
+msgstr "Some pages use an unsupported image decoder"
+
+#. {name} is a page's name inside the archive and is never translated.
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.cannotRead"
+msgstr "Cannot read {name}"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.missing"
+msgstr "File is missing"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.timeLimit"
+msgstr "Analysis time limit reached"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.corrupt"
+msgstr "Archive structure or entry data is corrupt"
+
+#. A PDF has no zip index to disagree with itself; PDFium refused to open it or read its page count.
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.pdfCorrupt"
+msgstr "Document structure or page data is corrupt"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.unreadable"
+msgstr "File could not be read; rescan when available"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+msgid "health.finding.accessDenied"
+msgstr "File cannot be accessed"
+
+#: src/Maki.Api/Services/HealthScanService.cs
+msgid "health.finding.unlinked"
+msgstr "Archive is not linked to any chapter"
+
+#: src/Maki.Api/Services/HealthScanService.cs
+msgid "health.finding.sizeMismatch"
+msgstr "Stored size differs from the file on disk"
+
+#. Several problems can share one finding (several bad entries in the same archive); {detail} is
+#. already rendered, each fragment joined with "; " at read time so a multi-problem finding still
+#. renders in the reader's own language.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "health.finding.joined"
+msgstr "{detail}"
+
+#. A file operation (replace or delete) that failed. Admin-only.
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.operation.error.deleteFailed"
+msgstr "File deletion failed; file links retained"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.operation.error.deleteInterrupted"
+msgstr "Deletion was interrupted before file removal; links retained"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.operation.error.applyInterrupted"
+msgstr "Interrupted application rolled back; rescan before retrying"
+
+#: src/Maki.Api/Services/HealthWorker.cs
+msgid "health.operation.error.downloadFailed"
+msgstr "A replacement download failed. Request a new repair after reviewing Activity."
+
+#: src/Maki.Api/Services/HealthWorker.cs
+msgid "health.operation.error.rootMissing"
+msgstr "Root folder no longer exists"
 
 #. Sent outward to Discord or a webhook when a check changes state.
 #: src/Maki.Api/Services/HealthMonitor.cs
@@ -1726,3 +2254,303 @@ msgstr "Pushes down titles closer to this one"
 #: src/Maki.Api/Services/RecommendationFeedbackService.cs
 msgid "feedback.taste.unchanged"
 msgstr "Taste unchanged"
+
+#. {list} is titles joined in English regardless of locale (see RecentActivityRailService.Because);
+#. a title is a proper noun a translation would not touch, and there is no list-format primitive in
+#. this catalogue's ICU subset. Same key used for the single-seed grouped rail, where {list} is one
+#. title.
+#: src/Maki.Api/Services/RecentActivityRailService.cs
+msgid "discover.rail.becauseYouRead"
+msgstr "Because you read {list}"
+
+#. {list} as above; {count} is how many further seeds were not named.
+#: src/Maki.Api/Services/RecentActivityRailService.cs
+msgid "discover.rail.becauseYouReadMore"
+msgstr "Because you read {list} and {count, plural, one {# more} other {# more}}"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "discover.rail.new"
+msgstr "Newly released"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "discover.rail.popular"
+msgstr "Most popular"
+
+#. {genre} is a MangaBaka genre name, provider data, not translated.
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "discover.rail.popularInGenre"
+msgstr "Popular in {genre}"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "discover.rail.popularManhua"
+msgstr "Popular manhua"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "discover.rail.popularManhwa"
+msgstr "Popular manhwa"
+
+#: src/Maki.Api/Services/ReaderCohortRailService.cs
+msgid "discover.rail.readerCohorts"
+msgstr "Readers like you also finished"
+
+#: src/Maki.Api/Services/ReaderCohortRailService.cs
+msgid "discover.rail.readerCohortsSubtitle"
+msgstr "From readers whose finished series look like yours."
+
+#: src/Maki.Api/Services/RecentActivityRailService.cs
+msgid "discover.rail.recentActivity"
+msgstr "Based on your recent activity"
+
+#. {name} is a MangaBaka tag or genre name, provider data, not translated.
+#: src/Maki.Api/Services/SideInterestRailService.cs
+msgid "discover.rail.sideInterest"
+msgstr "Another side of your library: {name}"
+
+#. {titles} is up to two series titles joined in English, same trade as {list} above. {count} is
+#. how many titles in total share the interest.
+#: src/Maki.Api/Services/SideInterestRailService.cs
+msgid "discover.rail.sideInterestSubtitle"
+msgstr "A smaller thread shared by {count, plural, one {# title} other {# titles}}, including {titles}"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "discover.rail.topRated"
+msgstr "Top rated"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+msgid "discover.rail.trending"
+msgstr "Trending now"
+
+#. MalReviewClient's fallback when MAL's page names no reviewer.
+#: src/Maki.Api/Services/MalReviewClient.cs
+msgid "discover.review.anonymousAuthor"
+msgstr "Anonymous"
+
+#. MAL's own sentiment classes, reworded for display; not MAL's own visible label text.
+#: src/Maki.Api/Services/MalReviewClient.cs
+msgid "discover.review.mixedFeelings"
+msgstr "Mixed Feelings"
+
+#: src/Maki.Api/Services/MalReviewClient.cs
+msgid "discover.review.notRecommended"
+msgstr "Not Recommended"
+
+#: src/Maki.Api/Services/MalReviewClient.cs
+msgid "discover.review.preliminary"
+msgstr "Preliminary"
+
+#: src/Maki.Api/Services/MalReviewClient.cs
+msgid "discover.review.recommended"
+msgstr "Recommended"
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+msgid "discover.tasteInsights.driftNeedsHistory"
+msgstr "Needs more dated reading history. Kavita imports do not count, since they all carry one date."
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+msgid "discover.tasteInsights.driftNeedsSpread"
+msgstr "Needs reading spread across at least two quarters."
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+msgid "discover.tasteInsights.indexNotBuilt"
+msgstr "The recommendation index has not been built yet."
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+msgid "discover.tasteInsights.noRecurringGroups"
+msgstr "Nothing recurs across enough of your reading to name a group yet."
+
+#. {min} is TasteGroupMining.MinPoints; {count} is how many series this view found.
+#: src/Maki.Api/Services/TasteInsightsService.cs
+msgid "discover.tasteInsights.notEnoughSeries"
+msgstr "Needs at least {min} series the catalogue knows about. So far this view has {count}."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.alreadyOn"
+msgstr "Already using this model."
+
+#: src/Maki.Metadata/Embedding/SeriesEmbeddingIndexer.cs
+msgid "install.embeddingModel.cancelled"
+msgstr "Cancelled"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.downloadFailed"
+msgstr "The embedding model failed to download."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.indexingRunning"
+msgstr "An indexing pass is running; try again once it finishes."
+
+#: src/Maki.Metadata/Embedding/SeriesEmbeddingIndexer.cs
+msgid "install.embeddingModel.notAvailable"
+msgstr "Embedding model not available"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.switchInProgress"
+msgstr "A model switch is already in progress."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+msgid "install.embeddingModel.switching"
+msgstr "Switching…"
+
+#. Identical wording in CoReadInstaller and RecoGraphInstaller, so one key covers both.
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+msgid "install.graph.schemaNewer"
+msgstr "The published graph uses a newer schema than this build reads."
+
+#. Identical wording in CoReadInstaller and RecoGraphInstaller, so one key covers both.
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+msgid "install.graph.truncated"
+msgstr "The published graph looks truncated; ignoring it."
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+msgid "install.coread.current"
+msgstr "The local co-read graph is already current."
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+msgid "install.coread.disabled"
+msgstr "The co-read channel is turned off."
+
+#. {pairs} is the raw install count.
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+msgid "install.coread.installed"
+msgstr "Installed {pairs, plural, one {# co-read pair} other {# co-read pairs}}"
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+msgid "install.coread.manifestMalformed"
+msgstr "The co-read graph manifest is malformed."
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+msgid "install.coread.manifestUnavailable"
+msgstr "Could not read the co-read graph manifest."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.current"
+msgstr "The local index is already current."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.disabled"
+msgstr "Prebuilt index downloads are turned off."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.embeddingsDisabled"
+msgstr "Embeddings are turned off."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.indexingRunning"
+msgstr "An indexing pass is running; will retry later."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.indexingStartedMidDownload"
+msgstr "An indexing pass started mid-download; discarded."
+
+#. {rows} is the raw install count.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.installed"
+msgstr "Installed {rows, plural, one {# embedded series} other {# embedded series}}"
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.manifestMalformed"
+msgstr "The prebuilt index manifest is malformed."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.manifestUnavailable"
+msgstr "Could not read the prebuilt index manifest."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.truncated"
+msgstr "The published index looks truncated; ignoring it."
+
+#. {published} and {needed} are both plain vector widths (integers), not translated.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.wrongDimensions"
+msgstr "The published index is {published}-dimensional; this build needs {needed}."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+msgid "install.prebuiltIndex.wrongModel"
+msgstr "The published index was built for a different embedding model."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.current"
+msgstr "The local reader cohorts are already current."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.disabled"
+msgstr "Reader cohorts are turned off."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.evaluationBuild"
+msgstr "The published cohorts are an evaluation build, not a full one."
+
+#. {rows} is the raw install count.
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.installed"
+msgstr "Installed {rows, plural, one {# cohort row} other {# cohort rows}}"
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.manifestMalformed"
+msgstr "The reader cohort manifest is malformed."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.manifestUnavailable"
+msgstr "Could not read the reader cohort manifest."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.schemaNewer"
+msgstr "The published cohorts use a newer schema than this build reads."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+msgid "install.readerCohorts.truncated"
+msgstr "The published cohorts look truncated; ignoring them."
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+msgid "install.recoGraph.current"
+msgstr "The local co-recommendation graph is already current."
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+msgid "install.recoGraph.disabled"
+msgstr "The co-recommendation channel is turned off."
+
+#. {pairs} is the raw install count.
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+msgid "install.recoGraph.installed"
+msgstr "Installed {pairs, plural, one {# co-recommendation pair} other {# co-recommendation pairs}}"
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+msgid "install.recoGraph.manifestMalformed"
+msgstr "The co-recommendation graph manifest is malformed."
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+msgid "install.recoGraph.manifestUnavailable"
+msgstr "Could not read the co-recommendation graph manifest."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.current"
+msgstr "The local behavioural vectors are already current."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.disabled"
+msgstr "The behavioural channel is turned off."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.evaluationBuild"
+msgstr "The published vectors are an evaluation build."
+
+#. {items} is the raw install count.
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.installed"
+msgstr "Installed {items, plural, one {# behavioural vector} other {# behavioural vectors}}"
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.manifestMalformed"
+msgstr "The behavioural vector manifest is malformed."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.manifestUnavailable"
+msgstr "Could not read the behavioural vector manifest."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.schemaNewer"
+msgstr "The published vectors use a newer schema than this build reads."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+msgid "install.tasteVectors.truncated"
+msgstr "The published vectors look truncated; ignoring them."

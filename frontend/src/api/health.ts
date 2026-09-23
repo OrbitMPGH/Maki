@@ -10,8 +10,13 @@ export interface Analysis { status: string; hash?: string; verified: boolean; pa
 export interface MatchChapter { id: number; number?: number; title?: string; hasFile: boolean }
 /** `healthFileId` is null when the rival file has never been scanned, which is the one case where the two archives cannot be compared page by page. */
 export interface MatchCounterpart { chapterFileId: number; relativePath: string; size: number; sourceName: string; healthFileId?: number; version?: string; status?: string; pages: number; pixelHeight: number; contentHash?: string; chapterIds: number[] }
-/** What an unlinked archive would have linked to. Null on files that already back a chapter. */
-export interface UnlinkedMatch { recognized: boolean; label: string; seriesId?: number; seriesTitle?: string; chapters: MatchChapter[]; counterparts: MatchCounterpart[] }
+/**
+ * What an unlinked archive would have linked to. Null on files that already back a chapter.
+ * `labelKind` is a discriminator rather than rendered text: the page needs both a title-case badge
+ * and a lower-case mid-sentence form, and lowercasing a translation is wrong for a language that
+ * capitalizes the noun regardless of position. `number` is the chapter number or the volume's start.
+ */
+export interface UnlinkedMatch { recognized: boolean; labelKind: 'chapter' | 'volume' | 'volumes' | 'unrecognized'; number?: number; volumeEnd?: number; seriesId?: number; seriesTitle?: string; chapters: MatchChapter[]; counterparts: MatchCounterpart[] }
 export interface FileDetail { file: HealthFile; analysis: Analysis; findings: HealthFinding[]; chapters: {id: number; title?: string; number?: number; wanted: boolean}[]; mappings: {id: number; sourceName: string; priority: number}[]; match: UnlinkedMatch | null }
 export interface HealthOperation { id: number; fileId: number; kind: string; status: string; version: string; error?: string; createdAt: string }
 export interface OperationDetail { operation: HealthOperation; file: HealthFile; chapters: {id: number; title?: string; wanted: boolean}[]; candidates: {chapterId: number; analysis: Analysis}[]; requiresReset: boolean }

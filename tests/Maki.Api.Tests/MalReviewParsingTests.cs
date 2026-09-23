@@ -40,7 +40,14 @@ public class MalReviewParsingTests
 
         Assert.NotNull(reviews);
         Assert.Equal(new[] { "Positive opinion", "Mixed opinion", "Negative opinion" }, reviews.Select(r => r.Text));
-        Assert.Equal(new[] { "Recommended", "Mixed Feelings", "Not Recommended" }, reviews.Select(r => r.Tags.Single()));
+        // Catalogue keys, not display text; MalReviewClient caches across every caller and cannot
+        // render a sentiment label itself; the controller does that.
+        Assert.Equal(
+            new[]
+            {
+                "discover.review.recommended", "discover.review.mixedFeelings", "discover.review.notRecommended",
+            },
+            reviews.Select(r => r.Tags.Single()));
     }
 
     [Fact]

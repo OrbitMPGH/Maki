@@ -62,10 +62,57 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         row.UserId,
     };
 
-    private string Render(string? key, string? paramsJson, string stored) =>
-        key is { Length: > 0 }
-            ? localizer.Get(key, HealthMonitor.HealthParams(paramsJson))
-            : stored;
+    private string Render(string? key, string? paramsJson, string stored)
+    {
+        if (key == "health.finding.joined")
+        {
+            var items = JsonSerializer.Deserialize<List<JoinedProblem>>(paramsJson ?? "[]", HealthScanService.Json) ?? [];
+            var detail = string.Join("; ", items.Select(p => localizer.Get(p.Key, HealthMonitor.HealthParams(p.ParamsJson))));
+            return localizer.Get(key, new { detail });
+        }
+        return key is { Length: > 0 } ? localizer.Get(key, HealthMonitor.HealthParams(paramsJson)) : stored;
+    }
+
+    /// <summary>
+    /// An operation as the page reads it: same fields, with <c>error</c> worded in the caller's own
+    /// language. A row with no key predates this and keeps the English it was written with.
+    /// </summary>
+    private object Rendered(HealthOperation op) => new
+    {
+        op.Id,
+        op.Kind,
+        op.Status,
+        op.FileId,
+        op.Version,
+        op.SourceMappingId,
+        op.UserId,
+        op.JournalJson,
+        Error = op.ErrorKey is { Length: > 0 } ? localizer.Get(op.ErrorKey, HealthMonitor.HealthParams(op.ErrorParamsJson)) : op.Error,
+        op.CreatedAt,
+        op.FinishedAt,
+    };
+
+    /// <summary>
+    /// An archive analysis as the page reads it: each problem's <c>message</c> worded in the
+    /// caller's own language instead of the raw analyzer key.
+    /// </summary>
+    /// <remarks>
+    /// A problem from an analysis stored before problems were keyed has no <c>MessageKey</c>; it
+    /// stays readable until the next scan rewrites it, the same as the rest of <c>ArchiveAnalysis</c>.
+    /// </remarks>
+    private object RenderedAnalysis(ArchiveAnalysis analysis) => new
+    {
+        analysis.Status,
+        analysis.Hash,
+        analysis.Pages,
+        Problems = analysis.Problems.Select(p => new
+        {
+            p.Kind,
+            p.Severity,
+            Message = p.MessageKey is { Length: > 0 } ? localizer.Get(p.MessageKey, HealthMonitor.HealthParams(p.ParamsJson)) : "",
+        }),
+        analysis.Verified,
+    };
 
     [HttpGet]
     public async Task<IActionResult> Overview(CancellationToken ct) => Ok(new
@@ -105,9 +152,9 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         if (options.ScanHour is < 0 or > 23 || options.BackupDays is < 1 or > 365 || options.ScanWorkers is < 0 or > 32 ||
             options.ErrorPercent < 0 || options.WarningPercent > 100 || options.WarningPercent < options.ErrorPercent ||
             options.ErrorGiB < 0 || options.WarningGiB < options.ErrorGiB)
-            return BadRequest(new { message = "Invalid health thresholds or schedule" });
+            return this.Fail(localizer, "error.health.invalidThresholds");
         try { TimeZoneInfo.FindSystemTimeZoneById(options.TimeZone ?? TimeZoneInfo.Local.Id); }
-        catch { return BadRequest(new { message = "Unknown timezone" }); }
+        catch { return this.Fail(localizer, "error.health.unknownTimezone"); }
         await settings.SetAsync(SettingKeys.HealthOptions, JsonSerializer.Serialize(options, HealthScanService.Json), ct);
         return Ok(options);
     }
@@ -170,7 +217,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         return Ok(new
         {
             file,
-            analysis = HealthScanService.Analysis(file),
+            analysis = RenderedAnalysis(HealthScanService.Analysis(file)),
             chapters,
             mappings,
             match = await matches.MatchAsync(file, ct),
@@ -184,7 +231,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     {
         var file = await db.HealthFiles.FindAsync([id], ct);
         if (file == null || file.Removed) return NotFound();
-        if (file.Version != version) return Conflict(new { message = "Preview is stale" });
+        if (file.Version != version) return this.Conflict(localizer, "error.health.previewStale");
         var root = await db.RootFolders.FindAsync([file.RootFolderId], ct);
         if (root == null) return NotFound();
         var analysis = HealthScanService.Analysis(file);
@@ -196,7 +243,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             if (!info.Exists || info.Length != file.Size || info.LastWriteTimeUtc != file.ModifiedAt) return Conflict();
             return await VerifiedPreview(path, file.ContentHash, analysis.Pages[page], ct);
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException) { return Conflict(new { message = "Preview is unavailable; rescan" }); }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException) { return this.Conflict(localizer, "error.health.previewUnavailable"); }
     }
 
     public record FindingReview(string Version, string State);
@@ -227,8 +274,8 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpPost("findings/review")]
     public async Task<IActionResult> ReviewFindings(BulkFindingReview request, CancellationToken ct)
     {
-        if (request.State is not ("open" or "acknowledged" or "ignored")) return BadRequest(new { message = "Unknown finding state" });
-        if (request.FileIds is not { Length: > 0 and <= 500 }) return BadRequest(new { message = "Select between 1 and 500 files" });
+        if (request.State is not ("open" or "acknowledged" or "ignored")) return this.Fail(localizer, "error.health.unknownFindingState");
+        if (request.FileIds is not { Length: > 0 and <= 500 }) return this.Fail(localizer, "error.health.selectUpTo500");
         var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed).ToListAsync(ct);
         var ids = files.Select(f => f.Id).ToList();
         var findings = await db.HealthFindings.Where(f => ids.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct);
@@ -263,7 +310,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpPost("imports")]
     public Task<IActionResult> Import(ImportRequest request, [FromServices] CbzLinkService cbz, CancellationToken ct) => ConflictGuard(async () =>
     {
-        if (request.FileIds is not { Length: > 0 and <= 500 }) return BadRequest(new { message = "Select between 1 and 500 files" });
+        if (request.FileIds is not { Length: > 0 and <= 500 }) return this.Fail(localizer, "error.health.selectUpTo500");
         var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed && f.ChapterFileId == null).ToListAsync(ct);
         var owners = new Dictionary<int, Series>();
         var orphans = 0;
@@ -331,7 +378,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     {
         try
         {
-            return Ok(await operations.RequestAsync(request.FileId, request.Version, request.SourceMappingId, user.UserId, ct));
+            return Ok(Rendered(await operations.RequestAsync(request.FileId, request.Version, request.SourceMappingId, user.UserId, ct)));
         }
         catch (PdfRepairUnsupportedException)
         {
@@ -353,8 +400,8 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     [HttpPost("deletions/bulk")]
     public async Task<IActionResult> DeleteBulk(BulkDelete request, CancellationToken ct)
     {
-        if (!request.Confirmed) return BadRequest(new { message = "Explicit confirmation is required" });
-        if (request.FileIds is not { Length: > 0 and <= 100 }) return BadRequest(new { message = "Select between 1 and 100 files" });
+        if (!request.Confirmed) return this.Fail(localizer, "error.health.confirmationRequired");
+        if (request.FileIds is not { Length: > 0 and <= 100 }) return this.Fail(localizer, "error.health.selectUpTo100");
         var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed).ToListAsync(ct);
         var deleted = 0;
         var failures = new List<object>();
@@ -384,7 +431,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
 
     [HttpPost("deletions/preview")]
     public Task<IActionResult> DeletePreview(FileReview request, CancellationToken ct) => ConflictGuard(async () =>
-        Ok(await operations.PreviewDeleteAsync(request.FileId, request.Version, user.UserId, ct)));
+        Ok(Rendered(await operations.PreviewDeleteAsync(request.FileId, request.Version, user.UserId, ct))));
     [HttpPost("operations/{id:int}/apply")]
     public Task<IActionResult> Apply(int id, ApplyReview request, CancellationToken ct) => ConflictGuard(async () =>
     { await operations.ApplyAsync(id, request.Version, request.Confirmed, request.ResetPositions, ct); return Ok(new { applied = true }); });
@@ -393,7 +440,8 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     public async Task<IActionResult> Operations([FromQuery] int page = 1, CancellationToken ct = default) => Ok(new
     {
         total = await db.HealthOperations.CountAsync(ct),
-        items = await db.HealthOperations.OrderByDescending(o => o.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct)
+        items = (await db.HealthOperations.OrderByDescending(o => o.Id).Skip((Math.Max(1, page) - 1) * 30).Take(30).ToListAsync(ct))
+            .Select(Rendered)
     });
     [HttpGet("operations/{id:int}")]
     public async Task<IActionResult> Operation(int id, CancellationToken ct)
@@ -403,7 +451,14 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var file = await db.HealthFiles.FindAsync([op.FileId], ct);
         var chapters = await db.Chapters.Where(c => file != null && file.ChapterFileId != null && c.ChapterFileId == file.ChapterFileId).Select(c => new { c.Id, c.Title, c.Wanted }).ToListAsync(ct);
         var candidates = HealthOperationService.Candidates(op);
-        return Ok(new { operation = op, file, chapters, candidates, requiresReset = file != null && HealthOperationService.RequiresReset(file, candidates, chapters.Count) });
+        return Ok(new
+        {
+            operation = Rendered(op),
+            file,
+            chapters,
+            candidates = candidates.Select(c => new { c.ChapterId, c.RelativePath, c.Hash, Analysis = RenderedAnalysis(c.Analysis), c.FinalPath, c.SourceMappingId }),
+            requiresReset = file != null && HealthOperationService.RequiresReset(file, candidates, chapters.Count),
+        });
     }
     [HttpGet("operations/{id:int}/candidates/{chapterId:int}/pages/{page:int}")]
     public async Task<IActionResult> CandidatePreview(int id, int chapterId, int page, CancellationToken ct)
@@ -415,7 +470,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var candidate = HealthOperationService.Candidates(op).FirstOrDefault(c => c.ChapterId == chapterId);
         if (root == null || candidate == null || page < 0 || page >= candidate.Analysis.Pages.Count) return NotFound();
         try { return await VerifiedPreview(HealthPaths.Resolve(root.Path, candidate.RelativePath), candidate.Hash, candidate.Analysis.Pages[page], ct); }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException) { return Conflict(new { message = "Candidate preview is unavailable" }); }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException) { return this.Conflict(localizer, "error.health.candidatePreviewUnavailable"); }
     }
     [HttpPost("operations/{id:int}/cancel")]
     public async Task<IActionResult> CancelOperation(int id, CancellationToken ct)
@@ -433,7 +488,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
                 { item.Status = QueueStatus.Cancelled; HttpContext.RequestServices.GetRequiredService<DownloadQueueService>().CancelWork(item.Id); }
                 await db.SaveChangesAsync(ct);
             }
-            return Ok(op);
+            return Ok(Rendered(op));
         }
         finally { HealthOperationService.MutationGate.Release(); }
     }
@@ -454,7 +509,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     private async Task<IActionResult> VerifiedPreview(string path, string? hash, PageFingerprint page, CancellationToken ct)
     {
         await using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        if (hash == null || Convert.ToHexString(await SHA256.HashDataAsync(input, ct)) != hash) return Conflict(new { message = "Preview content changed" });
+        if (hash == null || Convert.ToHexString(await SHA256.HashDataAsync(input, ct)) != hash) return this.Conflict(localizer, "error.health.previewContentChanged");
 
         if (ComicFile.IsPdf(path))
         {

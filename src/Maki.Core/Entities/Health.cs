@@ -125,6 +125,17 @@ public class HealthOperation
     public int? SourceMappingId { get; set; }
     public int UserId { get; set; }
     public string JournalJson { get; set; } = "[]";
+
+    /// <summary>
+    /// The catalogue key for why this operation failed. Null on rows written before operations were
+    /// keyed, and while nothing has failed.
+    /// </summary>
+    public string? ErrorKey { get; set; }
+
+    /// <summary>JSON object of the values filling the message's placeholders, or null when it has none.</summary>
+    public string? ErrorParamsJson { get; set; }
+
+    /// <summary>English, written before operations were keyed. Used when <see cref="ErrorKey"/> is null.</summary>
     public string? Error { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }

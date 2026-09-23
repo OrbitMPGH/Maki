@@ -554,7 +554,9 @@ public class ReaderController(
         running = readImport.State.Running,
         finishedAt = readImport.State.FinishedAt,
         result = readImport.State.Result,
-        error = readImport.State.Error,
+        error = readImport.State.ErrorKey is { } key
+            ? localizer.Get(key)
+            : readImport.State.RawError,
     });
 
     [HttpGet("chapter/{id:int}/bookmarks")]

@@ -1196,9 +1196,28 @@ function UnlinkedPanel({
   action: ReturnType<typeof useHealthAction>
   openFile: (id: number) => void
 }) {
-  const { seriesId, seriesTitle, chapters, counterparts, label, recognized } = match
+  const { t } = useLingui()
+  const { seriesId, seriesTitle, chapters, counterparts, labelKind, number, volumeEnd, recognized } = match
   const chapterCount = chapters.length
-  const lowerLabel = label.toLowerCase()
+  // Its own inline wording rather than `label.toLowerCase()`: case is not a transformation that
+  // survives translation, and a language that capitalizes the noun regardless of position needs its
+  // own lower-case message.
+  const label =
+    labelKind === 'chapter'
+      ? t`Chapter ${number}`
+      : labelKind === 'volumes'
+        ? t`Volumes ${number}-${volumeEnd}`
+        : labelKind === 'volume'
+          ? t`Volume ${number}`
+          : t`Unrecognized name`
+  const lowerLabel =
+    labelKind === 'chapter'
+      ? t`chapter ${number}`
+      : labelKind === 'volumes'
+        ? t`volumes ${number}-${volumeEnd}`
+        : labelKind === 'volume'
+          ? t`volume ${number}`
+          : t`unrecognized name`
   const importable = seriesId != null && chapterCount > 0 && counterparts.length === 0
 
   return (
@@ -1544,15 +1563,18 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                           </Text>
                         ))}
                         <SimpleGrid cols={2}>
-                          {candidate.analysis.pages.slice(0, 4).map((p, index) => (
-                            <Image
-                              key={p.name}
-                              h={200}
-                              fit="contain"
-                              src={`/api/v1/health/operations/${id}/candidates/${candidate.chapterId}/pages/${index}`}
-                              alt={`Candidate page ${index + 1}`}
-                            />
-                          ))}
+                          {candidate.analysis.pages.slice(0, 4).map((p, index) => {
+                            const pageNumber = index + 1
+                            return (
+                              <Image
+                                key={p.name}
+                                h={200}
+                                fit="contain"
+                                src={`/api/v1/health/operations/${id}/candidates/${candidate.chapterId}/pages/${index}`}
+                                alt={t`Candidate page ${pageNumber}`}
+                              />
+                            )
+                          })}
                         </SimpleGrid>
                       </Panel>
                     )

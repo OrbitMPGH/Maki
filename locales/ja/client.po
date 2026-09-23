@@ -530,6 +530,10 @@ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP、レベル{nextLevel}ま
 msgid "{kept, plural, one {# file left unlinked} other {# files left unlinked}}"
 msgstr "{kept, plural, other {#ファイルをリンク解除のまま残しました}}"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "{kind} to {relatedTo}"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -749,17 +753,6 @@ msgstr "{readValue, plural, other {章を読了}}"
 #, fuzzy
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, other {巻を読了}}"
-
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{relationKind} of {relatedTo}"
-msgstr "{relatedTo}の{relationKind}"
-
-#: src/components/discover/DiscoverHero.tsx
-#: src/components/ui/DiscoverRail.tsx
-#, fuzzy
-msgid "{relationKind} to {relatedToTitle}"
-msgstr "{relatedToTitle}への{relationKind}"
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
@@ -1842,6 +1835,7 @@ msgstr "アニメ化範囲"
 msgid "Anime you've watched"
 msgstr "視聴済みのアニメ"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "any"
@@ -2435,6 +2429,10 @@ msgstr ""
 msgid "Cancelled"
 msgstr "キャンセル済み"
 
+#: src/pages/HealthPage.tsx
+msgid "Candidate page {pageNumber}"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 msgid "Caps what search, Discover and recommendations show this account."
 msgstr ""
@@ -2679,6 +2677,14 @@ msgstr "第{chapterId}章：{pageCount, plural, other {#ページ}}"
 msgid "Chapter {n}"
 msgstr "第{n}章"
 
+#: src/pages/HealthPage.tsx
+msgid "chapter {number}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Chapter {number}"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chapter downloaded"
@@ -2806,6 +2812,10 @@ msgstr "開始前の未読章数"
 #, fuzzy
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "章：{chapterRangeMin}～{chapterRangeMax}"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Chapters: {chaptersMin}–{chaptersMax}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -3944,6 +3954,10 @@ msgstr "ダウンロード中"
 msgid "Downloading {outstanding}"
 msgstr "{outstanding}をダウンロード中"
 
+#: src/pages/ImportPage.tsx
+msgid "Downloading cover"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Downloading metadata database"
@@ -4336,6 +4350,7 @@ msgstr "{spanLabel}を展開"
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Failed"
 msgstr "失敗"
@@ -4348,6 +4363,10 @@ msgstr ""
 #, fuzzy
 msgid "Failed sign-ins before lockout"
 msgstr "ロックアウト前のサインイン失敗回数"
+
+#: src/api/client.ts
+msgid "Failed to initialize"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4414,6 +4433,10 @@ msgstr "取得中"
 #, fuzzy
 msgid "Fetching {label} again. The file is replaced when it lands."
 msgstr "{label}を再取得中です。取得後にファイルが置き換わります。"
+
+#: src/pages/ImportPage.tsx
+msgid "Fetching metadata"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4499,6 +4522,10 @@ msgstr "さらに検索"
 #, fuzzy
 msgid "Finding source"
 msgstr "ソースを検索中"
+
+#: src/pages/ImportPage.tsx
+msgid "Finding sources"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5224,6 +5251,7 @@ msgstr "リンク解除をインポート"
 msgid "Import what you have"
 msgstr ""
 
+#: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Imported"
@@ -5850,6 +5878,10 @@ msgstr "シリーズにリンク済み、有効かどうかを問わない"
 msgid "Linked, but nothing enabled"
 msgstr "リンク済みですが、有効なものはありません"
 
+#: src/pages/ImportPage.tsx
+msgid "Linking files"
+msgstr ""
+
 #: src/components/ui/viewPrefs.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5975,6 +6007,10 @@ msgstr "Mainのみ"
 msgid "Main only, no specials"
 msgstr "Mainのみ、特別編なし"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Main story of {relatedTo}"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "mainstream"
@@ -6050,6 +6086,10 @@ msgstr "漫画"
 #, fuzzy
 msgid "Manga"
 msgstr "manga"
+
+#: src/App.tsx
+msgid "Manga manager"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
@@ -6187,6 +6227,10 @@ msgstr "来年かもしれません"
 msgid "Mecha"
 msgstr "メカ"
 
+#: src/pages/ImportPage.tsx
+msgid "Merging folder"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/registry.ts
@@ -6232,6 +6276,10 @@ msgstr "最小"
 #, fuzzy
 msgid "Minimum chapters"
 msgstr "最小章数"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Minimum rating: {ratingLabel}"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -7877,6 +7925,10 @@ msgstr "先読み"
 msgid "Preparing model…"
 msgstr "モデルを準備中…"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Prequel to {relatedTo}"
+msgstr ""
+
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
 msgid "Press Enter to create a new tag"
@@ -8661,6 +8713,10 @@ msgstr "名前変更済み"
 #, fuzzy
 msgid "Renamed {renamed}, {failed} failed"
 msgstr "{renamed}件を名前変更、{failed}件失敗"
+
+#: src/pages/ImportPage.tsx
+msgid "Renaming folder"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9561,6 +9617,10 @@ msgstr "リクエストを送信"
 msgid "Sent to qBittorrent: {title}"
 msgstr "qBittorrentへ送信：{title}"
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Sequel to {relatedTo}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Sequels, prequels, spin-offs and side stories that MangaBaka has linked to this one."
@@ -9731,6 +9791,10 @@ msgstr "Settings"
 msgid "Settings › {tabName}"
 msgstr "Settings › {tabName}"
 
+#: src/api/hooks.ts
+msgid "Settings not loaded"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 msgid "Setup"
 msgstr ""
@@ -9870,6 +9934,10 @@ msgstr "名前、レベル、読んだ章、連続記録を、参加を選んだ
 msgid "Side interests"
 msgstr ""
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Side story of {relatedTo}"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in"
@@ -9936,6 +10004,7 @@ msgstr "単一ページ"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/SecuritySection.tsx
+#: src/pages/LoginPage.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Single sign-on"
@@ -10147,6 +10216,10 @@ msgstr ""
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr ""
 
+#: src/components/ui/DiscoverRail.tsx
+msgid "Spin-off of {relatedTo}"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Split double-width pages"
@@ -10353,6 +10426,10 @@ msgstr "同期実行中… · 前回{lastSync} · 次回{nextSync}"
 #, fuzzy
 msgid "Synced"
 msgstr "同期済み"
+
+#: src/pages/ImportPage.tsx
+msgid "Syncing chapters"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -11207,6 +11284,10 @@ msgstr "入力して検索…"
 msgid "Typical chapter"
 msgstr "通常の章"
 
+#: src/api/client.ts
+msgid "Unauthorized"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Unavailable"
@@ -11256,6 +11337,10 @@ msgstr "未照合"
 msgid "Unmonitored"
 msgstr "未監視"
 
+#: src/App.tsx
+msgid "Unofficial build (not a tagged release)"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Unofficial build, update checks are skipped."
@@ -11280,6 +11365,14 @@ msgstr "未読のみ"
 #, fuzzy
 msgid "Unrecognized"
 msgstr "認識できない"
+
+#: src/pages/HealthPage.tsx
+msgid "unrecognized name"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Unrecognized name"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy
@@ -11350,6 +11443,14 @@ msgstr "更新しました。このタイトルはおすすめから除外され
 #, fuzzy
 msgid "Updates"
 msgstr "更新"
+
+#: src/pages/ImportPage.tsx
+msgid "Updating ComicInfo"
+msgstr ""
+
+#: src/api/hooks.ts
+msgid "Upload failed: {status}"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -11594,6 +11695,14 @@ msgstr "第{volNum}巻 第{chapterNumber}章"
 msgid "Vol.{volume} Ch.{chapter}"
 msgstr "第{volume}巻 第{chapter}章"
 
+#: src/pages/HealthPage.tsx
+msgid "volume {number}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Volume {number}"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -11601,6 +11710,14 @@ msgstr "第{volume}巻 第{chapter}章"
 #, fuzzy
 msgid "Volumes"
 msgstr "巻"
+
+#: src/pages/HealthPage.tsx
+msgid "volumes {number}-{volumeEnd}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Volumes {number}-{volumeEnd}"
+msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -11890,6 +12007,10 @@ msgstr "<0>claim=value</0>の形式で記述します。例：<1>groups=maki-adm
 #, fuzzy
 msgid "Year"
 msgstr "年"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Year: {yearMin}–{yearMax}"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

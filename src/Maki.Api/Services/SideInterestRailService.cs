@@ -117,10 +117,15 @@ public class SideInterestRailService(
             foreach (var item in items) seen.Add(item.ProviderId);
             rails.Add(new DiscoverRail(
                 $"side-interest-{(interest.IsTag ? "tag" : "genre")}-{interest.Name.ToLowerInvariant()}",
-                $"Another side of your library: {interest.Name}", "SideInterest", null, items,
-                Subtitle: $"A smaller thread shared by {interest.Seeds.Count} titles, including " +
-                    string.Join(" and ", interest.Seeds.Take(2).Select(s => s.Title)),
-                SeedIds: ids, Filters: filters));
+                "discover.rail.sideInterest", "SideInterest", null, items,
+                Subtitle: "discover.rail.sideInterestSubtitle",
+                SeedIds: ids, Filters: filters,
+                TitleArgs: new { name = interest.Name },
+                SubtitleArgs: new
+                {
+                    count = interest.Seeds.Count,
+                    titles = string.Join(" and ", interest.Seeds.Take(2).Select(s => s.Title)),
+                }));
         }
         return rails;
     }

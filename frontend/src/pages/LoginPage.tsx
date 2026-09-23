@@ -61,7 +61,9 @@ export function LoginPage() {
   const error = login.error ?? verify.error
   const busy = login.isPending || verify.isPending
   const passwordHidden = sso.enabled && sso.restricted && !showPassword
-  const { displayName } = sso
+  // The server sends an empty string when no admin has typed a button label: an admin's own words
+  // go out verbatim, but the English default has to go through this page's own language instead.
+  const displayName = sso.displayName || t`Single sign-on`
 
   function submitPassword(event: React.FormEvent) {
     event.preventDefault()

@@ -119,7 +119,9 @@ public class RecoGraphInstallerTests : IDisposable
         var result = await Installer().InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("newer schema", result.Reason);
+        // A catalogue key, not display text; see RecoGraphResult's doc. Same key CoReadInstaller
+        // uses for identical wording.
+        Assert.Equal("install.graph.schemaNewer", result.Reason);
         Assert.False(File.Exists(_graphPath));
     }
 
@@ -145,7 +147,7 @@ public class RecoGraphInstallerTests : IDisposable
         var second = await installer.InstallAsync(ct: CancellationToken.None);
 
         Assert.False(second.Installed);
-        Assert.Contains("already current", second.Reason);
+        Assert.Equal("install.recoGraph.current", second.Reason);
     }
 
     [Fact]
@@ -182,7 +184,7 @@ public class RecoGraphInstallerTests : IDisposable
         var result = await Installer().InstallAsync(force: true, ct: CancellationToken.None);
 
         Assert.False(result.Installed);
-        Assert.Contains("turned off", result.Reason);
+        Assert.Equal("install.recoGraph.disabled", result.Reason);
         Assert.False(File.Exists(_graphPath));
     }
 

@@ -44,14 +44,20 @@ public record ImportPlanFile(
     IReadOnlyList<string> NewChapters,
     IReadOnlyList<ImportPlanExisting> Replaces);
 
-/// <param name="Error">Set when the plan could not be built at all (download path gone, say).</param>
+/// <param name="ErrorKey">
+/// Catalogue key, set when the plan could not be built at all (download path gone, say). Never
+/// English prose: this reaches the queue's stored, render-at-read-time error columns as well as a
+/// request that wants it worded immediately, so the caller decides how and when to render it.
+/// </param>
+/// <param name="ErrorArgs">Placeholders for <paramref name="ErrorKey"/>, or null when it has none.</param>
 public record TorrentImportPlan(
     int QueueItemId,
     int SeriesId,
     string SeriesTitle,
     string ReleaseName,
     IReadOnlyList<ImportPlanFile> Files,
-    string? Error = null)
+    string? ErrorKey = null,
+    object? ErrorArgs = null)
 {
     /// <summary>Whether importing this download would take chapters off files the library has.</summary>
     public bool HasConflicts => Files.Any(f => f.Replaces.Count > 0);
@@ -63,9 +69,16 @@ public record TorrentImportPlan(
 
 /// <param name="Deleted">Superseded files removed from disk, under <see cref="TorrentImportMode.Replace"/>.</param>
 /// <param name="Skipped">Downloaded files left alone because they brought nothing new.</param>
+/// <param name="Error">
+/// Raw text: an exception message from reading somebody else's archive. Null when <see cref="ErrorKey"/>
+/// carries a Maki-worded failure instead; the two are mutually exclusive, same split as
+/// <c>DownloadQueueItem.ErrorKey</c>/<c>ErrorMessage</c>.
+/// </param>
+/// <param name="ErrorKey">Catalogue key for a failure Maki worded, or null. See <see cref="Error"/>.</param>
+/// <param name="ErrorArgs">Placeholders for <paramref name="ErrorKey"/>, or null when it has none.</param>
 public record TorrentImportOutcome(
     bool Applied, string? Error, int Imported, int Linked, int Unrecognized, int Deleted, int Skipped,
-    IReadOnlyList<string> ImportedPaths);
+    IReadOnlyList<string> ImportedPaths, string? ErrorKey = null, object? ErrorArgs = null);
 
 /// <summary>
 /// Imports the CBZ files of a finished torrent into a series folder, and works out first whether
@@ -131,12 +144,12 @@ public class TorrentImportService(
         var releaseName = ReleaseInfoOf(item)?.Title ?? item.Title ?? "Release";
         if (contentPath is null)
         {
-            return Empty("The download is no longer in qBittorrent");
+            return Empty("error.torrentImport.notInQbittorrent");
         }
 
         if (!Directory.Exists(contentPath) && !File.Exists(contentPath))
         {
-            return Empty($"Download path not accessible from Maki: {contentPath}");
+            return Empty("error.torrentImport.pathNotAccessible", new { path = contentPath });
         }
 
         var sources = ComicSourceScanner.Scan(contentPath);
@@ -144,8 +157,9 @@ public class TorrentImportService(
         {
             // Naming what was actually there: "no comics found" on its own reads exactly like a
             // download that arrived empty, and the two want completely different things done.
-            return Empty(
-                $"No comics found in the completed download ({ComicSourceScanner.Describe(contentPath)})");
+            // {detail} is ComicSourceScanner's own summary of what it found and is not translated.
+            return Empty("error.torrentImport.noComicsFound",
+                new { detail = ComicSourceScanner.Describe(contentPath) });
         }
 
         var chapters = await db.Chapters
@@ -188,8 +202,8 @@ public class TorrentImportService(
 
         return new TorrentImportPlan(item.Id, series.Id, series.Title, releaseName, files);
 
-        TorrentImportPlan Empty(string error) =>
-            new(item.Id, series.Id, series.Title, releaseName, [], error);
+        TorrentImportPlan Empty(string errorKey, object? args = null) =>
+            new(item.Id, series.Id, series.Title, releaseName, [], errorKey, args);
     }
 
     /// <summary>
@@ -207,16 +221,16 @@ public class TorrentImportService(
         CancellationToken ct, TorrentImportPlan? plan = null)
     {
         plan ??= await PlanAsync(item, series, contentPath, ct);
-        if (plan.Error is not null)
+        if (plan.ErrorKey is not null)
         {
-            return new TorrentImportOutcome(false, plan.Error, 0, 0, 0, 0, 0, []);
+            return new TorrentImportOutcome(false, null, 0, 0, 0, 0, 0, [], plan.ErrorKey, plan.ErrorArgs);
         }
 
         var rootFolder = series.RootFolder
             ?? await db.RootFolders.FirstOrDefaultAsync(r => r.Id == series.RootFolderId, ct);
         if (rootFolder is null)
         {
-            return new TorrentImportOutcome(false, "Series has no root folder", 0, 0, 0, 0, 0, []);
+            return new TorrentImportOutcome(false, null, 0, 0, 0, 0, 0, [], "error.torrentImport.noRootFolder");
         }
 
         var wanted = mode == TorrentImportMode.Replace

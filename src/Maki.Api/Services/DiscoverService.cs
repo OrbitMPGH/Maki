@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Maki.Core.Metadata;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
@@ -10,10 +11,18 @@ namespace Maki.Api.Services;
 /// name) and <see cref="Genre"/> identify the rail's source so the "Show more" view can re-query it
 /// with filters and a higher limit.
 /// </summary>
+/// <param name="Title">
+/// A server message catalogue key, not display text. <see cref="DiscoverService"/> and its sibling
+/// rail services are singletons whose rails are cached instance-wide (see <see cref="CacheFor"/>),
+/// so they cannot render prose without freezing it in whichever locale built the cache. The
+/// controller renders it with the caller's own <c>ILocalizer</c> before the rail reaches the client.
+/// </param>
 /// <param name="Subtitle">
 /// A line under the heading explaining where the rail came from, or null for the catalogue rails,
-/// whose titles already say it.
+/// whose titles already say it. Also a catalogue key, rendered the same way as <see cref="Title"/>.
 /// </param>
+/// <param name="TitleArgs">ICU placeholder values for <see cref="Title"/>. Not sent to the client.</param>
+/// <param name="SubtitleArgs">ICU placeholder values for <see cref="Subtitle"/>. Not sent to the client.</param>
 /// <param name="SeedIds">
 /// Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
 /// the "Show more" view to re-query the recommender rather than
@@ -30,7 +39,20 @@ namespace Maki.Api.Services;
 public record DiscoverRail(
     string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items,
     string? Subtitle = null, IReadOnlyList<long>? SeedIds = null, SeedState? Seed = null,
-    RecommendationFilters? Filters = null);
+    RecommendationFilters? Filters = null,
+    [property: JsonIgnore] object? TitleArgs = null,
+    [property: JsonIgnore] object? SubtitleArgs = null);
+
+/// <summary>
+/// A Discover/recommendation request that cannot be served because the local MangaBaka database is
+/// not installed. Carries the catalogue key rather than a sentence: <see cref="DiscoverService"/> and
+/// <see cref="RecommendationService"/> are singletons with no request locale of their own, so the
+/// controller renders it, the same shape as <c>RecommendationFeedbackService.FeedbackException</c>.
+/// </summary>
+public sealed class LocalCatalogueUnavailableException(string key) : InvalidOperationException(key)
+{
+    public string Key { get; } = key;
+}
 
 /// <summary>
 /// A seed series as the Discover page draws it: the title, how far the caller has read, and which
@@ -177,15 +199,16 @@ public class DiscoverService(
         return (allowed[^1], new RecommendationFilters(ContentRatings: allowed));
     }
 
-    // Order here is the order rails render on the browse tab.
+    // Order here is the order rails render on the browse tab. Title is a catalogue key, not display
+    // text; see the DiscoverRail.Title doc.
     private static readonly (BrowseFeed Feed, string Key, string Title)[] Rails =
     [
-        (BrowseFeed.Trending, "trending", "Trending now"),
-        (BrowseFeed.Popular, "popular", "Most popular"),
-        (BrowseFeed.New, "new", "Newly released"),
-        (BrowseFeed.TopRated, "top-rated", "Top rated"),
-        (BrowseFeed.PopularManhwa, "popular-manhwa", "Popular manhwa"),
-        (BrowseFeed.PopularManhua, "popular-manhua", "Popular manhua"),
+        (BrowseFeed.Trending, "trending", "discover.rail.trending"),
+        (BrowseFeed.Popular, "popular", "discover.rail.popular"),
+        (BrowseFeed.New, "new", "discover.rail.new"),
+        (BrowseFeed.TopRated, "top-rated", "discover.rail.topRated"),
+        (BrowseFeed.PopularManhwa, "popular-manhwa", "discover.rail.popularManhwa"),
+        (BrowseFeed.PopularManhua, "popular-manhua", "discover.rail.popularManhua"),
     ];
 
     // Genres from the MangaBaka vocabulary that reliably fill a popularity-ranked rail. Each gets
@@ -377,8 +400,9 @@ public class DiscoverService(
                         BrowseFeed.GenreSpotlight, depth, genre, filters, ct);
                     return items.Count > 0
                         ? new DiscoverRail(
-                            $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", $"Popular in {genre}",
-                            BrowseFeed.GenreSpotlight.ToString(), genre, items)
+                            $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", "discover.rail.popularInGenre",
+                            BrowseFeed.GenreSpotlight.ToString(), genre, items,
+                            TitleArgs: new { genre })
                         : null;
                 }
                 finally
@@ -786,8 +810,7 @@ public class DiscoverService(
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            throw new InvalidOperationException(
-                "Discover needs the local MangaBaka database (Settings → Metadata → local DB)");
+            throw new LocalCatalogueUnavailableException("error.recommendation.discoverNeedsLocalDb");
         }
     }
 }

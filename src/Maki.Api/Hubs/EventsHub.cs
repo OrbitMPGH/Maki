@@ -148,8 +148,10 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
             .SendAsync("sourceMatchProgress", new { seriesId, sourceName, state });
     }
 
-    /// <summary>Per-folder progress while a library import runs. Stage is display text;
-    /// current/total are set for per-file stages; done/success/error mark completion.</summary>
+    /// <summary>Per-folder progress while a library import runs. Stage is a machine key (see
+    /// <see cref="Maki.Api.Services.ImportStage"/>), not display text; this reaches every admin
+    /// connection at once and they don't share a language, so the client words it; current/total
+    /// are set for per-file stages; done/success/error mark completion.</summary>
     public Task ImportProgress(
         string folderName, string stage, int? current = null, int? total = null,
         bool done = false, bool success = false, string? error = null) =>

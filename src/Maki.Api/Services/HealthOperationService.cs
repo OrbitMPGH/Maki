@@ -142,7 +142,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                     try { File.Delete(HealthPaths.Resolve(root.Path, file.RelativePath)); }
                     catch
                     {
-                        op.Status = "failed"; op.Error = "File deletion failed; file links retained";
+                        op.Status = "failed"; op.ErrorKey = "health.operation.error.deleteFailed";
                         await db.SaveChangesAsync(CancellationToken.None);
                         throw;
                     }
@@ -268,7 +268,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var root = await db.RootFolders.FindAsync([file.RootFolderId], ct) ?? throw new IOException("Missing deletion journal root");
             if (!Directory.Exists(root.Path)) throw new IOException("Cannot recover deletion while root is unavailable");
             if (File.Exists(HealthPaths.Resolve(root.Path, file.RelativePath)))
-            { op.Status = "failed"; op.Error = "Deletion was interrupted before file removal; links retained"; await db.SaveChangesAsync(ct); }
+            { op.Status = "failed"; op.ErrorKey = "health.operation.error.deleteInterrupted"; await db.SaveChangesAsync(ct); }
             else await CompleteDeletionAsync(op, file, root, ct);
         }
         foreach (var op in await db.HealthOperations.Where(o => o.Status == "applying" || o.Status == "completed").ToListAsync(ct))
@@ -302,7 +302,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 if (File.Exists(original)) throw new IOException("Recovery found conflicting original files");
                 File.Move(rollback, original);
             }
-            op.Status = "failed"; op.Error = "Interrupted application rolled back; rescan before retrying";
+            op.Status = "failed"; op.ErrorKey = "health.operation.error.applyInterrupted";
             await db.SaveChangesAsync(ct);
         }
     }

@@ -34,6 +34,14 @@ public class SourceMapping
 
     public bool Enabled { get; set; } = true;
     public DateTime? LastRefresh { get; set; }
+
+    /// <summary>
+    /// Not yet keyed (see <c>downloads.md</c> / <c>i18n.md</c>): stays plain English on purpose.
+    /// <see cref="Maki.Api.Services.HealthCheckService"/> both gates on <c>!= null</c> to decide a
+    /// mapping is failing and forwards this verbatim as an untranslated <c>{detail}</c> parameter
+    /// (health messages are the last stored-prose conversion target and are owned separately), so a
+    /// keyed/raw split here would have to teach that read site about both without touching it.
+    /// </summary>
     public string? LastError { get; set; }
 
     /// <summary>

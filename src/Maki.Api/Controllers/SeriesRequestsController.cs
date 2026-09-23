@@ -32,6 +32,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/requests")]
 public class SeriesRequestsController(
     ILocalizer localizer,
+    IUserLocaleResolver locales,
     MakiDbContext db,
     IEnumerable<IMetadataProvider> metadataProviders,
     SeriesCreationService seriesCreation,
@@ -585,7 +586,12 @@ public class SeriesRequestsController(
         request.QueuedCount = 0;
         request.ResolvedAt = DateTime.UtcNow;
         request.ResolvedByUserId = currentUser.UserId;
-        request.ResolutionNote = "Already in the library.";
+        // Rendered now, in the requester's own language, rather than carrying a key: ResolutionNote
+        // is also where an admin's free-text rejection note lives, and the requests page and the
+        // inbox notification both show it verbatim (see NotifyResolved). A stored key would have
+        // nowhere to fall back to for that free-text case.
+        request.ResolutionNote = localizer.GetFor(
+            await locales.ResolveAsync(request.UserId, ct), "error.requests.alreadyInLibrary");
         await db.SaveChangesAsync(ct);
 
         NotifyResolved(request, approved: true, queued: 0);

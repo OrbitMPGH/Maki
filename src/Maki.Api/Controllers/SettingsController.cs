@@ -545,7 +545,7 @@ public class SettingsController(
     {
         if (!Maki.Core.Naming.FolderNamingMode.IsValid(request.FolderNamingMode))
         {
-            return BadRequest(new { error = $"Unknown folder naming mode: {request.FolderNamingMode}" });
+            return this.Fail(localizer, "error.settings.unknownFolderNamingMode", new { mode = request.FolderNamingMode });
         }
 
         if (request.IncognitoByRating is { } rules)
@@ -555,12 +555,12 @@ public class SettingsController(
             {
                 if (!ContentRating.IsValid(rating))
                 {
-                    return BadRequest(new { error = $"Unknown content rating: {rating}" });
+                    return this.Fail(localizer, "error.settings.unknownContentRating", new { rating });
                 }
 
                 if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode))
                 {
-                    return BadRequest(new { error = $"Unknown incognito mode: {mode}" });
+                    return this.Fail(localizer, "error.settings.unknownIncognitoMode", new { mode });
                 }
 
                 parsed[rating] = parsedMode;
@@ -572,10 +572,10 @@ public class SettingsController(
 
         // Both formats validate before anything is written: a format that only fails at download
         // time fails inside a worker, hours later, with a half-named file already on disk.
-        foreach (var (format, field) in new[]
+        foreach (var (format, fieldKey) in new[]
                  {
-                     (request.SeriesFolderFormat, "Series folder format"),
-                     (request.ChapterFormat, "Chapter format")
+                     (request.SeriesFolderFormat, "error.naming.fieldSeriesFolder"),
+                     (request.ChapterFormat, "error.naming.fieldChapterFormat")
                  })
         {
             if (format is null)
@@ -585,7 +585,9 @@ public class SettingsController(
 
             if (Maki.Core.Naming.NamingFormatter.Validate(format) is { Count: > 0 } errors)
             {
-                return BadRequest(new { error = $"{field}: {string.Join("; ", errors)}" });
+                var reason = string.Join("; ", errors.Select(e => localizer.Get(e.Key, e.Args)));
+                return this.Fail(localizer, "error.naming.formatInvalid",
+                    new { field = localizer.Get(fieldKey), reason });
             }
         }
 
@@ -656,8 +658,8 @@ public class SettingsController(
         var sample = Maki.Core.Naming.NamingDefaults.SampleContext();
         return Ok(Maki.Core.Naming.NamingTokens.All.Select(t => new NamingTokenDto(
             t.Display,
-            t.Category,
-            t.Description,
+            localizer.Get(t.Category),
+            localizer.Get(t.DescriptionKey),
             Maki.Core.Naming.NamingFormatter.ExampleFor(t, sample))));
     }
 
@@ -675,9 +677,11 @@ public class SettingsController(
         var chapterFormat = request.ChapterFormat ?? await naming.ChapterFormatAsync(ct);
 
         var errors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat)
-            .Select(e => $"Series folder format: {e}")
+            .Select(e => localizer.Get("error.naming.formatInvalid",
+                new { field = localizer.Get("error.naming.fieldSeriesFolder"), reason = localizer.Get(e.Key, e.Args) }))
             .Concat(Maki.Core.Naming.NamingFormatter.Validate(chapterFormat)
-                .Select(e => $"Chapter format: {e}"))
+                .Select(e => localizer.Get("error.naming.formatInvalid",
+                    new { field = localizer.Get("error.naming.fieldChapterFormat"), reason = localizer.Get(e.Key, e.Args) })))
             .ToList();
 
         return Ok(new NamingPreviewResponse(
@@ -754,7 +758,7 @@ public class SettingsController(
     {
         if (!ContentRating.IsValid(request.MaxContentRating))
         {
-            return BadRequest(new { error = $"Unknown content rating: {request.MaxContentRating}" });
+            return this.Fail(localizer, "error.settings.unknownContentRating", new { rating = request.MaxContentRating });
         }
 
         await db.Users
@@ -868,7 +872,7 @@ public class SettingsController(
             .ToList();
         if (unknown.Count > 0)
         {
-            return BadRequest(new { error = $"Unknown source(s): {string.Join(", ", unknown)}" });
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = string.Join(", ", unknown) });
         }
 
         // Switching a source off writes one setting and nothing else — per-series
@@ -1320,11 +1324,11 @@ public class SettingsController(
         return Ok(new RecommendationIndexResponse(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
-            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError, 
+            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, InstallReason(snap.LastError),
             snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
             modelSwitcher.CurrentModel,
             string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase),
-            modelSwitcher.Switching, modelSwitcher.LastError));
+            modelSwitcher.Switching, InstallReason(modelSwitcher.LastError, modelSwitcher.LastErrorArgs)));
     }
 
     public record PrebuiltIndexRequest(bool Enabled);
@@ -1458,7 +1462,7 @@ public class SettingsController(
     public async Task<IActionResult> DownloadCoRead(CancellationToken ct)
     {
         var result = await coReadInstaller.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), pairCount = result.PairCount });
     }
 
     public record ReaderCohortStatus(
@@ -1521,7 +1525,7 @@ public class SettingsController(
         var result = await readerCohortInstaller.InstallAsync(force: true, ct);
         return Ok(new
         {
-            installed = result.Installed, reason = result.Reason, cohortItemCount = result.CohortItemCount,
+            installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), cohortItemCount = result.CohortItemCount,
         });
     }
 
@@ -1587,7 +1591,7 @@ public class SettingsController(
     public async Task<IActionResult> DownloadTasteVectors(CancellationToken ct)
     {
         var result = await tasteVectorInstaller.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, itemCount = result.ItemCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), itemCount = result.ItemCount });
     }
 
     /// <summary>
@@ -1601,7 +1605,7 @@ public class SettingsController(
     public async Task<IActionResult> DownloadCoGraph(CancellationToken ct)
     {
         var result = await recoGraph.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), pairCount = result.PairCount });
     }
 
     /// <summary>
@@ -1632,11 +1636,11 @@ public class SettingsController(
     {
         if (embeddingStatus.Running)
         {
-            return Ok(new { installed = false, reason = "An indexing pass is running." });
+            return Ok(new { installed = false, reason = localizer.Get("install.embeddingModel.indexingRunning") });
         }
 
         var result = await prebuiltIndex.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, rowCount = result.RowCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), rowCount = result.RowCount });
     }
 
     public record EmbeddingModelRequest(string Model);
@@ -1653,8 +1657,15 @@ public class SettingsController(
     public IActionResult SetEmbeddingModel([FromBody] EmbeddingModelRequest request)
     {
         var result = modelSwitcher.Start(request.Model);
-        return Ok(new { model = result.Model, switching = result.Started, reason = result.Reason });
+        return Ok(new { model = result.Model, switching = result.Started, reason = InstallReason(result.Reason) });
     }
+
+    // Maki.Metadata reports install outcomes as `install.*` keys, but a failure can also carry a raw
+    // exception message, which passes through as-is.
+    private string? InstallReason(string? reason, object? args = null) =>
+        reason is not null && reason.StartsWith("install.", StringComparison.Ordinal)
+            ? localizer.Get(reason, args)
+            : reason;
 
     public record FullDumpRequest(bool UseFullDump);
 
@@ -1676,7 +1687,7 @@ public class SettingsController(
     {
         if (embeddingStatus.Running)
         {
-            return Ok(new { started = false, message = "Indexing is already running" });
+            return Ok(new { started = false, message = localizer.Get("install.embeddingModel.indexingRunning") });
         }
 
         var scheduler = await schedulerFactory.GetScheduler(ct);
@@ -1845,7 +1856,10 @@ public class SettingsController(
             values.GetValueOrDefault(SettingKeys.AuthOidcClientId) ?? string.Empty,
             values.GetValueOrDefault(SettingKeys.AuthOidcClientSecret) ?? string.Empty,
             values.GetValueOrDefault(SettingKeys.AuthOidcScopes) ?? OidcRuntimeOptions.DefaultScopes,
-            values.GetValueOrDefault(SettingKeys.AuthOidcDisplayName) ?? OidcRuntimeOptions.DefaultDisplayName,
+            // Blank rather than the English default when nothing is configured: the "Button label"
+            // field's own placeholder already carries a translated copy of it, the same way the
+            // runtime's DisplayNameIsCustom/DisplayName split treats an unset value as blank.
+            values.GetValueOrDefault(SettingKeys.AuthOidcDisplayName) ?? string.Empty,
             values.GetValueOrDefault(SettingKeys.AuthOidcOnly) == "true",
             values.GetValueOrDefault(SettingKeys.AuthOidcAutoProvision) == "true",
             values.GetValueOrDefault(SettingKeys.AuthOidcUsernameClaim) ?? OidcRuntimeOptions.DefaultUsernameClaim,

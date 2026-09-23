@@ -22,15 +22,26 @@ namespace Maki.Core.Naming;
 public sealed record NamingContext(
     Series Series, Chapter? Chapter = null, Chapter? Through = null, bool WholeVolumes = false);
 
+/// <summary>
+/// Catalogue keys for the group headings the token picker shows. Core has no <c>ILocalizer</c>, so
+/// these name a <c>naming.category.*</c> entry rather than the heading text itself; Maki.Api renders
+/// them with the request's own localizer before the token list reaches the client.
+/// </summary>
 public static class NamingTokenCategory
 {
-    public const string Series = "Series";
-    public const string Chapter = "Chapter";
-    public const string SeriesId = "Series ID";
+    public const string Series = "naming.category.series";
+    public const string Chapter = "naming.category.chapter";
+    public const string SeriesId = "naming.category.seriesId";
 }
 
 /// <param name="Display">Canonical spelling shown in the UI, e.g. <c>{Series Title}</c>.</param>
 /// <param name="Key">Normalized lookup key — separators dropped, lowercased.</param>
+/// <param name="Category">A <see cref="NamingTokenCategory"/> catalogue key.</param>
+/// <param name="DescriptionKey">
+/// The catalogue key for this token's explanation in the token picker. Derived from
+/// <paramref name="Key"/> rather than carrying English text here, for the same reason
+/// <paramref name="Category"/> does not: Core has no <c>ILocalizer</c> to render it with.
+/// </param>
 /// <param name="SupportsPadding">Whether <c>{Token:000}</c> means anything for this token.</param>
 /// <param name="Resolve">
 /// Renders the token. Second argument is the zero-padding pattern (<c>"000"</c>) or null.
@@ -40,7 +51,7 @@ public sealed record NamingToken(
     string Display,
     string Key,
     string Category,
-    string Description,
+    string DescriptionKey,
     bool SupportsPadding,
     Func<NamingContext, string?, string?> Resolve);
 
@@ -62,60 +73,37 @@ public static class NamingTokens
     public static readonly IReadOnlyList<NamingToken> All =
     [
         // ---- Series -------------------------------------------------------------------------
-        Token("{Series Title}", NamingTokenCategory.Series,
-            "The series title as Maki has it",
-            (c, _) => c.Series.Title),
+        Token("{Series Title}", NamingTokenCategory.Series, (c, _) => c.Series.Title),
         Token("{Series TitleYear}", NamingTokenCategory.Series,
-            "Title with the release year in brackets; just the title when the year is unknown",
             (c, _) => c.Series.Year is int y ? $"{c.Series.Title} ({y})" : c.Series.Title),
-        Token("{Series CleanTitle}", NamingTokenCategory.Series,
-            "Title with punctuation removed: letters, digits and spaces only",
-            (c, _) => CleanTitle(c.Series.Title)),
-        Token("{Series SortTitle}", NamingTokenCategory.Series,
-            "The sort title, e.g. leading article moved to the end",
-            (c, _) => c.Series.SortTitle),
-        Token("{Series OriginalTitle}", NamingTokenCategory.Series,
-            "The native-language title; blank when the provider has none",
-            (c, _) => c.Series.OriginalTitle),
+        Token("{Series CleanTitle}", NamingTokenCategory.Series, (c, _) => CleanTitle(c.Series.Title)),
+        Token("{Series SortTitle}", NamingTokenCategory.Series, (c, _) => c.Series.SortTitle),
+        Token("{Series OriginalTitle}", NamingTokenCategory.Series, (c, _) => c.Series.OriginalTitle),
         Token("{Series Year}", NamingTokenCategory.Series,
-            "Release year; blank when unknown",
             (c, _) => c.Series.Year?.ToString(CultureInfo.InvariantCulture)),
-        Token("{Series Type}", NamingTokenCategory.Series,
-            "manga, manhwa, manhua and so on; blank when unknown",
-            (c, _) => c.Series.Type),
+        Token("{Series Type}", NamingTokenCategory.Series, (c, _) => c.Series.Type),
 
         // ---- Chapter ------------------------------------------------------------------------
-        Token("{Chapter VolChap}", NamingTokenCategory.Chapter,
-            "Vol.3 Ch.24, or Ch.24 when the source has no volumes. Blank for a one-shot",
-            (c, _) => VolChap(c)),
+        Token("{Chapter VolChap}", NamingTokenCategory.Chapter, (c, _) => VolChap(c)),
         Token("{Chapter Number}", NamingTokenCategory.Chapter,
-            "24, or 10.5 for a sub-chapter. Blank when the chapter has no number",
             (c, pad) => NumberSpan(c, pad), padding: true),
         Token("{Chapter Volume}", NamingTokenCategory.Chapter,
-            "3; blank when the source doesn't group into volumes",
             (c, pad) => VolumeSpan(c, pad), padding: true),
-        Token("{Chapter Title}", NamingTokenCategory.Chapter,
-            "The chapter's own title; blank when it just repeats the series title",
-            (c, _) => ChapterTitle(c)),
+        Token("{Chapter Title}", NamingTokenCategory.Chapter, (c, _) => ChapterTitle(c)),
         Token("{Chapter OneShotSuffix}", NamingTokenCategory.Chapter,
-            "\" - \" plus the chapter title, for a one-shot titled differently to its series. Blank otherwise",
             (c, _) => IsOneShot(c.Chapter) && ChapterTitle(c) is { Length: > 0 } t ? $" - {t}" : null),
-        Token("{Chapter Language}", NamingTokenCategory.Chapter,
-            "BCP-47 language tag, e.g. en",
-            (c, _) => c.Chapter?.Language),
+        Token("{Chapter Language}", NamingTokenCategory.Chapter, (c, _) => c.Chapter?.Language),
 
         // ---- Series ID ----------------------------------------------------------------------
-        Token("{MangaBakaId}", NamingTokenCategory.SeriesId, "MangaBaka id; blank when unmatched",
+        Token("{MangaBakaId}", NamingTokenCategory.SeriesId,
             (c, _) => c.Series.MangaBakaId?.ToString(CultureInfo.InvariantCulture)),
-        Token("{MalId}", NamingTokenCategory.SeriesId, "MyAnimeList id; blank when unmatched",
+        Token("{MalId}", NamingTokenCategory.SeriesId,
             (c, _) => c.Series.MalId?.ToString(CultureInfo.InvariantCulture)),
-        Token("{AniListId}", NamingTokenCategory.SeriesId, "AniList id; blank when unmatched",
+        Token("{AniListId}", NamingTokenCategory.SeriesId,
             (c, _) => c.Series.AniListId?.ToString(CultureInfo.InvariantCulture)),
-        Token("{MangaDexId}", NamingTokenCategory.SeriesId, "MangaDex UUID; blank when unmatched",
-            (c, _) => c.Series.MangaDexUuid),
-        Token("{MangaUpdatesId}", NamingTokenCategory.SeriesId, "MangaUpdates id; blank when unmatched",
-            (c, _) => c.Series.MangaUpdatesId),
-        Token("{KitsuId}", NamingTokenCategory.SeriesId, "Kitsu id; blank when unmatched",
+        Token("{MangaDexId}", NamingTokenCategory.SeriesId, (c, _) => c.Series.MangaDexUuid),
+        Token("{MangaUpdatesId}", NamingTokenCategory.SeriesId, (c, _) => c.Series.MangaUpdatesId),
+        Token("{KitsuId}", NamingTokenCategory.SeriesId,
             (c, _) => c.Series.KitsuId?.ToString(CultureInfo.InvariantCulture))
     ];
 
@@ -126,9 +114,12 @@ public static class NamingTokens
     public static NamingToken? Find(string name) => ByKey.GetValueOrDefault(NormalizeKey(name));
 
     private static NamingToken Token(
-        string display, string category, string description,
-        Func<NamingContext, string?, string?> resolve, bool padding = false) =>
-        new(display, NormalizeKey(display.Trim('{', '}')), category, description, padding, resolve);
+        string display, string category,
+        Func<NamingContext, string?, string?> resolve, bool padding = false)
+    {
+        var key = NormalizeKey(display.Trim('{', '}'));
+        return new(display, key, category, $"naming.token.{key}.description", padding, resolve);
+    }
 
     /// <summary>
     /// A chapter Maki names as a one-shot. A missing number counts as one too: there's nothing to

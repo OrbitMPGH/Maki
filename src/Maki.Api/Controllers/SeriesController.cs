@@ -1033,7 +1033,8 @@ public class SeriesController(
             series, rating: moved.Rating, notificationMode: moved.NotificationMode,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
-            Warnings = [$"Series folder moved from {oldRootFolderPath} to {destination.Path}"]
+            Warnings = [localizer.Get("error.series.folderMoved",
+                new { from = oldRootFolderPath, to = destination.Path })]
         });
     }
 

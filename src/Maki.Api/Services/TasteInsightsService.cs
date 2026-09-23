@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json.Serialization;
 using Maki.Api.Dtos;
 using Maki.Core.Entities;
 using Maki.Core.Security;
@@ -54,6 +55,16 @@ public record TasteDriftPoint(
 /// <param name="Unavailable">
 /// Why there is nothing to show, when there is nothing to show. Null on success. Separate from an
 /// error because every one of these is an ordinary state: no index yet, too few series, no history.
+/// <para>
+/// A server message catalogue key, not display text; same for <see cref="GroupsUnavailable"/> and
+/// <see cref="DriftUnavailable"/>. <see cref="TasteInsightsService"/> is a singleton whose result is
+/// cached per user for up to thirty minutes (<see cref="TasteInsightsService.CacheFor"/>), so it
+/// cannot render prose without freezing whichever locale built that entry for everyone who hits it
+/// before it expires. The controller renders these with the caller's own <c>ILocalizer</c>.
+/// </para>
+/// </param>
+/// <param name="UnavailableArgs">
+/// ICU placeholder values for <see cref="Unavailable"/>. Not sent to the client.
 /// </param>
 public record TasteInsights(
     IReadOnlyList<TasteGroup> Groups,
@@ -65,7 +76,8 @@ public record TasteInsights(
     int Covered,
     int Total,
     string? Unavailable,
-    DateTime GeneratedAt);
+    DateTime GeneratedAt,
+    [property: JsonIgnore] object? UnavailableArgs = null);
 
 /// <summary>
 /// The reader in the embedding space rather than in a tally.
@@ -272,8 +284,8 @@ public class TasteInsightsService(
     }
 
     /// <summary>Nothing at all: no index, or nothing of this reader's the index knows about.</summary>
-    private static TasteInsights Nothing(string why, int covered = 0, int total = 0) =>
-        new([], null, null, null, [], null, covered, total, why, DateTime.UtcNow);
+    private static TasteInsights Nothing(string why, object? args = null, int covered = 0, int total = 0) =>
+        new([], null, null, null, [], null, covered, total, why, DateTime.UtcNow, args);
 
     private async Task<TasteInsights> BuildAsync(
         ICurrentUser scope, SeedSnapshot snapshot, HashSet<long> suppressed, TasteView view,
@@ -282,7 +294,7 @@ public class TasteInsightsService(
         var index = await vectorIndex.GetAsync(ct);
         if (index is null || index.Count == 0)
         {
-            return Nothing("The recommendation index has not been built yet.");
+            return Nothing("discover.tasteInsights.indexNotBuilt");
         }
 
         var seeded = snapshot.Effective;
@@ -333,8 +345,8 @@ public class TasteInsightsService(
         if (points.Count < TasteGroupMining.MinPoints)
         {
             return Nothing(
-                $"Needs at least {TasteGroupMining.MinPoints} series the catalogue knows about. "
-                + $"So far this view has {points.Count}.",
+                "discover.tasteInsights.notEnoughSeries",
+                new { min = TasteGroupMining.MinPoints, count = points.Count },
                 points.Count, total);
         }
 
@@ -360,7 +372,7 @@ public class TasteInsightsService(
         if (mined.Count == 0)
         {
             return new TasteInsights(
-                [], "Nothing recurs across enough of your reading to name a group yet.", null, null,
+                [], "discover.tasteInsights.noRecurringGroups", null, null,
                 drift, driftUnavailable, points.Count, total, null, DateTime.UtcNow);
         }
 
@@ -745,7 +757,7 @@ public class TasteInsightsService(
         var dated = points.Where(p => p.FirstReadAt is not null).ToList();
         if (dated.Count < MinBucketSeries * 2)
         {
-            return ([], "Needs more dated reading history. Kavita imports do not count, since they all carry one date.");
+            return ([], "discover.tasteInsights.driftNeedsHistory");
         }
 
         var buckets = dated
@@ -756,7 +768,7 @@ public class TasteInsightsService(
 
         if (buckets.Count < 2)
         {
-            return ([], "Needs reading spread across at least two quarters.");
+            return ([], "discover.tasteInsights.driftNeedsSpread");
         }
 
         var centres = buckets
@@ -766,7 +778,7 @@ public class TasteInsightsService(
 
         if (centres.Count < 2)
         {
-            return ([], "Needs reading spread across at least two quarters.");
+            return ([], "discover.tasteInsights.driftNeedsSpread");
         }
 
         var drift = new List<TasteDriftPoint>(centres.Count);

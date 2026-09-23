@@ -9,16 +9,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Auth;
 
-/// <param name="User">The account to sign in, or null when <paramref name="Error"/> says why not.</param>
-/// <param name="Error">
-/// Shown to the user on the login page. Deliberately vague about *which* account is involved — this
-/// endpoint is reachable by anyone who can reach the identity provider.
+/// <param name="User">The account to sign in, or null when <paramref name="ErrorKey"/>/<paramref name="RawError"/> says why not.</param>
+/// <param name="ErrorKey">
+/// A server message catalogue key naming why sign-in failed, shown to the user on the login page.
+/// This service has no <c>ILocalizer</c>; the caller renders it. Deliberately vague about *which*
+/// account is involved; this endpoint is reachable by anyone who can reach the identity provider.
+/// </param>
+/// <param name="ErrorArgs">Values for <paramref name="ErrorKey"/>'s ICU placeholders.</param>
+/// <param name="RawError">
+/// Text ASP.NET Identity worded itself (a password/username validation failure), used instead of
+/// <paramref name="ErrorKey"/> when set. Not run through the catalogue: it is not Maki's own
+/// wording, the same reason <c>Describe(IdentityResult)</c> in <c>AuthController</c> stays English.
 /// </param>
 /// <param name="Linked">An existing local account gained this provider login on this request.</param>
 /// <param name="Provisioned">The account was created on this request.</param>
-public sealed record OidcSignInResult(MakiUser? User, string? Error, bool Linked = false, bool Provisioned = false)
+public sealed record OidcSignInResult(
+    MakiUser? User, string? ErrorKey, object? ErrorArgs = null, string? RawError = null,
+    bool Linked = false, bool Provisioned = false)
 {
-    public static OidcSignInResult Fail(string error) => new(null, error);
+    public static OidcSignInResult Fail(string key, object? args = null) => new(null, key, args);
+
+    public static OidcSignInResult FailRaw(string message) => new(null, null, RawError: message);
 }
 
 /// <summary>
@@ -46,7 +57,7 @@ public class OidcSignInService(
     {
         if (string.IsNullOrWhiteSpace(subject))
         {
-            return OidcSignInResult.Fail("The identity provider returned no subject");
+            return OidcSignInResult.Fail("error.auth.ssoNoSubject");
         }
 
         var user = await userManager.FindByLoginAsync(provider, subject);
@@ -62,7 +73,7 @@ public class OidcSignInService(
             if (!options.AutoProvision)
             {
                 logger.LogWarning("Rejected single sign-on for an unknown subject; auto-provisioning is off");
-                return OidcSignInResult.Fail("No Maki account is linked to that login");
+                return OidcSignInResult.Fail("error.auth.ssoNoAccountLinked");
             }
 
             return await ProvisionAsync(provider, subject, claims, ct);
@@ -70,7 +81,7 @@ public class OidcSignInService(
 
         if (user.Disabled)
         {
-            return OidcSignInResult.Fail("That account is disabled");
+            return OidcSignInResult.Fail("error.auth.ssoAccountDisabled");
         }
 
         // The placeholder the multi-user migration inserts owns the entire pre-upgrade library. Only
@@ -79,7 +90,7 @@ public class OidcSignInService(
         // library as an admin.
         if (user.PendingSetup)
         {
-            return OidcSignInResult.Fail("That account has not been set up yet");
+            return OidcSignInResult.Fail("error.auth.ssoAccountNotSetUp");
         }
 
         await ApplyClaimsAsync(user, provider, subject, claims, ct);
@@ -146,7 +157,7 @@ public class OidcSignInService(
         if (await db.Users.AnyAsync(u => u.NormalizedUserName == userManager.NormalizeName(userName), ct))
         {
             logger.LogWarning("Refused to provision {UserName} — an account with that name already exists", userName);
-            return OidcSignInResult.Fail("An account with that username already exists");
+            return OidcSignInResult.Fail("error.auth.ssoUsernameExists");
         }
 
         var user = new MakiUser
@@ -170,7 +181,7 @@ public class OidcSignInService(
         {
             var detail = string.Join("; ", created.Errors.Select(e => e.Description));
             logger.LogWarning("Could not provision {UserName}: {Errors}", userName, detail);
-            return OidcSignInResult.Fail(detail);
+            return OidcSignInResult.FailRaw(detail);
         }
 
         var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, userName));
@@ -179,7 +190,7 @@ public class OidcSignInService(
             // Without the link the account could never be signed into again and would block the name
             // forever, so it does not get to exist half-made.
             await userManager.DeleteAsync(user);
-            return OidcSignInResult.Fail("Could not link that login to a new account");
+            return OidcSignInResult.Fail("error.auth.ssoLinkNewAccountFailed");
         }
 
         // Nobody is signed in yet, so the id is passed explicitly rather than read off the scope.

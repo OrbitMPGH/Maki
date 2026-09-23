@@ -1,3 +1,4 @@
+using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -51,6 +52,7 @@ public class SeriesRenameService(
     MakiDbContext db,
     NamingService naming,
     KavitaScanService kavitaScans,
+    ILocalizer localizer,
     ILogger<SeriesRenameService> logger)
 {
     /// <summary>Suffix for the two-step move a case-only rename needs on Windows.</summary>
@@ -193,12 +195,12 @@ public class SeriesRenameService(
             .FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series is null)
         {
-            return new SeriesRenameResult(null, false, "Series not found", []);
+            return new SeriesRenameResult(null, false, localizer.Get("error.seriesRename.notFound"), []);
         }
 
         if (series.RootFolder is null)
         {
-            return new SeriesRenameResult(null, false, "Series has no root folder", []);
+            return new SeriesRenameResult(null, false, localizer.Get("error.series.noRootFolder"), []);
         }
 
         var plan = await PlanAsync(series, scope, ct);
@@ -206,7 +208,7 @@ public class SeriesRenameService(
         if (plan.Conflicts.Count > 0)
         {
             return new SeriesRenameResult(plan, false,
-                "The current chapter format gives two chapters the same file name", plan.Conflicts);
+                localizer.Get("error.seriesRename.formatCollision"), plan.Conflicts);
         }
 
         if (!plan.HasChanges)
@@ -220,7 +222,7 @@ public class SeriesRenameService(
         if (active)
         {
             return new SeriesRenameResult(plan, false,
-                "Series has an active download — wait for it to finish before renaming", []);
+                localizer.Get("error.seriesRename.activeDownload"), []);
         }
 
         var root = series.RootFolder.Path;
@@ -234,7 +236,7 @@ public class SeriesRenameService(
             if (occupied.Taken(newFolder) && !SamePathIgnoringCase(oldFolder, newFolder))
             {
                 return new SeriesRenameResult(plan, false,
-                    $"Destination folder already exists: {newFolder}", []);
+                    localizer.Get("error.series.destinationExists", new { folder = newFolder }), []);
             }
 
             try
@@ -269,7 +271,10 @@ public class SeriesRenameService(
             {
                 // Ahead of the missing-from-disk case below: repointing a row at a name another
                 // file already answers to leaves two rows describing one archive.
-                warnings.Add($"Skipped {Path.GetFileName(file.From)}: {Path.GetFileName(file.To)} already exists");
+                warnings.Add(localizer.Get("error.seriesRename.fileSkippedExists", new
+                {
+                    from = Path.GetFileName(file.From), to = Path.GetFileName(file.To)
+                }));
                 continue;
             }
 
@@ -278,7 +283,7 @@ public class SeriesRenameService(
                 // Nothing on disk to move, but the row still has to follow the folder rename or it
                 // points at a path that no longer exists.
                 renamed.Add(file);
-                warnings.Add($"{file.From} was missing from disk; its entry was updated anyway");
+                warnings.Add(localizer.Get("error.seriesRename.fileMissingUpdated", new { file = file.From }));
                 continue;
             }
 

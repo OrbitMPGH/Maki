@@ -35,7 +35,7 @@ public class LibraryImportServiceMaterializeTests : IDisposable
     private static List<string> Materialize(string targetDir)
     {
         var service = new LibraryImportService(
-            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
             NullLogger<LibraryImportService>.Instance);
 
         var method = typeof(LibraryImportService)

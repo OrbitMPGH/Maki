@@ -188,7 +188,10 @@ public class RecentActivityRailTests : IDisposable
         // RecommendationService sorts the seed list for its cache key, so the ordering that matters
         // is the subtitle's — that is the only place recency is user-visible.
         Assert.Equal([101, 202, 303], recommender.Seen.Single().Order());
-        Assert.Equal("Because you read Series 202, Series 303 and Series 101", result.Subtitle);
+        // Subtitle is a catalogue key, rendered by the controller, not the service; see the
+        // DiscoverRail doc. The rendered sentence lives in SubtitleArgs.list.
+        Assert.Equal("discover.rail.becauseYouRead", result.Subtitle);
+        Assert.Equivalent(new { list = "Series 202, Series 303 and Series 101" }, result.SubtitleArgs);
     }
 
     [Fact]
@@ -205,7 +208,9 @@ public class RecentActivityRailTests : IDisposable
         // The six most recent, which here are the six smallest ids. Six rather than a rounder
         // number because the grouped rail draws one card per seed in a three-column grid.
         Assert.Equal([100, 101, 102, 103, 104, 105], recommender.Seen.Single().Order());
-        Assert.Equal("Because you read Series 100, Series 101 and Series 102 and 3 more", result!.Subtitle);
+        Assert.Equal("discover.rail.becauseYouReadMore", result!.Subtitle);
+        Assert.Equivalent(
+            new { list = "Series 100, Series 101 and Series 102", count = 3 }, result.SubtitleArgs);
     }
 
     [Fact]
@@ -220,7 +225,8 @@ public class RecentActivityRailTests : IDisposable
         // Its ChapterProgress rows exist — only the StatsEvents are suppressed — so this rail has to
         // write the gate out itself, and it must not name the title in the subtitle either.
         Assert.Equal([202], recommender.Seen.Single().Order());
-        Assert.Equal("Because you read Series 202", result!.Subtitle);
+        Assert.Equal("discover.rail.becauseYouRead", result!.Subtitle);
+        Assert.Equivalent(new { list = "Series 202" }, result.SubtitleArgs);
     }
 
     [Fact]
@@ -430,9 +436,12 @@ public class RecentActivityRailTests : IDisposable
 
         var rails = await Grouping().GetGroupedAsync(new TestCurrentUser(1), refresh: false);
 
+        // Title is the same catalogue key for every rail; the seed title is TitleArgs.list, filled
+        // in by the controller, not the service.
+        Assert.All(rails, r => Assert.Equal("discover.rail.becauseYouRead", r.Title));
         Assert.Equal(
-            ["Because you read Series 202", "Because you read Series 303", "Because you read Series 101"],
-            rails.Select(r => r.Title));
+            ["Series 202", "Series 303", "Series 101"],
+            rails.Select(r => (string)((dynamic)r.TitleArgs!).list));
         // One rail per seed, each carrying only its own seed so "Show more" re-queries that seed.
         Assert.All(rails, r => Assert.Single(r.Items));
         Assert.Equal([[202L], [303L], [101L]], rails.Select(r => r.SeedIds!.ToArray()));
@@ -452,7 +461,8 @@ public class RecentActivityRailTests : IDisposable
         // A card with a heading and no picks under it is worse than no card, so the rail is skipped
         // rather than emitted empty.
         var rail = Assert.Single(rails);
-        Assert.Equal("Because you read Series 101", rail.Title);
+        Assert.Equal("discover.rail.becauseYouRead", rail.Title);
+        Assert.Equivalent(new { list = "Series 101" }, rail.TitleArgs);
         Assert.NotEmpty(rail.Items);
     }
 

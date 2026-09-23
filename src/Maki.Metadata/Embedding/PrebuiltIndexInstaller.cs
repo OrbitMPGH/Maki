@@ -31,8 +31,17 @@ public record PrebuiltIndexManifest
     [JsonPropertyName("url")] public string? Url { get; init; }
 }
 
-/// <summary>Outcome of one install attempt, for logs and the settings UI.</summary>
-public record PrebuiltIndexResult(bool Installed, string Reason, long? RowCount = null);
+/// <summary>
+/// Outcome of one install attempt, for logs and the settings UI.
+/// <para>
+/// <see cref="Reason"/> is a server message catalogue key, not display text; this project has no
+/// <c>ILocalizer</c> (see <c>CLAUDE.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
+/// renders it. <c>Install failed: {ex.Message}</c> is the one exception: it embeds a raw exception
+/// message and stays unconverted, same as every other site in this codebase that does that.
+/// </para>
+/// </summary>
+public record PrebuiltIndexResult(
+    bool Installed, string Reason, long? RowCount = null, object? ReasonArgs = null);
 
 /// <summary>
 /// Downloads and installs the prebuilt embedding index published alongside Maki, so a fresh
@@ -91,7 +100,7 @@ public class PrebuiltIndexInstaller(
         // Embeddings off: nothing to install, even on a forced request.
         if (!options.Enabled)
         {
-            return new PrebuiltIndexResult(false, "Embeddings are turned off.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.embeddingsDisabled");
         }
 
         // Turned off explicitly. Checked here rather than only at the job, because the settings
@@ -99,14 +108,14 @@ public class PrebuiltIndexInstaller(
         // freshness check, not the switches.
         if (!await IsEnabledAsync(ct))
         {
-            return new PrebuiltIndexResult(false, "Prebuilt index downloads are turned off.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.disabled");
         }
 
         // Never swap the file out from under a running pass: the indexer holds its own
         // connections and would write its results back over whatever we installed.
         if (indexStatus.Running)
         {
-            return new PrebuiltIndexResult(false, "An indexing pass is running; will retry later.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.indexingRunning");
         }
 
         var manifestUrl = await settings.GetAsync(SettingKeys.RecommendationsPrebuiltUrl, ct);
@@ -124,12 +133,12 @@ public class PrebuiltIndexInstaller(
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             logger.LogDebug(ex, "Prebuilt index manifest unavailable at {Url}", manifestUrl);
-            return new PrebuiltIndexResult(false, "Could not read the prebuilt index manifest.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.manifestUnavailable");
         }
 
         if (manifest is null || string.IsNullOrWhiteSpace(manifest.Url))
         {
-            return new PrebuiltIndexResult(false, "The prebuilt index manifest is malformed.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.manifestMalformed");
         }
 
         // Compatibility: a mismatch here is the failure that hides. Vectors of the wrong width
@@ -139,23 +148,24 @@ public class PrebuiltIndexInstaller(
             logger.LogInformation(
                 "Ignoring the prebuilt index: it was built with model {Theirs}, this install uses {Ours}",
                 manifest.ModelVersion, options.ModelVersion);
-            return new PrebuiltIndexResult(false, "The published index was built for a different embedding model.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.wrongModel");
         }
 
         if (manifest.Dimensions != options.Dimensions)
         {
             return new PrebuiltIndexResult(
-                false, $"The published index is {manifest.Dimensions}-dimensional; this build needs {options.Dimensions}.");
+                false, "install.prebuiltIndex.wrongDimensions",
+                ReasonArgs: new { published = manifest.Dimensions, needed = options.Dimensions });
         }
 
         if (manifest.RowCount < MinRows)
         {
-            return new PrebuiltIndexResult(false, "The published index looks truncated; ignoring it.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.truncated");
         }
 
         if (!force && !await IsNewerThanLocalAsync(manifest, ct))
         {
-            return new PrebuiltIndexResult(false, "The local index is already current.");
+            return new PrebuiltIndexResult(false, "install.prebuiltIndex.current");
         }
 
         Directory.CreateDirectory(options.StagingDirectory);
@@ -169,7 +179,7 @@ public class PrebuiltIndexInstaller(
             // would be writing into the file we're about to replace.
             if (indexStatus.Running)
             {
-                return new PrebuiltIndexResult(false, "An indexing pass started mid-download; discarded.");
+                return new PrebuiltIndexResult(false, "install.prebuiltIndex.indexingStartedMidDownload");
             }
 
             await cache.SwapDatabaseAsync(staging, ct);
@@ -179,9 +189,7 @@ public class PrebuiltIndexInstaller(
                 ct);
 
             logger.LogInformation("Installed the prebuilt embedding index ({Rows} series)", rows);
-            // Unformatted on purpose: the UI has the raw count and localizes it itself, and
-            // server-side grouping picks up the host's locale (non-breaking spaces and all).
-            return new PrebuiltIndexResult(true, $"Installed {rows} embedded series.", rows);
+            return new PrebuiltIndexResult(true, "install.prebuiltIndex.installed", rows, new { rows });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

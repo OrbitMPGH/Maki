@@ -1130,7 +1130,10 @@ try
         oidc = new
         {
             enabled = oidcOptions.Enabled,
-            displayName = oidcOptions.DisplayName,
+            // Empty when no admin ever typed a label, rather than the English default: an admin's
+            // own words go out verbatim, but "Single sign-on" itself has to go through the request's
+            // own language, and the client already carries its own translated copy for this blank case.
+            displayName = oidcOptions.DisplayNameIsCustom ? oidcOptions.DisplayName : string.Empty,
             localLoginRestricted = oidcOptions.OidcOnly
         }
     })).AllowAnonymous();

@@ -295,7 +295,7 @@ public class AuthController(
         catch (OpenIdConnectProtocolException ex)
         {
             logger.LogError(ex, "OIDC challenge failed");
-            return SsoFailure("The identity provider rejected the sign-in request. Check the OIDC client configuration.");
+            return SsoFailure("error.auth.ssoChallengeRejected");
         }
 
         return new EmptyResult();
@@ -328,7 +328,7 @@ public class AuthController(
 
         if (!external.Succeeded || external.Principal is null)
         {
-            return SsoFailure("The sign-in did not complete. Please try again.");
+            return SsoFailure("error.auth.ssoIncomplete");
         }
 
         var claims = external.Principal.Claims.ToList();
@@ -344,7 +344,7 @@ public class AuthController(
         if (string.IsNullOrEmpty(subject))
         {
             logger.LogWarning("Single sign-on returned no subject claim");
-            return SsoFailure("The identity provider returned no subject");
+            return SsoFailure("error.auth.ssoNoSubject");
         }
 
         var resolved = await oidcSignIn.SignInAsync(AuthSchemes.Oidc, subject, claims, ct);
@@ -352,8 +352,8 @@ public class AuthController(
         {
             await auditLog.LogAsync(AuthEventType.LoginFailed,
                 OidcClaimMapper.UserName(oidc, claims, subject), null, HttpContext,
-                detail: $"single sign-on refused: {resolved.Error}", ct: ct);
-            return SsoFailure(resolved.Error ?? "Sign-in failed");
+                detail: $"single sign-on refused: {resolved.ErrorKey ?? resolved.RawError}", ct: ct);
+            return SsoFailureRaw(ResolveError(resolved));
         }
 
         var user = resolved.User;
@@ -425,14 +425,14 @@ public class AuthController(
 
         if (!external.Succeeded || external.Principal is null)
         {
-            return LinkFailure("The sign-in did not complete. Please try again.");
+            return LinkFailure("error.auth.ssoIncomplete");
         }
 
         var subject = external.Principal.FindFirstValue("sub")
             ?? external.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(subject))
         {
-            return LinkFailure("The identity provider returned no subject");
+            return LinkFailure("error.auth.ssoNoSubject");
         }
 
         var user = await userManager.GetUserAsync(User);
@@ -446,7 +446,7 @@ public class AuthController(
         {
             // Refused rather than re-linked: moving it here would silently strip the login from
             // whoever it belonged to before.
-            return LinkFailure("That single sign-on account is already linked to a different user");
+            return LinkFailure("error.auth.ssoAlreadyLinkedOther");
         }
 
         if (existing is null)
@@ -458,7 +458,7 @@ public class AuthController(
             {
                 logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",
                     user.UserName, string.Join("; ", result.Errors.Select(e => e.Description)));
-                return LinkFailure("Could not link that single sign-on account");
+                return LinkFailure("error.auth.ssoLinkFailed");
             }
 
             await auditLog.LogAsync(AuthEventType.OidcLinked, user.UserName ?? string.Empty, user.Id,
@@ -471,14 +471,27 @@ public class AuthController(
     /// <summary>
     /// Back to the login page with the reason in the query string. A redirect rather than a JSON
     /// error because the browser got here by a top-level navigation from the provider — there is no
-    /// fetch waiting for a response body.
+    /// fetch waiting for a response body. The message is rendered here, in the request's own
+    /// language, because the page it lands on is a plain query string with no locale of its own.
     /// </summary>
-    private IActionResult SsoFailure(string message) =>
+    private IActionResult SsoFailure(string key, object? args = null) =>
+        SsoFailureRaw(localizer.Get(key, args));
+
+    private IActionResult SsoFailureRaw(string message) =>
         Redirect("/login?ssoError=" + Uri.EscapeDataString(message));
 
-    /// <summary>Same idea as <see cref="SsoFailure"/>, back to the settings page instead.</summary>
-    private IActionResult LinkFailure(string message) =>
-        Redirect("/settings?oidcLinkError=" + Uri.EscapeDataString(message));
+    /// <summary>Same idea as <see cref="SsoFailure(string,object?)"/>, back to the settings page instead.</summary>
+    private IActionResult LinkFailure(string key, object? args = null) =>
+        Redirect("/settings?oidcLinkError=" + Uri.EscapeDataString(localizer.Get(key, args)));
+
+    /// <summary>
+    /// Words an <see cref="OidcSignInService"/> failure: its own catalogue key when it has one, the
+    /// raw text Identity worded itself when it does not, and the generic fallback when neither is set.
+    /// </summary>
+    private string ResolveError(OidcSignInResult result) =>
+        result.ErrorKey is { } key
+            ? localizer.Get(key, result.ErrorArgs)
+            : result.RawError ?? localizer.Get("error.auth.ssoSignInFailed");
 
     /// <summary>
     /// Refuses anything that is not a path on this instance. Without it the return URL is an open

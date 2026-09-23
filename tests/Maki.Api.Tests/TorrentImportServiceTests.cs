@@ -58,7 +58,7 @@ public class TorrentImportServiceTests : IDisposable
             new SourceAvailability(_settings, registry),
             NullLogger<CbzLinkService>.Instance);
         var rename = new SeriesRenameService(
-            db, new NamingService(_settings), scans, NullLogger<SeriesRenameService>.Instance);
+            db, new NamingService(_settings), scans, new TestLocalizer(), NullLogger<SeriesRenameService>.Instance);
 
         return new TorrentImportService(
             db, null!, null!, linker, rename, archives, _settings,
@@ -159,7 +159,7 @@ public class TorrentImportServiceTests : IDisposable
 
         var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
 
-        Assert.Null(plan.Error);
+        Assert.Null(plan.ErrorKey);
         Assert.True(plan.HasConflicts);
         Assert.Equal(6, plan.ReplacedFileCount);
         Assert.Equal(0, plan.NewChapterCount);
@@ -329,7 +329,7 @@ public class TorrentImportServiceTests : IDisposable
         var plan = await Service().PlanAsync(
             item, series, Path.Combine(_root, "nope"), CancellationToken.None);
 
-        Assert.NotNull(plan.Error);
+        Assert.NotNull(plan.ErrorKey);
         Assert.False(plan.HasConflicts);
     }
 
@@ -415,7 +415,9 @@ public class TorrentImportServiceTests : IDisposable
 
         var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
 
-        Assert.Equal("No comics found in the completed download (found 2 .pdf)", plan.Error);
+        Assert.Equal("error.torrentImport.noComicsFound", plan.ErrorKey);
+        var detail = plan.ErrorArgs?.GetType().GetProperty("detail")?.GetValue(plan.ErrorArgs);
+        Assert.Equal("found 2 .pdf", detail);
     }
 
     private static void WriteTar(string path, IReadOnlyList<string> pageNames)

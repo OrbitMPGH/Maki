@@ -75,7 +75,10 @@ public class SeriesEmbeddingIndexer(
             if (!await embedder.EnsureReadyAsync(ct))
             {
                 logger.LogWarning("Embedding index skipped — embedder not ready");
-                status.End(0, 0, "Embedding model not available");
+                // A server message catalogue key, not display text: this project has no ILocalizer
+                // (see CLAUDE.md's directory ownership), and EmbeddingIndexStatus.LastError is read
+                // by SettingsController and rendered there.
+                status.End(0, 0, "install.embeddingModel.notAvailable");
                 return new IndexResult(0, 0, 0);
             }
 
@@ -208,7 +211,9 @@ public class SeriesEmbeddingIndexer(
         }
         catch (Exception ex)
         {
-            status.End(0, 0, ex is OperationCanceledException ? "Cancelled" : ex.Message);
+            // "Cancelled" is Maki's own word and goes through the catalogue; ex.Message is a raw
+            // exception and stays as-is, same rule CoReadInstaller and its siblings follow.
+            status.End(0, 0, ex is OperationCanceledException ? "install.embeddingModel.cancelled" : ex.Message);
             throw;
         }
     }
