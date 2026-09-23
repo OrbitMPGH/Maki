@@ -77,8 +77,11 @@ instead of the bare key. The base file stays read-only here because keys are nam
   produce a catalogue the app never loads and would fail `LocalizationCatalogTests`.
 - **Version control system**: GitHub (via Weblate GitHub app). Weblate pushes to a fork and opens a
   pull request against `dev`, so the push branch field is locked and does not need setting.
-- **PO line wrap**: "No line wrapping". Lingui writes long lines unwrapped, and Weblate's default of
-  77 columns would rewrap every file on its first commit and have the next extract undo it.
+- **PO line wrap**: "Only wrap lines at newlines", which is what Lingui writes. The default of 77
+  columns rewraps every file, and "No line wrapping" puts the whole header on one line, which
+  Lingui's parser reads as empty. Either way CI's `lingui extract` + `git diff` step fails.
+- **Set "Last-Translator"**: off. It writes the committer's name and email into every catalogue
+  header.
 - **Repository browser**: `https://github.com/OrbitMPGH/Maki/blob/{{branch}}/{{filename}}#L{{line}}`,
   which turns the `#:` source references into links. Those references are the most useful thing in
   the file: the same English word is a navigation tab in `nav.ts` and a failure sentence in
