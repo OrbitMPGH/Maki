@@ -1809,6 +1809,9 @@ function ScrobbleSection() {
     setForm((f) => (f ? { ...f, ...patch } : f))
 
   const origin = window.location.origin
+  // The app registrations, interval and library filter belong to the instance. The server returns
+  // them as null to anyone else and drops them on save, so a non-admin never sees the inputs.
+  const isAdmin = data?.isAdmin ?? false
 
   return (
     <Card withBorder radius="md" padding="md">
@@ -1826,52 +1829,60 @@ function ScrobbleSection() {
         <Text size="sm" fw={600}>
           AniList
         </Text>
-        <Text size="xs" c="dimmed">
-          <Trans>
-            Create an API client at anilist.co/settings/developer with redirect URL{' '}
-            <Code>{origin}/api/v1/scrobble/oauth/anilist</Code>
-          </Trans>
-        </Text>
-        <Group grow>
-          <TextInput
-            label={t`Client ID`}
-            value={form?.aniListClientId ?? ''}
-            onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
-          />
-          <TextInput
-            label={t`Client secret`}
-            type="password"
-            value={form?.aniListClientSecret ?? ''}
-            onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
-          />
-        </Group>
+        {isAdmin && (
+          <>
+          <Text size="xs" c="dimmed">
+            <Trans>
+              Create an API client at anilist.co/settings/developer with redirect URL{' '}
+              <Code>{origin}/api/v1/scrobble/oauth/anilist</Code>
+            </Trans>
+          </Text>
+          <Group grow>
+            <TextInput
+              label={t`Client ID`}
+              value={form?.aniListClientId ?? ''}
+              onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
+            />
+            <TextInput
+              label={t`Client secret`}
+              type="password"
+              value={form?.aniListClientSecret ?? ''}
+              onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
+            />
+          </Group>
+          </>
+        )}
         <TrackerSyncControls service="anilist" label="AniList" connection={conn('anilist')} />
 
         <Text size="sm" fw={600} mt="xs">
           MyAnimeList
         </Text>
-        <Text size="xs" c="dimmed">
-          <Trans>
-            Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-            <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
-            secret) exactly as shown there. If connecting opens a browser “sign in to
-            myanimelist.net” popup and then <Code>invalid_client</Code>, MyAnimeList didn&apos;t
-            recognise the Client ID: re-copy it and make sure the App Type is set.
-          </Trans>
-        </Text>
-        <Group grow>
-          <TextInput
-            label={t`Client ID`}
-            value={form?.malClientId ?? ''}
-            onChange={(e) => set({ malClientId: e.currentTarget.value })}
-          />
-          <TextInput
-            label={t`Client secret`}
-            type="password"
-            value={form?.malClientSecret ?? ''}
-            onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
-          />
-        </Group>
+        {isAdmin && (
+          <>
+          <Text size="xs" c="dimmed">
+            <Trans>
+              Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
+              <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
+              secret) exactly as shown there. If connecting opens a browser “sign in to
+              myanimelist.net” popup and then <Code>invalid_client</Code>, MyAnimeList didn&apos;t
+              recognise the Client ID: re-copy it and make sure the App Type is set.
+            </Trans>
+          </Text>
+          <Group grow>
+            <TextInput
+              label={t`Client ID`}
+              value={form?.malClientId ?? ''}
+              onChange={(e) => set({ malClientId: e.currentTarget.value })}
+            />
+            <TextInput
+              label={t`Client secret`}
+              type="password"
+              value={form?.malClientSecret ?? ''}
+              onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
+            />
+          </Group>
+          </>
+        )}
         <TrackerSyncControls service="mal" label="MyAnimeList" connection={conn('mal')} />
 
         <Text size="sm" fw={600} mt="xs">
@@ -1905,22 +1916,24 @@ function ScrobbleSection() {
         </Group>
         <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
 
-        <Group grow mt="xs">
-          <TextInput
-            label={t`Sync interval (minutes)`}
-            value={form?.intervalMinutes?.toString() ?? '30'}
-            onChange={(e) => {
-              const parsed = parseInt(e.currentTarget.value, 10)
-              set({ intervalMinutes: Number.isNaN(parsed) ? 30 : parsed })
-            }}
-          />
-          <TextInput
-            label={t`Kavita library ids`}
-            description={t`Comma-separated; empty = scrobble all libraries`}
-            value={form?.libraryIds ?? ''}
-            onChange={(e) => set({ libraryIds: e.currentTarget.value })}
-          />
-        </Group>
+        {isAdmin && (
+          <Group grow mt="xs">
+            <TextInput
+              label={t`Sync interval (minutes)`}
+              value={form?.intervalMinutes?.toString() ?? '30'}
+              onChange={(e) => {
+                const parsed = parseInt(e.currentTarget.value, 10)
+                set({ intervalMinutes: Number.isNaN(parsed) ? 30 : parsed })
+              }}
+            />
+            <TextInput
+              label={t`Kavita library ids`}
+              description={t`Comma-separated; empty = scrobble all libraries`}
+              value={form?.libraryIds ?? ''}
+              onChange={(e) => set({ libraryIds: e.currentTarget.value })}
+            />
+          </Group>
+        )}
         <Switch
           label={t`Add unread series as plan-to-read`}
           description={t`Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists.`}
