@@ -177,9 +177,11 @@ function HealthButton() {
         <Group gap={6} mb="xs">
           <IconHeartbeat size={16} />
           <Text fw={650} size="sm">
-            Health
+            <Trans>Health</Trans>
           </Text>
-          <Text component={Link} to="/health" size="sm">Open Health</Text>
+          <Text component={Link} to="/health" size="sm">
+            <Trans>Open Health</Trans>
+          </Text>
         </Group>
         <Stack gap="xs">
           {health.map((issue, i) => (

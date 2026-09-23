@@ -67,6 +67,17 @@ public sealed class InboxRenderer(ILocalizer localizer)
             args["error"] = localizer.GetFor(locale, errorKey, args);
         }
 
+        // A health check's sentence, stored as its key with its values under a `detail.` prefix (see
+        // HealthMonitor.InboxDetailArgs). A row from before the checks were keyed stores its English,
+        // which is not a key and comes back as itself.
+        if (args.TryGetValue("detail", out var detail) && detail is string { Length: > 0 } detailKey)
+        {
+            var detailArgs = args
+                .Where(a => a.Key.StartsWith("detail.", StringComparison.Ordinal))
+                .ToDictionary(a => a.Key["detail.".Length..], a => a.Value, StringComparer.Ordinal);
+            args["detail"] = localizer.GetFor(locale, detailKey, detailArgs);
+        }
+
         var title = localizer.GetFor(locale, $"{messageKey}.title", args);
         var body = localizer.GetFor(locale, $"{messageKey}.body", args);
 

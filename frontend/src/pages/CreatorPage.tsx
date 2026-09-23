@@ -11,7 +11,7 @@ import {
 } from '@mantine/core'
 import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import {
   useCreator,
@@ -137,12 +137,18 @@ export default function CreatorPage() {
     )
   }
 
+  // Named for Lingui: a member access would extract as an unlabelled {0}.
+  const workCount = data?.workCount ?? 0
+  const shownCount = items.length
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={data?.name ?? decoded}
         description={
-          data ? `${data.workCount} title${data.workCount === 1 ? '' : 's'} in the catalogue` : undefined
+          data ? (
+            <Plural value={workCount} one="# title in the catalogue" other="# titles in the catalogue" />
+          ) : undefined
         }
         actions={
           <Group gap="xs">
@@ -161,7 +167,7 @@ export default function CreatorPage() {
           leftSection={<IconAdjustmentsHorizontal size={16} />}
           onClick={() => setFiltersOpen((o) => !o)}
         >
-          {appliedCount > 0 ? `Filters (${appliedCount})` : 'Filters'}
+          {appliedCount > 0 ? t`Filters (${appliedCount})` : t`Filters`}
         </Button>
         <Group gap="xs">
           <Select
@@ -230,7 +236,7 @@ export default function CreatorPage() {
           {canLoadMore && (
             <Group justify="center" mt="lg">
               <Button variant="default" loading={isFetching} onClick={() => setPages((p) => p + 1)}>
-                Load more
+                <Trans>Load more</Trans>
               </Button>
             </Group>
           )}
@@ -240,8 +246,10 @@ export default function CreatorPage() {
       {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && (
         <Alert variant="light" color="var(--neutral)" mt="md">
           <Text size="sm">
-            Showing {items.length} of {data.workCount} titles. Filters and the catalogue's own
-            coverage both narrow this: only rated, non-novel entries are searchable.
+            <Trans>
+              Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage
+              both narrow this: only rated, non-novel entries are searchable.
+            </Trans>
           </Text>
         </Alert>
       )}

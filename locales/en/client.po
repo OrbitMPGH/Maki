@@ -870,6 +870,10 @@ msgstr "{watchedCount} watched"
 msgid "{weight} total"
 msgstr "{weight} total"
 
+#: src/pages/CreatorPage.tsx
+msgid "{workCount, plural, one {# title in the catalogue} other {# titles in the catalogue}}"
+msgstr "{workCount, plural, one {# title in the catalogue} other {# titles in the catalogue}}"
+
 #: src/components/discover/DiscoverGlance.tsx
 msgid "{year} – present"
 msgstr "{year} – present"
@@ -907,6 +911,10 @@ msgstr "+ erotica (default)"
 #: src/components/ContentRatingCards.tsx
 msgid "+ suggestive titles"
 msgstr "+ suggestive titles"
+
+#: src/pages/SettingsPage.tsx
+msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
+msgstr "<0>{deleting}</0> is removed from disk. This can't be undone."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
@@ -1182,6 +1190,7 @@ msgstr "Activity log"
 msgid "Adaptation"
 msgstr "Adaptation"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -1252,6 +1261,7 @@ msgid "Add some series to your library first and Maki will suggest more like the
 msgstr "Add some series to your library first and Maki will suggest more like them."
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Add to library"
 msgstr "Add to library"
 
@@ -1272,6 +1282,10 @@ msgstr "Add user"
 #: src/pages/stats/OverviewPanel.tsx
 msgid "Added"
 msgstr "Added"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Added {title}"
+msgstr "Added {title}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -1324,6 +1338,7 @@ msgstr "Affected chapters:"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "All"
@@ -1456,6 +1471,14 @@ msgstr "Ambiguous names"
 msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
 msgstr "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin decides where it lands and what gets downloaded."
+msgstr "An admin decides where it lands and what gets downloaded."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin will see it on the Requests page."
+msgstr "An admin will see it on the Requests page."
+
 #: src/pages/HealthPage.tsx
 msgid "Analysis"
 msgstr "Analysis"
@@ -1517,6 +1540,10 @@ msgstr "Anyone with the feed URL can read the whole library. Regenerating it bre
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Anything in the MangaBaka catalogue that matches these filters."
 msgstr "Anything in the MangaBaka catalogue that matches these filters."
+
+#: src/components/settings/AccountSection.tsx
+msgid "Anything still using this key stops working straight away. This can't be undone."
+msgstr "Anything still using this key stops working straight away. This can't be undone."
 
 #: src/components/RequestForm.tsx
 msgid "Anything the admin should know"
@@ -1621,6 +1648,10 @@ msgstr "Arrange Home and Discover on the pages themselves: pick which sections s
 #: src/pages/SeriesDetailPage.tsx
 msgid "Art"
 msgstr "Art"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ask for this"
+msgstr "Ask for this"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Assign"
@@ -1951,6 +1982,7 @@ msgstr "Can't read this download"
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
+#: src/components/ui/ConfirmDialog.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
@@ -1972,6 +2004,10 @@ msgstr "Cancel request"
 #: src/pages/HealthPage.tsx
 msgid "Cancel scan"
 msgstr "Cancel scan"
+
+#: src/pages/RequestsPage.tsx
+msgid "Cancel this request?"
+msgstr "Cancel this request?"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
@@ -2331,6 +2367,10 @@ msgstr "Clear all"
 #: src/pages/LibraryPage.tsx
 msgid "Clear all filters"
 msgstr "Clear all filters"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Clear all notifications?"
+msgstr "Clear all notifications?"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Clear chapter search"
@@ -2900,6 +2940,10 @@ msgstr "Defining"
 msgid "Delete"
 msgstr "Delete"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Delete {deletingName}?"
+msgstr "Delete {deletingName}?"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "Delete {fileName}"
 msgstr "Delete {fileName}"
@@ -2907,6 +2951,10 @@ msgstr "Delete {fileName}"
 #: src/components/TagManagerModal.tsx
 msgid "Delete {label}"
 msgstr "Delete {label}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Delete {name}?"
+msgstr "Delete {name}?"
 
 #: src/pages/LibraryPage.tsx
 msgid "Delete {selectedCount} series?"
@@ -2974,6 +3022,14 @@ msgstr "Delete the rail \"{label}\"? Its filters go with it."
 #: src/components/rails/CustomRailSection.tsx
 msgid "Delete the rail \"{railName}\"? Its filters go with it."
 msgstr "Delete the rail \"{railName}\"? Its filters go with it."
+
+#: src/pages/RequestsPage.tsx
+msgid "Delete this request?"
+msgstr "Delete this request?"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Delete user"
+msgstr "Delete user"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Deleted \"{name}\""
@@ -3438,6 +3494,10 @@ msgstr "Every genre"
 msgid "Every month"
 msgstr "Every month"
 
+#: src/pages/NotificationsPage.tsx
+msgid "Every notification goes, read and unread. This can't be undone."
+msgstr "Every notification goes, read and unread. This can't be undone."
+
 #: src/pages/HomePage.tsx
 msgid "Every section is switched off"
 msgstr "Every section is switched off"
@@ -3642,11 +3702,13 @@ msgid "Filter the catalogue"
 msgstr "Filter the catalogue"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Filters"
 msgstr "Filters"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 msgid "Filters ({appliedCount})"
 msgstr "Filters ({appliedCount})"
 
@@ -3906,6 +3968,10 @@ msgstr "Go to page {pageNumber}"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "Go to page {pageNumber} (bookmarked)"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Go to series"
+msgstr "Go to series"
+
 #: src/App.tsx
 msgid "Go to start page"
 msgstr "Go to start page"
@@ -3987,6 +4053,7 @@ msgstr "Has none of"
 msgid "Have ({downloadedFilterCount})"
 msgstr "Have ({downloadedFilterCount})"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 msgid "Health"
@@ -4292,6 +4359,10 @@ msgstr "In queue"
 #: src/pages/rewind/slides.tsx
 msgid "in the reader"
 msgstr "in the reader"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "In your library"
+msgstr "In your library"
 
 #: src/components/TagBuckets.tsx
 msgid "Incidental"
@@ -4804,6 +4875,7 @@ msgid "Live download queue: pages are fetched, validated and packaged into CBZ f
 msgstr "Live download queue: pages are fetched, validated and packaged into CBZ files two at a time."
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Load more"
@@ -5941,6 +6013,10 @@ msgstr "Notify"
 msgid "Now {range}"
 msgstr "Now {range}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Now in your library. Matching sources in the background."
+msgstr "Now in your library. Matching sources in the background."
+
 #: src/components/discover/RecommenderDials.tsx
 msgid "obscure"
 msgstr "obscure"
@@ -6100,6 +6176,10 @@ msgstr "Open entry"
 msgid "Open file findings"
 msgstr "Open file findings"
 
+#: src/App.tsx
+msgid "Open Health"
+msgstr "Open Health"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Open on"
 msgstr "Open on"
@@ -6144,6 +6224,10 @@ msgstr "Optional"
 #: src/components/settings/ProgressSection.tsx
 msgid "Optional, and yours to set. Maki never adds one for you."
 msgstr "Optional, and yours to set. Maki never adds one for you."
+
+#: src/pages/LoginPage.tsx
+msgid "or"
+msgstr "or"
 
 #: src/pages/SettingsPage.tsx
 msgid "Original script"
@@ -7129,6 +7213,14 @@ msgstr "Request replacement"
 msgid "Request series"
 msgstr "Request series"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Requested"
+msgstr "Requested"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Requested {title}"
+msgstr "Requested {title}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Requested, an admin will see it on the Requests page"
 msgstr "Requested, an admin will see it on the Requests page"
@@ -7309,6 +7401,10 @@ msgstr "Reviews"
 #: src/components/settings/AccountSection.tsx
 msgid "Revoke"
 msgstr "Revoke"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Revoke {revokingName}?"
+msgstr "Revoke {revokingName}?"
 
 #: src/components/settings/AccountSection.tsx
 msgid "revoked"
@@ -8060,6 +8156,10 @@ msgstr "Showing {currentLocaleLabel}. Non-English translations are machine-made 
 msgid "Showing {shown} of {total}"
 msgstr "Showing {shown} of {total}"
 
+#: src/pages/CreatorPage.tsx
+msgid "Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable."
+msgstr "Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable."
+
 #: src/pages/ActivityPage.tsx
 msgid "Showing {shownQueueCount} of {totalQueueCount} queued items. The rest are still queued and will download, they're just not listed here."
 msgstr "Showing {shownQueueCount} of {totalQueueCount} queued items. The rest are still queued and will download, they're just not listed here."
@@ -8672,9 +8772,17 @@ msgstr "The most popular titles in the MangaBaka catalogue."
 msgid "The odd one out"
 msgstr "The odd one out"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "The profile and its reader settings are removed. This can't be undone."
+msgstr "The profile and its reader settings are removed. This can't be undone."
+
 #: src/components/settings/SecuritySection.tsx
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
+
+#: src/pages/RequestsPage.tsx
+msgid "The request for {removingTitle} is removed. This can't be undone."
+msgstr "The request for {removingTitle} is removed. This can't be undone."
 
 #: src/components/SourceCompareModal.tsx
 msgid "The same chapter as each source scans it, heaviest first. Drag the columns so your favourite is first, then save: that becomes the order chapters download in for this series."
@@ -8760,6 +8868,10 @@ msgstr "These rules need the rules view. Remove some to switch back."
 #: src/pages/discover/TasteTab.tsx
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "They come from the catalogue, so a library the dump does not cover has none."
+
+#: src/components/settings/UsersSection.tsx
+msgid "They will no longer be able to sign in. This can't be undone."
+msgstr "They will no longer be able to sign in. This can't be undone."
 
 #: src/components/settings/AccountSection.tsx
 msgid "This account has no password login for two-factor to protect."
@@ -9470,6 +9582,10 @@ msgstr "View and add {title}"
 msgid "View changelog"
 msgstr "View changelog"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "View in library"
+msgstr "View in library"
+
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Vol. {volume}"
 msgstr "Vol. {volume}"
@@ -9756,6 +9872,14 @@ msgstr "you · {readChapter}"
 #: src/pages/discover/TasteTab.tsx
 msgid "You bail around"
 msgstr "You bail around"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
+msgstr "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can't add series yourself. An admin decides where it lands and what gets downloaded."
+msgstr "You can't add series yourself. An admin decides where it lands and what gets downloaded."
 
 #: src/components/settings/UsersSection.tsx
 msgid "You cannot remove your own administrator permission. Promote another account first, then edit this one from there."

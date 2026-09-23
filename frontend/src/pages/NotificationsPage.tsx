@@ -30,10 +30,12 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 import { NotificationVisual } from '../components/NotificationBell'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { relativeTime } from '../components/ui/time'
+import { formatTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 type NotificationDateGroup = {
@@ -104,6 +106,7 @@ export default function NotificationsPage() {
 
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [category, setCategory] = useState<string | null>(null)
+  const [clearing, setClearing] = useState(false)
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInbox({ unreadOnly })
   const markRead = useMarkInboxRead()
@@ -163,7 +166,7 @@ export default function NotificationsPage() {
               color="var(--danger)"
               size="xs"
               disabled={all.length === 0}
-              onClick={() => clear.mutate()}
+              onClick={() => setClearing(true)}
             >
               <Trans>Clear all</Trans>
             </Button>
@@ -245,6 +248,17 @@ export default function NotificationsPage() {
           </Button>
         </Group>
       )}
+
+      <ConfirmDialog
+        opened={clearing}
+        onClose={() => setClearing(false)}
+        title={<Trans>Clear all notifications?</Trans>}
+        confirmLabel={<Trans>Clear all</Trans>}
+        loading={clear.isPending}
+        onConfirm={() => clear.mutate(undefined, { onSuccess: () => setClearing(false) })}
+      >
+        <Trans>Every notification goes, read and unread. This can't be undone.</Trans>
+      </ConfirmDialog>
     </SurfaceFrame>
   )
 }
@@ -280,7 +294,12 @@ function Row({
               {item.body}
             </Text>
             <Text fz={10} lh={1.5} c="var(--ink-3)">
-              {relativeTime(item.createdAt)}
+              {/* Under an older day's heading the day is already said, and a relative time can
+                  disagree with it ("yesterday" under Monday, 34 hours on), so those rows give the
+                  clock time instead. */}
+              {new Date(item.createdAt).toDateString() === new Date().toDateString()
+                ? relativeTime(item.createdAt)
+                : formatTime(item.createdAt)}
             </Text>
           </Stack>
         </Group>

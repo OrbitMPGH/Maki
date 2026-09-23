@@ -30,11 +30,13 @@ import {
   useRevokeSessions,
   useStartTwoFactorSetup,
   useTwoFactorStatus,
+  type ApiKey,
   type CreatedApiKey,
 } from '../../api/auth'
 import { useAuth } from '../../auth/AuthProvider'
 import { getInitialize } from '../../api/client'
 import { formatDateTime } from '../../format'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Panel } from '../ui/Panel'
 
 /**
@@ -388,6 +390,8 @@ function ApiKeysCard() {
 
   const [name, setName] = useState('')
   const [created, setCreated] = useState<CreatedApiKey | null>(null)
+  const [revoking, setRevoking] = useState<ApiKey | null>(null)
+  const revokingName = revoking?.name ?? ''
 
   // The OPDS feed token is a key row too, but it is minted, shown and rotated on the OPDS card.
   const fullKeys = keys?.filter((key) => key.scope === 'Full')
@@ -462,7 +466,7 @@ function ApiKeysCard() {
                       size="compact-xs"
                       variant="subtle"
                       color="var(--danger)"
-                      onClick={() => revoke.mutate(key.id)}
+                      onClick={() => setRevoking(key)}
                     >
                       <Trans>Revoke</Trans>
                     </Button>
@@ -500,6 +504,17 @@ function ApiKeysCard() {
           </CopyButton>
         </Stack>
       </Modal>
+
+      <ConfirmDialog
+        opened={revoking !== null}
+        onClose={() => setRevoking(null)}
+        title={<Trans>Revoke {revokingName}?</Trans>}
+        confirmLabel={<Trans>Revoke</Trans>}
+        loading={revoke.isPending}
+        onConfirm={() => revoking && revoke.mutate(revoking.id, { onSuccess: () => setRevoking(null) })}
+      >
+        <Trans>Anything still using this key stops working straight away. This can't be undone.</Trans>
+      </ConfirmDialog>
     </Stack>
   )
 }

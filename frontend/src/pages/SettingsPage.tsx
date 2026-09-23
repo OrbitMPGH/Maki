@@ -42,6 +42,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Panel } from '../components/ui/Panel'
 import { RecommendationModelSwitch } from '../components/RecommendationModelSwitch'
 import { NamingFormatInput } from '../components/NamingFormatInput'
@@ -1293,6 +1294,7 @@ function BackupSection() {
 
   const [retention, setRetention] = useState<number | string>(5)
   const [target, setTarget] = useState<RestoreTarget | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   // Named, so the restore sentence extracts as `<0>{backupName}</0>` instead of an anonymous slot.
   const backupName =
@@ -1391,7 +1393,7 @@ function BackupSection() {
                       <ActionIcon
                         variant="subtle"
                         color="var(--danger)"
-                        onClick={() => remove.mutate(b.name)}
+                        onClick={() => setDeleting(b.name)}
                         aria-label={t`Delete backup`}
                       >
                         <IconTrash size={16} />
@@ -1466,6 +1468,19 @@ function BackupSection() {
           </Group>
         </Stack>
       </Modal>
+
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={t`Delete backup`}
+        confirmLabel={<Trans>Delete backup</Trans>}
+        loading={remove.isPending}
+        onConfirm={() => deleting && remove.mutate(deleting, { onSuccess: () => setDeleting(null) })}
+      >
+        <Trans>
+          <b>{deleting}</b> is removed from disk. This can't be undone.
+        </Trans>
+      </ConfirmDialog>
     </Panel>
   )
 }

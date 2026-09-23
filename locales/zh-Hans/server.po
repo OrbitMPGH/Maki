@@ -2314,10 +2314,10 @@ msgid "inbox.health.issue.title"
 msgstr "健康问题"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {check} needs attention
+#. English: {detail}
 #, fuzzy
 msgid "inbox.health.issue.body"
-msgstr "{check} 需要关注"
+msgstr "{detail}"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Health recovered
@@ -2326,10 +2326,10 @@ msgid "inbox.health.recovered.title"
 msgstr "健康已恢复"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {check} is healthy again
+#. English: Resolved: {detail}
 #, fuzzy
 msgid "inbox.health.recovered.body"
-msgstr "{check} 已恢复正常"
+msgstr "已解决：{detail}"
 
 #. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin

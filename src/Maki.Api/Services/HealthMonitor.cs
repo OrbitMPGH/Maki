@@ -231,10 +231,31 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             InboxEventType.HealthIssue,
             new InboxMessage(
                 Key: recovered ? "inbox.health.recovered" : "inbox.health.issue",
-                Params: InboxMessage.Args(new { check = row.Id, detail = row.MessageKey ?? row.Message }),
+                Params: InboxDetailArgs(row),
                 Level: level,
                 Url: "/health"),
             InboxAudience.Admins);
+    }
+
+    /// <summary>
+    /// The inbox row's parameters: the check's message key (or its English, on a row from before the
+    /// checks were keyed) as <c>detail</c>, and the check's own values under a <c>detail.</c> prefix.
+    /// <see cref="Localization.InboxRenderer"/> renders the detail per reader from those. Prefixed
+    /// because the renderer owns <c>{series}</c>, and a check's own <c>{series}</c> would otherwise be
+    /// replaced with the inbox's.
+    /// </summary>
+    private static Dictionary<string, object?> InboxDetailArgs(HealthCheckRecord row)
+    {
+        var args = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["detail"] = row.MessageKey ?? row.Message,
+        };
+        foreach (var (name, value) in HealthParams(row.ParamsJson))
+        {
+            args[$"detail.{name}"] = value;
+        }
+
+        return args;
     }
 
     /// <summary>

@@ -35,6 +35,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Panel } from '../ui/Panel'
 
 /**
@@ -89,7 +90,9 @@ export function UsersSection() {
   const { data: users } = useUsers()
   const { me } = useAuth()
   const [editing, setEditing] = useState<UserSummary | 'new' | null>(null)
+  const [deleting, setDeleting] = useState<UserSummary | null>(null)
   const remove = useDeleteUser()
+  const deletingName = deleting ? deleting.displayName?.trim() || deleting.userName : ''
 
   return (
     <Panel id="users" p="md">
@@ -169,11 +172,7 @@ export function UsersSection() {
                           size="compact-xs"
                           variant="subtle"
                           color="var(--danger)"
-                          onClick={() =>
-                            remove.mutate(user.id, {
-                              onError: (e) => notifications.show({ message: e.message, color: 'red' }),
-                            })
-                          }
+                          onClick={() => setDeleting(user)}
                         >
                           <Trans>Delete</Trans>
                         </Button>
@@ -188,6 +187,23 @@ export function UsersSection() {
       </Table.ScrollContainer>
 
       {editing && <UserModal target={editing} onClose={() => setEditing(null)} />}
+
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={<Trans>Delete {deletingName}?</Trans>}
+        confirmLabel={<Trans>Delete user</Trans>}
+        loading={remove.isPending}
+        onConfirm={() =>
+          deleting &&
+          remove.mutate(deleting.id, {
+            onSuccess: () => setDeleting(null),
+            onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+          })
+        }
+      >
+        <Trans>They will no longer be able to sign in. This can't be undone.</Trans>
+      </ConfirmDialog>
     </Panel>
   )
 }

@@ -1060,6 +1060,10 @@ msgstr "{watchedCount} просмотрено"
 msgid "{weight} total"
 msgstr "{weight} всего"
 
+#: src/pages/CreatorPage.tsx
+msgid "{workCount, plural, one {# title in the catalogue} other {# titles in the catalogue}}"
+msgstr ""
+
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
 msgid "{year} – present"
@@ -1106,6 +1110,10 @@ msgstr "+ эротика (по умолчанию)"
 #, fuzzy
 msgid "+ suggestive titles"
 msgstr "+ названия с пикантным содержанием"
+
+#: src/pages/SettingsPage.tsx
+msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1436,6 +1444,7 @@ msgstr "Журнал активности"
 msgid "Adaptation"
 msgstr "Адаптация"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -1515,6 +1524,7 @@ msgid "Add some series to your library first and Maki will suggest more like the
 msgstr "Сначала добавьте несколько серий в библиотеку, и Maki предложит похожие."
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Add to library"
 msgstr "Добавить в библиотеку"
@@ -1540,6 +1550,10 @@ msgstr "Добавить пользователя"
 #, fuzzy
 msgid "Added"
 msgstr "Добавлено"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Added {title}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -1603,6 +1617,7 @@ msgstr "Затронутые главы:"
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1763,6 +1778,14 @@ msgstr "Неоднозначные названия"
 msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
 msgstr ""
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin decides where it lands and what gets downloaded."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin will see it on the Requests page."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Analysis"
@@ -1834,6 +1857,10 @@ msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Anything in the MangaBaka catalogue that matches these filters."
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "Anything still using this key stops working straight away. This can't be undone."
 msgstr ""
 
 #: src/components/RequestForm.tsx
@@ -1961,6 +1988,10 @@ msgstr ""
 #, fuzzy
 msgid "Art"
 msgstr "Иллюстрации"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ask for this"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -2362,6 +2393,7 @@ msgstr "Не удаётся прочитать эту загрузку"
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
+#: src/components/ui/ConfirmDialog.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
@@ -2387,6 +2419,10 @@ msgstr "Отменить запрос"
 #, fuzzy
 msgid "Cancel scan"
 msgstr "Отменить сканирование"
+
+#: src/pages/RequestsPage.tsx
+msgid "Cancel this request?"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
@@ -2825,6 +2861,10 @@ msgstr "Очистить всё"
 #, fuzzy
 msgid "Clear all filters"
 msgstr "Очистить все фильтры"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Clear all notifications?"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3507,6 +3547,10 @@ msgstr "Определяющий"
 msgid "Delete"
 msgstr "Удалить"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Delete {deletingName}?"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Delete {fileName}"
@@ -3516,6 +3560,10 @@ msgstr "Удалить {fileName}"
 #, fuzzy
 msgid "Delete {label}"
 msgstr "Удалить {label}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Delete {name}?"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3595,6 +3643,14 @@ msgstr ""
 
 #: src/components/rails/CustomRailSection.tsx
 msgid "Delete the rail \"{railName}\"? Its filters go with it."
+msgstr ""
+
+#: src/pages/RequestsPage.tsx
+msgid "Delete this request?"
+msgstr ""
+
+#: src/components/settings/UsersSection.tsx
+msgid "Delete user"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -4152,6 +4208,10 @@ msgstr "Все жанры"
 msgid "Every month"
 msgstr "Каждый месяц"
 
+#: src/pages/NotificationsPage.tsx
+msgid "Every notification goes, read and unread. This can't be undone."
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Every section is switched off"
@@ -4398,12 +4458,14 @@ msgid "Filter the catalogue"
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Filters"
 msgstr "Фильтры"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Filters ({appliedCount})"
 msgstr "Фильтры ({appliedCount})"
@@ -4712,6 +4774,10 @@ msgstr "Перейти на страницу {pageNumber}"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "Перейти на страницу {pageNumber} (в закладках)"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Go to series"
+msgstr ""
+
 #: src/App.tsx
 #, fuzzy
 msgid "Go to start page"
@@ -4810,6 +4876,7 @@ msgstr ""
 msgid "Have ({downloadedFilterCount})"
 msgstr "Есть ({downloadedFilterCount})"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5174,6 +5241,10 @@ msgstr "В очереди"
 #, fuzzy
 msgid "in the reader"
 msgstr "в читалке"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "In your library"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -5784,6 +5855,7 @@ msgid "Live download queue: pages are fetched, validated and packaged into CBZ f
 msgstr "Очередь загрузок в реальном времени: страницы загружаются, проверяются и упаковываются в файлы CBZ по две за раз."
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7156,6 +7228,10 @@ msgstr "Уведомлять"
 msgid "Now {range}"
 msgstr "Сейчас {range}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Now in your library. Matching sources in the background."
+msgstr ""
+
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
@@ -7349,6 +7425,10 @@ msgstr "Открыть запись"
 msgid "Open file findings"
 msgstr "Открыть найденные файлы"
 
+#: src/App.tsx
+msgid "Open Health"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Open on"
@@ -7402,6 +7482,10 @@ msgstr ""
 #, fuzzy
 msgid "Optional, and yours to set. Maki never adds one for you."
 msgstr "Необязательно, настройте сами. Maki никогда не добавляет значение за вас."
+
+#: src/pages/LoginPage.tsx
+msgid "or"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8590,6 +8674,14 @@ msgstr "Запросить замену"
 msgid "Request series"
 msgstr "Запросить серию"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Requested"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Requested {title}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Requested, an admin will see it on the Requests page"
@@ -8812,6 +8904,10 @@ msgstr "Отзывы"
 #, fuzzy
 msgid "Revoke"
 msgstr "Отозвать"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Revoke {revokingName}?"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -9705,6 +9801,10 @@ msgstr ""
 msgid "Showing {shown} of {total}"
 msgstr "Показано {shown} из {total}"
 
+#: src/pages/CreatorPage.tsx
+msgid "Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Showing {shownQueueCount} of {totalQueueCount} queued items. The rest are still queued and will download, they're just not listed here."
@@ -10442,10 +10542,18 @@ msgstr ""
 msgid "The odd one out"
 msgstr "Отличающийся элемент"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "The profile and its reader settings are removed. This can't be undone."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "Издатель поставщика без /.well-known/openid-configuration. Maki добавляет это сам."
+
+#: src/pages/RequestsPage.tsx
+msgid "The request for {removingTitle} is removed. This can't be undone."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -10548,6 +10656,10 @@ msgstr ""
 #, fuzzy
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "Они поступают из каталога, поэтому для библиотеки, которую дамп не охватывает, их нет."
+
+#: src/components/settings/UsersSection.tsx
+msgid "They will no longer be able to sign in. This can't be undone."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -11416,6 +11528,10 @@ msgstr "Просмотреть и добавить {title}"
 msgid "View changelog"
 msgstr "Просмотреть журнал изменений"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "View in library"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Vol. {volume}"
@@ -11758,6 +11874,14 @@ msgstr "вы · {readChapter}"
 #, fuzzy
 msgid "You bail around"
 msgstr "Вы прекращаете примерно на"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can't add series yourself. An admin decides where it lands and what gets downloaded."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy

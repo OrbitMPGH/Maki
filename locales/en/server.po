@@ -1629,15 +1629,15 @@ msgstr "Health recovered"
 msgid "notify.health.recovered.body"
 msgstr "Resolved: {detail}"
 
-#. The admin inbox copy of the same event. {check} is a check's id; {detail} is either its message
-#. key or, on a row from before the checks were keyed, its English.
+#. The admin inbox copy of the same event. {detail} is the check's own message, already rendered in
+#. the reader's language, or on a row from before the checks were keyed, its English.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "inbox.health.issue.title"
 msgstr "Health issue"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "inbox.health.issue.body"
-msgstr "{check} needs attention"
+msgstr "{detail}"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "inbox.health.recovered.title"
@@ -1645,7 +1645,7 @@ msgstr "Health recovered"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "inbox.health.recovered.body"
-msgstr "{check} is healthy again"
+msgstr "Resolved: {detail}"
 
 #. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin

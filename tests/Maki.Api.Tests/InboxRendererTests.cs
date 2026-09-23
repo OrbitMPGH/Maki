@@ -120,6 +120,37 @@ public class InboxRendererTests
         Assert.Contains("ベルセルク", body, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A health notification names the problem, not the check's id ("legacy:mapping:10 needs
+    /// attention" was what admins used to get), and the check's own series survives the renderer
+    /// filling the inbox's <c>{series}</c>.
+    /// </summary>
+    [Fact]
+    public void A_health_issue_reads_as_the_checks_own_message()
+    {
+        var (title, body) = RenderRaw("inbox.health.issue", new Dictionary<string, object?>
+        {
+            ["detail"] = "health.issue.mappingFailing",
+            ["detail.series"] = "Secret Love",
+            ["detail.source"] = "mangakatana",
+            ["detail.detail"] = "Timed out.",
+        });
+
+        Assert.Equal("Health issue", title);
+        Assert.Equal("Secret Love: refreshing from mangakatana is failing. Timed out.", body);
+    }
+
+    [Fact]
+    public void A_health_row_from_before_the_checks_were_keyed_passes_its_english_through()
+    {
+        var (_, body) = RenderRaw("inbox.health.recovered", new Dictionary<string, object?>
+        {
+            ["detail"] = "Kavita: not configured",
+        });
+
+        Assert.Equal("Resolved: Kavita: not configured", body);
+    }
+
     [Fact]
     public void A_row_with_no_key_serves_its_stored_text()
     {
@@ -139,6 +170,9 @@ public class InboxRendererTests
             string.Empty,
             string.Empty,
             seriesTitle);
+
+    private static (string Title, string Body) RenderRaw(string key, Dictionary<string, object?> args) =>
+        Renderer.Render(SupportedLanguages.Default, key, InboxRenderer.Serialize(args), string.Empty, string.Empty, "Berserk");
 
     private sealed class FixedLocale(string locale) : IRequestLocale
     {

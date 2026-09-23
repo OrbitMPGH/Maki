@@ -29,6 +29,7 @@ import {
 } from '../../api/readingProfiles'
 import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Panel } from '../ui/Panel'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -190,6 +191,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
   const [open, setOpen] = useState(false)
   const update = useUpdateReadingProfile()
   const remove = useDeleteReadingProfile()
+  const [confirming, setConfirming] = useState(false)
   const { name } = profile
 
   return (
@@ -216,12 +218,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
               variant="subtle"
               color="var(--danger)"
               loading={remove.isPending}
-              onClick={() =>
-                remove.mutate(profile.id, {
-                  onSuccess: () =>
-                    notifications.show({ message: now`Deleted "${name}"`, color: 'green' }),
-                })
-              }
+              onClick={() => setConfirming(true)}
               aria-label={t`Delete profile`}
             >
               <IconTrash size={16} />
@@ -257,6 +254,24 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
           }
         />
       )}
+
+      <ConfirmDialog
+        opened={confirming}
+        onClose={() => setConfirming(false)}
+        title={<Trans>Delete {name}?</Trans>}
+        confirmLabel={<Trans>Delete profile</Trans>}
+        loading={remove.isPending}
+        onConfirm={() =>
+          remove.mutate(profile.id, {
+            onSuccess: () => {
+              setConfirming(false)
+              notifications.show({ message: now`Deleted "${name}"`, color: 'green' })
+            },
+          })
+        }
+      >
+        <Trans>The profile and its reader settings are removed. This can't be undone.</Trans>
+      </ConfirmDialog>
     </Card>
   )
 }

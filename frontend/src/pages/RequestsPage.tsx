@@ -40,6 +40,7 @@ import {
   type SeriesRequest,
 } from '../api/requests'
 import { useAuth } from '../auth/AuthProvider'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -83,6 +84,8 @@ export default function RequestsPage() {
   const [approveNote, setApproveNote] = useState('')
 
   const [rejecting, setRejecting] = useState<SeriesRequest | null>(null)
+  const [removing, setRemoving] = useState<SeriesRequest | null>(null)
+  const removingTitle = removing?.title ?? ''
   const [rejectNote, setRejectNote] = useState('')
 
   const [editing, setEditing] = useState<SeriesRequest | null>(null)
@@ -357,7 +360,7 @@ export default function RequestsPage() {
                           variant="subtle"
                           color="var(--danger)"
                           aria-label={t`Remove request`}
-                          onClick={() => remove.mutate(r.id)}
+                          onClick={() => setRemoving(r)}
                           loading={remove.isPending && remove.variables === r.id}
                         >
                           <IconTrash size={17} />
@@ -479,6 +482,17 @@ export default function RequestsPage() {
           </Group>
         </Stack>
       </Modal>
+
+      <ConfirmDialog
+        opened={removing !== null}
+        onClose={() => setRemoving(null)}
+        title={isAdmin ? <Trans>Delete this request?</Trans> : <Trans>Cancel this request?</Trans>}
+        confirmLabel={isAdmin ? t`Delete request` : t`Cancel request`}
+        loading={remove.isPending}
+        onConfirm={() => removing && remove.mutate(removing.id, { onSuccess: () => setRemoving(null) })}
+      >
+        <Trans>The request for {removingTitle} is removed. This can't be undone.</Trans>
+      </ConfirmDialog>
     </SurfaceFrame>
   )
 }

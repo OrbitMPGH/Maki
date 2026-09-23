@@ -1060,6 +1060,10 @@ msgstr "{watchedCount} 个已看过"
 msgid "{weight} total"
 msgstr "总计 {weight}"
 
+#: src/pages/CreatorPage.tsx
+msgid "{workCount, plural, one {# title in the catalogue} other {# titles in the catalogue}}"
+msgstr ""
+
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
 msgid "{year} – present"
@@ -1106,6 +1110,10 @@ msgstr "+ 情色（默认）"
 #, fuzzy
 msgid "+ suggestive titles"
 msgstr "+ 暗示性标题"
+
+#: src/pages/SettingsPage.tsx
+msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1436,6 +1444,7 @@ msgstr "活动日志"
 msgid "Adaptation"
 msgstr "改编"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -1515,6 +1524,7 @@ msgid "Add some series to your library first and Maki will suggest more like the
 msgstr "先将一些系列添加到资料库，Maki 就会推荐更多相似内容。"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Add to library"
 msgstr "添加到资料库"
@@ -1540,6 +1550,10 @@ msgstr "添加用户"
 #, fuzzy
 msgid "Added"
 msgstr "已添加"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Added {title}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -1603,6 +1617,7 @@ msgstr "受影响的章节："
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1763,6 +1778,14 @@ msgstr "名称有歧义"
 msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
 msgstr ""
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin decides where it lands and what gets downloaded."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "An admin will see it on the Requests page."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Analysis"
@@ -1834,6 +1857,10 @@ msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Anything in the MangaBaka catalogue that matches these filters."
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "Anything still using this key stops working straight away. This can't be undone."
 msgstr ""
 
 #: src/components/RequestForm.tsx
@@ -1961,6 +1988,10 @@ msgstr ""
 #, fuzzy
 msgid "Art"
 msgstr "画作"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ask for this"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -2362,6 +2393,7 @@ msgstr "无法读取此下载"
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
+#: src/components/ui/ConfirmDialog.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
@@ -2387,6 +2419,10 @@ msgstr "取消请求"
 #, fuzzy
 msgid "Cancel scan"
 msgstr "取消扫描"
+
+#: src/pages/RequestsPage.tsx
+msgid "Cancel this request?"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
@@ -2825,6 +2861,10 @@ msgstr "全部清除"
 #, fuzzy
 msgid "Clear all filters"
 msgstr "清除所有筛选条件"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Clear all notifications?"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3507,6 +3547,10 @@ msgstr "定义中"
 msgid "Delete"
 msgstr "删除"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Delete {deletingName}?"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Delete {fileName}"
@@ -3516,6 +3560,10 @@ msgstr "删除 {fileName}"
 #, fuzzy
 msgid "Delete {label}"
 msgstr "删除 {label}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Delete {name}?"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3595,6 +3643,14 @@ msgstr ""
 
 #: src/components/rails/CustomRailSection.tsx
 msgid "Delete the rail \"{railName}\"? Its filters go with it."
+msgstr ""
+
+#: src/pages/RequestsPage.tsx
+msgid "Delete this request?"
+msgstr ""
+
+#: src/components/settings/UsersSection.tsx
+msgid "Delete user"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -4152,6 +4208,10 @@ msgstr "所有类型"
 msgid "Every month"
 msgstr "每月"
 
+#: src/pages/NotificationsPage.tsx
+msgid "Every notification goes, read and unread. This can't be undone."
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Every section is switched off"
@@ -4398,12 +4458,14 @@ msgid "Filter the catalogue"
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Filters"
 msgstr "筛选条件"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Filters ({appliedCount})"
 msgstr "筛选条件（{appliedCount}）"
@@ -4712,6 +4774,10 @@ msgstr "前往第 {pageNumber} 页"
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "前往第 {pageNumber} 页（已加书签）"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Go to series"
+msgstr ""
+
 #: src/App.tsx
 #, fuzzy
 msgid "Go to start page"
@@ -4810,6 +4876,7 @@ msgstr ""
 msgid "Have ({downloadedFilterCount})"
 msgstr "已有（{downloadedFilterCount}）"
 
+#: src/App.tsx
 #: src/nav.ts
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5174,6 +5241,10 @@ msgstr "在队列中"
 #, fuzzy
 msgid "in the reader"
 msgstr "在阅读器中"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "In your library"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -5784,6 +5855,7 @@ msgid "Live download queue: pages are fetched, validated and packaged into CBZ f
 msgstr "实时下载队列：页面会被获取、验证，然后每次两个打包成 CBZ 文件。"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/pages/CreatorPage.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -7156,6 +7228,10 @@ msgstr "通知"
 msgid "Now {range}"
 msgstr "现在 {range}"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Now in your library. Matching sources in the background."
+msgstr ""
+
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
@@ -7349,6 +7425,10 @@ msgstr "打开条目"
 msgid "Open file findings"
 msgstr "打开文件发现项"
 
+#: src/App.tsx
+msgid "Open Health"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Open on"
@@ -7402,6 +7482,10 @@ msgstr ""
 #, fuzzy
 msgid "Optional, and yours to set. Maki never adds one for you."
 msgstr "可选，由你自行设置。Maki 不会替你添加。"
+
+#: src/pages/LoginPage.tsx
+msgid "or"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8590,6 +8674,14 @@ msgstr "请求替换"
 msgid "Request series"
 msgstr "请求系列"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Requested"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Requested {title}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Requested, an admin will see it on the Requests page"
@@ -8812,6 +8904,10 @@ msgstr "评论"
 #, fuzzy
 msgid "Revoke"
 msgstr "撤销"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Revoke {revokingName}?"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -9705,6 +9801,10 @@ msgstr ""
 msgid "Showing {shown} of {total}"
 msgstr "显示 {total} 项中的 {shown} 项"
 
+#: src/pages/CreatorPage.tsx
+msgid "Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Showing {shownQueueCount} of {totalQueueCount} queued items. The rest are still queued and will download, they're just not listed here."
@@ -10442,10 +10542,18 @@ msgstr ""
 msgid "The odd one out"
 msgstr "与众不同"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "The profile and its reader settings are removed. This can't be undone."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."
 msgstr "提供方的签发者 URL，不要包含 /.well-known/openid-configuration。Maki 会自行追加该路径。"
+
+#: src/pages/RequestsPage.tsx
+msgid "The request for {removingTitle} is removed. This can't be undone."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -10548,6 +10656,10 @@ msgstr ""
 #, fuzzy
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "它们来自目录，因此转储未覆盖的资料库不会有这些内容。"
+
+#: src/components/settings/UsersSection.tsx
+msgid "They will no longer be able to sign in. This can't be undone."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -11416,6 +11528,10 @@ msgstr "查看并添加 {title}"
 msgid "View changelog"
 msgstr "查看更新日志"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "View in library"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Vol. {volume}"
@@ -11758,6 +11874,14 @@ msgstr "你 · {readChapter}"
 #, fuzzy
 msgid "You bail around"
 msgstr "你通常在这里弃读"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "You can't add series yourself. An admin decides where it lands and what gets downloaded."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy

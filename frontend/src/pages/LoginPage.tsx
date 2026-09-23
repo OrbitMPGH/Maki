@@ -144,7 +144,7 @@ export function LoginPage() {
               >
                 <Trans>Continue with {displayName}</Trans>
               </Button>
-              {!passwordHidden && <Divider label="or" labelPosition="center" />}
+              {!passwordHidden && <Divider label={t`or`} labelPosition="center" />}
             </>
           )}
 

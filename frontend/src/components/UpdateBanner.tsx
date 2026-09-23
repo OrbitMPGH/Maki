@@ -4,9 +4,20 @@ import { IconRocket, IconX } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useUpdateStatus } from '../api/hooks'
 
+/** The last version somebody dismissed, remembered per browser so the banner stays gone until a newer one ships. */
+const LS_DISMISSED = 'update-banner-dismissed'
+
+function readDismissed(): string | null {
+  try {
+    return localStorage.getItem(LS_DISMISSED)
+  } catch {
+    return null
+  }
+}
+
 export default function UpdateBanner() {
   const { data } = useUpdateStatus()
-  const [dismissedVersion, setDismissedVersion] = useState<string | null>(null)
+  const [dismissedVersion, setDismissedVersion] = useState<string | null>(readDismissed)
   const { t } = useLingui()
 
   if (!data?.updateAvailable || !data.latestVersion) return null
@@ -44,7 +55,14 @@ export default function UpdateBanner() {
           color="gray"
           size="sm"
           aria-label={t`Dismiss`}
-          onClick={() => setDismissedVersion(latestVersion)}
+          onClick={() => {
+            setDismissedVersion(latestVersion)
+            try {
+              localStorage.setItem(LS_DISMISSED, latestVersion)
+            } catch {
+              /* private mode: dismissed for this visit only */
+            }
+          }}
         >
           <IconX size={16} />
         </ActionIcon>
