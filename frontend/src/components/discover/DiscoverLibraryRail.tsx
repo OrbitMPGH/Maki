@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { Alert, Button, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -103,7 +104,7 @@ export function DiscoverLibraryRail({
 
   const add = () => {
     if (!rootFolderId) return
-    addMutationId.current ??= crypto.randomUUID()
+    addMutationId.current ??= randomUUID()
     addSeries.mutate(
       {
         metadataProviderId: item.providerId,
