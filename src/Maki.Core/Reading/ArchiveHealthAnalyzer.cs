@@ -201,8 +201,6 @@ public static class ArchiveHealthAnalyzer
                     try
                     {
                         var info = await Image.IdentifyAsync(stream, cancel);
-                        if (info.FrameMetadataCollection.Count > 1)
-                            incomplete.Add("Animated images are read from their first frame only");
                         if ((long)info.Width * info.Height > MaxPixels)
                             incomplete.Add("An image exceeds the pixel limit");
                         fingerprints.Add(new(name, rawHash, info.Width, info.Height));
