@@ -12,7 +12,6 @@ import {
   Modal,
   NumberInput,
   Pagination,
-  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
@@ -894,7 +893,6 @@ function FileReview({
       title={t`Review archive`}
       size="min(1060px, 94vw)"
       centered
-      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="lg">
         {(error ?? action.error) && <Alert color="var(--danger)">{(error ?? action.error)?.message}</Alert>}
@@ -1429,7 +1427,6 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
       title={t`Operation #${id}`}
       size="min(1060px, 94vw)"
       centered
-      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="lg">
         {(error ?? action.error) && <Alert color="var(--danger)">{(error ?? action.error)?.message}</Alert>}

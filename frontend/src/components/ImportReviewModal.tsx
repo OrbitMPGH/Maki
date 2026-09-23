@@ -166,7 +166,7 @@ export function ImportReviewModal({
             </Text>
           </div>
 
-          <Stack gap="xs" mah={360} style={{ overflowY: 'auto' }}>
+          <Stack gap="xs" mah="min(360px, 35dvh)" style={{ overflowY: 'auto' }}>
             {plan.files.map((file) => (
               <PlanFile key={file.fileName} file={file} />
             ))}

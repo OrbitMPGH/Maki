@@ -4,7 +4,6 @@ import {
   Divider,
   Group,
   Modal,
-  ScrollArea,
   Select,
   Stack,
   Text,
@@ -150,7 +149,7 @@ export function NamingTokenModal({
   }, [tokens])
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Naming tokens`} size="xl" scrollAreaComponent={ScrollArea.Autosize}>
+    <Modal opened={opened} onClose={onClose} title={t`Naming tokens`} size="xl">
       <Group justify="flex-end" gap="sm" mb="md">
         <Select
           data={separatorOptions}

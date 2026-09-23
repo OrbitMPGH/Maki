@@ -204,7 +204,7 @@ export default function CommandPalette({ navItems }: Props) {
             py={4}
             style={{ borderBottom: '1px solid var(--border)' }}
           />
-          <ScrollArea.Autosize mah={360} type="auto" viewportRef={listRef}>
+          <ScrollArea.Autosize mah="min(360px, 60dvh)" type="auto" viewportRef={listRef}>
             <Stack gap={2} p="xs">
               {results.length === 0 && (
                 <Text c="var(--ink-3)" size="sm" ta="center" py="lg">

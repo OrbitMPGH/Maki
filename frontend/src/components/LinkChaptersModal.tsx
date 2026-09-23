@@ -68,7 +68,7 @@ export function LinkChaptersModal({
             <Trans>No files found in the series folder.</Trans>
           </Text>
         ) : (
-          <ScrollArea.Autosize mah={420}>
+          <ScrollArea.Autosize mah="min(420px, 45dvh)">
             <Stack gap={4}>
               {files.map((f) => (
                 <UnstyledButton

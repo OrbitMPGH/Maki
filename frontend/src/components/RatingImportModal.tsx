@@ -127,7 +127,7 @@ export function RatingImportModal({
             }
           />
         </Group>
-        <ScrollArea.Autosize mah={360}>
+        <ScrollArea.Autosize mah="min(360px, 45dvh)">
           <Stack gap={4}>
             {items.map((i) => (
               <Group key={i.seriesId} justify="space-between" wrap="nowrap" gap="sm">

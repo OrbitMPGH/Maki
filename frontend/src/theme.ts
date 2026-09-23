@@ -6,10 +6,12 @@ import {
   type MantineThemeOverride,
   Modal,
   Paper,
-  ScrollArea,
   Table,
   createTheme,
 } from '@mantine/core'
+import type { ReactNode } from 'react'
+
+const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
 
 /**
  * Maki design system.
@@ -144,19 +146,24 @@ const themeBase: MantineThemeOverride = {
      * hairline and a body that scrolls under it, without touching the call site. The immersive
      * Discover modal opts out by passing `padding={0} title={null} withCloseButton={false}` (no
      * header renders at all) and its own content styles.
+     *
+     * No scroll wrapper around header and body: Mantine's default wraps both, so the scrollbar ran
+     * past the title and the content box could overflow on top of it. The content is a flex column
+     * instead and only `.utility-modal-body` scrolls (theme.css).
      */
     Modal: Modal.extend({
       defaultProps: {
         radius: 'lg',
         padding: 'lg',
         centered: true,
-        scrollAreaComponent: ScrollArea.Autosize,
+        scrollAreaComponent: ModalPassthrough,
         overlayProps: { blur: 3, backgroundOpacity: 0.55 },
         classNames: {
           content: 'utility-modal-content',
           header: 'utility-modal-header',
           title: 'utility-modal-title',
           close: 'utility-modal-close',
+          body: 'utility-modal-body',
         },
       },
     }),

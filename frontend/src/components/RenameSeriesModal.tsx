@@ -5,7 +5,6 @@ import {
   Group,
   Loader,
   Modal,
-  ScrollArea,
   Stack,
   Table,
   Text,
@@ -47,7 +46,6 @@ export function RenameSeriesModal({
       title={t`Rename files`}
       size="lg"
       centered
-      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="md">
         {isLoading && <Loader size="sm" />}
