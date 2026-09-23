@@ -4849,8 +4849,11 @@ body.reader-open {
    Modal defaults hang these classes on every dialog, so an ordinary one needs no styling of its
    own. A modal with neither title nor close button renders no header element, which is how the
    immersive tier stays exactly as it was. */
-.utility-modal-content {
+.utility-modal-content:not([data-full-screen]) {
   max-height: min(90dvh, 1000px);
+}
+[data-mantine-color-scheme] .utility-modal-content[data-full-screen] {
+  border: 0;
 }
 .utility-modal-header {
   border-bottom: 1px solid var(--hairline);
