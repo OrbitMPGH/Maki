@@ -126,7 +126,7 @@ msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, other {파일 #개를 삭제함}}"
 
 #. placeholder {0}: r.rowCount
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{0, plural, one {Downloaded # embedded series} other {Downloaded # embedded series}}"
 msgstr "{0, plural, other {내장 시리즈 #개 다운로드함}}"
@@ -425,7 +425,7 @@ msgstr "{earnedCount} / {0, plural, other {획득한 업적 #개}}"
 msgid "{editingTitle}, asked for {editingAskedFor}"
 msgstr "{editingTitle}, 요청: {editingAskedFor}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{embedded, plural, one {# new} other {# new}}"
 msgstr "{embedded, plural, other {새 항목 #개}}"
@@ -480,12 +480,12 @@ msgstr "{haveCount} / {totalCount, plural, other {# 챕터}}"
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, other {# 챕터}} 목록에 있지만, 원하는 챕터는 없음"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
 msgstr "{hours, plural, other {#시간}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, other {약 #시간 남음}}"
@@ -575,7 +575,7 @@ msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 펼�
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{total}개 중 {matched}개 일치, 긍정 {positive}개, 회피 {avoided}개, 이미 보유 {superseded}개"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{minutes, plural, one {about # min left} other {about # min left}}"
 msgstr "{minutes, plural, other {약 #분 남음}}"
@@ -739,7 +739,7 @@ msgstr "{remaining, plural, other {대기열에 #개 더 있음}}"
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, other {시리즈 #개 이름 변경됨}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, other {#분}}"
@@ -997,7 +997,7 @@ msgstr "{value, plural, other {시리즈 완료됨}}"
 msgid "{value, plural, one {volume read} other {volumes read}}"
 msgstr "{value, plural, other {볼륨 읽음}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{vectorCount, plural, one {# series embedded.} other {# series embedded.}}"
 msgstr "{vectorCount, plural, other {시리즈 #개 임베딩됨.}}"
@@ -1112,11 +1112,6 @@ msgstr "<0>싫어요</0>와 4점 이하 평가는 유지한 작품보다 거부�
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>좋아요</0>는 취향에 반영됩니다. 비슷한 작품의 순위가 올라갑니다."
 
-#: src/components/RecommendationModelCards.tsx
-#, fuzzy
-msgid "~240 MB RAM · best results, recommended"
-msgstr "~240 MB RAM · 최상의 결과, 권장"
-
 #. placeholder {0}: formatRating(item.rating)
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1230,7 +1225,7 @@ msgid "A library import folder finished."
 msgstr "라이브러리 가져오기 폴더 작업이 완료되었습니다."
 
 #: src/components/SetupWizard.tsx
-msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Off turns both off. You can change this any time in Settings."
+msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Switching it off disables both. You can change this any time in Settings."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1281,7 +1276,7 @@ msgstr "시청한 애니메이션은 직접 평가한 만화와 같은 비중으
 msgid "A zip of your database and <0>config.json</0>: the library and every setting. Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken automatically before every upgrade migration."
 msgstr ""
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr "약 {hourPhrase} {restPhrase} 남음"
@@ -1291,7 +1286,7 @@ msgstr "약 {hourPhrase} {restPhrase} 남음"
 msgid "About {readingTime}"
 msgstr "읽기 시간 약 {readingTime}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about a minute left"
 msgstr "약 1분 남음"
@@ -1988,11 +1983,6 @@ msgstr "자동 (소스 우선순위)"
 msgid "Automatic download failed"
 msgstr "자동 다운로드 실패"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Automatically retry failed downloads"
-msgstr "실패한 다운로드 자동 재시도"
-
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -2688,7 +2678,7 @@ msgstr "트리거 전 읽지 않은 챕터 수"
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "챕터: {chapterRangeMin}–{chapterRangeMax}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Check for prebuilt now"
 msgstr "지금 사전 제작본 확인"
@@ -3759,7 +3749,7 @@ msgstr "이 챕터 다운로드"
 msgid "Downloaded"
 msgstr "다운로드됨"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded {installedDate}."
 msgstr "{installedDate}에 다운로드됨."
@@ -3769,7 +3759,7 @@ msgstr "{installedDate}에 다운로드됨."
 msgid "Downloaded from"
 msgstr "다운로드 위치"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded the prebuilt index"
 msgstr "사전 제작 인덱스 다운로드됨"
@@ -3796,7 +3786,7 @@ msgstr "메타데이터 데이터베이스 다운로드 중"
 msgid "Downloading now"
 msgstr "지금 다운로드 중"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloading…"
 msgstr "다운로드 중…"
@@ -4146,7 +4136,7 @@ msgid "Failed"
 msgstr "실패"
 
 #: src/pages/SettingsPage.tsx
-msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...) up to the cap. Manual retries from Activity don't count."
+msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry off. Manual retries from Activity don't count."
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
@@ -5120,7 +5110,7 @@ msgstr "인덱서"
 msgid "indexer, torrent search, api key, releases, indexers, torznab, categories"
 msgstr "인덱서, 토렌트 검색, API 키, 릴리스, 인덱서, Torznab, 카테고리"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Indexing… {scanned}{totalPart}{freshPart}{etaPart}"
 msgstr "인덱싱 중… {scanned}{totalPart}{freshPart}{etaPart}"
@@ -5323,7 +5313,7 @@ msgstr "마지막 {lastSync} · 다음 {nextSync}"
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "마지막 다운로드 실패: {lastError}. 다음 예약 실행에서 재시도합니다."
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last error: {lastError}"
 msgstr "마지막 오류: {lastError}"
@@ -5343,7 +5333,7 @@ msgstr "마지막 새로 고침"
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
 msgstr "마지막 실행 {finishedAtLabel}: 포스터 {downloadedCount}개 다운로드, {failedCount}개 실패, 캐시 이미지 {thumbnailsClearedCount}개 지움"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last run {finishedDate}."
 msgstr "마지막 실행 {finishedDate}."
@@ -5890,11 +5880,6 @@ msgstr "남은 소스 일치 중…"
 msgid "Max"
 msgstr "최대"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Max attempts"
-msgstr "최대 시도 횟수"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Maximum chapters"
@@ -5992,7 +5977,7 @@ msgstr "디스크에서 누락"
 msgid "Missing posters"
 msgstr "포스터 누락"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Model switch: {modelSwitchError}"
 msgstr "모델 전환: {modelSwitchError}"
@@ -6439,7 +6424,7 @@ msgstr "아직 장르 데이터가 없습니다."
 msgid "No history yet"
 msgstr "아직 기록 없음"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "아직 인덱스가 없습니다. 사전 제작 벡터가 자동으로 다운로드됩니다."
@@ -6550,11 +6535,6 @@ msgstr ""
 #, fuzzy
 msgid "No scrobble"
 msgstr "No scrobble"
-
-#: src/components/RecommendationModelCards.tsx
-#, fuzzy
-msgid "No semantic search or recommendations"
-msgstr "의미 검색 또는 추천 없음"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6971,7 +6951,6 @@ msgstr "OEL"
 msgid "OEL / western"
 msgstr "OEL / 서양"
 
-#: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7019,7 +6998,6 @@ msgstr ""
 msgid "OLED black"
 msgstr "OLED 블랙"
 
-#: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7549,7 +7527,7 @@ msgstr "접두사"
 msgid "Preload"
 msgstr "미리 로드"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Preparing model…"
 msgstr "모델 준비 중…"
@@ -8502,6 +8480,10 @@ msgstr "{retryCount}회 재시도함 - 다음 시도 {nextAttemptTime}"
 msgid "Retry"
 msgstr "재시도"
 
+#: src/pages/SettingsPage.tsx
+msgid "Retry a failed download up to (attempts)"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Retry and cancel queued downloads"
@@ -9148,7 +9130,11 @@ msgstr "이 챕터 선택"
 msgid "Self-hosted manga library and downloader."
 msgstr "자체 호스팅 만화 라이브러리 및 다운로더."
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Semantic search and recommendations"
+msgstr ""
+
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Semantic search and recommendations are off."
 msgstr "의미 검색 및 추천이 꺼져 있습니다."
@@ -9873,7 +9859,7 @@ msgstr "선정적"
 msgid "Supernatural"
 msgstr "초자연"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Switching model… downloading the model and its index."
 msgstr "모델 전환 중… 모델과 인덱스를 다운로드합니다."
@@ -10987,6 +10973,10 @@ msgstr "사용자"
 msgid "Users & security"
 msgstr "사용자 및 보안"
 
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Uses about 240 MB of RAM."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "UTC"
@@ -11117,7 +11107,7 @@ msgstr "권"
 msgid "vs {from} to {to}"
 msgstr "{from}부터 {to}까지 비교"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "먼저 MangaBaka 스냅샷이 다운로드되기를 기다리는 중입니다."

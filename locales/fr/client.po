@@ -126,7 +126,7 @@ msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, one {Supprimé : # fichier} many {Supprimés : # fichiers} other {Supprimés : # fichiers}}"
 
 #. placeholder {0}: r.rowCount
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{0, plural, one {Downloaded # embedded series} other {Downloaded # embedded series}}"
 msgstr "{0, plural, one {Téléchargé : # série intégrée} many {Téléchargé : # séries intégrées} other {Téléchargé : # séries intégrées}}"
@@ -425,7 +425,7 @@ msgstr "{earnedCount} sur {0, plural, one {# succès obtenu} many {# succès obt
 msgid "{editingTitle}, asked for {editingAskedFor}"
 msgstr "{editingTitle}, demandé pour {editingAskedFor}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{embedded, plural, one {# new} other {# new}}"
 msgstr "{embedded, plural, one {# nouveau} many {# nouveaux} other {# nouveaux}}"
@@ -480,12 +480,12 @@ msgstr "{haveCount} / {totalCount, plural, one {# chapitre} many {# chapitres} o
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# chapitre} many {# chapitres} other {# chapitres}} répertoriés, aucun souhaité"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
 msgstr "{hours, plural, one {# h} many {# h} other {# h}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {environ # h restante} many {environ # h restantes} other {environ # h restantes}}"
@@ -575,7 +575,7 @@ msgstr "{markerLabel} L'adaptation animée commence ici · cliquer pour dévelop
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} sur {total} correspondants, {positive} positifs, {avoided} évités, {superseded} déjà à vous"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{minutes, plural, one {about # min left} other {about # min left}}"
 msgstr "{minutes, plural, one {environ # min restante} many {environ # min restantes} other {environ # min restantes}}"
@@ -739,7 +739,7 @@ msgstr "{remaining, plural, one {# de plus dans la file} many {# de plus dans la
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, one {Renommage de # série} many {Renommage de # séries} other {Renommage de # séries}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} many {# min} other {# min}}"
@@ -997,7 +997,7 @@ msgstr "{value, plural, one {série terminée} many {séries terminées} other {
 msgid "{value, plural, one {volume read} other {volumes read}}"
 msgstr "{value, plural, one {volume lu} many {volumes lus} other {volumes lus}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{vectorCount, plural, one {# series embedded.} other {# series embedded.}}"
 msgstr "{vectorCount, plural, one {# série intégrée.} many {# séries intégrées.} other {# séries intégrées.}}"
@@ -1112,11 +1112,6 @@ msgstr "<0>Pouce vers le bas</0> et les notes de 4 ou moins rétrogradent les ti
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>Pouce vers le haut</0> compte pour vos goûts. Les titres similaires sont mieux classés."
 
-#: src/components/RecommendationModelCards.tsx
-#, fuzzy
-msgid "~240 MB RAM · best results, recommended"
-msgstr "~240 Mo de RAM · meilleurs résultats, recommandé"
-
 #. placeholder {0}: formatRating(item.rating)
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1230,7 +1225,7 @@ msgid "A library import folder finished."
 msgstr "L'importation d'un dossier de bibliothèque est terminée."
 
 #: src/components/SetupWizard.tsx
-msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Off turns both off. You can change this any time in Settings."
+msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Switching it off disables both. You can change this any time in Settings."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1281,7 +1276,7 @@ msgstr "Un anime vu compte autant qu'un manga que vous avez noté vous-même."
 msgid "A zip of your database and <0>config.json</0>: the library and every setting. Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken automatically before every upgrade migration."
 msgstr ""
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr "il reste environ {hourPhrase} {restPhrase}"
@@ -1291,7 +1286,7 @@ msgstr "il reste environ {hourPhrase} {restPhrase}"
 msgid "About {readingTime}"
 msgstr "Environ {readingTime}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about a minute left"
 msgstr "il reste environ une minute"
@@ -1988,11 +1983,6 @@ msgstr "Automatique (priorité des sources)"
 msgid "Automatic download failed"
 msgstr "Échec du téléchargement automatique"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Automatically retry failed downloads"
-msgstr "Réessayer automatiquement les téléchargements échoués"
-
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -2688,7 +2678,7 @@ msgstr "Nombre de chapitres non lus avant déclenchement"
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "Chapitres : {chapterRangeMin}–{chapterRangeMax}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Check for prebuilt now"
 msgstr "Vérifier les éléments préconstruits maintenant"
@@ -3759,7 +3749,7 @@ msgstr "Télécharger ce chapitre"
 msgid "Downloaded"
 msgstr "Téléchargé"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded {installedDate}."
 msgstr "Téléchargé le {installedDate}."
@@ -3769,7 +3759,7 @@ msgstr "Téléchargé le {installedDate}."
 msgid "Downloaded from"
 msgstr "Téléchargé depuis"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded the prebuilt index"
 msgstr "Index préconstruit téléchargé"
@@ -3796,7 +3786,7 @@ msgstr "Téléchargement de la base de données des métadonnées"
 msgid "Downloading now"
 msgstr "Téléchargement en cours"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloading…"
 msgstr "Téléchargement…"
@@ -4146,7 +4136,7 @@ msgid "Failed"
 msgstr "Échec"
 
 #: src/pages/SettingsPage.tsx
-msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...) up to the cap. Manual retries from Activity don't count."
+msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry off. Manual retries from Activity don't count."
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
@@ -5120,7 +5110,7 @@ msgstr "Indexeur"
 msgid "indexer, torrent search, api key, releases, indexers, torznab, categories"
 msgstr "indexeur, recherche de torrents, clé API, versions, indexeurs, torznab, catégories"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Indexing… {scanned}{totalPart}{freshPart}{etaPart}"
 msgstr "Indexation… {scanned}{totalPart}{freshPart}{etaPart}"
@@ -5323,7 +5313,7 @@ msgstr "dernier {lastSync} · prochain {nextSync}"
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "Dernier téléchargement échoué : {lastError}. La prochaine exécution planifiée réessaiera."
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last error: {lastError}"
 msgstr "Dernière erreur : {lastError}"
@@ -5343,7 +5333,7 @@ msgstr "Dernière actualisation"
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
 msgstr "Dernière exécution {finishedAtLabel} : {downloadedCount} affiches téléchargées, {failedCount} échecs, {thumbnailsClearedCount} images en cache effacées"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last run {finishedDate}."
 msgstr "Dernière exécution {finishedDate}."
@@ -5890,11 +5880,6 @@ msgstr "Mise en correspondance des sources restantes…"
 msgid "Max"
 msgstr "Max"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Max attempts"
-msgstr "Nombre maximal de tentatives"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Maximum chapters"
@@ -5992,7 +5977,7 @@ msgstr "Manquant sur le disque"
 msgid "Missing posters"
 msgstr "Affiches manquantes"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Model switch: {modelSwitchError}"
 msgstr "Changement de modèle : {modelSwitchError}"
@@ -6439,7 +6424,7 @@ msgstr "Aucune donnée de genre pour le moment."
 msgid "No history yet"
 msgstr "Pas encore d'historique"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "Pas encore d'index, les vecteurs préconstruits se téléchargent automatiquement."
@@ -6550,11 +6535,6 @@ msgstr ""
 #, fuzzy
 msgid "No scrobble"
 msgstr "Aucun Scrobble"
-
-#: src/components/RecommendationModelCards.tsx
-#, fuzzy
-msgid "No semantic search or recommendations"
-msgstr "Pas de recherche sémantique ni de recommandations"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6971,7 +6951,6 @@ msgstr "OEL"
 msgid "OEL / western"
 msgstr "OEL / occidental"
 
-#: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7019,7 +6998,6 @@ msgstr ""
 msgid "OLED black"
 msgstr "Noir OLED"
 
-#: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7549,7 +7527,7 @@ msgstr "Préfixe"
 msgid "Preload"
 msgstr "Précharger"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Preparing model…"
 msgstr "Préparation du modèle…"
@@ -8502,6 +8480,10 @@ msgstr "Nouvelle tentative {retryCount}x - prochain essai {nextAttemptTime}"
 msgid "Retry"
 msgstr "Réessayer"
 
+#: src/pages/SettingsPage.tsx
+msgid "Retry a failed download up to (attempts)"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Retry and cancel queued downloads"
@@ -9148,7 +9130,11 @@ msgstr "Sélectionner ces chapitres"
 msgid "Self-hosted manga library and downloader."
 msgstr "Bibliothèque de mangas auto-hébergée et outil de téléchargement."
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Semantic search and recommendations"
+msgstr ""
+
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Semantic search and recommendations are off."
 msgstr "La recherche sémantique et les recommandations sont désactivées."
@@ -9873,7 +9859,7 @@ msgstr "Suggestif"
 msgid "Supernatural"
 msgstr "Surnaturel"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Switching model… downloading the model and its index."
 msgstr "Changement de modèle… téléchargement du modèle et de son index."
@@ -10987,6 +10973,10 @@ msgstr "Utilisateurs"
 msgid "Users & security"
 msgstr "Utilisateurs et sécurité"
 
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Uses about 240 MB of RAM."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "UTC"
@@ -11117,7 +11107,7 @@ msgstr "Volumes"
 msgid "vs {from} to {to}"
 msgstr "contre {from} à {to}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "En attente du téléchargement préalable de l'instantané MangaBaka."

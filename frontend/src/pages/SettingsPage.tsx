@@ -46,7 +46,7 @@ import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { Panel } from '../components/ui/Panel'
-import { RecommendationModelCards } from '../components/RecommendationModelCards'
+import { RecommendationModelSwitch } from '../components/RecommendationModelSwitch'
 import { NamingFormatInput } from '../components/NamingFormatInput'
 import { PriorityList } from '../components/PriorityList'
 import { useAuth } from '../auth/AuthProvider'
@@ -504,7 +504,7 @@ function RecommendationIndexSection() {
         </Trans>
       </SettingsHelp>
 
-      <RecommendationModelCards status={status} busy={setModel.isPending} onSelect={selectModel} />
+      <RecommendationModelSwitch status={status} busy={setModel.isPending} onSelect={selectModel} />
     </Panel>
   )
 }
@@ -1125,8 +1125,9 @@ function DownloadSection() {
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
   const [concurrentChapters, setConcurrentChapters] = useState<number | string>(2)
-  const [retryEnabled, setRetryEnabled] = useState(true)
-  const [retryMaxAttempts, setRetryMaxAttempts] = useState<number | string>(5)
+  // One number on screen, two fields on the wire: 0 means retry is off, and turning it off keeps the
+  // stored cap so switching it back on doesn't forget what it was.
+  const [retryAttempts, setRetryAttempts] = useState<number | string>(5)
   const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
@@ -1135,8 +1136,7 @@ function DownloadSection() {
   useEffect(() => {
     if (settings) {
       setConcurrentChapters(settings.concurrentChapters)
-      setRetryEnabled(settings.retryEnabled)
-      setRetryMaxAttempts(settings.retryMaxAttempts)
+      setRetryAttempts(settings.retryEnabled ? settings.retryMaxAttempts : 0)
       setSmartDownloadChaptersLeft(settings.smartDownloadChaptersLeft)
       setSmartDownloadChapters(settings.smartDownloadChapters)
       setItemTimeoutMinutes(settings.itemTimeoutMinutes)
@@ -1147,8 +1147,7 @@ function DownloadSection() {
   const dirty =
     settings !== undefined &&
     (Number(concurrentChapters) !== settings.concurrentChapters ||
-      retryEnabled !== settings.retryEnabled ||
-      Number(retryMaxAttempts) !== settings.retryMaxAttempts ||
+      Number(retryAttempts) !== (settings.retryEnabled ? settings.retryMaxAttempts : 0) ||
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
       Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
@@ -1188,26 +1187,24 @@ function DownloadSection() {
       </SettingsHelp>
       <Group align="flex-end" mb="md">
         <NumberInput
-        label={t`Chapters unread before trigger`}
-        min={1}
-        max={10}
-        clampBehavior="strict"
-        value={smartDownloadChaptersLeft}
-        onChange={setSmartDownloadChaptersLeft}
-        w={220}
-        mb="md"
-      />
-      <NumberInput
-        label={t`Chapters to download at once`}
-        min={1}
-        max={20}
-        clampBehavior="strict"
-        value={smartDownloadChapters}
-        onChange={setSmartDownloadChapters}
-        w={220}
-        mb="md"
-      />
-        </Group>
+          label={t`Chapters unread before trigger`}
+          min={1}
+          max={10}
+          clampBehavior="strict"
+          value={smartDownloadChaptersLeft}
+          onChange={setSmartDownloadChaptersLeft}
+          w={220}
+        />
+        <NumberInput
+          label={t`Chapters to download at once`}
+          min={1}
+          max={20}
+          clampBehavior="strict"
+          value={smartDownloadChapters}
+          onChange={setSmartDownloadChapters}
+          w={220}
+        />
+      </Group>
       <Text fw={500} size="sm" mb={4}>
         <Trans>Stuck downloads</Trans>
       </Text>
@@ -1250,27 +1247,20 @@ function DownloadSection() {
       </Text>
       <SettingsHelp mb="xs">
         <Trans>
-          Failed downloads retry on a growing backoff (5m, 10m, 20m, ...) up to the cap. Manual
-          retries from Activity don't count.
+          Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry
+          off. Manual retries from Activity don't count.
         </Trans>
       </SettingsHelp>
-      <Group align="flex-end" mb="md">
-        <Switch
-          label={t`Automatically retry failed downloads`}
-          checked={retryEnabled}
-          onChange={(e) => setRetryEnabled(e.currentTarget.checked)}
-        />
-        <NumberInput
-          label={t`Max attempts`}
-          min={1}
-          max={20}
-          clampBehavior="strict"
-          value={retryMaxAttempts}
-          onChange={setRetryMaxAttempts}
-          disabled={!retryEnabled}
-          w={140}
-        />
-      </Group>
+      <NumberInput
+        label={t`Retry a failed download up to (attempts)`}
+        min={0}
+        max={20}
+        clampBehavior="strict"
+        value={retryAttempts}
+        onChange={setRetryAttempts}
+        w={220}
+        mb="md"
+      />
       <Group justify="flex-end" mt="md">
         <SaveButton
           dirty={dirty}
@@ -1279,8 +1269,9 @@ function DownloadSection() {
             save.mutate(
               {
                 concurrentChapters: Number(concurrentChapters),
-                retryEnabled,
-                retryMaxAttempts: Number(retryMaxAttempts),
+                retryEnabled: Number(retryAttempts) > 0,
+                retryMaxAttempts:
+                  Number(retryAttempts) > 0 ? Number(retryAttempts) : (settings?.retryMaxAttempts ?? 5),
                 smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
                 smartDownloadChapters: Number(smartDownloadChapters),
                 itemTimeoutMinutes: Number(itemTimeoutMinutes),

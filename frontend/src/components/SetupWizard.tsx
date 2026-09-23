@@ -43,7 +43,7 @@ import {
 } from '../api/hooks'
 import { ConnectionSettingsCard } from './ConnectionSettingsCard'
 import { ContentRatingCards } from './ContentRatingCards'
-import { RecommendationModelCards } from './RecommendationModelCards'
+import { RecommendationModelSwitch } from './RecommendationModelSwitch'
 import { useThemeChoice } from '../theme-context'
 import { useLabel } from '../i18n-context'
 
@@ -133,10 +133,10 @@ function RecommendationsStep() {
         <Trans>
           A local embedding model lets Discover recommend by feel and search by description. It
           uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the
-          heavy work. Off turns both off. You can change this any time in Settings.
+          heavy work. Switching it off disables both. You can change this any time in Settings.
         </Trans>
       </Text>
-      <RecommendationModelCards
+      <RecommendationModelSwitch
         status={recIndex}
         busy={setModel.isPending}
         onSelect={(kind) => setModel.mutate(kind)}

@@ -118,7 +118,6 @@ export function ProgressSection() {
           onChange={(e) => patch({ enabled: e.currentTarget.checked })}
           label={t`Track progress and achievements`}
           description={t`Off hides the Home section, the all-time tab on Stats, and unlock notifications.`}
-          aria-label={t`Track progress and achievements`}
         />
 
         <Switch
@@ -127,7 +126,6 @@ export function ProgressSection() {
           disabled={!settings.enabled}
           label={t`Show reading streaks`}
           description={t`One missed day a week is forgiven, and today never breaks a streak.`}
-          aria-label={t`Show reading streaks`}
         />
 
         <Switch
@@ -136,7 +134,6 @@ export function ProgressSection() {
           disabled={!settings.enabled}
           label={t`Compare with other users on this instance`}
           description={t`Shows your name, level, chapters read and streak to everyone who also opted in. Never anything about which series you read.`}
-          aria-label={t`Compare with other users on this instance`}
         />
 
         <Select

@@ -126,7 +126,7 @@ msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, one {# dosya silindi} other {# dosya silindi}}"
 
 #. placeholder {0}: r.rowCount
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{0, plural, one {Downloaded # embedded series} other {Downloaded # embedded series}}"
 msgstr "{0, plural, one {# gömülü seri indirildi} other {# gömülü seri indirildi}}"
@@ -425,7 +425,7 @@ msgstr "{0, plural, one {Kazanılan # başarımdan} other {Kazanılan # başarı
 msgid "{editingTitle}, asked for {editingAskedFor}"
 msgstr "{editingTitle}, {editingAskedFor} istendi"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{embedded, plural, one {# new} other {# new}}"
 msgstr "{embedded, plural, one {# yeni} other {# yeni}}"
@@ -480,12 +480,12 @@ msgstr "{haveCount} / {totalCount, plural, one {# bölüm} other {# bölüm}}"
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# bölüm} other {# bölüm}} listelendi, hiçbiri istenmiyor"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
 msgstr "{hours, plural, one {# sa} other {# sa}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {yaklaşık # sa kaldı} other {yaklaşık # sa kaldı}}"
@@ -575,7 +575,7 @@ msgstr "{markerLabel} Anime uyarlaması burada başlıyor · genişletmek için 
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} / {total} eşleşti, {positive} olumlu, {avoided} kaçınılan, {superseded} zaten sizde"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{minutes, plural, one {about # min left} other {about # min left}}"
 msgstr "{minutes, plural, one {yaklaşık # dk kaldı} other {yaklaşık # dk kaldı}}"
@@ -739,7 +739,7 @@ msgstr "{remaining, plural, one {kuyrukta # tane daha} other {kuyrukta # tane da
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, one {# seri yeniden adlandırıldı} other {# seri yeniden adlandırıldı}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# dk} other {# dk}}"
@@ -997,7 +997,7 @@ msgstr "{value, plural, one {seri bitirildi} other {seri bitirildi}}"
 msgid "{value, plural, one {volume read} other {volumes read}}"
 msgstr "{value, plural, one {cilt okundu} other {cilt okundu}}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{vectorCount, plural, one {# series embedded.} other {# series embedded.}}"
 msgstr "{vectorCount, plural, one {# seri gömüldü.} other {# seri gömüldü.}}"
@@ -1112,11 +1112,6 @@ msgstr "<0>Beğenmedim</0> ve 4 veya daha düşük puanlar, reddettiklerinize tu
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>Beğendim</0> zevk profilinize katkı sağlar. Benzer başlıklar daha üst sıralarda yer alır."
 
-#: src/components/RecommendationModelCards.tsx
-#, fuzzy
-msgid "~240 MB RAM · best results, recommended"
-msgstr "~240 MB RAM · en iyi sonuçlar, önerilir"
-
 #. placeholder {0}: formatRating(item.rating)
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1230,7 +1225,7 @@ msgid "A library import folder finished."
 msgstr "Bir kitaplık içe aktarma klasörü tamamlandı."
 
 #: src/components/SetupWizard.tsx
-msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Off turns both off. You can change this any time in Settings."
+msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Switching it off disables both. You can change this any time in Settings."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -1281,7 +1276,7 @@ msgstr "İzlediğiniz bir anime, kendi derecelendirdiğiniz bir manga kadar ağ�
 msgid "A zip of your database and <0>config.json</0>: the library and every setting. Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken automatically before every upgrade migration."
 msgstr ""
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr "yaklaşık {hourPhrase} {restPhrase} kaldı"
@@ -1291,7 +1286,7 @@ msgstr "yaklaşık {hourPhrase} {restPhrase} kaldı"
 msgid "About {readingTime}"
 msgstr "Yaklaşık {readingTime}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about a minute left"
 msgstr "yaklaşık bir dakika kaldı"
@@ -1988,11 +1983,6 @@ msgstr "Otomatik (kaynak önceliği)"
 msgid "Automatic download failed"
 msgstr "Otomatik indirme başarısız oldu"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Automatically retry failed downloads"
-msgstr "Başarısız indirmeleri otomatik olarak yeniden dene"
-
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -2688,7 +2678,7 @@ msgstr "Tetikleyiciden önce okunmamış bölüm sayısı"
 msgid "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgstr "Bölümler: {chapterRangeMin}–{chapterRangeMax}"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Check for prebuilt now"
 msgstr "Şimdi hazır olanı kontrol et"
@@ -3759,7 +3749,7 @@ msgstr "Bu bölümü indir"
 msgid "Downloaded"
 msgstr "İndirildi"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded {installedDate}."
 msgstr "{installedDate} tarihinde indirildi."
@@ -3769,7 +3759,7 @@ msgstr "{installedDate} tarihinde indirildi."
 msgid "Downloaded from"
 msgstr "Şuradan indirildi:"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded the prebuilt index"
 msgstr "Hazır dizin indirildi"
@@ -3796,7 +3786,7 @@ msgstr "Meta veri veritabanı indiriliyor"
 msgid "Downloading now"
 msgstr "Şu anda indiriliyor"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloading…"
 msgstr "İndiriliyor…"
@@ -4146,7 +4136,7 @@ msgid "Failed"
 msgstr "Başarısız"
 
 #: src/pages/SettingsPage.tsx
-msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...) up to the cap. Manual retries from Activity don't count."
+msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry off. Manual retries from Activity don't count."
 msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
@@ -5120,7 +5110,7 @@ msgstr "Dizinleyici"
 msgid "indexer, torrent search, api key, releases, indexers, torznab, categories"
 msgstr "dizinleyici, torrent araması, api anahtarı, sürümler, dizinleyiciler, torznab, kategoriler"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Indexing… {scanned}{totalPart}{freshPart}{etaPart}"
 msgstr "Dizin oluşturuluyor… {scanned}{totalPart}{freshPart}{etaPart}"
@@ -5323,7 +5313,7 @@ msgstr "son {lastSync} · sonraki {nextSync}"
 msgid "Last download failed: {lastError}. The next scheduled run retries."
 msgstr "Son indirme başarısız oldu: {lastError}. Bir sonraki zamanlanmış çalıştırma yeniden dener."
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last error: {lastError}"
 msgstr "Son hata: {lastError}"
@@ -5343,7 +5333,7 @@ msgstr "Son yenileme"
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
 msgstr "Son çalıştırma {finishedAtLabel}: {downloadedCount} poster indirildi, {failedCount} başarısız, {thumbnailsClearedCount} önbelleğe alınmış görüntü temizlendi"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last run {finishedDate}."
 msgstr "Son çalıştırma {finishedDate}."
@@ -5890,11 +5880,6 @@ msgstr "Kalan kaynaklar eşleştiriliyor…"
 msgid "Max"
 msgstr "Azami"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Max attempts"
-msgstr "Azami deneme"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Maximum chapters"
@@ -5992,7 +5977,7 @@ msgstr "Diskte eksik"
 msgid "Missing posters"
 msgstr "Eksik posterler"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Model switch: {modelSwitchError}"
 msgstr "Model değişimi: {modelSwitchError}"
@@ -6439,7 +6424,7 @@ msgstr "Henüz tür verisi yok."
 msgid "No history yet"
 msgstr "Henüz geçmiş yok"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "No index yet, the prebuilt vectors download automatically."
 msgstr "Henüz dizin yok, hazır vektörler otomatik olarak indirilir."
@@ -6550,11 +6535,6 @@ msgstr ""
 #, fuzzy
 msgid "No scrobble"
 msgstr "Senkronizasyon yok"
-
-#: src/components/RecommendationModelCards.tsx
-#, fuzzy
-msgid "No semantic search or recommendations"
-msgstr "Anlamsal arama veya öneri yok"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6971,7 +6951,6 @@ msgstr "OEL"
 msgid "OEL / western"
 msgstr "OEL / batı"
 
-#: src/components/RecommendationModelCards.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7019,7 +6998,6 @@ msgstr ""
 msgid "OLED black"
 msgstr "OLED siyahı"
 
-#: src/components/RecommendationModelCards.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7549,7 +7527,7 @@ msgstr "Önek"
 msgid "Preload"
 msgstr "Önden yükleme"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Preparing model…"
 msgstr "Model hazırlanıyor…"
@@ -8502,6 +8480,10 @@ msgstr "{retryCount}x yeniden denendi, sonraki deneme {nextAttemptTime}"
 msgid "Retry"
 msgstr "Yeniden dene"
 
+#: src/pages/SettingsPage.tsx
+msgid "Retry a failed download up to (attempts)"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Retry and cancel queued downloads"
@@ -9148,7 +9130,11 @@ msgstr "Bu bölümleri seç"
 msgid "Self-hosted manga library and downloader."
 msgstr "Kendi sunucunuzda barındırılan manga kitaplığı ve indirici."
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Semantic search and recommendations"
+msgstr ""
+
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Semantic search and recommendations are off."
 msgstr "Anlamsal arama ve öneriler kapalı."
@@ -9873,7 +9859,7 @@ msgstr "Üstü kapalı"
 msgid "Supernatural"
 msgstr "Doğaüstü"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Switching model… downloading the model and its index."
 msgstr "Model değiştiriliyor… model ve dizini indiriliyor."
@@ -10987,6 +10973,10 @@ msgstr "Kullanıcılar"
 msgid "Users & security"
 msgstr "Kullanıcılar ve güvenlik"
 
+#: src/components/RecommendationModelSwitch.tsx
+msgid "Uses about 240 MB of RAM."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "UTC"
@@ -11117,7 +11107,7 @@ msgstr "Ciltler"
 msgid "vs {from} to {to}"
 msgstr "{from} - {to} ile karşılaştırıldığında"
 
-#: src/components/RecommendationModelCards.tsx
+#: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "Önce MangaBaka anlık görüntüsünün indirilmesi bekleniyor."
