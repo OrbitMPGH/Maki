@@ -185,7 +185,7 @@ function PreferencesStep() {
           <Trans>Content rating</Trans>
         </Text>
         <Text size="sm" c="var(--ink-3)" mb="xs">
-          <Trans>Highest rating shown in "Add Series" search results. Changeable later in Settings.</Trans>
+          <Trans>Highest rating shown in search, Discover and recommendations. Changeable later in Settings.</Trans>
         </Text>
         <ContentRatingCards
           value={discover?.maxContentRating ?? 'erotica'}

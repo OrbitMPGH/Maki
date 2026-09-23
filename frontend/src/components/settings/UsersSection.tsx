@@ -103,8 +103,7 @@ export function UsersSection() {
       </Group>
       <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
-          Each account has its own login, permissions and content rating. Reading progress is shared
-          across accounts for now; per-user history arrives with the next release.
+          Each account has its own login, permissions, content rating and reading history.
         </Trans>
       </Text>
 
@@ -325,7 +324,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
 
         <Select
           label={t`Maximum content rating`}
-          description={t`Caps what Discover will show this account.`}
+          description={t`Caps what search, Discover and recommendations show this account.`}
           data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
           value={rating}
           onChange={(v) => setRating(v ?? 'safe')}

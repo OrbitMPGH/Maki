@@ -134,20 +134,20 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'start-page',
-    tab: 'account',
-    title: msg`Start page`,
-    keywords: msg({
-      message: `landing page, home, library, discover, opens on, default page`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
     id: 'title-language',
     tab: 'account',
     title: msg`Title language`,
     keywords: msg({
       message: `language, title language, japanese titles, romaji, native title, original title, localised, localized`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'start-page',
+    tab: 'account',
+    title: msg`Start page`,
+    keywords: msg({
+      message: `landing page, home, library, discover, opens on, default page`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -210,7 +210,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'discover-rating',
     tab: 'reading',
-    title: msg`Discover`,
+    title: msg`Content rating`,
     permission: 'ChangeContentRating',
     keywords: msg({
       message: `content rating, nsfw, erotica, mature, safe, adult`,

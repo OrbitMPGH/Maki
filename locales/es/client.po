@@ -2332,9 +2332,8 @@ msgid "Cancelled"
 msgstr "Cancelado"
 
 #: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "Caps what Discover will show this account."
-msgstr "Limita lo que Descubrir mostrará a esta cuenta."
+msgid "Caps what search, Discover and recommendations show this account."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3094,6 +3093,8 @@ msgstr "Contenido en un archivo de volumen/compilación"
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Content rating"
 msgstr "Clasificación de contenido"
@@ -3603,7 +3604,6 @@ msgstr "discord, webhook, apprise, alertas, eventos"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
-#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
@@ -3846,9 +3846,8 @@ msgid "e.g. Ongoing & behind"
 msgstr "p. ej., En curso y atrasado"
 
 #: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "Each account has its own login, permissions and content rating. Reading progress is shared across accounts for now; per-user history arrives with the next release."
-msgstr "Cada cuenta tiene su propio inicio de sesión, permisos y clasificación de contenido. El progreso de lectura se comparte entre cuentas por ahora; el historial por usuario llegará en la próxima versión."
+msgid "Each account has its own login, permissions, content rating and reading history."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4800,15 +4799,9 @@ msgstr "Ocultar este título"
 msgid "Higher for readers like you"
 msgstr "Más alto para lectores como tú"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "Clasificación de contenido más alta que se muestra en los resultados de búsqueda de \"Añadir serie\"; se permite todo hasta ella, incluida. Descubrir y las recomendaciones nunca muestran títulos pornográficos, independientemente de este ajuste."
-
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
-msgstr "Clasificación más alta que se muestra en los resultados de búsqueda de \"Añadir serie\". Se puede cambiar después en Ajustes."
+msgid "Highest rating shown in search, Discover and recommendations. Changeable later in Settings."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6699,6 +6692,10 @@ msgstr "Ninguno de los {total} capítulos solicitados"
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "Ninguno de los títulos de este creador coincide con estos filtros. Prueba a relajar alguno."
 
+#: src/pages/SettingsPage.tsx
+msgid "none yet"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 msgid "not {names}"
 msgstr ""
@@ -7727,6 +7724,10 @@ msgstr "Rebaja los títulos cercanos a este"
 #, fuzzy
 msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
 msgstr "Envía tu progreso de lectura de Kavita a AniList, MyAnimeList y MangaBaka (cualquier combinación; deja vacías las credenciales de un sitio para desactivarlo). Gestiona las conexiones y revisa las coincidencias en la página Scrobble. Usa la conexión de Kavita configurada arriba."
+
+#: src/pages/SettingsPage.tsx
+msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -10254,6 +10255,10 @@ msgstr "La biblioteca"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "El archivo vinculado aún no se ha inventariado, por lo que no se pueden mostrar sus páginas. Ejecuta Analizar archivos y vuelve para compararlas."
+
+#: src/pages/SettingsPage.tsx
+msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

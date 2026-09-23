@@ -2332,9 +2332,8 @@ msgid "Cancelled"
 msgstr "İptal Edildi"
 
 #: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "Caps what Discover will show this account."
-msgstr "Keşfet'in bu hesaba göstereceklerine üst sınır koyar."
+msgid "Caps what search, Discover and recommendations show this account."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3094,6 +3093,8 @@ msgstr "Bir cilt/derleme dosyasında bulunuyor"
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Content rating"
 msgstr "İçerik derecelendirmesi"
@@ -3603,7 +3604,6 @@ msgstr "discord, webhook, apprise, uyarılar, olaylar"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
-#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
@@ -3846,9 +3846,8 @@ msgid "e.g. Ongoing & behind"
 msgstr "örn. Devam ediyor ve geride"
 
 #: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "Each account has its own login, permissions and content rating. Reading progress is shared across accounts for now; per-user history arrives with the next release."
-msgstr "Her hesabın kendi girişi, izinleri ve içerik derecelendirmesi vardır. Okuma ilerlemesi şimdilik hesaplar arasında paylaşılır; kullanıcı başına geçmiş bir sonraki sürümle gelecek."
+msgid "Each account has its own login, permissions, content rating and reading history."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4800,15 +4799,9 @@ msgstr "Bu başlığı gizle"
 msgid "Higher for readers like you"
 msgstr "Sizin gibi okuyucular için daha yüksek"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "\"Seri Ekle\" arama sonuçlarında gösterilen en yüksek içerik derecelendirmesi, buna kadar ve bunu içeren her şeye izin verilir. Keşfet ve öneriler bu ayardan bağımsız olarak pornografik başlıkları asla göstermez."
-
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
-msgstr "\"Seri Ekle\" arama sonuçlarında gösterilen en yüksek derecelendirme. Daha sonra Ayarlar'dan değiştirilebilir."
+msgid "Highest rating shown in search, Discover and recommendations. Changeable later in Settings."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6699,6 +6692,10 @@ msgstr "{total} bölümün hiçbiri istenmiyor"
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "Bu yaratıcının başlıklarının hiçbiri bu filtrelere uymuyor. Bunlardan birini gevşetmeyi deneyin."
 
+#: src/pages/SettingsPage.tsx
+msgid "none yet"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 msgid "not {names}"
 msgstr ""
@@ -7727,6 +7724,10 @@ msgstr "Bu başlığa yakın başlıkları aşağı iter"
 #, fuzzy
 msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
 msgstr "Kavita okuma ilerlemenizi AniList, MyAnimeList ve MangaBaka'ya gönderir (herhangi bir kombinasyon, devre dışı bırakmak için bir sitenin kimlik bilgilerini boş bırakın). Bağlantıları yönetin ve eşleşmeleri Scrobble sayfasından inceleyin. Yukarıda yapılandırılan Kavita bağlantısını kullanır."
+
+#: src/pages/SettingsPage.tsx
+msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -10254,6 +10255,10 @@ msgstr "Kitaplık"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "Bağlı dosyanın henüz envanteri çıkarılmadı, bu yüzden sayfaları gösterilemiyor. Dosyaları Tara'yı çalıştırın, sonra karşılaştırmak için geri dönün."
+
+#: src/pages/SettingsPage.tsx
+msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

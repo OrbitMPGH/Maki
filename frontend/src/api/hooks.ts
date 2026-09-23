@@ -3200,6 +3200,8 @@ export interface ScrobbleSettings {
   intervalMinutes: number
   planToRead: boolean
   libraryIds: string | null
+  /** The app registrations, interval and library filter are instance-wide; the server drops them for anyone else. */
+  isAdmin: boolean
 }
 
 export function useScrobbleSettings() {

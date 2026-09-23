@@ -2332,9 +2332,8 @@ msgid "Cancelled"
 msgstr "キャンセル済み"
 
 #: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "Caps what Discover will show this account."
-msgstr "このアカウントで「見つける」に表示する内容を制限します。"
+msgid "Caps what search, Discover and recommendations show this account."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3094,6 +3093,8 @@ msgstr "巻／合本ファイルに含まれる"
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Content rating"
 msgstr "コンテンツレーティング"
@@ -3603,7 +3604,6 @@ msgstr "discord、webhook、apprise、アラート、イベント"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
-#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discover"
@@ -3846,9 +3846,8 @@ msgid "e.g. Ongoing & behind"
 msgstr "例：連載中と遅れ"
 
 #: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "Each account has its own login, permissions and content rating. Reading progress is shared across accounts for now; per-user history arrives with the next release."
-msgstr "各アカウントには固有のログイン、権限、コンテンツレーティングがあります。現時点では読書進捗はアカウント間で共有されます。ユーザーごとの履歴は次のリリースで追加されます。"
+msgid "Each account has its own login, permissions, content rating and reading history."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4800,15 +4799,9 @@ msgstr "このタイトルを非表示にする"
 msgid "Higher for readers like you"
 msgstr "あなたと同じ読者では高い"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "「Add Series」の検索結果に表示する最も高いコンテンツレーティングで、これ以下はすべて許可されます。この設定に関係なく、「見つける」と推薦ではポルノタイトルを表示しません。"
-
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
-msgstr "「Add Series」の検索結果に表示する最も高いレーティングです。後からSettingsで変更できます。"
+msgid "Highest rating shown in search, Discover and recommendations. Changeable later in Settings."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6699,6 +6692,10 @@ msgstr "{total}章のいずれも希望していません"
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "この作成者のタイトルはいずれもこれらのフィルターに一致しません。どれか1つを緩めてみてください。"
 
+#: src/pages/SettingsPage.tsx
+msgid "none yet"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 msgid "not {names}"
 msgstr ""
@@ -7727,6 +7724,10 @@ msgstr "このタイトルに近い作品の順位を下げます"
 #, fuzzy
 msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
 msgstr "Kavitaの読書進捗をAniList、MyAnimeList、MangaBakaへ送信します（任意の組み合わせ。無効にするサイトは認証情報を空欄にします）。Scrobbleページで接続を管理し、一致を確認します。上で設定したKavita接続を使用します。"
+
+#: src/pages/SettingsPage.tsx
+msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -10254,6 +10255,10 @@ msgstr "ライブラリ"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "リンクされたファイルはまだ棚卸しされていないため、ページを表示できません。ファイルをスキャンしてから戻り、比較してください。"
+
+#: src/pages/SettingsPage.tsx
+msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

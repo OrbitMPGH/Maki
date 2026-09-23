@@ -1901,8 +1901,8 @@ msgid "Cancelled"
 msgstr "Cancelled"
 
 #: src/components/settings/UsersSection.tsx
-msgid "Caps what Discover will show this account."
-msgstr "Caps what Discover will show this account."
+msgid "Caps what search, Discover and recommendations show this account."
+msgstr "Caps what search, Discover and recommendations show this account."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "cat {ratioValue}"
@@ -2522,6 +2522,8 @@ msgstr "Contained in a volume/compilation file"
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
 msgid "Content rating"
 msgstr "Content rating"
 
@@ -2939,7 +2941,6 @@ msgstr "discord, webhook, apprise, alerts, events"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
-#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Discover"
 msgstr "Discover"
@@ -3137,8 +3138,8 @@ msgid "e.g. Ongoing & behind"
 msgstr "e.g. Ongoing & behind"
 
 #: src/components/settings/UsersSection.tsx
-msgid "Each account has its own login, permissions and content rating. Reading progress is shared across accounts for now; per-user history arrives with the next release."
-msgstr "Each account has its own login, permissions and content rating. Reading progress is shared across accounts for now; per-user history arrives with the next release."
+msgid "Each account has its own login, permissions, content rating and reading history."
+msgstr "Each account has its own login, permissions, content rating and reading history."
 
 #: src/components/NotificationsSection.tsx
 msgid "Each connection chooses which events it fires on."
@@ -3919,13 +3920,9 @@ msgstr "Hide this title"
 msgid "Higher for readers like you"
 msgstr "Higher for readers like you"
 
-#: src/pages/SettingsPage.tsx
-msgid "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-msgstr "Highest content rating shown in \"Add Series\" search results, everything up to and including it is allowed. Discover and recommendations never surface pornographic titles regardless of this setting."
-
 #: src/components/SetupWizard.tsx
-msgid "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
-msgstr "Highest rating shown in \"Add Series\" search results. Changeable later in Settings."
+msgid "Highest rating shown in search, Discover and recommendations. Changeable later in Settings."
+msgstr "Highest rating shown in search, Discover and recommendations. Changeable later in Settings."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Historical"
@@ -5465,6 +5462,10 @@ msgstr "None of the {total} chapters wanted"
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "None of their titles match these filters. Try loosening one of them."
 
+#: src/pages/SettingsPage.tsx
+msgid "none yet"
+msgstr "none yet"
+
 #: src/components/CatalogueRules.tsx
 msgid "not {names}"
 msgstr "not {names}"
@@ -6302,6 +6303,10 @@ msgstr "Pushes down titles close to this one"
 #: src/pages/SettingsPage.tsx
 msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
 msgstr "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
+
+#: src/pages/SettingsPage.tsx
+msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
+msgstr "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
 
 #: src/pages/SetupAccountPage.tsx
 msgid "Put it behind HTTPS, then turn on Settings → Security → Require HTTPS."
@@ -8373,6 +8378,10 @@ msgstr "The library"
 #: src/pages/HealthPage.tsx
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
+
+#: src/pages/SettingsPage.tsx
+msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
+msgstr "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "The odd one out"
