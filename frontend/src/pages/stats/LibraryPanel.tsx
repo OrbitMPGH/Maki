@@ -10,7 +10,6 @@ import {
 } from '@mantine/core'
 import { AreaChart, DonutChart } from '@mantine/charts'
 import {
-  IconAlertTriangle,
   IconBooks,
   IconChartPie,
   IconChecks,
@@ -126,7 +125,6 @@ export function LibraryPanel() {
   if (isError || !stats) {
     return (
       <EmptyState
-        icon={IconAlertTriangle}
         title={t`Could not load library stats`}
         description={t`The server logs will say why.`}
         actionLabel={t`Try again`}

@@ -91,7 +91,7 @@ export function ReleaseSearchModal({
         </Text>
       )}
       {releases && releases.length > 0 && (
-        <Table striped highlightOnHover>
+        <Table highlightOnHover>
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Title</Trans></Table.Th>

@@ -423,7 +423,6 @@ export function CatalogueBrowser({
 
           {!loading && items.length === 0 && (
             <EmptyState
-              icon={IconSearch}
               title={searching ? t`No matches` : t`Nothing here`}
               description={
                 appliedCount > 0

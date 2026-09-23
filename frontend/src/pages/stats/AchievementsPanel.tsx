@@ -215,7 +215,7 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
           <Title order={4} mb="xs">
             <Trans>Around the house</Trans>
           </Title>
-          <Table highlightOnHover>
+          <Table className="panel-table ops-table" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>

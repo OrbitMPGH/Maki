@@ -313,8 +313,13 @@ export default function HealthPage() {
         </Alert>
       )}
 
-      <Tabs className="panel-tabs" value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
-        <Tabs.List className="panel-tab-list">
+      <Tabs
+        value={tab}
+        onChange={(value) => setParams({ tab: value ?? 'overview' })}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
+      >
+        <Tabs.List>
           <Tabs.Tab value="overview">
             <Trans>Overview</Trans>
           </Tabs.Tab>
@@ -329,7 +334,7 @@ export default function HealthPage() {
           </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="overview" pt="lg">
+        <Tabs.Panel value="overview">
           <div className="health-overview">
             <ChecksPanel checks={overview.data?.checks ?? []} run={run} />
             <CachePanel />
@@ -337,7 +342,7 @@ export default function HealthPage() {
           </div>
         </Tabs.Panel>
 
-        <Tabs.Panel value="files" pt="lg">
+        <Tabs.Panel value="files">
           <Stack>
             <Group className="health-filter-rail">
               <TextInput
@@ -453,93 +458,95 @@ export default function HealthPage() {
               <Loader />
             ) : (
               <>
-                <Table.ScrollContainer minWidth={720}>
-                  <Table striped highlightOnHover className="panel-table">
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th w={40}>
-                          <Checkbox
-                            aria-label={t`Select every file on this page`}
-                            checked={pageIds.length > 0 && pageIds.every((i) => selected.has(i))}
-                            indeterminate={
-                              pageIds.some((i) => selected.has(i)) && !pageIds.every((i) => selected.has(i))
-                            }
-                            onChange={(e) => {
-                              const checked = e.currentTarget.checked
-                              const next = new Set(selected)
-                              for (const i of pageIds) {
-                                if (checked) next.add(i)
-                                else next.delete(i)
-                              }
-                              setSelected(next)
-                            }}
-                          />
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Archive</Trans>
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Size</Trans>
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Analysis</Trans>
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Findings</Trans>
-                        </Table.Th>
-                        <Table.Th />
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {files.data?.items.map((file) => {
-                        const { relativePath } = file
-                        return (
-                        <Table.Tr key={file.id} data-selected={selected.has(file.id) || undefined}>
-                          <Table.Td>
+                <Panel p={0} className="table-panel">
+                  <Table.ScrollContainer minWidth={720}>
+                    <Table highlightOnHover className="panel-table">
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th w={40}>
                             <Checkbox
-                              aria-label={t`Select ${relativePath}`}
-                              checked={selected.has(file.id)}
+                              aria-label={t`Select every file on this page`}
+                              checked={pageIds.length > 0 && pageIds.every((i) => selected.has(i))}
+                              indeterminate={
+                                pageIds.some((i) => selected.has(i)) && !pageIds.every((i) => selected.has(i))
+                              }
                               onChange={(e) => {
                                 const checked = e.currentTarget.checked
                                 const next = new Set(selected)
-                                if (checked) next.add(file.id)
-                                else next.delete(file.id)
+                                for (const i of pageIds) {
+                                  if (checked) next.add(i)
+                                  else next.delete(i)
+                                }
                                 setSelected(next)
                               }}
                             />
-                          </Table.Td>
-                          <Table.Td>
-                            <Text fz="var(--type-meta)" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
-                              {file.relativePath}
-                            </Text>
-                            <Text size="xs" c="var(--ink-3)">
-                              {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>{bytes(file.size, t`Missing`)}</Table.Td>
-                          <Table.Td>
-                            <Status value={file.status} />
-                          </Table.Td>
-                          <Table.Td>
-                            <Group gap={4}>
-                              {file.findings.map((f) => (
-                                <Badge key={f.id} color={color(f.severity)} variant="light">
-                                  {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
-                                </Badge>
-                              ))}
-                            </Group>
-                          </Table.Td>
-                          <Table.Td>
-                            <Button size="xs" variant="default" onClick={() => setFileId(file.id)}>
-                              <Trans>Review</Trans>
-                            </Button>
-                          </Table.Td>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Archive</Trans>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Size</Trans>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Analysis</Trans>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Findings</Trans>
+                          </Table.Th>
+                          <Table.Th />
                         </Table.Tr>
-                        )
-                      })}
-                    </Table.Tbody>
-                  </Table>
-                </Table.ScrollContainer>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {files.data?.items.map((file) => {
+                          const { relativePath } = file
+                          return (
+                          <Table.Tr key={file.id} data-selected={selected.has(file.id) || undefined}>
+                            <Table.Td>
+                              <Checkbox
+                                aria-label={t`Select ${relativePath}`}
+                                checked={selected.has(file.id)}
+                                onChange={(e) => {
+                                  const checked = e.currentTarget.checked
+                                  const next = new Set(selected)
+                                  if (checked) next.add(file.id)
+                                  else next.delete(file.id)
+                                  setSelected(next)
+                                }}
+                              />
+                            </Table.Td>
+                            <Table.Td>
+                              <Text fz="var(--type-meta)" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
+                                {file.relativePath}
+                              </Text>
+                              <Text size="xs" c="var(--ink-3)">
+                                {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>{bytes(file.size, t`Missing`)}</Table.Td>
+                            <Table.Td>
+                              <Status value={file.status} />
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap={4}>
+                                {file.findings.map((f) => (
+                                  <Badge key={f.id} color={color(f.severity)} variant="light">
+                                    {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
+                                  </Badge>
+                                ))}
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Button size="xs" variant="default" onClick={() => setFileId(file.id)}>
+                                <Trans>Review</Trans>
+                              </Button>
+                            </Table.Td>
+                          </Table.Tr>
+                          )
+                        })}
+                      </Table.Tbody>
+                    </Table>
+                  </Table.ScrollContainer>
+                </Panel>
                 {files.data?.items.length === 0 && (
                   <Text c="var(--ink-3)">
                     <Trans>No files match these filters. Run a scan to inventory the library.</Trans>
@@ -555,7 +562,7 @@ export default function HealthPage() {
           </Stack>
         </Tabs.Panel>
 
-        <Tabs.Panel value="repairs" pt="lg">
+        <Tabs.Panel value="repairs">
           <Stack>
             {operations.data?.items.map((op) => {
               const { id: opId, kind: opKind } = op
@@ -597,7 +604,7 @@ export default function HealthPage() {
           </Stack>
         </Tabs.Panel>
 
-        <Tabs.Panel value="history" pt="lg">
+        <Tabs.Panel value="history">
           <Stack>
             {history.data?.items.map((entry) => (
               <Group key={entry.id} align="flex-start">

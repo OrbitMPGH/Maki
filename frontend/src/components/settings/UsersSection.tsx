@@ -108,7 +108,7 @@ export function UsersSection() {
       </Text>
 
       <Table.ScrollContainer minWidth={576}>
-        <Table striped withTableBorder fz="sm">
+        <Table className="panel-table ops-table">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>User</Trans></Table.Th>

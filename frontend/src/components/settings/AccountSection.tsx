@@ -433,7 +433,7 @@ function ApiKeysCard() {
       </Group>
 
       {fullKeys && fullKeys.length > 0 && (
-        <Table striped withTableBorder mt="xs" fz="sm">
+        <Table className="panel-table ops-table" mt="xs">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Name</Trans></Table.Th>

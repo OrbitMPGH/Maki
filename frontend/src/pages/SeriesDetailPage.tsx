@@ -55,7 +55,6 @@ import {
   IconDotsVertical,
   IconPhotoSearch,
   IconEyeOff,
-  IconBookOff,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -1091,7 +1090,6 @@ export default function SeriesDetailPage() {
   if (!series) {
     return (
         <EmptyState
-            icon={IconBookOff}
             title={t`Series not found`}
             description={t`It may have been removed from the library.`}
             actionLabel={t`Back to library`}

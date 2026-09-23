@@ -93,7 +93,7 @@ export function RenameSeriesModal({
             <Text fw={500} size="sm" mb={4}>
               <Plural value={fileCount} one="# file" other="# files" />
             </Text>
-            <Table striped highlightOnHover fz="sm">
+            <Table highlightOnHover fz="sm">
               <Table.Tbody>
                 {plan.files.map((file) => (
                   <Table.Tr key={file.chapterFileId}>

@@ -199,8 +199,13 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
         </div>
       }
     >
-      <Tabs value={tab} onChange={(value) => setTab(value === 'anime' ? 'anime' : 'titles')}>
-        <Tabs.List mb="sm">
+      <Tabs
+        value={tab}
+        onChange={(value) => setTab(value === 'anime' ? 'anime' : 'titles')}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs sub-tabs', tab: 'series-tab' }}
+      >
+        <Tabs.List>
           <Tabs.Tab value="titles"><Trans>Titles</Trans></Tabs.Tab>
           {lab?.capabilities.animeSignals && (
             <Tabs.Tab value="anime"><Trans>Anime</Trans></Tabs.Tab>

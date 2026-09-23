@@ -16,6 +16,7 @@ import { plural, t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
+import { Panel } from './ui/Panel'
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
@@ -145,122 +146,124 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             </Paper>
           )}
 
-          <Table.ScrollContainer minWidth={640} mt="sm">
-            <Table highlightOnHover verticalSpacing="xs">
-              <Table.Thead>
-                <Table.Tr>
-                  {selectMode && <Table.Th w={40} />}
-                  <Table.Th><Trans>File</Trans></Table.Th>
-                  <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
-                  <Table.Th w={160}><Trans>Status</Trans></Table.Th>
-                  <Table.Th><Trans>Mapped to</Trans></Table.Th>
-                  <Table.Th w={90}><Trans>Size</Trans></Table.Th>
-                  {!selectMode && <Table.Th w={40} />}
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {files.map((f) => {
-                  const v = fileStatusVisual(f.status)
-                  const { fileName } = f
-                  return (
-                    <Table.Tr key={f.relativePath} opacity={f.status === 'missing' ? 0.6 : 1}>
-                      {selectMode && (
+          <Panel p={0} className="table-panel" mt="sm">
+            <Table.ScrollContainer minWidth={640}>
+              <Table className="panel-table ops-table" highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    {selectMode && <Table.Th w={40} />}
+                    <Table.Th><Trans>File</Trans></Table.Th>
+                    <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
+                    <Table.Th w={160}><Trans>Status</Trans></Table.Th>
+                    <Table.Th><Trans>Mapped to</Trans></Table.Th>
+                    <Table.Th w={90}><Trans>Size</Trans></Table.Th>
+                    {!selectMode && <Table.Th w={40} />}
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {files.map((f) => {
+                    const v = fileStatusVisual(f.status)
+                    const { fileName } = f
+                    return (
+                      <Table.Tr key={f.relativePath} opacity={f.status === 'missing' ? 0.6 : 1}>
+                        {selectMode && (
+                          <Table.Td>
+                            <Checkbox
+                              checked={selected.has(f.relativePath)}
+                              onChange={() => toggleSelected(f.relativePath)}
+                              disabled={!f.onDisk}
+                              aria-label={t`Select ${fileName}`}
+                            />
+                          </Table.Td>
+                        )}
                         <Table.Td>
-                          <Checkbox
-                            checked={selected.has(f.relativePath)}
-                            onChange={() => toggleSelected(f.relativePath)}
-                            disabled={!f.onDisk}
-                            aria-label={t`Select ${fileName}`}
-                          />
+                          <Group gap={6} wrap="nowrap">
+                            {isPdfFile(f.fileName) ? (
+                              <IconFileTypePdf size={15} style={{ flexShrink: 0 }} />
+                            ) : (
+                              <IconFileZip size={15} style={{ flexShrink: 0 }} />
+                            )}
+                            <Text size="sm" style={{ wordBreak: 'break-all' }}>
+                              {f.fileName}
+                            </Text>
+                          </Group>
                         </Table.Td>
-                      )}
-                      <Table.Td>
-                        <Group gap={6} wrap="nowrap">
-                          {isPdfFile(f.fileName) ? (
-                            <IconFileTypePdf size={15} style={{ flexShrink: 0 }} />
+                        <Table.Td>
+                          {f.parsedLabel ? (
+                            <Badge
+                              size="sm"
+                              variant="light"
+                              color={f.isVolume ? 'indigo' : 'gray'}
+                              className="tnum"
+                            >
+                              {f.parsedLabel}
+                            </Badge>
                           ) : (
-                            <IconFileZip size={15} style={{ flexShrink: 0 }} />
+                            <Text size="sm" c="var(--ink-3)">
+                              -
+                            </Text>
                           )}
-                          <Text size="sm" style={{ wordBreak: 'break-all' }}>
-                            {f.fileName}
-                          </Text>
-                        </Group>
-                      </Table.Td>
-                      <Table.Td>
-                        {f.parsedLabel ? (
+                        </Table.Td>
+                        <Table.Td>
                           <Badge
                             size="sm"
+                            color={`var(--${statusToken(v.color)})`}
                             variant="light"
-                            color={f.isVolume ? 'indigo' : 'gray'}
-                            className="tnum"
+                            leftSection={<v.Icon size={12} />}
                           >
-                            {f.parsedLabel}
+                            {renderLabel(v.label)}
                           </Badge>
-                        ) : (
-                          <Text size="sm" c="var(--ink-3)">
-                            -
-                          </Text>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge
-                          size="sm"
-                          color={`var(--${statusToken(v.color)})`}
-                          variant="light"
-                          leftSection={<v.Icon size={12} />}
-                        >
-                          {renderLabel(v.label)}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        {f.isVolume && f.mappedChapters.length > 0 ? (
-                          <Tooltip
-                            label={plural(f.mappedChapters.length, {
-                              one: 'Volume file backing # chapter',
-                              other: 'Volume file backing # chapters',
-                            })}
-                            withArrow
-                          >
-                            <Text size="sm" className="tnum">
+                        </Table.Td>
+                        <Table.Td>
+                          {f.isVolume && f.mappedChapters.length > 0 ? (
+                            <Tooltip
+                              label={plural(f.mappedChapters.length, {
+                                one: 'Volume file backing # chapter',
+                                other: 'Volume file backing # chapters',
+                              })}
+                              withArrow
+                            >
+                              <Text size="sm" className="tnum">
+                                {mappedLabel(f)}
+                              </Text>
+                            </Tooltip>
+                          ) : (
+                            <Text size="sm" c={f.mappedChapters.length ? undefined : 'var(--ink-3)'} className="tnum">
                               {mappedLabel(f)}
                             </Text>
-                          </Tooltip>
-                        ) : (
-                          <Text size="sm" c={f.mappedChapters.length ? undefined : 'var(--ink-3)'} className="tnum">
-                            {mappedLabel(f)}
-                          </Text>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" c="var(--ink-3)" className="tnum">
-                          {formatBytes(f.size)}
-                        </Text>
-                      </Table.Td>
-                      {!selectMode && (
-                        <Table.Td>
-                          <Tooltip label={f.onDisk ? t`Delete from disk` : t`Missing from disk`} withArrow>
-                            <ActionIcon
-                              variant="subtle"
-                              color="red"
-                              disabled={!f.onDisk}
-                              onClick={() => {
-                                setSelected(new Set([f.relativePath]))
-                                setSelectMode(true)
-                                setConfirmOpen(true)
-                              }}
-                              aria-label={t`Delete ${fileName}`}
-                            >
-                              <IconTrash size={17} />
-                            </ActionIcon>
-                          </Tooltip>
+                          )}
                         </Table.Td>
-                      )}
-                    </Table.Tr>
-                  )
-                })}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                        <Table.Td>
+                          <Text size="sm" c="var(--ink-3)" className="tnum">
+                            {formatBytes(f.size)}
+                          </Text>
+                        </Table.Td>
+                        {!selectMode && (
+                          <Table.Td>
+                            <Tooltip label={f.onDisk ? t`Delete from disk` : t`Missing from disk`} withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="red"
+                                disabled={!f.onDisk}
+                                onClick={() => {
+                                  setSelected(new Set([f.relativePath]))
+                                  setSelectMode(true)
+                                  setConfirmOpen(true)
+                                }}
+                                aria-label={t`Delete ${fileName}`}
+                              >
+                                <IconTrash size={17} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Table.Td>
+                        )}
+                      </Table.Tr>
+                    )
+                  })}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Panel>
 
           <Modal
             opened={confirmOpen}

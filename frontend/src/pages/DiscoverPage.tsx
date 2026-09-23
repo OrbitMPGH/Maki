@@ -29,12 +29,11 @@ import {
   IconCompass,
   IconDeviceFloppy,
   IconFlame,
-  IconLibrary,
   IconLayoutDashboard,
   IconLayoutGrid,
+  IconLibrary,
   IconPlus,
   IconRefresh,
-  IconHeartFilled,
   IconSparkles,
   IconUsers,
 } from '@tabler/icons-react'
@@ -190,10 +189,7 @@ function DiscoverHeroSkeleton() {
 function DiscoverRailSkeleton({ engine = false }: { engine?: boolean }) {
   return (
     <div aria-hidden>
-      <Group gap="sm" mt="xl" mb="sm">
-        <Skeleton circle h={30} />
-        <Skeleton h={18} w={190} />
-      </Group>
+      <Skeleton h={18} w={190} mt="xl" mb="sm" />
       <div className="discover-rail" data-engine={engine || undefined}>
         {Array.from({ length: 12 }, (_, i) => (
           <div key={i} className="discover-rail-item">
@@ -208,9 +204,9 @@ function DiscoverRailSkeleton({ engine = false }: { engine?: boolean }) {
 function DiscoverCatalogueSkeleton({ density }: { density: Density }) {
   return (
     <div aria-hidden>
-      <Group gap="xs" wrap="wrap" mb="md">
-        {[82, 104, 96, 88, 112].map((width) => (
-          <Skeleton key={width} h={32} w={width} radius="md" />
+      <Group gap={24} wrap="wrap" mb="md" pb={10}>
+        {[62, 84, 76, 68, 92].map((width) => (
+          <Skeleton key={width} h={12} w={width} />
         ))}
       </Group>
       <Group justify="space-between" mb="sm">
@@ -225,10 +221,7 @@ function DiscoverCatalogueSkeleton({ density }: { density: Density }) {
 function DiscoverGenreSkeleton() {
   return (
     <div aria-hidden>
-      <Group gap="sm" mt="xl" mb="sm">
-        <Skeleton circle h={30} />
-        <Skeleton h={18} w={130} />
-      </Group>
+      <Skeleton h={18} w={130} mt="xl" mb="sm" />
       <div className="discover-genre-wall">
         {Array.from({ length: 8 }, (_, i) => (
           <Skeleton key={i} h={80} radius="lg" />
@@ -765,7 +758,6 @@ function RecommendedTab() {
 
       {data && related.length === 0 && similar.length === 0 && (
         <EmptyState
-          icon={IconSparkles}
           title={isCustomized ? t`No matches` : t`Nothing to recommend yet`}
           description={
             isCustomized
@@ -1031,7 +1023,6 @@ function FeedExpandModal({
 
       {items && items.length === 0 && (
         <EmptyState
-          icon={IconCompass}
           title={t`No matches`}
           description={t`No titles match these filters. Try loosening them.`}
         />
@@ -1427,7 +1418,6 @@ function DiscoverBrowseTab({
             />
           ) : (
             <EmptyState
-              icon={IconCompass}
               title={t`Nothing to browse yet`}
               description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
             />
@@ -1566,16 +1556,17 @@ export default function DiscoverPage() {
         className="discover-page-tabs"
         value={active}
         onChange={(v) => navigate(TAB_PATHS[(v as DiscoverTab) ?? 'browse'])}
-        mb="md"
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
       >
         <Tabs.List>
-          <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
+          <Tabs.Tab value="browse">
             <Trans>Discover</Trans>
           </Tabs.Tab>
-          <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />} disabled={editing}>
+          <Tabs.Tab value="recommended" disabled={editing}>
             <Trans>Recommended</Trans>
           </Tabs.Tab>
-          <Tabs.Tab value="taste" leftSection={<IconHeartFilled size={16} />} disabled={editing}>
+          <Tabs.Tab value="taste" disabled={editing}>
             <Trans>Your Taste</Trans>
           </Tabs.Tab>
         </Tabs.List>

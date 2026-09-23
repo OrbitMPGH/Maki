@@ -7,12 +7,9 @@ import {
   IconBook,
   IconBookmarks,
   IconChevronRight,
-  IconClock,
   IconDownload,
   IconFlame,
   IconLayoutDashboard,
-  IconLayoutList,
-  IconLibrary,
   IconPlayerPlay,
   IconPlus,
   IconSparkles,
@@ -210,7 +207,6 @@ export default function HomePage() {
       <SurfaceFrame width="full" pageStyle="editorial">
         {header}
         <EmptyState
-          icon={IconLibrary}
           title={t`Nothing in your library yet`}
           description={t`Add a series and Maki will start tracking chapters for it. This page fills up as you read and download.`}
           actionLabel={t`Add series`}
@@ -333,7 +329,6 @@ export default function HomePage() {
 
       {visible.length === 0 ? (
         <EmptyState
-          icon={IconLayoutList}
           title={t`Every section is switched off`}
           description={t`Home has nothing to show. Turn some sections back on in the layout editor, or switch Home off entirely in Settings.`}
           actionLabel={t`Edit layout`}
@@ -427,7 +422,6 @@ function StartReadingPrompt({ tracking }: { tracking: boolean }) {
   return (
     <Box mt="xl">
       <EmptyState
-        icon={IconClock}
         title={t`Nothing to pick up yet`}
         description={
           tracking ? (

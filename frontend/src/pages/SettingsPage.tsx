@@ -156,7 +156,7 @@ function RootFoldersSection() {
       </SettingsHelp>
       <Stack>
         {rootFolders && rootFolders.length > 0 && (
-          <Table>
+          <Table className="panel-table ops-table">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th><Trans>Path</Trans></Table.Th>
@@ -1347,7 +1347,7 @@ function BackupSection() {
 
       <Stack>
         {backups && backups.length > 0 && (
-          <Table>
+          <Table className="panel-table ops-table">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th><Trans>Created</Trans></Table.Th>
@@ -2592,8 +2592,9 @@ export default function SettingsPage() {
         }
       />
       <Tabs
-        className="panel-tabs"
         value={activeTab}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
         onChange={(value) => {
           if (!value || value === activeTab) return
           if (unsaved.current.size > 0) setPendingTab(value)
@@ -2601,7 +2602,7 @@ export default function SettingsPage() {
         }}
         keepMounted={false}
       >
-        <Tabs.List className="panel-tab-list" mb="md">
+        <Tabs.List>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab.key} value={tab.key}>
               {renderLabel(tab.label)}

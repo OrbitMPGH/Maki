@@ -1234,8 +1234,6 @@ body {
 .discover-page-tabs {
   position: relative;
   z-index: 1;
-  padding-bottom: 4px;
-  mask: linear-gradient(to right, black 70%, transparent);
 }
 
 /* Initial Discover paint follows the current feature band instead of dropping straight into a
@@ -1653,45 +1651,6 @@ body {
 }
 
 /* --- Catalogue block ------------------------------------------------------ */
-.discover-cat-tabs {
-  display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
-}
-.discover-cat-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 13px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface);
-  font-size: var(--type-meta);
-  font-weight: 500;
-  color: var(--ink-3);
-  cursor: pointer;
-  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
-}
-.discover-cat-tab::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--border-strong);
-  transition: background 140ms ease;
-}
-.discover-cat-tab:hover {
-  color: var(--ink-hi);
-  border-color: var(--border-strong);
-}
-.discover-cat-tab[aria-selected='true'] {
-  color: var(--ink-hi);
-  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-}
-.discover-cat-tab[aria-selected='true']::before {
-  background: var(--brand);
-}
 .discover-cat-grid {
   margin-bottom: var(--mantine-spacing-xl);
 }
@@ -3091,6 +3050,21 @@ body {
 .series-tab:hover {
   color: var(--ink-2);
 }
+/* The same rail one step down, for a switch inside a section rather than between a page's parts. */
+.sub-tabs {
+  gap: 24px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: var(--mantine-spacing-sm);
+}
+.sub-tabs .series-tab {
+  padding-bottom: 10px;
+  font-size: var(--type-meta);
+}
+.series-tab[data-disabled] {
+  color: var(--ink-4);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 /* Keep the selected tab aligned with the user's accent. */
 .series-tab[data-active] {
   color: var(--ink-hi);
@@ -3107,6 +3081,81 @@ body {
 
 .series-body {
   padding-top: var(--mantine-spacing-lg);
+}
+
+/* A page's own tab rail: the series rail on a hairline that runs the width of the page, so the
+   tabs read as the page's sections rather than as a control floating under the header. */
+.page-tabs {
+  margin-bottom: var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+.page-tabs .series-tab {
+  padding-top: 2px;
+}
+
+/* --- Section headers ------------------------------------------------------- */
+/* The heading over a rail or a block of panels. Set in the display face, because a run of rails
+   reads like the chapters of a page; the accent icon and the rule give each one a colour and a line
+   to its action, the way a tag bucket's name runs into its count in the Discover modal. */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: var(--mantine-spacing-xl);
+  margin-bottom: var(--mantine-spacing-sm);
+  min-width: 0;
+}
+.section-header-icon {
+  flex-shrink: 0;
+  color: var(--brand-fg);
+}
+.section-header-title {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.section-header-count {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand-fg);
+  font-size: var(--type-micro);
+  font-weight: 650;
+}
+.section-header-rule {
+  flex: 1;
+  min-width: 24px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--brand) 32%, transparent),
+    var(--hairline) 60%
+  );
+}
+.section-header-action {
+  flex-shrink: 0;
+}
+
+/* --- Empty states ---------------------------------------------------------- */
+.empty-state-title {
+  color: var(--ink-hi);
+  font-size: var(--type-section);
+  font-weight: 650;
+  line-height: 1.3;
+}
+.empty-state[data-compact] .empty-state-title {
+  color: var(--ink-2);
+  font-size: var(--type-body);
+  font-weight: 600;
 }
 
 /* --- Series detail panels -------------------------------------------------- */
@@ -3207,6 +3256,12 @@ body {
 .chapter-table tbody tr:last-child td,
 .panel-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* A table standing on the page gets a panel for its edge. The panel clips, so the header band and
+   the last row keep its corners. */
+.table-panel {
+  overflow: hidden;
 }
 
 /* --- Chapter table read state -------------------------------------------- */
@@ -3550,13 +3605,6 @@ body {
   flex-shrink: 0;
 }
 
-/* --- Stats: the page header ------------------------------------------------ */
-/* Home's header with the underline tab rail under it, full width and on its own hairline. */
-.stats-header-tabs {
-  margin-bottom: var(--mantine-spacing-lg);
-  border-bottom: 1px solid var(--hairline);
-}
-
 /* --- Stats: the period figures row ----------------------------------------- */
 /* The band's figure grammar in a panel: one number per cell, hairlines instead of gaps, the change
    against the previous window as a chip beside the number rather than a fourth line under it. */
@@ -3629,7 +3677,7 @@ body {
   .stats-figure:nth-child(2n + 1) {
     border-inline-start: none;
   }
-  .stats-header-tabs {
+  .page-tabs {
     gap: 22px;
   }
   .stats-rank-row {
@@ -4768,10 +4816,6 @@ body.reader-open {
   overflow-wrap: anywhere;
   padding-block: 0.2rem;
 }
-.import-table-scroll {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
-}
 .import-table .mantine-Table-td {
   vertical-align: middle;
 }
@@ -4809,24 +4853,6 @@ body.reader-open {
 }
 
 /* --- Operational page chrome (ported from redesignv2) --- */
-
-.health-surface .page-header,
-.settings-surface .page-header {
-  padding-bottom: 1.15rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.panel-tabs {
-  border-bottom: 1px solid var(--border);
-}
-.panel-tab-list {
-  gap: 0;
-  overflow-x: auto;
-}
-.panel-tabs .mantine-Tabs-tab {
-  min-height: 2.75rem;
-  white-space: nowrap;
-}
 
 .health-filter-rail {
   align-items: flex-end;
@@ -5080,9 +5106,12 @@ body.reader-open {
 /* --- notifications page (ported from redesignv2) --- */
 
 .notifications-filter-rail {
-  align-items: center;
-  padding-block: 0.75rem;
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  margin-bottom: var(--mantine-spacing-md);
+  border-bottom: 1px solid var(--hairline);
 }
 .notifications-filter-controls {
   min-width: 0;
@@ -5090,6 +5119,7 @@ body.reader-open {
 }
 .notifications-unread-switch {
   margin-inline-start: auto;
+  padding-bottom: 12px;
 }
 .notifications-feed {
   overflow: hidden;

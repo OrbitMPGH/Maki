@@ -281,72 +281,74 @@ export default function ScrobblePage() {
         <Trans>Recent syncs</Trans>
       </Title>
       {data && data.recent.length > 0 ? (
-        <Table.ScrollContainer minWidth={600} mb="lg">
-          <Table className="panel-table scrobble-recent-table" striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>
-                  <Trans>Series</Trans>
-                </Table.Th>
-                <Table.Th data-priority="low">
-                  <Trans>Service</Trans>
-                </Table.Th>
-                <Table.Th>
-                  <Trans>Progress</Trans>
-                </Table.Th>
-                <Table.Th>
-                  <Trans>Status</Trans>
-                </Table.Th>
-                <Table.Th data-priority="low">
-                  <Trans>When</Trans>
-                </Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {data.recent.map((r, i) => {
-                const { title, service, error, chapter, volume, status, at } = r
-                return (
-                  <Table.Tr key={i}>
-                    <Table.Td>{title || '#'}</Table.Td>
-                    <Table.Td data-priority="low">{service}</Table.Td>
-                    <Table.Td>
-                      {error ? (
-                        <Tooltip label={error} multiline maw={400}>
-                          <Text size="sm" c="red" lineClamp={1} className="scrobble-error-text">
-                            {error}
-                          </Text>
-                        </Tooltip>
-                      ) : volume ? (
-                        <Trans>
-                          ch {chapter} · vol {volume}
-                        </Trans>
-                      ) : (
-                        <Trans>ch {chapter}</Trans>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      {status ? (
-                        (() => {
-                          const visual = trackerStatusVisual(status)
-                          return (
-                            <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
-                          )
-                        })()
-                      ) : (
-                        '-'
-                      )}
-                    </Table.Td>
-                    <Table.Td data-priority="low">
-                      <Text size="sm" c="var(--ink-3)">
-                        {fmtTime(at)}
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
-                )
-              })}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        <Panel p={0} className="table-panel" mb="lg">
+          <Table.ScrollContainer minWidth={600}>
+            <Table className="panel-table scrobble-recent-table" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>
+                    <Trans>Series</Trans>
+                  </Table.Th>
+                  <Table.Th data-priority="low">
+                    <Trans>Service</Trans>
+                  </Table.Th>
+                  <Table.Th>
+                    <Trans>Progress</Trans>
+                  </Table.Th>
+                  <Table.Th>
+                    <Trans>Status</Trans>
+                  </Table.Th>
+                  <Table.Th data-priority="low">
+                    <Trans>When</Trans>
+                  </Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.recent.map((r, i) => {
+                  const { title, service, error, chapter, volume, status, at } = r
+                  return (
+                    <Table.Tr key={i}>
+                      <Table.Td>{title || '#'}</Table.Td>
+                      <Table.Td data-priority="low">{service}</Table.Td>
+                      <Table.Td>
+                        {error ? (
+                          <Tooltip label={error} multiline maw={400}>
+                            <Text size="sm" c="red" lineClamp={1} className="scrobble-error-text">
+                              {error}
+                            </Text>
+                          </Tooltip>
+                        ) : volume ? (
+                          <Trans>
+                            ch {chapter} · vol {volume}
+                          </Trans>
+                        ) : (
+                          <Trans>ch {chapter}</Trans>
+                        )}
+                      </Table.Td>
+                      <Table.Td>
+                        {status ? (
+                          (() => {
+                            const visual = trackerStatusVisual(status)
+                            return (
+                              <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
+                            )
+                          })()
+                        ) : (
+                          '-'
+                        )}
+                      </Table.Td>
+                      <Table.Td data-priority="low">
+                        <Text size="sm" c="var(--ink-3)">
+                          {fmtTime(at)}
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Panel>
       ) : (
         <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>No syncs yet.</Trans>

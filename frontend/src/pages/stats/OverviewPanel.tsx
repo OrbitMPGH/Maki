@@ -233,7 +233,6 @@ export function OverviewPanel({
       <>
         {rangeControls}
         <EmptyState
-          icon={IconHistory}
           title={t`Nothing recorded for ${windowLabel}`}
           description={t`Activity is collected from the moment this version is installed. Add, download and read some manga, then come back.`}
         />

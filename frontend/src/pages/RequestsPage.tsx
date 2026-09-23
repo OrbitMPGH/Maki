@@ -9,7 +9,7 @@ import {
   Image,
   Modal,
   NumberInput,
-  SegmentedControl,
+  Tabs,
   Select,
   Stack,
   Text,
@@ -19,7 +19,6 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   IconCheck,
-  IconInbox,
   IconExternalLink,
   IconPencil,
   IconTrash,
@@ -183,17 +182,24 @@ export default function RequestsPage() {
         }
       />
 
-      <Group mb="lg">
-        <SegmentedControl
-          value={filter}
-          onChange={(v) => setFilter(v as RequestFilter)}
-          data={[
-            { value: 'pending', label: t`Pending` },
-            { value: 'resolved', label: t`Resolved` },
-            { value: 'all', label: t`All` },
-          ]}
-        />
-      </Group>
+      <Tabs
+        value={filter}
+        onChange={(v) => v && setFilter(v as RequestFilter)}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="pending">
+            <Trans>Pending</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="resolved">
+            <Trans>Resolved</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="all">
+            <Trans>All</Trans>
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
 
       {(approve.isError || reject.isError || remove.isError || edit.isError) && (
         <Alert color="var(--danger)" variant="light" mb="md">
@@ -203,7 +209,6 @@ export default function RequestsPage() {
 
       {!isPending && (requests?.length ?? 0) === 0 ? (
         <EmptyState
-          icon={IconInbox}
           title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={
             isAdmin

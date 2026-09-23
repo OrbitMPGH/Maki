@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react'
-import { Button, Stack, Text, ThemeIcon } from '@mantine/core'
-import type { Icon } from '@tabler/icons-react'
+import { Button, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 
 /**
- * Friendly empty/zero-data state with an optional call to action. `compact` is for a section of an
- * operational page, where an empty queue is the normal state and should not take the screen.
+ * What a section says when it has nothing to show: a plain statement, one line on what would fill
+ * it, and at most one thing to do about it. Left-aligned with the content it stands in for, not a
+ * centred icon card. `compact` is for a section of an operational page, where an empty queue is the
+ * normal state and should not take the screen.
  */
 export function EmptyState({
-  icon: IconCmp,
   title,
   description,
   actionLabel,
@@ -16,7 +16,6 @@ export function EmptyState({
   onAction,
   compact,
 }: {
-  icon: Icon
   title: string
   description?: ReactNode
   actionLabel?: string
@@ -25,25 +24,26 @@ export function EmptyState({
   compact?: boolean
 }) {
   return (
-    <Stack align="center" gap={compact ? 6 : 'sm'} py={compact ? 28 : 64} px="md">
-      <ThemeIcon size={compact ? 40 : 64} radius="xl" variant="light" color="var(--neutral)">
-        <IconCmp size={compact ? 20 : 30} stroke={1.6} />
-      </ThemeIcon>
-      <Text fw={650} fz={compact ? 'md' : 'lg'}>
-        {title}
-      </Text>
+    <Stack
+      className="empty-state"
+      data-compact={compact || undefined}
+      align="flex-start"
+      gap={4}
+      py={compact ? 'sm' : 'xl'}
+    >
+      <Text className="empty-state-title">{title}</Text>
       {description && (
-        <Text c="var(--ink-3)" size="sm" ta="center" maw={420}>
+        <Text c="var(--ink-3)" size="sm" maw={520}>
           {description}
         </Text>
       )}
       {actionLabel &&
         (actionTo ? (
-          <Button component={Link} to={actionTo} mt="xs" variant="light">
+          <Button component={Link} to={actionTo} mt="sm" variant="default" size="sm">
             {actionLabel}
           </Button>
         ) : (
-          <Button onClick={onAction} mt="xs" variant="light">
+          <Button onClick={onAction} mt="sm" variant="default" size="sm">
             {actionLabel}
           </Button>
         ))}

@@ -2,16 +2,16 @@ import {
   ActionIcon,
   Box,
   Button,
-  Chip,
   Group,
   Loader,
   Stack,
   Switch,
+  Tabs,
   Text,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { IconBellOff, IconSettings, IconX } from '@tabler/icons-react'
+import { IconSettings, IconX } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { I18n } from '@lingui/core'
@@ -171,16 +171,25 @@ export default function NotificationsPage() {
         }
       />
 
-      <Group className="notifications-filter-rail" gap="xs" mb="md" wrap="wrap">
-        <Chip.Group value={category} onChange={(v) => setCategory(v as string | null)}>
-          <Group className="notifications-filter-controls" gap={6}>
+      <div className="notifications-filter-rail">
+        <Tabs
+          className="notifications-filter-controls"
+          value={category ?? 'all'}
+          onChange={(v) => setCategory(!v || v === 'all' ? null : v)}
+          variant="unstyled"
+          classNames={{ list: 'series-tabs', tab: 'series-tab' }}
+        >
+          <Tabs.List>
+            <Tabs.Tab value="all">
+              <Trans>All</Trans>
+            </Tabs.Tab>
             {categories.map((c) => (
-              <Chip key={c.id} value={c.id} size="xs" variant="light">
+              <Tabs.Tab key={c.id} value={c.id}>
                 {renderLabel(c.label)}
-              </Chip>
+              </Tabs.Tab>
             ))}
-          </Group>
-        </Chip.Group>
+          </Tabs.List>
+        </Tabs>
         <Switch
           className="notifications-unread-switch"
           size="xs"
@@ -189,7 +198,7 @@ export default function NotificationsPage() {
           checked={unreadOnly}
           onChange={(e) => setUnreadOnly(e.currentTarget.checked)}
         />
-      </Group>
+      </div>
 
       {isLoading ? (
         <Group justify="center" py="xl">
@@ -197,7 +206,6 @@ export default function NotificationsPage() {
         </Group>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={IconBellOff}
           title={unreadOnly || category ? t`Nothing matches` : t`No notifications yet`}
           description={
             unreadOnly || category

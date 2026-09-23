@@ -23,6 +23,7 @@ import { useHubEvent } from '../api/signalr'
 import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */
@@ -289,135 +290,136 @@ export default function ImportPage() {
 
       {candidates && candidates.length === 0 && (
         <EmptyState
-          icon={IconFolderSearch}
           title={t`Nothing to import`}
           description={t`Every folder in this root is already claimed by a series in the library.`}
         />
       )}
 
       {candidates && candidates.length > 0 && (
-        <Table.ScrollContainer className="import-table-scroll" minWidth={720}>
-          <Table className="import-table" striped>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th w={40} />
-                <Table.Th>
-                  <Trans>Folder</Trans>
-                </Table.Th>
-                <Table.Th>
-                  <Trans>Files</Trans>
-                </Table.Th>
-                <Table.Th w={420}>
-                  <Trans>Match</Trans>
-                </Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {candidates.map((c) => {
-                const selected = selection[c.folderName] ?? ''
-                const match = c.matches.find((m) => m.providerId === selected)
-                const rowProgress = progress[c.folderName]
-                const { cleanedTitle, comicCount, recognizedCount } = c
-                const unrecognizedCount = comicCount - recognizedCount
-                return (
-                  <Table.Tr key={c.folderName}>
-                    <Table.Td>
-                      <Checkbox
-                        checked={selected !== ''}
-                        disabled={c.matches.length === 0 || doImport.isPending}
-                        onChange={(e) => {
-                          // Capture before setState: React nulls currentTarget after the handler.
-                          const checked = e.currentTarget.checked
-                          setSelection((s) => ({
-                            ...s,
-                            [c.folderName]: checked ? c.matches[0]?.providerId ?? '' : '',
-                          }))
-                        }}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>
-                        {c.folderName}
-                      </Text>
-                      <Text size="xs" c="var(--ink-3)">
-                        <Trans>searched as “{cleanedTitle}”</Trans>
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">
-                        <Plural value={comicCount} one="# comic" other="# comics" />
-                      </Text>
-                      {recognizedCount < comicCount && (
-                        <Badge size="xs" color="var(--warn)" variant="light">
-                          <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
-                        </Badge>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      <Group wrap="nowrap" gap="xs">
-                        {match?.coverUrl && (
-                          <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" />
+        <Panel p={0} className="table-panel">
+          <Table.ScrollContainer minWidth={720}>
+            <Table className="panel-table import-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th w={40} />
+                  <Table.Th>
+                    <Trans>Folder</Trans>
+                  </Table.Th>
+                  <Table.Th>
+                    <Trans>Files</Trans>
+                  </Table.Th>
+                  <Table.Th w={420}>
+                    <Trans>Match</Trans>
+                  </Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {candidates.map((c) => {
+                  const selected = selection[c.folderName] ?? ''
+                  const match = c.matches.find((m) => m.providerId === selected)
+                  const rowProgress = progress[c.folderName]
+                  const { cleanedTitle, comicCount, recognizedCount } = c
+                  const unrecognizedCount = comicCount - recognizedCount
+                  return (
+                    <Table.Tr key={c.folderName}>
+                      <Table.Td>
+                        <Checkbox
+                          checked={selected !== ''}
+                          disabled={c.matches.length === 0 || doImport.isPending}
+                          onChange={(e) => {
+                            // Capture before setState: React nulls currentTarget after the handler.
+                            const checked = e.currentTarget.checked
+                            setSelection((s) => ({
+                              ...s,
+                              [c.folderName]: checked ? c.matches[0]?.providerId ?? '' : '',
+                            }))
+                          }}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" fw={600}>
+                          {c.folderName}
+                        </Text>
+                        <Text size="xs" c="var(--ink-3)">
+                          <Trans>searched as “{cleanedTitle}”</Trans>
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">
+                          <Plural value={comicCount} one="# comic" other="# comics" />
+                        </Text>
+                        {recognizedCount < comicCount && (
+                          <Badge size="xs" color="var(--warn)" variant="light">
+                            <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
+                          </Badge>
                         )}
-                        {rowProgress ? (
-                          <Stack gap={4} style={{ flex: 1 }}>
-                            <Progress
-                              size="sm"
-                              value={
-                                rowProgress.total
-                                  ? (100 * (rowProgress.current ?? 0)) / rowProgress.total
-                                  : rowProgress.stage === 'Queued'
-                                    ? 0
-                                    : 100
-                              }
-                              animated={!rowProgress.done && rowProgress.stage !== 'Queued'}
-                              color={
-                                rowProgress.done
-                                  ? rowProgress.success
-                                    ? 'var(--ok)'
-                                    : 'var(--danger)'
-                                  : 'brand'
-                              }
-                            />
-                            <Text
-                              size="xs"
-                              c={rowProgress.done && !rowProgress.success ? 'var(--danger)' : 'var(--ink-3)'}
-                            >
-                              {rowProgress.stage === 'Queued' ? <Trans>Queued</Trans> : rowProgress.stage}
-                              {rowProgress.total
-                                ? ` (${rowProgress.current}/${rowProgress.total})`
-                                : ''}
-                              {rowProgress.error ? ` - ${rowProgress.error}` : ''}
+                      </Table.Td>
+                      <Table.Td>
+                        <Group wrap="nowrap" gap="xs">
+                          {match?.coverUrl && (
+                            <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" />
+                          )}
+                          {rowProgress ? (
+                            <Stack gap={4} style={{ flex: 1 }}>
+                              <Progress
+                                size="sm"
+                                value={
+                                  rowProgress.total
+                                    ? (100 * (rowProgress.current ?? 0)) / rowProgress.total
+                                    : rowProgress.stage === 'Queued'
+                                      ? 0
+                                      : 100
+                                }
+                                animated={!rowProgress.done && rowProgress.stage !== 'Queued'}
+                                color={
+                                  rowProgress.done
+                                    ? rowProgress.success
+                                      ? 'var(--ok)'
+                                      : 'var(--danger)'
+                                    : 'brand'
+                                }
+                              />
+                              <Text
+                                size="xs"
+                                c={rowProgress.done && !rowProgress.success ? 'var(--danger)' : 'var(--ink-3)'}
+                              >
+                                {rowProgress.stage === 'Queued' ? <Trans>Queued</Trans> : rowProgress.stage}
+                                {rowProgress.total
+                                  ? ` (${rowProgress.current}/${rowProgress.total})`
+                                  : ''}
+                                {rowProgress.error ? ` - ${rowProgress.error}` : ''}
+                              </Text>
+                            </Stack>
+                          ) : c.matches.length === 0 ? (
+                            <Text size="sm" c="var(--danger)">
+                              <Trans>No metadata match, rename the folder closer to the title and rescan.</Trans>
                             </Text>
-                          </Stack>
-                        ) : c.matches.length === 0 ? (
-                          <Text size="sm" c="var(--danger)">
-                            <Trans>No metadata match, rename the folder closer to the title and rescan.</Trans>
-                          </Text>
-                        ) : (
-                          <Select
-                            data={[
-                              { value: '', label: t`- skip -` },
-                              ...c.matches.map((m) => ({
-                                value: m.providerId,
-                                label: `${m.title}${m.year ? ` (${m.year})` : ''}`,
-                              })),
-                            ]}
-                            value={selected}
-                            onChange={(v) =>
-                              setSelection((s) => ({ ...s, [c.folderName]: v ?? '' }))
-                            }
-                            disabled={doImport.isPending}
-                            style={{ flex: 1 }}
-                          />
-                        )}
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                )
-              })}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+                          ) : (
+                            <Select
+                              data={[
+                                { value: '', label: t`- skip -` },
+                                ...c.matches.map((m) => ({
+                                  value: m.providerId,
+                                  label: `${m.title}${m.year ? ` (${m.year})` : ''}`,
+                                })),
+                              ]}
+                              value={selected}
+                              onChange={(v) =>
+                                setSelection((s) => ({ ...s, [c.folderName]: v ?? '' }))
+                              }
+                              disabled={doImport.isPending}
+                              style={{ flex: 1 }}
+                            />
+                          )}
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Panel>
       )}
     </SurfaceFrame>
   )

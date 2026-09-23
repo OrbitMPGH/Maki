@@ -32,7 +32,6 @@ import {
   IconFolderSymlink,
   IconLayoutGrid,
   IconLayoutList,
-  IconLibrary,
   IconListCheck,
   IconPhoto,
   IconPlus,
@@ -1518,7 +1517,6 @@ export default function LibraryPage() {
       )}
       {series && series.length === 0 && (
         <EmptyState
-          icon={IconLibrary}
           title={t`Your library is empty`}
           description={t`Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically.`}
           actionLabel={t`Add a series`}
@@ -1527,9 +1525,10 @@ export default function LibraryPage() {
       )}
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
-          icon={IconSearch}
           title={t`No matches`}
           description={t`No series match the current filter. Try clearing the search or status filter.`}
+          actionLabel={t`Clear all filters`}
+          onAction={() => applySpec(DEFAULT_SPEC, null)}
         />
       )}
       {/* Both views render a slice, not the whole filtered set, once the library is big enough to

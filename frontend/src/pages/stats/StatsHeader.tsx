@@ -27,7 +27,7 @@ export function StatsHeader({
       />
 
       <div
-        className="series-tabs stats-header-tabs"
+        className="series-tabs page-tabs"
         role="tablist"
         onKeyDown={(e) => {
           const at = TABS.indexOf(tab)

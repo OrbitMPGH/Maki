@@ -19,7 +19,6 @@ import {
   IconAlertTriangle,
   IconDownload,
   IconHeartbeat,
-  IconMapQuestion,
 } from '@tabler/icons-react'
 import { lazy, Suspense, useEffect } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -89,7 +88,6 @@ function NotFoundPage() {
   const { t } = useLingui()
   return (
     <EmptyState
-      icon={IconMapQuestion}
       title={t`Page not found`}
       description={t`Nothing lives at this address. The link may be old or mistyped.`}
       actionLabel={t`Go to start page`}

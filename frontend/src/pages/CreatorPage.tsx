@@ -9,7 +9,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconUser } from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -128,7 +128,6 @@ export default function CreatorPage() {
       <SurfaceFrame width="full" pageStyle="editorial">
         <PageHeader title={decoded} />
         <EmptyState
-          icon={IconUser}
           title={t`No such creator`}
           description={t`Nobody by that name is credited in the local MangaBaka database.`}
           actionLabel={t`Back to Discover`}
@@ -216,7 +215,6 @@ export default function CreatorPage() {
 
       {data && items.length === 0 && (
         <EmptyState
-          icon={IconUser}
           title={t`Nothing to show`}
           description={
             appliedCount > 0

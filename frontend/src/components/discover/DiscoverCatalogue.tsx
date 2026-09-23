@@ -40,14 +40,15 @@ export function DiscoverCatalogue({
 
   return (
     <>
-      <div className="discover-cat-tabs" role="tablist" aria-label={t`Catalogue feeds`}>
+      <div className="series-tabs sub-tabs" role="tablist" aria-label={t`Catalogue feeds`}>
         {rails.map((rail) => (
           <button
             key={rail.key}
             type="button"
             role="tab"
             aria-selected={rail.key === active.key}
-            className="discover-cat-tab"
+            data-active={rail.key === active.key || undefined}
+            className="series-tab"
             onClick={() => setActiveKey(rail.key)}
           >
             {rail.title}

@@ -142,7 +142,7 @@ export function NotificationsSection() {
       </Text>
 
       {connections && connections.length > 0 ? (
-        <Table>
+        <Table className="panel-table ops-table">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Name</Trans></Table.Th>
