@@ -36,7 +36,7 @@ namespace Maki.Api.Controllers;
 //
 // "reader", "ui", "discover", "opds" and the per-tracker halves of "scrobble" are per-user, stored in
 // UserSettings and read through the scoped IUserSettings — so their writes need no admin policy: a
-// caller can only ever change their own. Everything else here describes the deployment (ports, paths,
+// caller can only ever change their own. Everything else here describes the deployment (paths,
 // Prowlarr/qBittorrent/Kavita connections, source priority, updates) or an app registration shared by
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
@@ -48,7 +48,6 @@ public class SettingsController(
     Maki.Core.Indexers.ProwlarrClient prowlarr,
     Maki.Core.Download.QBittorrentClient qbittorrent,
     Maki.Core.Kavita.KavitaClient kavita,
-    ConfigFileProvider configFile,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
     MangaBakaDumpService mangaBakaDump,
@@ -1714,18 +1713,6 @@ public class SettingsController(
 
         await settings.SetAsync(SettingKeys.ScrobbleLibraryIds, request.LibraryIds, ct);
         return await GetScrobble(ct);
-    }
-
-    /// <summary>
-    /// No longer returns an API key. There is no instance-wide key: credentials belong to users, are
-    /// created under Account, and only their SHA-256 digest is ever stored — so there is nothing here
-    /// to hand back, and the rotate endpoint that used to sit beside this is gone with it.
-    /// </summary>
-    [Authorize(Policy = Policies.Admin)]
-    [HttpGet("general")]
-    public IActionResult GetGeneral()
-    {
-        return Ok(new { port = configFile.Config.Port });
     }
 
     /// <summary>

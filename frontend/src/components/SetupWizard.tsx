@@ -463,7 +463,7 @@ export default function SetupWizard() {
             <Trans>
               You're ready to go. Head to <b>Add Series</b> to start building your library, or
               open <b>Settings</b> any time to fine-tune connections and scrobbling. You can
-              re-open this guide from Settings → General.
+              re-open this guide from the top of the Settings page.
             </Trans>
           </Text>
         </StepBody>

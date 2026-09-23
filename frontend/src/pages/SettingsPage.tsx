@@ -79,8 +79,6 @@ import {
   useNamingPreview,
   useSaveLibrarySettings,
   useDiscoverSettings,
-  useFlareSolverrSettings,
-  useGeneralSettings,
   useDumpProgress,
   useMetadataSettings,
   useMonitoringSettings,
@@ -94,7 +92,6 @@ import {
   useRootFolders,
   useSaveDiscoverSettings,
   useSaveDownloadSettings,
-  useSaveFlareSolverr,
   useSaveMetadataSettings,
   useSaveMonitoringSettings,
   useSaveProwlarrOptions,
@@ -115,7 +112,6 @@ import {
   useSourceLanguages,
   useSourcePriority,
   useSources,
-  useTestFlareSolverr,
   useCheckForUpdatesNow,
   useImageCache,
   useRebuildImageCache,
@@ -124,7 +120,9 @@ import {
   useSeries,
   useUpdateSettings,
   useUpdateStatus,
+  CONTENT_RATING_LABELS,
   type FolderNamingMode,
+  type LibrarySettings,
   type ScrobbleSettings,
 } from '../api/hooks'
 import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '../api/reader'
@@ -511,31 +509,92 @@ function RecommendationIndexSection() {
   )
 }
 
-function MonitoringSection() {
+/**
+ * The library settings are one record with one PUT, and the three required fields have to travel
+ * with every write. Same idea as useUiPatch: patch what changed, carry the rest over.
+ */
+function useLibraryPatch() {
+  const { data: settings } = useLibrarySettings()
+  const save = useSaveLibrarySettings()
+  const patch = (changes: Partial<LibrarySettings>) =>
+    save.mutate(
+      {
+        writeComicInfo: settings?.writeComicInfo ?? true,
+        folderNamingMode: settings?.folderNamingMode ?? 'rename',
+        writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+        ...changes,
+      },
+      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+    )
+  return { settings, patch }
+}
+
+/** What a series starts with when it is added or imported: the specials rule and the incognito rules. */
+function NewSeriesDefaultsSection() {
   const { t } = useLingui()
-  const { data: settings } = useMonitoringSettings()
-  const save = useSaveMonitoringSettings()
+  const renderLabel = useLabel()
+  const incognitoOptions = useIncognitoOptions()
+  const { data: monitoring } = useMonitoringSettings()
+  const saveMonitoring = useSaveMonitoringSettings()
+  const { settings, patch } = useLibraryPatch()
 
   return (
     <Panel>
       <Title order={4} mb="sm">
-        <Trans>Monitoring</Trans>
+        <Trans>New series defaults</Trans>
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never
-          downloaded or counted in the chapter total. Specials released later are covered too.
-          Existing chapters are unchanged; edit them from a series' Chapters tab.
+          What a series starts with when it is added or imported. Changing these never touches
+          series already in the library.
         </Trans>
       </SettingsHelp>
+
       <Switch
-        label={t`Don't want specials on new series`}
-        checked={settings?.unmonitorSpecials ?? false}
-        onChange={(e) =>
-          save.mutate(e.currentTarget.checked, {
-          })
-        }
+        mb="lg"
+        label={t`Don't want specials`}
+        description={t`Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too.`}
+        checked={monitoring?.unmonitorSpecials ?? false}
+        onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
       />
+
+      <Text fw={500} size="sm" mb={4}>
+        <Trans>Incognito by content rating</Trans>
+      </Text>
+      <SettingsHelp mb="sm">
+        <Trans>
+          Pre-filled on the add form, where any single add can change it. "No scrobble" keeps a
+          series off your trackers; "Full" also keeps it out of stats and history.
+        </Trans>
+      </SettingsHelp>
+      <Stack gap="xs">
+        {CONTENT_RATINGS.map((rating) => {
+          const ratingLabel = renderLabel(CONTENT_RATING_LABELS[rating])
+          return (
+            <Group key={rating} gap="sm" wrap="nowrap">
+              <Text size="sm" w={110} style={{ flexShrink: 0 }}>
+                {ratingLabel}
+              </Text>
+              <Select
+                aria-label={t`Incognito for ${ratingLabel}`}
+                data={incognitoOptions}
+                value={settings?.incognitoByRating?.[rating] ?? 'Off'}
+                disabled={!settings}
+                size="xs"
+                w={170}
+                onChange={(value) =>
+                  patch({
+                    incognitoByRating: {
+                      ...(settings?.incognitoByRating ?? {}),
+                      [rating]: (value as IncognitoMode | null) ?? 'Off',
+                    },
+                  })
+                }
+              />
+            </Group>
+          )
+        })}
+      </Stack>
     </Panel>
   )
 }
@@ -563,11 +622,43 @@ function DiscoverSection() {
   )
 }
 
-function LibrarySection() {
+/** What Maki writes into and next to the files: ComicInfo.xml and the folder poster. */
+function LibraryFilesSection() {
   const { t } = useLingui()
-  const incognitoOptions = useIncognitoOptions()
-  const { data: settings } = useLibrarySettings()
-  const save = useSaveLibrarySettings()
+  const { settings, patch } = useLibraryPatch()
+
+  return (
+    <Panel>
+      <Title order={4} mb="sm">
+        <Trans>Files</Trans>
+      </Title>
+      <SettingsHelp mb="md">
+        <Trans>
+          Writes a standard <Code>ComicInfo.xml</Code> into imported CBZs so Kavita groups and
+          names chapters consistently. Off leaves torrent grabs and manual imports untouched.
+          Maki's own downloads always get one, and PDFs never do. A series page's "Update
+          ComicInfo" action standardizes one series later.
+        </Trans>
+      </SettingsHelp>
+      <Switch
+        mb="lg"
+        label={t`Write ComicInfo.xml into imported files`}
+        checked={settings?.writeComicInfo ?? true}
+        onChange={(e) => patch({ writeComicInfo: e.currentTarget.checked })}
+      />
+      <Switch
+        label={t`Save a cover.jpg into each series' library folder`}
+        description={t`For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on.`}
+        checked={settings?.writeCoverToFolder ?? false}
+        onChange={(e) => patch({ writeCoverToFolder: e.currentTarget.checked })}
+      />
+    </Panel>
+  )
+}
+
+function NamingSection() {
+  const { t } = useLingui()
+  const { settings, patch } = useLibraryPatch()
   const { data: allSeries } = useSeries()
   const seriesCount = allSeries?.length ?? 0
   const renameMany = useRenameManySeries()
@@ -589,7 +680,7 @@ function LibrarySection() {
   const stale = debouncedFolder !== folderFormat || debouncedChapter !== chapterFormat
 
   const saveFormats = () => {
-    // A stale preview doesn't block the save — the server validates too, and a commit that lands
+    // A stale preview doesn't block the save: the server validates too, and a commit that lands
     // inside the debounce window (closing the token picker right after inserting one) would
     // otherwise be dropped silently.
     if (!settings || (!stale && previewErrors.length > 0)) {
@@ -603,68 +694,15 @@ function LibrarySection() {
       return
     }
 
-    save.mutate(
-      {
-        writeComicInfo: settings.writeComicInfo,
-        folderNamingMode: settings.folderNamingMode,
-        writeCoverToFolder: settings.writeCoverToFolder ?? false,
-        seriesFolderFormat: folderFormat,
-        chapterFormat: chapterFormat,
-      },
-      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-    )
+    patch({ seriesFolderFormat: folderFormat, chapterFormat: chapterFormat })
   }
 
   return (
     <Panel>
       <Title order={4} mb="sm">
-        <Trans>Library files</Trans>
+        <Trans>Naming</Trans>
       </Title>
       <SettingsHelp mb="md">
-        <Trans>
-          Writes a standard <Code>ComicInfo.xml</Code> into imported CBZs so Kavita groups and
-          names chapters consistently. Off leaves torrent grabs and manual imports untouched.
-          Maki's own downloads always get one, and PDFs never do. A series page's "Update
-          ComicInfo" action standardizes one series later.
-        </Trans>
-      </SettingsHelp>
-      <Switch
-        mb="lg"
-        label={t`Write ComicInfo.xml into imported files`}
-        checked={settings?.writeComicInfo ?? true}
-        onChange={(e) =>
-          save.mutate(
-            {
-              writeComicInfo: e.currentTarget.checked,
-              folderNamingMode: settings?.folderNamingMode ?? 'rename',
-              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
-      />
-
-      <Switch
-        mb="lg"
-        label={t`Save a cover.jpg into each series' library folder`}
-        description={t`For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on.`}
-        checked={settings?.writeCoverToFolder ?? false}
-        onChange={(e) =>
-          save.mutate(
-            {
-              writeComicInfo: settings?.writeComicInfo ?? true,
-              folderNamingMode: settings?.folderNamingMode ?? 'rename',
-              writeCoverToFolder: e.currentTarget.checked,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
-      />
-
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Naming</Trans>
-      </Text>
-      <SettingsHelp mb="sm">
         <Trans>
           How Maki names series folders and the chapter files it downloads. The "?" button lists
           every token. Changes apply to new series and downloads; files already on disk stay put
@@ -757,16 +795,7 @@ function LibrarySection() {
       </SettingsHelp>
       <Radio.Group
         value={settings?.folderNamingMode ?? 'rename'}
-        onChange={(value) =>
-          save.mutate(
-            {
-              writeComicInfo: settings?.writeComicInfo ?? true,
-              folderNamingMode: value as FolderNamingMode,
-              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
+        onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
       >
         <Stack gap="xs" mt="xs">
           <Radio value="rename" label={t`Rename folder to Maki standard`} />
@@ -789,63 +818,10 @@ function LibrarySection() {
         </Trans>
       </SettingsHelp>
       <Switch
-        mb="lg"
         label={t`Rename imported files to the Chapter Format`}
         checked={settings?.renameImportedFiles ?? true}
-        onChange={(e) =>
-          save.mutate(
-            {
-              writeComicInfo: settings?.writeComicInfo ?? true,
-              folderNamingMode: settings?.folderNamingMode ?? 'rename',
-              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-              renameImportedFiles: e.currentTarget.checked,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
+        onChange={(e) => patch({ renameImportedFiles: e.currentTarget.checked })}
       />
-
-      <Text fw={500} size="sm" mt="lg" mb={4}>
-        <Trans>Incognito by content rating</Trans>
-      </Text>
-      <SettingsHelp mb="sm">
-        <Trans>
-          The incognito mode pre-filled when adding a series of each rating. "No scrobble" keeps it
-          off your trackers; "Full" also keeps it out of stats and history. Any single add can
-          override it, and changes here never touch existing series.
-        </Trans>
-      </SettingsHelp>
-      <Stack gap="xs">
-        {CONTENT_RATINGS.map((rating) => (
-          <Group key={rating} gap="sm" wrap="nowrap">
-            <Text size="sm" tt="capitalize" w={110} style={{ flexShrink: 0 }}>
-              {rating}
-            </Text>
-            <Select
-              aria-label={t`Incognito for ${rating}`}
-              data={incognitoOptions}
-              value={settings?.incognitoByRating?.[rating] ?? 'Off'}
-              disabled={!settings}
-              size="xs"
-              w={170}
-              onChange={(value) =>
-                save.mutate(
-                  {
-                    writeComicInfo: settings?.writeComicInfo ?? true,
-                    folderNamingMode: settings?.folderNamingMode ?? 'rename',
-                    writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-                    incognitoByRating: {
-                      ...(settings?.incognitoByRating ?? {}),
-                      [rating]: (value as IncognitoMode | null) ?? 'Off',
-                    },
-                  },
-                  { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-                )
-              }
-            />
-          </Group>
-        ))}
-      </Stack>
     </Panel>
   )
 }
@@ -895,7 +871,7 @@ function KavitaSyncSection() {
             <Text size="xs" c="var(--ink-3)" mt={4}>
               <Trans>
                 Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change
-                that under Settings → Integrations → Kavita reading.
+                that under Settings → Integrations → Kavita.
               </Trans>
             </Text>
           )}
@@ -1627,62 +1603,6 @@ function ProwlarrOptionsSection() {
   )
 }
 
-function FlareSolverrSection() {
-  const { data: settings } = useFlareSolverrSettings()
-  const save = useSaveFlareSolverr()
-  const test = useTestFlareSolverr()
-  const [url, setUrl] = useState('')
-
-  useEffect(() => {
-    if (settings?.url) setUrl(settings.url)
-  }, [settings?.url])
-
-  const dirty = settings !== undefined && url !== (settings.url ?? '')
-
-  return (
-    <Panel>
-      <Title order={4} mb="sm">
-        FlareSolverr
-      </Title>
-      <SettingsHelp mb="md">
-        <Trans>
-          Needed for Cloudflare-protected sources like MangaFire. Point this at a running
-          FlareSolverr instance.
-        </Trans>
-      </SettingsHelp>
-      <Group>
-        <TextInput
-          placeholder="http://localhost:8191"
-          value={url}
-          onChange={(e) => setUrl(e.currentTarget.value)}
-          style={{ flex: 1 }}
-        />
-        <Button
-          variant="default"
-          loading={test.isPending}
-          onClick={() =>
-            test.mutate(url || null, {
-              onSuccess: () =>
-                notifications.show({ message: now`FlareSolverr is reachable`, color: 'green' }),
-            })
-          }
-        >
-          <Trans>Test</Trans>
-        </Button>
-        <SaveButton
-          dirty={dirty}
-          loading={save.isPending}
-          onClick={() =>
-            save.mutate(url || null, {
-              onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
-            })
-          }
-        />
-      </Group>
-    </Panel>
-  )
-}
-
 function ScrobbleSection() {
   const { t } = useLingui()
   const { data } = useScrobbleSettings()
@@ -1865,9 +1785,9 @@ function useUiPatch(): ((patch: Partial<UiSettings>) => void) | null {
 
 /**
  * Which page "/" opens on. Server-stored (unlike Appearance, which is per-browser), so it follows
- * the user across devices.
+ * the user across devices. Lives on the Home card because turning Home off is what changes it most.
  */
-function StartPageSection() {
+function StartPageSelect() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
@@ -1876,28 +1796,23 @@ function StartPageSection() {
   const homeEnabled = ui?.homeLayout.enabled ?? true
 
   return (
-    <Panel>
-      <Title order={4} mb={4}>
-        <Trans>Start page</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
-        <Trans>Which page Maki opens on. Stored on the server, so it applies on every device.</Trans>
-      </SettingsHelp>
-      <Select
-        data={[
-          // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
-          // choice that silently degrades to somewhere else is worse than saying why it's out.
-          { value: 'home', label: t`Home`, disabled: !homeEnabled },
-          { value: 'library', label: t`Library` },
-          { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
-        ]}
-        value={ui?.startPage ?? 'home'}
-        onChange={(value) => value && patch?.({ startPage: value as UiSettings['startPage'] })}
-        disabled={!patch}
-        allowDeselect={false}
-        maw={260}
-      />
-    </Panel>
+    <Select
+      label={t`Start page`}
+      description={t`Which page Maki opens on, on every device.`}
+      data={[
+        // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
+        // choice that silently degrades to somewhere else is worse than saying why it's out.
+        { value: 'home', label: t`Home`, disabled: !homeEnabled },
+        { value: 'library', label: t`Library` },
+        { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
+      ]}
+      value={ui?.startPage ?? 'home'}
+      onChange={(value) => value && patch?.({ startPage: value as UiSettings['startPage'] })}
+      disabled={!patch}
+      allowDeselect={false}
+      maw={260}
+      mb="md"
+    />
   )
 }
 
@@ -2116,7 +2031,7 @@ function HomeSectionsSection() {
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <div>
           <Title order={4} mb={4}>
-            <Trans>Home screen</Trans>
+            <Trans>Home &amp; start page</Trans>
           </Title>
           <SettingsHelp>
             <Trans>
@@ -2134,6 +2049,8 @@ function HomeSectionsSection() {
           aria-label={t`Enable the Home screen`}
         />
       </Group>
+
+      <StartPageSelect />
 
       {homeEnabled && (
         <Stack gap={6} ref={containerRef} onDragOver={handleContainerDragOver}>
@@ -2293,43 +2210,6 @@ function AppearanceSection() {
           )
         })}
       </Group>
-    </Panel>
-  )
-}
-
-function GeneralSection() {
-  const { data: general } = useGeneralSettings()
-  const completeSetup = useCompleteSetup()
-
-  return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>General</Trans>
-      </Title>
-      <Stack gap="xs">
-        <Group>
-          <Text size="sm" w={80}>
-            <Trans>Port</Trans>
-          </Text>
-          <Code>{general?.port ?? '...'}</Code>
-        </Group>
-        {/* The instance API key used to live here, with a regenerate button. There is no instance
-            key any more: credentials belong to accounts and are created under My account, where
-            each one can be revoked without affecting anything else. */}
-        <Group justify="space-between" mt="xs">
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Re-open the first-time setup guide.</Trans>
-          </Text>
-          <Button
-            variant="default"
-            size="xs"
-            loading={completeSetup.isPending}
-            onClick={() => completeSetup.mutate(false)}
-          >
-            <Trans>Run setup guide</Trans>
-          </Button>
-        </Group>
-      </Stack>
     </Panel>
   )
 }
@@ -2585,13 +2465,13 @@ function ImageCacheSection() {
 }
 
 /**
- * Which Maki account Kavita's reading belongs to. Instance-wide on purpose: Kavita is one server
+ * Which Maki account Kavita's reading belongs to, shown inside the Kavita card. Instance-wide on purpose: Kavita is one server
  * reached with one API key, so everything it reports is a single person's reading and there is no way
  * to tell two Kavita users apart from here. Naming the owner is what keeps the adopt/merge/zero-delta
  * chain intact: the recurring pass, the read-status import, the per-chapter sync and the push-back
  * all act as the same user, so a chapter read in Maki and re-reported by Kavita counts once.
  */
-function KavitaUserSection() {
+function KavitaOwnerField() {
   const { t } = useLingui()
   const { data: bound } = useKavitaUser()
   const { data: users } = useUsers()
@@ -2602,30 +2482,21 @@ function KavitaUserSection() {
     .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Kavita reading</Trans>
-      </Title>
-      <SettingsHelp mb="md">
-        <Trans>
-          The Maki account Kavita's reading is recorded as. Unset means the lowest-numbered admin,
-          which suits a single-user instance. Only this account can import from Kavita or push
-          reads back.
-        </Trans>
-      </SettingsHelp>
-      <Select
-        label={t`Attribute Kavita's reading to`}
-        placeholder={t`Lowest-numbered admin`}
-        clearable
-        data={options}
-        value={bound?.userId != null ? String(bound.userId) : null}
-        onChange={(value) =>
-          save.mutate(value === null ? null : Number(value), {
-            onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
-          })
-        }
-      />
-    </Panel>
+    <Select
+      mt="md"
+      maw={420}
+      label={t`Attribute Kavita's reading to`}
+      description={t`Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back.`}
+      placeholder={t`Lowest-numbered admin`}
+      clearable
+      data={options}
+      value={bound?.userId != null ? String(bound.userId) : null}
+      onChange={(value) =>
+        save.mutate(value === null ? null : Number(value), {
+          onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+        })
+      }
+    />
   )
 }
 
@@ -2633,7 +2504,7 @@ function KavitaUserSection() {
  * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
  * only says how each id is built, so adding a setting is one entry there plus one line here.
  *
- * A hook rather than a module-scope table: the Prowlarr/qBittorrent/Kavita cards below carry
+ * A hook rather than a module-scope table: the connection cards below carry
  * translated `title`/`description`/`fields` props, and a plain object literal would freeze those
  * in whatever language was active when the module first loaded.
  */
@@ -2649,7 +2520,6 @@ function useSectionNodes(): Record<string, ReactNode> {
       'notification-prefs': <NotificationPrefsSection />,
       appearance: <AppearanceSection />,
       language: <LanguageSection />,
-      'start-page': <StartPageSection />,
       'title-language': <TitleLanguageSection />,
       'home-screen': <HomeSectionsSection />,
       'series-page': <SeriesPageSection />,
@@ -2661,8 +2531,9 @@ function useSectionNodes(): Record<string, ReactNode> {
       'discover-rating': <DiscoverSection />,
 
       'root-folders': <RootFoldersSection />,
-      'library-files': <LibrarySection />,
-      monitoring: <MonitoringSection />,
+      'library-files': <LibraryFilesSection />,
+      naming: <NamingSection />,
+      monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
       recommendations: <RecommendationIndexSection />,
 
@@ -2673,7 +2544,14 @@ function useSectionNodes(): Record<string, ReactNode> {
           <SourcePrioritySection />
         </Stack>
       ),
-      flaresolverr: <FlareSolverrSection />,
+      flaresolverr: (
+        <ConnectionSettingsCard
+          name="flaresolverr"
+          title="FlareSolverr"
+          description={t`Needed for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance.`}
+          fields={[{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }]}
+        />
+      ),
       prowlarr: (
         <ConnectionSettingsCard
           name="prowlarr"
@@ -2703,7 +2581,6 @@ function useSectionNodes(): Record<string, ReactNode> {
         />
       ),
 
-      'kavita-user': <KavitaUserSection />,
       kavita: (
         <ConnectionSettingsCard
           name="kavita"
@@ -2715,7 +2592,9 @@ function useSectionNodes(): Record<string, ReactNode> {
             { key: 'pathMapFrom', label: t`Path mapping - Maki side`, placeholder: t`C:\\Manga (optional)` },
             { key: 'pathMapTo', label: t`Path mapping - Kavita side`, placeholder: t`/manga (optional)` },
           ]}
-        />
+        >
+          <KavitaOwnerField />
+        </ConnectionSettingsCard>
       ),
       scrobbling: <ScrobbleSection />,
       notifications: <NotificationsSection />,
@@ -2727,7 +2606,6 @@ function useSectionNodes(): Record<string, ReactNode> {
       backup: <BackupSection />,
       'image-cache': <ImageCacheSection />,
       updates: <UpdatesSection />,
-      general: <GeneralSection />,
     }),
     [t, i18n.locale],
   )
@@ -2740,6 +2618,7 @@ export default function SettingsPage() {
   const isAdmin = me?.isAdmin ?? false
   const [searchParams, setSearchParams] = useSearchParams()
   const sectionNodes = useSectionNodes()
+  const completeSetup = useCompleteSetup()
 
   // Which cards this account may see at all. Everything an admin-only card writes is rejected by
   // the server for anyone else, so rendering one would just fill the page with failed requests.
@@ -2815,6 +2694,18 @@ export default function SettingsPage() {
           isAdmin
             ? t`Storage, metadata, download clients and integrations for your Maki instance.`
             : t`Your account and how Maki looks.`
+        }
+        actions={
+          isAdmin && (
+            <Button
+              variant="default"
+              size="xs"
+              loading={completeSetup.isPending}
+              onClick={() => completeSetup.mutate(false)}
+            >
+              <Trans>Run setup guide</Trans>
+            </Button>
+          )
         }
       />
       <Tabs

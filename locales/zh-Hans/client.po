@@ -1928,12 +1928,6 @@ msgstr "必须至少启用一种语言。"
 msgid "Attribute Kavita's reading to"
 msgstr "将 Kavita 的阅读归属于"
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "attribute reading, kavita user, progress owner"
-msgstr "归属阅读，Kavita 用户，进度所有者"
-
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
 msgid "Auto"
@@ -2086,9 +2080,8 @@ msgid "Backups to keep (per kind)"
 msgstr "要保留的备份（按类型）"
 
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "Backups, updates and instance-level details."
-msgstr "备份、更新和实例级详细信息。"
+msgid "Backups, the image cache and updates."
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -2910,9 +2903,8 @@ msgstr "舒适"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "comicinfo, comicinfo.xml, folder naming, rename folder, imported files, chapter format, series folder format, naming tokens, file name"
-msgstr "ComicInfo，ComicInfo.xml，文件夹命名，重命名文件夹，导入文件，章节格式，系列文件夹格式，命名令牌，文件名"
+msgid "comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
@@ -3375,7 +3367,7 @@ msgid "Decides when your reading day ends, which is what streaks and daily goals
 msgstr "决定阅读日何时结束，连续记录和每日目标都以此为准。"
 
 #: src/pages/SettingsPage.tsx
-msgid "Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never downloaded or counted in the chapter total. Specials released later are covered too. Existing chapters are unchanged; edit them from a series' Chapters tab."
+msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -3659,8 +3651,11 @@ msgstr "显示名称"
 msgid "Don't want"
 msgstr "不想要"
 
-#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
+msgid "Don't want specials"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Don't want specials on new series"
 msgstr "新系列不需要特殊章节"
@@ -4247,6 +4242,8 @@ msgstr "导入时的文件命名"
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Files"
 msgstr "文件"
@@ -4389,7 +4386,6 @@ msgid "FlareSolverr"
 msgstr "FlareSolverr"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "FlareSolverr is reachable"
 msgstr "FlareSolverr 可访问"
@@ -4420,6 +4416,11 @@ msgstr "文件夹命名"
 #, fuzzy
 msgid "Folder naming on import"
 msgstr "导入时的文件夹命名"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -4525,12 +4526,6 @@ msgstr "全屏"
 #, fuzzy
 msgid "gems"
 msgstr "宝藏"
-
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "General"
-msgstr "常规"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -4812,22 +4807,20 @@ msgstr "持有订阅源令牌并通过 OPDS 应用阅读"
 msgid "Home"
 msgstr "首页"
 
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "Home & start page"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
 msgstr "首页没有可显示的内容。请在设置中重新开启各部分，或完全禁用首页。"
 
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Home screen"
-msgstr "首页"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "home sections, rails, continue reading, recently added, section order, disable home"
-msgstr "Home 部分，横栏，继续阅读，最近添加，部分顺序，禁用 Home"
+msgid "home sections, rails, continue reading, recently added, section order, disable home, start page, landing page, opens on, default page"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -5079,9 +5072,8 @@ msgid "Incognito by content rating"
 msgstr "按内容分级使用隐身模式"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Incognito for {rating}"
-msgstr "{rating} 使用隐身模式"
+msgid "Incognito for {ratingLabel}"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -5238,12 +5230,6 @@ msgstr "Kavita"
 msgid "Kavita library ids"
 msgstr "Kavita 资料库 ID"
 
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Kavita reading"
-msgstr "Kavita 阅读"
-
 #: src/pages/SettingsPage.tsx
 msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
 msgstr ""
@@ -5258,7 +5244,7 @@ msgid "Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
-msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita reading."
+msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -5298,12 +5284,6 @@ msgstr "类型"
 #, fuzzy
 msgid "Korean"
 msgstr "韩语"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "landing page, home, library, discover, opens on, default page"
-msgstr "着陆页，Home，资料库，Discover，打开页面，默认页面"
 
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/pages/settings/registry.ts
@@ -5509,12 +5489,6 @@ msgstr "资料库"
 #, fuzzy
 msgid "Library at a glance"
 msgstr "资料库概览"
-
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Library files"
-msgstr "资料库文件"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6040,8 +6014,6 @@ msgid "Monitored"
 msgstr "已监控"
 
 #: src/pages/LibraryPage.tsx
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Monitoring"
 msgstr "监控"
@@ -6241,6 +6213,7 @@ msgstr "名称"
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 msgstr "在受信任代理中为你的反向代理命名，否则限流和审计日志会看到代理而不是客户端。"
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Naming"
@@ -6339,6 +6312,11 @@ msgstr ""
 #, fuzzy
 msgid "New series"
 msgstr "新系列"
+
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "New series defaults"
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -7527,17 +7505,6 @@ msgstr "热门"
 msgid "Pornographic"
 msgstr "色情"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Port"
-msgstr "端口"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "port, setup guide, first-time setup, instance"
-msgstr "端口，设置指南，首次设置，实例"
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7563,6 +7530,10 @@ msgstr "海报：{coverFilesLabel} 个文件，{coverBytesLabel} - {seriesTotalL
 #, fuzzy
 msgid "Posters: {coverFilesLabel} files, {coverBytesLabel} - every series has one"
 msgstr "海报：{coverFilesLabel} 个文件，{coverBytesLabel} - 每个系列都有海报"
+
+#: src/pages/SettingsPage.tsx
+msgid "Pre-filled on the add form, where any single add can change it. \"No scrobble\" keeps a series off your trackers; \"Full\" also keeps it out of stats and history."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -7786,11 +7757,6 @@ msgstr "评分已清除"
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
 msgstr "从 {winnerDisplayName} 重新下载 {staleChapters}"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Re-open the first-time setup guide."
-msgstr "重新打开首次设置指南。"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8825,9 +8791,8 @@ msgstr "使用身份验证器应用扫描此内容，或手动输入密钥，然
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "scan, api key, path mapping, covers, library server"
-msgstr "扫描，API 密钥，路径映射，封面，资料库服务器"
+msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -9744,9 +9709,8 @@ msgstr "特殊章节是小数章节（10.5 番外篇、x.1/x.2 分篇）。开�
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "specials, omake, decimal chapters, monitor new items"
-msgstr "特殊章节，番外篇，小数章节，监控新项目"
+msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -9808,7 +9772,6 @@ msgstr "开始阅读本章"
 msgid "Start over"
 msgstr "重新开始"
 
-#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Start page"
@@ -10040,7 +10003,6 @@ msgstr "无论默认设置如何，都会通知你每个新章节。"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Test"
 msgstr "测试"
@@ -10130,10 +10092,6 @@ msgid "The full breakdown is waiting behind this slide."
 msgstr "完整明细就在此幻灯片之后。"
 
 #: src/pages/SettingsPage.tsx
-msgid "The incognito mode pre-filled when adding a series of each rating. \"No scrobble\" keeps it off your trackers; \"Full\" also keeps it out of stats and history. Any single add can override it, and changes here never touch existing series."
-msgstr ""
-
-#: src/pages/SettingsPage.tsx
 msgid "The language of Maki's interface, on every device. Title language below is separate: it sets the language of series titles."
 msgstr ""
 
@@ -10161,10 +10119,6 @@ msgstr "资料库"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "关联文件尚未盘点，因此无法显示其页面。运行“扫描文件”，然后回来进行比较。"
-
-#: src/pages/SettingsPage.tsx
-msgid "The Maki account Kavita's reading is recorded as. Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back."
-msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
@@ -10850,6 +10804,10 @@ msgstr "无法识别"
 msgid "Unsaved changes"
 msgstr "未保存的更改"
 
+#: src/pages/SettingsPage.tsx
+msgid "Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back."
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "unspecified"
@@ -11240,6 +11198,10 @@ msgstr "欢迎"
 msgid "Welcome to Maki"
 msgstr "欢迎使用 Maki"
 
+#: src/pages/SettingsPage.tsx
+msgid "What a series starts with when it is added or imported. Changing these never touches series already in the library."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "What happened in your library while you were away."
@@ -11334,9 +11296,8 @@ msgid "Which language series titles are shown in, where the metadata provider ha
 msgstr "系列标题显示时使用的语言，前提是元数据提供方有该语言。仅影响显示：文件夹和文件名保留英文标题，排序也使用英文标题。"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Which page Maki opens on. Stored on the server, so it applies on every device."
-msgstr "Maki 打开时显示的页面。存储在服务器上，因此会应用于每台设备。"
+msgid "Which page Maki opens on, on every device."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -11511,9 +11472,8 @@ msgid "You turned a lot of pages"
 msgstr "你翻过了很多页"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "You're ready to go. Head to <0>Add Series</0> to start building your library, or open <1>Settings</1> any time to fine-tune connections and scrobbling. You can re-open this guide from Settings → General."
-msgstr "一切准备就绪。前往 <0>添加系列</0> 开始建立资料库，或随时打开 <1>设置</1> 微调连接和阅读记录。你可以从设置 → 常规重新打开本指南。"
+msgid "You're ready to go. Head to <0>Add Series</0> to start building your library, or open <1>Settings</1> any time to fine-tune connections and scrobbling. You can re-open this guide from the top of the Settings page."
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy

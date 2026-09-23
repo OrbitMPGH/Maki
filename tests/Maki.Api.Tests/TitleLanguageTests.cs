@@ -88,7 +88,7 @@ public sealed class TitleLanguageTests : IDisposable
         return new SettingsController(
             localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
             settings: null!, naming: null!, flareSolverr: null!, prowlarr: null!, qbittorrent: null!,
-            kavita: null!, configFile: null!, sourceRegistry: null!, sourceAvailability: null!,
+            kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
             mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
             embeddingIndexer: null!, embeddingOptions: null!, prebuiltIndex: null!, recoGraph: null!,
             recoGraphCache: null!, coReadInstaller: null!, coReadCache: null!, readerCohortInstaller: null!,

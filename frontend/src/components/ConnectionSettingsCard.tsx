@@ -11,6 +11,7 @@ import {
   useConnectionSettings,
   useSaveConnectionSettings,
   useTestConnectionSettings,
+  type ConnectionName,
 } from '../api/hooks'
 
 interface Field {
@@ -20,7 +21,7 @@ interface Field {
   secret?: boolean
 }
 
-/** Generic URL+credentials settings card with Test/Save, used for Prowlarr and qBittorrent. */
+/** Generic URL+credentials settings card with Test/Save, used for every external service connection. */
 export function ConnectionSettingsCard({
   name,
   title,
@@ -28,7 +29,7 @@ export function ConnectionSettingsCard({
   fields,
   children,
 }: {
-  name: 'prowlarr' | 'qbittorrent' | 'kavita'
+  name: ConnectionName
   title: string
   description: string
   fields: Field[]

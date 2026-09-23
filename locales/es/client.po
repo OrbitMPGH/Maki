@@ -1928,12 +1928,6 @@ msgstr "Debe quedar al menos un idioma activado."
 msgid "Attribute Kavita's reading to"
 msgstr "Atribuir la lectura de Kavita a"
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "attribute reading, kavita user, progress owner"
-msgstr "atribuir lectura, usuario de Kavita, propietario del progreso"
-
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
 msgid "Auto"
@@ -2086,9 +2080,8 @@ msgid "Backups to keep (per kind)"
 msgstr "Copias de seguridad que conservar (por tipo)"
 
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "Backups, updates and instance-level details."
-msgstr "Copias de seguridad, actualizaciones y detalles de la instancia."
+msgid "Backups, the image cache and updates."
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -2910,9 +2903,8 @@ msgstr "Cómodo"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "comicinfo, comicinfo.xml, folder naming, rename folder, imported files, chapter format, series folder format, naming tokens, file name"
-msgstr "comicinfo, comicinfo.xml, nomenclatura de carpetas, renombrar carpeta, archivos importados, formato de capítulo, formato de carpeta de series, tokens de nomenclatura, nombre de archivo"
+msgid "comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
@@ -3375,7 +3367,7 @@ msgid "Decides when your reading day ends, which is what streaks and daily goals
 msgstr "Determina cuándo termina tu día de lectura, que es lo que se usa para contar las rachas y los objetivos diarios."
 
 #: src/pages/SettingsPage.tsx
-msgid "Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never downloaded or counted in the chapter total. Specials released later are covered too. Existing chapters are unchanged; edit them from a series' Chapters tab."
+msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -3659,8 +3651,11 @@ msgstr "Nombre visible"
 msgid "Don't want"
 msgstr "No quiero"
 
-#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
+msgid "Don't want specials"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Don't want specials on new series"
 msgstr "No querer especiales en series nuevas"
@@ -4247,6 +4242,8 @@ msgstr "Nombres de archivo al importar"
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Files"
 msgstr "Archivos"
@@ -4389,7 +4386,6 @@ msgid "FlareSolverr"
 msgstr "FlareSolverr"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "FlareSolverr is reachable"
 msgstr "FlareSolverr está disponible"
@@ -4420,6 +4416,11 @@ msgstr "Nomenclatura de carpetas"
 #, fuzzy
 msgid "Folder naming on import"
 msgstr "Nomenclatura de carpetas al importar"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -4525,12 +4526,6 @@ msgstr "Pantalla completa"
 #, fuzzy
 msgid "gems"
 msgstr "joyas"
-
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "General"
-msgstr "General"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -4812,22 +4807,20 @@ msgstr "Conserva un token de feed y lee mediante una aplicación OPDS"
 msgid "Home"
 msgstr "Inicio"
 
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "Home & start page"
+msgstr ""
+
 #: src/pages/HomePage.tsx
 #, fuzzy
 msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
 msgstr "Inicio no tiene nada que mostrar. Vuelve a activar las secciones o desactiva Inicio por completo en Ajustes."
 
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Home screen"
-msgstr "Pantalla de Inicio"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "home sections, rails, continue reading, recently added, section order, disable home"
-msgstr "secciones de Home, raíles, seguir leyendo, añadidos recientemente, orden de secciones, desactivar Home"
+msgid "home sections, rails, continue reading, recently added, section order, disable home, start page, landing page, opens on, default page"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -5079,9 +5072,8 @@ msgid "Incognito by content rating"
 msgstr "Incógnito por clasificación de contenido"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Incognito for {rating}"
-msgstr "Incógnito para {rating}"
+msgid "Incognito for {ratingLabel}"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -5238,12 +5230,6 @@ msgstr "Kavita"
 msgid "Kavita library ids"
 msgstr "ID de bibliotecas de Kavita"
 
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Kavita reading"
-msgstr "Lectura en Kavita"
-
 #: src/pages/SettingsPage.tsx
 msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
 msgstr ""
@@ -5258,7 +5244,7 @@ msgid "Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
-msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita reading."
+msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -5298,12 +5284,6 @@ msgstr "Tipo"
 #, fuzzy
 msgid "Korean"
 msgstr "Coreano"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "landing page, home, library, discover, opens on, default page"
-msgstr "página de inicio, Home, biblioteca, Discover, se abre en, página predeterminada"
 
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/pages/settings/registry.ts
@@ -5509,12 +5489,6 @@ msgstr "Biblioteca"
 #, fuzzy
 msgid "Library at a glance"
 msgstr "Biblioteca de un vistazo"
-
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Library files"
-msgstr "Archivos de la biblioteca"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6040,8 +6014,6 @@ msgid "Monitored"
 msgstr "Supervisado"
 
 #: src/pages/LibraryPage.tsx
-#: src/pages/settings/registry.ts
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Monitoring"
 msgstr "Supervisión"
@@ -6241,6 +6213,7 @@ msgstr "Nombre"
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 msgstr "Nombra tu proxy inverso en Proxies de confianza, o el límite de velocidad y el registro de auditoría verán el proxy en lugar del cliente."
 
+#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Naming"
@@ -6339,6 +6312,11 @@ msgstr ""
 #, fuzzy
 msgid "New series"
 msgstr "Nueva serie"
+
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "New series defaults"
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -7527,17 +7505,6 @@ msgstr "popular"
 msgid "Pornographic"
 msgstr "Pornográfico"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Port"
-msgstr "Puerto"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-msgid "port, setup guide, first-time setup, instance"
-msgstr "puerto, guía de configuración, configuración inicial, instancia"
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7563,6 +7530,10 @@ msgstr "Carteles: {coverFilesLabel} archivos, {coverBytesLabel} · {coversMissin
 #, fuzzy
 msgid "Posters: {coverFilesLabel} files, {coverBytesLabel} - every series has one"
 msgstr "Carteles: {coverFilesLabel} archivos, {coverBytesLabel} · todas las series tienen uno"
+
+#: src/pages/SettingsPage.tsx
+msgid "Pre-filled on the add form, where any single add can change it. \"No scrobble\" keeps a series off your trackers; \"Full\" also keeps it out of stats and history."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -7786,11 +7757,6 @@ msgstr "Valoración borrada"
 #, fuzzy
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
 msgstr "Volver a descargar {staleChapters} de {winnerDisplayName}"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Re-open the first-time setup guide."
-msgstr "Volver a abrir la guía de configuración inicial."
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8825,9 +8791,8 @@ msgstr "Analiza esto con tu aplicación de autenticación o introduce la clave m
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "scan, api key, path mapping, covers, library server"
-msgstr "análisis, clave API, asignación de rutas, portadas, servidor de biblioteca"
+msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -9744,9 +9709,8 @@ msgstr "Los especiales son capítulos decimales (omake 10.5, divisiones x.1/x.2)
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "specials, omake, decimal chapters, monitor new items"
-msgstr "especiales, omake, capítulos decimales, supervisar elementos nuevos"
+msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -9808,7 +9772,6 @@ msgstr "Empezar capítulo"
 msgid "Start over"
 msgstr "Empezar de nuevo"
 
-#: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Start page"
@@ -10040,7 +10003,6 @@ msgstr "Te informa de cada capítulo nuevo, independientemente de tu valor prede
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/SetupWizard.tsx
-#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Test"
 msgstr "Probar"
@@ -10130,10 +10092,6 @@ msgid "The full breakdown is waiting behind this slide."
 msgstr "El desglose completo está detrás de esta diapositiva."
 
 #: src/pages/SettingsPage.tsx
-msgid "The incognito mode pre-filled when adding a series of each rating. \"No scrobble\" keeps it off your trackers; \"Full\" also keeps it out of stats and history. Any single add can override it, and changes here never touch existing series."
-msgstr ""
-
-#: src/pages/SettingsPage.tsx
 msgid "The language of Maki's interface, on every device. Title language below is separate: it sets the language of series titles."
 msgstr ""
 
@@ -10161,10 +10119,6 @@ msgstr "La biblioteca"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "El archivo vinculado aún no se ha inventariado, por lo que no se pueden mostrar sus páginas. Ejecuta Analizar archivos y vuelve para compararlas."
-
-#: src/pages/SettingsPage.tsx
-msgid "The Maki account Kavita's reading is recorded as. Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back."
-msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
@@ -10850,6 +10804,10 @@ msgstr "No reconocido"
 msgid "Unsaved changes"
 msgstr "Cambios sin guardar"
 
+#: src/pages/SettingsPage.tsx
+msgid "Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back."
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "unspecified"
@@ -11240,6 +11198,10 @@ msgstr "Bienvenido"
 msgid "Welcome to Maki"
 msgstr "Bienvenido a Maki"
 
+#: src/pages/SettingsPage.tsx
+msgid "What a series starts with when it is added or imported. Changing these never touches series already in the library."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "What happened in your library while you were away."
@@ -11334,9 +11296,8 @@ msgid "Which language series titles are shown in, where the metadata provider ha
 msgstr "En qué idioma se muestran los títulos de las series, cuando el proveedor de metadatos lo ofrece. Solo afecta a la visualización: las carpetas y los nombres de archivo conservan el título en inglés, al igual que el orden."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Which page Maki opens on. Stored on the server, so it applies on every device."
-msgstr "Qué página abre Maki. Se almacena en el servidor, así que se aplica en todos los dispositivos."
+msgid "Which page Maki opens on, on every device."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -11511,9 +11472,8 @@ msgid "You turned a lot of pages"
 msgstr "Has pasado muchas páginas"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "You're ready to go. Head to <0>Add Series</0> to start building your library, or open <1>Settings</1> any time to fine-tune connections and scrobbling. You can re-open this guide from Settings → General."
-msgstr "Ya puedes empezar. Ve a <0>Añadir serie</0> para comenzar a crear tu biblioteca o abre <1>Ajustes</1> cuando quieras para ajustar las conexiones y el scrobbling. Puedes volver a abrir esta guía desde Ajustes → General."
+msgid "You're ready to go. Head to <0>Add Series</0> to start building your library, or open <1>Settings</1> any time to fine-tune connections and scrobbling. You can re-open this guide from the top of the Settings page."
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy

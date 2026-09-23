@@ -2392,14 +2392,16 @@ export interface QBittorrentSettings {
   category: string | null
 }
 
-export function useConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent' | 'kavita') {
+export type ConnectionName = 'prowlarr' | 'qbittorrent' | 'kavita' | 'flaresolverr'
+
+export function useConnectionSettings<T>(name: ConnectionName) {
   return useQuery({
     queryKey: ['settings', name],
     queryFn: () => api<T>(`/settings/${name}`),
   })
 }
 
-export function useSaveConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent' | 'kavita') {
+export function useSaveConnectionSettings<T>(name: ConnectionName) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: T) =>
@@ -2410,7 +2412,7 @@ export function useSaveConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent' | 
   })
 }
 
-export function useTestConnectionSettings<T>(name: 'prowlarr' | 'qbittorrent' | 'kavita') {
+export function useTestConnectionSettings<T>(name: ConnectionName) {
   return useMutation({
     mutationFn: (value: T) =>
       api<{ success: boolean }>(`/settings/${name}/test`, {
@@ -2916,15 +2918,6 @@ export function useRefreshMetadataDump() {
       api<{ started: boolean; alreadyRunning: boolean }>('/settings/metadata/refresh', {
         method: 'POST',
       }),
-  })
-}
-
-export function useGeneralSettings() {
-  return useQuery({
-    queryKey: ['settings', 'general'],
-    // No apiKey any more: there is no instance-wide key. Credentials belong to accounts and are
-    // managed under Settings → My account.
-    queryFn: () => api<{ port: number }>('/settings/general'),
   })
 }
 

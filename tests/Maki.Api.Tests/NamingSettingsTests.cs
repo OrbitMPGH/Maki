@@ -29,7 +29,7 @@ public class NamingSettingsTests : IDisposable
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
         settings: _settings,
         naming: new NamingService(_settings),
-        flareSolverr: null!, prowlarr: null!, qbittorrent: null!, kavita: null!, configFile: null!,
+        flareSolverr: null!, prowlarr: null!, qbittorrent: null!, kavita: null!,
         sourceRegistry: null!, sourceAvailability: null!, mangaBakaDump: null!, embeddingModel: null!,
         embeddingStore: null!, embeddingStatus: null!, embeddingIndexer: null!, embeddingOptions: null!,
         prebuiltIndex: null!, recoGraph: null!, recoGraphCache: null!, coReadInstaller: null!,

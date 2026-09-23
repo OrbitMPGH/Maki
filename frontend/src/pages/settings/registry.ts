@@ -90,7 +90,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'system',
     label: msg`System`,
-    description: msg`Backups, updates and instance-level details.`,
+    description: msg`Backups, the image cache and updates.`,
   },
 ]
 
@@ -143,20 +143,11 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'start-page',
-    tab: 'account',
-    title: msg`Start page`,
-    keywords: msg({
-      message: `landing page, home, library, discover, opens on, default page`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
     id: 'home-screen',
     tab: 'account',
-    title: msg`Home screen`,
+    title: msg`Home & start page`,
     keywords: msg({
-      message: `home sections, rails, continue reading, recently added, section order, disable home`,
+      message: `home sections, rails, continue reading, recently added, section order, disable home, start page, landing page, opens on, default page`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -231,20 +222,30 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'library-files',
     tab: 'library',
-    title: msg`Library files`,
+    title: msg`Files`,
     admin: true,
     keywords: msg({
-      message: `comicinfo, comicinfo.xml, folder naming, rename folder, imported files, chapter format, series folder format, naming tokens, file name`,
+      message: `comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'naming',
+    tab: 'library',
+    title: msg`Naming`,
+    admin: true,
+    keywords: msg({
+      message: `folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
     id: 'monitoring',
     tab: 'library',
-    title: msg`Monitoring`,
+    title: msg`New series defaults`,
     admin: true,
     keywords: msg({
-      message: `specials, omake, decimal chapters, monitor new items`,
+      message: `specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -321,22 +322,12 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   },
 
   {
-    id: 'kavita-user',
-    tab: 'integrations',
-    title: msg`Kavita reading`,
-    admin: true,
-    keywords: msg({
-      message: `attribute reading, kavita user, progress owner`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
     id: 'kavita',
     tab: 'integrations',
     title: msg`Kavita`,
     admin: true,
     keywords: msg({
-      message: `scan, api key, path mapping, covers, library server`,
+      message: `scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -419,16 +410,6 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     admin: true,
     keywords: msg({
       message: `new version, check for updates, release, github`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
-    id: 'general',
-    tab: 'system',
-    title: msg`General`,
-    admin: true,
-    keywords: msg({
-      message: `port, setup guide, first-time setup, instance`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
