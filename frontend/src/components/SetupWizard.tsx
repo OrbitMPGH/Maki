@@ -1,59 +1,172 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ActionIcon,
-  Alert,
   Anchor,
   Button,
-  Card,
+  Collapse,
   Group,
   Modal,
   Radio,
+  Select,
   Stack,
-  Stepper,
   Switch,
   Text,
   TextInput,
-  Title,
   UnstyledButton,
 } from '@mantine/core'
-import { IconCheck, IconInfoCircle, IconTrash } from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
-import { Link } from 'react-router-dom'
+import {
+  IconAlertTriangle,
+  IconArrowLeft,
+  IconArrowRight,
+  IconCheck,
+  IconChevronDown,
+  IconFolder,
+  IconFolderPlus,
+  IconTrash,
+} from '@tabler/icons-react'
+import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { t } from '@lingui/core/macro'
+import { plural } from '@lingui/core/macro'
 import {
   useAddRootFolder,
   useCompleteSetup,
+  useConnectionSettings,
   useDeleteRootFolder,
   useDiscoverSettings,
-  useFlareSolverrSettings,
-  type FolderNamingMode,
+  useDumpProgress,
   useLibrarySettings,
   useMetadataSettings,
   useMonitoringSettings,
   useRecommendationIndex,
   useRootFolders,
   useSaveDiscoverSettings,
-  useSaveFlareSolverr,
   useSaveLibrarySettings,
   useSaveMetadataSettings,
   useSaveMonitoringSettings,
+  useSaveSourceLanguages,
   useSetEmbeddingModel,
-  useTestFlareSolverr,
+  useSetupStatus,
+  useSourceLanguages,
+  useUiSettings,
+  type ConnectionName,
+  type FolderNamingMode,
+  type LibrarySettings,
 } from '../api/hooks'
-import { ConnectionSettingsCard } from './ConnectionSettingsCard'
-import { ContentRatingCards } from './ContentRatingCards'
-import { RecommendationModelSwitch } from './RecommendationModelSwitch'
+import { languageName } from '../api/titles'
+import { formatBytes } from '../format'
+import { useLabel, useLanguageChoice } from '../i18n-context'
 import { useThemeChoice } from '../theme-context'
-import { useLabel } from '../i18n-context'
+import { ConnectionForm, type ConnectionField } from './ConnectionSettingsCard'
+import { ContentRatingCards } from './ContentRatingCards'
+import { IconBrandMark } from './IconBrandMark'
+import { DumpProgressBar } from './MetadataDumpProgress'
+import { PriorityList } from './PriorityList'
+import { RecommendationModelSwitch } from './RecommendationModelSwitch'
+import { UnsavedSettingsContext } from './settings/SaveButton'
+import { useApplyLanguage, useLanguageOptions } from './ui/language'
 
-function StepBody({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
+const STEP_IDS = ['welcome', 'library', 'discovery', 'downloads', 'connections', 'finish'] as const
+type StepId = (typeof STEP_IDS)[number]
+
+type Tone = 'ok' | 'warn' | undefined
+
+/** One setting: what it is on the left, the control on the right, anything wide underneath. */
+function SettingRow({
+  label,
+  description,
+  control,
+  children,
+}: {
+  label: ReactNode
+  description?: ReactNode
+  control?: ReactNode
+  children?: ReactNode
+}) {
   return (
-    <Stack gap="md" mt="lg">
-      <Title order={3}>{title}</Title>
-      {children}
-    </Stack>
+    <section className="setup-row">
+      <div className="setup-row-head">
+        <div className="setup-row-text">
+          <Text className="setup-row-label">{label}</Text>
+          {description && <Text className="setup-row-description">{description}</Text>}
+        </div>
+        {control && <div className="setup-row-control">{control}</div>}
+      </div>
+      {children && <div className="setup-row-body">{children}</div>}
+    </section>
   )
+}
+
+function WelcomeStep() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const { data: ui } = useUiSettings()
+  const languageOptions = useLanguageOptions()
+  const applyLanguage = useApplyLanguage()
+  const { themeId, setThemeId, presets } = useThemeChoice()
+  // Applying a language clears the query cache, so the stored value is briefly unknown. Hold the
+  // pick locally so the select doesn't fall back to Automatic while it reloads.
+  const [languageChoice, setLanguageChoice] = useState<string | null>(null)
+
+  return (
+    <>
+      <SettingRow
+        label={<Trans>Language</Trans>}
+        description={<Trans>The language of Maki's interface, on every device you sign in on.</Trans>}
+        control={
+          <Select
+            aria-label={t`Language`}
+            data={languageOptions}
+            value={languageChoice ?? ui?.language ?? ''}
+            onChange={(value) => {
+              if (value === null) return
+              setLanguageChoice(value)
+              applyLanguage?.(value)
+            }}
+            disabled={!applyLanguage}
+            allowDeselect={false}
+            w={280}
+          />
+        }
+      />
+      <SettingRow
+        label={<Trans>Appearance</Trans>}
+        description={<Trans>An accent colour, the light theme, or whatever your system uses. Remembered on this device.</Trans>}
+      >
+        <div className="setup-swatches" role="radiogroup" aria-label={t`Appearance`}>
+          {presets.map((p) => {
+            const active = p.id === themeId
+            return (
+              <UnstyledButton
+                key={p.id}
+                role="radio"
+                aria-checked={active}
+                className="setup-swatch"
+                data-active={active || undefined}
+                onClick={() => setThemeId(p.id)}
+              >
+                <span className="setup-swatch-dot" style={{ background: p.swatch }} />
+                <span>{renderLabel(p.label)}</span>
+              </UnstyledButton>
+            )
+          })}
+        </div>
+      </SettingRow>
+    </>
+  )
+}
+
+function useLibraryPatch() {
+  const { data: settings } = useLibrarySettings()
+  const save = useSaveLibrarySettings()
+  // writeCoverToFolder is left out unless it is the thing changing: an omitted field keeps the
+  // stored value, and sending a default here once switched people's cover.jpg off.
+  const patch = (changes: Partial<LibrarySettings>) =>
+    save.mutate({
+      writeComicInfo: settings?.writeComicInfo ?? true,
+      folderNamingMode: settings?.folderNamingMode ?? 'rename',
+      ...changes,
+    })
+  return { settings, patch }
 }
 
 function LibraryStep() {
@@ -62,425 +175,830 @@ function LibraryStep() {
   const { data: rootFolders } = useRootFolders()
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
-  const { data: metadata } = useMetadataSettings()
-  const saveMetadata = useSaveMetadataSettings()
+  const { settings, patch } = useLibraryPatch()
 
   const add = () => {
-    if (!newPath.trim()) return
-    addFolder.mutate(newPath.trim(), { onSuccess: () => setNewPath('') })
+    const path = newPath.trim()
+    if (!path) return
+    addFolder.mutate(path, { onSuccess: () => setNewPath('') })
   }
 
   return (
-    <StepBody title={<Trans>Your library</Trans>}>
-      <Text size="sm" c="var(--ink-3)">
-        <Trans>
-          Point Maki at the folder where your manga is stored (or should be). Kavita, if you use
-          it, watches the same location. You can add more later in Settings.
-        </Trans>
-      </Text>
-      <Stack gap="xs">
-        {rootFolders?.map((f) => (
-          <Group key={f.id} justify="space-between" wrap="nowrap">
-            <Text size="sm">
-              {f.path}
-              {!f.accessible && (
-                <Text span c="var(--danger)" size="xs" ml="xs">
-                  <Trans>(inaccessible)</Trans>
-                </Text>
-              )}
-            </Text>
-            <ActionIcon
-              variant="subtle"
-              color="var(--danger)"
-              onClick={() => deleteFolder.mutate(f.id)}
-              aria-label={t`Delete root folder`}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
+    <>
+      <SettingRow
+        label={<Trans>Library folders</Trans>}
+        description={
+          <Trans>
+            Where your manga is stored, or should be. Maki creates one folder per series inside it.
+            If you use Kavita, point it at the same place.
+          </Trans>
+        }
+      >
+        <Stack gap="xs">
+          {rootFolders?.map((f) => {
+            const free = f.freeSpace != null ? formatBytes(f.freeSpace) : null
+            return (
+              <div key={f.id} className="setup-folder" data-broken={!f.accessible || undefined}>
+                <IconFolder size={18} className="setup-folder-icon" />
+                <div className="setup-folder-text">
+                  <Text className="setup-folder-path">{f.path}</Text>
+                  <Text className="setup-folder-meta">
+                    {!f.accessible ? (
+                      <Trans>Maki can't reach this folder</Trans>
+                    ) : free ? (
+                      <Trans>{free} free</Trans>
+                    ) : null}
+                  </Text>
+                </div>
+                <ActionIcon
+                  variant="subtle"
+                  color="var(--danger)"
+                  onClick={() => deleteFolder.mutate(f.id)}
+                  aria-label={t`Delete root folder`}
+                >
+                  <IconTrash size={16} />
+                </ActionIcon>
+              </div>
+            )
+          })}
+          <Group gap="xs" wrap="nowrap">
+            <TextInput
+              aria-label={t`Folder path`}
+              placeholder={t`C:\\Manga or /library`}
+              leftSection={<IconFolderPlus size={16} />}
+              value={newPath}
+              onChange={(e) => setNewPath(e.currentTarget.value)}
+              onKeyDown={(e) => e.key === 'Enter' && add()}
+              style={{ flex: 1 }}
+            />
+            <Button onClick={add} loading={addFolder.isPending} disabled={!newPath.trim()}>
+              <Trans>Add folder</Trans>
+            </Button>
           </Group>
-        ))}
-      </Stack>
-      <Group>
-        <TextInput
-          placeholder={t`C:\\Manga or /library`}
-          value={newPath}
-          onChange={(e) => setNewPath(e.currentTarget.value)}
-          style={{ flex: 1 }}
-          onKeyDown={(e) => e.key === 'Enter' && add()}
-        />
-        <Button onClick={add} loading={addFolder.isPending}>
-          <Trans>Add</Trans>
-        </Button>
-      </Group>
-      <Switch
-        mt="md"
-        label={t`Use the local MangaBaka database (Highly Recommended)`}
-        description={t`Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready.`}
-        checked={metadata?.useLocalDb ?? true}
-        onChange={(e) => saveMetadata.mutate(e.currentTarget.checked)}
+        </Stack>
+      </SettingRow>
+
+      <SettingRow
+        label={<Trans>Existing folders on import</Trans>}
+        description={<Trans>What happens to a series folder you already have when you import it into Maki.</Trans>}
+      >
+        <Radio.Group
+          value={settings?.folderNamingMode ?? 'rename'}
+          onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
+        >
+          <Stack gap="xs">
+            <Radio.Card value="rename" className="setup-choice">
+              <Group wrap="nowrap" align="flex-start" gap="sm">
+                <Radio.Indicator />
+                <div>
+                  <Text className="setup-choice-title">
+                    <Trans>Rename to the Maki standard</Trans>
+                  </Text>
+                  <Text className="setup-choice-description">
+                    <Trans>Every series folder ends up named the same way.</Trans>
+                  </Text>
+                </div>
+              </Group>
+            </Radio.Card>
+            <Radio.Card value="keep-new-standard" className="setup-choice">
+              <Group wrap="nowrap" align="flex-start" gap="sm">
+                <Radio.Indicator />
+                <div>
+                  <Text className="setup-choice-title">
+                    <Trans>Keep the name, download into a new standard folder</Trans>
+                  </Text>
+                  <Text className="setup-choice-description">
+                    <Trans>Your folder is left alone. New chapters go into a folder Maki names.</Trans>
+                  </Text>
+                </div>
+              </Group>
+            </Radio.Card>
+            <Radio.Card value="keep-original" className="setup-choice">
+              <Group wrap="nowrap" align="flex-start" gap="sm">
+                <Radio.Indicator />
+                <div>
+                  <Text className="setup-choice-title">
+                    <Trans>Keep the name, download into it too</Trans>
+                  </Text>
+                  <Text className="setup-choice-description">
+                    <Trans>Nothing is renamed and everything stays in the folder you had.</Trans>
+                  </Text>
+                </div>
+              </Group>
+            </Radio.Card>
+          </Stack>
+        </Radio.Group>
+      </SettingRow>
+
+      <SettingRow
+        label={<Trans>Write ComicInfo.xml into imported files</Trans>}
+        description={
+          <Trans>
+            Helps Kavita and other readers group and name chapters. Off leaves torrent grabs and
+            manual imports untouched. Maki's own downloads always get one.
+          </Trans>
+        }
+        control={
+          <Switch
+            aria-label={t`Write ComicInfo.xml into imported files`}
+            checked={settings?.writeComicInfo ?? true}
+            onChange={(e) => patch({ writeComicInfo: e.currentTarget.checked })}
+          />
+        }
       />
-    </StepBody>
+      <SettingRow
+        label={<Trans>Save a cover.jpg into each series folder</Trans>}
+        description={<Trans>For readers like Komga and Kavita that pick up a poster from the folder.</Trans>}
+        control={
+          <Switch
+            aria-label={t`Save a cover.jpg into each series folder`}
+            checked={settings?.writeCoverToFolder ?? false}
+            onChange={(e) => patch({ writeCoverToFolder: e.currentTarget.checked })}
+          />
+        }
+      />
+    </>
   )
 }
 
-function RecommendationsStep() {
+function DiscoveryStep() {
+  const { t } = useLingui()
+  const { data: metadata } = useMetadataSettings()
+  const saveMetadata = useSaveMetadataSettings()
+  const { data: progress } = useDumpProgress()
   const { data: recIndex } = useRecommendationIndex()
   const setModel = useSetEmbeddingModel()
-
-  return (
-    <StepBody title={<Trans>Recommendations</Trans>}>
-      <Text size="sm" c="var(--ink-3)">
-        <Trans>
-          A local embedding model lets Discover recommend by feel and search by description. It
-          uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the
-          heavy work. Switching it off disables both. You can change this any time in Settings.
-        </Trans>
-      </Text>
-      <RecommendationModelSwitch
-        status={recIndex}
-        busy={setModel.isPending}
-        onSelect={(kind) => setModel.mutate(kind)}
-      />
-    </StepBody>
-  )
-}
-
-function PreferencesStep() {
-  const { t } = useLingui()
-  const renderLabel = useLabel()
-  const { data: monitoring } = useMonitoringSettings()
-  const saveMonitoring = useSaveMonitoringSettings()
-  const { data: library } = useLibrarySettings()
-  const saveLibrary = useSaveLibrarySettings()
   const { data: discover } = useDiscoverSettings()
   const saveDiscover = useSaveDiscoverSettings()
-  const { themeId, setThemeId, presets } = useThemeChoice()
+  const downloading = Boolean(progress?.running && progress.phase !== 'checking')
 
   return (
-    <StepBody title={<Trans>Preferences</Trans>}>
-      <Card withBorder radius="md" padding="md">
-        <Switch
-          label={t`Don't want specials on new series`}
-          description={t`Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download.`}
-          checked={monitoring?.unmonitorSpecials ?? false}
-          onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
-          mb="md"
+    <>
+      <SettingRow
+        label={<Trans>Keep a local copy of MangaBaka</Trans>}
+        description={
+          <Trans>
+            About 3 GB on disk, refreshed nightly. Search and imports become instant instead of
+            rate-limited, and Discover needs it. Downloads in the background once setup is done.
+          </Trans>
+        }
+        control={
+          <Switch
+            aria-label={t`Keep a local copy of MangaBaka`}
+            checked={metadata?.useLocalDb ?? true}
+            onChange={(e) => saveMetadata.mutate(e.currentTarget.checked)}
+          />
+        }
+      >
+        {downloading && progress && <DumpProgressBar progress={progress} />}
+      </SettingRow>
+
+      <SettingRow
+        label={<Trans>Recommendations and search by description</Trans>}
+        description={
+          <Trans>
+            A small local model lets Discover recommend by feel and lets you search for a plot
+            rather than a title. Its index downloads prebuilt, so your machine skips the heavy work.
+          </Trans>
+        }
+      >
+        <RecommendationModelSwitch
+          status={recIndex}
+          busy={setModel.isPending}
+          onSelect={(kind) => setModel.mutate(kind)}
         />
-        <Switch
-          label={t`Write ComicInfo.xml into imported files`}
-          description={t`Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files.`}
-          checked={library?.writeComicInfo ?? true}
-          onChange={(e) =>
-            saveLibrary.mutate({
-              writeComicInfo: e.currentTarget.checked,
-              folderNamingMode: library?.folderNamingMode ?? 'rename',
-            })
-          }
-        />
-      </Card>
-      <Card withBorder radius="md" padding="md">
-        <Text size="sm" fw={500} mb={4}>
-          <Trans>Content rating</Trans>
-        </Text>
-        <Text size="sm" c="var(--ink-3)" mb="xs">
-          <Trans>Highest rating shown in search, Discover and recommendations. Changeable later in Settings.</Trans>
-        </Text>
+      </SettingRow>
+
+      <SettingRow
+        label={<Trans>Content rating</Trans>}
+        description={<Trans>The most explicit rating shown in search, Discover and recommendations. Everything up to it is allowed.</Trans>}
+      >
         <ContentRatingCards
           value={discover?.maxContentRating ?? 'erotica'}
           onChange={(rating) => saveDiscover.mutate(rating)}
         />
-      </Card>
-      <Card withBorder radius="md" padding="md">
-        <Text size="sm" fw={500} mb={4}>
-          <Trans>Folder naming</Trans>
-        </Text>
-        <Text size="sm" c="var(--ink-3)" mb="xs">
-          <Trans>
-            Whether Maki renames an imported series' folder to its standard sanitized-title name,
-            or leaves it as found. Changeable later in Settings.
-          </Trans>
-        </Text>
-        <Radio.Group
-          value={library?.folderNamingMode ?? 'rename'}
-          onChange={(value) =>
-            saveLibrary.mutate({
-              writeComicInfo: library?.writeComicInfo ?? true,
-              folderNamingMode: value as FolderNamingMode,
-            })
-          }
-        >
-          <Stack gap="xs" mt="xs">
-            <Radio value="rename" label={t`Rename folder to Maki standard`} />
-            <Radio
-              value="keep-new-standard"
-              label={t`Keep folder name, but put new downloads in a Maki standard folder`}
-            />
-            <Radio
-              value="keep-original"
-              label={t`Keep folder name, and put new downloads there too`}
-            />
-          </Stack>
-        </Radio.Group>
-      </Card>
-      <Card withBorder radius="md" padding="md">
-        <Text size="sm" fw={500} mb={4}>
-          <Trans>Appearance</Trans>
-        </Text>
-        <Text size="sm" c="var(--ink-3)" mb="sm">
-          <Trans>Pick an accent colour or the light theme. Applies instantly, remembered on this device.</Trans>
-        </Text>
-        <Group gap="sm">
-          {presets.map((p) => {
-            const active = p.id === themeId
-            return (
-              <UnstyledButton
-                key={p.id}
-                onClick={() => setThemeId(p.id)}
-                aria-pressed={active}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '8px 12px',
-                  borderRadius: 10,
-                  border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                  background: active ? 'var(--surface-hover)' : 'transparent',
-                  boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
-                }}
-              >
-                <span
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    background: p.swatch,
-                    border: '1px solid rgba(0,0,0,0.25)',
-                    flexShrink: 0,
-                  }}
-                />
-                <Text size="sm" fw={active ? 600 : 500}>
-                  {renderLabel(p.label)}
-                </Text>
-                {active && <IconCheck size={14} style={{ color: 'var(--brand)' }} />}
-              </UnstyledButton>
-            )
-          })}
-        </Group>
-      </Card>
-    </StepBody>
+      </SettingRow>
+    </>
   )
 }
 
-function FlareSolverrCard() {
-  const { data: settings } = useFlareSolverrSettings()
-  const save = useSaveFlareSolverr()
-  const test = useTestFlareSolverr()
-  const [url, setUrl] = useState('')
+function DownloadsStep() {
+  const { t } = useLingui()
+  const { data: languages } = useSourceLanguages()
+  const saveLanguages = useSaveSourceLanguages()
+  const { data: monitoring } = useMonitoringSettings()
+  const saveMonitoring = useSaveMonitoringSettings()
+  const [order, setOrder] = useState<string[] | null>(null)
+  const [disabled, setDisabled] = useState<string[] | null>(null)
+  const [noneEnabled, setNoneEnabled] = useState(false)
 
   useEffect(() => {
-    if (settings?.url) setUrl(settings.url)
-  }, [settings?.url])
+    if (languages && order === null) {
+      setOrder(languages.order)
+      setDisabled(languages.disabled)
+    }
+  }, [languages, order])
 
   return (
-    <div>
-      <Text size="sm" fw={600}>
-        FlareSolverr
-      </Text>
-      <Text size="xs" c="var(--ink-3)" mb="xs">
-        <Trans>
-          Required for Cloudflare-protected sources like MangaFire. Point at a running instance
-          (e.g. http://localhost:8191).
-        </Trans>
-      </Text>
-      <Group align="flex-end">
-        <TextInput
-          placeholder="http://localhost:8191"
-          value={url}
-          onChange={(e) => setUrl(e.currentTarget.value)}
-          style={{ flex: 1 }}
-        />
-        <Button
-          variant="default"
-          loading={test.isPending}
-          onClick={() =>
-            test.mutate(url || null, {
-              onSuccess: () =>
-                notifications.show({ message: t`FlareSolverr is reachable`, color: 'green' }),
-            })
-          }
-        >
-          <Trans>Test</Trans>
-        </Button>
-        <Button
-          loading={save.isPending}
-          onClick={() =>
-            save.mutate(url || null, {
-              onSuccess: () => notifications.show({ message: t`Saved`, color: 'green' }),
-            })
-          }
-        >
-          <Trans>Save</Trans>
-        </Button>
-      </Group>
+    <>
+      <SettingRow
+        label={<Trans>Languages to download</Trans>}
+        description={
+          <Trans>
+            Most preferred first. Maki matches new series to sources that publish your top language
+            and skips sources that publish none of these. Drag to reorder.
+          </Trans>
+        }
+      >
+        {order && disabled && (
+          <PriorityList
+            items={order}
+            disabled={disabled}
+            onChange={(nextOrder, nextDisabled) => {
+              const allOff = nextOrder.every((c) => nextDisabled.includes(c))
+              setNoneEnabled(allOff)
+              if (allOff) return
+              setOrder(nextOrder)
+              setDisabled(nextDisabled)
+              saveLanguages.mutate({
+                order: nextOrder,
+                disabled: nextDisabled,
+                available: languages?.available ?? [],
+              })
+            }}
+            renderLabel={(code) => languageName(code) ?? code}
+            toggleLabel={(code) => {
+              const name = languageName(code) ?? code
+              return t`Enable ${name}`
+            }}
+          />
+        )}
+        {noneEnabled && (
+          <Text size="sm" c="var(--danger)">
+            <Trans>At least one language must stay enabled.</Trans>
+          </Text>
+        )}
+      </SettingRow>
+
+      <SettingRow
+        label={<Trans>Skip specials on new series</Trans>}
+        description={
+          <Trans>
+            Specials are decimal chapters like 10.5 or 12.1. When on, they stay listed on newly
+            added series but never download.
+          </Trans>
+        }
+        control={
+          <Switch
+            aria-label={t`Skip specials on new series`}
+            checked={monitoring?.unmonitorSpecials ?? false}
+            onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
+          />
+        }
+      />
+    </>
+  )
+}
+
+interface ServiceSpec {
+  name: ConnectionName
+  title: string
+  description: string
+  fields: ConnectionField[]
+}
+
+function useServices(): ServiceSpec[] {
+  const { t } = useLingui()
+  return [
+    {
+      name: 'flaresolverr',
+      title: 'FlareSolverr',
+      description: t`Gets past Cloudflare for sources like MangaFire. Without it those sources are skipped.`,
+      fields: [{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }],
+    },
+    {
+      name: 'prowlarr',
+      title: 'Prowlarr',
+      description: t`Searches your indexers for manga releases to download as torrents.`,
+      fields: [
+        { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
+        { key: 'apiKey', label: t`API key`, secret: true },
+      ],
+    },
+    {
+      name: 'qbittorrent',
+      title: 'qBittorrent',
+      description: t`Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker.`,
+      fields: [
+        { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
+        { key: 'username', label: t`Username` },
+        { key: 'password', label: t`Password`, secret: true },
+        { key: 'pathMapFrom', label: t`Path mapping - qBittorrent side`, placeholder: t`/downloads (optional)` },
+        { key: 'pathMapTo', label: t`Path mapping - Maki side`, placeholder: t`Z:\\downloads (optional)` },
+      ],
+    },
+    {
+      name: 'kavita',
+      title: 'Kavita',
+      description: t`Maki asks Kavita to scan a series after its files change and sends it posters, links and status. The API key is under User Settings, 3rd Party Clients. Fill the path mapping only if Kavita sees the library under another path.`,
+      fields: [
+        { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
+        { key: 'apiKey', label: t`API key`, secret: true },
+        { key: 'pathMapFrom', label: t`Path mapping - Maki side`, placeholder: t`C:\\Manga (optional)` },
+        { key: 'pathMapTo', label: t`Path mapping - Kavita side`, placeholder: t`/manga (optional)` },
+      ],
+    },
+  ]
+}
+
+/** A connection counts as set up once it has a saved URL; every service here needs one. */
+function useConnected(name: ConnectionName): boolean {
+  const { data } = useConnectionSettings<Record<string, string | null>>(name)
+  return Boolean(data?.url)
+}
+
+/** Titles of the services with a saved URL, in the order the Connections step lists them. */
+function useConnectedTitles(): string[] {
+  const services = useServices()
+  const connected: Record<ConnectionName, boolean> = {
+    flaresolverr: useConnected('flaresolverr'),
+    prowlarr: useConnected('prowlarr'),
+    qbittorrent: useConnected('qbittorrent'),
+    kavita: useConnected('kavita'),
+  }
+  return services.filter((s) => connected[s.name]).map((s) => s.title)
+}
+
+function ServiceRow({ service }: { service: ServiceSpec }) {
+  const [open, setOpen] = useState(false)
+  const connected = useConnected(service.name)
+  const bodyId = `setup-service-${service.name}`
+
+  return (
+    <div className="setup-service" data-open={open || undefined}>
+      <UnstyledButton
+        className="setup-service-head"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <div className="setup-service-text">
+          <Text className="setup-row-label">{service.title}</Text>
+          <Text className="setup-row-description">{service.description}</Text>
+        </div>
+        <span className="setup-service-state" data-connected={connected || undefined}>
+          {connected ? <Trans>Saved</Trans> : <Trans>Not set</Trans>}
+        </span>
+        <IconChevronDown size={16} className="setup-service-chevron" />
+      </UnstyledButton>
+      <Collapse expanded={open} id={bodyId}>
+        <div className="setup-service-body">
+          <ConnectionForm name={service.name} title={service.title} fields={service.fields} />
+        </div>
+      </Collapse>
     </div>
   )
 }
 
 function ConnectionsStep() {
+  const services = useServices()
+  return (
+    <div className="setup-services">
+      {services.map((s) => (
+        <ServiceRow key={s.name} service={s} />
+      ))}
+    </div>
+  )
+}
+
+function SummaryLine({ tone, children, action }: { tone: Tone; children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="setup-summary-line" data-tone={tone}>
+      <span className="setup-summary-icon">
+        {tone === 'warn' ? <IconAlertTriangle size={14} /> : <IconCheck size={14} />}
+      </span>
+      <Text className="setup-summary-text">{children}</Text>
+      {action}
+    </div>
+  )
+}
+
+function FinishStep({ goTo, finishTo }: { goTo: (step: StepId) => void; finishTo: (path: string) => void }) {
+  const { data: rootFolders } = useRootFolders()
+  const { data: metadata } = useMetadataSettings()
+  const { data: recIndex } = useRecommendationIndex()
+  const connectedNames = useConnectedTitles()
+  const folderCount = rootFolders?.length ?? 0
+  const connectedList = connectedNames.join(', ')
+
+  return (
+    <>
+      <div className="setup-summary">
+        {folderCount > 0 ? (
+          <SummaryLine tone="ok">
+            {plural(folderCount, { one: '# library folder', other: '# library folders' })}
+          </SummaryLine>
+        ) : (
+          <SummaryLine
+            tone="warn"
+            action={
+              <Anchor component="button" size="sm" onClick={() => goTo('library')}>
+                <Trans>Add one</Trans>
+              </Anchor>
+            }
+          >
+            <Trans>No library folder yet. Series need one to download into.</Trans>
+          </SummaryLine>
+        )}
+        <SummaryLine tone="ok">
+          {metadata?.useLocalDb === false ? (
+            <Trans>Metadata straight from the MangaBaka API</Trans>
+          ) : metadata?.dumpPresent ? (
+            <Trans>Local MangaBaka database ready</Trans>
+          ) : (
+            <Trans>Local MangaBaka database downloads once you finish</Trans>
+          )}
+        </SummaryLine>
+        <SummaryLine tone="ok">
+          {recIndex?.embeddingModel === 'off' ? (
+            <Trans>Recommendations off</Trans>
+          ) : (
+            <Trans>Recommendations on</Trans>
+          )}
+        </SummaryLine>
+        <SummaryLine tone="ok">
+          {connectedNames.length > 0 ? (
+            <Trans>Connected: {connectedList}</Trans>
+          ) : (
+            <Trans>No outside tools connected. That's fine, sources download on their own.</Trans>
+          )}
+        </SummaryLine>
+      </div>
+
+      <Text className="setup-next-heading">
+        <Trans>Where to go next</Trans>
+      </Text>
+      <div className="setup-next">
+        <UnstyledButton className="setup-next-card" onClick={() => finishTo('/add')}>
+          <Text className="setup-row-label">
+            <Trans>Add a series</Trans>
+          </Text>
+          <Text className="setup-row-description">
+            <Trans>Search MangaBaka and start downloading.</Trans>
+          </Text>
+        </UnstyledButton>
+        <UnstyledButton className="setup-next-card" onClick={() => finishTo('/import')}>
+          <Text className="setup-row-label">
+            <Trans>Import what you have</Trans>
+          </Text>
+          <Text className="setup-row-description">
+            <Trans>Match the series already in your library folders.</Trans>
+          </Text>
+        </UnstyledButton>
+        <UnstyledButton
+          className="setup-next-card"
+          onClick={() => finishTo('/settings?tab=integrations&s=scrobbling')}
+        >
+          <Text className="setup-row-label">
+            <Trans>Connect your trackers</Trans>
+          </Text>
+          <Text className="setup-row-description">
+            <Trans>Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka.</Trans>
+          </Text>
+        </UnstyledButton>
+        <UnstyledButton className="setup-next-card" onClick={() => finishTo('/settings?tab=users&s=users')}>
+          <Text className="setup-row-label">
+            <Trans>Invite people</Trans>
+          </Text>
+          <Text className="setup-row-description">
+            <Trans>Give others their own account, library access and reading history.</Trans>
+          </Text>
+        </UnstyledButton>
+      </div>
+    </>
+  )
+}
+
+interface StepMeta {
+  id: StepId
+  label: string
+  title: string
+  lead: string
+  hint?: string
+  tone?: Tone
+}
+
+function useSteps(): StepMeta[] {
+  const { t } = useLingui()
+  const { locale, locales } = useLanguageChoice()
+  const { data: rootFolders } = useRootFolders()
+  const { data: metadata } = useMetadataSettings()
+  const { data: languages } = useSourceLanguages()
+  const connectedCount = useConnectedTitles().length
+  const folderCount = rootFolders?.length ?? 0
+  const topLanguages = (languages?.order ?? [])
+    .filter((c) => !languages?.disabled.includes(c))
+    .slice(0, 2)
+    .map((c) => languageName(c) ?? c)
+    .join(', ')
+
+  return [
+    {
+      id: 'welcome',
+      label: t`Welcome`,
+      title: t`Welcome to Maki`,
+      lead: t`A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards.`,
+      hint: locales.find((l) => l.code === locale)?.label,
+    },
+    {
+      id: 'library',
+      label: t`Library`,
+      title: t`Where your manga lives`,
+      lead: t`Pick the folders Maki reads from and downloads into, and how it treats the files it finds there.`,
+      hint: rootFolders
+        ? folderCount > 0
+          ? plural(folderCount, { one: '# folder', other: '# folders' })
+          : t`No folder yet`
+        : undefined,
+      tone: rootFolders && folderCount === 0 ? 'warn' : undefined,
+    },
+    {
+      id: 'discovery',
+      label: t`Discover`,
+      title: t`Metadata and Discover`,
+      lead: t`Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you.`,
+      hint: metadata ? (metadata.useLocalDb ? t`Local database` : t`API only`) : undefined,
+    },
+    {
+      id: 'downloads',
+      label: t`Downloads`,
+      title: t`What to download`,
+      lead: t`Which languages Maki looks for, and which chapters it leaves alone.`,
+      hint: topLanguages || undefined,
+    },
+    {
+      id: 'connections',
+      label: t`Connections`,
+      title: t`Tools you already run`,
+      lead: t`All optional. Maki downloads from its own sources without any of these. Open one to fill it in.`,
+      hint:
+        connectedCount > 0
+          ? plural(connectedCount, { one: '# connected', other: '# connected' })
+          : t`Optional`,
+    },
+    {
+      id: 'finish',
+      label: t`Finish`,
+      title: t`You're set`,
+      lead: t`Here is what Maki starts with. You can come back to this guide from the top of Settings.`,
+    },
+  ]
+}
+
+function GuideRail({
+  steps,
+  active,
+  visited,
+  onSelect,
+  onSkip,
+  skipping,
+}: {
+  steps: StepMeta[]
+  active: number
+  visited: Set<number>
+  onSelect: (index: number) => void
+  onSkip: () => void
+  skipping: boolean
+}) {
   const { t } = useLingui()
   return (
-    <StepBody title={<Trans>Connections</Trans>}>
-      <Text size="sm" c="var(--ink-3)">
-        <Trans>All optional: fill in only what you use. Everything here can be changed later in Settings.</Trans>
-      </Text>
-      <FlareSolverrCard />
-      <ConnectionSettingsCard
-        name="prowlarr"
-        title="Prowlarr"
-        description={t`Search manga releases on your indexers for torrent downloads.`}
-        fields={[
-          { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
-          { key: 'apiKey', label: t`API key`, secret: true },
-        ]}
-      />
-      <ConnectionSettingsCard
-        name="qbittorrent"
-        title="qBittorrent"
-        description={t`Download client for grabbed releases. Completed torrents are imported automatically.`}
-        fields={[
-          { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
-          { key: 'username', label: t`Username` },
-          { key: 'password', label: t`Password`, secret: true },
-        ]}
-      />
-      <ConnectionSettingsCard
-        name="kavita"
-        title="Kavita"
-        description={t`Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients.`}
-        fields={[
-          { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
-          { key: 'apiKey', label: t`API key`, secret: true },
-        ]}
-      />
-    </StepBody>
+    <aside className="setup-rail">
+      <div className="setup-rail-brand">
+        <span className="brand-mark setup-brand-mark">
+          <IconBrandMark />
+        </span>
+        <div>
+          <Text className="setup-rail-wordmark">Maki</Text>
+          <Text className="setup-rail-caption">
+            <Trans>Setup</Trans>
+          </Text>
+        </div>
+      </div>
+
+      <nav aria-label={t`Setup steps`}>
+        <ol className="setup-steps">
+          {steps.map((step, i) => {
+            const current = i === active
+            const done = !current && visited.has(i)
+            return (
+              <li key={step.id}>
+                <UnstyledButton
+                  className="setup-step"
+                  data-current={current || undefined}
+                  data-done={done || undefined}
+                  aria-current={current ? 'step' : undefined}
+                  onClick={() => onSelect(i)}
+                >
+                  <span className="setup-step-index">{done ? <IconCheck size={13} stroke={2.6} /> : i + 1}</span>
+                  <span className="setup-step-text">
+                    <span className="setup-step-label">{step.label}</span>
+                    {step.hint && (
+                      <span className="setup-step-hint" data-tone={step.tone}>
+                        {step.hint}
+                      </span>
+                    )}
+                  </span>
+                </UnstyledButton>
+              </li>
+            )
+          })}
+        </ol>
+      </nav>
+
+      <div className="setup-rail-foot">
+        <Button variant="subtle" color="var(--neutral)" size="xs" onClick={onSkip} loading={skipping}>
+          <Trans>Skip setup</Trans>
+        </Button>
+        <Text className="setup-rail-note">
+          <Trans>Nothing here is final. Every option is also in Settings.</Trans>
+        </Text>
+      </div>
+    </aside>
   )
 }
-
-function ScrobbleStep() {
-  return (
-    <StepBody title={<Trans>Scrobbling</Trans>}>
-      <Text size="sm" c="var(--ink-3)">
-        <Trans>
-          Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka.
-          Each needs an OAuth app or token, so it's set up on the Settings page rather than here.
-        </Trans>
-      </Text>
-      <Alert color="var(--info)" icon={<IconInfoCircle size={16} />} variant="light">
-        <Trans>
-          Finish setup, then open{' '}
-          <Anchor component={Link} to="/settings">
-            Settings → Scrobbling
-          </Anchor>{' '}
-          to connect your tracker accounts. Review and fix matches on the Scrobble page.
-        </Trans>
-      </Alert>
-    </StepBody>
-  )
-}
-
-const STEP_KEYS = ['welcome', 'library', 'preferences', 'recommendations', 'connections', 'scrobbling', 'done']
 
 /**
- * First-run onboarding overlay. Rendered by App whenever setup.completed is false. Every step is
- * skippable and writes its settings immediately (same endpoints as the Settings page), so closing
- * early loses nothing. Finishing or skipping marks setup complete; the Settings "Run setup guide"
- * button flips it back to re-open this.
+ * First-run guide, full screen over the app. Admin-only: every setting it touches is an instance
+ * setting, and the server refuses them from anyone else. Each control saves on change through the
+ * same endpoints as Settings, so leaving early loses nothing but a half-typed connection.
+ *
+ * The open state is latched rather than read off the setup query, because picking a language clears
+ * the whole query cache. Reading the query directly would unmount the guide and drop the step.
  */
 export default function SetupWizard() {
   const { t } = useLingui()
-  const [active, setActive] = useState(0)
+  const navigate = useNavigate()
+  const { data: setup } = useSetupStatus()
   const complete = useCompleteSetup()
-  const stepLabels = [
-    t`Welcome`,
-    t`Library`,
-    t`Preferences`,
-    t`Recommendations`,
-    t`Connections`,
-    t`Scrobbling`,
-    t`Done`,
-  ]
+  const steps = useSteps()
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  const [visited, setVisited] = useState<Set<number>>(() => new Set([0]))
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
 
-  const finish = () => complete.mutate(true)
-  const next = () => setActive((s) => Math.min(s + 1, STEP_KEYS.length - 1))
-  const back = () => setActive((s) => Math.max(s - 1, 0))
-  const last = active === STEP_KEYS.length - 1
+  // Dirty connection forms, reported by their Save buttons, so leaving a step with typed-in
+  // credentials asks once instead of dropping them.
+  const unsaved = useRef(new Set<string>())
+  const [unsavedCount, setUnsavedCount] = useState(0)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const reportUnsaved = useCallback((id: string, dirty: boolean) => {
+    if (dirty) unsaved.current.add(id)
+    else unsaved.current.delete(id)
+    setUnsavedCount(unsaved.current.size)
+  }, [])
+
+  useEffect(() => {
+    if (!setup) return
+    if (setup.completed) {
+      setOpen(false)
+    } else if (!open) {
+      setOpen(true)
+      setActive(0)
+      setVisited(new Set([0]))
+    }
+  }, [setup, open])
+
+  useEffect(() => {
+    if (unsavedCount === 0) setConfirmLeave(false)
+  }, [unsavedCount])
+
+  const last = STEP_IDS.length - 1
+
+  const go = (index: number) => {
+    const next = Math.max(0, Math.min(index, last))
+    if (next === active) return
+    setActive(next)
+    setVisited((v) => new Set(v).add(next))
+    setConfirmLeave(false)
+    stageRef.current?.scrollTo({ top: 0 })
+    requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true }))
+  }
+
+  const advance = () => {
+    if (unsavedCount > 0 && !confirmLeave) {
+      setConfirmLeave(true)
+      return
+    }
+    go(active + 1)
+  }
+
+  const finish = (then?: string) =>
+    complete.mutate(true, {
+      onSuccess: () => {
+        if (then) navigate(then)
+      },
+    })
+
+  if (!open) return null
+
+  const step = steps[active]
+  const stepNumber = active + 1
+  const stepTotal = steps.length
 
   return (
     <Modal
       opened
-      onClose={finish}
+      onClose={() => {}}
       fullScreen
       withCloseButton={false}
-      padding="xl"
-      styles={{ body: { maxWidth: 720, margin: '0 auto' } }}
+      closeOnEscape={false}
+      padding={0}
+      transitionProps={{ duration: 0 }}
+      classNames={{ content: 'setup-modal', body: 'setup-modal-body' }}
+      aria-label={t`Setup guide`}
     >
-      <Group justify="space-between" mb="md">
-        <Text fw={800} fz="xl" style={{ letterSpacing: '-0.02em' }}>
-          <Trans>Welcome to Maki</Trans>
-        </Text>
-        <Button variant="subtle" color="var(--neutral)" size="xs" onClick={finish} loading={complete.isPending}>
-          <Trans>Skip setup</Trans>
-        </Button>
-      </Group>
+      <UnsavedSettingsContext value={reportUnsaved}>
+        <div className="setup-frame">
+          <div className="setup-art" aria-hidden />
+          <GuideRail
+            steps={steps}
+            active={active}
+            visited={visited}
+            onSelect={go}
+            onSkip={() => finish()}
+            skipping={complete.isPending}
+          />
 
-      <Stepper active={active} onStepClick={setActive} size="sm" iconSize={28}>
-        {STEP_KEYS.map((key, i) => (
-          <Stepper.Step key={key} label={stepLabels[i]} />
-        ))}
-      </Stepper>
+          <main className="setup-main">
+            <div className="setup-mobile-bar">
+              <Text className="setup-mobile-step">
+                <Trans>
+                  Step {stepNumber} of {stepTotal}
+                </Trans>
+              </Text>
+              <Button variant="subtle" color="var(--neutral)" size="compact-xs" onClick={() => finish()}>
+                <Trans>Skip setup</Trans>
+              </Button>
+              <div className="setup-mobile-progress" aria-hidden>
+                {steps.map((s, i) => (
+                  <span key={s.id} data-filled={i <= active || undefined} />
+                ))}
+              </div>
+            </div>
 
-      {active === 0 && (
-        <StepBody title={<Trans>Let's get you set up</Trans>}>
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              A few quick choices to get Maki ready: where your library lives, how metadata and
-              monitoring behave, and any download or reading tools you already run. Every step is
-              optional and can be changed later in Settings. Your choices save as you go.
-            </Trans>
-          </Text>
-        </StepBody>
-      )}
-      {active === 1 && <LibraryStep />}
-      {active === 2 && <PreferencesStep />}
-      {active === 3 && <RecommendationsStep />}
-      {active === 4 && <ConnectionsStep />}
-      {active === 5 && <ScrobbleStep />}
-      {active === 6 && (
-        <StepBody title={<Trans>All set</Trans>}>
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>
-              You're ready to go. Head to <b>Add Series</b> to start building your library, or
-              open <b>Settings</b> any time to fine-tune connections and scrobbling. You can
-              re-open this guide from the top of the Settings page.
-            </Trans>
-          </Text>
-        </StepBody>
-      )}
+            <div className="setup-stage" ref={stageRef}>
+              <div className="setup-stage-inner" key={step.id}>
+                <Text className="setup-eyebrow">
+                  <Trans>
+                    Step {stepNumber} of {stepTotal}
+                  </Trans>
+                </Text>
+                <h2 className="setup-title" ref={titleRef} tabIndex={-1}>
+                  {step.title}
+                </h2>
+                <Text className="setup-lead">{step.lead}</Text>
 
-      <Group justify="space-between" mt="xl">
-        <Button variant="default" onClick={back} disabled={active === 0}>
-          <Trans>Back</Trans>
-        </Button>
-        {last ? (
-          <Button onClick={finish} loading={complete.isPending}>
-            <Trans>Finish</Trans>
-          </Button>
-        ) : (
-          <Button onClick={next}>
-            <Trans>Next</Trans>
-          </Button>
-        )}
-      </Group>
+                <div className="setup-content">
+                  {step.id === 'welcome' && <WelcomeStep />}
+                  {step.id === 'library' && <LibraryStep />}
+                  {step.id === 'discovery' && <DiscoveryStep />}
+                  {step.id === 'downloads' && <DownloadsStep />}
+                  {step.id === 'connections' && <ConnectionsStep />}
+                  {step.id === 'finish' && <FinishStep goTo={(id) => go(STEP_IDS.indexOf(id))} finishTo={finish} />}
+                </div>
+              </div>
+            </div>
+
+            <footer className="setup-footer">
+              <div className="setup-footer-inner">
+                <Button
+                  variant="default"
+                  leftSection={<IconArrowLeft size={16} />}
+                  onClick={() => go(active - 1)}
+                  style={{ visibility: active === 0 ? 'hidden' : undefined }}
+                >
+                  <Trans>Back</Trans>
+                </Button>
+                {confirmLeave && (
+                  <Text className="setup-footer-warning" role="status">
+                    <Trans>A connection has unsaved changes.</Trans>
+                  </Text>
+                )}
+                {active === last ? (
+                  <Button onClick={() => finish()} loading={complete.isPending}>
+                    <Trans>Finish setup</Trans>
+                  </Button>
+                ) : (
+                  <Button rightSection={<IconArrowRight size={16} />} onClick={advance}>
+                    {confirmLeave ? <Trans>Continue without saving</Trans> : <Trans>Continue</Trans>}
+                  </Button>
+                )}
+              </div>
+            </footer>
+          </main>
+        </div>
+      </UnsavedSettingsContext>
     </Modal>
   )
 }

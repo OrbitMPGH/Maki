@@ -490,7 +490,8 @@ function AppShellRoutes() {
         </Suspense>
       </AppShell.Main>
 
-      {setup && !setup.completed && <SetupWizard />}
+      {/* Opens itself off the setup flag, latched so a language pick's cache clear can't close it. */}
+      {isAdmin && <SetupWizard />}
       {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
           nobody being handed a brand-new Maki needs to be told what changed in it. */}
       {setup?.completed && <LanguageAnnouncementModal />}

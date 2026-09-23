@@ -2426,37 +2426,6 @@ export function useRemoveMapping() {
   })
 }
 
-export function useFlareSolverrSettings() {
-  return useQuery({
-    queryKey: ['settings', 'flaresolverr'],
-    queryFn: () => api<{ url: string | null }>('/settings/flaresolverr'),
-  })
-}
-
-export function useSaveFlareSolverr() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (url: string | null) =>
-      api<{ url: string | null }>('/settings/flaresolverr', {
-        method: 'PUT',
-        body: JSON.stringify({ url }),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'flaresolverr'] })
-    },
-  })
-}
-
-export function useTestFlareSolverr() {
-  return useMutation({
-    mutationFn: (url: string | null) =>
-      api<{ success: boolean }>('/settings/flaresolverr/test', {
-        method: 'POST',
-        body: JSON.stringify({ url }),
-      }),
-  })
-}
-
 export interface ProwlarrSettings {
   url: string | null
   apiKey: string | null

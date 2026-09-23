@@ -33,7 +33,6 @@ msgstr "«Main» пропускает спецглавы (десятичные �
 msgid "(blank when unset)"
 msgstr "(пусто, если не задано)"
 
-#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "(inaccessible)"
@@ -361,6 +360,10 @@ msgstr "Проверено файлов: {completed} / {total}"
 msgid "{connected} connected"
 msgstr "Подключено: {connected}"
 
+#: src/components/SetupWizard.tsx
+msgid "{connectedCount, plural, one {# connected} other {# connected}}"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch} other {# ch}}"
@@ -460,6 +463,14 @@ msgstr "{fileCount, plural, one {# файл} few {# файла} many {# файл
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
 msgstr "{finishedCount, plural, one {# серия завершена} few {# серии завершены} many {# серий завершено} other {# серии завершены}}"
 
+#: src/components/SetupWizard.tsx
+msgid "{folderCount, plural, one {# folder} other {# folders}}"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "{folderCount, plural, one {# library folder} other {# library folders}}"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}"
@@ -469,6 +480,10 @@ msgstr "{folderLabel}: связано {filesLinked, plural, one {# файл} few
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}: связано {filesLinked, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}, не распознано {filesUnrecognized, plural, one {#} few {#} many {#} other {#}}"
+
+#: src/components/SetupWizard.tsx
+msgid "{free} free"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -1055,11 +1070,13 @@ msgstr "{year} – по настоящее время"
 msgid "{zone} (this browser)"
 msgstr "{zone} (этот браузер)"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "/downloads (optional)"
 msgstr "/downloads (необязательно)"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "/manga (optional)"
@@ -1217,14 +1234,17 @@ msgstr "Загрузка главы завершена, глава импорт�
 msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit."
 msgstr ""
 
-#: src/components/discover/discoverSectionDefs.ts
-msgid "A few large picks at the top, from your recent reading or what is trending."
+#: src/components/SetupWizard.tsx
+msgid "A connection has unsaved changes."
 msgstr ""
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "A few quick choices to get Maki ready: where your library lives, how metadata and monitoring behave, and any download or reading tools you already run. Every step is optional and can be changed later in Settings. Your choices save as you go."
-msgstr "Несколько быстрых вариантов помогут подготовить Maki: где находится библиотека, как работают метаданные и мониторинг, а также какие инструменты загрузки или чтения вы уже используете. Каждый шаг необязателен, всё можно изменить позже в настройках. Выбор сохраняется по мере прохождения."
+msgid "A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards."
+msgstr ""
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A few large picks at the top, from your recent reading or what is trending."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1240,10 +1260,6 @@ msgstr "Большой выбор может обрабатываться нек
 #, fuzzy
 msgid "A library import folder finished."
 msgstr "Импорт папки библиотеки завершён."
-
-#: src/components/SetupWizard.tsx
-msgid "A local embedding model lets Discover recommend by feel and search by description. It uses about 240 MB of RAM, and its index downloads prebuilt, so your machine doesn't do the heavy work. Switching it off disables both. You can change this any time in Settings."
-msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "A local embedding model lets Discover recommend by feel and search by description. The vectors download prebuilt, so this normally needs no attention. While it's off or still downloading, search falls back to titles and recommendations to genres."
@@ -1286,6 +1302,10 @@ msgstr ""
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
 msgstr "Хорошо оценённое шоу немного сдвигает рекомендации в сторону похожей манги. Низкая оценка или брошенное шоу отталкивает их."
 
+#: src/components/SetupWizard.tsx
+msgid "A small local model lets Discover recommend by feel and lets you search for a plot rather than a title. Its index downloads prebuilt, so your machine skips the heavy work."
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
@@ -1314,6 +1334,10 @@ msgstr "осталось около {hourPhrase} {restPhrase}"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "Около {readingTime}"
+
+#: src/components/SetupWizard.tsx
+msgid "About 3 GB on disk, refreshed nightly. Search and imports become instant instead of rate-limited, and Discover needs it. Downloads in the background once setup is done."
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1412,7 +1436,6 @@ msgstr "Журнал активности"
 msgid "Adaptation"
 msgstr "Адаптация"
 
-#: src/components/SetupWizard.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -1435,6 +1458,7 @@ msgstr "Добавить {title} в библиотеку"
 msgid "Add a rail"
 msgstr ""
 
+#: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Add a series"
@@ -1450,8 +1474,16 @@ msgstr "Добавьте серию, и Maki начнёт отслеживать
 msgid "Add connection"
 msgstr "Добавить подключение"
 
+#: src/components/SetupWizard.tsx
+msgid "Add folder"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Add it to your reading app as an OPDS catalogue. From outside your network, swap the host for the address you use there."
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Add one"
 msgstr ""
 
 #: src/components/TagManagerModal.tsx
@@ -1625,9 +1657,8 @@ msgid "All libraries"
 msgstr ""
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "All optional: fill in only what you use. Everything here can be changed later in Settings."
-msgstr "Всё необязательно: заполните только используемое. Всё здесь можно изменить позже в настройках."
+msgid "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -1638,11 +1669,6 @@ msgstr "всё прочитано"
 #, fuzzy
 msgid "All roots"
 msgstr "Все корневые папки"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "All set"
-msgstr "Всё готово"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1733,6 +1759,10 @@ msgstr "Янтарный"
 msgid "Ambiguous names"
 msgstr "Неоднозначные названия"
 
+#: src/components/SetupWizard.tsx
+msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Analysis"
@@ -1821,6 +1851,10 @@ msgstr "Ключ API"
 #, fuzzy
 msgid "API keys"
 msgstr "Ключи API"
+
+#: src/components/SetupWizard.tsx
+msgid "API only"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
@@ -1955,6 +1989,7 @@ msgstr "Не менее 10 символов"
 msgid "At least one enabled"
 msgstr "Нужно включить хотя бы один"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "At least one language must stay enabled."
@@ -2297,6 +2332,7 @@ msgstr "По типу"
 msgid "Byte-identical to the linked file. Importing gains nothing; delete one of them."
 msgstr "Полностью идентичен связанному файлу. Импорт ничего не даст, удалите один из них."
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "C:\\Manga (optional)"
@@ -3075,6 +3111,10 @@ msgstr "Подключите его на странице Scrobble."
 msgid "Connect their own AniList, MAL or Kitsu account"
 msgstr "Подключить собственный аккаунт AniList, MyAnimeList или Kitsu"
 
+#: src/components/SetupWizard.tsx
+msgid "Connect your trackers"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "connected"
@@ -3085,6 +3125,10 @@ msgstr "подключено"
 #, fuzzy
 msgid "Connected"
 msgstr "Подключено"
+
+#: src/components/SetupWizard.tsx
+msgid "Connected: {connectedList}"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/ScrobblePage.tsx
@@ -3132,6 +3176,10 @@ msgstr "возрастной рейтинг, nsfw, эротика, для взр
 msgid "contents read"
 msgstr "прочитано содержимое"
 
+#: src/components/SetupWizard.tsx
+msgid "Continue"
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -3148,6 +3196,10 @@ msgstr "Продолжить чтение {nextChapter}"
 #, fuzzy
 msgid "Continue with {displayName}"
 msgstr "Продолжить с {displayName}"
+
+#: src/components/SetupWizard.tsx
+msgid "Continue without saving"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -3639,6 +3691,7 @@ msgid "discord, webhook, apprise, alerts, events, notifications, outbound"
 msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/SetupWizard.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -3702,15 +3755,9 @@ msgstr "Не хочу"
 msgid "Don't want specials"
 msgstr ""
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Don't want specials on new series"
-msgstr "Не загружать спецглавы в новых сериях"
-
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3770,11 +3817,6 @@ msgstr "Загрузить кандидат для проверки"
 #, fuzzy
 msgid "Download chapters"
 msgstr "Загрузить главы"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Download client for grabbed releases. Completed torrents are imported automatically."
-msgstr "Клиент загрузки для полученных релизов. Завершённые торренты импортируются автоматически."
 
 #: src/pages/SettingsPage.tsx
 msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
@@ -3856,6 +3898,7 @@ msgstr "Загрузка…"
 
 #: src/api/inbox.ts
 #: src/components/series/SeriesHero.tsx
+#: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3864,6 +3907,10 @@ msgstr "Загрузки"
 
 #: src/pages/SettingsPage.tsx
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
 msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
@@ -3994,6 +4041,7 @@ msgstr "Пусто"
 msgid "Empty."
 msgstr "Пусто."
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enable {name}"
@@ -4114,6 +4162,10 @@ msgstr "Все разделы отключены"
 msgid "Every series"
 msgstr "Каждая серия"
 
+#: src/components/SetupWizard.tsx
+msgid "Every series folder ends up named the same way."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Every series Maki watches: cover art, download progress and status at a glance."
@@ -4187,6 +4239,10 @@ msgstr "Исключено"
 #, fuzzy
 msgid "Excluded from taste"
 msgstr "Исключено из вкусов"
+
+#: src/components/SetupWizard.tsx
+msgid "Existing folders on import"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4385,9 +4441,8 @@ msgid "Finish"
 msgstr "Завершить"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Finish setup, then open <0>Settings → Scrobbling</0> to connect your tracker accounts. Review and fix matches on the Scrobble page."
-msgstr "Завершите настройку, затем откройте <0>Настройки → Синхронизация</0>, чтобы подключить аккаунты трекеров. Проверьте и исправьте сопоставления на странице Scrobble."
+msgid "Finish setup"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #: src/pages/stats/ActivityFeed.tsx
@@ -4455,11 +4510,6 @@ msgstr "Сначала исправьте или удалите сопостав
 msgid "FlareSolverr"
 msgstr "FlareSolverr"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "FlareSolverr is reachable"
-msgstr "FlareSolverr доступен"
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Flash chapter name on chapter change"
@@ -4477,11 +4527,6 @@ msgstr "Показывать название главы при смене гл�
 msgid "Folder"
 msgstr "Папка"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Folder naming"
-msgstr "Именование папок"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Folder naming on import"
@@ -4490,6 +4535,10 @@ msgstr "Именование папок при импорте"
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Folder path"
 msgstr ""
 
 #: src/pages/ImportPage.tsx
@@ -4501,6 +4550,10 @@ msgstr "Папки переименовываются в соответстви�
 #, fuzzy
 msgid "Follows the default on your notification settings."
 msgstr "Следует значению по умолчанию в настройках уведомлений."
+
+#: src/components/SetupWizard.tsx
+msgid "For readers like Komga and Kavita that pick up a poster from the folder."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
@@ -4621,6 +4674,10 @@ msgstr "Жанры в библиотеке"
 msgid "German"
 msgstr "Немецкий"
 
+#: src/components/SetupWizard.tsx
+msgid "Gets past Cloudflare for sources like MangaFire. Without it those sources are skipped."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Girls Love"
@@ -4629,6 +4686,10 @@ msgstr "Girls Love"
 #: src/components/DiscoverPresets.tsx
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Give it a name"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Give others their own account, library access and reading history."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -4781,6 +4842,14 @@ msgstr "Исправно"
 msgid "Height"
 msgstr "Высота"
 
+#: src/components/SetupWizard.tsx
+msgid "Helps Kavita and other readers group and name chapters. Off leaves torrent grabs and manual imports untouched. Maki's own downloads always get one."
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Here is what Maki starts with. You can come back to this guide from the top of Settings."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -4853,10 +4922,6 @@ msgstr "Скрыть это название"
 #, fuzzy
 msgid "Higher for readers like you"
 msgstr "Выше для читателей вроде вас"
-
-#: src/components/SetupWizard.tsx
-msgid "Highest rating shown in search, Discover and recommendations. Changeable later in Settings."
-msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -5076,6 +5141,10 @@ msgstr "Импортировать этот архив"
 msgid "Import unlinked"
 msgstr "Импортировать несвязанные"
 
+#: src/components/SetupWizard.tsx
+msgid "Import what you have"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Imported"
@@ -5220,6 +5289,10 @@ msgstr "Установка базы данных метаданных"
 msgid "Integrations"
 msgstr "Интеграции"
 
+#: src/components/SetupWizard.tsx
+msgid "Invite people"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Isekai"
@@ -5320,27 +5393,32 @@ msgstr ""
 msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita."
 msgstr ""
 
+#: src/components/SetupWizard.tsx
+msgid "Keep a local copy of MangaBaka"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Keep editing"
 msgstr "Продолжить редактирование"
 
-#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Keep folder name, and put new downloads there too"
 msgstr "Сохранить имя папки и помещать туда новые загрузки"
 
-#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Keep folder name, but put new downloads in a Maki standard folder"
 msgstr "Сохранить имя папки, но помещать новые загрузки в стандартную папку Maki"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Keeps a ~3 GB metadata snapshot on disk so searches and imports are instant instead of rate-limited. Downloads in the background; the API is used until it's ready."
-msgstr "Хранит на диске снимок метаданных размером около 3 ГБ, чтобы поиск и импорт выполнялись сразу, без ограничения частоты. Загружает в фоне; до готовности используется API."
+msgid "Keep the name, download into a new standard folder"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Keep the name, download into it too"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -5359,6 +5437,7 @@ msgid "Korean"
 msgstr "Корейский"
 
 #: src/components/LanguageAnnouncementModal.tsx
+#: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5382,6 +5461,10 @@ msgstr "язык, перевод, переводить, локаль, язык �
 #, fuzzy
 msgid "Languages"
 msgstr "Языки"
+
+#: src/components/SetupWizard.tsx
+msgid "Languages to download"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Languages to download, most preferred first. Auto-match tries sources that publish your top language first and skips sources that publish none of these. New auto-matched sources get these languages; existing mappings are never changed. Drag to reorder."
@@ -5525,11 +5608,6 @@ msgstr "Слева направо"
 msgid "Less"
 msgstr "Меньше"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Let's get you set up"
-msgstr "Настроим всё для вас"
-
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "Let's look back at what you read."
@@ -5580,6 +5658,10 @@ msgstr "Библиотека"
 
 #: src/api/hooks.ts
 msgid "Library counts"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Library folders"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -5713,6 +5795,18 @@ msgstr "Загрузить ещё"
 msgid "Loading…"
 msgstr "Загрузка…"
 
+#: src/components/SetupWizard.tsx
+msgid "Local database"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Local MangaBaka database downloads once you finish"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Local MangaBaka database ready"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Lockout duration (minutes)"
@@ -5812,19 +5906,17 @@ msgstr "Доступен Maki {checkedVersion}"
 msgid "Maki {latestVersion} is available, you're running {currentVersion}."
 msgstr "Доступен Maki {latestVersion}, сейчас используется {currentVersion}."
 
+#: src/components/SetupWizard.tsx
+msgid "Maki asks Kavita to scan a series after its files change and sends it posters, links and status. The API key is under User Settings, 3rd Party Clients. Fill the path mapping only if Kavita sees the library under another path."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings → 3rd Party Clients in Kavita. Fill the path mapping only if Kavita sees the library under a different path, e.g. in Docker."
 msgstr ""
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients."
-msgstr "Maki просит Kavita сканировать папку серии после загрузок и отправляет постеры, связи и состояние. Ключ API находится в разделе Настройки пользователя → Сторонние клиенты."
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Maki can push your Kavita reading progress to AniList, MyAnimeList, Kitsu and MangaBaka. Each needs an OAuth app or token, so it's set up on the Settings page rather than here."
-msgstr "Maki может отправлять прогресс чтения Kavita в AniList, MyAnimeList, Kitsu и MangaBaka. Для каждого нужен OAuth-клиент или токен, поэтому подключение настраивается в разделе настроек, а не здесь."
+msgid "Maki can't reach this folder"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5967,6 +6059,10 @@ msgstr "Сопоставить"
 msgid "Match system"
 msgstr ""
 
+#: src/components/SetupWizard.tsx
+msgid "Match the series already in your library folders."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
@@ -6015,6 +6111,10 @@ msgstr "Меха"
 msgid "Metadata"
 msgstr "Метаданные"
 
+#: src/components/SetupWizard.tsx
+msgid "Metadata and Discover"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Metadata and poster refreshed"
@@ -6034,6 +6134,10 @@ msgstr "Не удалось загрузить базу данных метад�
 #, fuzzy
 msgid "Metadata database ready."
 msgstr "База данных метаданных готова."
+
+#: src/components/SetupWizard.tsx
+msgid "Metadata straight from the MangaBaka API"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6171,6 +6275,10 @@ msgstr "Больше всего отсутствует"
 #: src/api/customRails.ts
 #: src/api/hooks.ts
 msgid "Most popular"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Most preferred first. Maki matches new series to sources that publish your top language and skips sources that publish none of these. Drag to reorder."
 msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
@@ -6426,11 +6534,6 @@ msgstr "новая версия, проверить обновления, вып
 msgid "Newest"
 msgstr ""
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Next"
-msgstr "Далее"
-
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -6522,6 +6625,10 @@ msgstr "В папке серии нет файлов."
 msgid "No files match these filters. Run a scan to inventory the library."
 msgstr "Ни один файл не соответствует этим фильтрам. Выполните сканирование, чтобы проиндексировать библиотеку."
 
+#: src/components/SetupWizard.tsx
+msgid "No folder yet"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "No genre data yet."
@@ -6541,6 +6648,10 @@ msgstr "Индекса пока нет, готовые векторы загру
 #, fuzzy
 msgid "No indexers configured in Prowlarr."
 msgstr "Индексаторы в Prowlarr не настроены."
+
+#: src/components/SetupWizard.tsx
+msgid "No library folder yet. Series need one to download into."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -6604,6 +6715,10 @@ msgstr "Уведомлений пока нет"
 #, fuzzy
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "Другой файл не поддерживает {lowerLabel}. Сравнивать нечего: импорт добавит этот архив и свяжет его с главой."
+
+#: src/components/SetupWizard.tsx
+msgid "No outside tools connected. That's fine, sources download on their own."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6842,6 +6957,10 @@ msgstr "Ещё не запускалось"
 msgid "Not scanned"
 msgstr "Не просканировано"
 
+#: src/components/SetupWizard.tsx
+msgid "Not set"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Not synced yet"
@@ -6884,6 +7003,10 @@ msgstr "От этой серии ничего нет. Администратор
 msgid "Nothing here"
 msgstr "Здесь ничего нет"
 
+#: src/components/SetupWizard.tsx
+msgid "Nothing here is final. Every option is also in Settings."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Nothing in the queue"
@@ -6893,6 +7016,10 @@ msgstr "Очередь пуста"
 #, fuzzy
 msgid "Nothing in your library yet"
 msgstr "В вашей библиотеке пока ничего нет"
+
+#: src/components/SetupWizard.tsx
+msgid "Nothing is renamed and everything stays in the folder you had."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7078,11 +7205,6 @@ msgstr "Выкл. скрывает раздел «Главная», вкладк
 #: src/pages/SettingsPage.tsx
 msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
 msgstr ""
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Off leaves torrent and manually imported files untouched. Chapters Maki downloads itself always get a ComicInfo, since Maki builds those files."
-msgstr "Выкл. оставляет торренты и файлы, импортированные вручную, без изменений. Главы, которые Maki загружает сам, всегда получают ComicInfo, поскольку Maki создаёт эти файлы."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -7272,6 +7394,10 @@ msgstr "Открывает проверку удаления. Ничего не 
 msgid "Operation #{id}"
 msgstr "Операция №{id}"
 
+#: src/components/SetupWizard.tsx
+msgid "Optional"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Optional, and yours to set. Maki never adds one for you."
@@ -7451,16 +7577,19 @@ msgstr "Вставьте URL серии или числовой идентифи
 msgid "Path"
 msgstr "Путь"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Path mapping - Kavita side"
 msgstr "Сопоставление путей: сторона Kavita"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Path mapping - Maki side"
 msgstr "Сопоставление путей: сторона Maki"
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Path mapping - qBittorrent side"
@@ -7523,11 +7652,6 @@ msgstr "Мобильная читалка"
 msgid "Pick a root folder"
 msgstr "Выберите корневую папку"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Pick an accent colour or the light theme. Applies instantly, remembered on this device."
-msgstr "Выберите цвет акцента или светлую тему. Применяется сразу и запоминается на этом устройстве."
-
 #: src/pages/SettingsPage.tsx
 msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
 msgstr ""
@@ -7536,6 +7660,10 @@ msgstr ""
 #, fuzzy
 msgid "Pick the file in the series folder these chapters are actually contained in, useful for compilation CBZs or oddly-named releases the automatic matcher couldn't parse."
 msgstr "Выберите файл в папке серии, в который фактически входят эти главы. Это полезно для сборников CBZ или релизов с необычными именами, которые автоматический сопоставитель не смог разобрать."
+
+#: src/components/SetupWizard.tsx
+msgid "Pick the folders Maki reads from and downloads into, and how it treats the files it finds there."
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -7578,11 +7706,6 @@ msgstr "Запустить Rewind"
 #, fuzzy
 msgid "Play the {rewindYear} retrospective"
 msgstr "Запустить ретроспективу Rewind за {rewindYear}"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Point Maki at the folder where your manga is stored (or should be). Kavita, if you use it, watches the same location. You can add more later in Settings."
-msgstr "Укажите Maki папку, где хранится ваша манга (или должна храниться). Kavita, если вы его используете, следит за тем же местом. Позже можно добавить другие папки в настройках."
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -7637,11 +7760,6 @@ msgstr "Постеры: файлов: {coverFilesLabel}, объём: {coverBytes
 #: src/pages/SettingsPage.tsx
 msgid "Pre-filled on the add form, where any single add can change it. \"No scrobble\" keeps a series off your trackers; \"Full\" also keeps it out of stats and history."
 msgstr ""
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Preferences"
-msgstr "Настройки"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -8109,12 +8227,23 @@ msgid "Recommend from this"
 msgstr "Рекомендовать на основе этого"
 
 #: src/api/customRails.ts
-#: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Recommendations"
 msgstr "Рекомендации"
+
+#: src/components/SetupWizard.tsx
+msgid "Recommendations and search by description"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Recommendations off"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Recommendations on"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -8384,7 +8513,6 @@ msgstr "Переименовать все серии по текущему фо�
 msgid "Rename files"
 msgstr "Переименовать файлы"
 
-#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Rename folder to Maki standard"
@@ -8394,6 +8522,10 @@ msgstr "Переименовать папку по стандарту Maki"
 #, fuzzy
 msgid "Rename imported files to the Chapter Format"
 msgstr "Переименовывать импортированные файлы по формату главы"
+
+#: src/components/SetupWizard.tsx
+msgid "Rename to the Maki standard"
+msgstr ""
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -8484,11 +8616,6 @@ msgstr "Требовать HTTPS"
 #, fuzzy
 msgid "Require single sign-on"
 msgstr "Требовать единый вход"
-
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Required for Cloudflare-protected sources like MangaFire. Point at a running instance (e.g. http://localhost:8191)."
-msgstr "Требуется для источников под защитой Cloudflare, например MangaFire. Укажите работающий экземпляр, например http://localhost:8191."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8785,12 +8912,15 @@ msgstr "Пример главы"
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UsersSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Save"
 msgstr "Сохранить"
+
+#: src/components/SetupWizard.tsx
+msgid "Save a cover.jpg into each series folder"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8988,7 +9118,6 @@ msgid "Scrobble reading"
 msgstr "Синхронизировать чтение"
 
 #: src/components/SeriesScrobbleSection.tsx
-#: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9059,15 +9188,14 @@ msgstr "Найдите серию и запросите её, после это�
 msgid "Search genres and tags"
 msgstr ""
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Search manga releases on your indexers for torrent downloads."
-msgstr "Ищите релизы манги на индексаторах для загрузки торрентов."
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
 msgstr "Найдите MangaBaka и добавьте первую серию. Maki будет отслеживать новые главы и загружать их автоматически."
+
+#: src/components/SetupWizard.tsx
+msgid "Search MangaBaka and start downloading."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -9130,6 +9258,10 @@ msgstr "найдено по запросу «{cleanedTitle}»"
 
 #: src/pages/SettingsPage.tsx
 msgid "Searches your indexers for manga releases through Prowlarr's search API. No app sync needed."
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Searches your indexers for manga releases to download as torrents."
 msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
@@ -9278,6 +9410,10 @@ msgstr "Семантический поиск и рекомендации отк
 msgid "Send events to Discord or a webhook. Each connection picks its own events."
 msgstr ""
 
+#: src/components/SetupWizard.tsx
+msgid "Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Send request"
@@ -9319,6 +9455,10 @@ msgstr "Серии, уже находящиеся в корневой папке
 #, fuzzy
 msgid "Series and chapters you have asked an admin for."
 msgstr "Серии и главы, которые вы запросили у администратора."
+
+#: src/components/SetupWizard.tsx
+msgid "Series details come from MangaBaka. Choose how much of it Maki keeps at hand, and what it may show you."
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -9453,6 +9593,18 @@ msgstr "Настройки"
 #, fuzzy
 msgid "Settings › {tabName}"
 msgstr "Настройки › {tabName}"
+
+#: src/components/SetupWizard.tsx
+msgid "Setup"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Setup guide"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Setup steps"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -9690,6 +9842,10 @@ msgstr ""
 msgid "Skip setup"
 msgstr "Пропустить настройку"
 
+#: src/components/SetupWizard.tsx
+msgid "Skip specials on new series"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Slice of Life"
@@ -9842,9 +9998,8 @@ msgid "Specials ({visibleSpecialsCount})"
 msgstr "Спецглавы ({visibleSpecialsCount})"
 
 #: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When on, they stay listed on newly added series but never download."
-msgstr "Спецглавы имеют десятичные номера (омаке 10.5, разделы x.1/x.2). При включении они остаются в списке новых серий, но не загружаются."
+msgid "Specials are decimal chapters like 10.5 or 12.1. When on, they stay listed on newly added series but never download."
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -9967,6 +10122,10 @@ msgstr "Остаться здесь"
 #, fuzzy
 msgid "Steering these picks"
 msgstr "Управление этими рекомендациями"
+
+#: src/components/SetupWizard.tsx
+msgid "Step {stepNumber} of {stepTotal}"
+msgstr ""
 
 #. {source} is a site name and is never translated.
 #: src/api/queue.ts
@@ -10145,7 +10304,6 @@ msgstr "Сообщает о каждой новой главе независи�
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
-#: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Test"
 msgstr "Проверить"
@@ -10234,6 +10392,10 @@ msgstr "Папка и все файлы уже соответствуют тек
 msgid "The full breakdown is waiting behind this slide."
 msgstr "Подробный разбор ждёт за этой панелью."
 
+#: src/components/SetupWizard.tsx
+msgid "The language of Maki's interface, on every device you sign in on."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "The language of Maki's interface, on every device. Title language below is separate: it sets the language of series titles."
 msgstr ""
@@ -10262,6 +10424,10 @@ msgstr "Библиотека"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "Связанный файл ещё не проиндексирован, поэтому его страницы нельзя показать. Запустите «Сканировать файлы», затем вернитесь для сравнения."
+
+#: src/components/SetupWizard.tsx
+msgid "The most explicit rating shown in search, Discover and recommendations. Everything up to it is allowed."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
@@ -10704,6 +10870,10 @@ msgstr "Разделитель токенов"
 msgid "Took too long to find a source"
 msgstr "Поиск источника занял слишком много времени"
 
+#: src/components/SetupWizard.tsx
+msgid "Tools you already run"
+msgstr ""
+
 #: src/components/layout/SectionProperties.tsx
 msgid "Top"
 msgstr ""
@@ -11070,11 +11240,6 @@ msgstr "Использовать локальную базу MangaBaka"
 msgid "Use OPDS"
 msgstr "Использовать OPDS"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Use the local MangaBaka database (Highly Recommended)"
-msgstr "Использовать локальную базу MangaBaka (настоятельно рекомендуется)"
-
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Use this copy"
@@ -11373,6 +11538,10 @@ msgstr ""
 msgid "What happened in your library while you were away."
 msgstr "Что произошло в вашей библиотеке, пока вас не было."
 
+#: src/components/SetupWizard.tsx
+msgid "What happens to a series folder you already have when you import it into Maki."
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "What happens to chapters released later"
@@ -11395,6 +11564,10 @@ msgstr "Что запросили читатели без прав добавл�
 #, fuzzy
 msgid "What shapes your recommendations"
 msgstr "Что формирует ваши рекомендации"
+
+#: src/components/SetupWizard.tsx
+msgid "What to download"
+msgstr ""
 
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -11450,20 +11623,31 @@ msgstr "Где будет находиться серия. Запрашиваю�
 msgid "Where the time went"
 msgstr "Куда ушло время"
 
+#: src/components/SetupWizard.tsx
+msgid "Where to go next"
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Where your manga is stored, or should be. Maki creates one folder per series inside it. If you use Kavita, point it at the same place."
+msgstr ""
+
+#: src/components/SetupWizard.tsx
+msgid "Where your manga lives"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Where your taste has moved"
 msgstr "Куда переместился ваш вкус"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-msgid "Whether Maki renames an imported series' folder to its standard sanitized-title name, or leaves it as found. Changeable later in Settings."
-msgstr "Переименовывать ли папку импортированной серии в стандартное имя с очищенным названием или оставить найденное. Позже это можно изменить в настройках."
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "Язык отображения названий серий, если поставщик метаданных его предоставляет. Только отображение: папки и имена файлов сохраняют английское название, как и сортировка."
+
+#: src/components/SetupWizard.tsx
+msgid "Which languages Maki looks for, and which chapters it leaves alone."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Which page Maki opens on, on every device."
@@ -11642,7 +11826,7 @@ msgid "You turned a lot of pages"
 msgstr "Вы перелистнули много страниц"
 
 #: src/components/SetupWizard.tsx
-msgid "You're ready to go. Head to <0>Add Series</0> to start building your library, or open <1>Settings</1> any time to fine-tune connections and scrobbling. You can re-open this guide from the top of the Settings page."
+msgid "You're set"
 msgstr ""
 
 #: src/pages/rewind/slides.tsx
@@ -11660,8 +11844,11 @@ msgstr "Ваш аккаунт и внешний вид Maki."
 msgid "Your busiest month"
 msgstr "Ваш самый активный месяц"
 
-#: src/api/customRails.ts
 #: src/components/SetupWizard.tsx
+msgid "Your folder is left alone. New chapters go into a folder Maki names."
+msgstr ""
+
+#: src/api/customRails.ts
 #, fuzzy
 msgid "Your library"
 msgstr "Ваша библиотека"
@@ -11748,6 +11935,7 @@ msgstr "Ваш вкус"
 msgid "Yours alone - this changes what lands in your bell, not anybody else's."
 msgstr "Только вы - это меняет содержимое вашего колокольчика, но не чужого."
 
+#: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Z:\\downloads (optional)"

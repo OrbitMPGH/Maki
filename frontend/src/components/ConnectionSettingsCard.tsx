@@ -14,7 +14,7 @@ import {
   type ConnectionName,
 } from '../api/hooks'
 
-interface Field {
+export interface ConnectionField {
   key: string
   label: string
   placeholder?: string
@@ -32,8 +32,32 @@ export function ConnectionSettingsCard({
   name: ConnectionName
   title: string
   description: string
-  fields: Field[]
+  fields: ConnectionField[]
   children?: ReactNode
+}) {
+  return (
+    <Panel>
+      <Title order={4} mb="sm">
+        {title}
+      </Title>
+      <SettingsHelp mb="md">
+        {description}
+      </SettingsHelp>
+      <ConnectionForm name={name} title={title} fields={fields} />
+      {children}
+    </Panel>
+  )
+}
+
+/** The fields and Test/Save row on their own, for surfaces that frame a connection differently (the setup guide). */
+export function ConnectionForm({
+  name,
+  title,
+  fields,
+}: {
+  name: ConnectionName
+  title: string
+  fields: ConnectionField[]
 }) {
   const { data: saved } = useConnectionSettings<Record<string, string | null>>(name)
   const save = useSaveConnectionSettings<Record<string, string | null>>(name)
@@ -55,63 +79,54 @@ export function ConnectionSettingsCard({
     Object.fromEntries(fields.map((f) => [f.key, values[f.key] || null]))
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        {title}
-      </Title>
-      <SettingsHelp mb="md">
-        {description}
-      </SettingsHelp>
-      <Group align="flex-end" wrap="wrap">
-        {fields.map((f) =>
-          f.secret ? (
-            <PasswordInput
-              key={f.key}
-              label={f.label}
-              placeholder={f.placeholder}
-              value={values[f.key] ?? ''}
-              onChange={(e) => {
-                const value = e.currentTarget.value
-                setValues((v) => ({ ...v, [f.key]: value }))
-              }}
-              style={{ flex: 1, minWidth: 180 }}
-            />
-          ) : (
-            <TextInput
-              key={f.key}
-              label={f.label}
-              placeholder={f.placeholder}
-              value={values[f.key] ?? ''}
-              onChange={(e) => {
-                const value = e.currentTarget.value
-                setValues((v) => ({ ...v, [f.key]: value }))
-              }}
-              style={{ flex: 1, minWidth: 180 }}
-            />
-          ),
-        )}
-        <Button
-          variant="default"
-          loading={test.isPending}
-          onClick={() =>
-            test.mutate(payload(), {
-              onSuccess: () => notifications.show({ message: now`${title} is reachable`, color: 'green' }),
-            })
-          }
-        >
-          <Trans>Test</Trans>
-        </Button>
-        <SaveButton
-          dirty={dirty}
-          loading={save.isPending}
-          onClick={() =>
-            save.mutate(payload(), {
-              onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
-            })
-          }
-        />
-      </Group>
-      {children}
-    </Panel>
+    <Group align="flex-end" wrap="wrap">
+      {fields.map((f) =>
+        f.secret ? (
+          <PasswordInput
+            key={f.key}
+            label={f.label}
+            placeholder={f.placeholder}
+            value={values[f.key] ?? ''}
+            onChange={(e) => {
+              const value = e.currentTarget.value
+              setValues((v) => ({ ...v, [f.key]: value }))
+            }}
+            style={{ flex: 1, minWidth: 180 }}
+          />
+        ) : (
+          <TextInput
+            key={f.key}
+            label={f.label}
+            placeholder={f.placeholder}
+            value={values[f.key] ?? ''}
+            onChange={(e) => {
+              const value = e.currentTarget.value
+              setValues((v) => ({ ...v, [f.key]: value }))
+            }}
+            style={{ flex: 1, minWidth: 180 }}
+          />
+        ),
+      )}
+      <Button
+        variant="default"
+        loading={test.isPending}
+        onClick={() =>
+          test.mutate(payload(), {
+            onSuccess: () => notifications.show({ message: now`${title} is reachable`, color: 'green' }),
+          })
+        }
+      >
+        <Trans>Test</Trans>
+      </Button>
+      <SaveButton
+        dirty={dirty}
+        loading={save.isPending}
+        onClick={() =>
+          save.mutate(payload(), {
+            onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+          })
+        }
+      />
+    </Group>
   )
 }
