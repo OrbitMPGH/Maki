@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { randomUUID } from '../../lib/uuid'
 import {
   Alert, Badge, Button, Card, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
 } from '@mantine/core'
@@ -306,7 +307,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     setActionError('')
     try {
       await signal.mutateAsync({
-        id: mangaBakaId, ignoreAsSeed, clientMutationId: crypto.randomUUID(),
+        id: mangaBakaId, ignoreAsSeed, clientMutationId: randomUUID(),
         expectedRevision: overrides?.find((item) => item.mangaBakaId === mangaBakaId)?.revision ?? 0,
       })
     } catch (cause) {

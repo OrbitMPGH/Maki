@@ -1,4 +1,5 @@
 import { ActionIcon, Button, Group, Menu, Text, Tooltip } from '@mantine/core'
+import { randomUUID } from '../../lib/uuid'
 import { notifications } from '@mantine/notifications'
 import {
   IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
@@ -44,7 +45,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
     // outcome than the disabled button this used to render.
     const command: Command = retry ?? {
       id, action, medium, expectedRevision: state?.revision ?? 0,
-      clientMutationId: crypto.randomUUID(),
+      clientMutationId: randomUUID(),
     }
     try {
       const result = await mutation.mutateAsync(command)
@@ -62,7 +63,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
           {eventId && <Button size="xs" variant="subtle" onClick={() => {
             void undo.mutateAsync({
               eventId, expectedRevision: revision,
-              clientMutationId: crypto.randomUUID(),
+              clientMutationId: randomUUID(),
             })
           }}><Trans>Undo</Trans></Button>}
         </Group>,
@@ -84,7 +85,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
   async function submitFranchise() {
     try {
       const result = await franchise.mutateAsync({
-        id, action: 'hide', clientMutationId: crypto.randomUUID(),
+        id, action: 'hide', clientMutationId: randomUUID(),
       })
       const count = result.changed
       notifications.show({
