@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -16,8 +16,6 @@ import {
 import { useIntersection } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
-  IconArrowDown,
-  IconArrowUp,
   IconChevronRight,
   IconCopy,
   IconDots,
@@ -38,9 +36,7 @@ import {
 import {
   customRailAsDiscoverRail,
   useCustomRailItems,
-  useCustomRails,
   useDeleteCustomRail,
-  useReorderCustomRails,
   type CustomRail,
   type CustomRailPlacement,
 } from '../../api/customRails'
@@ -61,20 +57,17 @@ const ICONS = { library: IconLibrary, recommendations: IconSparkles, catalogue: 
  *
  * @param onShowMoreCatalogue Discover's own expand view. Without it (on Home), a catalogue rail's
  *   "Show more" goes to Discover and opens it there.
- * @param onMove Discover only: Home rails are ordered in the Home layout instead.
  */
 export function CustomRailSection({
   rail,
   limit,
   onOpen,
   onShowMoreCatalogue,
-  onMove,
 }: {
   rail: CustomRail
   limit: number
   onOpen: (item: RecommendationItem) => void
   onShowMoreCatalogue?: (rail: DiscoverRail) => void
-  onMove?: (direction: -1 | 1) => void
 }) {
   const { t } = useLingui()
   const navigate = useNavigate()
@@ -155,16 +148,6 @@ export function CustomRailSection({
                   <Menu.Item leftSection={<IconCopy size={14} />} onClick={() => duplicate(otherPlacement)}>
                     {otherPlacement === 'home' ? <Trans>Copy to Home</Trans> : <Trans>Copy to Discover</Trans>}
                   </Menu.Item>
-                )}
-                {onMove && (
-                  <>
-                    <Menu.Item leftSection={<IconArrowUp size={14} />} onClick={() => onMove(-1)}>
-                      <Trans>Move up</Trans>
-                    </Menu.Item>
-                    <Menu.Item leftSection={<IconArrowDown size={14} />} onClick={() => onMove(1)}>
-                      <Trans>Move down</Trans>
-                    </Menu.Item>
-                  </>
                 )}
                 <Menu.Divider />
                 <Menu.Item
@@ -284,51 +267,15 @@ function LibraryRailModal({ rail, onClose }: { rail: CustomRail; onClose: () => 
   )
 }
 
-/** Discover's custom rails, in their own order, with the button that adds one. */
-export function DiscoverCustomRails({
-  onOpen,
-  onShowMore,
-}: {
-  onOpen: (item: RecommendationItem) => void
-  onShowMore: (rail: DiscoverRail) => void
-}) {
-  const { data: rails } = useCustomRails('discover')
-  const reorder = useReorderCustomRails()
-  const move = useCallback(
-    (index: number, direction: -1 | 1) => {
-      if (!rails) return
-      const target = index + direction
-      if (target < 0 || target >= rails.length) return
-      const ids = rails.map((r) => r.id)
-      ;[ids[index], ids[target]] = [ids[target], ids[index]]
-      reorder.mutate({ placement: 'discover', ids })
-    },
-    [rails, reorder],
-  )
-
-  return (
-    <>
-      {(rails ?? []).map((rail, index) => (
-        <CustomRailSection
-          key={rail.id}
-          rail={rail}
-          limit={40}
-          onOpen={onOpen}
-          onShowMoreCatalogue={onShowMore}
-          onMove={(direction) => move(index, direction)}
-        />
-      ))}
-    </>
-  )
-}
-
 /** Opens the editor for a new rail. */
 export function AddRailButton({
   placement,
   label,
+  onCreated,
 }: {
   placement: CustomRailPlacement
   label?: React.ReactNode
+  onCreated?: (rail: CustomRail) => void
 }) {
   const [open, setOpen] = useState(false)
   const draft: CustomRailDraft = {
@@ -340,7 +287,7 @@ export function AddRailButton({
       <Button variant="subtle" size="xs" leftSection={<IconPlus size={14} />} onClick={() => setOpen(true)}>
         {label ?? <Trans>Add a rail</Trans>}
       </Button>
-      {open && <CustomRailEditor draft={draft} onClose={() => setOpen(false)} />}
+      {open && <CustomRailEditor draft={draft} onSaved={onCreated} onClose={() => setOpen(false)} />}
     </>
   )
 }

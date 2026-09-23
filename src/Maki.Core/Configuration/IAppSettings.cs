@@ -163,6 +163,13 @@ public static class SettingKeys
     public const string UiHomeSections = "ui.homesections";
 
     /// <summary>
+    /// How Discover's Browse tab is arranged, as a <see cref="DiscoverLayoutSpec"/> JSON blob: the
+    /// built-in sections and the user's Discover rails, in their order. Unset = shipping order, all
+    /// on, rails before Trending.
+    /// </summary>
+    public const string UiDiscoverSections = "ui.discoversections";
+
+    /// <summary>
     /// Which supplementary rails the series page shows, as a <see cref="SeriesSectionsSpec"/> JSON
     /// blob. Unset = both on.
     /// <para>

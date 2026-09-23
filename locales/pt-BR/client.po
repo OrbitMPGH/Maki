@@ -239,6 +239,11 @@ msgstr "{0, plural, one {Arquivo de volume associado a # capítulo} many {Arquiv
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Quer # capítulo} many {Quer # capítulos}other {Quer # capítulos}}"
 
+#. placeholder {0}: sideInterests.length
+#: src/pages/DiscoverPage.tsx
+msgid "{0} rows right now"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -517,6 +522,10 @@ msgstr "{label} - página {pageNumber}"
 msgid "{label} already has a file. Compare the two before deciding: importing this archive links it alongside the existing one, it does not replace it. To swap them, delete the file you do not want first."
 msgstr "{label} já tem um arquivo. Compare os dois antes de decidir: importar este arquivo compactado o vincula ao lado do existente, não o substitui. Para trocá-los, exclua primeiro o arquivo que você não quer."
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "{label} moved to position {position} of {total}"
+msgstr ""
+
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
 msgid "{label} Rewind"
@@ -656,6 +665,10 @@ msgstr "{overflow, plural, one {+# a mais} many {+# a mais}other {+# a mais}}"
 #, fuzzy
 msgid "{pageCount, plural, one {# page} other {# pages}}"
 msgstr "{pageCount, plural, one {# página} many {# páginas}other {# páginas}}"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "{panelsOn} of {panelsTotal} panels"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -1204,6 +1217,10 @@ msgstr "Um capítulo terminou de baixar e foi importado."
 msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit."
 msgstr ""
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A few large picks at the top, from your recent reading or what is trending."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "A few quick choices to get Maki ready: where your library lives, how metadata and monitoring behave, and any download or reading tools you already run. Every step is optional and can be changed later in Settings. Your choices save as you go."
@@ -1251,6 +1268,18 @@ msgstr "Uma atualização encontrou novos capítulos para uma série."
 #, fuzzy
 msgid "A refresh is already running"
 msgstr "Uma atualização já está em andamento"
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A row for each smaller theme on your shelf."
+msgstr ""
+
+#: src/components/home/homeSectionDefs.ts
+msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
+msgstr ""
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "A short strip of what your library leans towards."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -1401,6 +1430,7 @@ msgstr "Adicione {chapterLanguageToken} ao formato do capítulo em Configuraçõ
 msgid "Add {title} to library"
 msgstr "Adicionar {title} à biblioteca"
 
+#: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 msgid "Add a rail"
 msgstr ""
@@ -1887,6 +1917,10 @@ msgstr "Inventário de arquivos compactados concluído"
 msgid "Around the house"
 msgstr "Pela casa"
 
+#: src/pages/SettingsPage.tsx
+msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
+msgstr ""
+
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -1899,6 +1933,7 @@ msgstr "Arte"
 msgid "Assign"
 msgstr "Atribuir"
 
+#: src/api/hooks.ts
 #: src/components/discover/DiscoverGlance.tsx
 #, fuzzy
 msgid "At a glance"
@@ -2105,6 +2140,10 @@ msgstr "Quase não tocado"
 msgid "Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library."
 msgstr "Baseie as recomendações nestes títulos. A pesquisa adiciona qualquer título do MangaBaka. Vazio = sua biblioteca inteira."
 
+#: src/api/hooks.ts
+msgid "Based on your recent activity"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Bearer token (optional)"
@@ -2183,6 +2222,10 @@ msgstr "Adicionar esta página aos favoritos"
 msgid "Both"
 msgstr "Ambos"
 
+#: src/components/layout/SectionProperties.tsx
+msgid "Bottom"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Boys Love"
@@ -2208,6 +2251,7 @@ msgstr "Navegue ou pesquise no MangaBaka e peça um título a um administrador. 
 msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
 msgstr "Navegue ou pesquise no MangaBaka, escolha onde ele fica e o Maki cuidará do resto."
 
+#: src/api/hooks.ts
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Browse the catalogue"
@@ -2270,6 +2314,8 @@ msgid "Can't read this download"
 msgstr "Não é possível ler este download"
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/layout/PageLayoutEditor.tsx
+#: src/components/layout/SectionProperties.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
@@ -2629,6 +2675,10 @@ msgstr ""
 #, fuzzy
 msgid "Chapters downloaded automatically"
 msgstr "Capítulos baixados automaticamente"
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Chapters downloading right now. Only shows while something is."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3305,7 +3355,7 @@ msgstr "Cópia atual"
 msgid "Currently popular"
 msgstr "Atualmente popular"
 
-#: src/pages/SettingsPage.tsx
+#: src/components/layout/PageLayoutEditor.tsx
 msgid "Custom rail"
 msgstr ""
 
@@ -3394,6 +3444,7 @@ msgstr "Ordem padrão das fontes atualizada"
 msgid "Defining"
 msgstr "Definindo"
 
+#: src/components/layout/SectionProperties.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -3454,6 +3505,7 @@ msgstr "Excluir permanentemente"
 msgid "Delete profile"
 msgstr "Excluir perfil"
 
+#: src/components/layout/SectionProperties.tsx
 #: src/components/rails/CustomRailSection.tsx
 msgid "Delete rail"
 msgstr ""
@@ -3484,6 +3536,10 @@ msgstr "Excluir selecionados"
 #, fuzzy
 msgid "Delete series"
 msgstr "Excluir série"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Delete the rail \"{label}\"? Its filters go with it."
+msgstr ""
 
 #: src/components/rails/CustomRailSection.tsx
 msgid "Delete the rail \"{railName}\"? Its filters go with it."
@@ -3652,6 +3708,7 @@ msgid "Don't want specials on new series"
 msgstr "Não quero especiais em séries novas"
 
 #: src/components/LanguageAnnouncementModal.tsx
+#: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/LibraryPage.tsx
@@ -3664,6 +3721,10 @@ msgstr "Concluído"
 #, fuzzy
 msgid "Double"
 msgstr "Duplo"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Down"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3805,6 +3866,10 @@ msgstr "Downloads"
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
 msgstr ""
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Drag to reorder. Click a section to change it."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Drama"
@@ -3857,14 +3922,23 @@ msgstr "Editar"
 msgid "Edit {editName}"
 msgstr "Editar {editName}"
 
-#: src/pages/SettingsPage.tsx
-msgid "Edit {label}"
-msgstr ""
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Edit connection"
 msgstr "Editar conexão"
+
+#: src/pages/SettingsPage.tsx
+msgid "Edit Discover layout"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Edit Home layout"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+#: src/pages/HomePage.tsx
+msgid "Edit layout"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3889,6 +3963,10 @@ msgstr "Editar solicitação"
 #, fuzzy
 msgid "Edit request for {title}"
 msgstr "Editar solicitação de {title}"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Editing layout"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4015,6 +4093,7 @@ msgstr "Todas as fontes ativadas já estão vinculadas."
 msgid "Every folder in this root is already claimed by a series in the library."
 msgstr "Todas as pastas nesta raiz já estão atribuídas a uma série da biblioteca."
 
+#: src/api/hooks.ts
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Every genre"
@@ -4708,6 +4787,7 @@ msgstr "Altura"
 msgid "Hiatus"
 msgstr "Hiato"
 
+#: src/components/layout/PageLayoutEditor.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -4740,6 +4820,10 @@ msgstr ""
 #, fuzzy
 msgid "hidden or dismissed"
 msgstr "oculto ou dispensado"
+
+#: src/pages/HomePage.tsx
+msgid "Hidden while progression is switched off."
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 msgid "Hide everywhere on Discover"
@@ -4804,13 +4888,12 @@ msgid "Home & start page"
 msgstr ""
 
 #: src/pages/HomePage.tsx
-#, fuzzy
-msgid "Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings."
-msgstr "Início não tem nada para mostrar. Reative as seções ou desative Início completamente em Configurações."
+msgid "Home has nothing to show. Turn some sections back on in the layout editor, or switch Home off entirely in Settings."
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "home sections, rails, continue reading, recently added, section order, disable home, start page, landing page, opens on, default page"
+msgid "home sections, rails, continue reading, recently added, section order, edit layout, drag, reorder, hero, glance, discover layout, disable home, start page, landing page, opens on, default page"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -5304,6 +5387,14 @@ msgstr "Idiomas"
 msgid "Languages to download, most preferred first. Auto-match tries sources that publish your top language first and skips sources that publish none of these. New auto-matched sources get these languages; existing mappings are never changed. Drag to reorder."
 msgstr ""
 
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Large tiles"
+msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Large tiles for the first three"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
@@ -5370,6 +5461,14 @@ msgstr "mais recente"
 #, fuzzy
 msgid "Layout"
 msgstr "Layout"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Layout saved"
+msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Lead with big cover tiles instead of a plain row."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5480,9 +5579,8 @@ msgid "Library"
 msgstr "Biblioteca"
 
 #: src/api/hooks.ts
-#, fuzzy
-msgid "Library at a glance"
-msgstr "Biblioteca em um relance"
+msgid "Library counts"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6086,22 +6184,15 @@ msgstr "Mais lidos"
 msgid "Move"
 msgstr "Mover"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Move {label} down"
-msgstr "Mover {label} para baixo"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Move {label} up"
-msgstr "Mover {label} para cima"
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Move {label}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Move {selectedCount} series"
 msgstr "Mover {selectedCount} séries"
 
-#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -6138,7 +6229,6 @@ msgstr "Mover para o topo"
 msgid "Move to top of queue"
 msgstr "Mover para o topo da fila"
 
-#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -6231,6 +6321,10 @@ msgstr "Precisa de pelo menos duas fontes ativadas para comparar."
 msgid "Needs FlareSolverr"
 msgstr "Precisa do FlareSolverr"
 
+#: src/pages/HomePage.tsx
+msgid "Needs read tracking: use the reader or connect Kavita."
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -6239,6 +6333,10 @@ msgstr "Precisa do FlareSolverr"
 #, fuzzy
 msgid "Needs review"
 msgstr "Precisa de revisão"
+
+#: src/pages/HomePage.tsx
+msgid "Needs the local MangaBaka database"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6257,6 +6355,7 @@ msgstr "neutro, começa com o peso da estante"
 msgid "never"
 msgstr "nunca"
 
+#: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "New"
@@ -7044,6 +7143,10 @@ msgstr "Um dia perdido por semana é perdoado, e hoje nunca quebra uma sequênci
 msgid "One refresh required"
 msgstr "Uma atualização necessária"
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "One tile per genre, each opening its most popular titles."
+msgstr ""
+
 #: src/api/queue.ts
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7144,11 +7247,6 @@ msgstr "Começar a abrir Recommended com estes filtros"
 #, fuzzy
 msgid "Open series"
 msgstr "Abrir série"
-
-#: src/pages/HomePage.tsx
-#, fuzzy
-msgid "Open settings"
-msgstr "Abrir configurações"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -7291,6 +7389,10 @@ msgstr "Páginas buscadas antecipadamente."
 #, fuzzy
 msgid "Pages matched"
 msgstr "Páginas correspondentes"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Panels"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -7440,8 +7542,16 @@ msgstr "Escolha o arquivo na pasta da série que realmente contém estes capítu
 msgid "Pick up where you left off."
 msgstr "Retomar de onde parou."
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "Picks based on the series you read most recently."
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
+msgstr ""
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Picks from the recommender, based on your whole library."
 msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
@@ -7484,6 +7594,10 @@ msgstr "Polonês"
 msgid "popular"
 msgstr "popular"
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "Popular, new and top rated titles, with the catalogue filter."
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -7495,6 +7609,10 @@ msgstr "Pornográfico"
 #, fuzzy
 msgid "Portuguese (Br)"
 msgstr "Português (BR)"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Position"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7688,6 +7806,11 @@ msgstr "Capítulos enfileirados e baixando aparecem aqui. Inicie uma pesquisa na
 msgid "Rail added"
 msgstr ""
 
+#: src/components/layout/SectionProperties.tsx
+msgid "Rail changes save straight away. Done saves the layout."
+msgstr ""
+
+#: src/components/layout/SectionProperties.tsx
 #: src/components/rails/CustomRailSection.tsx
 msgid "Rail deleted"
 msgstr ""
@@ -7827,6 +7950,10 @@ msgstr "Configurações do leitor"
 #, fuzzy
 msgid "Reader thumbnails: {thumbnailFilesLabel} files, {thumbnailBytesLabel}"
 msgstr "Miniaturas do leitor: {thumbnailFilesLabel} arquivos, {thumbnailBytesLabel}"
+
+#: src/api/hooks.ts
+msgid "Readers like you"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
@@ -9238,12 +9365,24 @@ msgstr "Página da série"
 msgid "Series removed"
 msgstr "Série removida"
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Series with a chapter part-way through."
+msgstr ""
+
 #: src/components/DiscoverPresets.tsx
 msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
 msgstr ""
 
+#: src/components/home/homeSectionDefs.ts
+msgid "Series with newly added chapters."
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Series you already have that match these filters."
+msgstr ""
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Series you finished a chapter of that still have more to read."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -9295,6 +9434,10 @@ msgstr "Defina como <0>0</0> para desativar o bloqueio."
 msgid "Set up"
 msgstr "Configurar"
 
+#: src/pages/SettingsPage.tsx
+msgid "Set up the Kavita connection above to pick libraries."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Set up two-factor authentication"
@@ -9330,11 +9473,6 @@ msgstr "Shoujo"
 #, fuzzy
 msgid "Shounen"
 msgstr "Shounen"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Show {label}"
-msgstr "Mostrar {label}"
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -9402,6 +9540,10 @@ msgstr "Mostrar sequências de leitura"
 msgid "Show source text"
 msgstr "Mostrar texto da fonte"
 
+#: src/components/layout/SectionProperties.tsx
+msgid "Show this section"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
 msgstr ""
@@ -9430,6 +9572,10 @@ msgstr "Exibido para quem solicitou"
 #, fuzzy
 msgid "Shows your name, level, chapters read and streak to everyone who also opted in. Never anything about which series you read."
 msgstr "Mostra seu nome, nível, capítulos lidos e sequência para todos que também optaram por participar. Nunca mostra quais séries você lê."
+
+#: src/api/hooks.ts
+msgid "Side interests"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -9724,6 +9870,10 @@ msgstr "Spoiler · {description}"
 #, fuzzy
 msgid "Sports"
 msgstr "Esportes"
+
+#: src/api/hooks.ts
+msgid "Spotlight"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10117,6 +10267,10 @@ msgstr "O arquivo vinculado ainda não foi inventariado, então suas páginas n�
 msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
 msgstr ""
 
+#: src/components/home/homeSectionDefs.ts
+msgid "The most popular titles in the MangaBaka catalogue."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The odd one out"
@@ -10171,6 +10325,10 @@ msgstr "Os itens específicos que continuam aparecendo na sua biblioteca, cada u
 #, fuzzy
 msgid "The starting point for every series. Any series can be set to something else from its own page, or for a whole selection at once from the Library's Select mode."
 msgstr "O ponto de partida para cada série. Qualquer série pode ser definida como outra opção na própria página ou para uma seleção inteira de uma vez no modo Selecionar da Biblioteca."
+
+#: src/components/discover/discoverSectionDefs.ts
+msgid "The titles climbing fastest in popularity right now."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -10546,6 +10704,10 @@ msgstr "Separador de tokens"
 msgid "Took too long to find a source"
 msgstr "Demorou demais para encontrar uma fonte"
 
+#: src/components/layout/SectionProperties.tsx
+msgid "Top"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "Top genres"
@@ -10612,6 +10774,10 @@ msgstr "Tragédia"
 #, fuzzy
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "Traduções que não sejam em inglês são feitas por máquina e corrigidas ao longo do tempo; tudo que ainda não foi traduzido usa o inglês."
+
+#: src/api/hooks.ts
+msgid "Trending now"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10814,6 +10980,10 @@ msgstr "Até que ele seja criado, os selos comparam apenas com sua própria bibl
 #, fuzzy
 msgid "Until: {end}"
 msgstr "Até: {end}"
+
+#: src/components/layout/SectionProperties.tsx
+msgid "Up"
+msgstr ""
 
 #: src/api/requests.ts
 #, fuzzy
@@ -11212,6 +11382,10 @@ msgstr "O que acontece com capítulos lançados posteriormente"
 msgid "What lands in your bell. These settings only affect you."
 msgstr ""
 
+#: src/components/discover/discoverSectionDefs.ts
+msgid "What readers who finished the same series as you went on to finish."
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "What readers without add or download permissions have asked for. Approving adds the series and queues the chapters."
@@ -11300,10 +11474,6 @@ msgstr ""
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "Quais trilhos aparecem abaixo da lista de capítulos. Desativar um também impede que ele seja buscado."
 
-#: src/pages/SettingsPage.tsx
-msgid "Which sections appear, and in what order. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
-msgstr ""
-
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "While reading"
@@ -11338,6 +11508,10 @@ msgstr "Largura"
 #, fuzzy
 msgid "With either claim set, your provider is the authority on permissions: they are recomputed on every sign-in, so changes made on the Users page are overwritten the next time that person signs in. Leave both empty to keep permissions here."
 msgstr "Com qualquer claim definido, seu provedor é a autoridade sobre as permissões: elas são recalculadas a cada login, então alterações feitas na página Usuários são substituídas na próxima vez que essa pessoa entrar. Deixe ambos vazios para manter as permissões aqui."
+
+#: src/components/layout/SectionProperties.tsx
+msgid "With every panel off, this section stays empty."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 msgid "With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see the real client."
@@ -11558,6 +11732,7 @@ msgstr "Suas fontes vão só até o capítulo <0>{highest}</0>, mas o MangaBaka 
 msgid "Your tags"
 msgstr "Suas tags"
 
+#: src/api/hooks.ts
 #: src/components/discover/DiscoverTasteStrip.tsx
 #, fuzzy
 msgid "Your taste"

@@ -162,9 +162,14 @@ public class SettingsController(
     /// Japanese-titled manga in a Swedish interface is the ordinary case. Nullable for the same
     /// reason the two above it are.
     /// </param>
+    /// <param name="DiscoverLayout">
+    /// How Discover's Browse tab is arranged. Unlike <paramref name="SeriesSections"/>, null on write
+    /// means "leave what is stored": this field is saved from Discover's edit mode, and every other
+    /// caller that PUTs this record (Settings, an older cached bundle) would otherwise reset it.
+    /// </param>
     public record UiSettings(
         string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
-        string? TitleLanguage = null, string? Language = null);
+        string? TitleLanguage = null, string? Language = null, DiscoverLayoutSpec? DiscoverLayout = null);
 
     /// <param name="Language">
     /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
@@ -399,10 +404,12 @@ public class SettingsController(
         var rows = await userSettings.GetManyAsync(
             [
                 SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections,
-                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage
+                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage, SettingKeys.UiDiscoverSections
             ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
-        var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections), await HomeRailIdsAsync(ct));
+        var (homeRails, discoverRails) = await RailIdsAsync(ct);
+        var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections), homeRails);
+        var discoverLayout = DiscoverLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiDiscoverSections), discoverRails);
         var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
         // An unsupported stored language reads as "no preference" rather than erroring, the same way
         // an unrecognised start page does: a row written by a build that shipped a catalogue this one
@@ -410,7 +417,8 @@ public class SettingsController(
         return Ok(new UiSettings(
             StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections,
             rows.GetValueOrDefault(SettingKeys.UiTitleLanguage),
-            SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage))));
+            SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage)),
+            discoverLayout));
     }
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
@@ -425,8 +433,11 @@ public class SettingsController(
         // Turning Home off while it is the start page would leave "/" pointing at a page the client
         // then bounces away from. The client already falls back for exactly this, but storing the
         // contradiction means the setting silently disagrees with what the user sees; resolve it here.
-        var homeRails = await HomeRailIdsAsync(ct);
+        var (homeRails, discoverRails) = await RailIdsAsync(ct);
         var layout = (request.HomeLayout ?? HomeLayoutSpec.Default).Merge(homeRails);
+        var discoverLayout = request.DiscoverLayout is { } requestedDiscover
+            ? requestedDiscover.Merge(discoverRails)
+            : DiscoverLayoutSpec.Parse(await userSettings.GetAsync(SettingKeys.UiDiscoverSections, ct), discoverRails);
         var startPage = !layout.Enabled && request.StartPage == StartPage.Home
             ? StartPage.Library
             : request.StartPage;
@@ -459,23 +470,35 @@ public class SettingsController(
             SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
         await userSettings.SetAsync(SettingKeys.UiTitleLanguage, titleLanguage, ct);
         await userSettings.SetAsync(SettingKeys.UiLanguage, language, ct);
+        if (request.DiscoverLayout is not null)
+        {
+            await userSettings.SetAsync(
+                SettingKeys.UiDiscoverSections, DiscoverLayoutSpec.Serialize(discoverLayout, discoverRails), ct);
+        }
+
         // Anything rendered outside a request (a webhook, a pushed notification) reads this through a
         // short cache, so without this a language change would not reach it for up to five minutes.
         userLocales.Forget(currentUser.UserId);
-        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language));
+        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language, discoverLayout));
     }
 
     /// <summary>
-    /// The caller's Home custom rails, in their own order: what a <c>rail:{id}</c> key in the layout
-    /// may name. The only place the layout is merged against rails, so every read and write passes it.
+    /// The caller's custom rails per page, in creation order: what a <c>rail:{id}</c> key in each
+    /// layout may name, and the order new ones are placed in. The only place the layouts are merged
+    /// against rails, so every read and write passes these.
     /// </summary>
-    private Task<List<int>> HomeRailIdsAsync(CancellationToken ct) =>
-        db.SavedFilters
-            .Where(f => f.Scope == Maki.Core.Entities.SavedFilter.HomeRailScope)
+    private async Task<(List<int> Home, List<int> Discover)> RailIdsAsync(CancellationToken ct)
+    {
+        var rails = await db.SavedFilters
+            .Where(f => f.Scope == SavedFilter.HomeRailScope || f.Scope == SavedFilter.DiscoverRailScope)
             .OrderBy(f => f.SortOrder)
             .ThenBy(f => f.Id)
-            .Select(f => f.Id)
+            .Select(f => new { f.Id, f.Scope })
             .ToListAsync(ct);
+        return (
+            rails.Where(r => r.Scope == SavedFilter.HomeRailScope).Select(r => r.Id).ToList(),
+            rails.Where(r => r.Scope == SavedFilter.DiscoverRailScope).Select(r => r.Id).ToList());
+    }
 
     /// <summary>
     /// The one-off notices this user has not been shown yet. Read on every app load, so it is one

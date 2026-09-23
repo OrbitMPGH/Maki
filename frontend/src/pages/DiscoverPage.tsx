@@ -1,6 +1,6 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
 import '@mantine/charts/styles.css'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -30,6 +30,7 @@ import {
   IconDeviceFloppy,
   IconFlame,
   IconLibrary,
+  IconLayoutDashboard,
   IconLayoutGrid,
   IconPlus,
   IconRefresh,
@@ -37,6 +38,7 @@ import {
   IconSparkles,
   IconUsers,
 } from '@tabler/icons-react'
+import { useIsFetching } from '@tanstack/react-query'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -58,7 +60,11 @@ import {
   useSaveRecommendationDefaults,
   useSeries,
   useSeriesIdLookup,
+  useUiSettings,
+  isRailKey,
+  railIdOf,
   type DiscoverRail,
+  type DiscoverSectionKey,
   type RecommendationDefaults,
   type RecommendationFilters,
   type RecommendationItem,
@@ -96,7 +102,11 @@ import {
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
-import { AddRailButton, DiscoverCustomRails } from '../components/rails/CustomRailSection'
+import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
+import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
+import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
+import { reconcileLayout } from '../components/layout/pageLayout'
+import { DISCOVER_LAYOUT_CONFIG, DISCOVER_SECTION_DEFS } from '../components/discover/discoverSectionDefs'
 import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '../api/customRails'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -1078,6 +1088,8 @@ function DiscoverBrowseTab({
   refreshNonce,
   onRefresh,
   density,
+  editing,
+  onExitEditing,
 }: {
   /** Bumped by the page header's refresh action; busts the server-side rail cache. */
   refreshNonce: number
@@ -1086,14 +1098,45 @@ function DiscoverBrowseTab({
       page header. Every card below sizes from it: the rails through CSS variables on the wrapper,
       the catalogue grid through the shared column counts. */
   density: DensityPref
+  /** Layout edit mode: the sections become compact cards, and nothing below fetches. */
+  editing: boolean
+  onExitEditing: () => void
 }) {
   const { t } = useLingui()
-  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
-  const { data: recentRail, isFetching: recentFetching } = useDiscoverRecentActivity(refreshNonce)
-  const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(refreshNonce)
-  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres()
+  const { data: ui } = useUiSettings()
+  const { data: customRails } = useCustomRails()
+  const discoverRails = useMemo(
+    () => customRails?.filter((r) => r.placement === 'discover'),
+    [customRails],
+  )
+
+  // Shipping order while the setting loads, so the page doesn't reflow once it arrives.
+  const layout = useMemo(
+    () =>
+      ui?.discoverLayout?.sections ??
+      reconcileLayout([], DISCOVER_LAYOUT_CONFIG, (discoverRails ?? []).map((r) => r.id)),
+    [ui, discoverRails],
+  )
+  const on = (key: DiscoverSectionKey) =>
+    !editing && (layout.find((s) => s.key === key)?.enabled ?? false)
+
+  // Every query is gated on the section that shows it, so a switched-off section costs nothing.
+  // The hero is the exception that proves it: it borrows the recent-activity picks, and Trending
+  // when those run short, so it keeps both of those alive on its own.
+  const recent = useDiscoverRecentActivity(refreshNonce, on('recent') || on('hero'))
+  const { data: recentRail, isFetching: recentFetching } = recent
+  const heroNeedsTrending = on('hero') && !recentFetching && (recentRail?.items.length ?? 0) < 3
+  const { data: rails, isFetching, error } = useDiscover(
+    refreshNonce,
+    on('trending') || on('catalogue') || heroNeedsTrending,
+  )
+  const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(
+    refreshNonce,
+    on('sideinterests'),
+  )
+  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres(0, on('genres'))
   const cohortRequest = useMemo(() => ({}), [])
-  const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest)
+  const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest, on('cohort'))
 
   const { data: rootFolders } = useRootFolders()
   const navigate = useNavigate()
@@ -1104,7 +1147,6 @@ function DiscoverBrowseTab({
   // A catalogue rail on Home expands here, since this is where the expand view lives.
   const location = useLocation()
   const expandRailId = (location.state as { expandRailId?: number } | null)?.expandRailId
-  const { data: customRails } = useCustomRails()
   useEffect(() => {
     if (expandRailId == null || !customRails) return
     const rail = customRails.find((r) => r.id === expandRailId)
@@ -1141,227 +1183,286 @@ function DiscoverBrowseTab({
     [rails],
   )
 
-  const body = (
-    <div className="discover-density" data-density={density.density}>
-      {heroItems.length > 0 ? (
+  if (editing) {
+    return ui && customRails ? (
+      <PageLayoutEditor
+        page="discover"
+        placement="discover"
+        registry={DISCOVER_SECTION_DEFS}
+        config={DISCOVER_LAYOUT_CONFIG}
+        initial={layout}
+        rails={discoverRails}
+        railLimit={40}
+        summary={(key) =>
+          key === 'sideinterests' && sideInterests
+            ? t`${sideInterests.length} rows right now`
+            : null
+        }
+        preview={(key) => {
+          const items =
+            key === 'hero'
+              ? heroItems
+              : key === 'recent'
+                ? recentRail?.items
+                : key === 'cohort'
+                  ? cohortRail?.items
+                  : key === 'trending'
+                    ? trendingRail?.items
+                    : key === 'catalogue'
+                      ? catalogueRails[0]?.items
+                      : key === 'sideinterests'
+                        ? sideInterests?.[0]?.items
+                        : undefined
+          return (items ?? []).map((i) => i.thumbUrl ?? i.coverUrl)
+        }}
+        onExit={onExitEditing}
+      />
+    ) : (
+      <PageLayoutEditorLoading />
+    )
+  }
+
+  // The catalogue query's failure and loading states. They live with the catalogue section rather
+  // than at the top of the page, since the hero and the personalised rows come from other endpoints
+  // and survive this one being down; with that section off they move to Trending instead.
+  const catalogueStatus = error ? (
+    <Alert
+      color="var(--warn)"
+      variant="light"
+      icon={<IconAlertTriangle size={18} />}
+      title={t`Catalogue unavailable`}
+    >
+      <Stack gap="sm" align="flex-start">
+        <Text size="sm">{String(error)}</Text>
+        <Button
+          size="xs"
+          variant="default"
+          leftSection={<IconRefresh size={14} />}
+          loading={isFetching}
+          onClick={onRefresh}
+        >
+          <Trans>Try again</Trans>
+        </Button>
+      </Stack>
+    </Alert>
+  ) : null
+
+  const sections: Record<DiscoverSectionKey, React.ReactNode> = {
+    hero:
+      heroItems.length > 0 ? (
         <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
-      ) : ((isFetching && !rails) || (recentFetching && recentRail === undefined)) ? (
+      ) : (isFetching && !rails) || (recentFetching && recentRail === undefined) ? (
         <DiscoverHeroSkeleton />
-      ) : null}
+      ) : null,
 
-      <DiscoverTasteStrip />
+    taste: <DiscoverTasteStrip />,
 
-      {recentRail ? (
-        <div>
-          <SectionHeader
-            icon={IconLibrary}
-            title={recentRail.title}
-            count={recentRail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(recentRail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {/* The covers of the series this was built from, with the server's prose subtitle as the
-              fallback for a reader whose seeds no longer resolve to library rows. */}
-          {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
-            <DiscoverSeedStrip seedIds={recentRail.seedIds} />
-          ) : (
-            recentRail.subtitle && (
-              <Text c="var(--ink-3)" size="sm" mb="sm">
-                {recentRail.subtitle}
-              </Text>
-            )
-          )}
-          <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
-        </div>
-      ) : recentFetching ? (
-        <DiscoverRailSkeleton engine />
-      ) : null}
-
-      {sideInterests?.map((rail) => (
-        <div key={rail.key}>
-          <SectionHeader
-            icon={IconCompass}
-            title={rail.title}
-            count={rail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(rail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {rail.seedIds && rail.seedIds.length > 0 ? (
-            <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
-          ) : (
-            <Text c="var(--ink-3)" size="sm" mb="sm">{rail.subtitle}</Text>
-          )}
-          <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
-        </div>
-      ))}
-      {!sideInterests && sideInterestsFetching ? <DiscoverRailSkeleton engine /> : null}
-
-      {cohortRail ? (
-        <div>
-          <SectionHeader
-            icon={IconUsers}
-            title={cohortRail.title}
-            count={cohortRail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(cohortRail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {cohortRail.subtitle && (
+    recent: recentRail ? (
+      <div>
+        <SectionHeader
+          icon={IconLibrary}
+          title={recentRail.title}
+          count={recentRail.items.length}
+          action={
+            <Button
+              variant="subtle"
+              size="xs"
+              rightSection={<IconChevronRight size={14} />}
+              onClick={() => setExpandedRail(recentRail)}
+            >
+              <Trans>Show more</Trans>
+            </Button>
+          }
+        />
+        {/* The covers of the series this was built from, with the server's prose subtitle as the
+            fallback for a reader whose seeds no longer resolve to library rows. */}
+        {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
+          <DiscoverSeedStrip seedIds={recentRail.seedIds} />
+        ) : (
+          recentRail.subtitle && (
             <Text c="var(--ink-3)" size="sm" mb="sm">
-              {cohortRail.subtitle}
+              {recentRail.subtitle}
             </Text>
-          )}
-          {/* Not an engine rail, despite being personalised: cohort items hydrate straight from the
-              MangaBaka dump, so they carry no `coRead`/`matchedTags`/`becauseOfTitle` and every
-              card's footer would read "Similar feel". The heading is the only grounds there is. */}
-          <DiscoverRailRow
-            items={cohortRail.items}
-            seriesIdFor={seriesIdFor}
-            onOpen={setDetailItem}
-          />
-        </div>
-      ) : cohortFetching ? (
-        <DiscoverRailSkeleton />
-      ) : null}
+          )
+        )}
+        <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      </div>
+    ) : recentFetching ? (
+      <DiscoverRailSkeleton engine />
+    ) : null,
 
-      <DiscoverCustomRails onOpen={setDetailItem} onShowMore={setExpandedRail} />
-
-      {trendingRail ? (
-        <div>
-          <SectionHeader
-            icon={IconFlame}
-            title={trendingRail.title}
-            count={trendingRail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(trendingRail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
-              Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}
-          <div className="discover-ranked">
-            <DiscoverRailRow
-              items={trendingRail.items}
-              seriesIdFor={seriesIdFor}
-              onOpen={setDetailItem}
+    sideinterests: (
+      <>
+        {sideInterests?.map((rail) => (
+          <div key={rail.key}>
+            <SectionHeader
+              icon={IconCompass}
+              title={rail.title}
+              count={rail.items.length}
+              action={
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  rightSection={<IconChevronRight size={14} />}
+                  onClick={() => setExpandedRail(rail)}
+                >
+                  <Trans>Show more</Trans>
+                </Button>
+              }
             />
+            {rail.seedIds && rail.seedIds.length > 0 ? (
+              <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
+            ) : (
+              <Text c="var(--ink-3)" size="sm" mb="sm">{rail.subtitle}</Text>
+            )}
+            <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
           </div>
-        </div>
-      ) : isFetching && !rails ? (
-        <DiscoverRailSkeleton />
-      ) : null}
+        ))}
+        {!sideInterests && sideInterestsFetching ? <DiscoverRailSkeleton engine /> : null}
+      </>
+    ),
 
-      {/* The rails, and whatever stands in for them. The failure and loading states live down here
-          rather than at the top of the page: the hero and the personalised rows come from other
-          endpoints and survive this one being down, so a bar above them mislabels the whole page as
-          broken. */}
+    cohort: cohortRail ? (
+      <div>
+        <SectionHeader
+          icon={IconUsers}
+          title={cohortRail.title}
+          count={cohortRail.items.length}
+          action={
+            <Button
+              variant="subtle"
+              size="xs"
+              rightSection={<IconChevronRight size={14} />}
+              onClick={() => setExpandedRail(cohortRail)}
+            >
+              <Trans>Show more</Trans>
+            </Button>
+          }
+        />
+        {cohortRail.subtitle && (
+          <Text c="var(--ink-3)" size="sm" mb="sm">
+            {cohortRail.subtitle}
+          </Text>
+        )}
+        {/* Not an engine rail, despite being personalised: cohort items hydrate straight from the
+            MangaBaka dump, so they carry no `coRead`/`matchedTags`/`becauseOfTitle` and every
+            card's footer would read "Similar feel". The heading is the only grounds there is. */}
+        <DiscoverRailRow items={cohortRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      </div>
+    ) : cohortFetching ? (
+      <DiscoverRailSkeleton />
+    ) : null,
+
+    trending: (
+      <>
+        {!on('catalogue') && catalogueStatus}
+        {trendingRail ? (
+          <div>
+            <SectionHeader
+              icon={IconFlame}
+              title={trendingRail.title}
+              count={trendingRail.items.length}
+              action={
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  rightSection={<IconChevronRight size={14} />}
+                  onClick={() => setExpandedRail(trendingRail)}
+                >
+                  <Trans>Show more</Trans>
+                </Button>
+              }
+            />
+            {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
+                Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}
+            <div className="discover-ranked">
+              <DiscoverRailRow items={trendingRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+            </div>
+          </div>
+        ) : isFetching && !rails ? (
+          <DiscoverRailSkeleton />
+        ) : null}
+      </>
+    ),
+
+    catalogue: (
       <div>
         <SectionHeader
           icon={IconCompass}
           title={t`Browse the catalogue`}
           action={
-            <Group gap={4} wrap="nowrap">
-              <AddRailButton placement="discover" />
-              <Button
-                variant="subtle"
-                size="xs"
-                leftSection={<IconAdjustmentsHorizontal size={14} />}
-                onClick={() =>
-                  setExpandedRail({
-                    key: 'catalogue',
-                    title: t`The whole catalogue`,
-                    feed: 'Popular',
-                    genre: null,
-                    items: [],
-                  })
-                }
-              >
-                <Trans>Filter the catalogue</Trans>
-              </Button>
-            </Group>
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconAdjustmentsHorizontal size={14} />}
+              onClick={() =>
+                setExpandedRail({
+                  key: 'catalogue',
+                  title: t`The whole catalogue`,
+                  feed: 'Popular',
+                  genre: null,
+                  items: [],
+                })
+              }
+            >
+              <Trans>Filter the catalogue</Trans>
+            </Button>
           }
         />
-        {error ? (
-          <Alert
-            color="var(--warn)"
-            variant="light"
-            icon={<IconAlertTriangle size={18} />}
-            title={t`Catalogue unavailable`}
-          >
-            <Stack gap="sm" align="flex-start">
-              <Text size="sm">{String(error)}</Text>
-              <Button
-                size="xs"
-                variant="default"
-                leftSection={<IconRefresh size={14} />}
-                loading={isFetching}
-                onClick={onRefresh}
-              >
-                <Trans>Try again</Trans>
-              </Button>
-            </Stack>
-          </Alert>
-        ) : isFetching && !rails ? (
-          <>
-            <Text c="var(--ink-3)" size="sm" mb="sm">
-              <Trans>Scanning the MangaBaka catalogue…</Trans>
-            </Text>
-            <DiscoverCatalogueSkeleton density={density.density} />
-          </>
-        ) : catalogueRails.length > 0 ? (
-          <DiscoverCatalogue
-            rails={catalogueRails}
-            cols={density.cols}
-            seriesIdFor={seriesIdFor}
-            onOpen={setDetailItem}
-            onShowMore={setExpandedRail}
-          />
-        ) : (
-          <EmptyState
-            icon={IconCompass}
-            title={t`Nothing to browse yet`}
-            description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
-          />
-        )}
+        {catalogueStatus ??
+          (isFetching && !rails ? (
+            <>
+              <Text c="var(--ink-3)" size="sm" mb="sm">
+                <Trans>Scanning the MangaBaka catalogue…</Trans>
+              </Text>
+              <DiscoverCatalogueSkeleton density={density.density} />
+            </>
+          ) : catalogueRails.length > 0 ? (
+            <DiscoverCatalogue
+              rails={catalogueRails}
+              cols={density.cols}
+              seriesIdFor={seriesIdFor}
+              onOpen={setDetailItem}
+              onShowMore={setExpandedRail}
+            />
+          ) : (
+            <EmptyState
+              icon={IconCompass}
+              title={t`Nothing to browse yet`}
+              description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
+            />
+          ))}
       </div>
+    ),
 
-      {genreRails && genreRails.length > 0 ? (
+    genres:
+      genreRails && genreRails.length > 0 ? (
         <div>
           <SectionHeader icon={IconLayoutGrid} title={t`Every genre`} count={genreRails.length} />
           <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
         </div>
       ) : genresFetching ? (
         <DiscoverGenreSkeleton />
-      ) : null}
+      ) : null,
+  }
+
+  const renderSection = (key: string) => {
+    if (!isRailKey(key)) return sections[key as DiscoverSectionKey]
+    const rail = discoverRails?.find((r) => r.id === railIdOf(key))
+    return rail ? (
+      <CustomRailSection rail={rail} limit={40} onOpen={setDetailItem} onShowMoreCatalogue={setExpandedRail} />
+    ) : null
+  }
+
+  const body = (
+    <div className="discover-density" data-density={density.density}>
+      {layout.filter((s) => s.enabled).map((s) => (
+        <Fragment key={s.key}>{renderSection(s.key)}</Fragment>
+      ))}
+
+      <Group justify="center" mt="xl">
+        <AddRailButton placement="discover" />
+      </Group>
 
       {expandedRail && (
         <FeedExpandModal
@@ -1415,12 +1516,13 @@ export default function DiscoverPage() {
         : 'browse'
 
   // The rails are cached for an hour on both sides, so the only way back to a fresh catalogue is
-  // this. It lives up here rather than in the tab so it can sit in the page header, and reads the
-  // same query the tab does: same key, so React Query serves it from cache and nothing extra is
-  // requested.
+  // this. It lives up here rather than in the tab so it can sit in the page header. The spinner
+  // watches the tab's query rather than running its own, which would fetch the catalogue even with
+  // every section that shows it switched off.
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const { isFetching: railsFetching } = useDiscover(refreshNonce, active === 'browse')
+  const railsFetching = useIsFetching({ queryKey: ['discover-rails'] }) > 0
   const refreshRails = useCallback(() => setRefreshNonce((n) => n + 1), [])
+  const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode(active === 'browse')
 
   // One density for the whole Discover tab, up here for the same reason as the refresh action: the
   // control belongs in the page header. Its own scope rather than `discover`, which the Recommended
@@ -1434,8 +1536,11 @@ export default function DiscoverPage() {
         title={t`Discover`}
         description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
         actions={
-          active === 'browse' ? (
+          active === 'browse' && !editing ? (
             <Group gap="xs" wrap="nowrap">
+              <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
+                <Trans>Edit layout</Trans>
+              </Button>
               <DensityControl
                 value={browseDensity.density}
                 onChange={browseDensity.setDensity}
@@ -1465,12 +1570,12 @@ export default function DiscoverPage() {
       >
         <Tabs.List>
           <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
-            Discover
+            <Trans>Discover</Trans>
           </Tabs.Tab>
-          <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
+          <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />} disabled={editing}>
             <Trans>Recommended</Trans>
           </Tabs.Tab>
-          <Tabs.Tab value="taste" leftSection={<IconHeartFilled size={16} />}>
+          <Tabs.Tab value="taste" leftSection={<IconHeartFilled size={16} />} disabled={editing}>
             <Trans>Your Taste</Trans>
           </Tabs.Tab>
         </Tabs.List>
@@ -1485,6 +1590,8 @@ export default function DiscoverPage() {
           refreshNonce={refreshNonce}
           onRefresh={refreshRails}
           density={browseDensity}
+          editing={editing}
+          onExitEditing={exitEditing}
         />
       )}
     </SurfaceFrame>

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useLabel, useLanguageChoice } from '../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -32,12 +32,9 @@ import {
 import {
   IconAlertTriangle,
   IconCheck,
-  IconChevronDown,
-  IconChevronUp,
   IconCopy,
   IconDownload,
-  IconGripVertical,
-  IconPencil,
+  IconLayoutDashboard,
   IconRefresh,
   IconTrash,
   IconUpload,
@@ -101,10 +98,6 @@ import {
   useSaveSourcePriority,
   useSaveUiSettings,
   useUiSettings,
-  HOME_SECTION_LABELS,
-  isRailKey,
-  railIdOf,
-  type HomeSection,
   type SeriesSections,
   type UiSettings,
   useSetEmbeddingModel,
@@ -134,10 +127,7 @@ import { SettingsIndex } from '../components/settings/SettingsIndex'
 import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
-import { useCustomRails, type CustomRail } from '../api/customRails'
 import { ApiError } from '../api/client'
-import { AddRailButton } from '../components/rails/CustomRailSection'
-import { CustomRailEditor } from '../components/rails/CustomRailEditor'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
@@ -1988,62 +1978,16 @@ function SeriesPageSection() {
 }
 
 /**
- * Which Home sections appear, in what order, and whether Home exists at all.
- *
- * Reorder is drag-and-drop, same mechanism as SourcePrioritySection: the real order only
- * changes on drop, rows shift purely visually (transform) while dragging. Up/down buttons
- * stay alongside as the keyboard-reachable equivalent.
+ * Whether Home exists at all, and the way into the page layout editors. The sections themselves are
+ * arranged on Home and Discover, in their edit mode, rather than from a list here.
  */
 function HomeSectionsSection() {
   const { t } = useLingui()
-  const renderLabel = useLabel()
   const { data: ui } = useUiSettings()
+  const { data: metadata } = useMetadataSettings()
   const patch = useUiPatch()
-  const sections = ui?.homeLayout.sections ?? []
   const homeEnabled = ui?.homeLayout.enabled ?? true
-  const { data: homeRails } = useCustomRails('home')
-  const [editingRail, setEditingRail] = useState<CustomRail | null>(null)
-  const railFor = (key: string) =>
-    isRailKey(key) ? homeRails?.find((r) => r.id === railIdOf(key)) : undefined
-
-  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null)
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
-  const [rowHeight, setRowHeight] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const write = (next: HomeSection[]) =>
-    patch?.({ homeLayout: { enabled: homeEnabled, sections: next } })
-
-  const move = (index: number, delta: number) => {
-    const target = index + delta
-    if (target < 0 || target >= sections.length) return
-    const next = [...sections]
-    ;[next[index], next[target]] = [next[target], next[index]]
-    write(next)
-  }
-
-  const toggle = (index: number, enabled: boolean) =>
-    write(sections.map((s, i) => (i === index ? { ...s, enabled } : s)))
-
-  function handleContainerDragOver(e: DragEvent) {
-    e.preventDefault()
-    if (dragFromIndex === null || !containerRef.current || rowHeight === 0) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const rawIndex = Math.floor((e.clientY - rect.top) / rowHeight)
-    const clamped = Math.min(Math.max(rawIndex, 0), sections.length - 1)
-    setHoverIndex(clamped)
-  }
-
-  function commitDrag() {
-    if (dragFromIndex !== null && hoverIndex !== null && dragFromIndex !== hoverIndex) {
-      const next = [...sections]
-      const [moved] = next.splice(dragFromIndex, 1)
-      next.splice(hoverIndex, 0, moved)
-      write(next)
-    }
-    setDragFromIndex(null)
-    setHoverIndex(null)
-  }
+  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
 
   return (
     <Panel>
@@ -2054,16 +1998,17 @@ function HomeSectionsSection() {
           </Title>
           <SettingsHelp>
             <Trans>
-              Which sections appear, and in what order. Turn Home off if you don&apos;t read in
-              Maki: the tab disappears and Library becomes the start page.
+              Arrange Home and Discover on the pages themselves: pick which sections show, drag them
+              into order and add your own rails. Turn Home off if you don&apos;t read in Maki: the
+              tab disappears and Library becomes the start page.
             </Trans>
           </SettingsHelp>
         </div>
         <Switch
           checked={homeEnabled}
-          disabled={!patch}
+          disabled={!patch || !ui}
           onChange={(e) =>
-            patch?.({ homeLayout: { enabled: e.currentTarget.checked, sections } })
+            ui && patch?.({ homeLayout: { ...ui.homeLayout, enabled: e.currentTarget.checked } })
           }
           aria-label={t`Enable the Home screen`}
         />
@@ -2071,108 +2016,27 @@ function HomeSectionsSection() {
 
       <StartPageSelect />
 
-      {homeEnabled && (
-        <Stack gap={6} ref={containerRef} onDragOver={handleContainerDragOver}>
-          {sections.map((section, index) => {
-            let shift = 0
-            if (dragFromIndex !== null && hoverIndex !== null && index !== dragFromIndex) {
-              if (dragFromIndex < hoverIndex && index > dragFromIndex && index <= hoverIndex)
-                shift = -1
-              else if (dragFromIndex > hoverIndex && index >= hoverIndex && index < dragFromIndex)
-                shift = 1
-            }
-            const rail = railFor(section.key)
-            // A rail's name is what the user typed, so it is shown as is, never translated.
-            const label = isRailKey(section.key)
-              ? (rail?.name ?? t`Custom rail`)
-              : renderLabel(HOME_SECTION_LABELS[section.key])
-            return (
-              <Group
-                key={section.key}
-                gap="xs"
-                wrap="nowrap"
-                px="xs"
-                py={6}
-                draggable={!!patch}
-                onDragStart={(e) => {
-                  const original = e.currentTarget
-                  const clone = original.cloneNode(true) as HTMLElement
-                  clone.style.position = 'fixed'
-                  clone.style.top = '-9999px'
-                  clone.style.left = '-9999px'
-                  clone.style.width = `${original.offsetWidth}px`
-                  clone.style.pointerEvents = 'none'
-                  document.body.appendChild(clone)
-                  e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-                  setTimeout(() => document.body.removeChild(clone), 0)
-                  setDragFromIndex(index)
-                  setHoverIndex(index)
-                  setRowHeight(original.getBoundingClientRect().height)
-                }}
-                onDragEnd={commitDrag}
-                style={{
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--mantine-radius-md)',
-                  opacity: dragFromIndex === index ? 0 : section.enabled ? 1 : 0.55,
-                  cursor: patch ? 'grab' : undefined,
-                  transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
-                  transition: 'transform 150ms ease',
-                  pointerEvents: dragFromIndex !== null && index !== dragFromIndex ? 'none' : undefined,
-                }}
-              >
-                <IconGripVertical size={14} opacity={0.5} />
-                <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  size="sm"
-                  disabled={index === 0 || !patch}
-                  aria-label={t`Move ${label} up`}
-                  onClick={() => move(index, -1)}
-                >
-                  <IconChevronUp size={15} />
-                </ActionIcon>
-                <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  size="sm"
-                  disabled={index === sections.length - 1 || !patch}
-                  aria-label={t`Move ${label} down`}
-                  onClick={() => move(index, 1)}
-                >
-                  <IconChevronDown size={15} />
-                </ActionIcon>
-                <Text size="sm" fw={550} style={{ flex: 1 }}>
-                  {label}
-                </Text>
-                {rail && (
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--neutral)"
-                    size="sm"
-                    aria-label={t`Edit ${label}`}
-                    onClick={() => setEditingRail(rail)}
-                  >
-                    <IconPencil size={15} />
-                  </ActionIcon>
-                )}
-                <Switch
-                  size="sm"
-                  checked={section.enabled}
-                  disabled={!patch}
-                  onChange={(e) => toggle(index, e.currentTarget.checked)}
-                  aria-label={t`Show ${label}`}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  draggable={false}
-                />
-              </Group>
-            )
-          })}
-          <Group mt={4}>
-            <AddRailButton placement="home" />
-          </Group>
-        </Stack>
-      )}
-      {editingRail && <CustomRailEditor rail={editingRail} onClose={() => setEditingRail(null)} />}
+      <Group gap="xs" mt="md">
+        <Button
+          component={Link}
+          to="/home?edit=1"
+          variant="default"
+          leftSection={<IconLayoutDashboard size={16} />}
+          disabled={!homeEnabled}
+        >
+          <Trans>Edit Home layout</Trans>
+        </Button>
+        {discoverAvailable && (
+          <Button
+            component={Link}
+            to="/discover?edit=1"
+            variant="default"
+            leftSection={<IconLayoutDashboard size={16} />}
+          >
+            <Trans>Edit Discover layout</Trans>
+          </Button>
+        )}
+      </Group>
     </Panel>
   )
 }

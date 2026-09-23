@@ -44,17 +44,55 @@ export interface CustomRailDraft {
 const SOURCES: CustomRailSource[] = ['library', 'recommendations', 'catalogue']
 
 /**
- * Creates or edits one custom rail. Pass `rail` to edit it, or `draft` to create a new one from
- * whatever the caller already had on screen. Mount it only while open, so its state starts fresh.
+ * Creates or edits one custom rail in a modal. Pass `rail` to edit it, or `draft` to create a new
+ * one from whatever the caller already had on screen. Mount it only while open, so its state
+ * starts fresh.
  */
 export function CustomRailEditor({
   rail,
   draft,
+  onSaved,
   onClose,
 }: {
   rail?: CustomRail
   draft?: CustomRailDraft
+  onSaved?: (rail: CustomRail) => void
   onClose: () => void
+}) {
+  const { t } = useLingui()
+  return (
+    <Modal opened onClose={onClose} title={rail ? t`Edit rail` : t`New rail`} size="xl">
+      <CustomRailForm
+        rail={rail}
+        draft={draft}
+        onSaved={(saved) => {
+          onSaved?.(saved)
+          onClose()
+        }}
+        onCancel={onClose}
+      />
+    </Modal>
+  )
+}
+
+/**
+ * The rail's fields and its save button, without a frame, so the layout editor can show them in
+ * its own side panel. Saving writes the rail straight away.
+ *
+ * @param placementLocked Hides the Home/Discover choice, for a caller that already decided.
+ */
+export function CustomRailForm({
+  rail,
+  draft,
+  onSaved,
+  onCancel,
+  placementLocked = false,
+}: {
+  rail?: CustomRail
+  draft?: CustomRailDraft
+  onSaved?: (rail: CustomRail) => void
+  onCancel?: () => void
+  placementLocked?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -119,9 +157,9 @@ export function CustomRailEditor({
     }
     const body = { name: trimmed, placement, spec }
     const options = {
-      onSuccess: () => {
+      onSuccess: (saved: CustomRail) => {
         notifications.show({ color: 'green', message: rail ? now`Rail saved` : now`Rail added` })
-        onClose()
+        onSaved?.(saved)
       },
       onError: (err: unknown) => setError(String(err)),
     }
@@ -130,7 +168,6 @@ export function CustomRailEditor({
   }
 
   return (
-    <Modal opened onClose={onClose} title={rail ? t`Edit rail` : t`New rail`} size="xl">
       <Stack gap="md">
         <TextInput
           label={t`Name`}
@@ -144,7 +181,8 @@ export function CustomRailEditor({
           }}
         />
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, sm: placementLocked ? 1 : 2 }} spacing="md">
+          {!placementLocked && (
           <Stack gap={4}>
             <Text size="sm" fw={500}>
               <Trans>Show on</Trans>
@@ -158,6 +196,7 @@ export function CustomRailEditor({
               ]}
             />
           </Stack>
+          )}
           <Stack gap={4}>
             <Text size="sm" fw={500}>
               <Trans>Titles from</Trans>
@@ -241,15 +280,16 @@ export function CustomRailEditor({
             {count != null && <Plural value={count} one="# title matches" other="# titles match" />}
           </Text>
           <Group gap="xs">
-            <Button variant="subtle" onClick={onClose}>
-              <Trans>Cancel</Trans>
-            </Button>
+            {onCancel && (
+              <Button variant="subtle" onClick={onCancel}>
+                <Trans>Cancel</Trans>
+              </Button>
+            )}
             <Button loading={pending} onClick={save}>
               {rail ? <Trans>Save</Trans> : <Trans>Add rail</Trans>}
             </Button>
           </Group>
         </Group>
       </Stack>
-    </Modal>
   )
 }

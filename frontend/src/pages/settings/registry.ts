@@ -147,7 +147,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'account',
     title: msg`Home & start page`,
     keywords: msg({
-      message: `home sections, rails, continue reading, recently added, section order, disable home, start page, landing page, opens on, default page`,
+      message: `home sections, rails, continue reading, recently added, section order, edit layout, drag, reorder, hero, glance, discover layout, disable home, start page, landing page, opens on, default page`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

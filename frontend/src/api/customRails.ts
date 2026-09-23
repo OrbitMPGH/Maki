@@ -113,12 +113,33 @@ export interface SaveCustomRail {
   spec: CustomRailSpec
 }
 
+/**
+ * Puts a rail into (or takes it out of) the cached lists straight away, so a page layout being
+ * edited sees it before the refetch lands.
+ */
+function usePatchRailLists() {
+  const queryClient = useQueryClient()
+  return (change: (rails: CustomRail[], placement: string) => CustomRail[]) => {
+    for (const placement of ['all', 'home', 'discover']) {
+      queryClient.setQueryData<CustomRail[]>(['custom-rails', placement], (rails) =>
+        rails ? change(rails, placement) : rails,
+      )
+    }
+  }
+}
+
 export function useCreateCustomRail() {
   const invalidate = useInvalidateRails()
+  const patch = usePatchRailLists()
   return useMutation({
     mutationFn: (body: SaveCustomRail) =>
       api<CustomRail>('/rails', { method: 'POST', body: JSON.stringify(body) }),
-    onSuccess: invalidate,
+    onSuccess: (rail) => {
+      patch((rails, placement) =>
+        placement === 'all' || placement === rail.placement ? [...rails, rail] : rails,
+      )
+      invalidate()
+    },
   })
 }
 
@@ -133,18 +154,13 @@ export function useUpdateCustomRail() {
 
 export function useDeleteCustomRail() {
   const invalidate = useInvalidateRails()
+  const patch = usePatchRailLists()
   return useMutation({
     mutationFn: (id: number) => api<void>(`/rails/${id}`, { method: 'DELETE' }),
-    onSuccess: invalidate,
-  })
-}
-
-export function useReorderCustomRails() {
-  const invalidate = useInvalidateRails()
-  return useMutation({
-    mutationFn: (body: { placement: CustomRailPlacement; ids: number[] }) =>
-      api<CustomRail[]>('/rails/order', { method: 'PUT', body: JSON.stringify(body) }),
-    onSuccess: invalidate,
+    onSuccess: (_result, id) => {
+      patch((rails) => rails.filter((r) => r.id !== id))
+      invalidate()
+    },
   })
 }
 

@@ -571,12 +571,13 @@ export function useDiscoverRecentActivity(refreshNonce = 0, enabled = true) {
 }
 
 /** Small personalised rows for recurring minority themes in the visible library. */
-export function useDiscoverSideInterests(refreshNonce = 0) {
+export function useDiscoverSideInterests(refreshNonce = 0, enabled = true) {
   return useQuery({
     queryKey: ['discover-side-interests', refreshNonce],
     queryFn: () => api<DiscoverRail[]>(
       `/recommendations/discover/side-interests${refreshNonce > 0 ? '?refresh=true' : ''}`,
     ),
+    enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
     meta: { silent: true },
@@ -621,13 +622,14 @@ export function useDiscoverCohort(
  * One "Popular in {genre}" rail per genre, for the Discover Genres tab. Bump `refreshNonce` to
  * recompute the server-side cache; nonce 0 reads the cache.
  */
-export function useDiscoverGenres(refreshNonce = 0) {
+export function useDiscoverGenres(refreshNonce = 0, enabled = true) {
   return useQuery({
     queryKey: ['discover-genres', refreshNonce],
     queryFn: () =>
       api<DiscoverRail[]>(
         `/recommendations/discover/genres${refreshNonce > 0 ? '?refresh=true' : ''}`,
       ),
+    enabled,
     staleTime: 60 * 60 * 1000,
     retry: false,
   })
@@ -824,62 +826,114 @@ export function useHomeRecentlyAdded(limit = 12, enabled = true) {
   })
 }
 
-/** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server. */
+/** Home section keys, in the order they ship. Mirrors `HomeSections.All` on the server exactly. */
 export const HOME_SECTIONS = [
-  'continue',
+  'glance',
   'downloading',
-  'recent',
+  'continue',
   'jumpback',
+  'recent',
   'recommended',
   'popular',
-  'stats',
-  'progress',
-  'toread',
 ] as const
 
 export type HomeSectionKey = (typeof HOME_SECTIONS)[number]
 
 /**
- * Human labels for the settings list. Home renders its own headings from its own icons.
+ * Human labels for the layout editor. Home renders its own headings from its own icons.
  *
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
  * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
  */
 export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
+  glance: msg`At a glance`,
   continue: msg`Continue reading`,
   downloading: msg`Downloading now`,
   recent: msg`Recently added`,
   jumpback: msg`Jump back in`,
   recommended: msg`You might like`,
   popular: msg`Currently popular`,
-  stats: msg`Library at a glance`,
+}
+
+/** The panels of the glance section, in the order they ship. Mirrors `HomeGlancePanels.All`. */
+export const HOME_GLANCE_PANELS = ['stats', 'progress', 'toread'] as const
+
+export type HomeGlancePanel = (typeof HOME_GLANCE_PANELS)[number]
+
+export const HOME_GLANCE_PANEL_LABELS: Record<HomeGlancePanel, MessageDescriptor> = {
+  stats: msg`Library counts`,
   progress: msg`Your progress`,
   toread: msg`Waiting to read`,
 }
 
-/** A custom rail's key in the Home layout. Not in {@link HOME_SECTIONS}: which ones exist is per user. */
-export type HomeRailKey = `rail:${number}`
+/** Sections that can lead with large tiles, and whether they do by default. Mirrors the server. */
+export const HOME_HERO_DEFAULTS: Record<string, boolean> = { continue: true, jumpback: false }
 
-export type HomeLayoutKey = HomeSectionKey | HomeRailKey
+/** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
+export const DISCOVER_SECTIONS = [
+  'hero',
+  'taste',
+  'recent',
+  'sideinterests',
+  'cohort',
+  'trending',
+  'catalogue',
+  'genres',
+] as const
 
-export function isRailKey(key: string): key is HomeRailKey {
+export type DiscoverSectionKey = (typeof DISCOVER_SECTIONS)[number]
+
+export const DISCOVER_SECTION_LABELS: Record<DiscoverSectionKey, MessageDescriptor> = {
+  hero: msg`Spotlight`,
+  taste: msg`Your taste`,
+  recent: msg`Based on your recent activity`,
+  sideinterests: msg`Side interests`,
+  cohort: msg`Readers like you`,
+  trending: msg`Trending now`,
+  catalogue: msg`Browse the catalogue`,
+  genres: msg`Every genre`,
+}
+
+/** A custom rail's key in a page layout. Not in the section lists: which ones exist is per user. */
+export type RailKey = `rail:${number}`
+export type HomeRailKey = RailKey
+
+export type HomeLayoutKey = HomeSectionKey | RailKey
+
+export function isRailKey(key: string): key is RailKey {
   return /^rail:\d+$/.test(key)
 }
 
-export function railIdOf(key: HomeRailKey): number {
+export function railIdOf(key: RailKey): number {
   return Number(key.slice('rail:'.length))
 }
 
-export interface HomeSection {
-  key: HomeLayoutKey
+export interface LayoutPanel {
+  key: string
   enabled: boolean
 }
+
+/** One section of a user-arranged page. Mirrors `PageSection` on the server. */
+export interface PageSection<K extends string = string> {
+  key: K | RailKey
+  enabled: boolean
+  /** Leads with large tiles. Set on sections that support it, null elsewhere. */
+  hero?: boolean | null
+  /** The parts of a multi-panel section, in order. Null elsewhere. */
+  panels?: LayoutPanel[] | null
+}
+
+export type HomeSection = PageSection<HomeSectionKey>
 
 export interface HomeLayout {
   /** False turns Home off entirely: no tab, no route, and "/" can't resolve there. */
   enabled: boolean
   /** Always every known key, in the user's order; the server merges before sending. */
   sections: HomeSection[]
+}
+
+export interface DiscoverLayout {
+  sections: PageSection<DiscoverSectionKey>[]
 }
 
 /** Which supplementary rails the series page shows. Both default on. */
@@ -905,6 +959,8 @@ export interface UiSettings {
    * interface is ordinary rather than an edge case.
    */
   language: string
+  /** How Discover's Browse tab is arranged. Leaving it out of a save keeps the stored one. */
+  discoverLayout?: DiscoverLayout | null
 }
 
 /** Which page "/" resolves to, and how Home is laid out. Server-stored, so it follows the user. */
@@ -921,11 +977,32 @@ export function useSaveUiSettings() {
   return useMutation({
     mutationFn: (settings: UiSettings) =>
       api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(settings) }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'ui'] })
+    onMutate: () => queryClient.getQueryData<UiSettings>(['settings', 'ui'])?.titleLanguage,
+    onSuccess: (saved, _settings, previousTitleLanguage) => {
+      queryClient.setQueryData(['settings', 'ui'], saved)
       // Titles are resolved server-side, so a language change only shows up on the next fetch.
-      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      // Only then: reloading the whole library on every layout save is a lot of work for nothing.
+      if (saved.titleLanguage !== previousTitleLanguage) {
+        void queryClient.invalidateQueries({ queryKey: ['series'] })
+      }
     },
+  })
+}
+
+/** Saves one page's section layout, and nothing else, in a single request. */
+export function useSavePageLayout() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ page, sections }: { page: 'home' | 'discover'; sections: PageSection[] }) => {
+      const ui = queryClient.getQueryData<UiSettings>(['settings', 'ui'])
+      if (!ui) throw new Error('Settings not loaded')
+      const next: UiSettings =
+        page === 'home'
+          ? { ...ui, homeLayout: { ...ui.homeLayout, sections: sections as HomeSection[] }, discoverLayout: null }
+          : { ...ui, discoverLayout: { sections: sections as PageSection<DiscoverSectionKey>[] } }
+      return api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(next) })
+    },
+    onSuccess: (saved) => queryClient.setQueryData(['settings', 'ui'], saved),
   })
 }
 

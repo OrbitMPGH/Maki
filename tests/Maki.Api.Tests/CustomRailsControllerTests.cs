@@ -156,38 +156,6 @@ public sealed class CustomRailsControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Reorder_applies_the_requested_order_and_appends_unnamed_ids_after_it()
-    {
-        var alice = _db.SeedUser("alice");
-        var controller = Controller(alice);
-        var a = Body<CustomRailDto>(await controller.Create(Request("A", CustomRailPlacements.Discover), CancellationToken.None));
-        var b = Body<CustomRailDto>(await controller.Create(Request("B", CustomRailPlacements.Discover), CancellationToken.None));
-        var c = Body<CustomRailDto>(await controller.Create(Request("C", CustomRailPlacements.Discover), CancellationToken.None));
-
-        var reordered = Body<IEnumerable<CustomRailDto>>(await controller.Reorder(
-            new ReorderCustomRailsRequest(CustomRailPlacements.Discover, [c.Id, a.Id]), CancellationToken.None)).ToList();
-
-        Assert.Equal([c.Id, a.Id, b.Id], reordered.Select(r => r.Id));
-        Assert.Equal([0, 1, 2], reordered.Select(r => r.SortOrder));
-    }
-
-    [Fact]
-    public async Task Reorder_ignores_ids_that_are_not_the_callers_rails()
-    {
-        var alice = _db.SeedUser("alice");
-        var bob = _db.SeedUser("bob");
-        var mine = Body<CustomRailDto>(await Controller(alice).Create(
-            Request(placement: CustomRailPlacements.Discover), CancellationToken.None));
-        var theirs = Body<CustomRailDto>(await Controller(bob).Create(
-            Request(placement: CustomRailPlacements.Discover), CancellationToken.None));
-
-        var reordered = Body<IEnumerable<CustomRailDto>>(await Controller(alice).Reorder(
-            new ReorderCustomRailsRequest(CustomRailPlacements.Discover, [theirs.Id, mine.Id]), CancellationToken.None));
-
-        Assert.Equal([mine.Id], reordered.Select(r => r.Id));
-    }
-
-    [Fact]
     public async Task List_filters_by_placement()
     {
         var alice = _db.SeedUser("alice");

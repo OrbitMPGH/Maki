@@ -11,8 +11,9 @@ namespace Maki.Api.Controllers;
 /// <summary>
 /// Custom rails: a named filter plus a source, drawn as a row on Home or Discover. Private to one
 /// user and stored in <c>SavedFilters</c> with the placement as the scope, so the preset
-/// controllers never see them. Home rails are ordered by the Home layout (<c>rail:{id}</c> keys);
-/// Discover rails by <see cref="SavedFilter.SortOrder"/>.
+/// controllers never see them. Both pages order their rails in their own layout (<c>rail:{id}</c>
+/// keys in <see cref="HomeLayoutSpec"/> and <see cref="DiscoverLayoutSpec"/>);
+/// <see cref="SavedFilter.SortOrder"/> is only the order a layout first places new rails in.
 /// </summary>
 [ApiController]
 [Route("api/v1/rails")]
@@ -129,36 +130,6 @@ public class CustomRailsController(ILocalizer localizer, MakiDbContext db, Custo
         return NoContent();
     }
 
-    /// <summary>
-    /// Sets the order of one placement's rails. Ids not named keep their place after the named ones;
-    /// ids that are not the caller's rails are ignored.
-    /// </summary>
-    [HttpPut("order")]
-    public async Task<IActionResult> Reorder([FromBody] ReorderCustomRailsRequest request, CancellationToken ct)
-    {
-        if (CustomRailPlacements.ScopeFor(request.Placement) is not { } scope)
-        {
-            return this.Fail(localizer, "error.customRails.unknownPlacement");
-        }
-
-        var list = await Rails()
-            .Where(f => f.Scope == scope)
-            .OrderBy(f => f.SortOrder)
-            .ThenBy(f => f.Id)
-            .ToListAsync(ct);
-        var wanted = (request.Ids ?? []).Distinct().ToList();
-        var ordered = list
-            .OrderBy(f => wanted.IndexOf(f.Id) is var at && at >= 0 ? at : int.MaxValue)
-            .ToList();
-        for (var i = 0; i < ordered.Count; i++)
-        {
-            ordered[i].SortOrder = i;
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Ok(ordered.Select(ToDto));
-    }
-
     [HttpGet("{id:int}/items")]
     public async Task<IActionResult> Items(int id, [FromQuery] int limit = 20, CancellationToken ct = default)
     {
@@ -186,7 +157,5 @@ public class CustomRailsController(ILocalizer localizer, MakiDbContext db, Custo
 public record CustomRailDto(int Id, string Name, string Placement, CustomRailSpec Spec, int SortOrder);
 
 public record SaveCustomRailRequest(string? Name, string? Placement, CustomRailSpec? Spec);
-
-public record ReorderCustomRailsRequest(string? Placement, IReadOnlyList<int>? Ids);
 
 public record CountCustomRailRequest(CustomRailSpec? Spec);
