@@ -1118,6 +1118,35 @@ public class SettingsController(
         return Ok(new KavitaUserSetting(await kavitaUser.ResolveAsync(ct)));
     }
 
+    /// <summary>
+    /// Proxies Kavita's library list so the scrobble library filter can be picked by name instead of
+    /// typed as raw ids.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("kavita/libraries")]
+    public async Task<IActionResult> GetKavitaLibraries(CancellationToken ct)
+    {
+        var url = await settings.GetAsync(SettingKeys.KavitaUrl, ct);
+        var apiKey = await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
+        }
+
+        try
+        {
+            var libraries = await kavita.GetLibrariesAsync(url, apiKey, ct);
+            return Ok(libraries.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase).Select(l => new { l.Id, l.Name }));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException
+                                   && !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Could not list Kavita libraries");
+            return StatusCode(StatusCodes.Status502BadGateway,
+                new { code = "error.settings.kavitaNoResponse", error = localizer.Get("error.settings.kavitaNoResponse") });
+        }
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpPost("kavita/test")]
     public async Task<IActionResult> TestKavita([FromBody] KavitaSettings request, CancellationToken ct)

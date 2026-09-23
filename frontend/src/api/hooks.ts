@@ -2408,6 +2408,8 @@ export function useSaveConnectionSettings<T>(name: ConnectionName) {
       api<T>(`/settings/${name}`, { method: 'PUT', body: JSON.stringify(value) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', name] })
+      // The scrobble card's library picker lists Kavita's libraries through this connection.
+      if (name === 'kavita') void queryClient.invalidateQueries({ queryKey: ['kavita-libraries'] })
     },
   })
 }
@@ -2450,6 +2452,22 @@ export function useSaveProwlarrOptions() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'prowlarr-options'] })
     },
+  })
+}
+
+export interface KavitaLibrary {
+  id: number
+  name: string | null
+}
+
+/** Kavita's libraries, for the scrobble library filter. Admin-only on the server. */
+export function useKavitaLibraries(enabled: boolean) {
+  return useQuery({
+    queryKey: ['kavita-libraries'],
+    queryFn: () => api<KavitaLibrary[]>('/settings/kavita/libraries'),
+    enabled,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   })
 }
 

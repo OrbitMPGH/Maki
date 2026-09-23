@@ -1201,7 +1201,7 @@ msgid "A chapter finished downloading and imported."
 msgstr "La descarga de un capítulo terminó y se importó."
 
 #: src/pages/SettingsPage.tsx
-msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit. Takes effect after a restart."
+msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit."
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -1590,6 +1590,10 @@ msgstr "Todos los capítulos descargados leídos"
 msgid "All findings"
 msgstr "Todos los hallazgos"
 
+#: src/pages/SettingsPage.tsx
+msgid "All libraries"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "All optional: fill in only what you use. Everything here can be changed later in Settings."
@@ -1721,9 +1725,8 @@ msgstr "AniList"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
-msgstr "anilist, myanimelist, mal, mangabaka, kitsu, rastreadores, oauth, id de cliente, secreto de cliente, intervalo de sincronización, pendiente de lectura"
+msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read, kavita libraries"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -2619,7 +2622,7 @@ msgid "Chapters already listed keep whatever you set on them."
 msgstr "Los capítulos ya listados conservan lo que hayas establecido en ellos."
 
 #: src/pages/SettingsPage.tsx
-msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected. Takes effect after a restart."
+msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected."
 msgstr ""
 
 #: src/api/inbox.ts
@@ -2904,11 +2907,6 @@ msgstr ""
 msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
 msgstr ""
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Comma-separated; empty = scrobble all libraries"
-msgstr "Separados por comas; vacío = hacer scrobble de todas las bibliotecas"
-
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
 msgid "Compact"
@@ -3175,6 +3173,10 @@ msgstr "No se pudieron cargar las señales de anime: {0}"
 #, fuzzy
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr "No se pudieron cargar los indexadores de Prowlarr: {indexersErrorMessage}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not load libraries from Kavita: {kavitaLibrariesErrorMessage}"
+msgstr ""
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -5215,9 +5217,8 @@ msgid "Kavita"
 msgstr "Kavita"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Kavita library ids"
-msgstr "ID de bibliotecas de Kavita"
+msgid "Kavita libraries"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
@@ -5394,6 +5395,10 @@ msgstr "Déjalo en blanco para conservar el actual"
 #, fuzzy
 msgid "Leave both boxes empty to ignore."
 msgstr "Deja ambas casillas vacías para ignorarlo."
+
+#: src/pages/SettingsPage.tsx
+msgid "Leave empty to scrobble every library."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -5859,6 +5864,10 @@ msgstr "Artes marciales"
 #, fuzzy
 msgid "Match"
 msgstr "Coincidir"
+
+#: src/theme-context.tsx
+msgid "Match system"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -7418,9 +7427,8 @@ msgid "Pick an accent colour or the light theme. Applies instantly, remembered o
 msgstr "Elige un color de acento o el tema claro. Se aplica al instante y se recuerda en este dispositivo."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Pick an accent colour, or switch to the light theme. Applies instantly and is remembered on this device."
-msgstr "Elige un color de acento o cambia al tema claro. Se aplica al instante y se recuerda en este dispositivo."
+msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -10180,9 +10188,8 @@ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "theme, dark mode, light mode, accent colour, accent color, colour"
-msgstr "tema, modo oscuro, modo claro, color de acento, color"
+msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

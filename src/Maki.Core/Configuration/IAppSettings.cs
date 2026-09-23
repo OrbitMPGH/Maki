@@ -283,15 +283,15 @@ public static class SettingKeys
     public const string ProgressLastNotifiedLevel = "progress.lastnotifiedlevel";
 
     /// <summary>
-    /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
-    /// fixed for the process lifetime, so a change needs a restart to take effect.
+    /// How many scraper chapter downloads run at once. The worker re-reads it every few seconds, so a
+    /// change applies without a restart; lowering it retires workers after their current item.
     /// </summary>
     public const string DownloadConcurrentChapters = "download.concurrentchapters";
 
     /// <summary>
     /// Wall-clock cap on one scraper chapter download before the worker abandons it and marks it
-    /// Failed (so the normal retry backoff picks it up). Default 120; 0 disables the cap. Read once
-    /// at startup alongside <see cref="DownloadConcurrentChapters"/>.
+    /// Failed (so the normal retry backoff picks it up). Default 120; 0 disables the cap. Re-read
+    /// alongside <see cref="DownloadConcurrentChapters"/>, and applied to each item as it starts.
     /// <para>
     /// Exists because a worker held by an item that never finishes is indistinguishable from a dead
     /// queue: the row keeps an in-flight status so the orphan sweep sees it as owned and skips it,

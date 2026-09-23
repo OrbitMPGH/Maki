@@ -11,6 +11,11 @@ namespace Maki.Api.Services;
 /// Consumes the download queue channel with a bounded number of concurrent
 /// chapter workers. On startup, in-flight items from a previous run are reset
 /// to Queued and re-signaled.
+/// <para>
+/// The worker count and the per-item timeout are re-read on every cooldown poll, so a change in
+/// Settings applies within a few seconds. All <see cref="MaxConcurrentChapters"/> loops exist from
+/// the start; the ones above the configured count stay parked and read nothing from the channel.
+/// </para>
 /// </summary>
 public class DownloadWorkerHostedService(
     DownloadQueueService queue,
@@ -24,16 +29,20 @@ public class DownloadWorkerHostedService(
     private static readonly TimeSpan CooldownPollInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan WorkerRestartDelay = TimeSpan.FromSeconds(10);
 
-    private TimeSpan _itemTimeout = TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
+    private volatile int _concurrency = DefaultConcurrentChapters;
+
+    // Minutes rather than a TimeSpan so it can be volatile; 0 means no limit.
+    private volatile int _itemTimeoutMinutes = DefaultItemTimeoutMinutes;
+
+    private TimeSpan ItemTimeout =>
+        _itemTimeoutMinutes > 0 ? TimeSpan.FromMinutes(_itemTimeoutMinutes) : Timeout.InfiniteTimeSpan;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await RecoverAsync(stoppingToken);
+        await RefreshSettingsAsync(stoppingToken);
 
-        _itemTimeout = await ResolveItemTimeoutAsync(stoppingToken);
-
-        var concurrency = await ResolveConcurrencyAsync(stoppingToken);
-        var workers = Enumerable.Range(0, concurrency)
+        var workers = Enumerable.Range(0, MaxConcurrentChapters)
             .Select(i => SuperviseAsync($"worker {i}", ct => WorkerLoopAsync(i, ct), stoppingToken))
             .Append(SuperviseAsync("cooldown poll", PeriodicWakeAsync, stoppingToken))
             .ToArray();
@@ -88,12 +97,26 @@ public class DownloadWorkerHostedService(
         using var timer = new PeriodicTimer(CooldownPollInterval);
         while (await timer.WaitForNextTickAsync(ct))
         {
+            await RefreshSettingsAsync(ct);
             await queue.SignalAsync(0, ct);
         }
     }
 
+    /// <summary>Both resolvers swallow their own failures, so this never throws out of the poll loop.</summary>
+    private async Task RefreshSettingsAsync(CancellationToken ct)
+    {
+        var concurrency = await ResolveConcurrencyAsync(ct);
+        if (concurrency != _concurrency)
+        {
+            logger.LogInformation("Download concurrency now {Concurrency}", concurrency);
+            _concurrency = concurrency;
+        }
+
+        _itemTimeoutMinutes = await ResolveItemTimeoutMinutesAsync(ct);
+    }
+
     /// <summary>
-    /// Reads the configured worker count once. Clamped because each worker is a live scraper
+    /// Reads the configured worker count. Clamped because each worker is a live scraper
     /// connection — too many is a fast route to a site-wide rate limit, which stalls every
     /// download rather than speeding any up.
     /// </summary>
@@ -110,14 +133,9 @@ public class DownloadWorkerHostedService(
                 return DefaultConcurrentChapters;
             }
 
-            var clamped = Math.Clamp(configured, 1, MaxConcurrentChapters);
-            if (clamped != configured)
-            {
-                logger.LogWarning(
-                    "Download concurrency {Configured} out of range; using {Clamped}", configured, clamped);
-            }
-
-            return clamped;
+            // No warning when out of range: this runs every few seconds, and the settings endpoint
+            // already refuses values outside 1..MaxConcurrentChapters.
+            return Math.Clamp(configured, 1, MaxConcurrentChapters);
         }
         catch (Exception ex)
         {
@@ -127,10 +145,10 @@ public class DownloadWorkerHostedService(
     }
 
     /// <summary>
-    /// Reads the per-item wall-clock cap once. A non-positive value means no cap, which is the
+    /// Reads the per-item wall-clock cap in minutes. A non-positive value means no cap, which is the
     /// escape hatch for somebody whose source is legitimately slower than any number we'd pick.
     /// </summary>
-    private async Task<TimeSpan> ResolveItemTimeoutAsync(CancellationToken ct)
+    private async Task<int> ResolveItemTimeoutMinutesAsync(CancellationToken ct)
     {
         try
         {
@@ -140,16 +158,16 @@ public class DownloadWorkerHostedService(
 
             if (!int.TryParse(raw, out var minutes))
             {
-                return TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
+                return DefaultItemTimeoutMinutes;
             }
 
-            return minutes > 0 ? TimeSpan.FromMinutes(minutes) : Timeout.InfiniteTimeSpan;
+            return Math.Max(minutes, 0);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Could not read the download item timeout; using {Default} min",
                 DefaultItemTimeoutMinutes);
-            return TimeSpan.FromMinutes(DefaultItemTimeoutMinutes);
+            return DefaultItemTimeoutMinutes;
         }
     }
 
@@ -206,9 +224,27 @@ public class DownloadWorkerHostedService(
     /// </summary>
     private async Task WorkerLoopAsync(int workerId, CancellationToken ct)
     {
-        await foreach (var _ in queue.Reader.ReadAllAsync(ct))
+        while (!ct.IsCancellationRequested)
         {
-            while (true)
+            // Parked above the configured count: read nothing, so the signal goes to a live worker.
+            if (workerId >= _concurrency)
+            {
+                await Task.Delay(CooldownPollInterval, ct);
+                continue;
+            }
+
+            if (!await queue.Reader.WaitToReadAsync(ct))
+            {
+                return; // clean exit: the channel completed
+            }
+
+            if (!queue.Reader.TryRead(out _))
+            {
+                continue;
+            }
+
+            // Re-checked per item so lowering the count retires a worker after its current download.
+            while (workerId < _concurrency)
             {
                 int queueItemId;
                 try
@@ -234,6 +270,7 @@ public class DownloadWorkerHostedService(
                     break;
                 }
 
+                var itemTimeout = ItemTimeout;
                 try
                 {
                     // A RateLimited outcome means ChapterDownloadProcessor already parked the item
@@ -250,7 +287,7 @@ public class DownloadWorkerHostedService(
                     // worker giving up on it.
                     var workCancellation = queue.WorkCancellationToken(queueItemId);
                     using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct, workCancellation);
-                    deadline.CancelAfter(_itemTimeout);
+                    deadline.CancelAfter(itemTimeout);
                     await processor.ProcessAsync(queueItemId, deadline.Token);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -266,10 +303,10 @@ public class DownloadWorkerHostedService(
                     // The per-item deadline, not a shutdown. Fail it so the retry backoff owns what
                     // happens next, and free the worker for the rest of the queue.
                     logger.LogError("Worker {Worker} abandoned queue item {Id} after {Minutes} min",
-                        workerId, queueItemId, _itemTimeout.TotalMinutes);
+                        workerId, queueItemId, itemTimeout.TotalMinutes);
                     await TryFailAsync(
                         queueItemId,
-                        new TimeoutException($"Download gave up after {_itemTimeout.TotalMinutes:0} minutes"),
+                        new TimeoutException($"Download gave up after {itemTimeout.TotalMinutes:0} minutes"),
                         ct);
                 }
                 catch (Exception ex)

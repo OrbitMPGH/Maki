@@ -96,6 +96,7 @@ import {
   useSaveMonitoringSettings,
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
+  useKavitaLibraries,
   useSaveSourceLanguages,
   useSaveSourcePriority,
   useSaveUiSettings,
@@ -134,6 +135,7 @@ import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { useCustomRails, type CustomRail } from '../api/customRails'
+import { ApiError } from '../api/client'
 import { AddRailButton } from '../components/rails/CustomRailSection'
 import { CustomRailEditor } from '../components/rails/CustomRailEditor'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
@@ -1161,8 +1163,7 @@ function DownloadSection() {
       <SettingsHelp mb="md">
         <Trans>
           Chapters downloaded at once from scraper sources. More isn't always faster: tripping a
-          site's rate limit pauses every download. Torrents aren't affected. Takes effect after a
-          restart.
+          site's rate limit pauses every download. Torrents aren't affected.
         </Trans>
       </SettingsHelp>
       <NumberInput
@@ -1212,7 +1213,6 @@ function DownloadSection() {
         <Trans>
           A chapter that never finishes holds a worker and can stall the whole queue. Past this
           many minutes it is marked failed and retried like any other failure. 0 means no limit.
-          Takes effect after a restart.
         </Trans>
       </SettingsHelp>
       <NumberInput
@@ -1605,16 +1605,32 @@ function ScrobbleSection() {
     if (data && form === null) setForm(data)
   }, [data, form])
 
+  // The app registrations, interval and library filter belong to the instance. The server returns
+  // them as null to anyone else and drops them on save, so a non-admin never sees the inputs.
+  const isAdmin = data?.isAdmin ?? false
+
   const conn = (service: string) => status?.connections.find((c) => c.service === service)
+
+  // Stored as a comma-separated id list. Ids Kavita no longer reports stay selectable, so a library
+  // that is briefly missing isn't dropped from the filter by the next save.
+  const { data: kavitaLibraries, error: kavitaLibrariesError } = useKavitaLibraries(isAdmin)
+  const selectedLibraries = (form?.libraryIds ?? '').split(',').map((id) => id.trim()).filter(Boolean)
+  const libraryOptions = [
+    ...(kavitaLibraries ?? []).map((l) => ({ value: String(l.id), label: l.name ?? `#${l.id}` })),
+    ...selectedLibraries
+      .filter((id) => !(kavitaLibraries ?? []).some((l) => String(l.id) === id))
+      .map((id) => ({ value: id, label: `#${id}` })),
+  ]
+  // A 400 here only ever means the Kavita connection isn't filled in yet, which is not an error.
+  const kavitaNotSetUp = kavitaLibrariesError instanceof ApiError && kavitaLibrariesError.status === 400
+  const kavitaLibrariesErrorMessage =
+    kavitaLibrariesError != null && !kavitaNotSetUp ? kavitaLibrariesError.message : null
 
   const set = (patch: Partial<ScrobbleSettings>) =>
     setForm((f) => (f ? { ...f, ...patch } : f))
   const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
 
   const origin = window.location.origin
-  // The app registrations, interval and library filter belong to the instance. The server returns
-  // them as null to anyone else and drops them on save, so a non-admin never sees the inputs.
-  const isAdmin = data?.isAdmin ?? false
 
   return (
     <Panel>
@@ -1718,20 +1734,32 @@ function ScrobbleSection() {
         <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
 
         {isAdmin && (
-          <Group grow mt="xs">
-            <TextInput
+          <Group grow mt="xs" align="flex-start">
+            <NumberInput
               label={t`Sync interval (minutes)`}
-              value={form?.intervalMinutes?.toString() ?? '30'}
-              onChange={(e) => {
-                const parsed = parseInt(e.currentTarget.value, 10)
-                set({ intervalMinutes: Number.isNaN(parsed) ? 30 : parsed })
-              }}
+              min={5}
+              max={1440}
+              clampBehavior="strict"
+              value={form?.intervalMinutes ?? 30}
+              onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 30 })}
             />
-            <TextInput
-              label={t`Kavita library ids`}
-              description={t`Comma-separated; empty = scrobble all libraries`}
-              value={form?.libraryIds ?? ''}
-              onChange={(e) => set({ libraryIds: e.currentTarget.value })}
+            <MultiSelect
+              label={t`Kavita libraries`}
+              description={
+                kavitaNotSetUp
+                  ? t`Set up the Kavita connection above to pick libraries.`
+                  : t`Leave empty to scrobble every library.`
+              }
+              placeholder={selectedLibraries.length === 0 ? t`All libraries` : undefined}
+              data={libraryOptions}
+              value={selectedLibraries}
+              onChange={(ids) => set({ libraryIds: ids.length > 0 ? ids.join(',') : null })}
+              error={
+                kavitaLibrariesErrorMessage != null
+                  ? t`Could not load libraries from Kavita: ${kavitaLibrariesErrorMessage}`
+                  : undefined
+              }
+              clearable
             />
           </Group>
         )}
@@ -2160,8 +2188,8 @@ function AppearanceSection() {
       </Title>
       <SettingsHelp mb="sm">
         <Trans>
-          Pick an accent colour, or switch to the light theme. Applies instantly and is remembered
-          on this device.
+          Pick an accent colour, the light theme, or match your system's light or dark mode.
+          Remembered on this device.
         </Trans>
       </SettingsHelp>
       <Group gap="sm">

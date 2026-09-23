@@ -978,8 +978,8 @@ msgid "A chapter finished downloading and imported."
 msgstr "A chapter finished downloading and imported."
 
 #: src/pages/SettingsPage.tsx
-msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit. Takes effect after a restart."
-msgstr "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit. Takes effect after a restart."
+msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit."
+msgstr "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit."
 
 #: src/components/SetupWizard.tsx
 msgid "A few quick choices to get Maki ready: where your library lives, how metadata and monitoring behave, and any download or reading tools you already run. Every step is optional and can be changed later in Settings. Your choices save as you go."
@@ -1301,6 +1301,10 @@ msgstr "All downloaded chapters read"
 msgid "All findings"
 msgstr "All findings"
 
+#: src/pages/SettingsPage.tsx
+msgid "All libraries"
+msgstr "All libraries"
+
 #: src/components/SetupWizard.tsx
 msgid "All optional: fill in only what you use. Everything here can be changed later in Settings."
 msgstr "All optional: fill in only what you use. Everything here can be changed later in Settings."
@@ -1407,8 +1411,8 @@ msgstr "AniList"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
-msgstr "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read"
+msgid "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read, kavita libraries"
+msgstr "anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read, kavita libraries"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "anime"
@@ -2142,8 +2146,8 @@ msgid "Chapters already listed keep whatever you set on them."
 msgstr "Chapters already listed keep whatever you set on them."
 
 #: src/pages/SettingsPage.tsx
-msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected. Takes effect after a restart."
-msgstr "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected. Takes effect after a restart."
+msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected."
+msgstr "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected."
 
 #: src/api/inbox.ts
 msgid "Chapters downloaded automatically"
@@ -2378,10 +2382,6 @@ msgstr "comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga
 msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
 msgstr "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
 
-#: src/pages/SettingsPage.tsx
-msgid "Comma-separated; empty = scrobble all libraries"
-msgstr "Comma-separated; empty = scrobble all libraries"
-
 #: src/components/ui/viewPrefs.tsx
 msgid "Compact"
 msgstr "Compact"
@@ -2602,6 +2602,10 @@ msgstr "Could not load anime signals: {0}"
 #: src/pages/SettingsPage.tsx
 msgid "Could not load indexers from Prowlarr: {indexersErrorMessage}"
 msgstr "Could not load indexers from Prowlarr: {indexersErrorMessage}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not load libraries from Kavita: {kavitaLibrariesErrorMessage}"
+msgstr "Could not load libraries from Kavita: {kavitaLibrariesErrorMessage}"
 
 #: src/pages/stats/LibraryPanel.tsx
 msgid "Could not load library stats"
@@ -4287,8 +4291,8 @@ msgid "Kavita"
 msgstr "Kavita"
 
 #: src/pages/SettingsPage.tsx
-msgid "Kavita library ids"
-msgstr "Kavita library ids"
+msgid "Kavita libraries"
+msgstr "Kavita libraries"
 
 #: src/pages/SettingsPage.tsx
 msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
@@ -4436,6 +4440,10 @@ msgstr "Leave blank to keep the current one"
 #: src/pages/LibraryPage.tsx
 msgid "Leave both boxes empty to ignore."
 msgstr "Leave both boxes empty to ignore."
+
+#: src/pages/SettingsPage.tsx
+msgid "Leave empty to scrobble every library."
+msgstr "Leave empty to scrobble every library."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Leave empty to use this profile only where you pin it to a series."
@@ -4817,6 +4825,10 @@ msgstr "Martial Arts"
 #: src/pages/ImportPage.tsx
 msgid "Match"
 msgstr "Match"
+
+#: src/theme-context.tsx
+msgid "Match system"
+msgstr "Match system"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
@@ -6092,8 +6104,8 @@ msgid "Pick an accent colour or the light theme. Applies instantly, remembered o
 msgstr "Pick an accent colour or the light theme. Applies instantly, remembered on this device."
 
 #: src/pages/SettingsPage.tsx
-msgid "Pick an accent colour, or switch to the light theme. Applies instantly and is remembered on this device."
-msgstr "Pick an accent colour, or switch to the light theme. Applies instantly and is remembered on this device."
+msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+msgstr "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
 
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are actually contained in, useful for compilation CBZs or oddly-named releases the automatic matcher couldn't parse."
@@ -8368,8 +8380,8 @@ msgstr "The whole catalogue"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "theme, dark mode, light mode, accent colour, accent color, colour"
-msgstr "theme, dark mode, light mode, accent colour, accent color, colour"
+msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
+msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "There is no safe automatic merge."
