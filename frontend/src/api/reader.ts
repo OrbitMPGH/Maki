@@ -26,6 +26,10 @@ export interface ReaderManifest {
   completed: boolean
   previousChapterId: number | null
   nextChapterId: number | null
+  /** The next chapter's label and number, for the end-of-chapter screen. Null with no next chapter. */
+  nextChapterLabel: string | null
+  nextChapterNumber: number | null
+  seriesCoverUrl: string | null
   /** Whatever won: the series override, a reading profile, or the global defaults. */
   prefs: ReaderPrefs
   prefsSource: PrefsSource

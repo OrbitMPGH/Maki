@@ -15,6 +15,7 @@ import {
 import type { UnlockedAchievement } from '../../api/reader'
 import { useMarkAchievementsSeen } from '../../api/hooks'
 import ChapterBanner from './ChapterBanner'
+import ChapterEnd from './ChapterEnd'
 import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -188,6 +189,11 @@ export default function ReaderPage() {
   )
 
   const next = useCallback(() => {
+    // On the end screen the forward key is the "second press" it asks for.
+    if (atEnd) {
+      if (manifest?.nextChapterId != null) void goToChapter(manifest.nextChapterId, true)
+      return
+    }
     const nextSpread = spreads[spreadIndex + 1]
     if (nextSpread) {
       seekToPage(nextSpread[0])
@@ -202,7 +208,7 @@ export default function ReaderPage() {
     // is a deliberate second press.
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
     else setAtEnd(true)
-  }, [spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage])
+  }, [atEnd, spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage])
 
   /** Continuous mode's equivalent of `next()` hitting the chapter boundary: no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
@@ -248,8 +254,9 @@ export default function ReaderPage() {
           previous()
           break
         case ' ':
-          // Continuous mode keeps the browser's native space-to-scroll.
-          if (prefs.mode !== 'vertical') {
+          // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
+          // where there is nothing to scroll.
+          if (prefs.mode !== 'vertical' || atEnd) {
             event.preventDefault()
             if (event.shiftKey) previous()
             else next()
@@ -303,6 +310,7 @@ export default function ReaderPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [
+    atEnd,
     next,
     previous,
     pageCount,
@@ -365,8 +373,6 @@ export default function ReaderPage() {
     )
   }
 
-  const { label: chapterLabel } = manifest
-
   return (
     <div className="reader-root" style={{ background: prefs.background }}>
       <ReaderToolbar
@@ -395,29 +401,13 @@ export default function ReaderPage() {
       />
 
       {atEnd ? (
-        <Center h="100dvh">
-          <Stack align="center" gap="sm">
-            <Text fz="sm" c="var(--ink-3)">
-              {manifest.nextChapterId == null ? (
-                <Trans>{chapterLabel} is the last chapter. No more chapters available.</Trans>
-              ) : (
-                <Trans>End of {chapterLabel}</Trans>
-              )}
-            </Text>
-            {manifest.nextChapterId != null ? (
-              <Button onClick={() => void goToChapter(manifest.nextChapterId, true)}>
-                <Trans>Next chapter</Trans>
-              </Button>
-            ) : (
-              <Button component={Link} to={`/series/${manifest.seriesId}`}>
-                <Trans>Exit reader</Trans>
-              </Button>
-            )}
-            <Button variant="subtle" color="gray" onClick={() => setAtEnd(false)}>
-              <Trans>Stay here</Trans>
-            </Button>
-          </Stack>
-        </Center>
+        <ChapterEnd
+          manifest={manifest}
+          incognito={incognito}
+          rtl={prefs.direction === 'rtl'}
+          onNext={() => void goToChapter(manifest.nextChapterId, true)}
+          onStay={() => setAtEnd(false)}
+        />
       ) : (
         <div
           className="reader-surface"

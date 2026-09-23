@@ -301,11 +301,6 @@ msgstr "{cellDate}: no se ha leído nada"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, one {# capítulo} many {# capítulos} other {# capítulos}}"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "{chapterLabel} is the last chapter. No more chapters available."
-msgstr "{chapterLabel} es el último capítulo. No hay más capítulos disponibles."
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch"
@@ -491,6 +486,10 @@ msgstr "{folderLabel}: vinculados {filesLinked, plural, one {# archivo} many {# 
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}: vinculados {filesLinked, plural, one {# archivo} many {# archivos} other {# archivos}}, {filesUnrecognized, plural, one {# no reconocido} many {# no reconocidos} other {# no reconocidos}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{forwardKey} or Space opens it, Esc goes back to the series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -706,6 +705,10 @@ msgstr "{pageCount, plural, one {# página} many {# páginas} other {# páginas}
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsOn} de {panelsTotal} paneles"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
@@ -741,6 +744,10 @@ msgstr "{readChapterCount} de {have} capítulos descargados leídos"
 #, fuzzy
 msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{readCount} / {haveCount, plural, one {# capítulo} many {# capítulos} other {# capítulos}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{readCount} of {seriesChapterCount} read"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -973,6 +980,10 @@ msgstr "{totalSeries, plural, one {# serie} many {# series} other {# series}}"
 #, fuzzy
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (otro perfil)"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2165,6 +2176,7 @@ msgstr "Volver a Descubrir"
 msgid "Back to library"
 msgstr "Volver a la biblioteca"
 
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Back to series"
@@ -2728,6 +2740,10 @@ msgstr "Capítulo"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Capítulo {chapterId}: {pageCount, plural, one {# página} many {# páginas} other {# páginas}}"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Chapter {n}"
@@ -2790,6 +2806,10 @@ msgstr "Capítulos, dejar en blanco para todos"
 #, fuzzy
 msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
 msgstr "Capítulos {currentPageLabel} · {visibleAllCount} coincidentes"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4254,11 +4274,6 @@ msgstr "Activar el catálogo OPDS"
 msgid "Enabled"
 msgstr "Activado"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "End of {chapterLabel}"
-msgstr "Fin de {chapterLabel}"
-
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -4437,11 +4452,6 @@ msgstr "Carpetas existentes al importar"
 #, fuzzy
 msgid "Exit full screen"
 msgstr "Salir de pantalla completa"
-
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "Exit reader"
-msgstr "Salir del lector"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4656,6 +4666,7 @@ msgid "Finish setup"
 msgstr "Finalizar configuración"
 
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -5753,6 +5764,10 @@ msgstr "Tarjetas grandes para las tres primeras"
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
 msgstr "última {lastSync} · próxima {nextSync}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Last chapter on disk"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6863,7 +6878,7 @@ msgstr "nueva versión, buscar actualizaciones, lanzamiento, github"
 msgid "Newest"
 msgstr "Más recientes"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Next chapter"
@@ -8405,6 +8420,10 @@ msgstr "Leído {chapterLbl}"
 #, fuzzy
 msgid "Read {nextChapter}"
 msgstr "Leído {nextChapter}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Read {nextChapterLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10626,7 +10645,7 @@ msgstr "Estado"
 msgid "Status change"
 msgstr "Cambio de estado"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Stay here"
 msgstr "Quedarse aquí"
@@ -10854,6 +10873,10 @@ msgstr "Ese capítulo ya no existe"
 #, fuzzy
 msgid "That was your {label}"
 msgstr "Ese era tu {label}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's every chapter on disk."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -11733,6 +11756,10 @@ msgstr "Hasta: {end}"
 msgid "Up"
 msgstr "Arriba"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Up next"
+msgstr ""
+
 #: src/api/requests.ts
 #, fuzzy
 msgid "up to ch. {end}"
@@ -12467,6 +12494,10 @@ msgstr "Devora"
 #, fuzzy
 msgid "You turned a lot of pages"
 msgstr "Has pasado muchas páginas"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You're caught up"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

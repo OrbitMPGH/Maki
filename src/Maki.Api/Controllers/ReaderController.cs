@@ -1,4 +1,5 @@
 ﻿using Maki.Api.Configuration;
+using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -179,6 +180,12 @@ public class ReaderController(
         var seriesWantedCount = await db.Chapters
             .CountAsync(c => c.SeriesId == slice.Series.Id && (c.Wanted || c.ChapterFileId != null), ct);
 
+        // Named on the end-of-chapter screen, and its number is how that screen tells a straight
+        // continuation from a jump over chapters that were never downloaded.
+        var nextChapter = next is int nextId
+            ? await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == nextId, ct)
+            : null;
+
         return Ok(new
         {
             chapterId = slice.Chapter.Id,
@@ -196,6 +203,9 @@ public class ReaderController(
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
+            nextChapterLabel = nextChapter is null ? null : ChapterLabel.For(nextChapter),
+            nextChapterNumber = nextChapter?.Number,
+            seriesCoverUrl = SeriesDto.CoverUrlFor(slice.Series.Id, slice.Series.CoverPath, slice.Series.LastMetadataRefresh),
             prefs = resolved.Prefs,
             prefsSource = resolved.Source.ToString(),
             profileId = resolved.ProfileId,

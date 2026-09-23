@@ -301,11 +301,6 @@ msgstr "{cellDate}: 읽은 내용 없음"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, other {챕터 #개}}"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "{chapterLabel} is the last chapter. No more chapters available."
-msgstr "{chapterLabel}이(가) 마지막 챕터입니다. 더 이상 사용할 수 있는 챕터가 없습니다."
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch"
@@ -491,6 +486,10 @@ msgstr "{folderLabel}: 연결된 파일 {filesLinked, plural, other {#개}}"
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}: 연결된 파일 {filesLinked, plural, other {#개}}, 인식할 수 없는 파일 {filesUnrecognized, plural, other {#개}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{forwardKey} or Space opens it, Esc goes back to the series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -706,6 +705,10 @@ msgstr "{pageCount, plural, other {페이지 #개}}"
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsTotal}개 패널 중 {panelsOn}개"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
@@ -741,6 +744,10 @@ msgstr "{have}개 다운로드된 챕터 중 {readChapterCount}개 읽음"
 #, fuzzy
 msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{readCount} / {haveCount, plural, other {# 챕터}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{readCount} of {seriesChapterCount} read"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -973,6 +980,10 @@ msgstr "{totalSeries, plural, other {시리즈 #개}}"
 #, fuzzy
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (다른 프로필)"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2165,6 +2176,7 @@ msgstr "탐색으로 돌아가기"
 msgid "Back to library"
 msgstr "라이브러리로 돌아가기"
 
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Back to series"
@@ -2728,6 +2740,10 @@ msgstr "챕터"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "챕터 {chapterId}: {pageCount, plural, other {페이지 #개}}"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Chapter {n}"
@@ -2790,6 +2806,10 @@ msgstr "챕터, 전체를 대상으로 하려면 비워 둠"
 #, fuzzy
 msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
 msgstr "챕터 {currentPageLabel} · {visibleAllCount}개 일치"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4254,11 +4274,6 @@ msgstr "OPDS 카탈로그 활성화"
 msgid "Enabled"
 msgstr "활성화됨"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "End of {chapterLabel}"
-msgstr "{chapterLabel} 끝"
-
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -4437,11 +4452,6 @@ msgstr "가져올 때 기존 폴더 처리"
 #, fuzzy
 msgid "Exit full screen"
 msgstr "전체 화면 종료"
-
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "Exit reader"
-msgstr "리더 종료"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4656,6 +4666,7 @@ msgid "Finish setup"
 msgstr "설정 완료"
 
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -5753,6 +5764,10 @@ msgstr "처음 세 개를 큰 타일로 표시"
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
 msgstr "마지막 {lastSync} · 다음 {nextSync}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Last chapter on disk"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6863,7 +6878,7 @@ msgstr "새 버전, 업데이트 확인, 릴리스, GitHub"
 msgid "Newest"
 msgstr "최신순"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Next chapter"
@@ -8405,6 +8420,10 @@ msgstr "{chapterLbl} 읽음"
 #, fuzzy
 msgid "Read {nextChapter}"
 msgstr "{nextChapter} 읽음"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Read {nextChapterLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10626,7 +10645,7 @@ msgstr "상태"
 msgid "Status change"
 msgstr "상태 변경"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Stay here"
 msgstr "여기 머무르기"
@@ -10854,6 +10873,10 @@ msgstr "해당 챕터가 더 이상 존재하지 않습니다"
 #, fuzzy
 msgid "That was your {label}"
 msgstr "그 항목은 {label}입니다"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's every chapter on disk."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -11733,6 +11756,10 @@ msgstr "종료: {end}"
 msgid "Up"
 msgstr "위로"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Up next"
+msgstr ""
+
 #: src/api/requests.ts
 #, fuzzy
 msgid "up to ch. {end}"
@@ -12467,6 +12494,10 @@ msgstr "빠르게 읽은 항목"
 #, fuzzy
 msgid "You turned a lot of pages"
 msgstr "많은 페이지를 넘겼습니다"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You're caught up"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

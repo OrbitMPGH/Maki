@@ -251,10 +251,6 @@ msgstr "{cellDate}: nothing read"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, one {# chapter} other {# chapters}}"
 
-#: src/pages/reader/ReaderPage.tsx
-msgid "{chapterLabel} is the last chapter. No more chapters available."
-msgstr "{chapterLabel} is the last chapter. No more chapters available."
-
 #: src/pages/DiscoverPage.tsx
 msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} ch"
@@ -403,6 +399,10 @@ msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}
 #: src/pages/ImportPage.tsx
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{forwardKey} or Space opens it, Esc goes back to the series."
+msgstr "{forwardKey} or Space opens it, Esc goes back to the series."
 
 #: src/components/SetupWizard.tsx
 msgid "{free} free"
@@ -576,6 +576,10 @@ msgstr "{pageCount, plural, one {# page} other {# pages}}"
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsOn} of {panelsTotal} panels"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
+msgstr "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, one {# needs attention} other {# need attention}}"
@@ -604,6 +608,10 @@ msgstr "{readChapterCount} of {have} downloaded read"
 #: src/components/series/SeriesHero.tsx
 msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{readCount} of {seriesChapterCount} read"
+msgstr "{readCount} of {seriesChapterCount} read"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{readCount} read"
@@ -790,6 +798,10 @@ msgstr "{totalSeries, plural, one {# series} other {# series}}"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (another profile)"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
+msgstr "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -1756,6 +1768,7 @@ msgstr "Back to Discover"
 msgid "Back to library"
 msgstr "Back to library"
 
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Back to series"
 msgstr "Back to series"
@@ -2213,6 +2226,10 @@ msgstr "Chapter"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
+msgstr "Chapter {gapFrom} isn't downloaded, so this skips it."
+
 #: src/components/SourceCompareModal.tsx
 msgid "Chapter {n}"
 msgstr "Chapter {n}"
@@ -2264,6 +2281,10 @@ msgstr "Chapters - leave blank for all"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
 msgstr "Chapters {currentPageLabel} · {visibleAllCount} matching"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
+msgstr "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters {range}"
@@ -3454,10 +3475,6 @@ msgstr "Enable the OPDS catalogue"
 msgid "Enabled"
 msgstr "Enabled"
 
-#: src/pages/reader/ReaderPage.tsx
-msgid "End of {chapterLabel}"
-msgstr "End of {chapterLabel}"
-
 #: src/components/AnimeCoverageBar.tsx
 msgid "ends at ch. {num}"
 msgstr "ends at ch. {num}"
@@ -3601,10 +3618,6 @@ msgstr "Existing folders on import"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Exit full screen"
 msgstr "Exit full screen"
-
-#: src/pages/reader/ReaderPage.tsx
-msgid "Exit reader"
-msgstr "Exit reader"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Expand"
@@ -3780,6 +3793,7 @@ msgid "Finish setup"
 msgstr "Finish setup"
 
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/OverviewPanel.tsx
 msgid "Finished"
@@ -4667,6 +4681,10 @@ msgstr "Large tiles for the first three"
 #: src/pages/ScrobblePage.tsx
 msgid "last {lastSync} · next {nextSync}"
 msgstr "last {lastSync} · next {nextSync}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Last chapter on disk"
+msgstr "Last chapter on disk"
 
 #: src/pages/SettingsPage.tsx
 msgid "Last download failed: {lastError}. The next scheduled run retries."
@@ -5569,7 +5587,7 @@ msgstr "new version, check for updates, release, github"
 msgid "Newest"
 msgstr "Newest"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Next chapter"
 msgstr "Next chapter"
@@ -6815,6 +6833,10 @@ msgstr "Read {chapterLbl}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Read {nextChapter}"
 msgstr "Read {nextChapter}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Read {nextChapterLabel}"
+msgstr "Read {nextChapterLabel}"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Read a few chapters and this fills in."
@@ -8614,7 +8636,7 @@ msgstr "Status"
 msgid "Status change"
 msgstr "Status change"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Stay here"
 msgstr "Stay here"
 
@@ -8799,6 +8821,10 @@ msgstr "That chapter no longer exists"
 #: src/pages/rewind/slides.tsx
 msgid "That was your {label}"
 msgstr "That was your {label}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's every chapter on disk."
+msgstr "That's every chapter on disk."
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "The anime covers through ch. {covered}."
@@ -9507,6 +9533,10 @@ msgstr "Until: {end}"
 msgid "Up"
 msgstr "Up"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Up next"
+msgstr "Up next"
+
 #: src/api/requests.ts
 msgid "up to ch. {end}"
 msgstr "up to ch. {end}"
@@ -10098,6 +10128,10 @@ msgstr "You tear through"
 #: src/pages/rewind/slides.tsx
 msgid "You turned a lot of pages"
 msgstr "You turned a lot of pages"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You're caught up"
+msgstr "You're caught up"
 
 #: src/components/SetupWizard.tsx
 msgid "You're set"

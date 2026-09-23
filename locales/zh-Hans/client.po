@@ -301,11 +301,6 @@ msgstr "{cellDate}：没有阅读内容"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, other {# 个章节}}"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "{chapterLabel} is the last chapter. No more chapters available."
-msgstr "{chapterLabel}是最后一章，没有更多章节可用。"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch"
@@ -491,6 +486,10 @@ msgstr "{folderLabel}：已关联 {filesLinked, plural, other {# 个文件}}"
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}：已关联 {filesLinked, plural, other {# 个文件}}，{filesUnrecognized, plural, other {# 个无法识别}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{forwardKey} or Space opens it, Esc goes back to the series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -706,6 +705,10 @@ msgstr "{pageCount, plural, other {# 页}}"
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "已启用 {panelsOn}/{panelsTotal} 个面板。"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
@@ -741,6 +744,10 @@ msgstr "已读下载章节 {readChapterCount}/{have}"
 #, fuzzy
 msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{readCount} / {haveCount, plural, other {# 个章节}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{readCount} of {seriesChapterCount} read"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -973,6 +980,10 @@ msgstr "{totalSeries, plural, other {# 个系列}}"
 #, fuzzy
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel}（另一个配置文件）"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2165,6 +2176,7 @@ msgstr "返回发现"
 msgid "Back to library"
 msgstr "返回资料库"
 
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Back to series"
@@ -2728,6 +2740,10 @@ msgstr "章节"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "章节 {chapterId}：{pageCount, plural, other {# 页}}"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Chapter {n}"
@@ -2790,6 +2806,10 @@ msgstr "章节，留空表示全部"
 #, fuzzy
 msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
 msgstr "章节 {currentPageLabel} · 匹配 {visibleAllCount} 个"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4254,11 +4274,6 @@ msgstr "启用 OPDS 目录"
 msgid "Enabled"
 msgstr "已启用"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "End of {chapterLabel}"
-msgstr "{chapterLabel} 的结尾"
-
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -4437,11 +4452,6 @@ msgstr "导入时对已有文件夹的处理方式"
 #, fuzzy
 msgid "Exit full screen"
 msgstr "退出全屏"
-
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "Exit reader"
-msgstr "退出阅读器"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4656,6 +4666,7 @@ msgid "Finish setup"
 msgstr "完成设置"
 
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -5753,6 +5764,10 @@ msgstr "前三个使用大尺寸卡片"
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
 msgstr "上次 {lastSync} · 下次 {nextSync}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Last chapter on disk"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6863,7 +6878,7 @@ msgstr "新版本，检查更新，发布版本，GitHub"
 msgid "Newest"
 msgstr "最新"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Next chapter"
@@ -8405,6 +8420,10 @@ msgstr "阅读 {chapterLbl}"
 #, fuzzy
 msgid "Read {nextChapter}"
 msgstr "阅读 {nextChapter}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Read {nextChapterLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10626,7 +10645,7 @@ msgstr "状态"
 msgid "Status change"
 msgstr "状态变更"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Stay here"
 msgstr "留在这里"
@@ -10854,6 +10873,10 @@ msgstr "该章节已不存在"
 #, fuzzy
 msgid "That was your {label}"
 msgstr "那就是你的 {label}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's every chapter on disk."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -11733,6 +11756,10 @@ msgstr "结束：{end}"
 msgid "Up"
 msgstr "上移"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Up next"
+msgstr ""
+
 #: src/api/requests.ts
 #, fuzzy
 msgid "up to ch. {end}"
@@ -12467,6 +12494,10 @@ msgstr "你快速读完"
 #, fuzzy
 msgid "You turned a lot of pages"
 msgstr "你翻过了很多页"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You're caught up"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

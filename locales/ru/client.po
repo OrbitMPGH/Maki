@@ -301,11 +301,6 @@ msgstr "{cellDate}: ничего не прочитано"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, one {# глава} few {# главы} many {# глав} other {# главы}}"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "{chapterLabel} is the last chapter. No more chapters available."
-msgstr "{chapterLabel}: последняя глава. Больше глав нет."
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch"
@@ -491,6 +486,10 @@ msgstr "{folderLabel}: связано {filesLinked, plural, one {# файл} few
 #, fuzzy
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}: связано {filesLinked, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}, не распознано {filesUnrecognized, plural, one {#} few {#} many {#} other {#}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{forwardKey} or Space opens it, Esc goes back to the series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -706,6 +705,10 @@ msgstr "{pageCount, plural, one {# страница} few {# страницы} ma
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "Панелей: {panelsOn} из {panelsTotal}"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
@@ -741,6 +744,10 @@ msgstr "Прочитано {readChapterCount} из {have} загруженных
 #, fuzzy
 msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{readCount} / {haveCount, plural, one {# глава} few {# главы} many {# глав} other {# главы}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{readCount} of {seriesChapterCount} read"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -973,6 +980,10 @@ msgstr "{totalSeries, plural, one {# серия} few {# серии} many {# се
 #, fuzzy
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (другой профиль)"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2165,6 +2176,7 @@ msgstr "Назад к Обзору"
 msgid "Back to library"
 msgstr "Назад к библиотеке"
 
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Back to series"
@@ -2728,6 +2740,10 @@ msgstr "Глава"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Глава {chapterId}: {pageCount, plural, one {# страница} few {# страницы} many {# страниц} other {# страницы}}"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Chapter {n}"
@@ -2790,6 +2806,10 @@ msgstr "Главы, оставьте пустым для всех"
 #, fuzzy
 msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
 msgstr "Главы {currentPageLabel} · найдено: {visibleAllCount}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4254,11 +4274,6 @@ msgstr "Включить каталог OPDS"
 msgid "Enabled"
 msgstr "Включено"
 
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "End of {chapterLabel}"
-msgstr "Конец {chapterLabel}"
-
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -4437,11 +4452,6 @@ msgstr "Существующие папки при импорте"
 #, fuzzy
 msgid "Exit full screen"
 msgstr "Выйти из полноэкранного режима"
-
-#: src/pages/reader/ReaderPage.tsx
-#, fuzzy
-msgid "Exit reader"
-msgstr "Выйти из читалки"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4656,6 +4666,7 @@ msgid "Finish setup"
 msgstr "Завершить настройку"
 
 #: src/pages/HomePage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
@@ -5753,6 +5764,10 @@ msgstr "Крупные плитки для первых трёх"
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
 msgstr "последняя синхронизация {lastSync} · следующая {nextSync}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Last chapter on disk"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6863,7 +6878,7 @@ msgstr "новая версия, проверить обновления, вып
 msgid "Newest"
 msgstr "Самые новые"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Next chapter"
@@ -8405,6 +8420,10 @@ msgstr "Прочитано: {chapterLbl}"
 #, fuzzy
 msgid "Read {nextChapter}"
 msgstr "Читать {nextChapter}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Read {nextChapterLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10626,7 +10645,7 @@ msgstr "Статус"
 msgid "Status change"
 msgstr "Изменение статуса"
 
-#: src/pages/reader/ReaderPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Stay here"
 msgstr "Остаться здесь"
@@ -10854,6 +10873,10 @@ msgstr "Эта глава больше не существует"
 #, fuzzy
 msgid "That was your {label}"
 msgstr "Это была ваша {label}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's every chapter on disk."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -11733,6 +11756,10 @@ msgstr "До: {end}"
 msgid "Up"
 msgstr "Вверх"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Up next"
+msgstr ""
+
 #: src/api/requests.ts
 #, fuzzy
 msgid "up to ch. {end}"
@@ -12467,6 +12494,10 @@ msgstr "Вы быстро пролистываете"
 #, fuzzy
 msgid "You turned a lot of pages"
 msgstr "Вы перелистнули много страниц"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You're caught up"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

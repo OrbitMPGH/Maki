@@ -4160,6 +4160,140 @@ body.reader-open {
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* End of chapter. The cover, blurred far past recognition, is the only colour on the screen: the
+   same light the series page's band takes from it, turned down to suit a reader that stays dark. */
+.reader-end {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  overflow: hidden;
+}
+.reader-end-backdrop {
+  position: absolute;
+  inset: -12%;
+  background-size: cover;
+  background-position: center 30%;
+  filter: blur(56px) saturate(1.15);
+  opacity: 0.24;
+  mask-image: radial-gradient(closest-side, black 30%, transparent 100%);
+  pointer-events: none;
+}
+.reader-end-body {
+  position: relative;
+  width: min(620px, 100%);
+  display: grid;
+  gap: 28px;
+}
+.reader-end-finished {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+}
+.reader-end-cover {
+  width: 112px;
+  aspect-ratio: 2 / 3;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.85);
+}
+.reader-end-heading {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.reader-end-eyebrow {
+  font-size: var(--type-label);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.reader-end-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.reader-end-series {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.reader-end-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: var(--type-micro);
+  color: rgba(255, 255, 255, 0.55);
+}
+.reader-end-meter-track {
+  flex: 1;
+  max-width: 220px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.reader-end-meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+.reader-end-next {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.reader-end-next-label {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.reader-end-note {
+  max-width: 46ch;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+.reader-end-quiet {
+  --button-color: rgba(255, 255, 255, 0.72);
+  --button-hover: rgba(255, 255, 255, 0.08);
+}
+.reader-end-hint {
+  margin-top: 10px;
+  font-size: var(--type-micro);
+  color: rgba(255, 255, 255, 0.38);
+}
+@media (hover: none) {
+  .reader-end-hint {
+    display: none;
+  }
+}
+@media (max-width: 47.9375em) {
+  .reader-end-cover {
+    width: 84px;
+  }
+  .reader-end-finished {
+    gap: 16px;
+  }
+}
+
 @keyframes reader-chapter-banner {
   0% {
     opacity: 0;
