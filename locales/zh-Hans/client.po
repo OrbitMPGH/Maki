@@ -826,9 +826,8 @@ msgid "{sourceName} · priority {priority}"
 msgstr "{sourceName} · 优先级 {priority}"
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "{sourceName} is switched off in Settings → Source priority. This series' setting is kept and applies again once it's back on."
-msgstr "{sourceName} 已在设置 → 来源优先级中关闭。此系列的设置会保留，重新开启后再次生效。"
+msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1196,11 +1195,6 @@ msgstr "90 天"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "评分为 10/10 的动画以 {topSeed} 作为基准值，而书架上未评分的书籍为 1.00。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A backup is a zip of your database and <0>config.json</0>, your whole library and all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left out. One is taken automatically right before any upgrade migration runs. Restoring replaces the current data and restarts Maki."
-msgstr "备份是一个 ZIP 文件，包含你的数据库、<0>config.json</0>、整个资料库和所有设置。不包含大型且可重新下载的数据（MangaBaka 转储、嵌入、封面、缓存）。每次升级迁移运行前都会自动创建一个备份。恢复会替换当前数据并重启 Maki。"
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A chapter download failed."
@@ -1212,9 +1206,8 @@ msgid "A chapter finished downloading and imported."
 msgstr "章节下载并导入完成。"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A chapter that never finishes holds a worker for as long as the app runs, and with only a couple of workers that stops the whole queue: everything else sits on \"Queued\" with nothing wrong with it. Past this many minutes the download is abandoned and marked failed, so retry handling takes over. Set 0 to remove the limit. Takes effect after a restart."
-msgstr "始终无法完成的章节会在应用运行期间一直占用一个工作线程，而只有几个工作线程时，这会阻塞整个队列：其他内容明明没有问题，却都会停留在“已排队”状态。超过此分钟数后，下载会被放弃并标记为失败，然后交由重试处理。设置为 0 可移除限制。重启后生效。"
+msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit. Takes effect after a restart."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -1226,11 +1219,6 @@ msgstr "做出几个快速选择即可准备好 Maki：资料库存放位置、�
 msgid "A file move is blocked for any series with an active download."
 msgstr "有活动下载的系列无法移动文件。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A finished torrent keeps seeding from the download folder, so its files are brought into the library rather than moved. A hardlink gives the library its own name for the same bytes, so the release isn't stored twice. It only works when the download folder and the library sit on the same filesystem; when they don't, Maki copies instead. Hardlinked files are left exactly as the release built them, which means no ComicInfo.xml standardization for them, so Kavita may group them separately from chapters Maki downloaded itself."
-msgstr "完成的种子会继续从下载文件夹做种，因此其中的文件会被带入资料库，而不是移动。硬链接让资料库可以为相同字节使用自己的名称，因此发布内容不会存储两次。只有下载文件夹和资料库位于同一文件系统时才有效；否则 Maki 会改为复制。硬链接文件会完全保留发布内容创建时的样子，这意味着不会对其标准化 ComicInfo.xml，因此 Kavita 可能会将它们与 Maki 自己下载的章节分开分组。"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "A large selection can take a while."
@@ -1240,6 +1228,10 @@ msgstr "选择内容较多时可能需要一段时间。"
 #, fuzzy
 msgid "A library import folder finished."
 msgstr "一个资料库导入文件夹已完成。"
+
+#: src/pages/SettingsPage.tsx
+msgid "A local embedding model lets Discover recommend by feel and search by description. The vectors download prebuilt, so this normally needs no attention. While it's off or still downloading, search falls back to titles and recommendations to genres."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1266,11 +1258,6 @@ msgstr "刷新已在运行"
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
 msgstr "评分高的动画会将推荐推向相似漫画。低分或弃看的动画会将推荐推离这些内容。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
-msgstr "自动匹配时，发布排名更高语言的来源会排在此列表之前。"
-
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
@@ -1285,6 +1272,10 @@ msgstr "某个系列的令牌没有值时不会显示，周围的空格和空括
 #, fuzzy
 msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "看过的动画与自己评分的漫画权重相同。"
+
+#: src/pages/SettingsPage.tsx
+msgid "A zip of your database and <0>config.json</0>: the library and every setting. Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken automatically before every upgrade migration."
+msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1429,6 +1420,10 @@ msgstr "添加系列后，Maki 会开始跟踪它的章节。你阅读和下载�
 #, fuzzy
 msgid "Add connection"
 msgstr "添加连接"
+
+#: src/pages/SettingsPage.tsx
+msgid "Add it to your reading app as an OPDS catalogue. From outside your network, swap the host for the address you use there."
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -1772,6 +1767,10 @@ msgstr "任意"
 msgid "Any"
 msgstr "任意"
 
+#: src/pages/SettingsPage.tsx
+msgid "Anyone with the feed URL can read the whole library. Regenerating it breaks the apps using it and nothing else."
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Anything in the MangaBaka catalogue that matches these filters."
 msgstr ""
@@ -1994,11 +1993,6 @@ msgstr "自动下载失败"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Automatically downloads the next chapters of a series when you have only a few unread chapters left. The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once. Runs every five minutes, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option."
-msgstr "当某个系列只剩少量未读章节时，自动下载后续章节。下面的设置控制剩余多少未读章节会触发下载，以及每次下载多少章节。每五分钟运行一次，依据 Kavita 或内置阅读器的阅读进度。作为监控选项按系列启用。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
 msgid "Automatically retry failed downloads"
 msgstr "自动重试失败的下载"
 
@@ -2067,11 +2061,6 @@ msgstr "备份和缓存工具"
 msgid "Backup created"
 msgstr "备份已创建"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a downloaded backup like a password. Restore auto-recovers only under a supervisor (Docker / systemd); a bare process just stops and you restart it yourself."
-msgstr "备份文件以明文包含设置中的机密信息（API 密钥、密码）。请像保护密码一样保护下载的备份。只有在监管程序（Docker / systemd）下运行时，恢复才会自动恢复服务；直接运行的进程只会停止，需要你手动重启。"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Backup freshness (days)"
@@ -2087,6 +2076,10 @@ msgstr "已完成备份"
 #, fuzzy
 msgid "backup, restore, zip, retention, database, export"
 msgstr "备份，恢复，ZIP，保留，数据库，导出"
+
+#: src/pages/SettingsPage.tsx
+msgid "Backups hold API keys and passwords in plain text. Treat a downloaded one like a password."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -2639,6 +2632,10 @@ msgstr "{winnerDisplayName} 没有的章节会保持不变，从磁盘导入的�
 msgid "Chapters already listed keep whatever you set on them."
 msgstr "已经列出的章节会保留你为它们设置的内容。"
 
+#: src/pages/SettingsPage.tsx
+msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected. Takes effect after a restart."
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Chapters downloaded automatically"
@@ -2717,14 +2714,8 @@ msgid "Checking for a new metadata snapshot"
 msgstr "正在检查新的元数据快照"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Checks GitHub daily for a newer release and raises a banner and a Notifications event when one is found. Bare installs are notify-only, pull the latest code and rebuild."
-msgstr "每天检查 GitHub 是否有更新版本，发现后显示横幅并创建通知事件。直接安装仅会发出通知，请拉取最新代码并重新构建。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Checks GitHub daily for a newer release and raises a banner and a Notifications event when one is found. Docker installs are notify-only, pull the new image and recreate the container."
-msgstr "每天检查 GitHub 是否有更新版本，发现后显示横幅并创建通知事件。Docker 安装仅会发出通知，请拉取新镜像并重新创建容器。"
+msgid "Checks GitHub daily for a new release and shows a banner and a notification when there is one. Updating is manual: {howToUpdate}."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -2824,9 +2815,8 @@ msgid "Clearing cached images..."
 msgstr "正在清除缓存图像……"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Clears the reader's page thumbnails and the source-comparison samples, drops poster folders for series that no longer exist, and re-downloads series posters from the metadata provider. Thumbnails come back on their own the next time a chapter is opened, so nothing is lost by clearing them."
-msgstr "清除阅读器的页面缩略图和来源比较样本，删除已不存在系列的海报文件夹，并从元数据提供方重新下载系列海报。下次打开章节时缩略图会自动回来，因此清除它们不会丢失任何内容。"
+msgid "Clears reader thumbnails and source-comparison samples, removes posters of deleted series, and re-downloads posters. Thumbnails regenerate the next time a chapter opens."
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 msgid "Click a genre once to require it, twice to exclude it."
@@ -2926,9 +2916,8 @@ msgid "comicinfo, comicinfo.xml, folder naming, rename folder, imported files, c
 msgstr "ComicInfo，ComicInfo.xml，文件夹命名，重命名文件夹，导入文件，章节格式，系列文件夹格式，命名令牌，文件名"
 
 #: src/components/settings/SecuritySection.tsx
-#, fuzzy
-msgid "Comma-separated IP addresses or CIDR networks, e.g. 172.18.0.0/16. Only these are believed when they set X-Forwarded-For. Leave empty if Maki is reached directly."
-msgstr "以逗号分隔的 IP 地址或 CIDR 网络，例如 172.18.0.0/16。只有这些地址设置 X-Forwarded-For 时才会被信任。如果直接访问 Maki，请留空。"
+msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3165,9 +3154,8 @@ msgid "Copy feed URL"
 msgstr "复制订阅源 URL"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Copy this now, it is shown only once. Maki stores a fingerprint of the token, not the token, so it cannot be displayed again. Lose it and you regenerate."
-msgstr "现在复制它，此内容只显示一次。Maki 保存的是令牌指纹而不是令牌本身，因此之后无法再次显示。丢失后请重新生成。"
+msgid "Copy this now. It can't be shown again; if you lose it, regenerate."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -3273,9 +3261,8 @@ msgid "Create an API client at anilist.co/settings/developer with redirect URL <
 msgstr "在 anilist.co/settings/developer 创建 API 客户端，重定向 URL 为 <0>{origin}/api/v1/scrobble/oauth/anilist</0>"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>. Paste the <1>Client ID</1> (not the secret) exactly as shown there. If connecting opens a browser “sign in to myanimelist.net” popup and then <2>invalid_client</2>, MyAnimeList didn't recognise the Client ID: re-copy it and make sure the App Type is set."
-msgstr "在 myanimelist.net/apiconfig 创建 API 客户端（应用类型：web），重定向 URL 为 <0>{origin}/api/v1/scrobble/oauth/mal</0>。严格按页面显示粘贴 <1>客户端 ID</1>，不要粘贴密钥。如果连接时浏览器弹出“登录 myanimelist.net”，随后出现 <2>invalid_client</2>，说明 MyAnimeList 未识别客户端 ID，请重新复制并确认已设置应用类型。"
+msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>. If connecting ends in <1>invalid_client</1>, re-copy the Client ID (not the secret) and check the App Type is set."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3308,9 +3295,8 @@ msgid "Creators"
 msgstr "创作者"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Credit pages and the next chapter's opening pages often look the same, so a chapter turn can pass unnoticed. This shows the chapter name over the page for a couple of seconds when you enter one."
-msgstr "致谢页和下一章的开头页面通常看起来一样，因此翻章可能不易察觉。进入章节时，此选项会在页面上显示章节名称几秒钟。"
+msgid "Credit pages and the next chapter's first pages often look alike. This shows the chapter name for a couple of seconds when you enter a new one."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3389,6 +3375,10 @@ msgstr "阅读天数"
 #, fuzzy
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "决定阅读日何时结束，连续记录和每日目标都以此为准。"
+
+#: src/pages/SettingsPage.tsx
+msgid "Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never downloaded or counted in the chapter total. Specials released later are covered too. Existing chapters are unchanged; edit them from a series' Chapters tab."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -3619,11 +3609,6 @@ msgstr "发现和离线搜索现在可用。"
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
 msgstr "发现使用本地嵌入模型，按语义上的“感觉”推荐，并按描述搜索。Base 更轻量（约占 240 MB 内存）；Large 更准确但更占资源（约占 500 MB），首次下载也更大；Off 会同时禁用两者。模型会下载预构建版本，因此不会让你的设备承担繁重工作，你随时可以在设置中更改此选项。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and recommendations to genres whenever it's off or still downloading."
-msgstr "发现使用本地嵌入模型，按语义上的“感觉”推荐，并按描述搜索。向量会下载预构建版本，通常无需额外操作；功能关闭或仍在下载时，搜索会退回标题匹配，推荐会退回按类型推荐。"
-
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Disk used"
@@ -3742,9 +3727,8 @@ msgid "Download client for grabbed releases. Completed torrents are imported aut
 msgstr "用于已抓取发布内容的下载客户端。完成的种子会自动导入。"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\\downloads), fill the optional path mapping to translate them."
-msgstr "用于已抓取发布内容的下载客户端。完成的种子会自动导入资料库（类别默认为“maki”）。如果 qBittorrent 报告了 Maki 无法访问的下载路径（例如它运行在 Docker 中并报告 /downloads，而 Maki 看到的是 Z:\\downloads），请填写可选的路径映射进行转换。"
+msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3755,6 +3739,10 @@ msgstr "下载失败"
 #, fuzzy
 msgid "Download next chapters"
 msgstr "下载后续章节"
+
+#: src/pages/SettingsPage.tsx
+msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles. Drag to reorder."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3824,6 +3812,10 @@ msgstr "下载中……"
 msgid "Downloads"
 msgstr "下载"
 
+#: src/pages/SettingsPage.tsx
+msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Drama"
@@ -3848,11 +3840,6 @@ msgstr "例如：连载中和落后"
 #: src/components/settings/UsersSection.tsx
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr ""
-
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Each connection chooses which events it fires on."
-msgstr "每个连接都可以选择触发哪些事件。"
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
@@ -4158,9 +4145,8 @@ msgid "Failed"
 msgstr "失败"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...) up to the attempt cap below. A manual retry from the Activity page doesn't count against it."
-msgstr "失败的下载会按递增的退避时间（5 分钟、10 分钟、20 分钟……）自动重试，直到达到下面设置的尝试次数上限。从活动页手动重试不计入该上限。"
+msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...) up to the cap. Manual retries from Activity don't count."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -4336,6 +4322,10 @@ msgstr "完成设置，然后打开 <0>设置 → 记录</0> 连接你的跟踪�
 msgid "Finished"
 msgstr "已完成"
 
+#: src/pages/SettingsPage.tsx
+msgid "Finishing a chapter in Maki's reader also marks it read in Kavita. Only for series matched to a Kavita series. Stats never count a chapter twice."
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "first"
@@ -4439,14 +4429,12 @@ msgid "Follows the default on your notification settings."
 msgstr "遵循通知设置中的默认值。"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on."
-msgstr "供其他直接读取文件夹中海报的阅读器（Komga、Kavita）使用。开启后会立即运行。"
+msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "For scripts and third-party clients. A <0>Full</0> key acts as you through the <1>X-Api-Key</1> header. An <2>OPDS</2> key is only a feed URL, it cannot reach the management API, which is why the URL you paste into a reading app is safe to paste."
-msgstr "供脚本和第三方客户端使用。<0>完整</0>密钥会通过 <1>X-Api-Key</1> 标头代表你操作。<2>OPDS</2> 密钥仅是订阅源 URL，无法访问管理 API，因此可以放心将该 URL 粘贴到阅读应用中。"
+msgid "For scripts and third-party clients. A <0>Full</0> key acts as you through the <1>X-Api-Key</1> header. An <2>OPDS</2> key is only a feed URL and cannot reach the management API."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4475,11 +4463,6 @@ msgstr "法语"
 msgid "From"
 msgstr "从"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "From MangaBaka settings, no OAuth needed, works immediately"
-msgstr "使用 MangaBaka 设置，无需 OAuth，立即生效"
-
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
 msgid "From MyAnimeList"
@@ -4494,6 +4477,10 @@ msgstr "来自元数据提供方，而不是你自己的标签"
 #, fuzzy
 msgid "From your library"
 msgstr "来自你的资料库"
+
+#: src/pages/SettingsPage.tsx
+msgid "From your MangaBaka settings. No OAuth needed."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4860,19 +4847,13 @@ msgid "How close each quarter sat to where you started."
 msgstr "每个季度与你开始时的位置有多接近。"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "How Maki names a series' folder and the chapter files it downloads. Both take tokens; the \"?\" button lists every one with an example, and its dialog is directly editable too. A change applies to series added and chapters downloaded from here on. Nothing already on disk moves until you rename it, either from a series' page or with the button below for the whole library."
-msgstr "Maki 如何命名系列文件夹和下载的章节文件。两者都支持令牌；“？”按钮会列出所有令牌及示例，其对话框也可以直接编辑。更改会应用于之后添加的系列和下载的章节。磁盘上已有的内容不会移动，除非你从系列页面重命名，或使用下面的按钮重命名整个资料库。"
+msgid "How Maki names series folders and the chapter files it downloads. The \"?\" button lists every token. Changes apply to new series and downloads; files already on disk stay put until you rename them from a series' page or with the button below."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "How many"
 msgstr "数量"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "How many chapters download at once from scraper sources. Higher isn't always faster: each worker is a live connection to the same site, and tripping its rate limit pauses every download. Torrent releases aren't affected. Takes effect after a restart."
-msgstr "从抓取来源一次下载多少章节。数量更多不一定更快：每个工作线程都是连接到同一网站的实时连接，触发其速率限制会暂停所有下载。种子发布不受影响。重启后生效。"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -5252,11 +5233,6 @@ msgstr "Kavita"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Kavita is one server behind one API key, so its reading belongs to a single Maki account, and it isn't yours. An admin picks which one under Settings → Kavita."
-msgstr "Kavita 通过一个 API 密钥连接一个服务器，因此它的阅读记录属于单个 Maki 账户，并不属于你本人。管理员可以在设置 → Kavita 中选择该账户。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
 msgid "Kavita library ids"
 msgstr "Kavita 资料库 ID"
 
@@ -5266,10 +5242,18 @@ msgstr "Kavita 资料库 ID"
 msgid "Kavita reading"
 msgstr "Kavita 阅读"
 
+#: src/pages/SettingsPage.tsx
+msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
 msgstr "Kavita、Maki 记录到的跟踪器，以及出站通知。"
+
+#: src/pages/SettingsPage.tsx
+msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita reading."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5339,6 +5323,10 @@ msgstr "语言，翻译，翻译内容，区域设置，界面语言，UI 语言
 #, fuzzy
 msgid "Languages"
 msgstr "语言"
+
+#: src/pages/SettingsPage.tsx
+msgid "Languages to download, most preferred first. Auto-match tries sources that publish your top language first and skips sources that publish none of these. New auto-matched sources get these languages; existing mappings are never changed. Drag to reorder."
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -5754,6 +5742,10 @@ msgstr "Maki {checkedVersion} 可用"
 msgid "Maki {latestVersion} is available, you're running {currentVersion}."
 msgstr "Maki {latestVersion} 可用，你当前运行的是 {currentVersion}。"
 
+#: src/pages/SettingsPage.tsx
+msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings → 3rd Party Clients in Kavita. Fill the path mapping only if Kavita sees the library under a different path, e.g. in Docker."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients."
@@ -5773,11 +5765,6 @@ msgstr "Maki 正在重启以应用更改。稍后重新加载。"
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki 支持你的语言"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
-msgstr "Maki 会在每个 CBZ 中写入标准格式的 <0>ComicInfo.xml</0>，让 Kavita 能以一致的方式对这些文件和章节进行分组与命名。PDF 会跳过，因为 PDF 没有可写入元数据的位置。关闭此项后，导入的文件（种子下载和手动导入）会保持原样；Maki 从来源下载的章节仍会写入 ComicInfo，因为这些文件由 Maki 创建。之后你可以在系列页面使用“更新 ComicInfo”批量操作，单独为某个系列统一格式。"
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -5888,9 +5875,8 @@ msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "已标记为看过，未标记为已读。不计入阅读统计"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Marks every chapter you've already finished in Kavita as read in Maki, so the built-in reader and the library's progress bars don't start from zero. Safe to run more than once: it never un-marks anything. These chapters are deliberately left out of Rewind: Kavita doesn't say when they were read, and dating them today would pile your whole back catalogue onto one day of the year in review. Rewind keeps counting only the reading Maki sees happen, through the scrobble sync and its own reader."
-msgstr "将你已经在 Kavita 中读完的每个章节在 Maki 中标记为已读，这样内置阅读器和资料库进度条就不会从零开始。可以安全地运行多次：它不会取消任何已读标记。这些章节会特意排除在 Rewind 之外：Kavita 不会说明它们的阅读时间，而将日期设为今天会把整个旧资料库堆到年度回顾中的同一天。Rewind 只统计 Maki 通过记录同步和自身阅读器实际看到的阅读行为。"
+msgid "Marks chapters you finished in Kavita as read here, so progress doesn't start from zero. Safe to rerun; it never unmarks anything. These reads stay out of Rewind because Kavita doesn't record when they happened."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6247,9 +6233,8 @@ msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the a
 msgstr "在受信任代理中为你的反向代理命名，否则限流和审计日志会看到代理而不是客户端。"
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Named reader settings, picked automatically from a series' type. Series with a type no profile covers fall back to the Reader defaults above. A series whose metadata hasn't been refreshed since upgrading has no type yet, so it does the same until the next metadata run. You can still pin a profile, or override the settings outright, from inside the reader."
-msgstr "命名的阅读器设置会根据系列类型自动选择。没有配置文件覆盖其类型的系列会退回到上面的阅读器默认设置。升级后尚未刷新元数据的系列还没有类型，在下一次元数据运行前也会使用相同的默认设置。你仍可以在阅读器中固定配置文件，或直接覆盖设置。"
+msgid "Named reader settings, picked automatically by series type. Types no profile covers use the Reader defaults above, as do series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6260,6 +6245,10 @@ msgstr "命名"
 #, fuzzy
 msgid "Naming tokens"
 msgstr "命名令牌"
+
+#: src/pages/SettingsPage.tsx
+msgid "Needed for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -7018,15 +7007,14 @@ msgstr "关闭"
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder."
 msgstr "默认关闭：开启后，提供方验证通过的任何人都会获得 Maki 账户。新账户在获得根文件夹授权前没有资料库访问权限。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Off by default. When on, finishing a chapter in Maki's reader also marks it read for your Kavita user, so the two stay in step. Only applies to series Maki has matched to a Kavita series, reading stats are never counted twice either way."
-msgstr "默认关闭。开启后，在 Maki 阅读器中读完章节也会为你的 Kavita 用户标记为已读，使两者保持同步。仅适用于 Maki 已匹配到 Kavita 系列的内容，无论哪种情况阅读统计都不会重复计算。"
-
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
 msgstr "关闭后会隐藏首页部分、统计中的全部时间标签页和解锁通知。"
+
+#: src/pages/SettingsPage.tsx
+msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -7103,11 +7091,6 @@ msgstr "单话"
 #, fuzzy
 msgid "Ongoing"
 msgstr "连载中"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Only affects importing an existing series from disk: whether Maki renames its current folder to match the Series Folder Format above, or leaves it as found."
-msgstr "仅影响从磁盘导入现有系列：Maki 是否将其当前文件夹重命名为符合上方系列文件夹格式的名称，还是保持发现时的名称。"
 
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
@@ -7338,6 +7321,10 @@ msgstr "分页阅读速度 · 剩余 {remainingChapters} 个章节 · 根据 {sa
 msgid "Pages"
 msgstr "页面"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pages decoded at once (0 = automatic)"
@@ -7347,11 +7334,6 @@ msgstr "一次解码的页面数（0 = 自动）"
 #, fuzzy
 msgid "Pages fetched ahead."
 msgstr "已提前获取页面。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Pages fetched by a streaming reader count as read, so OPDS reading shows up in your library, Rewind and your trackers. Turn it off if an app reports progress you didn't make: some fetch pages ahead, or grab the last page to size their page bar."
-msgstr "流式阅读器获取的页面会计为已读，因此 OPDS 阅读会显示在你的资料库、Rewind 和跟踪器中。如果某个应用报告了你没有完成的进度，请关闭此选项：有些应用会提前获取页面，或获取最后一页来确定页面栏大小。"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -7403,11 +7385,6 @@ msgstr "密码不匹配"
 #, fuzzy
 msgid "Paste id or URL"
 msgstr "粘贴 ID 或 URL"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Paste it into your reading app as an OPDS catalogue. If you reach Maki from outside your network, swap the host for the address you use there."
-msgstr "将其作为 OPDS 目录粘贴到阅读应用中。如果你从网络外部访问 Maki，请将主机替换为你在那里使用的地址。"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -7511,11 +7488,6 @@ msgstr "选择系列文件夹中实际包含这些章节的文件，适用于合
 #, fuzzy
 msgid "Pick up where you left off."
 msgstr "从你上次离开的地方继续。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
-msgstr "选择要显示的部分及其顺序。如果你不在 Maki 中阅读，可以完全关闭首页：该标签页会消失，资料库会接管为起始页。"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
@@ -7700,10 +7672,18 @@ msgstr "出版方"
 msgid "Publishers"
 msgstr "出版方"
 
+#: src/pages/SettingsPage.tsx
+msgid "pull the latest code and rebuild"
+msgstr ""
+
 #: src/components/UpdateBanner.tsx
 #, fuzzy
 msgid "Pull the latest code and rebuild to update."
 msgstr "拉取最新代码并重新构建以更新。"
+
+#: src/pages/SettingsPage.tsx
+msgid "pull the new image and recreate the container"
+msgstr ""
 
 #: src/components/UpdateBanner.tsx
 #, fuzzy
@@ -7719,11 +7699,6 @@ msgstr "降低相近标题的排名"
 #, fuzzy
 msgid "Pushes down titles close to this one"
 msgstr "降低与此标题相近的标题排名"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
-msgstr "将你在 Kavita 中的阅读进度推送到 AniList、MyAnimeList 和 MangaBaka（可任意组合，留空某个网站的凭据即可禁用它）。在记录页面管理连接并审核匹配。使用上面配置的 Kavita 连接。"
 
 #: src/pages/SettingsPage.tsx
 msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
@@ -8104,9 +8079,8 @@ msgid "Recurrent"
 msgstr "重复"
 
 #: src/components/settings/SecuritySection.tsx
-#, fuzzy
-msgid "Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS, and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why."
-msgstr "将 HTTP 重定向到 HTTPS，发送 HSTS，并将会话 Cookie 标记为 Secure。只有在 Maki 位于 TLS 后方时才开启，不要提前开启，因为通过普通 HTTP 发送的 Secure Cookie 不会返回，登录会无故失败。"
+msgid "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why."
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/DiscoverPage.tsx
@@ -8467,11 +8441,6 @@ msgstr "要求单点登录"
 #, fuzzy
 msgid "Required for Cloudflare-protected sources like MangaFire. Point at a running instance (e.g. http://localhost:8191)."
 msgstr "Cloudflare 保护的来源（如 MangaFire）需要此项。请指向正在运行的实例（例如 http://localhost:8191）。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Required for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance (e.g. http://localhost:8191)."
-msgstr "Cloudflare 保护的来源（如 MangaFire）需要此项。请将其指向正在运行的 FlareSolverr 实例（例如 http://localhost:8191）。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9051,11 +9020,6 @@ msgstr ""
 msgid "Search manga releases on your indexers for torrent downloads."
 msgstr "在索引器中搜索漫画发布内容以下载种子。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed."
-msgstr "在索引器中搜索漫画发布内容。使用 Prowlarr 的聚合搜索 API，无需同步应用。"
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
@@ -9120,6 +9084,10 @@ msgstr "搜索……"
 msgid "searched as “{cleanedTitle}”"
 msgstr "已按“{cleanedTitle}”搜索"
 
+#: src/pages/SettingsPage.tsx
+msgid "Searches your indexers for manga releases through Prowlarr's search API. No app sync needed."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Searching indexers…"
@@ -9163,6 +9131,10 @@ msgstr "种子来源"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Seeded from"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Seeding torrents stay in the download folder, so imports are linked or copied, never moved. A hardlink stores the files once but needs the download folder and library on the same filesystem; otherwise Maki copies. Hardlinked files are left as released, without Maki's ComicInfo.xml, so Kavita may group them apart from Maki's own downloads."
 msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
@@ -9255,9 +9227,8 @@ msgid "Semantic search and recommendations are off."
 msgstr "语义搜索和推荐已关闭。"
 
 #: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Send alerts to Discord or a generic webhook when chapters download, downloads fail, new chapters appear, imports finish, or a health issue is detected."
-msgstr "当章节下载、下载失败、新章节出现、导入完成或检测到健康问题时，向 Discord 或通用 Webhook 发送提醒。"
+msgid "Send events to Discord or a webhook. Each connection picks its own events."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9322,14 +9293,8 @@ msgid "Series I'm reading"
 msgstr "我正在阅读的系列"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
-msgstr "Kavita 中没有阅读进度的系列会在各网站上添加为“待读”。不会修改你列表中已有的条目。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Series metadata comes from MangaBaka. With the local database enabled, Maki keeps a nightly snapshot on disk (~3 GB) so searches and library imports are instant instead of rate-limited. Until the first download finishes, the API is used automatically."
-msgstr "系列元数据来自 MangaBaka。启用本地数据库后，Maki 会在磁盘上保留每晚生成的快照（约 3 GB），让搜索和资料库导入立即完成而不受速率限制。首次下载完成前会自动使用 API。"
+msgid "Series metadata comes from MangaBaka. The local database keeps a nightly snapshot on disk (~3 GB) so search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9361,9 +9326,8 @@ msgid "Series you already have that match these filters."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
-msgstr "将资料库作为 OPDS 目录提供服务，让阅读应用（Panels、Chunky、KOReader、Mihon/Tachiyomi 的 OPDS 扩展）直接连接 Maki，中间不需要 Kavita。章节可以完整下载，也可以逐页流式传输。"
+msgid "Serves the library as an OPDS catalogue for reading apps like Panels, Chunky, KOReader and Mihon. Chapters download whole or stream a page at a time."
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -9518,9 +9482,8 @@ msgid "Show source text"
 msgstr "显示来源文本"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Showing {currentLocaleLabel}. Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
-msgstr "当前显示 {currentLocaleLabel}。英语以外的翻译由机器生成，会随着时间修正；仍未翻译的内容会退回英语。"
+msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -9786,11 +9749,6 @@ msgstr "来源的章节编号不一致"
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "来源对章节起始位置意见不一：这里是致谢页，那里是彩色封面。页面按图像内容匹配，因此每一行在每列都是同一幅图。扫描内容完全无法匹配的来源会停留在自己的第一页。"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
-msgstr "创建映射时，会自动将带语言选择器的来源设置为这些语言。已有映射不会被重写，开启或关闭语言也不会切换来源的启用状态。"
-
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Space ( )"
@@ -9816,11 +9774,6 @@ msgstr "特殊章节（{specialsFilterCount}）"
 #, fuzzy
 msgid "Specials ({visibleSpecialsCount})"
 msgstr "特殊章节（{visibleSpecialsCount}）"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on newly added or imported series are marked \"not wanted\": they stay listed, but they never download and they don't count toward the series' chapter total. Applies as each chapter is discovered, so specials released later are covered too. Existing chapters are unaffected; change them on the series page or in bulk from its Chapters tab."
-msgstr "特殊章节是小数章节（10.5 番外篇、x.1/x.2 分篇）。启用后，新添加或导入系列中的特殊章节会标记为“不想要”：它们仍会列出，但不会下载，也不计入系列章节总数。每发现一个章节时都会应用，因此之后发布的特殊章节也会覆盖。现有章节不受影响，可以在系列页面或其章节标签页中批量更改。"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9995,11 +9948,6 @@ msgstr "暗示性"
 #, fuzzy
 msgid "Supernatural"
 msgstr "超自然"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Switching a source off skips it when auto-matching and stops every series from using it, without changing the per-series toggles: turn it back on and each series picks up exactly where it was."
-msgstr "关闭来源后，自动匹配会跳过它，并阻止所有系列使用它，但不会更改每个系列的开关。重新开启后，每个系列会准确恢复到之前的状态。"
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -10197,19 +10145,13 @@ msgid "The catalogue rails need the local MangaBaka database (Settings → Metad
 msgstr "目录横栏需要本地 MangaBaka 数据库（设置 → 元数据 → 本地数据库）。"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "The current feed URL stops working immediately. Every reading app you've set up with it will need the new URL."
-msgstr "当前订阅源 URL 会立即失效。你用它配置的每个阅读应用都需要新的 URL。"
+msgid "The current feed URL stops working immediately. Every app using it needs the new one."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "The fallback for Maki's built-in reader: what a series gets when no reading profile covers its type and nothing is pinned or overridden on the series itself."
 msgstr "Maki 内置阅读器的回退设置：当没有阅读配置文件覆盖系列类型，且系列本身没有固定或覆盖设置时所使用的配置。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "The feed URL carries its own token and is the only credential a reading app needs, so anyone holding it can read the whole library. It is deliberately not your API key: revoking it below breaks configured readers and nothing else."
-msgstr "订阅源 URL 自带令牌，是阅读应用唯一需要的凭据，因此持有它的人可以阅读整个资料库。它特意不是你的 API 密钥：在下方撤销它只会使已配置的阅读器失效，不会影响其他内容。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10230,6 +10172,14 @@ msgstr "文件夹和所有文件已经符合当前命名格式。"
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
 msgstr "完整明细就在此幻灯片之后。"
+
+#: src/pages/SettingsPage.tsx
+msgid "The incognito mode pre-filled when adding a series of each rating. \"No scrobble\" keeps it off your trackers; \"Full\" also keeps it out of stats and history. Any single add can override it, and changes here never touch existing series."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "The language of Maki's interface, on every device. Title language below is separate: it sets the language of series titles."
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -10255,6 +10205,10 @@ msgstr "资料库"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "关联文件尚未盘点，因此无法显示其页面。运行“扫描文件”，然后回来进行比较。"
+
+#: src/pages/SettingsPage.tsx
+msgid "The Maki account Kavita's reading is recorded as. Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
@@ -10466,9 +10420,8 @@ msgid "This repair needs a source chosen by hand"
 msgstr "此修复需要手动选择来源"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, take a backup first if you want a way back."
-msgstr "这会用 <0>{backupName}</0> 替换当前资料库和设置，然后重启 Maki。当前数据不会保留，如果想保留退路，请先进行备份。"
+msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -11357,11 +11310,6 @@ msgstr "没有添加或下载权限的读者请求的内容。批准后会添加
 msgid "What shapes your recommendations"
 msgstr "哪些因素影响你的推荐"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "What the incognito setting is pre-filled with when a series of each rating is added. \"No scrobble\" keeps it off your trackers; \"Full\" also keeps it out of stats and reading history. The add form still shows the value, so any single add can override it, and changing a rule here never touches a series already in the library."
-msgstr "添加各分级系列时，隐身设置预填的值。“不记录”会使其不出现在跟踪器中；“完整”还会将其排除在统计和阅读历史之外。添加表单仍会显示该值，因此单次添加可以覆盖它，而更改这里的规则不会影响资料库中已有的系列。"
-
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "What you read"
@@ -11388,14 +11336,8 @@ msgid "When"
 msgstr "时间"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "When a series auto-matches multiple sources, chapters download from the highest-priority enabled source first. Applies to new auto-matches and manual \"Auto-match\" runs; existing series mappings keep their current priorities. Drag to reorder."
-msgstr "系列自动匹配多个来源时，章节会先从优先级最高的已启用来源下载。适用于新的自动匹配和手动运行“自动匹配”；现有系列映射保留当前优先级。拖动即可重新排序。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
-msgstr "配置后，新章节下载或导入文件发生变化时，Maki 会立即要求 Kavita 扫描系列文件夹，然后将系列海报、网页链接和发布状态推送到 Kavita（你在 Kavita 中自行设置的封面绝不会被覆盖）。在 Kavita 的用户设置 → 第三方客户端中获取 API 密钥。如果 Kavita 看到的资料库路径不同（例如它运行在 Docker 中），请填写可选的路径映射，让 Maki 转换文件夹路径。"
+msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -11427,11 +11369,6 @@ msgstr "时间花在哪里"
 msgid "Where your taste has moved"
 msgstr "你的品味发生了怎样的变化"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene release's own name often carries more than the format can say (the edition, the group, the year), so turning this off keeps what the release named it. Chapters Maki downloads itself are always named by the format, and renaming a series from its own page still renames everything in it."
-msgstr "从磁盘导入的文件是否会重命名为上面的章节格式。场景发布的原始名称通常包含格式无法表达的更多信息（版本、组别、年份），关闭此选项即可保留发布时的名称。Maki 自行下载的章节始终按该格式命名，从系列页面重命名系列时仍会重命名其中的所有内容。"
-
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Whether Maki renames an imported series' folder to its standard sanitized-title name, or leaves it as found. Changeable later in Settings."
@@ -11439,18 +11376,8 @@ msgstr "Maki 是否将导入系列的文件夹重命名为标准的净化标题�
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Which language Maki's interface is in. Stored on the server, so it applies on every device. This is separate from Title language below, which is about the metadata rather than the app."
-msgstr "Maki 界面使用的语言。存储在服务器上，因此会应用于每台设备。这与下面的标题语言不同，后者针对的是元数据而不是应用。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "系列标题显示时使用的语言，前提是元数据提供方有该语言。仅影响显示：文件夹和文件名保留英文标题，排序也使用英文标题。"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
-msgstr "要下载的语言，按偏好顺序排列。自动匹配时，每个来源会按其发布的语言在此列表中的最高排名排序，因此包含首选语言的来源会优先于不包含的来源。未发布任何已启用语言的来源会完全跳过自动匹配。拖动即可重新排序。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -11461,6 +11388,10 @@ msgstr "Maki 打开时显示的页面。存储在服务器上，因此会应用�
 #, fuzzy
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "章节列表下方显示哪些横栏。关闭某个横栏也会停止获取它。"
+
+#: src/pages/SettingsPage.tsx
+msgid "Which sections appear, and in what order. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11487,11 +11418,6 @@ msgstr "整个资料库"
 msgid "Whole year"
 msgstr "全年"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered admin, which is what a single-user instance wants. Only this account can import read status from Kavita or push its reads back."
-msgstr "Kavita 进度记录为谁的阅读历史。未设置表示编号最小的管理员，这也是单用户实例所需的设置。只有此账户可以从 Kavita 导入阅读状态，或将阅读记录推送回 Kavita。"
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Width"
@@ -11503,9 +11429,8 @@ msgid "With either claim set, your provider is the authority on permissions: the
 msgstr "设置任一声明后，提供方就是权限的权威来源：每次登录都会重新计算权限，因此在用户页面所作的更改会在该用户下次登录时被覆盖。两者都留空即可在此处保留权限。"
 
 #: src/components/settings/SecuritySection.tsx
-#, fuzzy
-msgid "With no trusted proxy configured, forwarded headers are ignored entirely, deliberately, since believing them from anyone would let a client claim any address and slip past both rate limiting and account lockout. Behind a reverse proxy that means every failed sign-in is attributed to the proxy: name it above so lockout and the audit log see the real client."
-msgstr "未配置受信任代理时，会完全忽略转发标头，这是有意为之，因为相信任何人提供的标头会让客户端声称自己来自任意地址，从而绕过速率限制和账户锁定。在反向代理后方，这意味着每次失败登录都会归因于代理：请在上方为它命名，这样锁定和审计日志才能看到真实客户端。"
+msgid "With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see the real client."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -11522,6 +11447,10 @@ msgstr "不会再次推荐"
 #, fuzzy
 msgid "Write ComicInfo.xml into imported files"
 msgstr "将 ComicInfo.xml 写入导入的文件"
+
+#: src/pages/SettingsPage.tsx
+msgid "Writes a standard <0>ComicInfo.xml</0> into imported CBZs so Kavita groups and names chapters consistently. Off leaves torrent grabs and manual imports untouched. Maki's own downloads always get one, and PDFs never do. A series page's \"Update ComicInfo\" action standardizes one series later."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

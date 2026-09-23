@@ -138,11 +138,7 @@ export function NotificationsSection() {
         </Button>
       </Group>
       <Text size="sm" c="var(--ink-3)" mb="md">
-        <Trans>
-          Send alerts to Discord or a generic webhook when chapters download, downloads fail, new
-          chapters appear, imports finish, or a health issue is detected.
-        </Trans>{' '}
-        <Trans>Each connection chooses which events it fires on.</Trans>
+        <Trans>Send events to Discord or a webhook. Each connection picks its own events.</Trans>
       </Text>
 
       {connections && connections.length > 0 ? (

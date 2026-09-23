@@ -251,19 +251,11 @@ function SourceLanguageSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Which languages to download, most preferred first. When auto-matching, every source is
-          ranked by the highest language on this list that it publishes, so a source carrying your
-          top language is tried before one that does not. Sources publishing none of the enabled
-          languages are skipped by auto-matching entirely. Drag to reorder.
+          Languages to download, most preferred first. Auto-match tries sources that publish your
+          top language first and skips sources that publish none of these. New auto-matched
+          sources get these languages; existing mappings are never changed. Drag to reorder.
         </Trans>
       </SettingsHelp>
-      <Text size="sm" c="var(--ink-3)" mb="md">
-        <Trans>
-          Sources with a language picker get it set to these languages when a mapping is created
-          automatically. Mappings that already exist are never rewritten, and switching a language on
-          or off never switches a source on or off.
-        </Trans>
-      </Text>
       {order && disabled && (
         <PriorityList
           items={order}
@@ -333,24 +325,13 @@ function SourcePrioritySection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          When a series auto-matches multiple sources, chapters download from the highest-priority
-          enabled source first. Applies to new auto-matches and manual "Auto-match" runs; existing
-          series mappings keep their current priorities. Drag to reorder.
+          Download order when a series matches several sources, highest first. Language ranking
+          above comes first. Applies to new auto-matches and manual Auto-match runs; other series
+          keep their order.
+          Switching a source off pauses it for every series without touching their own toggles.
+          Drag to reorder.
         </Trans>
       </SettingsHelp>
-      <Text size="sm" c="var(--ink-3)" mb="md">
-        <Trans>
-          A source publishing a higher-ranked language is ranked ahead of this list when
-          auto-matching.
-        </Trans>
-      </Text>
-      <Text size="sm" c="var(--ink-3)" mb="md">
-        <Trans>
-          Switching a source off skips it when auto-matching and stops every series from using it,
-          without changing the per-series toggles: turn it back on and each series picks up exactly
-          where it was.
-        </Trans>
-      </Text>
       {order && disabled && (
         <PriorityList
           items={order}
@@ -433,9 +414,9 @@ function MetadataSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Series metadata comes from MangaBaka. With the local database enabled, Maki keeps a
-          nightly snapshot on disk (~3 GB) so searches and library imports are instant instead of
-          rate-limited. Until the first download finishes, the API is used automatically.
+          Series metadata comes from MangaBaka. The local database keeps a nightly snapshot on
+          disk (~3 GB) so search and imports skip the API's rate limit, and Discover needs it. The
+          API is used until the first download finishes.
         </Trans>
       </SettingsHelp>
       <Stack gap="sm">
@@ -521,10 +502,9 @@ function RecommendationIndexSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Discover recommends by semantic "feel" and searches by description, using a local
-          embedding model. The vectors download prebuilt, so this normally needs no attention;
-          search falls back to titles and recommendations to genres whenever it's off or still
-          downloading.
+          A local embedding model lets Discover recommend by feel and search by description. The
+          vectors download prebuilt, so this normally needs no attention. While it's off or still
+          downloading, search falls back to titles and recommendations to genres.
         </Trans>
       </SettingsHelp>
 
@@ -545,11 +525,9 @@ function MonitoringSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on
-          newly added or imported series are marked "not wanted": they stay listed, but they never
-          download and they don't count toward the series' chapter total. Applies as each chapter
-          is discovered, so specials released later are covered too. Existing chapters are
-          unaffected; change them on the series page or in bulk from its Chapters tab.
+          Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never
+          downloaded or counted in the chapter total. Specials released later are covered too.
+          Existing chapters are unchanged; edit them from a series' Chapters tab.
         </Trans>
       </SettingsHelp>
       <Switch
@@ -646,12 +624,10 @@ function LibrarySection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Maki writes a standardized <Code>ComicInfo.xml</Code> into each CBZ so Kavita groups and
-          names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put
-          it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as
-          they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki
-          builds those files. You can always standardize a single series later with the "Update
-          ComicInfo" bulk action on its page.
+          Writes a standard <Code>ComicInfo.xml</Code> into imported CBZs so Kavita groups and
+          names chapters consistently. Off leaves torrent grabs and manual imports untouched.
+          Maki's own downloads always get one, and PDFs never do. A series page's "Update
+          ComicInfo" action standardizes one series later.
         </Trans>
       </SettingsHelp>
       <Switch
@@ -673,7 +649,7 @@ function LibrarySection() {
       <Switch
         mb="lg"
         label={t`Save a cover.jpg into each series' library folder`}
-        description={t`For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on.`}
+        description={t`For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on.`}
         checked={settings?.writeCoverToFolder ?? false}
         onChange={(e) =>
           save.mutate(
@@ -692,11 +668,9 @@ function LibrarySection() {
       </Text>
       <SettingsHelp mb="sm">
         <Trans>
-          How Maki names a series' folder and the chapter files it downloads. Both take tokens;
-          the "?" button lists every one with an example, and its dialog is directly editable too.
-          A change applies to series added and chapters downloaded from here on. Nothing already
-          on disk moves until you rename it, either from a series' page or with the button below
-          for the whole library.
+          How Maki names series folders and the chapter files it downloads. The "?" button lists
+          every token. Changes apply to new series and downloads; files already on disk stay put
+          until you rename them from a series' page or with the button below.
         </Trans>
       </SettingsHelp>
       <Stack gap="md" mb="md">
@@ -779,8 +753,8 @@ function LibrarySection() {
       </Text>
       <SettingsHelp mb="sm">
         <Trans>
-          Only affects importing an existing series from disk: whether Maki renames its current
-          folder to match the Series Folder Format above, or leaves it as found.
+          When importing an existing series from disk: rename its folder to the Series Folder
+          Format, or keep it as found.
         </Trans>
       </SettingsHelp>
       <Radio.Group
@@ -811,10 +785,8 @@ function LibrarySection() {
       </Text>
       <SettingsHelp mb="sm">
         <Trans>
-          Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene
-          release's own name often carries more than the format can say (the edition, the group,
-          the year), so turning this off keeps what the release named it. Chapters Maki downloads
-          itself are always named by the format, and renaming a series from its own page still
+          Off keeps a release's own file name, which often says more than the format can. Maki's
+          own downloads always follow the format, and renaming a series from its page still
           renames everything in it.
         </Trans>
       </SettingsHelp>
@@ -840,10 +812,9 @@ function LibrarySection() {
       </Text>
       <SettingsHelp mb="sm">
         <Trans>
-          What the incognito setting is pre-filled with when a series of each rating is added.
-          "No scrobble" keeps it off your trackers; "Full" also keeps it out of stats and reading
-          history. The add form still shows the value, so any single add can override it, and
-          changing a rule here never touches a series already in the library.
+          The incognito mode pre-filled when adding a series of each rating. "No scrobble" keeps it
+          off your trackers; "Full" also keeps it out of stats and history. Any single add can
+          override it, and changes here never touch existing series.
         </Trans>
       </SettingsHelp>
       <Stack gap="xs">
@@ -977,9 +948,8 @@ function ReaderSection() {
           />
           <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
-              Credit pages and the next chapter's opening pages often look the same, so a chapter
-              turn can pass unnoticed. This shows the chapter name over the page for a couple of
-              seconds when you enter one.
+              Credit pages and the next chapter's first pages often look alike. This shows the
+              chapter name for a couple of seconds when you enter a new one.
             </Trans>
           </Text>
         </div>
@@ -993,16 +963,15 @@ function ReaderSection() {
           />
           <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
-              Off by default. When on, finishing a chapter in Maki's reader also marks it read for
-              your Kavita user, so the two stay in step. Only applies to series Maki has matched to
-              a Kavita series, reading stats are never counted twice either way.
+              Finishing a chapter in Maki's reader also marks it read in Kavita. Only for series
+              matched to a Kavita series. Stats never count a chapter twice.
             </Trans>
           </Text>
           {ownsKavita ? null : (
             <Text size="xs" c="var(--ink-3)" mt={4}>
               <Trans>
-                Kavita is one server behind one API key, so its reading belongs to a single Maki
-                account, and it isn't yours. An admin picks which one under Settings → Kavita.
+                Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change
+                that under Settings → Integrations → Kavita reading.
               </Trans>
             </Text>
           )}
@@ -1062,9 +1031,8 @@ function OpdsSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader,
-          Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between.
-          Chapters can be downloaded whole or streamed a page at a time.
+          Serves the library as an OPDS catalogue for reading apps like Panels, Chunky, KOReader
+          and Mihon. Chapters download whole or stream a page at a time.
         </Trans>
       </SettingsHelp>
 
@@ -1077,9 +1045,8 @@ function OpdsSection() {
           />
           <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
-              The feed URL carries its own token and is the only credential a reading app needs,
-              so anyone holding it can read the whole library. It is deliberately not your API
-              key: revoking it below breaks configured readers and nothing else.
+              Anyone with the feed URL can read the whole library. Regenerating it breaks the apps
+              using it and nothing else.
             </Trans>
           </Text>
         </div>
@@ -1101,14 +1068,13 @@ function OpdsSection() {
                 </Group>
                 <Alert color="var(--warn)" variant="light" mt="xs">
                   <Trans>
-                    Copy this now, it is shown only once. Maki stores a fingerprint of the token,
-                    not the token, so it cannot be displayed again. Lose it and you regenerate.
+                    Copy this now. It can't be shown again; if you lose it, regenerate.
                   </Trans>
                 </Alert>
                 <Text size="xs" c="var(--ink-3)" mt={4}>
                   <Trans>
-                    Paste it into your reading app as an OPDS catalogue. If you reach Maki from
-                    outside your network, swap the host for the address you use there.
+                    Add it to your reading app as an OPDS catalogue. From outside your network, swap
+                    the host for the address you use there.
                   </Trans>
                 </Text>
               </>
@@ -1138,9 +1104,9 @@ function OpdsSection() {
             />
             <Text size="xs" c="var(--ink-3)" mt={4}>
               <Trans>
-                Pages fetched by a streaming reader count as read, so OPDS reading shows up in
-                your library, Rewind and your trackers. Turn it off if an app reports progress you
-                didn't make: some fetch pages ahead, or grab the last page to size their page bar.
+                Pages a streaming app fetches count as read, so OPDS reading reaches your library,
+                Rewind and trackers. Turn it off if an app reports progress you didn't make; some
+                fetch pages ahead.
               </Trans>
             </Text>
           </div>
@@ -1156,8 +1122,8 @@ function OpdsSection() {
         <Stack>
           <Text size="sm">
             <Trans>
-              The current feed URL stops working immediately. Every reading app you've set up
-              with it will need the new URL.
+              The current feed URL stops working immediately. Every app using it needs the new
+              one.
             </Trans>
           </Text>
           <Group justify="flex-end">
@@ -1221,12 +1187,9 @@ function KavitaReadImportControl() {
       </Text>
       <Text size="xs" c="var(--ink-3)" mb="sm">
         <Trans>
-          Marks every chapter you've already finished in Kavita as read in Maki, so the built-in
-          reader and the library's progress bars don't start from zero. Safe to run more than
-          once: it never un-marks anything. These chapters are deliberately left out of Rewind:
-          Kavita doesn't say when they were read, and dating them today would pile your whole back
-          catalogue onto one day of the year in review. Rewind keeps counting only the reading
-          Maki sees happen, through the scrobble sync and its own reader.
+          Marks chapters you finished in Kavita as read here, so progress doesn't start from zero.
+          Safe to rerun; it never unmarks anything. These reads stay out of Rewind because Kavita
+          doesn't record when they happened.
         </Trans>
       </Text>
       <Group gap="sm">
@@ -1298,9 +1261,9 @@ function DownloadSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          How many chapters download at once from scraper sources. Higher isn't always faster:
-          each worker is a live connection to the same site, and tripping its rate limit pauses
-          every download. Torrent releases aren't affected. Takes effect after a restart.
+          Chapters downloaded at once from scraper sources. More isn't always faster: tripping a
+          site's rate limit pauses every download. Torrents aren't affected. Takes effect after a
+          restart.
         </Trans>
       </SettingsHelp>
       <NumberInput
@@ -1318,10 +1281,9 @@ function DownloadSection() {
       </Text>
       <SettingsHelp mb="xs">
         <Trans>
-          Automatically downloads the next chapters of a series when you have only a few unread
-          chapters left. The settings below control how many unread chapters trigger the download
-          and how many chapters are downloaded at once. Runs every five minutes, based on reading
-          progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
+          Downloads the next chapters of a series when you're down to a few unread. Checks every
+          five minutes against progress from Kavita or the built-in reader. Turn it on per series
+          in its monitoring options.
         </Trans>
       </SettingsHelp>
       <Group align="flex-end" mb="md">
@@ -1351,11 +1313,9 @@ function DownloadSection() {
       </Text>
       <SettingsHelp mb="xs">
         <Trans>
-          A chapter that never finishes holds a worker for as long as the app runs, and with only
-          a couple of workers that stops the whole queue: everything else sits on "Queued" with
-          nothing wrong with it. Past this many minutes the download is abandoned and marked
-          failed, so retry handling takes over. Set 0 to remove the limit. Takes effect after a
-          restart.
+          A chapter that never finishes holds a worker and can stall the whole queue. Past this
+          many minutes it is marked failed and retried like any other failure. 0 means no limit.
+          Takes effect after a restart.
         </Trans>
       </SettingsHelp>
       <NumberInput
@@ -1373,13 +1333,10 @@ function DownloadSection() {
       </Text>
       <SettingsHelp mb="xs">
         <Trans>
-          A finished torrent keeps seeding from the download folder, so its files are brought into
-          the library rather than moved. A hardlink gives the library its own name for the same
-          bytes, so the release isn't stored twice. It only works when the download folder and the
-          library sit on the same filesystem; when they don't, Maki copies instead. Hardlinked
-          files are left exactly as the release built them, which means no ComicInfo.xml
-          standardization for them, so Kavita may group them separately from chapters Maki
-          downloaded itself.
+          Seeding torrents stay in the download folder, so imports are linked or copied, never
+          moved. A hardlink stores the files once but needs the download folder and library on the
+          same filesystem; otherwise Maki copies. Hardlinked files are left as released, without
+          Maki's ComicInfo.xml, so Kavita may group them apart from Maki's own downloads.
         </Trans>
       </SettingsHelp>
       <Switch
@@ -1393,9 +1350,8 @@ function DownloadSection() {
       </Text>
       <SettingsHelp mb="xs">
         <Trans>
-          Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...)
-          up to the attempt cap below. A manual retry from the Activity page doesn't count against
-          it.
+          Failed downloads retry on a growing backoff (5m, 10m, 20m, ...) up to the cap. Manual
+          retries from Activity don't count.
         </Trans>
       </SettingsHelp>
       <Group align="flex-end" mb="md">
@@ -1496,17 +1452,15 @@ function BackupSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          A backup is a zip of your database and <Code>config.json</Code>, your whole library and
-          all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache)
-          is left out. One is taken automatically right before any upgrade migration runs.
-          Restoring replaces the current data and restarts Maki.
+          A zip of your database and <Code>config.json</Code>: the library and every setting.
+          Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken
+          automatically before every upgrade migration.
         </Trans>
       </SettingsHelp>
       <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
         <Trans>
-          Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a
-          downloaded backup like a password. Restore auto-recovers only under a supervisor (Docker
-          / systemd); a bare process just stops and you restart it yourself.
+          Backups hold API keys and passwords in plain text. Treat a downloaded one like a
+          password.
         </Trans>
       </Alert>
 
@@ -1617,7 +1571,8 @@ function BackupSection() {
           <Text size="sm">
             <Trans>
               This replaces your current library and settings with <b>{backupName}</b>, then restarts
-              Maki. The current data is not kept, take a backup first if you want a way back.
+              Maki. The current data is not kept, so take a backup first if you want a way back.
+              Docker and systemd bring Maki back up on their own; otherwise start it again yourself.
             </Trans>
           </Text>
           <Group justify="flex-end">
@@ -1767,8 +1722,8 @@ function FlareSolverrSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Required for Cloudflare-protected sources like MangaFire. Point this at a running
-          FlareSolverr instance (e.g. http://localhost:8191).
+          Needed for Cloudflare-protected sources like MangaFire. Point this at a running
+          FlareSolverr instance.
         </Trans>
       </SettingsHelp>
       <Group>
@@ -1832,18 +1787,10 @@ function ScrobbleSection() {
         <Trans>Scrobbling</Trans>
       </Title>
       <SettingsHelp mb="sm">
-        {isAdmin ? (
-          <Trans>
-            Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any
-            combination, leave a site's credentials empty to disable it). Manage connections and
-            review matches on the Scrobble page. Uses the Kavita connection configured above.
-          </Trans>
-        ) : (
-          <Trans>
-            Pushes your reading progress to your trackers. Connect your accounts and review matches
-            on the Scrobble page.
-          </Trans>
-        )}
+        <Trans>
+          Pushes your reading progress to your trackers. Connect your accounts and review matches
+          on the Scrobble page.
+        </Trans>
       </SettingsHelp>
       <Stack gap="xs">
         <Text size="sm" fw={600}>
@@ -1879,15 +1826,14 @@ function ScrobbleSection() {
         </Text>
         {isAdmin && (
           <>
-            <Text size="xs" c="var(--ink-3)">
+            <SettingsHelp>
               <Trans>
                 Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-                <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
-                secret) exactly as shown there. If connecting opens a browser “sign in to
-                myanimelist.net” popup and then <Code>invalid_client</Code>, MyAnimeList didn&apos;t
-                recognise the Client ID: re-copy it and make sure the App Type is set.
+                <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. If connecting ends in{' '}
+                <Code>invalid_client</Code>, re-copy the Client ID (not the secret) and check the
+                App Type is set.
               </Trans>
-            </Text>
+            </SettingsHelp>
             <Group grow>
               <TextInput
                 label={t`Client ID`}
@@ -1910,7 +1856,7 @@ function ScrobbleSection() {
         </Text>
         <TextInput
           label={t`Personal Access Token`}
-          description={t`From MangaBaka settings, no OAuth needed, works immediately`}
+          description={t`From your MangaBaka settings. No OAuth needed.`}
           type="password"
           placeholder="mb-..."
           value={form?.mangaBakaToken ?? ''}
@@ -1956,7 +1902,7 @@ function ScrobbleSection() {
         )}
         <Switch
           label={t`Add unread series as plan-to-read`}
-          description={t`Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists.`}
+          description={t`Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed.`}
           checked={form?.planToRead ?? false}
           onChange={(e) => {
             const checked = e.currentTarget.checked
@@ -2058,9 +2004,8 @@ function LanguageSection() {
       </Title>
       <SettingsHelp mb="sm">
         <Trans>
-          Which language Maki's interface is in. Stored on the server, so it applies on every
-          device. This is separate from Title language below, which is about the metadata rather
-          than the app.
+          The language of Maki's interface, on every device. Title language below is separate:
+          it sets the language of series titles.
         </Trans>
       </SettingsHelp>
       <Select
@@ -2073,8 +2018,8 @@ function LanguageSection() {
       />
       <Text size="xs" c="var(--ink-3)" mt="sm">
         <Trans>
-          Showing {currentLocaleLabel}. Translations other than English are machine-made and being
-          corrected over time; anything still untranslated falls back to English.
+          Showing {currentLocaleLabel}. Non-English translations are machine-made and improving;
+          anything untranslated shows in English.
         </Trans>
       </Text>
     </Panel>
@@ -2251,9 +2196,8 @@ function HomeSectionsSection() {
           </Title>
           <SettingsHelp>
             <Trans>
-              Pick which sections appear and what order they run in. Turn Home off entirely if you
-              don&apos;t read in Maki: the tab disappears and the library takes over as the start
-              page.
+              Which sections appear, and in what order. Turn Home off if you don&apos;t read in
+              Maki: the tab disappears and Library becomes the start page.
             </Trans>
           </SettingsHelp>
         </div>
@@ -2474,6 +2418,9 @@ function UpdatesSection() {
   const checkNow = useCheckForUpdatesNow()
   const latestVersion = status?.latestVersion
   const checkedAtLabel = status?.checkedAt ? formatDateTime(status.checkedAt) : undefined
+  const howToUpdate = status?.isDocker
+    ? t`pull the new image and recreate the container`
+    : t`pull the latest code and rebuild`
 
   return (
     <Panel>
@@ -2481,18 +2428,10 @@ function UpdatesSection() {
         <Trans>Updates</Trans>
       </Title>
       <SettingsHelp mb="md">
-        {status?.isDocker ? (
-          <Trans>
-            Checks GitHub daily for a newer release and raises a banner and a Notifications event
-            when one is found. Docker installs are notify-only, pull the new image and recreate
-            the container.
-          </Trans>
-        ) : (
-          <Trans>
-            Checks GitHub daily for a newer release and raises a banner and a Notifications event
-            when one is found. Bare installs are notify-only, pull the latest code and rebuild.
-          </Trans>
-        )}
+        <Trans>
+          Checks GitHub daily for a new release and shows a banner and a notification when there
+          is one. Updating is manual: {howToUpdate}.
+        </Trans>
       </SettingsHelp>
       <Stack gap="sm">
         <Switch
@@ -2609,10 +2548,8 @@ function ImageCacheSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Clears the reader&apos;s page thumbnails and the source-comparison samples, drops poster
-          folders for series that no longer exist, and re-downloads series posters from the
-          metadata provider. Thumbnails come back on their own the next time a chapter is opened,
-          so nothing is lost by clearing them.
+          Clears reader thumbnails and source-comparison samples, removes posters of deleted
+          series, and re-downloads posters. Thumbnails regenerate the next time a chapter opens.
         </Trans>
       </SettingsHelp>
 
@@ -2747,9 +2684,9 @@ function KavitaUserSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered
-          admin, which is what a single-user instance wants. Only this account can import read
-          status from Kavita or push its reads back.
+          The Maki account Kavita's reading is recorded as. Unset means the lowest-numbered admin,
+          which suits a single-user instance. Only this account can import from Kavita or push
+          reads back.
         </Trans>
       </SettingsHelp>
       <Select
@@ -2817,7 +2754,7 @@ function useSectionNodes(): Record<string, ReactNode> {
         <ConnectionSettingsCard
           name="prowlarr"
           title="Prowlarr"
-          description={t`Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed.`}
+          description={t`Searches your indexers for manga releases through Prowlarr's search API. No app sync needed.`}
           fields={[
             { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
             { key: 'apiKey', label: t`API key`, secret: true },
@@ -2830,7 +2767,7 @@ function useSectionNodes(): Record<string, ReactNode> {
         <ConnectionSettingsCard
           name="qbittorrent"
           title="qBittorrent"
-          description={t`Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\\downloads), fill the optional path mapping to translate them.`}
+          description={t`Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
           fields={[
             { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
             { key: 'username', label: t`Username` },
@@ -2847,7 +2784,7 @@ function useSectionNodes(): Record<string, ReactNode> {
         <ConnectionSettingsCard
           name="kavita"
           title="Kavita"
-          description={t`When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths.`}
+          description={t`Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings → 3rd Party Clients in Kavita. Fill the path mapping only if Kavita sees the library under a different path, e.g. in Docker.`}
           fields={[
             { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
             { key: 'apiKey', label: t`API key`, secret: true },

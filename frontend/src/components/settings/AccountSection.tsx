@@ -404,8 +404,8 @@ function ApiKeysCard() {
       <Text size="xs" c="var(--ink-3)">
         <Trans>
           For scripts and third-party clients. A <Code>Full</Code> key acts as you through the{' '}
-          <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL, it cannot reach
-          the management API, which is why the URL you paste into a reading app is safe to paste.
+          <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL and cannot reach
+          the management API.
         </Trans>
       </Text>
 

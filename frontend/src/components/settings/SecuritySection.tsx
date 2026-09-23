@@ -58,14 +58,14 @@ export function SecuritySection() {
       <Stack gap="md">
         <Switch
           label={t`Require HTTPS`}
-          description={t`Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS, and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why.`}
+          description={t`Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why.`}
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
 
         <TextInput
           label={t`Trusted proxies`}
-          description={t`Comma-separated IP addresses or CIDR networks, e.g. 172.18.0.0/16. Only these are believed when they set X-Forwarded-For. Leave empty if Maki is reached directly.`}
+          description={t`Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly.`}
           placeholder="172.18.0.0/16, 10.0.0.5"
           value={draft.trustedProxies}
           onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
@@ -74,10 +74,9 @@ export function SecuritySection() {
         {!draft.trustedProxies.trim() && (
           <Alert color="var(--warn)" variant="light">
             <Trans>
-              With no trusted proxy configured, forwarded headers are ignored entirely, deliberately,
-              since believing them from anyone would let a client claim any address and slip past both
-              rate limiting and account lockout. Behind a reverse proxy that means every failed sign-in
-              is attributed to the proxy: name it above so lockout and the audit log see the real client.
+              With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every
+              failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see
+              the real client.
             </Trans>
           </Alert>
         )}

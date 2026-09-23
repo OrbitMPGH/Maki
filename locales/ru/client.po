@@ -826,9 +826,8 @@ msgid "{sourceName} · priority {priority}"
 msgstr "{sourceName} · приоритет {priority}"
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "{sourceName} is switched off in Settings → Source priority. This series' setting is kept and applies again once it's back on."
-msgstr "{sourceName} отключён в Настройки → Приоритет источников. Настройка этой серии сохранена и снова применится после включения источника."
+msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1196,11 +1195,6 @@ msgstr "90 дней"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "Аниме с оценкой 10/10 даёт вес {topSeed}, против 1.00 у неоценённой книги на полке."
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A backup is a zip of your database and <0>config.json</0>, your whole library and all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache) is left out. One is taken automatically right before any upgrade migration runs. Restoring replaces the current data and restarts Maki."
-msgstr "Резервная копия содержит zip базы данных и <0>config.json</0>, всю библиотеку и все настройки. Крупные данные, которые можно скачать заново (дамп MangaBaka, эмбеддинги, обложки, кэш), не включаются. Копия создаётся автоматически прямо перед миграцией при обновлении. Восстановление заменяет текущие данные и перезапускает Maki."
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A chapter download failed."
@@ -1212,9 +1206,8 @@ msgid "A chapter finished downloading and imported."
 msgstr "Загрузка главы завершена, глава импортирована."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A chapter that never finishes holds a worker for as long as the app runs, and with only a couple of workers that stops the whole queue: everything else sits on \"Queued\" with nothing wrong with it. Past this many minutes the download is abandoned and marked failed, so retry handling takes over. Set 0 to remove the limit. Takes effect after a restart."
-msgstr "Глава, которая никогда не завершается, удерживает рабочий процесс всё время работы приложения. При наличии всего нескольких рабочих процессов это останавливает всю очередь: всё остальное остаётся в состоянии «В очереди», хотя с ним всё в порядке. После этого количества минут загрузка отменяется и помечается как неудачная, затем запускается обработка повтора. Установите 0, чтобы убрать ограничение. Изменение вступит в силу после перезапуска."
+msgid "A chapter that never finishes holds a worker and can stall the whole queue. Past this many minutes it is marked failed and retried like any other failure. 0 means no limit. Takes effect after a restart."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -1226,11 +1219,6 @@ msgstr "Несколько быстрых вариантов помогут по
 msgid "A file move is blocked for any series with an active download."
 msgstr "Перемещение файлов заблокировано для любой серии с активной загрузкой."
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A finished torrent keeps seeding from the download folder, so its files are brought into the library rather than moved. A hardlink gives the library its own name for the same bytes, so the release isn't stored twice. It only works when the download folder and the library sit on the same filesystem; when they don't, Maki copies instead. Hardlinked files are left exactly as the release built them, which means no ComicInfo.xml standardization for them, so Kavita may group them separately from chapters Maki downloaded itself."
-msgstr "Завершённый торрент продолжает раздачу из папки загрузок, поэтому его файлы добавляются в библиотеку, а не перемещаются. Жёсткая ссылка даёт библиотеке собственное имя для тех же данных, поэтому релиз не хранится дважды. Это работает только если папка загрузок и библиотека находятся в одной файловой системе; иначе Maki копирует файлы. Файлы с жёсткими ссылками сохраняются точно в виде релиза, поэтому ComicInfo.xml не стандартизируется, и Kavita может сгруппировать их отдельно от глав, загруженных самим Maki."
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "A large selection can take a while."
@@ -1240,6 +1228,10 @@ msgstr "Большой выбор может обрабатываться нек
 #, fuzzy
 msgid "A library import folder finished."
 msgstr "Импорт папки библиотеки завершён."
+
+#: src/pages/SettingsPage.tsx
+msgid "A local embedding model lets Discover recommend by feel and search by description. The vectors download prebuilt, so this normally needs no attention. While it's off or still downloading, search falls back to titles and recommendations to genres."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1266,11 +1258,6 @@ msgstr "Обновление уже выполняется"
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
 msgstr "Хорошо оценённое шоу немного сдвигает рекомендации в сторону похожей манги. Низкая оценка или брошенное шоу отталкивает их."
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "A source publishing a higher-ranked language is ranked ahead of this list when auto-matching."
-msgstr "Источник, публикующий язык с более высоким приоритетом, ставится впереди при автоподборе."
-
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
@@ -1285,6 +1272,10 @@ msgstr "Токен без значения для серии отображае�
 #, fuzzy
 msgid "A watched anime counts for as much as a manga you rated yourself."
 msgstr "Просмотренное аниме учитывается так же, как манга, которую вы оценили сами."
+
+#: src/pages/SettingsPage.tsx
+msgid "A zip of your database and <0>config.json</0>: the library and every setting. Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken automatically before every upgrade migration."
+msgstr ""
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -1429,6 +1420,10 @@ msgstr "Добавьте серию, и Maki начнёт отслеживать
 #, fuzzy
 msgid "Add connection"
 msgstr "Добавить подключение"
+
+#: src/pages/SettingsPage.tsx
+msgid "Add it to your reading app as an OPDS catalogue. From outside your network, swap the host for the address you use there."
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -1772,6 +1767,10 @@ msgstr "любой"
 msgid "Any"
 msgstr "Любой"
 
+#: src/pages/SettingsPage.tsx
+msgid "Anyone with the feed URL can read the whole library. Regenerating it breaks the apps using it and nothing else."
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Anything in the MangaBaka catalogue that matches these filters."
 msgstr ""
@@ -1994,11 +1993,6 @@ msgstr "Автоматическая загрузка не удалась"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Automatically downloads the next chapters of a series when you have only a few unread chapters left. The settings below control how many unread chapters trigger the download and how many chapters are downloaded at once. Runs every five minutes, based on reading progress from Kavita or the built-in reader. Enabled per series as a monitoring option."
-msgstr "Автоматически загружает следующие главы серии, когда остаётся всего несколько непрочитанных. Настройки ниже определяют, сколько непрочитанных глав запускают загрузку и сколько глав загружается за раз. Выполняется каждые пять минут на основе прогресса чтения из Kavita или встроенной читалки. Включается для каждой серии как параметр мониторинга."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
 msgid "Automatically retry failed downloads"
 msgstr "Автоматически повторять неудачные загрузки"
 
@@ -2067,11 +2061,6 @@ msgstr "Инструменты резервного копирования и к
 msgid "Backup created"
 msgstr "Резервная копия создана"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a downloaded backup like a password. Restore auto-recovers only under a supervisor (Docker / systemd); a bare process just stops and you restart it yourself."
-msgstr "Файлы резервных копий содержат секреты настроек (ключи API, пароли) в виде обычного текста. С загруженной копией обращайтесь как с паролем. Автоматическое восстановление выполняется только под supervisor (Docker / systemd); обычный процесс просто останавливается, и перезапустить его нужно самостоятельно."
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Backup freshness (days)"
@@ -2087,6 +2076,10 @@ msgstr "Резервная копия создана"
 #, fuzzy
 msgid "backup, restore, zip, retention, database, export"
 msgstr "резервная копия, восстановление, zip, хранение, база данных, экспорт"
+
+#: src/pages/SettingsPage.tsx
+msgid "Backups hold API keys and passwords in plain text. Treat a downloaded one like a password."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -2639,6 +2632,10 @@ msgstr "Главы, которых нет у {winnerDisplayName}, остаютс
 msgid "Chapters already listed keep whatever you set on them."
 msgstr "Уже перечисленные главы сохраняют заданное для них значение."
 
+#: src/pages/SettingsPage.tsx
+msgid "Chapters downloaded at once from scraper sources. More isn't always faster: tripping a site's rate limit pauses every download. Torrents aren't affected. Takes effect after a restart."
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Chapters downloaded automatically"
@@ -2717,14 +2714,8 @@ msgid "Checking for a new metadata snapshot"
 msgstr "Проверка нового снимка метаданных"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Checks GitHub daily for a newer release and raises a banner and a Notifications event when one is found. Bare installs are notify-only, pull the latest code and rebuild."
-msgstr "Каждый день проверяет GitHub на наличие нового выпуска, показывает баннер и создаёт событие в уведомлениях. Для установки без контейнера доступны только уведомления: получите свежий код и пересоберите приложение."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Checks GitHub daily for a newer release and raises a banner and a Notifications event when one is found. Docker installs are notify-only, pull the new image and recreate the container."
-msgstr "Каждый день проверяет GitHub на наличие нового выпуска, показывает баннер и создаёт событие в уведомлениях. Для Docker доступны только уведомления: получите новый образ и пересоздайте контейнер."
+msgid "Checks GitHub daily for a new release and shows a banner and a notification when there is one. Updating is manual: {howToUpdate}."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -2824,9 +2815,8 @@ msgid "Clearing cached images..."
 msgstr "Очистка кэшированных изображений..."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Clears the reader's page thumbnails and the source-comparison samples, drops poster folders for series that no longer exist, and re-downloads series posters from the metadata provider. Thumbnails come back on their own the next time a chapter is opened, so nothing is lost by clearing them."
-msgstr "Очищает миниатюры страниц читалки и образцы сравнения источников, удаляет папки постеров для несуществующих серий и заново загружает постеры серий у поставщика метаданных. Миниатюры возвращаются сами при следующем открытии главы, поэтому очистка ничего не теряет."
+msgid "Clears reader thumbnails and source-comparison samples, removes posters of deleted series, and re-downloads posters. Thumbnails regenerate the next time a chapter opens."
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 msgid "Click a genre once to require it, twice to exclude it."
@@ -2926,9 +2916,8 @@ msgid "comicinfo, comicinfo.xml, folder naming, rename folder, imported files, c
 msgstr "comicinfo, ComicInfo.xml, именование папок, переименование папки, импортированные файлы, формат главы, формат папки серии, токены именования, имя файла"
 
 #: src/components/settings/SecuritySection.tsx
-#, fuzzy
-msgid "Comma-separated IP addresses or CIDR networks, e.g. 172.18.0.0/16. Only these are believed when they set X-Forwarded-For. Leave empty if Maki is reached directly."
-msgstr "IP-адреса или сети CIDR через запятую, например 172.18.0.0/16. Доверенными считаются только они, когда задают X-Forwarded-For. Оставьте пустым, если Maki доступен напрямую."
+msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3165,9 +3154,8 @@ msgid "Copy feed URL"
 msgstr "Копировать URL ленты"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Copy this now, it is shown only once. Maki stores a fingerprint of the token, not the token, so it cannot be displayed again. Lose it and you regenerate."
-msgstr "Скопируйте это сейчас, оно показывается только один раз. Maki хранит отпечаток токена, а не сам токен, поэтому повторно показать его нельзя. Если потеряете, создайте новый."
+msgid "Copy this now. It can't be shown again; if you lose it, regenerate."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -3273,9 +3261,8 @@ msgid "Create an API client at anilist.co/settings/developer with redirect URL <
 msgstr "Создайте API-клиент на anilist.co/settings/developer с URL перенаправления <0>{origin}/api/v1/scrobble/oauth/anilist</0>"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>. Paste the <1>Client ID</1> (not the secret) exactly as shown there. If connecting opens a browser “sign in to myanimelist.net” popup and then <2>invalid_client</2>, MyAnimeList didn't recognise the Client ID: re-copy it and make sure the App Type is set."
-msgstr "Создайте API-клиент на myanimelist.net/apiconfig (тип приложения: web) с URL перенаправления <0>{origin}/api/v1/scrobble/oauth/mal</0>. Вставьте <1>Client ID</1> (не секрет) точно в том виде, как он показан там. Если после подключения откроется всплывающее окно браузера «войдите на myanimelist.net», а затем появится <2>invalid_client</2>, MyAnimeList не распознал Client ID: скопируйте его заново и убедитесь, что тип приложения настроен."
+msgid "Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL <0>{origin}/api/v1/scrobble/oauth/mal</0>. If connecting ends in <1>invalid_client</1>, re-copy the Client ID (not the secret) and check the App Type is set."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3308,9 +3295,8 @@ msgid "Creators"
 msgstr "Создатели"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Credit pages and the next chapter's opening pages often look the same, so a chapter turn can pass unnoticed. This shows the chapter name over the page for a couple of seconds when you enter one."
-msgstr "Страницы с титрами и первые страницы следующей главы часто выглядят одинаково, поэтому переход главы можно не заметить. При входе в главу название показывается поверх страницы на пару секунд."
+msgid "Credit pages and the next chapter's first pages often look alike. This shows the chapter name for a couple of seconds when you enter a new one."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3389,6 +3375,10 @@ msgstr "Дней чтения"
 #, fuzzy
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Определяет, когда заканчивается день чтения, что учитывается в сериях и ежедневных целях."
+
+#: src/pages/SettingsPage.tsx
+msgid "Decimal chapters (10.5, x.1) on new series start as not wanted: listed, but never downloaded or counted in the chapter total. Specials released later are covered too. Existing chapters are unchanged; edit them from a series' Chapters tab."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #: src/components/ui/viewPrefs.tsx
@@ -3619,11 +3609,6 @@ msgstr "Обзор и офлайн-поиск уже доступны."
 msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. Base is lighter (~240 MB of RAM); Large is more accurate but heavier (~500 MB) with a bigger one-time download; Off disables both. Either model is downloaded prebuilt, so your machine doesn't do the heavy work, and you can change this any time in Settings."
 msgstr "Обзор рекомендует по семантическому «ощущению» и ищет по описанию с помощью локальной модели эмбеддингов. Base использует меньше памяти (около 240 МБ); Large точнее, но тяжелее (около 500 МБ) и требует большего разового скачивания; Off отключает обе функции. Любая модель скачивается уже собранной, поэтому компьютер не выполняет тяжёлую работу, а изменить выбор можно в любое время в настройках."
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Discover recommends by semantic \"feel\" and searches by description, using a local embedding model. The vectors download prebuilt, so this normally needs no attention; search falls back to titles and recommendations to genres whenever it's off or still downloading."
-msgstr "Обзор рекомендует по семантическому «ощущению» и ищет по описанию с помощью локальной модели эмбеддингов. Векторы скачиваются уже готовыми, поэтому обычно не требуют внимания; поиск переключается на названия, а рекомендации на жанры, если модель отключена или ещё загружается."
-
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
 msgid "Disk used"
@@ -3742,9 +3727,8 @@ msgid "Download client for grabbed releases. Completed torrents are imported aut
 msgstr "Клиент загрузки для полученных релизов. Завершённые торренты импортируются автоматически."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\\downloads), fill the optional path mapping to translate them."
-msgstr "Клиент загрузки для полученных релизов. Завершённые торренты автоматически импортируются в библиотеку (категория по умолчанию: \"maki\"). Если qBittorrent сообщает пути загрузки, недоступные Maki (например, он работает в Docker и сообщает /downloads, а Maki видит Z:/downloads), заполните необязательное сопоставление путей, чтобы преобразовать их."
+msgid "Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3755,6 +3739,10 @@ msgstr "Загрузка не удалась"
 #, fuzzy
 msgid "Download next chapters"
 msgstr "Загрузить следующие главы"
+
+#: src/pages/SettingsPage.tsx
+msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles. Drag to reorder."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3824,6 +3812,10 @@ msgstr "Загрузка…"
 msgid "Downloads"
 msgstr "Загрузки"
 
+#: src/pages/SettingsPage.tsx
+msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Drama"
@@ -3848,11 +3840,6 @@ msgstr "например, Выходит и отстаёт"
 #: src/components/settings/UsersSection.tsx
 msgid "Each account has its own login, permissions, content rating and reading history."
 msgstr ""
-
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Each connection chooses which events it fires on."
-msgstr "Каждое подключение выбирает, при каких событиях оно отправляет уведомления."
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
@@ -4158,9 +4145,8 @@ msgid "Failed"
 msgstr "Не удалось"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...) up to the attempt cap below. A manual retry from the Activity page doesn't count against it."
-msgstr "Неудачные загрузки автоматически повторяются с увеличивающейся задержкой (5 мин, 10 мин, 20 мин, ...), пока не будет достигнут предел попыток ниже. Ручной повтор со страницы активности не учитывается."
+msgid "Failed downloads retry on a growing backoff (5m, 10m, 20m, ...) up to the cap. Manual retries from Activity don't count."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -4336,6 +4322,10 @@ msgstr "Завершите настройку, затем откройте <0>Н
 msgid "Finished"
 msgstr "Завершено"
 
+#: src/pages/SettingsPage.tsx
+msgid "Finishing a chapter in Maki's reader also marks it read in Kavita. Only for series matched to a Kavita series. Stats never count a chapter twice."
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "first"
@@ -4439,14 +4429,12 @@ msgid "Follows the default on your notification settings."
 msgstr "Следует значению по умолчанию в настройках уведомлений."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on."
-msgstr "Для других читалок (Komga, Kavita), которые читают постер прямо из папки. Запускается сразу после включения."
+msgid "For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "For scripts and third-party clients. A <0>Full</0> key acts as you through the <1>X-Api-Key</1> header. An <2>OPDS</2> key is only a feed URL, it cannot reach the management API, which is why the URL you paste into a reading app is safe to paste."
-msgstr "Для скриптов и сторонних клиентов. Ключ <0>Full</0> действует от вашего имени через заголовок <1>X-Api-Key</1>. Ключ <2>OPDS</2> является только URL ленты и не имеет доступа к API управления, поэтому URL, вставленный в приложение для чтения, безопасен."
+msgid "For scripts and third-party clients. A <0>Full</0> key acts as you through the <1>X-Api-Key</1> header. An <2>OPDS</2> key is only a feed URL and cannot reach the management API."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4475,11 +4463,6 @@ msgstr "Французский"
 msgid "From"
 msgstr "От"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "From MangaBaka settings, no OAuth needed, works immediately"
-msgstr "Из настроек MangaBaka, OAuth не нужен, работает сразу"
-
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
 msgid "From MyAnimeList"
@@ -4494,6 +4477,10 @@ msgstr "От поставщика метаданных, а не от ваших 
 #, fuzzy
 msgid "From your library"
 msgstr "Из вашей библиотеки"
+
+#: src/pages/SettingsPage.tsx
+msgid "From your MangaBaka settings. No OAuth needed."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4860,19 +4847,13 @@ msgid "How close each quarter sat to where you started."
 msgstr "Насколько близко каждый квартал оказался к месту старта."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "How Maki names a series' folder and the chapter files it downloads. Both take tokens; the \"?\" button lists every one with an example, and its dialog is directly editable too. A change applies to series added and chapters downloaded from here on. Nothing already on disk moves until you rename it, either from a series' page or with the button below for the whole library."
-msgstr "Как Maki называет папку серии и загружаемые файлы глав. Оба используют токены; кнопка «?» перечисляет их с примерами, и её диалог тоже можно редактировать. Изменение применяется к сериям, добавленным после него, и к загруженным позже главам. Уже сохранённые на диске файлы не перемещаются, пока вы не переименуете их на странице серии или кнопкой ниже для всей библиотеки."
+msgid "How Maki names series folders and the chapter files it downloads. The \"?\" button lists every token. Changes apply to new series and downloads; files already on disk stay put until you rename them from a series' page or with the button below."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "How many"
 msgstr "Сколько"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "How many chapters download at once from scraper sources. Higher isn't always faster: each worker is a live connection to the same site, and tripping its rate limit pauses every download. Torrent releases aren't affected. Takes effect after a restart."
-msgstr "Сколько глав одновременно загружается из источников-скрейперов. Больше не всегда быстрее: каждый рабочий процесс поддерживает живое соединение с одним сайтом, а срабатывание ограничения частоты приостанавливает все загрузки. Торрент-релизы не затрагиваются. Вступает в силу после перезапуска."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -5252,11 +5233,6 @@ msgstr "Kavita"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Kavita is one server behind one API key, so its reading belongs to a single Maki account, and it isn't yours. An admin picks which one under Settings → Kavita."
-msgstr "Kavita работает как один сервер с одним ключом API, поэтому чтение относится к одному аккаунту Maki и не обязательно к вам. Администратор выбирает его в разделе Настройки → Kavita."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
 msgid "Kavita library ids"
 msgstr "Идентификаторы библиотек Kavita"
 
@@ -5266,10 +5242,18 @@ msgstr "Идентификаторы библиотек Kavita"
 msgid "Kavita reading"
 msgstr "Чтение Kavita"
 
+#: src/pages/SettingsPage.tsx
+msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Kavita, the trackers Maki scrobbles to, and outbound notifications."
 msgstr "Kavita, трекеры, в которые Maki отправляет данные, и исходящие уведомления."
+
+#: src/pages/SettingsPage.tsx
+msgid "Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change that under Settings → Integrations → Kavita reading."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5339,6 +5323,10 @@ msgstr "язык, перевод, переводить, локаль, язык �
 #, fuzzy
 msgid "Languages"
 msgstr "Языки"
+
+#: src/pages/SettingsPage.tsx
+msgid "Languages to download, most preferred first. Auto-match tries sources that publish your top language first and skips sources that publish none of these. New auto-matched sources get these languages; existing mappings are never changed. Drag to reorder."
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -5754,6 +5742,10 @@ msgstr "Доступен Maki {checkedVersion}"
 msgid "Maki {latestVersion} is available, you're running {currentVersion}."
 msgstr "Доступен Maki {latestVersion}, сейчас используется {currentVersion}."
 
+#: src/pages/SettingsPage.tsx
+msgid "Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings → 3rd Party Clients in Kavita. Fill the path mapping only if Kavita sees the library under a different path, e.g. in Docker."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Maki asks Kavita to scan the series folder after downloads and pushes posters, links and status. Get the API key under User Settings → 3rd Party Clients."
@@ -5773,11 +5765,6 @@ msgstr "Maki перезапускается для применения наст
 #, fuzzy
 msgid "Maki speaks your language"
 msgstr "Maki говорит на вашем языке"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
-msgstr "Maki записывает стандартные метаданные в <0>ComicInfo.xml</0> каждого CBZ, чтобы Kavita одинаково группировала главы и присваивала им названия. PDF пропускаются, поскольку в них негде сохранить эти данные. Отключите эту настройку, чтобы импортированные файлы (загруженные через торрент или добавленные вручную) остались без изменений. В главы, которые Maki загружает из источника, ComicInfo всё равно записывается, поскольку эти файлы создаёт Maki. Позже можно обновить ComicInfo для отдельной серии с помощью массового действия «Update ComicInfo» на её странице."
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -5888,9 +5875,8 @@ msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "Отмечено просмотренным, но не прочитано. Не учитывается в статистике чтения"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Marks every chapter you've already finished in Kavita as read in Maki, so the built-in reader and the library's progress bars don't start from zero. Safe to run more than once: it never un-marks anything. These chapters are deliberately left out of Rewind: Kavita doesn't say when they were read, and dating them today would pile your whole back catalogue onto one day of the year in review. Rewind keeps counting only the reading Maki sees happen, through the scrobble sync and its own reader."
-msgstr "Отмечает в Maki прочитанными все главы, которые вы уже завершили в Kavita, чтобы встроенная читалка и индикаторы прогресса библиотеки не начинали с нуля. Безопасно запускать повторно: ничего не снимает. Эти главы намеренно исключаются из Rewind: Kavita не сообщает, когда они были прочитаны, а сегодняшняя дата собрала бы весь архив в один день годового обзора. Rewind продолжает считать только чтение, которое Maki видит через синхронизацию Scrobble и собственную читалку."
+msgid "Marks chapters you finished in Kavita as read here, so progress doesn't start from zero. Safe to rerun; it never unmarks anything. These reads stay out of Rewind because Kavita doesn't record when they happened."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6247,9 +6233,8 @@ msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the a
 msgstr "Назовите обратный прокси в разделе доверенных прокси, иначе ограничение частоты и журнал аудита будут видеть прокси вместо клиента."
 
 #: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Named reader settings, picked automatically from a series' type. Series with a type no profile covers fall back to the Reader defaults above. A series whose metadata hasn't been refreshed since upgrading has no type yet, so it does the same until the next metadata run. You can still pin a profile, or override the settings outright, from inside the reader."
-msgstr "Именованные настройки читалки автоматически выбираются по типу серии. Для серии с типом, для которого нет профиля, используются настройки читалки выше. Если метаданные серии не обновлялись после обновления, её тип ещё неизвестен и до следующего запуска метаданных используются те же настройки. Профиль всё ещё можно закрепить или полностью переопределить настройки внутри читалки."
+msgid "Named reader settings, picked automatically by series type. Types no profile covers use the Reader defaults above, as do series whose metadata hasn't been refreshed since upgrading. You can pin a profile or override settings from inside the reader."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6260,6 +6245,10 @@ msgstr "Именование"
 #, fuzzy
 msgid "Naming tokens"
 msgstr "Токены именования"
+
+#: src/pages/SettingsPage.tsx
+msgid "Needed for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -7018,15 +7007,14 @@ msgstr "Выкл."
 msgid "Off by default: with it on, anyone your provider will authenticate gets a Maki account. New accounts start with no library access until you grant a root folder."
 msgstr "По умолчанию выключено: при включении любой пользователь, которого аутентифицирует ваш провайдер, получит аккаунт Maki. Новые аккаунты не получают доступ к библиотеке, пока вы не назначите им корневую папку."
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Off by default. When on, finishing a chapter in Maki's reader also marks it read for your Kavita user, so the two stay in step. Only applies to series Maki has matched to a Kavita series, reading stats are never counted twice either way."
-msgstr "По умолчанию выключено. При включении завершение главы в читалке Maki также отмечает её прочитанной для вашего пользователя Kavita, чтобы они оставались синхронизированы. Это действует только для серий, сопоставленных Maki с серией Kavita; статистика чтения в любом случае не учитывается дважды."
-
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Off hides the Home section, the all-time tab on Stats, and unlock notifications."
 msgstr "Выкл. скрывает раздел «Главная», вкладку за всё время в разделе «Статистика» и уведомления о разблокировке."
+
+#: src/pages/SettingsPage.tsx
+msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -7103,11 +7091,6 @@ msgstr "Ваншот"
 #, fuzzy
 msgid "Ongoing"
 msgstr "Продолжается"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Only affects importing an existing series from disk: whether Maki renames its current folder to match the Series Folder Format above, or leaves it as found."
-msgstr "Влияет только на импорт существующей серии с диска: переименует ли Maki её текущую папку в соответствии с указанным выше форматом папки серии или оставит найденное имя."
 
 #: src/components/ContentRatingCards.tsx
 #, fuzzy
@@ -7338,6 +7321,10 @@ msgstr "Темп чтения · осталось глав: {remainingChapters} 
 msgid "Pages"
 msgstr "Страницы"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pages a streaming app fetches count as read, so OPDS reading reaches your library, Rewind and trackers. Turn it off if an app reports progress you didn't make; some fetch pages ahead."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pages decoded at once (0 = automatic)"
@@ -7347,11 +7334,6 @@ msgstr "Страниц декодируется за раз (0 = автомат�
 #, fuzzy
 msgid "Pages fetched ahead."
 msgstr "Страницы загружены заранее."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Pages fetched by a streaming reader count as read, so OPDS reading shows up in your library, Rewind and your trackers. Turn it off if an app reports progress you didn't make: some fetch pages ahead, or grab the last page to size their page bar."
-msgstr "Страницы, загруженные потоковой читалкой, считаются прочитанными, поэтому чтение через OPDS отображается в библиотеке, Rewind и ваших трекерах. Отключите это, если приложение сообщает о прогрессе, которого вы не делали: некоторые загружают страницы заранее или берут последнюю страницу, чтобы определить размер индикатора страниц."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -7403,11 +7385,6 @@ msgstr "Пароли не совпадают"
 #, fuzzy
 msgid "Paste id or URL"
 msgstr "Вставьте идентификатор или URL"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Paste it into your reading app as an OPDS catalogue. If you reach Maki from outside your network, swap the host for the address you use there."
-msgstr "Вставьте его в приложение для чтения как каталог OPDS. Если вы заходите в Maki из-за пределов сети, замените хост на используемый там адрес."
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -7511,11 +7488,6 @@ msgstr "Выберите файл в папке серии, в который ф
 #, fuzzy
 msgid "Pick up where you left off."
 msgstr "Продолжите с того места, на котором остановились."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
-msgstr "Выберите разделы и порядок их отображения. Если вы не читаете в Maki, полностью отключите «Главную»: вкладка исчезнет, а библиотека станет стартовой страницей."
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
@@ -7700,10 +7672,18 @@ msgstr "Издатель"
 msgid "Publishers"
 msgstr "Издатели"
 
+#: src/pages/SettingsPage.tsx
+msgid "pull the latest code and rebuild"
+msgstr ""
+
 #: src/components/UpdateBanner.tsx
 #, fuzzy
 msgid "Pull the latest code and rebuild to update."
 msgstr "Получите последний код и пересоберите приложение для обновления."
+
+#: src/pages/SettingsPage.tsx
+msgid "pull the new image and recreate the container"
+msgstr ""
 
 #: src/components/UpdateBanner.tsx
 #, fuzzy
@@ -7719,11 +7699,6 @@ msgstr "понижает близкие к нему названия"
 #, fuzzy
 msgid "Pushes down titles close to this one"
 msgstr "Понижает названия, близкие к этому"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any combination, leave a site's credentials empty to disable it). Manage connections and review matches on the Scrobble page. Uses the Kavita connection configured above."
-msgstr "Отправляет ваш прогресс чтения в Kavita в AniList, MyAnimeList и MangaBaka (в любой комбинации; оставьте учётные данные сайта пустыми, чтобы отключить его). Управляйте подключениями и проверяйте сопоставления на странице Scrobble. Использует настроенное выше подключение Kavita."
 
 #: src/pages/SettingsPage.tsx
 msgid "Pushes your reading progress to your trackers. Connect your accounts and review matches on the Scrobble page."
@@ -8104,9 +8079,8 @@ msgid "Recurrent"
 msgstr "Повторяющийся"
 
 #: src/components/settings/SecuritySection.tsx
-#, fuzzy
-msgid "Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS, and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why."
-msgstr "Перенаправляет HTTP на HTTPS, отправляет HSTS и помечает cookie сеанса как Secure. Включите это, когда Maki уже работает за TLS, но не раньше: cookie Secure, отправленная по обычному HTTP, не вернётся, и вход завершится ошибкой без объяснения причины."
+msgid "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why."
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/DiscoverPage.tsx
@@ -8467,11 +8441,6 @@ msgstr "Требовать единый вход"
 #, fuzzy
 msgid "Required for Cloudflare-protected sources like MangaFire. Point at a running instance (e.g. http://localhost:8191)."
 msgstr "Требуется для источников под защитой Cloudflare, например MangaFire. Укажите работающий экземпляр, например http://localhost:8191."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Required for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance (e.g. http://localhost:8191)."
-msgstr "Требуется для источников под защитой Cloudflare, например MangaFire. Укажите работающий экземпляр FlareSolverr, например http://localhost:8191."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -9051,11 +9020,6 @@ msgstr ""
 msgid "Search manga releases on your indexers for torrent downloads."
 msgstr "Ищите релизы манги на индексаторах для загрузки торрентов."
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed."
-msgstr "Ищите релизы манги на индексаторах. Используется агрегированный API поиска Prowlarr, синхронизация приложения не нужна."
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
@@ -9120,6 +9084,10 @@ msgstr "Поиск…"
 msgid "searched as “{cleanedTitle}”"
 msgstr "найдено по запросу «{cleanedTitle}»"
 
+#: src/pages/SettingsPage.tsx
+msgid "Searches your indexers for manga releases through Prowlarr's search API. No app sync needed."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Searching indexers…"
@@ -9163,6 +9131,10 @@ msgstr "Начальный элемент из"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Seeded from"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Seeding torrents stay in the download folder, so imports are linked or copied, never moved. A hardlink stores the files once but needs the download folder and library on the same filesystem; otherwise Maki copies. Hardlinked files are left as released, without Maki's ComicInfo.xml, so Kavita may group them apart from Maki's own downloads."
 msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
@@ -9255,9 +9227,8 @@ msgid "Semantic search and recommendations are off."
 msgstr "Семантический поиск и рекомендации отключены."
 
 #: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Send alerts to Discord or a generic webhook when chapters download, downloads fail, new chapters appear, imports finish, or a health issue is detected."
-msgstr "Отправлять оповещения в Discord или обычный webhook при загрузке глав, сбоях загрузок, появлении новых глав, завершении импорта или обнаружении проблемы состояния системы."
+msgid "Send events to Discord or a webhook. Each connection picks its own events."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9322,14 +9293,8 @@ msgid "Series I'm reading"
 msgstr "Серии, которые я читаю"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists."
-msgstr "Серии Kavita без прогресса чтения добавляются на сайты как «план чтения». Записи, уже находящиеся в ваших списках, не изменяются."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Series metadata comes from MangaBaka. With the local database enabled, Maki keeps a nightly snapshot on disk (~3 GB) so searches and library imports are instant instead of rate-limited. Until the first download finishes, the API is used automatically."
-msgstr "Метаданные серий поступают из MangaBaka. При включённой локальной базе Maki хранит на диске ночной снимок размером около 3 ГБ, поэтому поиск и импорт выполняются сразу, без ограничения частоты. Пока первая загрузка не завершена, автоматически используется API."
+msgid "Series metadata comes from MangaBaka. The local database keeps a nightly snapshot on disk (~3 GB) so search and imports skip the API's rate limit, and Discover needs it. The API is used until the first download finishes."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9361,9 +9326,8 @@ msgid "Series you already have that match these filters."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
-msgstr "Предоставляет библиотеку как каталог OPDS, чтобы приложения для чтения (Panels, Chunky, расширения OPDS для KOReader и Mihon/Tachiyomi) подключались напрямую к Maki, без Kavita. Главы можно загружать целиком или передавать по одной странице."
+msgid "Serves the library as an OPDS catalogue for reading apps like Panels, Chunky, KOReader and Mihon. Chapters download whole or stream a page at a time."
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -9518,9 +9482,8 @@ msgid "Show source text"
 msgstr "Показать исходный текст"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Showing {currentLocaleLabel}. Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
-msgstr "Показан {currentLocaleLabel}. Переводы, кроме английского, созданы машиной и постепенно исправляются. Всё ещё непереведённые строки отображаются на английском."
+msgid "Showing {currentLocaleLabel}. Non-English translations are machine-made and improving; anything untranslated shows in English."
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -9786,11 +9749,6 @@ msgstr "Источники расходятся в нумерации глав"
 msgid "Sources disagree on where a chapter starts: a credit page here, a colour cover there. Pages are matched by image content, so each row is the same drawing in every column. A source whose scan matches nothing is left at its own first page."
 msgstr "Источники расходятся в месте начала главы: здесь страница с благодарностями, там цветная обложка. Страницы сопоставляются по содержимому изображений, поэтому в каждой колонке одна и та же иллюстрация. Источник, скан которого ни с чем не совпал, остаётся на собственной первой странице."
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Sources with a language picker get it set to these languages when a mapping is created automatically. Mappings that already exist are never rewritten, and switching a language on or off never switches a source on or off."
-msgstr "Источникам с выбором языка при автоматическом создании привязки выставляются эти языки. Уже существующие привязки никогда не перезаписываются, а включение или отключение языка никогда не включает и не отключает источник."
-
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Space ( )"
@@ -9816,11 +9774,6 @@ msgstr "Спецглавы ({specialsFilterCount})"
 #, fuzzy
 msgid "Specials ({visibleSpecialsCount})"
 msgstr "Спецглавы ({visibleSpecialsCount})"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on newly added or imported series are marked \"not wanted\": they stay listed, but they never download and they don't count toward the series' chapter total. Applies as each chapter is discovered, so specials released later are covered too. Existing chapters are unaffected; change them on the series page or in bulk from its Chapters tab."
-msgstr "Спецглавы имеют десятичные номера (омаке 10.5, разделы x.1/x.2). При включении спецглавы в новых или импортированных сериях помечаются как «не запрашивать»: они остаются в списке, но не загружаются и не учитываются в общем количестве глав серии. Это применяется при обнаружении каждой главы, поэтому охватывает и спецглавы, выпущенные позже. Существующие главы не изменяются; поменяйте их на странице серии или массово во вкладке «Главы»."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9995,11 +9948,6 @@ msgstr "Пикантно"
 #, fuzzy
 msgid "Supernatural"
 msgstr "Сверхъестественное"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Switching a source off skips it when auto-matching and stops every series from using it, without changing the per-series toggles: turn it back on and each series picks up exactly where it was."
-msgstr "Отключение источника пропускает его при автоматическом сопоставлении и не даёт сериям использовать его, не меняя переключатели отдельных серий. Включите источник обратно, и каждая серия продолжит с того же места."
 
 #: src/components/RecommendationModelCards.tsx
 #, fuzzy
@@ -10197,19 +10145,13 @@ msgid "The catalogue rails need the local MangaBaka database (Settings → Metad
 msgstr "Для лент каталога нужна локальная база MangaBaka (Настройки → Метаданные → локальная БД)."
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "The current feed URL stops working immediately. Every reading app you've set up with it will need the new URL."
-msgstr "Текущий URL ленты сразу перестанет работать. Для каждого настроенного приложения чтения потребуется новый URL."
+msgid "The current feed URL stops working immediately. Every app using it needs the new one."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "The fallback for Maki's built-in reader: what a series gets when no reading profile covers its type and nothing is pinned or overridden on the series itself."
 msgstr "Запасной вариант для встроенной читалки Maki: что получает серия, если ни один профиль чтения не подходит её типу и для самой серии ничего не закреплено или не переопределено."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "The feed URL carries its own token and is the only credential a reading app needs, so anyone holding it can read the whole library. It is deliberately not your API key: revoking it below breaks configured readers and nothing else."
-msgstr "URL ленты содержит собственный токен и является единственными учётными данными для приложения чтения, поэтому любой, у кого он есть, может прочитать всю библиотеку. Это намеренно не ваш ключ API: отзыв ниже сломает настроенные читалки и больше ничего."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10230,6 +10172,14 @@ msgstr "Папка и все файлы уже соответствуют тек
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
 msgstr "Подробный разбор ждёт за этой панелью."
+
+#: src/pages/SettingsPage.tsx
+msgid "The incognito mode pre-filled when adding a series of each rating. \"No scrobble\" keeps it off your trackers; \"Full\" also keeps it out of stats and history. Any single add can override it, and changes here never touch existing series."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "The language of Maki's interface, on every device. Title language below is separate: it sets the language of series titles."
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -10255,6 +10205,10 @@ msgstr "Библиотека"
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "Связанный файл ещё не проиндексирован, поэтому его страницы нельзя показать. Запустите «Сканировать файлы», затем вернитесь для сравнения."
+
+#: src/pages/SettingsPage.tsx
+msgid "The Maki account Kavita's reading is recorded as. Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "The most explicit rating shown to you in search, Discover and recommendations. Everything up to and including it is allowed."
@@ -10466,9 +10420,8 @@ msgid "This repair needs a source chosen by hand"
 msgstr "Для исправления нужно выбрать источник вручную"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, take a backup first if you want a way back."
-msgstr "Заменяет текущую библиотеку и настройки на <0>{backupName}</0>, затем перезапускает Maki. Текущие данные не сохраняются, поэтому сначала создайте резервную копию, если хотите иметь путь назад."
+msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -11357,11 +11310,6 @@ msgstr "Что запросили читатели без прав добавл�
 msgid "What shapes your recommendations"
 msgstr "Что формирует ваши рекомендации"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "What the incognito setting is pre-filled with when a series of each rating is added. \"No scrobble\" keeps it off your trackers; \"Full\" also keeps it out of stats and reading history. The add form still shows the value, so any single add can override it, and changing a rule here never touches a series already in the library."
-msgstr "Что получает настройка инкогнито при добавлении серии каждого рейтинга. «No scrobble» отключает отправку трекерам, а «Full» также исключает серию из статистики и истории чтения. Форма добавления всё ещё показывает значение, поэтому отдельное добавление может его переопределить, а изменение правила здесь не затрагивает серию, уже находящуюся в библиотеке."
-
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "What you read"
@@ -11388,14 +11336,8 @@ msgid "When"
 msgstr "Когда"
 
 #: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "When a series auto-matches multiple sources, chapters download from the highest-priority enabled source first. Applies to new auto-matches and manual \"Auto-match\" runs; existing series mappings keep their current priorities. Drag to reorder."
-msgstr "Когда серия автоматически сопоставляется с несколькими источниками, главы сначала загружаются из включённого источника с наивысшим приоритетом. Применяется к новым автоматическим сопоставлениям и ручным запускам «Сопоставить автоматически»; существующие связи серий сохраняют свои приоритеты. Перетащите для изменения порядка."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths."
-msgstr "Когда это настроено, Maki просит Kavita просканировать папку серии сразу после загрузки новых глав или изменения импортированных файлов, затем отправляет в Kavita постер серии, веб-ссылки и статус публикации. Обложки, заданные вами в Kavita, никогда не перезаписываются. Получите ключ API в Kavita в разделе Настройки пользователя → Сторонние клиенты. Если Kavita видит библиотеку по другому пути, например в Docker, заполните необязательное сопоставление путей, чтобы Maki преобразовывал пути папок."
+msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -11427,11 +11369,6 @@ msgstr "Куда ушло время"
 msgid "Where your taste has moved"
 msgstr "Куда переместился ваш вкус"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene release's own name often carries more than the format can say (the edition, the group, the year), so turning this off keeps what the release named it. Chapters Maki downloads itself are always named by the format, and renaming a series from its own page still renames everything in it."
-msgstr "Переименовываются ли файлы, которые Maki подхватывает с диска, по формату главы выше. Собственное имя релиза сцены часто несёт больше, чем может выразить формат (издание, группа, год), поэтому отключение этой опции сохраняет то, как назвал файл релизер. Главы, которые Maki загружает сама, всегда именуются по формату, а переименование серии с её собственной страницы по-прежнему переименовывает всё в ней."
-
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Whether Maki renames an imported series' folder to its standard sanitized-title name, or leaves it as found. Changeable later in Settings."
@@ -11439,18 +11376,8 @@ msgstr "Переименовывать ли папку импортирован�
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Which language Maki's interface is in. Stored on the server, so it applies on every device. This is separate from Title language below, which is about the metadata rather than the app."
-msgstr "Язык интерфейса Maki. Хранится на сервере и применяется на каждом устройстве. Это не то же самое, что язык названий ниже, который относится к метаданным, а не приложению."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "Язык отображения названий серий, если поставщик метаданных его предоставляет. Только отображение: папки и имена файлов сохраняют английское название, как и сортировка."
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Which languages to download, most preferred first. When auto-matching, every source is ranked by the highest language on this list that it publishes, so a source carrying your top language is tried before one that does not. Sources publishing none of the enabled languages are skipped by auto-matching entirely. Drag to reorder."
-msgstr "Какие языки загружать, в порядке предпочтения. При автоподборе каждый источник ранжируется по самому приоритетному языку из этого списка, который он публикует, поэтому источник с вашим языком в приоритете пробуется раньше остальных. Источники, не публикующие ни одного из включённых языков, автоподбор полностью пропускает. Перетаскивайте, чтобы изменить порядок."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -11461,6 +11388,10 @@ msgstr "Страница, которую открывает Maki. Хранитс
 #, fuzzy
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "Какие ленты отображаются под списком глав. Отключение ленты также прекращает её загрузку."
+
+#: src/pages/SettingsPage.tsx
+msgid "Which sections appear, and in what order. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -11487,11 +11418,6 @@ msgstr "Вся библиотека"
 msgid "Whole year"
 msgstr "Весь год"
 
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-msgid "Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered admin, which is what a single-user instance wants. Only this account can import read status from Kavita or push its reads back."
-msgstr "Чья история чтения записывается как прогресс Kavita. Если не задано, используется администратор с наименьшим номером, что нужно для экземпляра с одним пользователем. Только этот аккаунт может импортировать статус чтения из Kavita или отправлять туда прочитанное."
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Width"
@@ -11503,9 +11429,8 @@ msgid "With either claim set, your provider is the authority on permissions: the
 msgstr "При установленной любой заявке поставщик является источником истины для разрешений: они пересчитываются при каждом входе, поэтому изменения на странице пользователей будут перезаписаны при следующем входе этого человека. Оставьте обе пустыми, чтобы хранить разрешения здесь."
 
 #: src/components/settings/SecuritySection.tsx
-#, fuzzy
-msgid "With no trusted proxy configured, forwarded headers are ignored entirely, deliberately, since believing them from anyone would let a client claim any address and slip past both rate limiting and account lockout. Behind a reverse proxy that means every failed sign-in is attributed to the proxy: name it above so lockout and the audit log see the real client."
-msgstr "Без настроенного доверенного прокси пересылаемые заголовки полностью игнорируются намеренно: доверие к ним от любого клиента позволило бы заявить любой адрес и обойти ограничение частоты и блокировку аккаунта. За обратным прокси это означает, что каждый неудачный вход приписывается прокси. Назовите его выше, чтобы блокировка и журнал аудита видели настоящий клиент."
+msgid "With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see the real client."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -11522,6 +11447,10 @@ msgstr "больше не будет рекомендовано"
 #, fuzzy
 msgid "Write ComicInfo.xml into imported files"
 msgstr "Записывать ComicInfo.xml в импортированные файлы"
+
+#: src/pages/SettingsPage.tsx
+msgid "Writes a standard <0>ComicInfo.xml</0> into imported CBZs so Kavita groups and names chapters consistently. Off leaves torrent grabs and manual imports untouched. Maki's own downloads always get one, and PDFs never do. A series page's \"Update ComicInfo\" action standardizes one series later."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

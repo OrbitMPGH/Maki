@@ -385,7 +385,7 @@ export function SourceMappingsSection({
                 </Table.Td>
                 <Table.Td>
                   <Tooltip
-                    label={t`${sourceName} is switched off in Settings → Source priority. This series' setting is kept and applies again once it's back on.`}
+                    label={t`${sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on.`}
                     withArrow
                     multiline
                     w={260}

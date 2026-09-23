@@ -88,10 +88,9 @@ export function ReadingProfilesSection() {
 
       <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
-          Named reader settings, picked automatically from a series' type. Series with a type no
-          profile covers fall back to the Reader defaults above. A series whose metadata hasn't been
-          refreshed since upgrading has no type yet, so it does the same until the next metadata run.
-          You can still pin a profile, or override the settings outright, from inside the reader.
+          Named reader settings, picked automatically by series type. Types no profile covers use
+          the Reader defaults above, as do series whose metadata hasn't been refreshed since
+          upgrading. You can pin a profile or override settings from inside the reader.
         </Trans>
       </Text>
 
