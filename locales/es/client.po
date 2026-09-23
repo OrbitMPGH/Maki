@@ -402,6 +402,10 @@ msgstr "{count, plural, one {# título oculto} many {# títulos ocultos} other {
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr "{count, plural, one {Confirmo la eliminación permanente de # archivo.} many {Confirmo la eliminación permanente de # archivos.} other {Confirmo la eliminación permanente de # archivos.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
+msgstr ""
+
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -4961,6 +4965,10 @@ msgstr "oculto o descartado"
 msgid "Hidden while progression is switched off."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Hide affected series"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 msgid "Hide everywhere on Discover"
 msgstr ""
@@ -8350,6 +8358,10 @@ msgstr ""
 msgid "Refresh"
 msgstr "Actualizar"
 
+#: src/pages/HealthPage.tsx
+msgid "Refresh all"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -8385,6 +8397,14 @@ msgstr "Actualización iniciada, descargando en segundo plano si hay una instant
 #, fuzzy
 msgid "Refresh the catalogue"
 msgstr "Actualizar el catálogo"
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing {done} of {total}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

@@ -4337,6 +4337,19 @@ body.reader-open {
   gap: 4px;
   align-self: center;
 }
+/* Sixty series behind one outage must not push the rest of the checks off the page. */
+.health-source-series {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--mantine-radius-sm);
+}
 /* An acknowledged check is kept, not hidden: the decision was "stop telling me", not "this is
    fine", and the row has to stay findable for whoever reverses it. */
 .health-check[data-acknowledged] {
@@ -4423,7 +4436,8 @@ body.reader-open {
   .health-check {
     grid-template-columns: max-content minmax(0, 1fr);
   }
-  .health-check-actions {
+  .health-check-actions,
+  .health-source-series {
     grid-column: 1 / -1;
   }
 }

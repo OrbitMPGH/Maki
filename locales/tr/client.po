@@ -402,6 +402,10 @@ msgstr "{count, plural, one {# gizli başlık} other {# gizli başlık}}"
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr "{count, plural, one {# arşivin kalıcı olarak silinmesini onaylıyorum.} other {# arşivin kalıcı olarak silinmesini onaylıyorum.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
+msgstr ""
+
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -4961,6 +4965,10 @@ msgstr "gizlenmiş veya kapatılmış"
 msgid "Hidden while progression is switched off."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Hide affected series"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 msgid "Hide everywhere on Discover"
 msgstr ""
@@ -8350,6 +8358,10 @@ msgstr ""
 msgid "Refresh"
 msgstr "Yenile"
 
+#: src/pages/HealthPage.tsx
+msgid "Refresh all"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -8385,6 +8397,14 @@ msgstr "Yenileme başladı, yeni bir anlık görüntü varsa arka planda indiril
 #, fuzzy
 msgid "Refresh the catalogue"
 msgstr "Kataloğu yenile"
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing {done} of {total}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

@@ -335,6 +335,10 @@ msgstr "{count, plural, one {Hidden # title} other {Hidden # titles}}"
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
+msgstr "{count, plural, one {Show # affected series} other {Show # affected series}}"
+
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -4127,6 +4131,10 @@ msgstr "hidden or dismissed"
 msgid "Hidden while progression is switched off."
 msgstr "Hidden while progression is switched off."
 
+#: src/pages/HealthPage.tsx
+msgid "Hide affected series"
+msgstr "Hide affected series"
+
 #: src/components/CatalogueRules.tsx
 msgid "Hide everywhere on Discover"
 msgstr "Hide everywhere on Discover"
@@ -6950,6 +6958,10 @@ msgstr "Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure.
 msgid "Refresh"
 msgstr "Refresh"
 
+#: src/pages/HealthPage.tsx
+msgid "Refresh all"
+msgstr "Refresh all"
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 msgid "Refresh chapters"
@@ -6978,6 +6990,14 @@ msgstr "Refresh started, downloading in the background if a new snapshot is avai
 #: src/pages/DiscoverPage.tsx
 msgid "Refresh the catalogue"
 msgstr "Refresh the catalogue"
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing"
+msgstr "Refreshing"
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing {done} of {total}"
+msgstr "Refreshing {done} of {total}"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Refuses password sign-in for everyone except administrators, who keep it so a provider outage can never lock you out of your own library."

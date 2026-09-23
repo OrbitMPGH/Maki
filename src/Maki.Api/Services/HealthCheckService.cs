@@ -1,5 +1,6 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Sources;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -17,9 +18,10 @@ namespace Maki.Api.Services;
 /// <see cref="HealthState"/> diffs on, which the rendered message used to do badly: two series with
 /// the same problem produced two different sentences and so read as two unrelated issues.
 /// </param>
+/// <param name="Covers">Mapping ids folded into this issue, whose own rows it replaces.</param>
 public record HealthIssue(
     string Type, string Severity, string MessageKey, object? Params = null,
-    int? SeriesId = null, string? Key = null)
+    int? SeriesId = null, string? Key = null, IReadOnlyList<int>? Covers = null)
 {
     /// <summary>What makes this issue the same issue across two checks.</summary>
     public string Identity => Key ?? $"{Type}:{SeriesId}:{MessageKey}";
@@ -33,8 +35,15 @@ public class HealthCheckService(
     MakiDbContext db,
     IAppSettings settings,
     SourceAvailability sourceAvailability,
+    SourceRegistry sources,
     MangaBakaDumpService mangaBakaDump)
 {
+    /// <summary>
+    /// Failing mappings on one source at which they read as the site being down rather than as that
+    /// many separate series problems.
+    /// </summary>
+    public const int SourceOutageThreshold = 3;
+
     public async Task<List<HealthIssue>> GetIssuesAsync(CancellationToken ct = default)
     {
         var issues = new List<HealthIssue>();
@@ -47,12 +56,23 @@ public class HealthCheckService(
             .Where(m => m.Enabled && m.LastError != null && !disabledSources.Contains(m.SourceName))
             .Include(m => m.Series)
             .ToListAsync(ct);
-        foreach (var mapping in failingMappings)
+        foreach (var group in failingMappings.GroupBy(m => m.SourceName, StringComparer.OrdinalIgnoreCase))
         {
-            // {detail} is the source's own error text and is not translated.
-            issues.Add(new HealthIssue("sourceMapping", "warning", "health.issue.mappingFailing",
-                new { series = mapping.Series?.Title ?? "", source = mapping.SourceName, detail = mapping.LastError ?? "" },
-                mapping.SeriesId, $"mapping:{mapping.Id}"));
+            if (group.Count() >= SourceOutageThreshold)
+            {
+                issues.Add(new HealthIssue("source", "warning", "health.issue.sourceUnstable",
+                    new { source = sources.Find(group.Key)?.DisplayName ?? group.Key, count = group.Count() },
+                    Key: $"source:{group.Key}", Covers: group.Select(m => m.Id).ToList()));
+                continue;
+            }
+
+            foreach (var mapping in group)
+            {
+                // {detail} is the source's own error text and is not translated.
+                issues.Add(new HealthIssue("sourceMapping", "warning", "health.issue.mappingFailing",
+                    new { series = mapping.Series?.Title ?? "", source = mapping.SourceName, detail = mapping.LastError ?? "" },
+                    mapping.SeriesId, $"mapping:{mapping.Id}"));
+            }
         }
 
         foreach (var folder in await db.RootFolders.ToListAsync(ct))

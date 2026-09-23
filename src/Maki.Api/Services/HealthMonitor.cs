@@ -40,11 +40,16 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 string id, string category, string status, string key, object? args = null,
                 string? url = null, bool connection = false) =>
                 checks.Add((id, category, status, key, args is null ? null : JsonSerializer.Serialize(args), url, connection));
+            var folded = new HashSet<string>(StringComparer.Ordinal);
             try
             {
                 foreach (var issue in await legacy.GetIssuesAsync(ct))
+                {
                     Add($"legacy:{issue.Key ?? $"{issue.Type}:{issue.SeriesId}"}", "library", issue.Severity,
-                        issue.MessageKey, issue.Params, issue.SeriesId is {} id ? $"/series/{id}" : "/settings");
+                        issue.MessageKey, issue.Params,
+                        issue.SeriesId is {} id ? $"/series/{id}" : issue.Covers is null ? "/settings" : null);
+                    foreach (var mappingId in issue.Covers ?? []) folded.Add($"legacy:mapping:{mappingId}");
+                }
             }
             catch { Add("library-check", "library", "unavailable", "health.check.libraryUnavailable"); }
             var roots = await db.RootFolders.ToListAsync(ct);
@@ -163,6 +168,9 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             if (!checks.Any(c => c.Id == "library-check"))
                 foreach (var row in old.Where(r => r.Id.StartsWith("legacy:") && !checks.Any(c => c.Id == r.Id) && r.Status != "healthy"))
                 {
+                    // Still failing, now counted in its source's row. Announcing it as recovered
+                    // would send one false all-clear per series the moment a site goes down.
+                    if (folded.Contains(row.Id)) { db.HealthChecks.Remove(row); continue; }
                     row.Status = row.NotifiedStatus = "healthy";
                     row.ChangedAt = row.CheckedAt = DateTime.UtcNow;
                     await NotifyAsync(row, true, ct);

@@ -52,6 +52,7 @@ import {
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
+  type SourceFailures,
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -827,39 +828,108 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
               </Text>
             </Group>
             {rows.map((check) => (
-              <div className="health-check" key={check.id} data-acknowledged={check.acknowledged || undefined}>
-                <Status value={check.status} />
-                <div style={{ minWidth: 0 }}>
-                  <Text size="sm" c="var(--ink-2)">
-                    {check.message}
-                  </Text>
-                  <Text size="xs" c="var(--ink-4)" mt={2}>
-                    {formatDateTime(check.checkedAt)}
-                    {check.acknowledged && <Trans> · Acknowledged, hidden from the header badge</Trans>}
-                  </Text>
-                </div>
-                <div className="health-check-actions">
-                  {check.url && (
-                    <Button component={Link} to={check.url} size="xs" variant="subtle">
-                      <Trans>Open</Trans>
-                    </Button>
-                  )}
-                  {ISSUE.includes(check.status) && (
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
-                    >
-                      {check.acknowledged ? <Trans>Reopen</Trans> : <Trans>Acknowledge</Trans>}
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <CheckRow key={check.id} check={check} run={run} />
             ))}
           </div>
         )
       })}
     </Panel>
+  )
+}
+
+/** Id prefix of HealthCheckService's grouped warning for a source failing on several series at once. */
+const SOURCE_CHECK = 'legacy:source:'
+
+function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body?: object) => void }) {
+  const [open, setOpen] = useState(false)
+  const source =
+    check.id.startsWith(SOURCE_CHECK) && ISSUE.includes(check.status) ? check.id.slice(SOURCE_CHECK.length) : null
+  const failures = useHealthData<SourceFailures>(`/sources/${source}`, source !== null)
+  const affected = failures.data?.series ?? []
+  const count = affected.length
+  const done = failures.data?.done ?? 0
+  const total = failures.data?.total ?? 0
+
+  return (
+    <div className="health-check" data-acknowledged={check.acknowledged || undefined}>
+      <Status value={check.status} />
+      <div style={{ minWidth: 0 }}>
+        <Text size="sm" c="var(--ink-2)">
+          {check.message}
+        </Text>
+        <Text size="xs" c="var(--ink-4)" mt={2}>
+          {formatDateTime(check.checkedAt)}
+          {check.acknowledged && <Trans> · Acknowledged, hidden from the header badge</Trans>}
+        </Text>
+        {source !== null && count > 0 && (
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            mt={4}
+            px={0}
+            rightSection={
+              <IconChevronDown size={12} style={{ transform: open ? 'rotate(180deg)' : undefined }} />
+            }
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? (
+              <Trans>Hide affected series</Trans>
+            ) : (
+              <Plural value={count} one="Show # affected series" other="Show # affected series" />
+            )}
+          </Button>
+        )}
+      </div>
+      <div className="health-check-actions">
+        {source !== null && (
+          <Button
+            size="xs"
+            variant="light"
+            leftSection={<IconRefresh size={14} />}
+            disabled={failures.data?.refreshing || count === 0}
+            onClick={() => run(`/sources/${source}/refresh`)}
+          >
+            {!failures.data?.refreshing ? (
+              <Trans>Refresh all</Trans>
+            ) : total > 0 ? (
+              <Trans>
+                Refreshing {done} of {total}
+              </Trans>
+            ) : (
+              <Trans>Refreshing</Trans>
+            )}
+          </Button>
+        )}
+        {check.url && (
+          <Button component={Link} to={check.url} size="xs" variant="subtle">
+            <Trans>Open</Trans>
+          </Button>
+        )}
+        {ISSUE.includes(check.status) && (
+          <Button
+            size="xs"
+            variant="subtle"
+            onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
+          >
+            {check.acknowledged ? <Trans>Reopen</Trans> : <Trans>Acknowledge</Trans>}
+          </Button>
+        )}
+      </div>
+      {source !== null && open && (
+        <div className="health-source-series">
+          {affected.map((m) => (
+            <div key={m.id}>
+              <Anchor component={Link} to={`/series/${m.seriesId}`} size="sm">
+                {m.title}
+              </Anchor>
+              <Text size="xs" c="var(--ink-4)" lineClamp={2}>
+                {m.error}
+              </Text>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -1552,6 +1552,12 @@ msgstr "{job}: last run failed, see the logs"
 msgid "health.issue.mappingFailing"
 msgstr "{series}: refreshing from {source} is failing. {detail}"
 
+#. Replaces the per-series line above once several series fail on the same source, which usually
+#. means the site itself is down. {source} is the site's name.
+#: src/Maki.Api/Services/HealthCheckService.cs
+msgid "health.issue.sourceUnstable"
+msgstr "{source} looks unstable or unavailable: {count, plural, one {# series is} other {# series are}} failing to refresh from it"
+
 #: src/Maki.Api/Services/HealthCheckService.cs
 msgid "health.issue.rootInaccessible"
 msgstr "Root folder is not reachable: {path}"

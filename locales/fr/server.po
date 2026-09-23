@@ -2198,6 +2198,13 @@ msgstr "{job} : dernière exécution échouée, voir les journaux"
 msgid "health.issue.mappingFailing"
 msgstr "{series} : l'actualisation depuis {source} échoue. {detail}"
 
+#. Replaces the per-series line above once several series fail on the same source, which usually
+#. means the site itself is down. {source} is the site's name.
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: {source} looks unstable or unavailable: {count, plural, one {# series is} other {# series are}} failing to refresh from it
+msgid "health.issue.sourceUnstable"
+msgstr ""
+
 #: src/Maki.Api/Services/HealthCheckService.cs
 #. English: Root folder is not reachable: {path}
 #, fuzzy
@@ -2305,8 +2312,8 @@ msgstr "Intégrité rétablie"
 msgid "notify.health.recovered.body"
 msgstr "Résolu : {detail}"
 
-#. The admin inbox copy of the same event. {check} is a check's id; {detail} is either its message
-#. key or, on a row from before the checks were keyed, its English.
+#. The admin inbox copy of the same event. {detail} is the check's own message, already rendered in
+#. the reader's language, or on a row from before the checks were keyed, its English.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Health issue
 #, fuzzy

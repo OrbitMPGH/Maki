@@ -402,6 +402,10 @@ msgstr "{count, plural, other {已隐藏 # 个标题}}"
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr "{count, plural, other {我确认永久删除 # 个归档。}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
+msgstr ""
+
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -4961,6 +4965,10 @@ msgstr "已隐藏或忽略"
 msgid "Hidden while progression is switched off."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Hide affected series"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 msgid "Hide everywhere on Discover"
 msgstr ""
@@ -8350,6 +8358,10 @@ msgstr ""
 msgid "Refresh"
 msgstr "刷新"
 
+#: src/pages/HealthPage.tsx
+msgid "Refresh all"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -8385,6 +8397,14 @@ msgstr "刷新已开始，如有新快照会在后台下载"
 #, fuzzy
 msgid "Refresh the catalogue"
 msgstr "刷新目录"
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing {done} of {total}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

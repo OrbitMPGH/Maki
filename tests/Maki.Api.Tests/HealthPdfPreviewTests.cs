@@ -20,7 +20,7 @@ public sealed class HealthPdfPreviewTests
     /// dependencies can stay null for a focused test of the fix.</summary>
     private static async Task<IActionResult> VerifiedPreview(string path, string? hash, PageFingerprint page)
     {
-        var controller = new HealthController(null!, null!, null!, null!, null!, null!, null!)
+        var controller = new HealthController(null!, null!, null!, null!, null!, null!, null!, null!, null!)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

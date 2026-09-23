@@ -7,6 +7,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Core.Security;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,7 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/health")]
 public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOperationService operations,
     HealthMatchService matches, ICurrentUser user, IAppSettings settings,
-    ILocalizer localizer) : ControllerBase
+    ILocalizer localizer, SourceRegistry sources, HealthSourceRecovery recovery) : ControllerBase
 {
     /// <summary>
     /// The row as the page reads it: same fields, with <c>message</c> worded in the caller's own
@@ -121,6 +122,26 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         return Ok(check);
     }
     public record CheckReview(string Id, bool Acknowledged);
+
+    /// <summary>The series behind a grouped source warning, and how far a refresh of them has got.</summary>
+    [HttpGet("sources/{name}")]
+    public async Task<IActionResult> SourceFailures(string name, CancellationToken ct)
+    {
+        var series = await HealthSourceRecovery.Failing(db, name)
+            .OrderBy(m => m.Series!.Title)
+            .Select(m => new { m.Id, m.SeriesId, m.Series!.Title, Error = m.LastError, m.LastRefresh })
+            .ToListAsync(ct);
+        var progress = recovery.Progress(name);
+        return Ok(new { series, refreshing = progress != null, done = progress?.Done ?? 0, total = progress?.Total ?? 0 });
+    }
+
+    [HttpPost("sources/{name}/refresh")]
+    public IActionResult RefreshSource(string name)
+    {
+        if (sources.Find(name) is not { } source) return NotFound();
+        recovery.Enqueue(source.Name);
+        return Accepted(new { refreshing = true });
+    }
 
     [HttpGet("files")]
     public async Task<IActionResult> Files([FromQuery] int page = 1, [FromQuery] string? search = null,
