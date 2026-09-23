@@ -836,6 +836,11 @@ public class MangaBakaLocalStore(
                     continue;
                 }
 
+                if (!filters.MatchesNames(ParseStringArray(GetString(reader, 7)), candidateTags))
+                {
+                    continue;
+                }
+
                 var matchedTags = candidateTags
                     .Where(tagWeight.ContainsKey)
                     .OrderByDescending(t => tagWeight[t])

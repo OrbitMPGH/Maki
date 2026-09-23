@@ -309,6 +309,12 @@ msgstr "Desteklenmeyen geri bildirim durumu"
 msgid "error.libraryFilters.nameRequired"
 msgstr "Ad gerekli"
 
+#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
+#. {max} is how many saved filters one person may keep.
+#. English: You can keep at most {max} saved filters
+msgid "error.discoverFilters.tooMany"
+msgstr ""
+
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: No items to import
 #, fuzzy

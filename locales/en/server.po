@@ -217,6 +217,11 @@ msgstr "Unsupported feedback state"
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
 
+#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
+#. {max} is how many saved filters one person may keep.
+msgid "error.discoverFilters.tooMany"
+msgstr "You can keep at most {max} saved filters"
+
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 msgid "error.libraryImport.noItemsToImport"
 msgstr "No items to import"

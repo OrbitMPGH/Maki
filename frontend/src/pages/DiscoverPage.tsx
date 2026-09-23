@@ -54,7 +54,6 @@ import {
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
-  useRecommendationTags,
   useRootFolders,
   useSaveRecommendationDefaults,
   useSeries,
@@ -74,7 +73,6 @@ import {
   CHAPTER_MAX,
   CHAPTER_MIN,
   filtersFromSpec,
-  useGenreOptions,
   useStatusOptions,
   useTypeOptions,
   useCatalogueFilters,
@@ -95,6 +93,13 @@ import {
   RecommendationRow,
 } from '../components/ui/DiscoverRail'
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
+import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
+import {
+  HiddenContentButton,
+  PRESET_RAIL_PREFIX,
+  PresetMenu,
+  PresetRails,
+} from '../components/DiscoverPresets'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -245,12 +250,11 @@ function RecommendedTab() {
   const [years, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
   const [types, setTypes] = usePageState<string[]>(`${MEM}:types`, [])
   const [statuses, setStatuses] = usePageState<string[]>(`${MEM}:statuses`, [])
-  const [genres, setGenres] = usePageState<string[]>(`${MEM}:genres`, [])
-  const [tags, setTags] = usePageState<string[]>(`${MEM}:tags`, [])
-  const { data: tagOptions } = useRecommendationTags()
+  const terms = useTermFilters(`${MEM}:terms`)
+  const { hydrate: hydrateTerms, reset: resetTerms } = terms
+  const ruleChips = useRuleChips()
   const typeOptions = useTypeOptions()
   const statusOptions = useStatusOptions()
-  const genreOptions = useGenreOptions()
   const [chapters, setChapters] = usePageState<[number, number]>(`${MEM}:chapters`, [CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = usePageState(`${MEM}:min-rating`, 0)
   const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
@@ -326,8 +330,7 @@ function RecommendedTab() {
       setYears([carriedFilters.yearMin ?? YEAR_MIN, carriedFilters.yearMax ?? YEAR_MAX])
       setTypes(carriedFilters.types ?? [])
       setStatuses(carriedFilters.statuses ?? [])
-      setGenres(carriedFilters.genres ?? [])
-      setTags(carriedFilters.tags ?? [])
+      hydrateTerms(carriedFilters)
       setChapters([carriedFilters.minChapters ?? CHAPTER_MIN, carriedFilters.maxChapters ?? CHAPTER_MAX])
       setMinRating((carriedFilters.minRating ?? 0) / 10)
       setContentRatings(carriedFilters.contentRatings ?? [])
@@ -377,8 +380,7 @@ function RecommendedTab() {
     setYears([d.yearMin ?? YEAR_MIN, d.yearMax ?? YEAR_MAX])
     setTypes(d.types ?? [])
     setStatuses(d.statuses ?? [])
-    setGenres(d.genres ?? [])
-    setTags(d.tags ?? [])
+    hydrateTerms(filtersFromSpec(d))
     setChapters([d.minChapters ?? CHAPTER_MIN, d.maxChapters ?? CHAPTER_MAX])
     setMinRating((d.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, slider is 0–10
     setObscurity(d.obscurity)
@@ -396,7 +398,7 @@ function RecommendedTab() {
     setHydrated(true)
   }, [
     hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate,
-    setSeedIds, setLabelCache, setYears, setTypes, setStatuses, setGenres, setTags, setChapters,
+    setSeedIds, setLabelCache, setYears, setTypes, setStatuses, hydrateTerms, setChapters,
     setMinRating, setObscurity, setDiversity, setContentRatings, setCustomizeOpen, setApplied,
     setHydrated,
   ])
@@ -412,13 +414,23 @@ function RecommendedTab() {
     if (years[1] < YEAR_MAX) filters.yearMax = years[1]
     if (types.length) filters.types = types
     if (statuses.length) filters.statuses = statuses
-    if (genres.length) filters.genres = genres
-    if (tags.length) filters.tags = tags
+    Object.assign(filters, terms.build())
     if (chapters[0] > CHAPTER_MIN) filters.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
     if (contentRatings.length) filters.contentRatings = contentRatings
     return filters
+  }
+
+  /** A saved catalogue filter into the panel. Seeds and the two dials are not part of one. */
+  const loadCatalogueFilters = (f: RecommendationFilters) => {
+    setYears([f.yearMin ?? YEAR_MIN, f.yearMax ?? YEAR_MAX])
+    setTypes(f.types ?? [])
+    setStatuses(f.statuses ?? [])
+    hydrateTerms(f)
+    setChapters([f.minChapters ?? CHAPTER_MIN, f.maxChapters ?? CHAPTER_MAX])
+    setMinRating((f.minRating ?? 0) / 10)
+    setContentRatings(f.contentRatings ?? [])
   }
 
   const apply = (refresh = false) => {
@@ -461,8 +473,7 @@ function RecommendedTab() {
     setYears([YEAR_MIN, YEAR_MAX])
     setTypes([])
     setStatuses([])
-    setGenres([])
-    setTags([])
+    resetTerms()
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setObscurity(0)
@@ -477,8 +488,7 @@ function RecommendedTab() {
     years[1] < YEAR_MAX ||
     types.length > 0 ||
     statuses.length > 0 ||
-    genres.length > 0 ||
-    tags.length > 0 ||
+    terms.isCustomized ||
     chapters[0] > CHAPTER_MIN ||
     chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
@@ -504,15 +514,14 @@ function RecommendedTab() {
       const diversityChip = diversity.toFixed(2)
       chips.push(t`varied (${diversityChip})`)
     }
-    for (const g of genres) chips.push(g)
-    for (const tagName of tags) chips.push(tagName)
+    chips.push(...ruleChips(terms.rules))
     for (const typeName of types) chips.push(typeName)
     for (const s of statuses) chips.push(s)
     for (const c of contentRatings) chips.push(renderLabel(CONTENT_RATING_LABELS[c] ?? c))
     return chips
   }, [
-    seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses,
-    contentRatings, renderLabel, i18n.locale, t,
+    seedIds, years, minRating, chapters, obscurity, diversity, terms.rules, ruleChips, types,
+    statuses, contentRatings, renderLabel, i18n.locale, t,
   ])
 
   // --- detail modal ---
@@ -580,37 +589,7 @@ function RecommendedTab() {
               maxDropdownHeight={260}
             />
 
-            <MultiSelect
-              label={t`Genres`}
-              description={t`Only show titles tagged with every selected genre.`}
-              placeholder={genres.length ? undefined : t`Any`}
-              data={genreOptions}
-              value={genres}
-              onChange={setGenres}
-              searchable
-              clearable
-              hidePickedOptions
-              maxDropdownHeight={260}
-            />
-
-            <MultiSelect
-              label={t`Tags`}
-              description={t`Only show titles carrying every selected tag (from the MangaBaka tag vocabulary).`}
-              placeholder={tags.length ? undefined : t`Any`}
-              data={tagOptions ?? []}
-              value={tags}
-              onChange={setTags}
-              searchable
-              clearable
-              hidePickedOptions
-              limit={50}
-              nothingFoundMessage={
-                (tagOptions?.length ?? 0) === 0
-                  ? t`Tags appear once the recommendation index is built`
-                  : t`No matches`
-              }
-              maxDropdownHeight={260}
-            />
+            <TermFilters controls={terms} />
 
             <MultiSelect
                 label={t`Type`}
@@ -751,22 +730,26 @@ function RecommendedTab() {
             </SimpleGrid>
 
             <Group justify="space-between">
-              <Button
-                variant="subtle"
-                size="xs"
-                leftSection={<IconDeviceFloppy size={14} />}
-                loading={saveDefaults.isPending}
-                // Nothing set and nothing stored: there is neither a default to save nor one to clear.
-                disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
-                onClick={saveAsDefault}
-                title={
-                  isCustomized
-                    ? t`Open Recommended with these filters from now on`
-                    : t`Clear your saved default`
-                }
-              >
-                {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
-              </Button>
+              <Group gap="xs">
+                <PresetMenu current={currentFilters} onLoad={loadCatalogueFilters} />
+                <HiddenContentButton />
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  leftSection={<IconDeviceFloppy size={14} />}
+                  loading={saveDefaults.isPending}
+                  // Nothing set and nothing stored: there is neither a default to save nor one to clear.
+                  disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
+                  onClick={saveAsDefault}
+                  title={
+                    isCustomized
+                      ? t`Open Recommended with these filters from now on`
+                      : t`Clear your saved default`
+                  }
+                >
+                  {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
+                </Button>
+              </Group>
               <Group gap="xs">
                 <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
                   <Trans>Reset</Trans>
@@ -929,13 +912,21 @@ function FeedExpandModal({
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
   const { density, setDensity, cols } = useDensityPref('discover-expand')
 
-  // Reset filters whenever a different rail is opened.
+  // Reset filters whenever a different rail is opened. A saved filter's rail opens with that
+  // filter loaded instead, since the filter is the whole point of the rail.
   const railKey = rail?.key
+  const presetFilters = railKey?.startsWith(PRESET_RAIL_PREFIX) ? rail?.filters : null
   const resetAll = catalogue.reset
+  const hydrateAll = catalogue.hydrate
   useEffect(() => {
-    resetAll()
-    setApplied({})
-  }, [railKey, resetAll])
+    if (presetFilters) {
+      hydrateAll(presetFilters)
+      setApplied(presetFilters)
+    } else {
+      resetAll()
+      setApplied({})
+    }
+  }, [railKey, presetFilters, resetAll, hydrateAll])
 
   // The personalised rail carries seeds instead of a browse feed, and `GetFeedAsync` has no
   // ordering for it — page the recommender with those seeds instead. Both queries are declared
@@ -1026,6 +1017,21 @@ function FeedExpandModal({
               setApplied({})
             }}
             onApply={() => setApplied(catalogue.build())}
+            extra={
+              <>
+                <PresetMenu
+                  current={catalogue.build}
+                  onLoad={(f) => {
+                    catalogue.hydrate(f)
+                    setApplied(f)
+                  }}
+                />
+                <HiddenContentButton />
+                {!personalised && !cohort && rail && (
+                  <FilterMatchCount filters={catalogue.build()} feed={rail.feed} genre={rail.genre} />
+                )}
+              </>
+            }
           />
         </Stack>
       </Panel>
@@ -1254,6 +1260,8 @@ function DiscoverBrowseTab({
         <DiscoverRailSkeleton />
       ) : null}
 
+      <PresetRails seriesIdFor={seriesIdFor} onOpen={setDetailItem} onShowMore={setExpandedRail} />
+
       {trendingRail ? (
         <div>
           <SectionHeader
@@ -1290,7 +1298,28 @@ function DiscoverBrowseTab({
           endpoints and survive this one being down, so a bar above them mislabels the whole page as
           broken. */}
       <div>
-        <SectionHeader icon={IconCompass} title={t`Browse the catalogue`} />
+        <SectionHeader
+          icon={IconCompass}
+          title={t`Browse the catalogue`}
+          action={
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconAdjustmentsHorizontal size={14} />}
+              onClick={() =>
+                setExpandedRail({
+                  key: 'catalogue',
+                  title: t`The whole catalogue`,
+                  feed: 'Popular',
+                  genre: null,
+                  items: [],
+                })
+              }
+            >
+              <Trans>Filter the catalogue</Trans>
+            </Button>
+          }
+        />
         {error ? (
           <Alert
             color="var(--warn)"

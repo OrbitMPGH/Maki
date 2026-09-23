@@ -47,7 +47,8 @@ public record RecommendationDefaultsSpec(
     double? MinRating = null,
     double Obscurity = 0,
     double Diversity = 0,
-    IReadOnlyList<string>? ContentRatings = null)
+    IReadOnlyList<string>? ContentRatings = null,
+    IReadOnlyList<Maki.Core.Recommendations.CatalogueRule>? Rules = null)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -74,7 +75,8 @@ public record RecommendationDefaultsSpec(
         (Genres?.Count ?? 0) == 0 && (Tags?.Count ?? 0) == 0 &&
         MinChapters is null && MaxChapters is null &&
         MinRating is null &&
-        Obscurity == 0 && Diversity == 0 && (ContentRatings?.Count ?? 0) == 0;
+        Obscurity == 0 && Diversity == 0 && (ContentRatings?.Count ?? 0) == 0 &&
+        (Rules?.Count ?? 0) == 0;
 
     /// <summary>
     /// Clamps a client-supplied spec into the ranges the panel can actually produce, so a hand-rolled
@@ -91,6 +93,7 @@ public record RecommendationDefaultsSpec(
         Obscurity = Math.Clamp(Obscurity, -1, 1),
         Diversity = Math.Clamp(Diversity, 0, 1),
         ContentRatings = TrimNames(ContentRatings),
+        Rules = Maki.Core.Recommendations.CatalogueRules.Normalize(Rules),
     };
 
     private static IReadOnlyList<T>? Trim<T>(IReadOnlyList<T>? values) =>

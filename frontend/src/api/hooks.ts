@@ -196,6 +196,28 @@ export interface RecommendationFilters {
    * never appears there regardless of this list).
    */
   contentRatings?: string[]
+  /** Genre and tag rules, ANDed together. See {@link CatalogueRule}. */
+  rules?: CatalogueRule[]
+}
+
+/**
+ * One genre or tag in a rule. `subtags` widens a tag to everything under it in MangaBaka's tag
+ * tree ("School" covers "College"); `central` only counts it where it is core or defining for the
+ * series. Both are ignored on a genre.
+ */
+export interface CatalogueTerm {
+  kind: 'genre' | 'tag'
+  name: string
+  subtags?: boolean
+  central?: boolean
+}
+
+export type RuleMode = 'all' | 'any' | 'none'
+
+/** A series must carry every term (`all`), at least one (`any`), or none of them (`none`). */
+export interface CatalogueRule {
+  mode: RuleMode
+  terms: CatalogueTerm[]
 }
 
 export interface RecommendationRequest {
@@ -917,12 +939,120 @@ export function useSeenLanguageAnnouncement() {
   })
 }
 
-/** Tag names for the Discover tag filter (empty until the embedding index is built). */
+/** One tag in the Discover tag filter, with where it sits in MangaBaka's tag tree. */
+export interface TagOption {
+  name: string
+  /** Its ancestors, "Locations > School" for College. Empty at a root. */
+  path: string
+  count: number
+  hasSubtags: boolean
+}
+
+/** The Discover tag vocabulary, most used first (empty until the embedding index is built). */
 export function useRecommendationTags() {
   return useQuery({
-    queryKey: ['recommendation-tags'],
-    queryFn: () => api<string[]>('/recommendations/tags'),
+    queryKey: ['recommendation-tags-v2'],
+    queryFn: () => api<TagOption[]>('/recommendations/tags'),
     staleTime: 12 * 60 * 60 * 1000,
+  })
+}
+
+/**
+ * How many catalogue series a feed and its filters leave. `count` is null when the search index
+ * is not built. Callers debounce the request; every edit is otherwise a full index pass.
+ */
+export function useDiscoverCount(request: DiscoverFeedRequest | null) {
+  return useQuery({
+    queryKey: ['discover-count', request],
+    queryFn: () =>
+      api<{ count: number | null }>('/recommendations/discover/count', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    enabled: request != null,
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    retry: false,
+  })
+}
+
+/** The caller's never-show list: genres and tags removed from every Discover surface. */
+export interface HiddenContent {
+  terms?: CatalogueTerm[] | null
+}
+
+export function useHiddenContent() {
+  return useQuery({
+    queryKey: ['discover-hidden'],
+    queryFn: () => api<HiddenContent>('/recommendations/discover/hidden'),
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+/** Every query whose answer the never-show list shapes. */
+const HIDDEN_SHAPED = new Set([
+  'discover-rails', 'discover-genres', 'discover-recent-activity', 'discover-side-interests',
+  'discover-cohort', 'discover-feed', 'discover-search', 'discover-count', 'creator',
+  'recommendations',
+])
+
+export function useSaveHiddenContent() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (spec: HiddenContent) =>
+      api<HiddenContent>('/recommendations/discover/hidden', {
+        method: 'PUT',
+        body: JSON.stringify(spec),
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['discover-hidden'], saved)
+      void queryClient.invalidateQueries({
+        predicate: (q) => HIDDEN_SHAPED.has(String(q.queryKey[0])),
+      })
+    },
+  })
+}
+
+/** A named Discover filter. `pinned` ones are drawn as rails on the Discover page. */
+export interface DiscoverPreset {
+  id: number
+  name: string
+  spec: SearchDefaults
+  pinned: boolean
+  sortOrder: number
+}
+
+export function useDiscoverPresets() {
+  return useQuery({
+    queryKey: ['discover-presets'],
+    queryFn: () => api<DiscoverPreset[]>('/discover/filters'),
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+export function useCreateDiscoverPreset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string; spec: SearchDefaults; pinned?: boolean }) =>
+      api<DiscoverPreset>('/discover/filters', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['discover-presets'] }),
+  })
+}
+
+export function useUpdateDiscoverPreset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: number; name?: string; spec?: SearchDefaults; pinned?: boolean }) =>
+      api<DiscoverPreset>(`/discover/filters/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['discover-presets'] }),
+  })
+}
+
+export function useDeleteDiscoverPreset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/discover/filters/${id}`, { method: 'DELETE' }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['discover-presets'] }),
   })
 }
 
@@ -952,6 +1082,7 @@ export interface RecommendationDefaults {
   obscurity: number
   diversity: number
   contentRatings?: string[] | null
+  rules?: CatalogueRule[] | null
 }
 
 /** The caller's saved Recommended defaults; an all-empty spec means they have none. */
@@ -995,6 +1126,7 @@ export interface SearchDefaults {
   /** The dump's 0–100 scale, not the slider's 0–10. */
   minRating?: number | null
   contentRatings?: string[] | null
+  rules?: CatalogueRule[] | null
 }
 
 /** The caller's saved Discover-search filters; an all-empty spec means they have none. */

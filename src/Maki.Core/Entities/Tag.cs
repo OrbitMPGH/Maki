@@ -47,4 +47,16 @@ public class SavedFilter : IUserOwned
     public string Spec { get; set; } = "{}";
     public int SortOrder { get; set; }
     public DateTime Created { get; set; }
+
+    /// <summary>
+    /// Which page the preset belongs to: <see cref="LibraryScope"/> or <see cref="DiscoverScope"/>.
+    /// The two specs are different shapes, so a preset never crosses between them.
+    /// </summary>
+    public string Scope { get; set; } = LibraryScope;
+
+    /// <summary>Discover only: shown as a rail of its own on the Discover page.</summary>
+    public bool Pinned { get; set; }
+
+    public const string LibraryScope = "library";
+    public const string DiscoverScope = "discover";
 }

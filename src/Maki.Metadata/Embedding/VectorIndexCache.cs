@@ -332,6 +332,7 @@ public sealed class VectorIndexCache(
             rows, dimensions, rows * (double)stride / (1024 * 1024), (DateTime.UtcNow - started).TotalSeconds,
             mismatched > 0 ? $"; skipped {mismatched} vector(s) from an older model" : string.Empty);
 
+        var tagVocabulary = ReadTagVocabulary(conn);
         return new VectorIndex(
             ids,
             data,
@@ -343,7 +344,8 @@ public sealed class VectorIndexCache(
                 popularity, tagBlobs,
                 contentRatingIdx, []),
             new VectorIndexVocabularies(
-                typeIds, statusIds, genreIds, authorIds, ReadTagVocabulary(conn), contentRatingIds),
+                typeIds, statusIds, genreIds, authorIds, tagVocabulary.Tags, contentRatingIds,
+                tagVocabulary.Subtrees),
             LoadTaste(ids),
             franchiseLoader: () => LoadFranchises(ids));
     }
@@ -500,34 +502,38 @@ public sealed class VectorIndexCache(
     /// — the honest answer for a filter whose vocabulary isn't there, and the next indexing pass
     /// writes it.
     /// </summary>
-    private static IReadOnlyDictionary<string, int[]> ReadTagVocabulary(SqliteConnection conn)
+    private static (IReadOnlyDictionary<string, int[]> Tags, IReadOnlyDictionary<string, int[]> Subtrees)
+        ReadTagVocabulary(SqliteConnection conn)
     {
-        var byName = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
-        try
+        var entries = new List<(int Id, string Name, string Path)>();
+        // An index built before name_path existed still filters by name; it just has no subtags.
+        foreach (var sql in (string[])["SELECT id, name, name_path FROM tag_vocab", "SELECT id, name, '' FROM tag_vocab"])
         {
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT id, name FROM tag_vocab";
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
+            try
             {
-                var name = GetString(reader, 1);
-                if (!string.IsNullOrWhiteSpace(name))
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    if (!byName.TryGetValue(name, out var ids))
+                    if (GetString(reader, 1) is { } name && !string.IsNullOrWhiteSpace(name))
                     {
-                        byName[name] = ids = [];
+                        entries.Add((reader.GetInt32(0), name, GetString(reader, 2) ?? string.Empty));
                     }
-
-                    ids.Add(reader.GetInt32(0));
                 }
+
+                break;
+            }
+            catch (SqliteException)
+            {
+                entries.Clear();
             }
         }
-        catch (SqliteException)
-        {
-            return new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
-        }
 
-        return byName.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray(), StringComparer.OrdinalIgnoreCase);
+        return (
+            entries.GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.Id).ToArray(), StringComparer.OrdinalIgnoreCase),
+            TagSubtrees.Build(entries));
     }
 
     /// <summary>Maps a low-cardinality column value to a byte id, growing the vocabulary as it goes.</summary>

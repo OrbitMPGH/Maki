@@ -75,6 +75,7 @@ public static class UserSettingKeys
         SettingKeys.UiLanguageAnnouncement,
         SettingKeys.RecommendationsDefaults,
         SettingKeys.DiscoverSearchDefaults,
+        SettingKeys.DiscoverHidden,
         SettingKeys.OpdsEnabled,
         SettingKeys.OpdsTrackProgress,
         SettingKeys.ScrobblePlanToRead,

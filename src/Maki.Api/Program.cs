@@ -238,6 +238,7 @@ try
     builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
+    builder.Services.AddScoped<HiddenContentService>();
 
     // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first
     // use) turns each series' description into a vector so Discover can match on "feel", not

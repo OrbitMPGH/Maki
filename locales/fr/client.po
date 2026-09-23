@@ -219,10 +219,7 @@ msgstr "{0, plural, one {Afficher tous les #} many {Afficher tous les #} other {
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "{0, plural, one {This will permanently delete # file from disk.} other {This will permanently delete # files from disk.}}"
-msgstr ""
-"{0, plural, one {# fichier sera définitivement supprimé du disque.} many {# fichiers seront "
-"définitivement supprimés du disque.} other {# fichiers seront définitivement supprimés du "
-"disque.}}"
+msgstr "{0, plural, one {# fichier sera définitivement supprimé du disque.} many {# fichiers seront définitivement supprimés du disque.} other {# fichiers seront définitivement supprimés du disque.}}"
 
 #. placeholder {0}: r.unlinked
 #: src/pages/SeriesDetailPage.tsx
@@ -363,6 +360,10 @@ msgstr "{connected} connectés"
 #, fuzzy
 msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, one {# chap.} many {# chap.} other {# chap.}}"
+
+#: src/components/CatalogueRules.tsx
+msgid "{count, plural, one {# series matches} other {# series match}}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -521,6 +522,14 @@ msgstr "{label} Rewind"
 #, fuzzy
 msgid "{label} tokens"
 msgstr "{label} jetons"
+
+#: src/components/CatalogueRules.tsx
+msgid "{label}: excluded"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "{label}: required"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -943,12 +952,7 @@ msgstr "{unrecognizedCount, plural, one {# non reconnu} many {# non reconnus} ot
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "{unsavedCount, plural, one {A card on this tab has changes that are not saved. Leaving the tab drops them.} other {# cards on this tab have changes that are not saved. Leaving the tab drops them.}}"
-msgstr ""
-"{unsavedCount, plural, one {Une carte de cet onglet comporte des modifications non enregistrées. "
-"En quittant l'onglet, elles seront perdues.} many {# cartes de cet onglet comportent des "
-"modifications non enregistrées. En quittant l'onglet, elles seront perdues.} other {# cartes de "
-"cet onglet comportent des modifications non enregistrées. En quittant l'onglet, elles seront "
-"perdues.}}"
+msgstr "{unsavedCount, plural, one {Une carte de cet onglet comporte des modifications non enregistrées. En quittant l'onglet, elles seront perdues.} many {# cartes de cet onglet comportent des modifications non enregistrées. En quittant l'onglet, elles seront perdues.} other {# cartes de cet onglet comportent des modifications non enregistrées. En quittant l'onglet, elles seront perdues.}}"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1423,6 +1427,10 @@ msgstr "Ajouter une connexion"
 msgid "Add one above, or tag a series from its detail page."
 msgstr "Ajoutez-en une ci-dessus, ou étiquetez une série depuis sa page de détails."
 
+#: src/components/CatalogueRules.tsx
+msgid "Add rule"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/nav.ts
@@ -1524,6 +1532,7 @@ msgstr "Aventure"
 msgid "Affected chapters:"
 msgstr "Chapitres concernés :"
 
+#: src/components/CatalogueRules.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -1666,6 +1675,10 @@ msgstr "Aussi pour vous"
 msgid "Also make this my default order"
 msgstr "Utiliser aussi ceci comme ordre par défaut"
 
+#: src/components/CatalogueRules.tsx
+msgid "Also match every tag filed under this one"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -1740,6 +1753,7 @@ msgid "any"
 msgstr "n'importe lequel"
 
 #: src/components/CatalogueFilters.tsx
+#: src/components/CatalogueRules.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2256,6 +2270,7 @@ msgstr "C:\\Manga ou /library"
 msgid "Can't read this download"
 msgstr "Impossible de lire ce téléchargement"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -2342,6 +2357,10 @@ msgstr "Catégorie"
 #, fuzzy
 msgid "Caught up"
 msgstr "À jour"
+
+#: src/components/CatalogueRules.tsx
+msgid "Central only"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -2785,6 +2804,10 @@ msgstr "Effacement des images en cache..."
 #, fuzzy
 msgid "Clears the reader's page thumbnails and the source-comparison samples, drops poster folders for series that no longer exist, and re-downloads series posters from the metadata provider. Thumbnails come back on their own the next time a chapter is opened, so nothing is lost by clearing them."
 msgstr "Efface les miniatures de pages du lecteur et les échantillons de comparaison des sources, supprime les dossiers d'affiches des séries qui n'existent plus, puis retélécharge les affiches depuis le fournisseur de métadonnées. Les miniatures reviennent automatiquement à l'ouverture du prochain chapitre, donc rien n'est perdu en les effaçant."
+
+#: src/components/CatalogueRules.tsx
+msgid "Click a genre once to require it, twice to exclude it."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3427,6 +3450,7 @@ msgstr "Supprimer la demande"
 msgid "Delete root folder"
 msgstr "Supprimer le dossier racine"
 
+#: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Delete saved filter"
@@ -4194,6 +4218,14 @@ msgstr "Filtrer les chapitres"
 msgid "Filter library…"
 msgstr "Filtrer la bibliothèque…"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Filter saved"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Filter the catalogue"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4344,9 +4376,7 @@ msgstr "Nommage des dossiers à l'importation"
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Folders are renamed to the English title and their comic files are linked to chapters."
-msgstr ""
-"Les dossiers sont renommés avec le titre anglais et leurs fichiers de bande dessinée sont "
-"associés aux chapitres."
+msgstr "Les dossiers sont renommés avec le titre anglais et leurs fichiers de bande dessinée sont associés aux chapitres."
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -4462,15 +4492,18 @@ msgstr "trésors"
 msgid "General"
 msgstr "Général"
 
-#: src/components/CatalogueFilters.tsx
+#: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/discover/TasteTab.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Genres"
 msgstr "Genres"
+
+#: src/components/CatalogueRules.tsx
+msgid "Genres and tags"
+msgstr ""
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -4487,6 +4520,10 @@ msgstr "Allemand"
 #, fuzzy
 msgid "Girls Love"
 msgstr "Girls Love"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Give it a name"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4589,6 +4626,18 @@ msgstr "Harem"
 msgid "Has a disabled source"
 msgstr "Possède une source désactivée"
 
+#: src/components/CatalogueRules.tsx
+msgid "Has all of"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Has any of"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Has none of"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Have ({downloadedFilterCount})"
@@ -4638,6 +4687,14 @@ msgstr "Pause"
 msgid "Hidden"
 msgstr "Masqué"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Hidden everywhere"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Hidden everywhere ({count})"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Hidden from recommendations"
@@ -4648,10 +4705,18 @@ msgstr "Masqué des recommandations"
 msgid "hidden gems"
 msgstr "trésors cachés"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Hidden list saved"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "hidden or dismissed"
 msgstr "masqué ou ignoré"
+
+#: src/components/CatalogueRules.tsx
+msgid "Hide everywhere on Discover"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4949,6 +5014,14 @@ msgstr "Incident"
 #, fuzzy
 msgid "Include"
 msgstr "Inclure"
+
+#: src/components/CatalogueRules.tsx
+msgid "Include subtags"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Includes subtags"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -5649,14 +5722,7 @@ msgstr "Maki parle votre langue"
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Maki writes a standardized <0>ComicInfo.xml</0> into each CBZ so Kavita groups and names chapters consistently; PDFs are skipped, since there is nowhere in a PDF to put it. Turn this off to leave imported files (torrent grabs and manual imports) exactly as they came; chapters Maki downloads itself from a source still get a ComicInfo, since Maki builds those files. You can always standardize a single series later with the \"Update ComicInfo\" bulk action on its page."
-msgstr ""
-"Maki ajoute un fichier <0>ComicInfo.xml</0> standardisé à chaque CBZ afin que Kavita regroupe et "
-"nomme les chapitres de manière cohérente. Les PDF sont ignorés, car on ne peut pas ajouter ce "
-"fichier à un PDF. Désactivez cette option pour laisser les fichiers importés (téléchargés via "
-"torrent ou ajoutés manuellement) tels quels. Les chapitres que Maki télécharge lui-même depuis "
-"une source reçoivent toujours un fichier ComicInfo, car Maki crée ces fichiers. Vous pourrez "
-"toujours standardiser une série plus tard avec l'action groupée « Mettre à jour ComicInfo » sur "
-"sa page."
+msgstr "Maki ajoute un fichier <0>ComicInfo.xml</0> standardisé à chaque CBZ afin que Kavita regroupe et nomme les chapitres de manière cohérente. Les PDF sont ignorés, car on ne peut pas ajouter ce fichier à un PDF. Désactivez cette option pour laisser les fichiers importés (téléchargés via torrent ou ajoutés manuellement) tels quels. Les chapitres que Maki télécharge lui-même depuis une source reçoivent toujours un fichier ComicInfo, car Maki crée ces fichiers. Vous pourrez toujours standardiser une série plus tard avec l'action groupée « Mettre à jour ComicInfo » sur sa page."
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -6103,6 +6169,7 @@ msgstr "MyAnimeList n'a pas répondu, aucune critique à afficher pour le moment
 msgid "Mystery"
 msgstr "Mystère"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -6355,6 +6422,7 @@ msgid "No match"
 msgstr "Aucune correspondance"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueRules.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6435,6 +6503,10 @@ msgstr "Aucune réparation ni suppression demandée."
 #, fuzzy
 msgid "No results."
 msgstr "Aucun résultat."
+
+#: src/components/CatalogueRules.tsx
+msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
+msgstr ""
 
 #: src/components/ui/incognito.ts
 #, fuzzy
@@ -6547,6 +6619,10 @@ msgstr "Aucun des {total} chapitres souhaités"
 #, fuzzy
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "Aucun des titres de ce créateur ne correspond à ces filtres. Essayez d'en assouplir un."
+
+#: src/components/CatalogueRules.tsx
+msgid "not {names}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6727,6 +6803,10 @@ msgstr "Rien en file : {displayName} ne liste pas ces chapitres."
 #, fuzzy
 msgid "Nothing recorded for {windowLabel}"
 msgstr "Rien d'enregistré pour {windowLabel}"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Nothing saved yet."
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6949,16 +7029,6 @@ msgstr "N'affecte que l'importation d'une série existante depuis le disque : Ma
 msgid "Only safe titles"
 msgstr "Titres sûrs uniquement"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
-msgstr "Afficher uniquement les titres comportant tous les tags sélectionnés (parmi le vocabulaire de tags MangaBaka)."
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Only show titles tagged with every selected genre."
-msgstr "Afficher uniquement les titres portant tous les genres sélectionnés."
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only the built-in reader records it."
@@ -6968,6 +7038,10 @@ msgstr "Seul le lecteur intégré l'enregistre."
 #, fuzzy
 msgid "Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick."
 msgstr "Seule cette source est essayée. Rien ne revient à une autre source, la demande échoue donc au lieu de récupérer des données depuis un emplacement que vous n'avez pas choisi."
+
+#: src/components/CatalogueRules.tsx
+msgid "Only where it is central"
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -8054,6 +8128,10 @@ msgstr "Retirer l'archive"
 msgid "Remove bookmark"
 msgstr "Retirer le favori"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Remove from Discover"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Remove from library"
@@ -8078,6 +8156,10 @@ msgstr "Supprimer la correspondance"
 #, fuzzy
 msgid "Remove request"
 msgstr "Retirer la demande"
+
+#: src/components/CatalogueRules.tsx
+msgid "Remove rule"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8475,14 +8557,7 @@ msgstr "révoqué"
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Rewrites the metadata embedded in each CBZ (title, summary, authors, genres, chapter numbers) to Maki's standard so Kavita groups these files with future downloads and imports; PDFs are skipped, since there is nowhere in a PDF to put it. If Kavita already indexed this library, its existing entries may reshuffle; skipping keeps the files byte-for-byte untouched, but they may not group consistently with chapters Maki adds later."
-msgstr ""
-"Réécrit les métadonnées intégrées à chaque CBZ (titre, résumé, auteurs, genres et numéros de "
-"chapitre) selon le format standard de Maki. Kavita peut ainsi regrouper ces fichiers avec les "
-"futurs téléchargements et imports. Les PDF sont ignorés, car on ne peut pas y ajouter ces "
-"informations. Si Kavita a déjà indexé cette bibliothèque, les entrées existantes peuvent être "
-"réorganisées. En ignorant cette étape, les fichiers restent strictement inchangés, mais ils "
-"risquent de ne pas être regroupés de manière cohérente avec les chapitres que Maki ajoutera plus "
-"tard."
+msgstr "Réécrit les métadonnées intégrées à chaque CBZ (titre, résumé, auteurs, genres et numéros de chapitre) selon le format standard de Maki. Kavita peut ainsi regrouper ces fichiers avec les futurs téléchargements et imports. Les PDF sont ignorés, car on ne peut pas y ajouter ces informations. Si Kavita a déjà indexé cette bibliothèque, les entrées existantes peuvent être réorganisées. En ignorant cette étape, les fichiers restent strictement inchangés, mais ils risquent de ne pas être regroupés de manière cohérente avec les chapitres que Maki ajoutera plus tard."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -8528,6 +8603,14 @@ msgstr "Rose"
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Ligne {zoomRowNumber} sur {zoomTotalPages}"
 
+#: src/components/CatalogueRules.tsx
+msgid "Rule type"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Rules"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Run setup guide"
@@ -8560,6 +8643,7 @@ msgstr "même auteur"
 msgid "Sample chapter"
 msgstr "Chapitre échantillon"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
@@ -8591,6 +8675,10 @@ msgstr "Échec de l'enregistrement"
 msgid "Save filter"
 msgstr "Enregistrer le filtre"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Save filters"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Save health settings"
@@ -8605,6 +8693,10 @@ msgstr "Enregistrer l'ordre"
 #, fuzzy
 msgid "Save range"
 msgstr "Enregistrer la plage"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Save these filters…"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8630,6 +8722,10 @@ msgstr "Enregistré"
 #, fuzzy
 msgid "Saved as your default"
 msgstr "Enregistré comme valeur par défaut"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Saved filters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8698,16 +8794,16 @@ msgstr "Recherche de correspondances dans la base de données MangaBaka…"
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Scans a root folder for series Maki doesn't know yet, matches them to metadata, renames each folder to the English title, and links existing comic files to chapters. Files keep their original names; a PDF is kept as it is, never converted."
-msgstr ""
-"Analyse un dossier racine pour trouver les séries que Maki ne connaît pas encore, les associe à "
-"leurs métadonnées, renomme chaque dossier avec le titre anglais et associe les fichiers de bande "
-"dessinée existants aux chapitres. Les fichiers gardent leur nom d'origine. Les PDF restent tels "
-"quels et ne sont jamais convertis."
+msgstr "Analyse un dossier racine pour trouver les séries que Maki ne connaît pas encore, les associe à leurs métadonnées, renomme chaque dossier avec le titre anglais et associe les fichiers de bande dessinée existants aux chapitres. Les fichiers gardent leur nom d'origine. Les PDF restent tels quels et ne sont jamais convertis."
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "School Life"
 msgstr "Vie scolaire"
+
+#: src/components/DiscoverPresets.tsx
+msgid "School romance, no adult cast"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8824,6 +8920,10 @@ msgstr "Rechercher « {typed} »"
 msgid "Search for a series and request it - it will show up here once you do."
 msgstr "Recherchez une série et demandez-la. Elle apparaîtra ici une fois la demande envoyée."
 
+#: src/components/CatalogueRules.tsx
+msgid "Search genres and tags"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Search manga releases on your indexers for torrent downloads."
@@ -8873,6 +8973,10 @@ msgstr "Rechercher des séries"
 #, fuzzy
 msgid "Search sources and add new series to the library"
 msgstr "Rechercher des sources et ajouter de nouvelles séries à la bibliothèque"
+
+#: src/components/CatalogueRules.tsx
+msgid "Search tags"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -9122,6 +9226,10 @@ msgstr "Page de la série"
 msgid "Series removed"
 msgstr "Série retirée"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
@@ -9223,6 +9331,10 @@ msgstr "Afficher une fenêtre contextuelle à l'arrivée d'une notification"
 msgid "Show all"
 msgstr "Tout afficher"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Show as a rail on Discover"
+msgstr ""
+
 #: src/components/home/ContinueRail.tsx
 #, fuzzy
 msgid "Show earlier chapters"
@@ -9248,6 +9360,7 @@ msgstr "Afficher moins"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Show more"
@@ -9354,6 +9467,10 @@ msgstr "Ambiance similaire"
 msgid "Similarity to start"
 msgstr "Similarité avec le début"
 
+#: src/components/CatalogueRules.tsx
+msgid "Simple"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Single"
@@ -9404,6 +9521,10 @@ msgstr "Taille"
 #, fuzzy
 msgid "Size mismatch"
 msgstr "Taille incohérente"
+
+#: src/components/CatalogueRules.tsx
+msgid "Skip series where it is only a passing element"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9821,20 +9942,27 @@ msgstr "Problèmes système"
 msgid "Tag {selectedCount} series"
 msgstr "Étiqueter {selectedCount} séries"
 
-#: src/components/CatalogueFilters.tsx
+#: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Tags"
 msgstr "Tags"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Tags appear once the recommendation index is built"
 msgstr "Les tags apparaissent une fois l'index de recommandations créé"
+
+#: src/components/CatalogueRules.tsx
+msgid "Tags to exclude"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Tags to include"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -10055,6 +10183,10 @@ msgstr "Le torrent continue de partager celui que vous choisissez."
 msgid "The torrent never appeared in qBittorrent"
 msgstr "Le torrent n'est jamais apparu dans qBittorrent"
 
+#: src/pages/DiscoverPage.tsx
+msgid "The whole catalogue"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -10085,6 +10217,10 @@ msgstr "Ce sont des pages en bandeau long et les deux versions les découpent à
 #, fuzzy
 msgid "These are shown once. They are stored hashed, so nobody (including you) can read them back. Keep them somewhere you can reach without your authenticator."
 msgstr "Ils ne sont affichés qu'une seule fois. Ils sont stockés sous forme hachée, personne, y compris vous, ne peut donc les relire. Conservez-les dans un endroit accessible sans votre authentificateur."
+
+#: src/components/CatalogueRules.tsx
+msgid "These rules need the rules view. Remove some to switch back."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10121,10 +10257,7 @@ msgstr "Cette archive ne se trouve dans aucun dossier de série de sa racine, il
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "This chapter as each source scans it, heaviest first. Pick the one that looks best and Maki downloads it again from there, replacing the file you have."
-msgstr ""
-"Les versions de ce chapitre proposées par chaque source, classées de la plus volumineuse à la "
-"plus légère. Choisissez celle qui vous convient le mieux et Maki la téléchargera à nouveau "
-"depuis cette source, en remplaçant le fichier actuel."
+msgstr "Les versions de ce chapitre proposées par chaque source, classées de la plus volumineuse à la plus légère. Choisissez celle qui vous convient le mieux et Maki la téléchargera à nouveau depuis cette source, en remplaçant le fichier actuel."
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -10159,9 +10292,7 @@ msgstr "Cette action supprime définitivement l'archive. Les enregistrements de 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "This permanently removes {selectedCount} chapter row(s), not just their file link, along with any backing file on disk."
-msgstr ""
-"Cette action supprime définitivement les lignes de {selectedCount} chapitre(s) et les fichiers "
-"correspondants sur le disque, pas seulement les liens vers ces fichiers."
+msgstr "Cette action supprime définitivement les lignes de {selectedCount} chapitre(s) et les fichiers correspondants sur le disque, pas seulement les liens vers ces fichiers."
 
 #: src/api/queue.ts
 #, fuzzy
@@ -10197,6 +10328,10 @@ msgstr "Cette action remplace votre bibliothèque et vos réglages actuels par <
 #, fuzzy
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
 msgstr "Les images de cette source ne correspondent pas aux autres, généralement parce qu'il s'agit d'une édition ou d'un scanlation différent. Ses pages sont affichées telles qu'elles ont été fournies, les lignes ne correspondent donc pas à celles des autres colonnes."
+
+#: src/components/CatalogueRules.tsx
+msgid "This tag has no subtags"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy

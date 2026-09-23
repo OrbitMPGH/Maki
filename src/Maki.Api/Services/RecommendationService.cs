@@ -1,6 +1,7 @@
 ﻿using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
 using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -396,5 +397,5 @@ public class RecommendationService(
     private static string FilterKey(RecommendationFilters f) =>
         $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{string.Join('.', f.Types ?? [])}-{string.Join('.', f.Statuses ?? [])}" +
         $"-{string.Join('.', f.Genres ?? [])}-{f.MinChapters}-{f.MaxChapters}-{string.Join('.', f.Tags ?? [])}" +
-        $"-{string.Join('.', f.ContentRatings ?? [])}";
+        $"-{string.Join('.', f.ContentRatings ?? [])}-{CatalogueRules.Key(f.Rules)}-{CatalogueRules.TermsKey(f.Hidden)}";
 }

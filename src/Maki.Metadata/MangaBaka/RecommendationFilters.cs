@@ -1,4 +1,5 @@
 using System.Globalization;
+using Maki.Core.Recommendations;
 using Microsoft.Data.Sqlite;
 
 namespace Maki.Metadata.MangaBaka;
@@ -24,7 +25,14 @@ public record RecommendationFilters(
     /// constraint at all — callers with a viewer must resolve this to the viewer's ceiling
     /// themselves (<see cref="ContentRating.Allowed"/>/<see cref="ContentRating.Clamp"/>) before
     /// building a scan with it; there is no floor left in the scan sites to fall back on.</summary>
-    IReadOnlyList<string>? ContentRatings = null)
+    IReadOnlyList<string>? ContentRatings = null,
+    /// <summary>Genre and tag rules, ANDed together and with every field above. The legacy
+    /// <see cref="Genres"/>/<see cref="Tags"/> lists still apply and read as an "all" rule.</summary>
+    IReadOnlyList<CatalogueRule>? Rules = null,
+    /// <summary>The viewer's never-show list, set by the server from their settings and never
+    /// taken from a request. Separate from <see cref="Rules"/> because an exact title search
+    /// bypasses the rules but must still honour this.</summary>
+    IReadOnlyList<CatalogueTerm>? Hidden = null)
 {
     public static readonly RecommendationFilters None = new();
 
@@ -81,12 +89,82 @@ public record RecommendationFilters(
             }
         }
 
+        // Tags cannot be tested in SQL, so every rule is reduced to its genre terms in the direction
+        // that widens: an "any" rule holding a tag is dropped whole, since its genres alone would
+        // narrow it. Callers that need tags exact route through the vector index instead.
+        var ruleIndex = 0;
+        foreach (var rule in Rules ?? [])
+        {
+            var genres = rule.Terms.Where(t => t.Kind == CatalogueRules.Genre).Select(t => t.Name).ToList();
+            if (genres.Count == 0 || (rule.Mode == CatalogueRules.Any && genres.Count != rule.Terms.Count))
+            {
+                continue;
+            }
+
+            var tests = new List<string>(genres.Count);
+            for (var i = 0; i < genres.Count; i++)
+            {
+                var name = $"${prefix}_r{ruleIndex.ToString(CultureInfo.InvariantCulture)}_{i.ToString(CultureInfo.InvariantCulture)}";
+                tests.Add($"{alias}.genres LIKE {name}");
+                cmd.Parameters.AddWithValue(name, $"%\"{genres[i]}\"%");
+            }
+
+            parts.Add(rule.Mode switch
+            {
+                CatalogueRules.Any => $"({string.Join(" OR ", tests)})",
+                CatalogueRules.None => $"NOT ({string.Join(" OR ", tests)})",
+                _ => string.Join(" AND ", tests),
+            });
+            ruleIndex++;
+        }
+
+        var hiddenGenres = (Hidden ?? []).Where(t => t.Kind == CatalogueRules.Genre).ToList();
+        for (var i = 0; i < hiddenGenres.Count; i++)
+        {
+            var name = $"${prefix}_h{i.ToString(CultureInfo.InvariantCulture)}";
+            parts.Add($"({alias}.genres IS NULL OR {alias}.genres NOT LIKE {name})");
+            cmd.Parameters.AddWithValue(name, $"%\"{hiddenGenres[i].Name}\"%");
+        }
+
         AppendIn(cmd, parts, alias, "type", Types, $"{prefix}_t");
         AppendIn(cmd, parts, alias, "status", Statuses, $"{prefix}_s");
         AppendIn(cmd, parts, alias, "content_rating", ContentRatings, $"{prefix}_cr");
 
         return parts.Count > 0 ? " AND " + string.Join(" AND ", parts) : string.Empty;
     }
+
+    /// <summary>
+    /// <see cref="Rules"/> and <see cref="Hidden"/> tested against plain name lists, for the
+    /// pre-index fallback scan. Exact names only: subtags and centrality need the index's tag tree
+    /// and weights, so those options read as a plain name match here.
+    /// </summary>
+    public bool MatchesNames(IReadOnlyCollection<string> genres, IReadOnlyCollection<string> tags)
+    {
+        bool Held(CatalogueTerm term) =>
+            (term.Kind == CatalogueRules.Genre ? genres : tags).Contains(term.Name, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var rule in Rules ?? [])
+        {
+            var pass = rule.Mode switch
+            {
+                CatalogueRules.Any => rule.Terms.Any(Held),
+                CatalogueRules.None => !rule.Terms.Any(Held),
+                _ => rule.Terms.All(Held),
+            };
+            if (!pass)
+            {
+                return false;
+            }
+        }
+
+        return Hidden is null || !Hidden.Any(Held);
+    }
+
+    /// <summary>Whether any tag has to be tested, which only the vector index can do.</summary>
+    public bool NeedsTags =>
+        Tags is { Count: > 0 } ||
+        (Rules?.Any(r => r.Terms.Any(t => t.Kind == CatalogueRules.Tag)) ?? false) ||
+        (Hidden?.Any(t => t.Kind == CatalogueRules.Tag) ?? false);
 
     private static void AppendIn(
         SqliteCommand cmd, List<string> parts, string alias, string column,

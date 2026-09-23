@@ -438,7 +438,7 @@ public class DiscoverService(
         // filtered catalogue is exactly the case where people keep pressing Load more.
         var limit = Math.Clamp(request.Limit, 1, 600);
         var offset = Math.Max(0, request.Offset);
-        var wantsTags = request.Filters?.Tags is { Count: > 0 };
+        var wantsTags = request.Filters?.NeedsTags == true;
 
         if (OrderableInIndex(feed) || wantsTags || offset > 0)
         {
@@ -526,9 +526,69 @@ public class DiscoverService(
         BrowseFeed.Popular or BrowseFeed.TopRated or
         BrowseFeed.PopularManhwa or BrowseFeed.PopularManhua or BrowseFeed.GenreSpotlight;
 
+    /// <summary>
+    /// How many catalogue rows a feed and its filters allow, for the filter panel's live count.
+    /// One pass over the index with no ordering or hydration, so it is cheap enough to ask on
+    /// every edit. Null when the index is not built, since the dump has no answer for tags.
+    /// </summary>
+    public async Task<int?> CountAsync(DiscoverFeedRequest request, CancellationToken ct = default)
+    {
+        if (!Enum.TryParse<BrowseFeed>(request.Feed, ignoreCase: true, out var feed) ||
+            await vectorIndex.GetAsync(ct) is not { } index)
+        {
+            return null;
+        }
+
+        if (ComposeFilters(feed, request) is not { } filters)
+        {
+            return 0;
+        }
+
+        var plan = index.Plan(filters);
+        if (plan.Impossible)
+        {
+            return 0;
+        }
+
+        var count = 0;
+        for (var row = 0; row < index.Count; row++)
+        {
+            if (index.Matches(row, plan))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     /// <summary>Turns a feed plus the caller's filters into one page of series ids.</summary>
     private static IReadOnlyList<long> SelectRows(
         VectorIndex index, BrowseFeed feed, DiscoverFeedRequest request, int offset, int limit)
+    {
+        if (ComposeFilters(feed, request) is not { } filters)
+        {
+            return [];
+        }
+
+        var sort = request.Sort;
+        if (feed == BrowseFeed.TopRated)
+        {
+            sort = BrowseSort.Rating;
+        }
+        else if (feed == BrowseFeed.New)
+        {
+            sort = BrowseSort.Newest;
+        }
+
+        return OrderRows(index, index.Plan(filters), sort, offset, limit);
+    }
+
+    /// <summary>
+    /// The caller's filters with the rail's own constraint folded in, or null when the two cannot
+    /// both hold (a manhwa rail narrowed to manga).
+    /// </summary>
+    private static RecommendationFilters? ComposeFilters(BrowseFeed feed, DiscoverFeedRequest request)
     {
         var filters = request.Filters ?? RecommendationFilters.None;
 
@@ -557,21 +617,11 @@ public class DiscoverService(
 
             if (filters.Types.Count == 0)
             {
-                return [];
+                return null;
             }
         }
 
-        var sort = request.Sort;
-        if (feed == BrowseFeed.TopRated)
-        {
-            sort = BrowseSort.Rating;
-        }
-        else if (feed == BrowseFeed.New)
-        {
-            sort = BrowseSort.Newest;
-        }
-
-        return OrderRows(index, index.Plan(filters), sort, offset, limit);
+        return filters;
     }
 
     /// <summary>Every row a plan allows, ordered, then paged.</summary>

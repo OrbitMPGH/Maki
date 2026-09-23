@@ -361,6 +361,10 @@ msgstr "已连接 {connected} 个"
 msgid "{count, plural, one {# ch} other {# ch}}"
 msgstr "{count, plural, other {# 章}}"
 
+#: src/components/CatalogueRules.tsx
+msgid "{count, plural, one {# series matches} other {# series match}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
@@ -518,6 +522,14 @@ msgstr "{label} Rewind"
 #, fuzzy
 msgid "{label} tokens"
 msgstr "{label} 令牌"
+
+#: src/components/CatalogueRules.tsx
+msgid "{label}: excluded"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "{label}: required"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1415,6 +1427,10 @@ msgstr "添加连接"
 msgid "Add one above, or tag a series from its detail page."
 msgstr "在上方添加一个，或从系列详情页为系列添加标签。"
 
+#: src/components/CatalogueRules.tsx
+msgid "Add rule"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/nav.ts
@@ -1516,6 +1532,7 @@ msgstr "冒险"
 msgid "Affected chapters:"
 msgstr "受影响的章节："
 
+#: src/components/CatalogueRules.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -1658,6 +1675,10 @@ msgstr "也适合你"
 msgid "Also make this my default order"
 msgstr "同时将此设为我的默认顺序"
 
+#: src/components/CatalogueRules.tsx
+msgid "Also match every tag filed under this one"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Alt titles"
@@ -1732,6 +1753,7 @@ msgid "any"
 msgstr "任意"
 
 #: src/components/CatalogueFilters.tsx
+#: src/components/CatalogueRules.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2248,6 +2270,7 @@ msgstr "C:\\Manga 或 /library"
 msgid "Can't read this download"
 msgstr "无法读取此下载"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/RatingImportModal.tsx
@@ -2334,6 +2357,10 @@ msgstr "类别"
 #, fuzzy
 msgid "Caught up"
 msgstr "已追上进度"
+
+#: src/components/CatalogueRules.tsx
+msgid "Central only"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -2777,6 +2804,10 @@ msgstr "正在清除缓存图像……"
 #, fuzzy
 msgid "Clears the reader's page thumbnails and the source-comparison samples, drops poster folders for series that no longer exist, and re-downloads series posters from the metadata provider. Thumbnails come back on their own the next time a chapter is opened, so nothing is lost by clearing them."
 msgstr "清除阅读器的页面缩略图和来源比较样本，删除已不存在系列的海报文件夹，并从元数据提供方重新下载系列海报。下次打开章节时缩略图会自动回来，因此清除它们不会丢失任何内容。"
+
+#: src/components/CatalogueRules.tsx
+msgid "Click a genre once to require it, twice to exclude it."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3419,6 +3450,7 @@ msgstr "删除请求"
 msgid "Delete root folder"
 msgstr "删除根文件夹"
 
+#: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Delete saved filter"
@@ -4186,6 +4218,14 @@ msgstr "筛选章节"
 msgid "Filter library…"
 msgstr "筛选资料库……"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Filter saved"
+msgstr ""
+
+#: src/pages/DiscoverPage.tsx
+msgid "Filter the catalogue"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4452,15 +4492,18 @@ msgstr "宝藏"
 msgid "General"
 msgstr "常规"
 
-#: src/components/CatalogueFilters.tsx
+#: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/discover/TasteTab.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Genres"
 msgstr "类型"
+
+#: src/components/CatalogueRules.tsx
+msgid "Genres and tags"
+msgstr ""
 
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -4477,6 +4520,10 @@ msgstr "德语"
 #, fuzzy
 msgid "Girls Love"
 msgstr "百合"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Give it a name"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4579,6 +4626,18 @@ msgstr "后宫"
 msgid "Has a disabled source"
 msgstr "包含已禁用的来源"
 
+#: src/components/CatalogueRules.tsx
+msgid "Has all of"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Has any of"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Has none of"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Have ({downloadedFilterCount})"
@@ -4628,6 +4687,14 @@ msgstr "暂停连载"
 msgid "Hidden"
 msgstr "已隐藏"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Hidden everywhere"
+msgstr ""
+
+#: src/components/DiscoverPresets.tsx
+msgid "Hidden everywhere ({count})"
+msgstr ""
+
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Hidden from recommendations"
@@ -4638,10 +4705,18 @@ msgstr "已从推荐中隐藏"
 msgid "hidden gems"
 msgstr "隐藏宝藏"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Hidden list saved"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "hidden or dismissed"
 msgstr "已隐藏或忽略"
+
+#: src/components/CatalogueRules.tsx
+msgid "Hide everywhere on Discover"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4939,6 +5014,14 @@ msgstr "附带"
 #, fuzzy
 msgid "Include"
 msgstr "包含"
+
+#: src/components/CatalogueRules.tsx
+msgid "Include subtags"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Includes subtags"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -6086,6 +6169,7 @@ msgstr "MyAnimeList 没有响应，因此目前没有可显示的评论。"
 msgid "Mystery"
 msgstr "悬疑"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -6338,6 +6422,7 @@ msgid "No match"
 msgstr "无匹配"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/CatalogueRules.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6418,6 +6503,10 @@ msgstr "没有请求修复或删除。"
 #, fuzzy
 msgid "No results."
 msgstr "没有结果。"
+
+#: src/components/CatalogueRules.tsx
+msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
+msgstr ""
 
 #: src/components/ui/incognito.ts
 #, fuzzy
@@ -6530,6 +6619,10 @@ msgstr "{total} 个章节中没有想要的章节"
 #, fuzzy
 msgid "None of their titles match these filters. Try loosening one of them."
 msgstr "该创作者的标题都不符合这些筛选条件。请尝试放宽其中一个条件。"
+
+#: src/components/CatalogueRules.tsx
+msgid "not {names}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6710,6 +6803,10 @@ msgstr "没有加入队列的内容：{displayName} 未列出这些章节。"
 #, fuzzy
 msgid "Nothing recorded for {windowLabel}"
 msgstr "{windowLabel} 没有记录"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Nothing saved yet."
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6932,16 +7029,6 @@ msgstr "仅影响从磁盘导入现有系列：Maki 是否将其当前文件夹�
 msgid "Only safe titles"
 msgstr "仅安全标题"
 
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Only show titles carrying every selected tag (from the MangaBaka tag vocabulary)."
-msgstr "仅显示包含所有所选标签的标题（标签来自 MangaBaka 标签词汇）。"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Only show titles tagged with every selected genre."
-msgstr "仅显示带有所有所选类型标签的标题。"
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only the built-in reader records it."
@@ -6951,6 +7038,10 @@ msgstr "只有内置阅读器会记录它。"
 #, fuzzy
 msgid "Only this source is tried. Nothing falls back to another one, so the request fails rather than fetching from somewhere you did not pick."
 msgstr "只会尝试此来源。不会退回到其他来源，因此请求会失败，而不是从你未选择的地方获取内容。"
+
+#: src/components/CatalogueRules.tsx
+msgid "Only where it is central"
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -8037,6 +8128,10 @@ msgstr "移除归档"
 msgid "Remove bookmark"
 msgstr "移除书签"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Remove from Discover"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Remove from library"
@@ -8061,6 +8156,10 @@ msgstr "移除映射"
 #, fuzzy
 msgid "Remove request"
 msgstr "移除请求"
+
+#: src/components/CatalogueRules.tsx
+msgid "Remove rule"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8504,6 +8603,14 @@ msgstr "玫瑰色"
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "第 {zoomRowNumber}/{zoomTotalPages} 行"
 
+#: src/components/CatalogueRules.tsx
+msgid "Rule type"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Rules"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Run setup guide"
@@ -8536,6 +8643,7 @@ msgstr "同一作者"
 msgid "Sample chapter"
 msgstr "示例章节"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
@@ -8567,6 +8675,10 @@ msgstr "保存失败"
 msgid "Save filter"
 msgstr "保存筛选条件"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Save filters"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Save health settings"
@@ -8581,6 +8693,10 @@ msgstr "保存顺序"
 #, fuzzy
 msgid "Save range"
 msgstr "保存范围"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Save these filters…"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8606,6 +8722,10 @@ msgstr "已保存"
 #, fuzzy
 msgid "Saved as your default"
 msgstr "已保存为你的默认设置"
+
+#: src/components/DiscoverPresets.tsx
+msgid "Saved filters"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8680,6 +8800,10 @@ msgstr "扫描根文件夹，查找 Maki 尚未收录的系列，将它们与元
 #, fuzzy
 msgid "School Life"
 msgstr "校园生活"
+
+#: src/components/DiscoverPresets.tsx
+msgid "School romance, no adult cast"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -8796,6 +8920,10 @@ msgstr "搜索“{typed}”"
 msgid "Search for a series and request it - it will show up here once you do."
 msgstr "搜索并请求一个系列，完成后它会显示在这里。"
 
+#: src/components/CatalogueRules.tsx
+msgid "Search genres and tags"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Search manga releases on your indexers for torrent downloads."
@@ -8845,6 +8973,10 @@ msgstr "搜索动画"
 #, fuzzy
 msgid "Search sources and add new series to the library"
 msgstr "搜索来源并将新系列添加到资料库"
+
+#: src/components/CatalogueRules.tsx
+msgid "Search tags"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -9094,6 +9226,10 @@ msgstr "系列页面"
 msgid "Series removed"
 msgstr "系列已移除"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
@@ -9195,6 +9331,10 @@ msgstr "通知到达时显示弹窗"
 msgid "Show all"
 msgstr "显示全部"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Show as a rail on Discover"
+msgstr ""
+
 #: src/components/home/ContinueRail.tsx
 #, fuzzy
 msgid "Show earlier chapters"
@@ -9220,6 +9360,7 @@ msgstr "显示更少"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/components/DiscoverPresets.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Show more"
@@ -9326,6 +9467,10 @@ msgstr "相似感觉"
 msgid "Similarity to start"
 msgstr "与起点的相似度"
 
+#: src/components/CatalogueRules.tsx
+msgid "Simple"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Single"
@@ -9376,6 +9521,10 @@ msgstr "大小"
 #, fuzzy
 msgid "Size mismatch"
 msgstr "大小不匹配"
+
+#: src/components/CatalogueRules.tsx
+msgid "Skip series where it is only a passing element"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -9793,20 +9942,27 @@ msgstr "系统问题"
 msgid "Tag {selectedCount} series"
 msgstr "为 {selectedCount} 个系列添加标签"
 
-#: src/components/CatalogueFilters.tsx
+#: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/pages/discover/TasteTab.tsx
-#: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Tags"
 msgstr "标签"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Tags appear once the recommendation index is built"
 msgstr "建立推荐索引后会显示标签"
+
+#: src/components/CatalogueRules.tsx
+msgid "Tags to exclude"
+msgstr ""
+
+#: src/components/CatalogueRules.tsx
+msgid "Tags to include"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -10027,6 +10183,10 @@ msgstr "无论选择哪个，种子都会继续做种。"
 msgid "The torrent never appeared in qBittorrent"
 msgstr "种子从未出现在 qBittorrent 中"
 
+#: src/pages/DiscoverPage.tsx
+msgid "The whole catalogue"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -10057,6 +10217,10 @@ msgstr "这些是长条页面，两个发布版本在不同位置进行了裁切
 #, fuzzy
 msgid "These are shown once. They are stored hashed, so nobody (including you) can read them back. Keep them somewhere you can reach without your authenticator."
 msgstr "这些内容只显示一次。它们以哈希形式存储，因此任何人（包括你自己）都无法再次读取。请将它们保存在不使用身份验证器也能访问的位置。"
+
+#: src/components/CatalogueRules.tsx
+msgid "These rules need the rules view. Remove some to switch back."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10164,6 +10328,10 @@ msgstr "这会用 <0>{backupName}</0> 替换当前资料库和设置，然后重
 #, fuzzy
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
 msgstr "此来源的图像与其他来源不匹配，通常是因为版本或扫图不同。页面会按来源提供的样子显示，因此行不会与其他列对齐。"
+
+#: src/components/CatalogueRules.tsx
+msgid "This tag has no subtags"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy

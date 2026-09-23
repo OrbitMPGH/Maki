@@ -1,6 +1,7 @@
 ﻿using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
@@ -27,6 +28,7 @@ public class RecommendationController(
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     IUserSettings userSettings,
+    HiddenContentService hidden,
     MalReviewClient reviews) : ControllerBase
 {
     [HttpPost]
@@ -34,7 +36,15 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await recommendations.GetAsync(request ?? new RecommendationRequest(), currentUser, ct));
+            request ??= new RecommendationRequest();
+            var filters = await hidden.ApplyAsync(Sanitize(request.Filters), ct);
+            var result = await recommendations.GetAsync(request with { Filters = filters }, currentUser, ct);
+            // Relations skip the catalogue filters on purpose (a sequel is shown whatever the panel
+            // says), but a never-show list is not a panel setting.
+            var isHidden = await hidden.PredicateAsync(ct);
+            return Ok(isHidden is null
+                ? result
+                : result with { Related = HiddenContentService.Without(result.Related, isHidden) });
         }
         catch (InvalidOperationException ex)
         {
@@ -118,9 +128,10 @@ public class RecommendationController(
         try
         {
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
-            return Ok(FilterRails(rails, suppressed));
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+            return Ok(FilterRails(rails, suppressed, isHidden));
         }
         catch (InvalidOperationException ex)
         {
@@ -134,7 +145,9 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await sideInterests.GetAsync(currentUser, refresh, ct));
+            var isHidden = await hidden.PredicateAsync(ct);
+            var rails = await sideInterests.GetAsync(currentUser, refresh, ct);
+            return Ok(rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList());
         }
         catch (InvalidOperationException ex)
         {
@@ -158,7 +171,9 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await recentActivity.GetAsync(currentUser, refresh, ct));
+            var isHidden = await hidden.PredicateAsync(ct);
+            var rail = await recentActivity.GetAsync(currentUser, refresh, ct);
+            return Ok(rail is null ? null : rail with { Items = HiddenContentService.Without(rail.Items, isHidden) });
         }
         catch (InvalidOperationException ex)
         {
@@ -180,7 +195,9 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await recentActivity.GetGroupedAsync(currentUser, refresh, ct));
+            var isHidden = await hidden.PredicateAsync(ct);
+            var rails = await recentActivity.GetGroupedAsync(currentUser, refresh, ct);
+            return Ok(rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList());
         }
         catch (InvalidOperationException ex)
         {
@@ -195,9 +212,10 @@ public class RecommendationController(
         try
         {
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetGenreFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
-            return Ok(FilterRails(rails, suppressed));
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+            return Ok(FilterRails(rails, suppressed, isHidden));
         }
         catch (InvalidOperationException ex)
         {
@@ -214,12 +232,7 @@ public class RecommendationController(
     {
         try
         {
-            var clamped = (request.Filters ?? RecommendationFilters.None) with
-            {
-                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
-                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
-                    : ContentRating.Allowed(currentUser.MaxContentRating)
-            };
+            var clamped = await ScopeAsync(request.Filters, ct);
             var items = await discover.GetFeedAsync(request with { Filters = clamped }, ct);
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
             return Ok(items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id)).ToList());
@@ -240,12 +253,7 @@ public class RecommendationController(
     {
         try
         {
-            var clamped = (request.Filters ?? RecommendationFilters.None) with
-            {
-                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
-                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
-                    : ContentRating.Allowed(currentUser.MaxContentRating)
-            };
+            var clamped = await ScopeAsync(request.Filters, ct);
             return Ok(await discover.SearchAsync(request with { Filters = clamped }, ct));
         }
         catch (InvalidOperationException ex)
@@ -269,12 +277,7 @@ public class RecommendationController(
 
         try
         {
-            var clamped = (request.Filters ?? RecommendationFilters.None) with
-            {
-                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
-                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
-                    : ContentRating.Allowed(currentUser.MaxContentRating)
-            };
+            var clamped = await ScopeAsync(request.Filters, ct);
 
             var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
             return profile is null ? this.NotFoundMessage(localizer, "error.recommendation.creatorNotFound") : Ok(profile);
@@ -362,20 +365,73 @@ public class RecommendationController(
     }
 
     /// <summary>
-    /// Tag names for the Discover tag filter, from the embedding index's tags_v2 vocabulary
-    /// (non-spoiler, most-used first). Empty until the index has been built.
+    /// Tags for the Discover tag filter, from the embedding index's tags_v2 vocabulary
+    /// (non-spoiler, most-used first). Each carries its place in MangaBaka's tag tree, because names
+    /// alone mislead: "Adult" is a sexual-content intensity, not an age, and the path is what says
+    /// so. Empty until the index has been built.
     /// </summary>
     [HttpGet("tags")]
     public IActionResult Tags()
     {
         embeddings.EnsureSchema();
-        var names = embeddings.GetVocab().Values
+        var visible = embeddings.GetVocab().Values
             .Where(t => !t.IsSpoiler)
             .OrderByDescending(t => t.SeriesCount)
-            .Select(t => t.Name)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .DistinctBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        return Ok(names);
+        // A tag has subtags when another tag's path runs through its own.
+        var parents = visible
+            .Select(t => ParentPath(t.NamePath))
+            .Where(p => p.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return Ok(visible.Select(t => new TagOption(
+            t.Name,
+            ParentPath(t.NamePath),
+            t.SeriesCount,
+            t.NamePath.Length > 0 && parents.Contains(t.NamePath))));
+    }
+
+    /// <param name="Path">The tag's ancestors, "Locations &gt; School" for College; empty at a root.</param>
+    /// <param name="HasSubtags">Whether the "include subtags" option would change anything.</param>
+    public record TagOption(string Name, string Path, long Count, bool HasSubtags);
+
+    private static string ParentPath(string namePath)
+    {
+        var cut = namePath.LastIndexOf(" > ", StringComparison.Ordinal);
+        return cut > 0 ? namePath[..cut] : string.Empty;
+    }
+
+    /// <summary>
+    /// How many catalogue series a set of filters leaves, for the panel's live count. Scoped like
+    /// every other POST here, so the number matches what Apply would show. <c>count</c> is null
+    /// when the search index is not built.
+    /// </summary>
+    [HttpPost("discover/count")]
+    public async Task<IActionResult> DiscoverCount([FromBody] DiscoverFeedRequest request, CancellationToken ct)
+    {
+        var scoped = await ScopeAsync(request.Filters, ct);
+        return Ok(new { count = await discover.CountAsync(request with { Filters = scoped }, ct) });
+    }
+
+    /// <summary>The caller's never-show list.</summary>
+    [HttpGet("discover/hidden")]
+    public async Task<IActionResult> GetHidden(CancellationToken ct) =>
+        Ok(HiddenContentSpec.Parse(await userSettings.GetAsync(SettingKeys.DiscoverHidden, ct)));
+
+    /// <summary>
+    /// Replaces the caller's never-show list. Per user and needs no permission: it only ever hides
+    /// more. An empty list deletes the row.
+    /// </summary>
+    [HttpPut("discover/hidden")]
+    public async Task<IActionResult> SetHidden([FromBody] HiddenContentSpec request, CancellationToken ct)
+    {
+        var spec = (request ?? HiddenContentSpec.Empty).Normalize();
+        await userSettings.SetAsync(
+            SettingKeys.DiscoverHidden,
+            spec.IsEmpty ? null : HiddenContentSpec.Serialize(spec),
+            ct);
+        return Ok(spec);
     }
 
     /// <summary>
@@ -399,10 +455,15 @@ public class RecommendationController(
             // Re-clamped here as well as wherever the ids were chosen: every other POST on this
             // controller does the same, and a ceiling applied in only one of two places is not a
             // ceiling.
-            filters = filters with
+            filters = Sanitize(filters) with
             {
                 ContentRatings = ContentRating.Clamp(filters.ContentRatings, currentUser.MaxContentRating),
             };
+        }
+
+        if (await hidden.TermsAsync(ct) is { Count: > 0 })
+        {
+            filters = await hidden.ApplyAsync(filters ?? RecommendationFilters.None, ct);
         }
 
         var limit = Math.Clamp(request?.Limit ?? 40, 1, 120);
@@ -416,8 +477,31 @@ public class RecommendationController(
     /// are shared instance-wide, so a reader with no feedback asking for refill headroom would make
     /// every reader pay a doubled catalogue scan for slack none of them use.
     /// </summary>
-    private static int RailDepth(HashSet<long> suppressed) =>
-        suppressed.Count > 0 ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+    private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
+        suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+
+    /// <summary>
+    /// A request's filters bounded by the caller: rules trimmed to sane sizes, content ratings
+    /// clamped to their ceiling, and their never-show list attached.
+    /// </summary>
+    private async Task<RecommendationFilters> ScopeAsync(RecommendationFilters? filters, CancellationToken ct)
+    {
+        var scoped = Sanitize(filters) with
+        {
+            ContentRatings = filters?.ContentRatings is { Count: > 0 } requested
+                ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
+                : ContentRating.Allowed(currentUser.MaxContentRating)
+        };
+        return await hidden.ApplyAsync(scoped, ct);
+    }
+
+    /// <summary>Normalizes the client-supplied rules and drops any never-show list a request carried.</summary>
+    private static RecommendationFilters Sanitize(RecommendationFilters? filters) =>
+        (filters ?? RecommendationFilters.None) with
+        {
+            Rules = CatalogueRules.Normalize(filters?.Rules),
+            Hidden = null,
+        };
 
     /// <summary>
     /// The viewer's suppression over a shared rail. Returns a new list every time: the cached rail
@@ -425,16 +509,18 @@ public class RecommendationController(
     /// titles from all of them.
     /// </summary>
     private static IReadOnlyList<DiscoverRail> FilterRails(
-        IReadOnlyList<DiscoverRail> rails, HashSet<long> suppressed)
+        IReadOnlyList<DiscoverRail> rails, HashSet<long> suppressed, Func<long, bool>? isHidden)
     {
-        if (suppressed.Count == 0)
+        if (suppressed.Count == 0 && isHidden is null)
         {
             return rails;
         }
 
         return rails.Select(rail => rail with
         {
-            Items = rail.Items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id))
+            Items = rail.Items
+                .Where(x => !long.TryParse(x.ProviderId, out var id) ||
+                    (!suppressed.Contains(id) && isHidden?.Invoke(id) != true))
                 .Take(DiscoverService.RailSize).ToList()
         }).ToList();
     }

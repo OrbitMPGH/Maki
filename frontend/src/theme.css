@@ -2489,6 +2489,26 @@ body {
 .tag-chip[data-active] > .tag-dot {
   background: var(--brand);
 }
+/* Filter chips and pills carry a tone: required reads green, excluded reads red and struck. */
+.term-chip[data-state='include'],
+.term-pill[data-state='include'] {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ink-hi);
+}
+.term-chip[data-state='exclude'],
+.term-pill[data-state='exclude'] {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--ink-hi);
+}
+.term-chip[data-state='exclude'] .tag-chip-body,
+.term-pill[data-state='exclude'] .mantine-Pill-label {
+  text-decoration: line-through;
+}
+.term-pill {
+  border: 1px solid transparent;
+}
 /* The blur is for the tag's name. A 6px dot rendered through it is just a smudge, and it gives
    away nothing anyway. */
 .tag-chip.spoiler-tag > .tag-dot {

@@ -517,6 +517,12 @@ public static class SettingKeys
     /// </summary>
     public const string DiscoverSearchDefaults = "discover.searchdefaults";
 
+    /// <summary>
+    /// Per user: genres and tags never shown on Discover, as a <see cref="HiddenContentSpec"/> JSON
+    /// blob. Applied by the server to every Discover and recommendation request, never read from one.
+    /// </summary>
+    public const string DiscoverHidden = "discover.hidden";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";

@@ -336,6 +336,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         modelBuilder.Entity<SavedFilter>(e =>
         {
             e.HasIndex(f => new { f.UserId, f.SortOrder });
+            e.Property(f => f.Scope).HasDefaultValue(SavedFilter.LibraryScope);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(f => _scope.Unrestricted || f.UserId == _scope.UserId);
         });

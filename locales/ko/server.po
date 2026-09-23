@@ -309,6 +309,12 @@ msgstr "지원하지 않는 피드백 상태입니다"
 msgid "error.libraryFilters.nameRequired"
 msgstr "이름이 필요합니다"
 
+#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
+#. {max} is how many saved filters one person may keep.
+#. English: You can keep at most {max} saved filters
+msgid "error.discoverFilters.tooMany"
+msgstr ""
+
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: No items to import
 #, fuzzy

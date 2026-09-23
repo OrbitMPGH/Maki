@@ -1,17 +1,18 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { usePageState } from '../lib/pageState'
-import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Text } from '@mantine/core'
+import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Stack, Text } from '@mantine/core'
 import { IconDeviceFloppy } from '@tabler/icons-react'
 import {
   allowedContentRatings,
   CONTENT_RATING_LABELS,
-  useRecommendationTags,
+  type CatalogueRule,
   type RecommendationFilters,
 } from '../api/hooks'
+import { TermFilters, useTermFilters } from './CatalogueRules'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 
@@ -126,6 +127,7 @@ export interface CatalogueFilterSpec {
   /** The dump's 0–100 scale, not the slider's 0–10. */
   minRating?: number | null
   contentRatings?: string[] | null
+  rules?: CatalogueRule[] | null
 }
 
 /**
@@ -145,6 +147,7 @@ export function filtersFromSpec(spec: CatalogueFilterSpec): RecommendationFilter
   if (spec.maxChapters != null) f.maxChapters = spec.maxChapters
   if (spec.minRating != null) f.minRating = spec.minRating
   if (spec.contentRatings?.length) f.contentRatings = spec.contentRatings
+  if (spec.rules?.length) f.rules = spec.rules
   return f
 }
 
@@ -168,8 +171,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
   // wants: the rail modal resets itself every time it opens, so remembering it would be noise.
   const at = (field: string) => (scope ? `${scope}:${field}` : null)
 
-  const [genres, setGenres] = usePageState<string[]>(at('genres'), initial?.genres ?? [])
-  const [tags, setTags] = usePageState<string[]>(at('tags'), initial?.tags ?? [])
+  const terms = useTermFilters(at('terms'), initial)
   const [types, setTypes] = usePageState<string[]>(at('types'), initial?.types ?? [])
   const [statuses, setStatuses] = usePageState<string[]>(at('statuses'), initial?.statuses ?? [])
   const [years, setYears] = usePageState<[number, number]>(at('years'), [
@@ -187,8 +189,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
   )
 
   const isCustomized =
-    genres.length > 0 ||
-    tags.length > 0 ||
+    terms.isCustomized ||
     types.length > 0 ||
     statuses.length > 0 ||
     years[0] > YEAR_MIN ||
@@ -206,8 +207,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     if (years[1] < YEAR_MAX) f.yearMax = years[1]
     if (types.length) f.types = types
     if (statuses.length) f.statuses = statuses
-    if (genres.length) f.genres = genres
-    if (tags.length) f.tags = tags
+    Object.assign(f, terms.build())
     if (chapters[0] > CHAPTER_MIN) f.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) f.maxChapters = chapters[1]
     if (minRating > 0) f.minRating = minRating * 10 // slider is 0–10, the dump's rating is 0–100
@@ -218,9 +218,10 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
   // Stable, because callers clear the panel from an effect keyed on what they're filtering (the
   // rail modal resets when a different rail opens). An identity that changed every render would
   // re-run that effect every render, which is a reset loop, not a reset.
+  const resetTerms = terms.reset
+  const hydrateTerms = terms.hydrate
   const reset = useCallback(() => {
-    setGenres([])
-    setTags([])
+    resetTerms()
     setTypes([])
     setStatuses([])
     setYears([YEAR_MIN, YEAR_MAX])
@@ -228,21 +229,20 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     setMinRating(0)
     setContentRatings([])
     // Every setter here is a `useState` setter, page-backed or not, so this stays stable.
-  }, [setGenres, setTags, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
+  }, [resetTerms, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
 
   // Seeds the panel from a stored spec once it arrives. `initial` cannot do this: the saved
   // default is fetched, so it is undefined on the render that runs the state initializers. Stable
   // for the same reason `reset` is — callers hydrate from an effect.
   const hydrate = useCallback((f: RecommendationFilters) => {
-    setGenres(f.genres ?? [])
-    setTags(f.tags ?? [])
+    hydrateTerms(f)
     setTypes(f.types ?? [])
     setStatuses(f.statuses ?? [])
     setYears([f.yearMin ?? YEAR_MIN, f.yearMax ?? YEAR_MAX])
     setChapters([f.minChapters ?? CHAPTER_MIN, f.maxChapters ?? CHAPTER_MAX])
     setMinRating((f.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, the slider is 0–10
     setContentRatings(f.contentRatings ?? [])
-  }, [setGenres, setTags, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
+  }, [hydrateTerms, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
 
   return {
     isCustomized,
@@ -250,8 +250,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     reset,
     hydrate,
     controls: {
-      genres, setGenres,
-      tags, setTags,
+      terms: { state: terms.state, setState: terms.setState },
       types, setTypes,
       statuses, setStatuses,
       years, setYears,
@@ -273,16 +272,13 @@ export function CatalogueFilters({
   cols?: Record<string, number>
 }) {
   const { t } = useLingui()
-  const { data: tagOptions } = useRecommendationTags()
   const { me } = useAuth()
   const renderLabel = useLabel()
   const { i18n } = useLingui()
   const typeOptions = useTypeOptions()
   const statusOptions = useStatusOptions()
-  const genreOptions = useGenreOptions()
   const {
-    genres, setGenres,
-    tags, setTags,
+    terms,
     types, setTypes,
     statuses, setStatuses,
     years, setYears,
@@ -290,14 +286,6 @@ export function CatalogueFilters({
     minRating, setMinRating,
     contentRatings, setContentRatings,
   } = controls
-
-  const tagNothingFound = useMemo(
-    () =>
-      (tagOptions?.length ?? 0) === 0
-        ? 'Tags appear once the recommendation index is built'
-        : 'No matches',
-    [tagOptions],
-  )
 
   // Only ratings at or below the signed-in user's own ceiling: picking one they can't see would
   // just come back empty, and the option shouldn't be offered in the first place.
@@ -311,108 +299,87 @@ export function CatalogueFilters({
   )
 
   return (
-    <SimpleGrid cols={cols} spacing="lg">
-      <MultiSelect
-        label={t`Genres`}
-        placeholder={genres.length ? undefined : t`Any`}
-        data={genreOptions}
-        value={genres}
-        onChange={setGenres}
-        searchable
-        clearable
-        hidePickedOptions
-        maxDropdownHeight={260}
-      />
-      <MultiSelect
-        label={t`Tags`}
-        placeholder={tags.length ? undefined : t`Any`}
-        data={tagOptions ?? []}
-        value={tags}
-        onChange={setTags}
-        searchable
-        clearable
-        hidePickedOptions
-        limit={50}
-        nothingFoundMessage={tagNothingFound}
-        maxDropdownHeight={260}
-      />
-      <MultiSelect
-        label={t`Type`}
-        placeholder={types.length ? undefined : t`Any`}
-        data={typeOptions}
-        value={types}
-        onChange={setTypes}
-        clearable
-      />
-      <MultiSelect
-        label={t`Status`}
-        placeholder={statuses.length ? undefined : t`Any`}
-        data={statusOptions}
-        value={statuses}
-        onChange={setStatuses}
-        clearable
-      />
-      <MultiSelect
-        label={t`Content rating`}
-        placeholder={contentRatings.length ? undefined : t`Any`}
-        data={contentRatingOptions}
-        value={contentRatings}
-        onChange={setContentRatings}
-        clearable
-      />
-      <div>
-        <Text size="sm" fw={500} mb={4}>
-          Chapters: {chapters[0]}–{chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
-        </Text>
-        <RangeSlider
-          min={CHAPTER_MIN}
-          max={CHAPTER_MAX}
-          step={5}
-          value={chapters}
-          onChange={setChapters}
-          label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
-          marks={[
-            { value: CHAPTER_MIN, label: '0' },
-            { value: 250, label: '250' },
-            { value: CHAPTER_MAX, label: '500+' },
-          ]}
+    <Stack gap="lg">
+      <TermFilters controls={terms} />
+      <SimpleGrid cols={cols} spacing="lg">
+        <MultiSelect
+          label={t`Type`}
+          placeholder={types.length ? undefined : t`Any`}
+          data={typeOptions}
+          value={types}
+          onChange={setTypes}
+          clearable
         />
-      </div>
-      <div>
-        <Text size="sm" fw={500} mb={4}>
-          Year: {years[0]}–{years[1]}
-        </Text>
-        <RangeSlider
-          min={YEAR_MIN}
-          max={YEAR_MAX}
-          value={years}
-          onChange={setYears}
-          marks={[
-            { value: YEAR_MIN, label: `${YEAR_MIN}` },
-            { value: YEAR_MAX, label: `${YEAR_MAX}` },
-          ]}
-          minRange={0}
+        <MultiSelect
+          label={t`Status`}
+          placeholder={statuses.length ? undefined : t`Any`}
+          data={statusOptions}
+          value={statuses}
+          onChange={setStatuses}
+          clearable
         />
-      </div>
-      <div>
-        <Text size="sm" fw={500} mb={4}>
-          Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
-        </Text>
-        <Slider
-          min={0}
-          max={9.5}
-          step={0.5}
-          value={minRating}
-          onChange={setMinRating}
-          label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : 'any')}
-          marks={[
-            { value: 0, label: 'any' },
-            { value: 7, label: '7' },
-            { value: 9, label: '9' },
-          ]}
+        <MultiSelect
+          label={t`Content rating`}
+          placeholder={contentRatings.length ? undefined : t`Any`}
+          data={contentRatingOptions}
+          value={contentRatings}
+          onChange={setContentRatings}
+          clearable
         />
-      </div>
-    </SimpleGrid>
+        <div>
+          <Text size="sm" fw={500} mb={4}>
+            Chapters: {chapters[0]}–{chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]}
+          </Text>
+          <RangeSlider
+            min={CHAPTER_MIN}
+            max={CHAPTER_MAX}
+            step={5}
+            value={chapters}
+            onChange={setChapters}
+            label={(v) => (v >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : `${v}`)}
+            marks={[
+              { value: CHAPTER_MIN, label: '0' },
+              { value: 250, label: '250' },
+              { value: CHAPTER_MAX, label: '500+' },
+            ]}
+          />
+        </div>
+        <div>
+          <Text size="sm" fw={500} mb={4}>
+            Year: {years[0]}–{years[1]}
+          </Text>
+          <RangeSlider
+            min={YEAR_MIN}
+            max={YEAR_MAX}
+            value={years}
+            onChange={setYears}
+            marks={[
+              { value: YEAR_MIN, label: `${YEAR_MIN}` },
+              { value: YEAR_MAX, label: `${YEAR_MAX}` },
+            ]}
+            minRange={0}
+          />
+        </div>
+        <div>
+          <Text size="sm" fw={500} mb={4}>
+            Minimum rating: {minRating > 0 ? `★ ${minRating.toFixed(1)}` : 'any'}
+          </Text>
+          <Slider
+            min={0}
+            max={9.5}
+            step={0.5}
+            value={minRating}
+            onChange={setMinRating}
+            label={(v) => (v > 0 ? `★ ${v.toFixed(1)}` : 'any')}
+            marks={[
+              { value: 0, label: 'any' },
+              { value: 7, label: '7' },
+              { value: 9, label: '9' },
+            ]}
+          />
+        </div>
+      </SimpleGrid>
+    </Stack>
   )
 }
 
@@ -427,38 +394,44 @@ export function CatalogueFilterActions({
   onApply,
   onSaveAsDefault,
   saving = false,
+  extra,
 }: {
   isCustomized: boolean
   onReset: () => void
   onApply: () => void
   onSaveAsDefault?: () => void
   saving?: boolean
+  /** Sits on the left: saved filters, the never-show list, the live count. */
+  extra?: ReactNode
 }) {
   return (
-    <Group justify="flex-end">
-      {onSaveAsDefault && (
-        <Button
-          variant="subtle"
-          size="xs"
-          leftSection={<IconDeviceFloppy size={14} />}
-          loading={saving}
-          onClick={onSaveAsDefault}
-          // Never disabled: saving an untouched panel is how a stored default gets cleared.
-          title={
-            isCustomized
-              ? 'Open the search with these filters from now on'
-              : 'Clear your saved default'
-          }
-        >
-          Save as default
+    <Group justify="space-between" gap="xs" wrap="wrap">
+      <Group gap="sm" wrap="wrap">{extra}</Group>
+      <Group justify="flex-end" gap="xs">
+        {onSaveAsDefault && (
+          <Button
+            variant="subtle"
+            size="xs"
+            leftSection={<IconDeviceFloppy size={14} />}
+            loading={saving}
+            onClick={onSaveAsDefault}
+            // Never disabled: saving an untouched panel is how a stored default gets cleared.
+            title={
+              isCustomized
+                ? 'Open the search with these filters from now on'
+                : 'Clear your saved default'
+            }
+          >
+            Save as default
+          </Button>
+        )}
+        <Button variant="subtle" size="xs" onClick={onReset} disabled={!isCustomized}>
+          Reset
         </Button>
-      )}
-      <Button variant="subtle" size="xs" onClick={onReset} disabled={!isCustomized}>
-        Reset
-      </Button>
-      <Button size="xs" onClick={onApply}>
-        Apply
-      </Button>
+        <Button size="xs" onClick={onApply}>
+          Apply
+        </Button>
+      </Group>
     </Group>
   )
 }

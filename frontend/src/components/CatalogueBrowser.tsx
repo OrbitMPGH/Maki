@@ -43,6 +43,8 @@ import {
   filtersFromSpec,
   useCatalogueFilters,
 } from './CatalogueFilters'
+import { FilterMatchCount } from './CatalogueRules'
+import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
 import { RecommendationCard, RecommendationRow } from './ui/DiscoverRail'
@@ -341,6 +343,19 @@ export function CatalogueBrowser({
                   onApply={() => setApplied(catalogue.build())}
                   saving={saveDefaults.isPending}
                   onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
+                  extra={
+                    <>
+                      <PresetMenu
+                        current={catalogue.build}
+                        onLoad={(f) => {
+                          catalogue.hydrate(f)
+                          setApplied(f)
+                        }}
+                      />
+                      <HiddenContentButton />
+                      <FilterMatchCount filters={catalogue.build()} />
+                    </>
+                  }
                 />
               </Stack>
             </Panel>

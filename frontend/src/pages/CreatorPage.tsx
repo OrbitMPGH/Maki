@@ -28,6 +28,7 @@ import {
   useCatalogueFilters,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
+import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -190,6 +191,19 @@ export default function CreatorPage() {
                 setApplied(catalogue.build())
                 setPages(1)
               }}
+              extra={
+                <>
+                  <PresetMenu
+                    current={catalogue.build}
+                    onLoad={(f) => {
+                      catalogue.hydrate(f)
+                      setApplied(f)
+                      setPages(1)
+                    }}
+                  />
+                  <HiddenContentButton />
+                </>
+              }
             />
           </Stack>
         </Panel>

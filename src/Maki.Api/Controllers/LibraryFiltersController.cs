@@ -40,6 +40,7 @@ public class LibraryFiltersController(
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var filters = await db.SavedFilters
+            .Where(f => f.Scope == SavedFilter.LibraryScope)
             .OrderBy(f => f.SortOrder)
             .ThenBy(f => f.Id)
             .ToListAsync(ct);
@@ -61,7 +62,7 @@ public class LibraryFiltersController(
             Spec = JsonSerializer.Serialize(request.Spec, SpecJson),
             // Per-user count: the query filter narrows it, so two users' presets don't interleave
             // their sort order.
-            SortOrder = await db.SavedFilters.CountAsync(ct),
+            SortOrder = await db.SavedFilters.CountAsync(f => f.Scope == SavedFilter.LibraryScope, ct),
             Created = DateTime.UtcNow,
         };
         db.SavedFilters.Add(filter);
@@ -73,7 +74,7 @@ public class LibraryFiltersController(
     public async Task<IActionResult> Update(int id, [FromBody] SaveFilterRequest request, CancellationToken ct)
     {
         var filter = await db.SavedFilters.FindAsync([id], ct);
-        if (filter is null)
+        if (filter is null || filter.Scope != SavedFilter.LibraryScope)
         {
             return NotFound();
         }
@@ -92,7 +93,7 @@ public class LibraryFiltersController(
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var filter = await db.SavedFilters.FindAsync([id], ct);
-        if (filter is null)
+        if (filter is null || filter.Scope != SavedFilter.LibraryScope)
         {
             return NotFound();
         }
