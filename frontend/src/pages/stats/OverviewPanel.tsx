@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import {
   Alert,
   Group,
-  Loader,
   SegmentedControl,
+  Skeleton,
   Select,
   SimpleGrid,
   Stack,
@@ -26,6 +26,7 @@ import { useProgressSummary, useReadingHeatmap, useActivityStats } from '../../a
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useLabel } from '../../i18n-context'
 import { Panel } from '../../components/ui/Panel'
+import { ChartSkeleton } from './ChartSkeleton'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { TagChip, TagChips } from '../../components/ui/TagChip'
 import { formatNumber, formatReadingTime, monthName } from '../../format'
@@ -220,9 +221,24 @@ export function OverviewPanel({
     return (
       <>
         {rangeControls}
-        <Group justify="center" py={64}>
-          <Loader />
-        </Group>
+        <Stack gap="lg" aria-hidden>
+          <Panel p={0}>
+            <div className="stats-figures">
+              {[58, 72, 50, 64, 80, 68].map((width) => (
+                <div className="stats-figure" key={width}>
+                  <Skeleton h={26} w={width} my={4} />
+                  <Skeleton h={8} w={width + 16} mt={6} />
+                </div>
+              ))}
+            </div>
+          </Panel>
+          <div>
+            <SectionHeader icon={IconCalendarStats} title={t`Activity`} />
+            <Panel p="md">
+              <ChartSkeleton h={260} />
+            </Panel>
+          </div>
+        </Stack>
       </>
     )
   }

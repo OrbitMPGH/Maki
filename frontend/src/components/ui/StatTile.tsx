@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Card, Group, Text } from '@mantine/core'
+import { Card, Group, Skeleton, Text } from '@mantine/core'
 import type { Icon } from '@tabler/icons-react'
 
 const ACCENT: Record<string, string> = {
@@ -28,6 +28,7 @@ export function StatTile({
   deltaLabel,
   invertDelta = false,
   hint,
+  loading,
 }: {
   label: string
   value: ReactNode
@@ -41,6 +42,8 @@ export function StatTile({
   invertDelta?: boolean
   /** A dimmed second line under the value, for a related count the tile does not headline. */
   hint?: string
+  /** Keeps the label, icon and accent in place and blanks only the number while it loads. */
+  loading?: boolean
 }) {
   const color = ACCENT[accent] ?? ACCENT.brand
   const hasDelta = delta !== undefined
@@ -58,9 +61,13 @@ export function StatTile({
           <Text size="xs" c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
             {label}
           </Text>
-          <Text fz={26} fw={750} lh={1.1} mt={6} className="tnum">
-            {value}
-          </Text>
+          {loading ? (
+            <Skeleton h={22} w={64} mt={10} mb={3} />
+          ) : (
+            <Text fz={26} fw={750} lh={1.1} mt={6} className="tnum">
+              {value}
+            </Text>
+          )}
           {hint && (
             <Text size="xs" c="var(--ink-3)" mt={4}>
               {hint}

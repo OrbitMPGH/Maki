@@ -2630,6 +2630,11 @@ body {
   pointer-events: none;
 }
 
+/* No art to fade while loading, so no surface either: a flat band would end on a hard edge. */
+.series-hero[data-loading] {
+  background: transparent;
+}
+
 .series-hero-body {
   position: relative;
   width: 100%;
@@ -3665,6 +3670,19 @@ body {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
+.chart-skeleton {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding-top: var(--mantine-spacing-md);
+  border-bottom: 1px solid var(--hairline);
+  opacity: 0.55;
+}
+.chart-skeleton > * {
+  flex: 1;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
 .stats-figure {
   display: grid;
   gap: 4px;
@@ -3868,6 +3886,26 @@ body.reader-open {
   z-index: 401;
   color: #fff;
   background: #0a0a0b;
+}
+/* A page's outline while the chapter loads. Its own colours: the reader is always dark, and the
+   theme's skeleton grey is a light-mode grey on a light theme. */
+.reader-page-skeleton {
+  height: min(88dvh, 138vw);
+  aspect-ratio: 2 / 3;
+  max-width: 92vw;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  animation: reader-page-pulse 1.6s ease-in-out infinite;
+}
+@keyframes reader-page-pulse {
+  50% {
+    background: rgba(255, 255, 255, 0.09);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-page-skeleton {
+    animation: none;
+  }
 }
 
 /* The reader sits above Mantine's popover layer (300), so its own popovers and tooltips

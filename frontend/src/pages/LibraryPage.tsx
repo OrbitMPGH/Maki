@@ -4,12 +4,10 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Center,
   Checkbox,
   Drawer,
   Group,
   Indicator,
-  Loader,
   Modal,
   MultiSelect,
   NumberInput,
@@ -78,6 +76,7 @@ import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
+import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -681,6 +680,8 @@ export default function LibraryPage() {
   const shownCount = visible.length
   const totalSeriesShown = series?.length ?? 0
   const loadErrorMessage = error ? String(error) : null
+  // The header, figures and toolbar hold their place while the list loads, so the grid lands where it will stay.
+  const showChrome = isLoading || (series != null && series.length > 0)
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
@@ -688,7 +689,7 @@ export default function LibraryPage() {
         title={t`Library`}
         description={t`Every series Maki watches: cover art, download progress and status at a glance.`}
         actions={
-          series && series.length > 0 && !selectMode ? (
+          showChrome && !selectMode ? (
             <>
               <Button.Group>
                 <Button
@@ -738,10 +739,11 @@ export default function LibraryPage() {
         }
       />
 
-      {series && series.length > 0 && (
+      {showChrome && (
         <Panel p={0} className="library-index layer-sunken">
           <FigureStrip
             flush
+            loading={isLoading}
             className="library-index-metrics"
             figures={[
               { label: t`Series`, value: stats.total },
@@ -894,7 +896,7 @@ export default function LibraryPage() {
                   onChange={(v) => setSort(v ?? 'added')}
                   comboboxProps={{ withinPortal: true }}
                 />
-                <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm">
+                <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm" hidden={isLoading}>
                   {filtersActive ? (
                     <Trans>
                       {visibleCount} of {totalCount} series match
@@ -1505,11 +1507,7 @@ export default function LibraryPage() {
         </Stack>
       </Modal>
 
-      {isLoading && (
-        <Center py={80}>
-          <Loader />
-        </Center>
-      )}
+      {isLoading && <PosterSkeletons density={density} viewMode={viewMode} />}
       {error && (
         <Text c="var(--danger)" ta="center" py="xl">
           <Trans>Failed to load library: {loadErrorMessage}</Trans>

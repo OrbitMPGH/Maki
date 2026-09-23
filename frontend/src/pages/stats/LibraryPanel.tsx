@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import {
   Group,
-  Loader,
   Progress,
   SimpleGrid,
   Stack,
@@ -23,9 +22,11 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useLibraryComposition } from '../../api/hooks'
+import type { LibraryCompositionTotals } from '../../api/hooks'
 import type { NamedCount } from '../../api/hooks'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Panel } from '../../components/ui/Panel'
+import { ChartSkeleton } from './ChartSkeleton'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StatTile } from '../../components/ui/StatTile'
 import { TagChip, TagChips } from '../../components/ui/TagChip'
@@ -43,6 +44,46 @@ const SLICE_COLORS = [
 
 function fileCount(n: number): string {
   return plural(n, { one: '# file', other: '# files' })
+}
+
+function TotalsTiles({ totals }: { totals?: LibraryCompositionTotals }) {
+  const { t } = useLingui()
+  const loading = !totals
+  const count = (n: number | undefined) => formatNumber(n ?? 0)
+  return (
+    <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
+      <StatTile label={t`Series`} value={count(totals?.seriesCount)} icon={IconBooks} loading={loading} />
+      <StatTile
+        label={t`Chapters`}
+        value={count(totals?.chapterCount)}
+        icon={IconFileZip}
+        accent="info"
+        loading={loading}
+      />
+      <StatTile
+        label={t`Downloaded`}
+        value={count(totals?.downloadedChapterCount)}
+        icon={IconDownload}
+        accent="info"
+        loading={loading}
+      />
+      <StatTile
+        label={t`Disk used`}
+        value={formatBytes(totals?.totalBytes ?? 0)}
+        icon={IconDatabase}
+        accent="warn"
+        loading={loading}
+      />
+      <StatTile label={t`Monitored`} value={count(totals?.monitoredCount)} icon={IconEye} accent="ok" loading={loading} />
+      <StatTile
+        label={t`Completed`}
+        value={count(totals?.completedCount)}
+        icon={IconChecks}
+        accent="ok"
+        loading={loading}
+      />
+    </SimpleGrid>
+  )
 }
 
 function CompositionCard({ title, items }: { title: string; items: NamedCount[] }) {
@@ -116,9 +157,15 @@ export function LibraryPanel() {
 
   if (isLoading && !stats) {
     return (
-      <Group justify="center" py={64}>
-        <Loader />
-      </Group>
+      <Stack gap="lg" aria-hidden>
+        <TotalsTiles />
+        <div>
+          <SectionHeader icon={IconTrendingUp} title={t`Growth`} />
+          <Panel p="md">
+            <ChartSkeleton h={240} />
+          </Panel>
+        </div>
+      </Stack>
     )
   }
 
@@ -133,33 +180,9 @@ export function LibraryPanel() {
     )
   }
 
-  const { totals } = stats
-
   return (
     <Stack gap="lg">
-      <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-        <StatTile label={t`Series`} value={formatNumber(totals.seriesCount)} icon={IconBooks} />
-        <StatTile
-          label={t`Chapters`}
-          value={formatNumber(totals.chapterCount)}
-          icon={IconFileZip}
-          accent="info"
-        />
-        <StatTile
-          label={t`Downloaded`}
-          value={formatNumber(totals.downloadedChapterCount)}
-          icon={IconDownload}
-          accent="info"
-        />
-        <StatTile label={t`Disk used`} value={formatBytes(totals.totalBytes)} icon={IconDatabase} accent="warn" />
-        <StatTile label={t`Monitored`} value={formatNumber(totals.monitoredCount)} icon={IconEye} accent="ok" />
-        <StatTile
-          label={t`Completed`}
-          value={formatNumber(totals.completedCount)}
-          icon={IconChecks}
-          accent="ok"
-        />
-      </SimpleGrid>
+      <TotalsTiles totals={stats.totals} />
 
       {growthData.length > 0 && (
         <div>

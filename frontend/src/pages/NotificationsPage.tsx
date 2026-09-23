@@ -3,8 +3,8 @@ import {
   Box,
   Button,
   Group,
-  Loader,
   Stack,
+  Skeleton,
   Switch,
   Tabs,
   Text,
@@ -204,9 +204,7 @@ export default function NotificationsPage() {
       </div>
 
       {isLoading ? (
-        <Group justify="center" py="xl">
-          <Loader />
-        </Group>
+        <FeedSkeleton />
       ) : items.length === 0 ? (
         <EmptyState
           title={unreadOnly || category ? t`Nothing matches` : t`No notifications yet`}
@@ -260,6 +258,26 @@ export default function NotificationsPage() {
         <Trans>Every notification goes, read and unread. This can't be undone.</Trans>
       </ConfirmDialog>
     </SurfaceFrame>
+  )
+}
+
+function FeedSkeleton() {
+  return (
+    <Panel className="notifications-feed" p={0} aria-hidden>
+      <Box px="md" pt="md" pb={4}>
+        <Skeleton h={10} w={72} />
+      </Box>
+      {[64, 48, 72, 56, 44, 60].map((width, i) => (
+        <Group key={i} className="inbox-record" gap="sm" wrap="nowrap" align="flex-start" px="md" py="sm">
+          <Skeleton w={34} h={49} radius="sm" mt={2} style={{ flexShrink: 0 }} />
+          <Stack gap={7} style={{ flex: 1 }} pt={3}>
+            <Skeleton h={12} w={width * 5} maw="80%" />
+            <Skeleton h={10} w={(width - 12) * 5} maw="70%" />
+            <Skeleton h={8} w={52} />
+          </Stack>
+        </Group>
+      ))}
+    </Panel>
   )
 }
 

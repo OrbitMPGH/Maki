@@ -37,6 +37,7 @@ import { ImportReviewModal } from '../components/ImportReviewModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
+import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
 import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
@@ -115,6 +116,7 @@ export default function ActivityPage() {
       />
 
       <FigureStrip
+        loading={!queue}
         figures={[
           { label: t`In progress`, value: stats.active, tone: 'info' },
           { label: t`Queued`, value: stats.queued },
@@ -123,7 +125,9 @@ export default function ActivityPage() {
         ]}
       />
 
-      {queueItems.length === 0 ? (
+      {!queue ? (
+        <TableSkeleton columns={5} rows={4} />
+      ) : queueItems.length === 0 ? (
         <EmptyState
           compact
           title={t`Nothing in the queue`}
@@ -357,7 +361,9 @@ export default function ActivityPage() {
           </Title>
         </Group>
 
-        {!history || history.items.length === 0 ? (
+        {!history ? (
+          <TableSkeleton columns={5} />
+        ) : history.items.length === 0 ? (
           <EmptyState
             compact
             title={t`No history yet`}

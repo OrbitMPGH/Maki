@@ -5,11 +5,10 @@ import {
   Anchor,
   Button,
   Card,
-  Center,
   Group,
-  Loader,
   SegmentedControl,
   SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   Tooltip,
@@ -86,6 +85,47 @@ function percent(share: number): string {
 
 function ratio(value: number): string {
   return `${value >= 10 ? Math.round(value) : value.toFixed(1)}x`
+}
+
+function TasteSkeleton() {
+  const { t } = useLingui()
+  return (
+    <Stack gap="md" aria-hidden>
+      <SignalsCard />
+      <SectionHeader icon={IconClock} title={t`How you read`} />
+      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
+        <StatTile label={t`You finish`} value="" icon={IconChartPie} loading />
+        <StatTile label={t`Typical chapter`} value="" icon={IconClock} accent="info" loading />
+        <StatTile label={t`You bail around`} value="" icon={IconArrowsShuffle} accent="warn" loading />
+        <StatTile label={t`Biggest day`} value="" icon={IconCalendar} accent="ok" loading />
+      </SimpleGrid>
+      <SectionHeader icon={IconCompass} title={t`What you read, grouped`} />
+      {[0, 1, 2].map((i) => (
+        <Panel key={i} p="md">
+          <Group justify="space-between" mb="sm">
+            <Skeleton h={14} w={140 - i * 20} />
+            <Skeleton h={10} w={120} />
+          </Group>
+          <Group gap="md" mb="md">
+            {[120, 96, 140, 108].map((w) => (
+              <Group key={w} gap={6} wrap="nowrap">
+                <Skeleton w={24} h={34} radius="sm" />
+                <Skeleton h={10} w={w} />
+              </Group>
+            ))}
+          </Group>
+          <Skeleton h={8} w={72} mb={8} />
+          <div className="discover-rail">
+            {Array.from({ length: 8 }, (_, j) => (
+              <div key={j} className="discover-rail-item">
+                <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+              </div>
+            ))}
+          </div>
+        </Panel>
+      ))}
+    </Stack>
+  )
 }
 
 function GroupCard({
@@ -525,11 +565,7 @@ export function TasteTab() {
     })
 
   if (insightsLoading && behaviourLoading && profileLoading) {
-    return (
-      <Center py="xl">
-        <Loader />
-      </Center>
-    )
+    return <TasteSkeleton />
   }
 
   if (error) {

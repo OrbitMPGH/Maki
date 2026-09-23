@@ -14,6 +14,7 @@ import {
   Pagination,
   Select,
   SimpleGrid,
+  Skeleton,
   Stack,
   Switch,
   Table,
@@ -57,6 +58,7 @@ import {
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
+import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
 import { formatDateTime, formatNumber } from '../format'
@@ -275,9 +277,8 @@ export default function HealthPage() {
           {error.message}
         </Alert>
       )}
-      {overview.isPending && <Loader mb="lg" />}
-
       <FigureStrip
+        loading={overview.isPending}
         figures={[
           { label: t`System issues`, value: issues, tone: 'danger' },
           { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
@@ -336,7 +337,7 @@ export default function HealthPage() {
 
         <Tabs.Panel value="overview">
           <div className="health-overview">
-            <ChecksPanel checks={overview.data?.checks ?? []} run={run} />
+            <ChecksPanel checks={overview.data?.checks ?? []} loading={overview.isPending} run={run} />
             <CachePanel />
             <OptionsPanel />
           </div>
@@ -455,7 +456,7 @@ export default function HealthPage() {
             )}
 
             {files.isPending ? (
-              <Loader />
+              <TableSkeleton columns={5} />
             ) : (
               <>
                 <Panel p={0} className="table-panel">
@@ -769,7 +770,15 @@ function BulkDeleteModal({
  * source cooldown and one per root folder, so a healthy instance shows around thirty green rows
  * and the two that matter are lost in them.
  */
-function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+function ChecksPanel({
+  checks,
+  loading,
+  run,
+}: {
+  checks: HealthCheck[]
+  loading: boolean
+  run: (path: string, body?: object) => void
+}) {
   const { t } = useLingui()
   const [showPassing, setShowPassing] = useState(false)
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
@@ -797,7 +806,21 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
         />
       </Group>
 
-      {checks.length === 0 && (
+      {loading && (
+        <Stack gap="md" aria-hidden>
+          <Skeleton h={8} w={96} />
+          {[0, 1, 2].map((i) => (
+            <Group key={i} gap="lg" wrap="nowrap" align="flex-start">
+              <Skeleton h={10} w={64} />
+              <Stack gap={8} style={{ flex: 1 }}>
+                <Skeleton h={10} w={`${78 - i * 14}%`} />
+                <Skeleton h={8} w="36%" />
+              </Stack>
+            </Group>
+          ))}
+        </Stack>
+      )}
+      {!loading && checks.length === 0 && (
         <Alert>
           <Trans>No checks have run yet. Use Check now.</Trans>
         </Alert>

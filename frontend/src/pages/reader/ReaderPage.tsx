@@ -1,4 +1,4 @@
-import { Button, Center, Loader, Stack, Text } from '@mantine/core'
+import { Button, Center, Stack, Text } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -342,7 +342,7 @@ export default function ReaderPage() {
     return (
       <div className="reader-root">
         <Center h="100dvh">
-          <Loader />
+          <div className="reader-page-skeleton" aria-hidden />
         </Center>
       </div>
     )

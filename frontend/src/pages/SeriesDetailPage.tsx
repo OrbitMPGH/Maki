@@ -12,11 +12,9 @@ import {
   Badge,
   Box,
   Button,
-  Center,
   Checkbox,
   Divider,
   Group,
-  Loader,
   Menu,
   NumberInput,
   Modal,
@@ -111,7 +109,7 @@ import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
-import { SeriesHero } from '../components/series/SeriesHero'
+import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
@@ -1081,9 +1079,9 @@ export default function SeriesDetailPage() {
 
   if (isLoading) {
     return (
-        <Center py={80}>
-          <Loader />
-        </Center>
+        <SurfaceFrame width="full" pageStyle="editorial">
+          <SeriesHeroSkeleton />
+        </SurfaceFrame>
     )
   }
 

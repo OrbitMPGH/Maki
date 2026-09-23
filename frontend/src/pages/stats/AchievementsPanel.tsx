@@ -2,10 +2,10 @@ import {
   Alert,
   Card,
   Group,
-  Loader,
   Progress,
   RingProgress,
   SimpleGrid,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -91,9 +91,32 @@ export function AchievementsPanel({ userId }: { userId?: number }) {
 
   if (isLoading && !summary) {
     return (
-      <Group justify="center" py={64}>
-        <Loader />
-      </Group>
+      <Stack gap="lg" aria-hidden>
+        <Panel p="md">
+          <Group gap="md" wrap="nowrap">
+            <Skeleton h={92} w={92} circle />
+            <Stack gap={8}>
+              <Skeleton h={16} w={90} />
+              <Skeleton h={10} w={180} />
+              <Skeleton h={8} w={140} />
+            </Stack>
+          </Group>
+        </Panel>
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+          <StatTile label={t`Chapters read`} value="" icon={IconBook2} loading />
+          <StatTile label={t`Time reading`} value="" icon={IconClock} loading />
+          <StatTile label={t`Series finished`} value="" icon={IconChecks} loading />
+          <StatTile label={t`Days read`} value="" icon={IconFlame} loading />
+        </SimpleGrid>
+        <Stack gap="sm">
+          <Skeleton h={12} w={64} />
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="sm">
+            {Array.from({ length: 8 }, (_, i) => (
+              <Skeleton key={i} h={104} radius="lg" />
+            ))}
+          </SimpleGrid>
+        </Stack>
+      </Stack>
     )
   }
 
