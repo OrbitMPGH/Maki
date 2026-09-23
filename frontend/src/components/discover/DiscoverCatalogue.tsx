@@ -76,6 +76,7 @@ export function DiscoverCatalogue({
             item={item}
             inLibrarySeriesId={seriesIdFor(item)}
             onOpen={onOpen}
+            reasonOverride={null}
           />
         ))}
       </SimpleGrid>
