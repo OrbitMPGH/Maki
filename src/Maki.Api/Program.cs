@@ -1052,6 +1052,18 @@ try
         o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
     });
 
+    // A browser that navigates away mid-request cancels RequestAborted, and the query awaiting it
+    // throws. Left alone that reaches request logging and Kestrel as an unhandled 500.
+    app.Use(async (context, next) =>
+    {
+        try { await next(); }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            if (!context.Response.HasStarted)
+                context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+        }
+    });
+
     app.UseMiddleware<SecurityHeadersMiddleware>();
 
     if (authOptions.RequireHttps)

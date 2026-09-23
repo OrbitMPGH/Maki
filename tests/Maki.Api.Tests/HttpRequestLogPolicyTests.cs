@@ -65,6 +65,7 @@ public class HttpRequestLogPolicyTests
     [InlineData(401)]
     [InlineData(403)]
     [InlineData(404)]
+    [InlineData(499)]
     public void Unauthenticated_and_missing_are_ordinary_traffic(int status)
     {
         // A signed-out browser emits a row of 401s on its way to the login page, and a bookmarked
