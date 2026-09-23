@@ -82,8 +82,10 @@ instead of the bare key. The base file stays read-only here because keys are nam
   Lingui's parser reads as empty. Either way CI's `lingui extract` + `git diff` step fails.
 - **Set "Last-Translator"**: off. It writes the committer's name and email into every catalogue
   header.
-- **Repository browser**: `https://github.com/OrbitMPGH/Maki/blob/{{branch}}/{{filename}}#L{{line}}`,
-  which turns the `#:` source references into links. Those references are the most useful thing in
+- **Repository browser**: `https://github.com/OrbitMPGH/Maki/blob/{{branch}}/{{filename}}#L{{line}}`
+  on `maki-backend` and the same with `frontend/` before `{{filename}}` on `maki-frontend`, because
+  Lingui writes its references relative to `frontend/`. It turns the `#:` source references into
+  links. Those references are the most useful thing in
   the file: the same English word is a navigation tab in `nav.ts` and a failure sentence in
   `DownloadQueueService.cs`, and they do not translate the same way.
 
