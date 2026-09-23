@@ -315,6 +315,29 @@ msgstr "Ad gerekli"
 msgid "error.discoverFilters.tooMany"
 msgstr ""
 
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: Name is required
+msgid "error.customRails.nameRequired"
+msgstr ""
+
+#. A custom rail was saved for a page other than Home or Discover.
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: A rail goes on Home or Discover
+msgid "error.customRails.unknownPlacement"
+msgstr ""
+
+#. A rail showing the reader's own library was placed on Discover, which only shows titles from the catalogue.
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: Library rails can only go on Home
+msgid "error.customRails.libraryHomeOnly"
+msgstr ""
+
+#. {max} is how many custom rails one person may keep across Home and Discover.
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: You can keep at most {max} rails
+msgid "error.customRails.tooMany"
+msgstr ""
+
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: No items to import
 #, fuzzy

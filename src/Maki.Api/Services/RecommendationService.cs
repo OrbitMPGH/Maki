@@ -70,6 +70,12 @@ public class RecommendationService(
     /// </summary>
     private const int CacheSlots = 16;
 
+    /// <summary>
+    /// Custom rails' own budget, separate from <see cref="CacheSlots"/> so they cannot evict the
+    /// pools above. Each rail with its own filters is its own pool, and a reader can have several.
+    /// </summary>
+    private const int RailCacheSlots = 24;
+
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
     /// <summary>
@@ -93,15 +99,20 @@ public class RecommendationService(
     private const int FranchiseSpacing = 8;
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<string, RecommendationsResult> _pools = [];
+    private readonly RecommendationPoolCache _pools = new(CacheSlots, RailCacheSlots, CacheFor);
 
     /// <param name="scope">
     /// The caller's data scope, applied to the child scope this opens. A singleton creating its own
     /// scope gets a fresh unrestricted <see cref="DataScope"/>, which would seed recommendations from
     /// root folders the caller was never granted and weight them with somebody else's ratings.
     /// </param>
+    /// <param name="origin">
+    /// Whose cache budget the pool counts against. A parameter rather than a request field because
+    /// the request is bound from a POST body and a client must not be able to pick its own budget.
+    /// </param>
     public async Task<RecommendationsResult> GetAsync(
-        RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default)
+        RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default,
+        PoolOrigin origin = PoolOrigin.Interactive)
     {
         if (!await store.IsAvailableAsync(ct))
         {
@@ -197,11 +208,7 @@ public class RecommendationService(
         await _lock.WaitAsync(ct);
         try
         {
-            var pool = !request.Refresh &&
-                       _pools.TryGetValue(key, out var hit) &&
-                       DateTime.UtcNow - hit.GeneratedAt < CacheFor
-                ? hit
-                : null;
+            var pool = !request.Refresh && _pools.TryGet(key, origin, out var hit) ? hit : null;
 
             if (pool is null)
             {
@@ -241,7 +248,7 @@ public class RecommendationService(
                 similar = Spread(WithFranchises(similar, franchises));
 
                 pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
-                Store(key, pool);
+                _pools.Store(key, pool, origin);
             }
 
             var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
@@ -366,32 +373,6 @@ public class RecommendationService(
     {
         var value = await settings.GetAsync(SettingKeys.RecommendationsTasteVectors, ct);
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Caches a pool, dropping expired entries first and then the oldest if the slots are still full.
-    /// Called under <see cref="_lock"/>.
-    /// </summary>
-    private void Store(string key, RecommendationsResult pool)
-    {
-        _pools[key] = pool;
-        if (_pools.Count <= CacheSlots)
-        {
-            return;
-        }
-
-        foreach (var stale in _pools
-                     .Where(kv => DateTime.UtcNow - kv.Value.GeneratedAt >= CacheFor)
-                     .Select(kv => kv.Key)
-                     .ToList())
-        {
-            _pools.Remove(stale);
-        }
-
-        while (_pools.Count > CacheSlots)
-        {
-            _pools.Remove(_pools.MinBy(kv => kv.Value.GeneratedAt).Key);
-        }
     }
 
     private static string FilterKey(RecommendationFilters f) =>

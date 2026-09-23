@@ -44,6 +44,25 @@ public static class HomeSections
     ];
 
     public static bool IsValid(string? key) => key is not null && All.Contains(key);
+
+    /// <summary>
+    /// Prefix of a custom rail's key (<c>rail:{id}</c>). Rail keys are not in <see cref="All"/>: which
+    /// ones are valid depends on the user's own rails, so <see cref="HomeLayoutSpec.Merge(IReadOnlyList{int})"/>
+    /// takes them as an argument.
+    /// </summary>
+    public const string RailPrefix = "rail:";
+
+    public static string RailKey(int id) => RailPrefix + id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    public static bool TryParseRail(string? key, out int id)
+    {
+        id = 0;
+        return key is not null &&
+            key.StartsWith(RailPrefix, StringComparison.Ordinal) &&
+            int.TryParse(key.AsSpan(RailPrefix.Length), System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out id) &&
+            id > 0;
+    }
 }
 
 /// <summary>
@@ -80,21 +99,27 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<HomeSection>? Se
     /// worth preserving, and a new section they haven't seen has no business jumping above it;</item>
     /// <item>duplicates collapse to their first occurrence.</item>
     /// </list>
+    /// Custom rails follow the same rules against <paramref name="homeRailIds"/>, the user's Home
+    /// rails in their own order: a deleted rail's key is dropped and a new rail is appended, on,
+    /// after the built-in sections.
     /// </summary>
-    public HomeLayoutSpec Merge()
+    public HomeLayoutSpec Merge(IReadOnlyList<int> homeRailIds)
     {
+        var rails = homeRailIds.Select(HomeSections.RailKey).ToList();
         var seen = new HashSet<string>();
-        var ordered = new List<HomeSection>(HomeSections.All.Length);
+        var ordered = new List<HomeSection>(HomeSections.All.Length + rails.Count);
 
         foreach (var section in Sections ?? [])
         {
-            if (HomeSections.IsValid(section.Key) && seen.Add(section.Key))
+            var known = HomeSections.IsValid(section.Key) ||
+                (HomeSections.TryParseRail(section.Key, out var id) && homeRailIds.Contains(id));
+            if (known && seen.Add(section.Key))
             {
                 ordered.Add(section);
             }
         }
 
-        foreach (var key in HomeSections.All)
+        foreach (var key in HomeSections.All.Concat(rails))
         {
             if (seen.Add(key))
             {
@@ -105,23 +130,31 @@ public record HomeLayoutSpec(bool Enabled = true, IReadOnlyList<HomeSection>? Se
         return this with { Sections = ordered };
     }
 
+    /// <summary><see cref="Merge(IReadOnlyList{int})"/> for a user with no custom rails.</summary>
+    public HomeLayoutSpec Merge() => Merge([]);
+
     /// <summary>Reads a stored blob, falling back to the default layout for null/blank/bad JSON.</summary>
-    public static HomeLayoutSpec Parse(string? json)
+    public static HomeLayoutSpec Parse(string? json) => Parse(json, []);
+
+    public static HomeLayoutSpec Parse(string? json, IReadOnlyList<int> homeRailIds)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            return Default;
+            return Default.Merge(homeRailIds);
         }
 
         try
         {
-            return (JsonSerializer.Deserialize<HomeLayoutSpec>(json, Json) ?? Default).Merge();
+            return (JsonSerializer.Deserialize<HomeLayoutSpec>(json, Json) ?? Default).Merge(homeRailIds);
         }
         catch (JsonException)
         {
-            return Default;
+            return Default.Merge(homeRailIds);
         }
     }
 
-    public static string Serialize(HomeLayoutSpec spec) => JsonSerializer.Serialize(spec.Merge(), Json);
+    public static string Serialize(HomeLayoutSpec spec) => Serialize(spec, []);
+
+    public static string Serialize(HomeLayoutSpec spec, IReadOnlyList<int> homeRailIds) =>
+        JsonSerializer.Serialize(spec.Merge(homeRailIds), Json);
 }

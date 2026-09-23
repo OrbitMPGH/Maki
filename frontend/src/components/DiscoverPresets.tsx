@@ -1,68 +1,60 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Button,
-  Checkbox,
   Group,
   Menu,
   Modal,
   Stack,
   Text,
   TextInput,
-  Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
   IconBookmark,
-  IconChevronRight,
   IconDeviceFloppy,
   IconEyeOff,
-  IconFilter,
-  IconPin,
-  IconPinnedOff,
+  IconLayoutRows,
   IconTrash,
 } from '@tabler/icons-react'
 import {
   useCreateDiscoverPreset,
   useDeleteDiscoverPreset,
-  useDiscoverFeed,
   useDiscoverPresets,
   useHiddenContent,
   useSaveHiddenContent,
-  useUpdateDiscoverPreset,
   type CatalogueTerm,
-  type DiscoverPreset,
-  type DiscoverRail,
   type RecommendationFilters,
-  type RecommendationItem,
 } from '../api/hooks'
+import type { CustomRailSpec } from '../api/customRails'
 import { filtersFromSpec } from './CatalogueFilters'
 import { TermPicker } from './CatalogueRules'
-import { DiscoverRailRow } from './ui/DiscoverRail'
-import { SectionHeader } from './ui/SectionHeader'
-
-/** Key prefix for a rail built from a saved filter, so the "Show more" view can recognize it. */
-export const PRESET_RAIL_PREFIX = 'preset:'
+import { CustomRailEditor } from './rails/CustomRailEditor'
 
 /**
- * Saved filters for a catalogue filter panel: load one, save the panel as a new one, pin one as a
- * Discover rail. `current` is read when saving rather than passed as a value, because a panel's
- * `build()` is a fresh object each render.
+ * Saved filters for a catalogue filter panel: load one, save the panel as a new one, or turn the
+ * panel into a custom rail. `current` is read when saving rather than passed as a value, because a
+ * panel's `build()` is a fresh object each render.
+ *
+ * @param railDraft What "Save as a rail" starts from. Defaults to a Discover catalogue rail over
+ *   `current()`; the Recommended panel passes a recommendation rail with its seeds and dials.
  */
 export function PresetMenu({
   current,
   onLoad,
+  railDraft,
 }: {
   current: () => RecommendationFilters
   onLoad: (filters: RecommendationFilters) => void
+  railDraft?: () => CustomRailSpec
 }) {
   const { t } = useLingui()
   const { data: presets } = useDiscoverPresets()
-  const update = useUpdateDiscoverPreset()
   const remove = useDeleteDiscoverPreset()
   const [saveOpen, setSaveOpen] = useState(false)
+  const [railSpec, setRailSpec] = useState<CustomRailSpec | null>(null)
 
   return (
     <>
@@ -85,16 +77,6 @@ export function PresetMenu({
                   {preset.name}
                 </Text>
               </Menu.Item>
-              <Tooltip label={preset.pinned ? t`Remove from Discover` : t`Show as a rail on Discover`} withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  color={preset.pinned ? 'var(--brand)' : 'var(--neutral)'}
-                  aria-label={preset.pinned ? t`Remove from Discover` : t`Show as a rail on Discover`}
-                  onClick={() => update.mutate({ id: preset.id, pinned: !preset.pinned })}
-                >
-                  {preset.pinned ? <IconPinnedOff size={14} /> : <IconPin size={14} />}
-                </ActionIcon>
-              </Tooltip>
               <ActionIcon
                 variant="subtle"
                 color="var(--neutral)"
@@ -109,9 +91,21 @@ export function PresetMenu({
           <Menu.Item leftSection={<IconDeviceFloppy size={14} />} onClick={() => setSaveOpen(true)}>
             <Trans>Save these filters…</Trans>
           </Menu.Item>
+          <Menu.Item
+            leftSection={<IconLayoutRows size={14} />}
+            onClick={() => setRailSpec(railDraft ? railDraft() : { source: 'catalogue', filters: current() })}
+          >
+            <Trans>Save as a rail…</Trans>
+          </Menu.Item>
         </Menu.Dropdown>
       </Menu>
       <SavePresetModal opened={saveOpen} onClose={() => setSaveOpen(false)} current={current} />
+      {railSpec && (
+        <CustomRailEditor
+          draft={{ placement: 'discover', spec: railSpec }}
+          onClose={() => setRailSpec(null)}
+        />
+      )}
     </>
   )
 }
@@ -128,7 +122,6 @@ function SavePresetModal({
   const { t } = useLingui()
   const create = useCreateDiscoverPreset()
   const [name, setName] = useState('')
-  const [pinned, setPinned] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const submit = () => {
@@ -138,7 +131,7 @@ function SavePresetModal({
       return
     }
     create.mutate(
-      { name: trimmed, spec: current(), pinned },
+      { name: trimmed, spec: current() },
       {
         onSuccess: () => {
           notifications.show({ color: 'green', message: now`Filter saved` })
@@ -166,11 +159,6 @@ function SavePresetModal({
           onKeyDown={(e) => {
             if (e.key === 'Enter') submit()
           }}
-        />
-        <Checkbox
-          label={t`Show as a rail on Discover`}
-          checked={pinned}
-          onChange={(e) => setPinned(e.currentTarget.checked)}
         />
         <Group justify="flex-end">
           <Button variant="subtle" onClick={onClose}>
@@ -249,75 +237,3 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-/** Each pinned saved filter as a Discover rail. */
-export function PresetRails({
-  seriesIdFor,
-  onOpen,
-  onShowMore,
-}: {
-  seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
-  onShowMore: (rail: DiscoverRail) => void
-}) {
-  const { data: presets } = useDiscoverPresets()
-  const pinned = useMemo(() => (presets ?? []).filter((p) => p.pinned), [presets])
-  return (
-    <>
-      {pinned.map((preset) => (
-        <PresetRail
-          key={preset.id}
-          preset={preset}
-          seriesIdFor={seriesIdFor}
-          onOpen={onOpen}
-          onShowMore={onShowMore}
-        />
-      ))}
-    </>
-  )
-}
-
-function PresetRail({
-  preset,
-  seriesIdFor,
-  onOpen,
-  onShowMore,
-}: {
-  preset: DiscoverPreset
-  seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
-  onShowMore: (rail: DiscoverRail) => void
-}) {
-  const filters = useMemo(() => filtersFromSpec(preset.spec), [preset.spec])
-  const request = useMemo(() => ({ feed: 'Popular', filters, limit: 40 }), [filters])
-  const { data: items } = useDiscoverFeed(request)
-  if (!items || items.length === 0) return null
-
-  const rail: DiscoverRail = {
-    key: `${PRESET_RAIL_PREFIX}${preset.id}`,
-    title: preset.name,
-    feed: 'Popular',
-    genre: null,
-    items,
-    filters,
-  }
-  return (
-    <div>
-      <SectionHeader
-        icon={IconFilter}
-        title={preset.name}
-        count={items.length}
-        action={
-          <Button
-            variant="subtle"
-            size="xs"
-            rightSection={<IconChevronRight size={14} />}
-            onClick={() => onShowMore(rail)}
-          >
-            <Trans>Show more</Trans>
-          </Button>
-        }
-      />
-      <DiscoverRailRow items={items} seriesIdFor={seriesIdFor} onOpen={onOpen} />
-    </div>
-  )
-}

@@ -25,7 +25,6 @@ import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/
 import { Panel } from './ui/Panel'
 import { TagChip } from './ui/TagChip'
 import {
-  BROWSE_SORTS,
   useDiscoverFeed,
   useDiscoverSearch,
   useDiscoverSearchDefaults,
@@ -41,6 +40,7 @@ import {
   CatalogueFilterActions,
   CatalogueFilters,
   filtersFromSpec,
+  useBrowseSortOptions,
   useCatalogueFilters,
 } from './CatalogueFilters'
 import { FilterMatchCount } from './CatalogueRules'
@@ -116,6 +116,7 @@ export function CatalogueBrowser({
   const { pathname } = useLocation()
   const memory = (field: string) => `catalogue@${pathname}:${field}`
   const { t } = useLingui()
+  const sortOptions = useBrowseSortOptions()
 
   const [query, setQuery] = usePageState(memory('query'), seededQuery ?? '')
   const [debounced] = useDebouncedValue(query, 400)
@@ -401,7 +402,7 @@ export function CatalogueBrowser({
                   w={150}
                   value={sort}
                   onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-                  data={BROWSE_SORTS}
+                  data={sortOptions}
                   allowDeselect={false}
                   aria-label={t`Sort`}
                 />

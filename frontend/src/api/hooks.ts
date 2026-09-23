@@ -240,7 +240,10 @@ export interface RecommendationApplyState {
   recommendationFilters: RecommendationFilters
   /** Seeds to recommend from, for "more like this group". Their titles ride along as labels. */
   seeds?: { id: number; title: string | null }[]
-  source: 'taste-profile' | 'discover-hero'
+  source: 'taste-profile' | 'discover-hero' | 'custom-rail'
+  /** Carried by a custom rail's "Show more", so the tab ranks exactly as the rail did. */
+  obscurity?: number
+  diversity?: number
 }
 
 /** One of the reader's own series, as a group or a drift bucket shows it. */
@@ -487,6 +490,9 @@ export interface DiscoverRail {
    * the app renders that route today; the flat rail is what Discover shows.
    */
   seed?: DiscoverSeedState | null
+  /** Set on a custom catalogue rail, so "Show more" keeps its order and owned-series setting. */
+  sort?: BrowseSort
+  excludeOwned?: boolean
 }
 
 /** A seed series as the Discover page draws it: the title, the position, and which state that is. */
@@ -508,15 +514,18 @@ export interface DiscoverFeedRequest {
   /** Rows to skip. Honoured on the in-memory path only, which is the only one that pages coherently. */
   offset?: number
   sort?: BrowseSort
+  /** Leave out series already in the library. */
+  excludeOwned?: boolean
 }
 
 export type BrowseSort = 'popular' | 'rating' | 'newest' | 'oldest'
 
-export const BROWSE_SORTS: { value: BrowseSort; label: string }[] = [
-  { value: 'popular', label: 'Most popular' },
-  { value: 'rating', label: 'Top rated' },
-  { value: 'newest', label: 'Newest' },
-  { value: 'oldest', label: 'Oldest' },
+/** Descriptors, rendered with `useLabel()`: see {@link HOME_SECTION_LABELS} for why. */
+export const BROWSE_SORTS: { value: BrowseSort; label: MessageDescriptor }[] = [
+  { value: 'popular', label: msg`Most popular` },
+  { value: 'rating', label: msg`Top rated` },
+  { value: 'newest', label: msg`Newest` },
+  { value: 'oldest', label: msg`Oldest` },
 ]
 
 /**
@@ -848,8 +857,21 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   toread: msg`Waiting to read`,
 }
 
+/** A custom rail's key in the Home layout. Not in {@link HOME_SECTIONS}: which ones exist is per user. */
+export type HomeRailKey = `rail:${number}`
+
+export type HomeLayoutKey = HomeSectionKey | HomeRailKey
+
+export function isRailKey(key: string): key is HomeRailKey {
+  return /^rail:\d+$/.test(key)
+}
+
+export function railIdOf(key: HomeRailKey): number {
+  return Number(key.slice('rail:'.length))
+}
+
 export interface HomeSection {
-  key: HomeSectionKey
+  key: HomeLayoutKey
   enabled: boolean
 }
 
@@ -993,7 +1015,7 @@ export function useHiddenContent() {
 const HIDDEN_SHAPED = new Set([
   'discover-rails', 'discover-genres', 'discover-recent-activity', 'discover-side-interests',
   'discover-cohort', 'discover-feed', 'discover-search', 'discover-count', 'creator',
-  'recommendations',
+  'recommendations', 'custom-rail-items', 'custom-rail-count',
 ])
 
 export function useSaveHiddenContent() {
@@ -1013,12 +1035,11 @@ export function useSaveHiddenContent() {
   })
 }
 
-/** A named Discover filter. `pinned` ones are drawn as rails on the Discover page. */
+/** A named Discover filter. Drawing one as a row is a custom rail's job (`api/customRails`). */
 export interface DiscoverPreset {
   id: number
   name: string
   spec: SearchDefaults
-  pinned: boolean
   sortOrder: number
 }
 
@@ -1033,7 +1054,7 @@ export function useDiscoverPresets() {
 export function useCreateDiscoverPreset() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string; spec: SearchDefaults; pinned?: boolean }) =>
+    mutationFn: (body: { name: string; spec: SearchDefaults }) =>
       api<DiscoverPreset>('/discover/filters', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['discover-presets'] }),
   })
@@ -1042,7 +1063,7 @@ export function useCreateDiscoverPreset() {
 export function useUpdateDiscoverPreset() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: number; name?: string; spec?: SearchDefaults; pinned?: boolean }) =>
+    mutationFn: ({ id, ...body }: { id: number; name?: string; spec?: SearchDefaults }) =>
       api<DiscoverPreset>(`/discover/filters/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['discover-presets'] }),
   })

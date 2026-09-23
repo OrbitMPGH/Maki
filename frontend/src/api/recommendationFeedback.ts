@@ -101,12 +101,12 @@ const affectedKeys = [
   'recommendations', 'discover-recent-activity', 'discover-side-interests',
   'discover-cohort', 'discover-rails', 'discover-feed', 'discover-genres',
   'taste-insights', 'taste-profile', 'series-related', 'series-similar', 'home',
-  'anime-signals',
+  'anime-signals', 'custom-rail-items',
 ]
 const outputKeys = [
   'recommendations', 'discover-recent-activity', 'discover-side-interests',
   'discover-cohort', 'discover-rails', 'discover-feed', 'discover-genres',
-  'taste-insights', 'series-related', 'series-similar',
+  'taste-insights', 'series-related', 'series-similar', 'custom-rail-items',
 ]
 const pendingOptimistic = new Map<number, string>()
 

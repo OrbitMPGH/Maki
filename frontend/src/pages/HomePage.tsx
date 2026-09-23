@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Box, Button, Paper, Skeleton } from '@mantine/core'
+import { Box, Button, Group, Paper, Skeleton } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import {
   IconBook,
@@ -29,9 +29,14 @@ import {
   useSeries,
   useSeriesIdLookup,
   useUiSettings,
+  isRailKey,
+  railIdOf,
+  type HomeLayoutKey,
   type HomeSectionKey,
   type RecommendationItem,
 } from '../api/hooks'
+import { useCustomRails } from '../api/customRails'
+import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
@@ -96,6 +101,7 @@ export default function HomePage() {
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
   const { data: progress } = useProgressSummary(undefined, on('progress'))
+  const { data: homeRails } = useCustomRails('home')
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -155,7 +161,7 @@ export default function HomePage() {
   // taking a heading and the full page width — see `.home-glance`. The row renders at the position
   // of whichever member the user's order puts first, in their order; every other member's key
   // renders nothing.
-  const glancePanels: Partial<Record<HomeSectionKey, React.ReactNode>> = {
+  const glancePanels: Partial<Record<string, React.ReactNode>> = {
     stats: on('stats') && (
       <GlancePanel key="stats">
         <LibraryFigure label={t`Series`} value={stats.total} />
@@ -258,6 +264,15 @@ export default function HomePage() {
 
   const visible = layout.filter((s) => s.enabled)
 
+  // A custom rail's key only names it; the rail itself comes from the rails list. One whose source
+  // is the catalogue waits on the local database like the borrowed Discover rails above.
+  const renderSection = (key: HomeLayoutKey) => {
+    if (!isRailKey(key)) return sections[key]
+    const rail = homeRails?.find((r) => r.id === railIdOf(key))
+    if (!rail || (rail.spec.source !== 'library' && !discoverAvailable)) return null
+    return <CustomRailSection rail={rail} limit={RAIL_SIZE} onOpen={setDetailItem} />
+  }
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       {header}
@@ -271,8 +286,12 @@ export default function HomePage() {
           actionTo="/settings"
         />
       ) : (
-        visible.map((s) => <Fragment key={s.key}>{sections[s.key]}</Fragment>)
+        visible.map((s) => <Fragment key={s.key}>{renderSection(s.key)}</Fragment>)
       )}
+
+      <Group justify="center" mt="xl">
+        <AddRailButton placement="home" />
+      </Group>
 
       <DiscoverDetailModal
         item={detailItem}

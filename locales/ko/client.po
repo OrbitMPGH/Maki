@@ -365,6 +365,10 @@ msgstr "{count, plural, other {#개 챕터}}"
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr ""
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "{count, plural, one {# title matches} other {# titles match}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
@@ -1407,6 +1411,10 @@ msgstr "{chapterLanguageToken}을(를) 설정의 챕터 형식에 추가하여 �
 msgid "Add {title} to library"
 msgstr "라이브러리에 {title} 추가"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Add a rail"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Add a series"
@@ -1426,6 +1434,10 @@ msgstr "연결 추가"
 #, fuzzy
 msgid "Add one above, or tag a series from its detail page."
 msgstr "위 항목을 추가하거나 시리즈 상세 페이지에서 시리즈에 태그를 지정하세요."
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Add rail"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 msgid "Add rule"
@@ -1760,6 +1772,10 @@ msgstr "임의"
 msgid "Any"
 msgstr "임의"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Anything in the MangaBaka catalogue that matches these filters."
+msgstr ""
+
 #: src/components/RequestForm.tsx
 #, fuzzy
 msgid "Anything the admin should know"
@@ -1798,6 +1814,7 @@ msgstr "위의 시리즈 폴더 형식과 챕터 형식을 라이브러리의 �
 msgid "Applies to chapters released later."
 msgstr "나중에 출시되는 챕터에 적용"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -2081,7 +2098,7 @@ msgstr "보관할 백업 수(종류별)"
 msgid "Backups, updates and instance-level details."
 msgstr "백업, 업데이트 및 인스턴스 수준 세부 정보."
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "balanced"
 msgstr "균형"
@@ -2273,6 +2290,8 @@ msgstr "이 다운로드를 읽을 수 없음"
 #: src/components/DiscoverPresets.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -2321,6 +2340,10 @@ msgstr "탐색에서 이 계정에 표시할 항목을 제한합니다."
 #, fuzzy
 msgid "cat {ratioValue}"
 msgstr "cat {ratioValue}"
+
+#: src/api/customRails.ts
+msgid "Catalogue"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -2790,6 +2813,7 @@ msgstr "싫어요 해제"
 msgid "Clear the thumbs up"
 msgstr "좋아요 해제"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear your saved default"
@@ -2855,7 +2879,7 @@ msgstr "취향 공간에서 내 읽기와 가까운 항목"
 msgid "Close to your taste"
 msgstr "내 취향과 가까운 항목"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "closest"
 msgstr "가장 가까운"
@@ -3149,6 +3173,14 @@ msgstr "지금 복사하세요. 한 번만 표시됩니다. Maki는 토큰이 �
 msgid "Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose it, revoke this one and create another."
 msgstr "지금 복사하세요. 지문만 저장되므로 다시 표시할 수 없습니다. 잃어버리면 이 토큰을 철회하고 새로 만드세요."
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Copy to Discover"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Copy to Home"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Core"
@@ -3300,6 +3332,10 @@ msgstr "현재 파일"
 msgid "Currently popular"
 msgstr "현재 인기"
 
+#: src/pages/SettingsPage.tsx
+msgid "Custom rail"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Customize"
@@ -3380,6 +3416,7 @@ msgstr "기본 소스 순서 업데이트됨"
 msgid "Defining"
 msgstr "정의 중"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
@@ -3439,6 +3476,10 @@ msgstr "영구 삭제"
 msgid "Delete profile"
 msgstr "프로필 삭제"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Delete rail"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete request"
@@ -3465,6 +3506,10 @@ msgstr "선택 항목 삭제"
 #, fuzzy
 msgid "Delete series"
 msgstr "시리즈 삭제"
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Delete the rail \"{railName}\"? Its filters go with it."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -3555,6 +3600,7 @@ msgstr "연결 해제"
 msgid "discord, webhook, apprise, alerts, events"
 msgstr "Discord, 웹훅, Apprise, 알림, 이벤트"
 
+#: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/registry.ts
@@ -3788,6 +3834,7 @@ msgstr "드라마"
 msgid "Dropped"
 msgstr "중단함"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Duplicate"
@@ -3823,6 +3870,7 @@ msgstr "라이브러리 자체에서 획득하므로 이 인스턴스의 모든 
 msgid "Ecchi"
 msgstr "에치"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3833,6 +3881,10 @@ msgstr "편집"
 #, fuzzy
 msgid "Edit {editName}"
 msgstr "{editName} 편집"
+
+#: src/pages/SettingsPage.tsx
+msgid "Edit {label}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3848,6 +3900,10 @@ msgstr "메타데이터 편집"
 #, fuzzy
 msgid "Edit profile"
 msgstr "프로필 편집"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Edit rail"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4481,7 +4537,7 @@ msgstr "전체 검토"
 msgid "Full screen"
 msgstr "전체 화면"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "gems"
 msgstr "보석"
@@ -4522,6 +4578,7 @@ msgid "Girls Love"
 msgstr "백합"
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/rails/CustomRailEditor.tsx
 msgid "Give it a name"
 msgstr ""
 
@@ -4769,6 +4826,7 @@ msgstr "기록"
 msgid "Hold a feed token and read through an OPDS app"
 msgstr "피드 토큰을 보관하고 OPDS 앱에서 읽기"
 
+#: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
 #: src/pages/SettingsPage.tsx
@@ -5386,6 +5444,10 @@ msgstr "무시하려면 두 상자를 모두 비워 두세요."
 #, fuzzy
 msgid "Leave empty to use this profile only where you pin it to a series."
 msgstr "이 시리즈에 고정한 경우에만 이 프로필을 사용하려면 비워 두세요."
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Leave out series in your library"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -6055,6 +6117,11 @@ msgstr "추가 추천 피드백 작업"
 msgid "Most missing"
 msgstr "가장 많이 누락됨"
 
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Most popular"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "Most read"
@@ -6081,6 +6148,7 @@ msgstr "{label} 위로 이동"
 msgid "Move {selectedCount} series"
 msgstr "{selectedCount}개 시리즈 이동"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -6117,6 +6185,7 @@ msgstr "맨 위로 이동"
 msgid "Move to top of queue"
 msgstr "대기열 맨 위로 이동"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -6171,6 +6240,7 @@ msgstr "미스터리"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -6274,6 +6344,10 @@ msgstr "새 비밀번호"
 msgid "New profile"
 msgstr "새 프로필"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "New rail"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New series"
@@ -6289,6 +6363,11 @@ msgstr "새 태그…"
 #, fuzzy
 msgid "new version, check for updates, release, github"
 msgstr "새 버전, 업데이트 확인, 릴리스, GitHub"
+
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Newest"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -6784,6 +6863,10 @@ msgstr "일치하는 항목 없음"
 msgid "Nothing matches these filters. Try loosening one of them."
 msgstr "이 필터와 일치하는 항목이 없습니다. 필터를 하나 완화해 보세요."
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Nothing matches this rail right now."
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Nothing needs review."
@@ -6896,22 +6979,22 @@ msgstr "알림"
 msgid "Now {range}"
 msgstr "현재 {range}"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
 msgstr "잘 알려지지 않음"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: balanced"
 msgstr "무명도: 균형"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: hidden gems (+{obscurityDisplay})"
 msgstr "무명도: 숨은 보석 (+{obscurityDisplay})"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: mainstream ({obscurityDisplay})"
 msgstr "무명도: 메인스트림 ({obscurityDisplay})"
@@ -6963,6 +7046,11 @@ msgstr "OIDC, OpenID Connect, SSO, Authelia, Authentik, Keycloak, issuer, client
 #, fuzzy
 msgid "OK"
 msgstr "정상"
+
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Oldest"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -7133,6 +7221,10 @@ msgstr "소스 페이지 열기"
 #, fuzzy
 msgid "Open the page to check it's the right series"
 msgstr "페이지를 열어 올바른 시리즈인지 확인"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Open the search with these filters from now on"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7428,6 +7520,10 @@ msgstr "중단한 위치에서 계속"
 msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
 msgstr "표시할 섹션과 순서를 선택하세요. Maki에서 읽지 않는다면 홈을 완전히 끄세요. 탭이 사라지고 라이브러리가 시작 페이지를 대신합니다."
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -7463,7 +7559,7 @@ msgstr "만화를 저장했거나 저장할 폴더를 Maki에 지정하세요. K
 msgid "Polish"
 msgstr "폴란드어"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "popular"
 msgstr "인기"
@@ -7673,6 +7769,22 @@ msgstr "{outstanding} 대기열에 추가됨"
 #, fuzzy
 msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
 msgstr "대기열에 추가되었거나 다운로드 중인 챕터가 여기에 표시됩니다. 시리즈 페이지나 라이브러리에서 검색을 시작하세요."
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Rail added"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Rail deleted"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Rail options"
+msgstr ""
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Rail saved"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -7950,6 +8062,7 @@ msgstr "최근 피드백"
 msgid "Recent syncs"
 msgstr "최근 동기화"
 
+#: src/api/customRails.ts
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -7962,11 +8075,16 @@ msgstr "최근 추가됨"
 msgid "Recently changed"
 msgstr "최근 변경됨"
 
+#: src/api/customRails.ts
+msgid "Recently read"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Recommend from this"
 msgstr "여기에서 추천"
 
+#: src/api/customRails.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
@@ -8127,10 +8245,6 @@ msgstr "보관 파일 제거"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "북마크 제거"
-
-#: src/components/DiscoverPresets.tsx
-msgid "Remove from Discover"
-msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -8373,6 +8487,7 @@ msgstr "파일 다시 스캔"
 msgid "Rescanned: {newFiles} new, {relinked} relinked, {removed} removed"
 msgstr "다시 스캔 완료: 새 파일 {newFiles}개, 다시 연결됨 {relinked}개, 제거됨 {removed}개"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Reset"
@@ -8645,6 +8760,7 @@ msgstr "샘플 챕터"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UsersSection.tsx
@@ -8660,6 +8776,11 @@ msgstr "저장"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "각 시리즈의 라이브러리 폴더에 cover.jpg 저장"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Save as a rail…"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Save as default"
@@ -9039,6 +9160,10 @@ msgstr "모든 알림 보기"
 msgid "Seed from"
 msgstr "다음에서 시드:"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Seeded from"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Seeds"
@@ -9230,6 +9355,10 @@ msgstr "시리즈 제거됨"
 msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
 msgstr ""
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Series you already have that match these filters."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
@@ -9331,10 +9460,6 @@ msgstr "알림 도착 시 팝업 표시"
 msgid "Show all"
 msgstr "전체 보기"
 
-#: src/components/DiscoverPresets.tsx
-msgid "Show as a rail on Discover"
-msgstr ""
-
 #: src/components/home/ContinueRail.tsx
 #, fuzzy
 msgid "Show earlier chapters"
@@ -9360,11 +9485,15 @@ msgstr "덜 보기"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
-#: src/components/DiscoverPresets.tsx
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Show more"
 msgstr "더 보기"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Show on"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -9589,6 +9718,10 @@ msgstr "문제가 발생했습니다. Maki가 다시 시도합니다."
 #, fuzzy
 msgid "Sort"
 msgstr "정렬"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Sort by"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -9980,6 +10113,10 @@ msgstr "탭 영역 (페이지 가장자리를 클릭하여 넘김)"
 msgid "Taste"
 msgstr "취향"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Teen romcoms"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "Tell me about new chapters for"
@@ -10299,6 +10436,10 @@ msgstr "파일 연결만이 아니라 {selectedCount}개 챕터 행과 디스크
 msgid "This queue item has no chapter to find a source for"
 msgstr "이 대기열 항목에는 소스를 찾을 챕터가 없습니다"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "This rail needs the local MangaBaka database, which is switched off or still downloading."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
@@ -10448,6 +10589,7 @@ msgstr "시간대"
 msgid "Timezone (empty uses server timezone)"
 msgstr "시간대 (비워 두면 서버 시간대 사용)"
 
+#: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -10481,6 +10623,10 @@ msgstr "제목 검색"
 #, fuzzy
 msgid "Titles"
 msgstr "작품"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Titles from"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -10545,6 +10691,11 @@ msgstr "소스를 찾는 데 너무 오래 걸림"
 msgid "Top genres"
 msgstr "주요 장르"
 
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Top rated"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Torrent"
@@ -10587,7 +10738,7 @@ msgstr "OPDS에서 읽기 진행 상황 추적"
 msgid "Tracker"
 msgstr "트래커"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Trades a little similarity for picks that aren't near-copies of each other."
 msgstr "서로 거의 복사본이 아닌 추천 항목을 위해 유사도를 조금 낮춥니다."
@@ -10976,7 +11127,7 @@ msgstr "UTC"
 msgid "Validating"
 msgstr "검증 중"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "varied"
 msgstr "다양함"
@@ -10986,12 +11137,12 @@ msgstr "다양함"
 msgid "varied ({diversityChip})"
 msgstr "다양함 ({diversityChip})"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Variety: closest matches"
 msgstr "다양성: 가장 가까운 일치"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Variety: spread out ({diversityDisplay})"
 msgstr "다양성: 분산 ({diversityDisplay})"
@@ -11491,6 +11642,7 @@ msgstr "계정 및 Maki의 모양입니다."
 msgid "Your busiest month"
 msgstr "가장 바쁜 달"
 
+#: src/api/customRails.ts
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Your library"

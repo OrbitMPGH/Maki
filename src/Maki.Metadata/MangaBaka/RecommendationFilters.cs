@@ -37,6 +37,33 @@ public record RecommendationFilters(
     public static readonly RecommendationFilters None = new();
 
     /// <summary>
+    /// A saved filter as wire filters, the server-side twin of the client's <c>filtersFromSpec</c>.
+    /// Empty lists read as no constraint.
+    /// </summary>
+    public static RecommendationFilters FromSpec(Maki.Core.Configuration.SearchDefaultsSpec? spec)
+    {
+        if (spec is null)
+        {
+            return None;
+        }
+
+        static IReadOnlyList<T>? NonEmpty<T>(IReadOnlyList<T>? values) => values is { Count: > 0 } ? values : null;
+
+        return new RecommendationFilters(
+            spec.YearMin,
+            spec.YearMax,
+            NonEmpty(spec.Types),
+            NonEmpty(spec.Statuses),
+            spec.MinRating,
+            NonEmpty(spec.Genres),
+            spec.MinChapters,
+            spec.MaxChapters,
+            NonEmpty(spec.Tags),
+            NonEmpty(spec.ContentRatings),
+            NonEmpty(spec.Rules));
+    }
+
+    /// <summary>
     /// Appends parameters to <paramref name="cmd"/> and returns the SQL fragment (leading
     /// " AND …") to splice into the candidate scan's WHERE, qualified by <paramref name="alias"/>.
     /// A distinct <paramref name="prefix"/> keeps parameter names unique if called twice.

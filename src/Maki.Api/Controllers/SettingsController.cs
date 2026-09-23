@@ -399,7 +399,7 @@ public class SettingsController(
                 SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage
             ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
-        var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
+        var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections), await HomeRailIdsAsync(ct));
         var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
         // An unsupported stored language reads as "no preference" rather than erroring, the same way
         // an unrecognised start page does: a row written by a build that shipped a catalogue this one
@@ -422,7 +422,8 @@ public class SettingsController(
         // Turning Home off while it is the start page would leave "/" pointing at a page the client
         // then bounces away from. The client already falls back for exactly this, but storing the
         // contradiction means the setting silently disagrees with what the user sees; resolve it here.
-        var layout = (request.HomeLayout ?? HomeLayoutSpec.Default).Merge();
+        var homeRails = await HomeRailIdsAsync(ct);
+        var layout = (request.HomeLayout ?? HomeLayoutSpec.Default).Merge(homeRails);
         var startPage = !layout.Enabled && request.StartPage == StartPage.Home
             ? StartPage.Library
             : request.StartPage;
@@ -450,7 +451,7 @@ public class SettingsController(
         }
 
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
-        await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
+        await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout, homeRails), ct);
         await userSettings.SetAsync(
             SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
         await userSettings.SetAsync(SettingKeys.UiTitleLanguage, titleLanguage, ct);
@@ -460,6 +461,18 @@ public class SettingsController(
         userLocales.Forget(currentUser.UserId);
         return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language));
     }
+
+    /// <summary>
+    /// The caller's Home custom rails, in their own order: what a <c>rail:{id}</c> key in the layout
+    /// may name. The only place the layout is merged against rails, so every read and write passes it.
+    /// </summary>
+    private Task<List<int>> HomeRailIdsAsync(CancellationToken ct) =>
+        db.SavedFilters
+            .Where(f => f.Scope == Maki.Core.Entities.SavedFilter.HomeRailScope)
+            .OrderBy(f => f.SortOrder)
+            .ThenBy(f => f.Id)
+            .Select(f => f.Id)
+            .ToListAsync(ct);
 
     /// <summary>
     /// The one-off notices this user has not been shown yet. Read on every app load, so it is one

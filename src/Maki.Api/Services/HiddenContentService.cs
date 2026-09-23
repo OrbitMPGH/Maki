@@ -34,6 +34,30 @@ public class HiddenContentService(IUserSettings userSettings, VectorIndexCache v
         filters with { Hidden = await TermsAsync(ct) };
 
     /// <summary>
+    /// A request's filters bounded by the caller: rules trimmed to sane sizes, content ratings
+    /// clamped to their ceiling, and their never-show list attached.
+    /// </summary>
+    public async Task<RecommendationFilters> ScopeAsync(
+        RecommendationFilters? filters, string? maxContentRating, CancellationToken ct = default)
+    {
+        var scoped = Sanitize(filters) with
+        {
+            ContentRatings = filters?.ContentRatings is { Count: > 0 } requested
+                ? ContentRating.Clamp(requested, maxContentRating)
+                : ContentRating.Allowed(maxContentRating)
+        };
+        return await ApplyAsync(scoped, ct);
+    }
+
+    /// <summary>Normalizes client-supplied rules and drops any never-show list a request carried.</summary>
+    public static RecommendationFilters Sanitize(RecommendationFilters? filters) =>
+        (filters ?? RecommendationFilters.None) with
+        {
+            Rules = CatalogueRules.Normalize(filters?.Rules),
+            Hidden = null,
+        };
+
+    /// <summary>
     /// True for a MangaBaka id the caller has hidden. Null when nothing is hidden, or when the index
     /// is not built: tags cannot be tested without it, and a row missing from it has nothing to
     /// test, so both read as visible.

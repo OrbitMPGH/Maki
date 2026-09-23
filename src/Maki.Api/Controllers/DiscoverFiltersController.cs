@@ -10,7 +10,8 @@ namespace Maki.Api.Controllers;
 /// <summary>
 /// Named Discover filter presets, private to one user. Stored in the same table as the Library
 /// presets under <see cref="SavedFilter.DiscoverScope"/>, with a <see cref="SearchDefaultsSpec"/> as
-/// the spec. A pinned preset is drawn as its own rail on the Discover page.
+/// the spec. A preset is a filter only; drawing one as a rail is a custom rail's job
+/// (<see cref="CustomRailsController"/>).
 /// </summary>
 [ApiController]
 [Route("api/v1/discover/filters")]
@@ -48,7 +49,6 @@ public class DiscoverFiltersController(ILocalizer localizer, MakiDbContext db) :
             Name = name,
             Scope = SavedFilter.DiscoverScope,
             Spec = SearchDefaultsSpec.Serialize(request.Spec ?? SearchDefaultsSpec.Empty),
-            Pinned = request.Pinned ?? false,
             SortOrder = count,
             Created = DateTime.UtcNow,
         };
@@ -57,7 +57,7 @@ public class DiscoverFiltersController(ILocalizer localizer, MakiDbContext db) :
         return Ok(ToDto(filter));
     }
 
-    /// <summary>Changes whichever of name, spec and pin the request carries.</summary>
+    /// <summary>Changes whichever of name and spec the request carries.</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveDiscoverFilterRequest request, CancellationToken ct)
     {
@@ -75,11 +75,6 @@ public class DiscoverFiltersController(ILocalizer localizer, MakiDbContext db) :
         if (request.Spec is { } spec)
         {
             filter.Spec = SearchDefaultsSpec.Serialize(spec);
-        }
-
-        if (request.Pinned is { } pinned)
-        {
-            filter.Pinned = pinned;
         }
 
         await db.SaveChangesAsync(ct);
@@ -104,9 +99,9 @@ public class DiscoverFiltersController(ILocalizer localizer, MakiDbContext db) :
         db.SavedFilters.Where(f => f.Scope == SavedFilter.DiscoverScope);
 
     private static DiscoverFilterDto ToDto(SavedFilter f) =>
-        new(f.Id, f.Name, SearchDefaultsSpec.Parse(f.Spec), f.Pinned, f.SortOrder);
+        new(f.Id, f.Name, SearchDefaultsSpec.Parse(f.Spec), f.SortOrder);
 }
 
-public record DiscoverFilterDto(int Id, string Name, SearchDefaultsSpec Spec, bool Pinned, int SortOrder);
+public record DiscoverFilterDto(int Id, string Name, SearchDefaultsSpec Spec, int SortOrder);
 
-public record SaveDiscoverFilterRequest(string? Name, SearchDefaultsSpec? Spec, bool? Pinned);
+public record SaveDiscoverFilterRequest(string? Name, SearchDefaultsSpec? Spec);

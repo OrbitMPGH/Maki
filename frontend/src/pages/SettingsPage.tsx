@@ -38,6 +38,7 @@ import {
   IconCopy,
   IconDownload,
   IconGripVertical,
+  IconPencil,
   IconRefresh,
   IconTrash,
   IconUpload,
@@ -104,6 +105,8 @@ import {
   useSaveUiSettings,
   useUiSettings,
   HOME_SECTION_LABELS,
+  isRailKey,
+  railIdOf,
   type HomeSection,
   type SeriesSections,
   type UiSettings,
@@ -134,6 +137,9 @@ import { SettingsIndex } from '../components/settings/SettingsIndex'
 import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
+import { useCustomRails, type CustomRail } from '../api/customRails'
+import { AddRailButton } from '../components/rails/CustomRailSection'
+import { CustomRailEditor } from '../components/rails/CustomRailEditor'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
@@ -2173,6 +2179,10 @@ function HomeSectionsSection() {
   const patch = useUiPatch()
   const sections = ui?.homeLayout.sections ?? []
   const homeEnabled = ui?.homeLayout.enabled ?? true
+  const { data: homeRails } = useCustomRails('home')
+  const [editingRail, setEditingRail] = useState<CustomRail | null>(null)
+  const railFor = (key: string) =>
+    isRailKey(key) ? homeRails?.find((r) => r.id === railIdOf(key)) : undefined
 
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null)
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -2248,7 +2258,11 @@ function HomeSectionsSection() {
               else if (dragFromIndex > hoverIndex && index >= hoverIndex && index < dragFromIndex)
                 shift = 1
             }
-            const label = renderLabel(HOME_SECTION_LABELS[section.key])
+            const rail = railFor(section.key)
+            // A rail's name is what the user typed, so it is shown as is, never translated.
+            const label = isRailKey(section.key)
+              ? (rail?.name ?? t`Custom rail`)
+              : renderLabel(HOME_SECTION_LABELS[section.key])
             return (
               <Group
                 key={section.key}
@@ -2307,6 +2321,17 @@ function HomeSectionsSection() {
                 <Text size="sm" fw={550} style={{ flex: 1 }}>
                   {label}
                 </Text>
+                {rail && (
+                  <ActionIcon
+                    variant="subtle"
+                    color="var(--neutral)"
+                    size="sm"
+                    aria-label={t`Edit ${label}`}
+                    onClick={() => setEditingRail(rail)}
+                  >
+                    <IconPencil size={15} />
+                  </ActionIcon>
+                )}
                 <Switch
                   size="sm"
                   checked={section.enabled}
@@ -2319,8 +2344,12 @@ function HomeSectionsSection() {
               </Group>
             )
           })}
+          <Group mt={4}>
+            <AddRailButton placement="home" />
+          </Group>
         </Stack>
       )}
+      {editingRail && <CustomRailEditor rail={editingRail} onClose={() => setEditingRail(null)} />}
     </Panel>
   )
 }

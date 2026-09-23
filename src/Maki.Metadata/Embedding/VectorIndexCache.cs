@@ -199,6 +199,7 @@ public sealed class VectorIndexCache(
         var popularity = new int[total];
         var tagBlobs = new byte[]?[total];
         var contentRatingIdx = new byte[total];
+        var startDays = new int[total];
 
         // The configured model's dimensionality is authoritative, not whatever the first row
         // happens to be: after a model change the table holds both old and new vectors until the
@@ -227,13 +228,19 @@ public sealed class VectorIndexCache(
         // is what lets the recommender answer its author-match term without touching SQLite.
         var authorIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
+        // Older dumps have no publication date, and a missing column would fail the whole build
+        // rather than just the date sort, which falls back to the year.
+        var startDateColumn = HasDumpColumn(conn, "published_start_date")
+            ? "d.published_start_date"
+            : "NULL";
+
         var rows = 0;
         using (var scan = conn.CreateCommand())
         {
             scan.CommandText = $"""
                 SELECT v.id, v.scale, v.vec, d.year, d.rating, d.total_chapters, d.type, d.status,
                        d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating,
-                       d.artists
+                       d.artists, {startDateColumn}
                 FROM series_vectors v
                 CROSS JOIN dump.series d ON d.id = v.id
                 LEFT JOIN series_tags t ON t.id = v.id
@@ -282,6 +289,7 @@ public sealed class VectorIndexCache(
                 artistIdx[rows] = ParseNames(GetString(reader, 13), authorIds, ignoreSentinels: true);
                 popularity[rows] = reader.IsDBNull(11) ? VectorIndex.Unknown : reader.GetInt32(11);
                 contentRatingIdx[rows] = Intern(contentRatingIds, GetString(reader, 12));
+                startDays[rows] = ParseStartDay(GetString(reader, 14)) ?? VectorIndex.Unknown;
                 rows++;
             }
         }
@@ -312,6 +320,7 @@ public sealed class VectorIndexCache(
             Array.Resize(ref popularity, rows);
             Array.Resize(ref tagBlobs, rows);
             Array.Resize(ref contentRatingIdx, rows);
+            Array.Resize(ref startDays, rows);
 
             // Not resized with the rest. Array.Resize allocates a second array and copies, and this
             // one is ~100 MB at catalogue scale: the copy doubles peak footprint during the build
@@ -342,7 +351,7 @@ public sealed class VectorIndexCache(
                 years, ratings, chapters, typeIdx, statusIdx,
                 JaggedInts.From(genreIdx), JaggedInts.From(authorIdx), JaggedInts.From(artistIdx),
                 popularity, tagBlobs,
-                contentRatingIdx, []),
+                contentRatingIdx, [], startDays),
             new VectorIndexVocabularies(
                 typeIds, statusIds, genreIds, authorIds, tagVocabulary.Tags, contentRatingIds,
                 tagVocabulary.Subtrees),
@@ -608,6 +617,45 @@ public sealed class VectorIndexCache(
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
 
     /// <summary>total_chapters is TEXT and may be fractional (see the dump notes).</summary>
+    private static bool HasDumpColumn(SqliteConnection conn, string column)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "PRAGMA dump.table_info(series)";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// <c>published_start_date</c> as a day number. The dump writes <c>yyyy-MM-dd</c>, but a partial
+    /// <c>yyyy-MM</c> or <c>yyyy</c> reads as the start of that month or year rather than as unknown.
+    /// </summary>
+    internal static int? ParseStartDay(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var text = value.Trim();
+        if (text.Length > 10)
+        {
+            text = text[..10];
+        }
+
+        string[] formats = ["yyyy-MM-dd", "yyyy-MM", "yyyy"];
+        return DateOnly.TryParseExact(text, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+            ? date.DayNumber
+            : null;
+    }
+
     private static int? ParseCount(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))

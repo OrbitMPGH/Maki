@@ -8,6 +8,7 @@ import { Button, Group, MultiSelect, RangeSlider, SimpleGrid, Slider, Stack, Tex
 import { IconDeviceFloppy } from '@tabler/icons-react'
 import {
   allowedContentRatings,
+  BROWSE_SORTS,
   CONTENT_RATING_LABELS,
   type CatalogueRule,
   type RecommendationFilters,
@@ -15,6 +16,15 @@ import {
 import { TermFilters, useTermFilters } from './CatalogueRules'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
+
+/** {@link BROWSE_SORTS} as `Select` data in the current language. */
+export function useBrowseSortOptions() {
+  const renderLabel = useLabel()
+  return useMemo(
+    () => BROWSE_SORTS.map((s) => ({ value: s.value, label: renderLabel(s.label) })),
+    [renderLabel],
+  )
+}
 
 export const YEAR_MIN = 1950
 export const YEAR_MAX = 2026
@@ -404,6 +414,7 @@ export function CatalogueFilterActions({
   /** Sits on the left: saved filters, the never-show list, the live count. */
   extra?: ReactNode
 }) {
+  const { t } = useLingui()
   return (
     <Group justify="space-between" gap="xs" wrap="wrap">
       <Group gap="sm" wrap="wrap">{extra}</Group>
@@ -418,18 +429,18 @@ export function CatalogueFilterActions({
             // Never disabled: saving an untouched panel is how a stored default gets cleared.
             title={
               isCustomized
-                ? 'Open the search with these filters from now on'
-                : 'Clear your saved default'
+                ? t`Open the search with these filters from now on`
+                : t`Clear your saved default`
             }
           >
-            Save as default
+            {t`Save as default`}
           </Button>
         )}
         <Button variant="subtle" size="xs" onClick={onReset} disabled={!isCustomized}>
-          Reset
+          {t`Reset`}
         </Button>
         <Button size="xs" onClick={onApply}>
-          Apply
+          {t`Apply`}
         </Button>
       </Group>
     </Group>

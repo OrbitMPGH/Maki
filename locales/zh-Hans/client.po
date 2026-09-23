@@ -365,6 +365,10 @@ msgstr "{count, plural, other {# 章}}"
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr ""
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "{count, plural, one {# title matches} other {# titles match}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
@@ -1407,6 +1411,10 @@ msgstr "在设置的章节格式中添加 {chapterLanguageToken}，以便区分�
 msgid "Add {title} to library"
 msgstr "将 {title} 添加到资料库"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Add a rail"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Add a series"
@@ -1426,6 +1434,10 @@ msgstr "添加连接"
 #, fuzzy
 msgid "Add one above, or tag a series from its detail page."
 msgstr "在上方添加一个，或从系列详情页为系列添加标签。"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Add rail"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 msgid "Add rule"
@@ -1760,6 +1772,10 @@ msgstr "任意"
 msgid "Any"
 msgstr "任意"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Anything in the MangaBaka catalogue that matches these filters."
+msgstr ""
+
 #: src/components/RequestForm.tsx
 #, fuzzy
 msgid "Anything the admin should know"
@@ -1798,6 +1814,7 @@ msgstr "将上面的系列文件夹格式和章节格式应用于资料库中的
 msgid "Applies to chapters released later."
 msgstr "适用于之后发布的章节。"
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -2081,7 +2098,7 @@ msgstr "要保留的备份（按类型）"
 msgid "Backups, updates and instance-level details."
 msgstr "备份、更新和实例级详细信息。"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "balanced"
 msgstr "均衡"
@@ -2273,6 +2290,8 @@ msgstr "无法读取此下载"
 #: src/components/DiscoverPresets.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -2321,6 +2340,10 @@ msgstr "限制发现向此账户显示的内容。"
 #, fuzzy
 msgid "cat {ratioValue}"
 msgstr "目录 {ratioValue}"
+
+#: src/api/customRails.ts
+msgid "Catalogue"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -2790,6 +2813,7 @@ msgstr "清除点踩"
 msgid "Clear the thumbs up"
 msgstr "清除点赞"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear your saved default"
@@ -2855,7 +2879,7 @@ msgstr "在品味空间中与你的阅读偏好接近"
 msgid "Close to your taste"
 msgstr "符合你的品味"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "closest"
 msgstr "最接近"
@@ -3149,6 +3173,14 @@ msgstr "现在复制它，此内容只显示一次。Maki 保存的是令牌指�
 msgid "Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose it, revoke this one and create another."
 msgstr "现在复制它。系统只保存其指纹，因此之后无法再次显示。如果丢失，请撤销此令牌并创建新的令牌。"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Copy to Discover"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Copy to Home"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Core"
@@ -3300,6 +3332,10 @@ msgstr "当前文件"
 msgid "Currently popular"
 msgstr "当前热门"
 
+#: src/pages/SettingsPage.tsx
+msgid "Custom rail"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Customize"
@@ -3380,6 +3416,7 @@ msgstr "默认来源顺序已更新"
 msgid "Defining"
 msgstr "定义中"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
@@ -3439,6 +3476,10 @@ msgstr "永久删除"
 msgid "Delete profile"
 msgstr "删除配置文件"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Delete rail"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete request"
@@ -3465,6 +3506,10 @@ msgstr "删除所选项"
 #, fuzzy
 msgid "Delete series"
 msgstr "删除系列"
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Delete the rail \"{railName}\"? Its filters go with it."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -3555,6 +3600,7 @@ msgstr "断开连接"
 msgid "discord, webhook, apprise, alerts, events"
 msgstr "Discord，Webhook，Apprise，提醒，事件"
 
+#: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/registry.ts
@@ -3788,6 +3834,7 @@ msgstr "剧情"
 msgid "Dropped"
 msgstr "已弃看"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Duplicate"
@@ -3823,6 +3870,7 @@ msgstr "由资料库本身获得，因此此实例上的所有人共享这些成
 msgid "Ecchi"
 msgstr "Ecchi"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3833,6 +3881,10 @@ msgstr "编辑"
 #, fuzzy
 msgid "Edit {editName}"
 msgstr "编辑 {editName}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Edit {label}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3848,6 +3900,10 @@ msgstr "编辑元数据"
 #, fuzzy
 msgid "Edit profile"
 msgstr "编辑配置文件"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Edit rail"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4481,7 +4537,7 @@ msgstr "完整评论"
 msgid "Full screen"
 msgstr "全屏"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "gems"
 msgstr "宝藏"
@@ -4522,6 +4578,7 @@ msgid "Girls Love"
 msgstr "百合"
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/rails/CustomRailEditor.tsx
 msgid "Give it a name"
 msgstr ""
 
@@ -4769,6 +4826,7 @@ msgstr "历史记录"
 msgid "Hold a feed token and read through an OPDS app"
 msgstr "持有订阅源令牌并通过 OPDS 应用阅读"
 
+#: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
 #: src/pages/SettingsPage.tsx
@@ -5386,6 +5444,10 @@ msgstr "两个输入框都留空即可忽略。"
 #, fuzzy
 msgid "Leave empty to use this profile only where you pin it to a series."
 msgstr "留空表示仅在将此配置固定到系列时使用。"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Leave out series in your library"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -6055,6 +6117,11 @@ msgstr "更多推荐反馈操作"
 msgid "Most missing"
 msgstr "缺失最多"
 
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Most popular"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "Most read"
@@ -6081,6 +6148,7 @@ msgstr "将 {label} 上移"
 msgid "Move {selectedCount} series"
 msgstr "移动 {selectedCount} 个系列"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -6117,6 +6185,7 @@ msgstr "移到顶部"
 msgid "Move to top of queue"
 msgstr "移到队列顶部"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -6171,6 +6240,7 @@ msgstr "悬疑"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -6274,6 +6344,10 @@ msgstr "新密码"
 msgid "New profile"
 msgstr "新配置文件"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "New rail"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New series"
@@ -6289,6 +6363,11 @@ msgstr "新标签……"
 #, fuzzy
 msgid "new version, check for updates, release, github"
 msgstr "新版本，检查更新，发布版本，GitHub"
+
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Newest"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -6784,6 +6863,10 @@ msgstr "没有匹配项"
 msgid "Nothing matches these filters. Try loosening one of them."
 msgstr "没有内容匹配这些筛选条件。请尝试放宽其中一个条件。"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Nothing matches this rail right now."
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Nothing needs review."
@@ -6896,22 +6979,22 @@ msgstr "通知"
 msgid "Now {range}"
 msgstr "现在 {range}"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
 msgstr "冷门"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: balanced"
 msgstr "冷门程度：均衡"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: hidden gems (+{obscurityDisplay})"
 msgstr "冷门程度：隐藏宝藏（+{obscurityDisplay}）"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: mainstream ({obscurityDisplay})"
 msgstr "冷门程度：主流（{obscurityDisplay}）"
@@ -6963,6 +7046,11 @@ msgstr "OIDC，OpenID Connect，SSO，Authelia，Authentik，Keycloak，签发�
 #, fuzzy
 msgid "OK"
 msgstr "正常"
+
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Oldest"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -7133,6 +7221,10 @@ msgstr "打开来源页面"
 #, fuzzy
 msgid "Open the page to check it's the right series"
 msgstr "打开页面以确认这是正确的系列"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Open the search with these filters from now on"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7428,6 +7520,10 @@ msgstr "从你上次离开的地方继续。"
 msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
 msgstr "选择要显示的部分及其顺序。如果你不在 Maki 中阅读，可以完全关闭首页：该标签页会消失，资料库会接管为起始页。"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -7463,7 +7559,7 @@ msgstr "将 Maki 指向存放漫画（或准备存放漫画）的文件夹。如
 msgid "Polish"
 msgstr "波兰语"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "popular"
 msgstr "热门"
@@ -7673,6 +7769,22 @@ msgstr "已排队 {outstanding}"
 #, fuzzy
 msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
 msgstr "已排队和正在下载的章节会显示在这里。从系列页面或资料库触发搜索。"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Rail added"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Rail deleted"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Rail options"
+msgstr ""
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Rail saved"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -7950,6 +8062,7 @@ msgstr "最近的反馈"
 msgid "Recent syncs"
 msgstr "最近同步"
 
+#: src/api/customRails.ts
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -7962,11 +8075,16 @@ msgstr "最近添加"
 msgid "Recently changed"
 msgstr "最近更改"
 
+#: src/api/customRails.ts
+msgid "Recently read"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Recommend from this"
 msgstr "根据此内容推荐"
 
+#: src/api/customRails.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
@@ -8127,10 +8245,6 @@ msgstr "移除归档"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "移除书签"
-
-#: src/components/DiscoverPresets.tsx
-msgid "Remove from Discover"
-msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -8373,6 +8487,7 @@ msgstr "重新扫描文件"
 msgid "Rescanned: {newFiles} new, {relinked} relinked, {removed} removed"
 msgstr "重新扫描完成：新增 {newFiles} 个，重新关联 {relinked} 个，移除 {removed} 个"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Reset"
@@ -8645,6 +8760,7 @@ msgstr "示例章节"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UsersSection.tsx
@@ -8660,6 +8776,11 @@ msgstr "保存"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "将 cover.jpg 保存到每个系列的资料库文件夹"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Save as a rail…"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Save as default"
@@ -9039,6 +9160,10 @@ msgstr "查看所有通知"
 msgid "Seed from"
 msgstr "种子来源"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Seeded from"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Seeds"
@@ -9230,6 +9355,10 @@ msgstr "系列已移除"
 msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
 msgstr ""
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Series you already have that match these filters."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
@@ -9331,10 +9460,6 @@ msgstr "通知到达时显示弹窗"
 msgid "Show all"
 msgstr "显示全部"
 
-#: src/components/DiscoverPresets.tsx
-msgid "Show as a rail on Discover"
-msgstr ""
-
 #: src/components/home/ContinueRail.tsx
 #, fuzzy
 msgid "Show earlier chapters"
@@ -9360,11 +9485,15 @@ msgstr "显示更少"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
-#: src/components/DiscoverPresets.tsx
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Show more"
 msgstr "显示更多"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Show on"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -9589,6 +9718,10 @@ msgstr "出现问题，Maki 会重试"
 #, fuzzy
 msgid "Sort"
 msgstr "排序"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Sort by"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -9980,6 +10113,10 @@ msgstr "点击区域（点击页面边缘翻页）"
 msgid "Taste"
 msgstr "品味"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Teen romcoms"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "Tell me about new chapters for"
@@ -10299,6 +10436,10 @@ msgstr "这会永久删除 {selectedCount} 条章节记录（不只是文件链�
 msgid "This queue item has no chapter to find a source for"
 msgstr "此队列项目没有可查找来源的章节"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "This rail needs the local MangaBaka database, which is switched off or still downloading."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
@@ -10448,6 +10589,7 @@ msgstr "时区"
 msgid "Timezone (empty uses server timezone)"
 msgstr "时区（留空使用服务器时区）"
 
+#: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -10481,6 +10623,10 @@ msgstr "标题搜索"
 #, fuzzy
 msgid "Titles"
 msgstr "标题"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Titles from"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -10545,6 +10691,11 @@ msgstr "查找来源耗时过长"
 msgid "Top genres"
 msgstr "热门类型"
 
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Top rated"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Torrent"
@@ -10587,7 +10738,7 @@ msgstr "跟踪来自 OPDS 的阅读进度"
 msgid "Tracker"
 msgstr "跟踪器"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Trades a little similarity for picks that aren't near-copies of each other."
 msgstr "牺牲少量相似度，换取彼此不会过于相似的推荐。"
@@ -10976,7 +11127,7 @@ msgstr "UTC"
 msgid "Validating"
 msgstr "验证中"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "varied"
 msgstr "多样"
@@ -10986,12 +11137,12 @@ msgstr "多样"
 msgid "varied ({diversityChip})"
 msgstr "多样（{diversityChip}）"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Variety: closest matches"
 msgstr "多样性：最接近的匹配"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Variety: spread out ({diversityDisplay})"
 msgstr "多样性：分散（{diversityDisplay}）"
@@ -11491,6 +11642,7 @@ msgstr "你的账户和 Maki 的外观。"
 msgid "Your busiest month"
 msgstr "你最忙的月份"
 
+#: src/api/customRails.ts
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Your library"

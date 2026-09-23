@@ -82,6 +82,7 @@ import {
 import { DiscoverCatalogue } from '../components/discover/DiscoverCatalogue'
 import { DiscoverGenreWall } from '../components/discover/DiscoverGenreWall'
 import { DiscoverHero } from '../components/discover/DiscoverHero'
+import { RecommenderDials } from '../components/discover/RecommenderDials'
 import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
 import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
@@ -94,12 +95,9 @@ import {
 } from '../components/ui/DiscoverRail'
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
-import {
-  HiddenContentButton,
-  PRESET_RAIL_PREFIX,
-  PresetMenu,
-  PresetRails,
-} from '../components/DiscoverPresets'
+import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
+import { AddRailButton, DiscoverCustomRails } from '../components/rails/CustomRailSection'
+import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '../api/customRails'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -315,8 +313,15 @@ function RecommendedTab() {
   // effect below re-runs on each one until it manages to latch.
   const carried = useMemo(() => {
     const state = location.state as RecommendationApplyState | null
-    return state?.source === 'taste-profile' || state?.source === 'discover-hero'
-      ? { filters: state.recommendationFilters, seeds: state.seeds, source: state.source }
+    return state?.source === 'taste-profile' || state?.source === 'discover-hero' ||
+      state?.source === 'custom-rail'
+      ? {
+          filters: state.recommendationFilters,
+          seeds: state.seeds,
+          source: state.source,
+          obscurity: state.obscurity ?? 0,
+          diversity: state.diversity ?? 0,
+        }
       : null
   }, [location.state])
 
@@ -334,8 +339,8 @@ function RecommendedTab() {
       setChapters([carriedFilters.minChapters ?? CHAPTER_MIN, carriedFilters.maxChapters ?? CHAPTER_MAX])
       setMinRating((carriedFilters.minRating ?? 0) / 10)
       setContentRatings(carriedFilters.contentRatings ?? [])
-      setObscurity(0)
-      setDiversity(0)
+      setObscurity(carried.obscurity)
+      setDiversity(carried.diversity)
       if (source === 'discover-hero') setCustomizeOpen(true)
       // Seeds arrive when the caller asked for one taste group rather than the whole library. Only
       // some carry titles, so the label cache is filled from what there is and the rest resolve
@@ -353,6 +358,8 @@ function RecommendedTab() {
       setApplied({
         seedIds: carriedSeeds?.length ? carriedSeeds.map((seed) => seed.id) : undefined,
         filters: Object.keys(carriedFilters).length ? carriedFilters : undefined,
+        obscurity: carried.obscurity !== 0 ? carried.obscurity : undefined,
+        diversity: carried.diversity !== 0 ? carried.diversity : undefined,
         nonce: 0,
       })
       setHydrated(true)
@@ -546,8 +553,6 @@ function RecommendedTab() {
   const yearRangeMin = years[0]
   const yearRangeMax = years[1]
   const minRatingDisplay = minRating.toFixed(1)
-  const obscurityDisplay = obscurity.toFixed(2)
-  const diversityDisplay = diversity.toFixed(2)
 
   return (
     <>
@@ -674,64 +679,27 @@ function RecommendedTab() {
                   ]}
                 />
               </div>
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  {obscurity === 0 ? (
-                    <Trans>Obscurity: balanced</Trans>
-                  ) : obscurity > 0 ? (
-                    <Trans>Obscurity: hidden gems (+{obscurityDisplay})</Trans>
-                  ) : (
-                    <Trans>Obscurity: mainstream ({obscurityDisplay})</Trans>
-                  )}
-                </Text>
-                <Slider
-                  min={-1}
-                  max={1}
-                  step={0.25}
-                  value={obscurity}
-                  onChange={setObscurity}
-                  label={(v) => (v === 0 ? t`balanced` : v > 0 ? t`obscure` : t`popular`)}
-                  marks={[
-                    { value: -1, label: t`popular` },
-                    { value: 0, label: '·' },
-                    { value: 1, label: t`gems` },
-                  ]}
-                  color={obscurity >= 0 ? 'grape' : 'blue'}
-                />
-              </div>
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  {diversity === 0 ? (
-                    <Trans>Variety: closest matches</Trans>
-                  ) : (
-                    <Trans>Variety: spread out ({diversityDisplay})</Trans>
-                  )}
-                </Text>
-                <Slider
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  value={diversity}
-                  onChange={setDiversity}
-                  label={(v) => (v === 0 ? t`closest` : v.toFixed(1))}
-                  marks={[
-                    { value: 0, label: t`closest` },
-                    { value: 0.5, label: '·' },
-                    { value: 1, label: t`varied` },
-                  ]}
-                  color="var(--ok)"
-                />
-                {/* Mark labels are absolutely positioned, so they take no layout space — this has
-                    to clear them by hand or the caption lands on top of "closest"/"varied". */}
-                <Text size="xs" c="var(--ink-3)" mt={26}>
-                  <Trans>Trades a little similarity for picks that aren't near-copies of each other.</Trans>
-                </Text>
-              </div>
+              <RecommenderDials
+                obscurity={obscurity}
+                setObscurity={setObscurity}
+                diversity={diversity}
+                setDiversity={setDiversity}
+              />
             </SimpleGrid>
 
             <Group justify="space-between">
               <Group gap="xs">
-                <PresetMenu current={currentFilters} onLoad={loadCatalogueFilters} />
+                <PresetMenu
+                  current={currentFilters}
+                  onLoad={loadCatalogueFilters}
+                  railDraft={() => ({
+                    source: 'recommendations',
+                    filters: currentFilters(),
+                    seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
+                    obscurity,
+                    diversity,
+                  })}
+                />
                 <HiddenContentButton />
                 <Button
                   variant="subtle"
@@ -912,10 +880,10 @@ function FeedExpandModal({
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
   const { density, setDensity, cols } = useDensityPref('discover-expand')
 
-  // Reset filters whenever a different rail is opened. A saved filter's rail opens with that
-  // filter loaded instead, since the filter is the whole point of the rail.
+  // Reset filters whenever a different rail is opened. A custom rail opens with its filter loaded
+  // instead, since the filter is the whole point of the rail.
   const railKey = rail?.key
-  const presetFilters = railKey?.startsWith(PRESET_RAIL_PREFIX) ? rail?.filters : null
+  const presetFilters = railKey?.startsWith(CUSTOM_RAIL_PREFIX) ? rail?.filters : null
   const resetAll = catalogue.reset
   const hydrateAll = catalogue.hydrate
   useEffect(() => {
@@ -942,7 +910,14 @@ function FeedExpandModal({
 
   const feedRequest =
     rail && !personalised && !cohort
-      ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 }
+      ? {
+          feed: rail.feed,
+          genre: rail.genre,
+          filters: applied,
+          limit: 120,
+          sort: rail.sort,
+          excludeOwned: rail.excludeOwned,
+        }
       : null
   const feedQuery = useDiscoverFeed(feedRequest)
 
@@ -1125,6 +1100,18 @@ function DiscoverBrowseTab({
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
+
+  // A catalogue rail on Home expands here, since this is where the expand view lives.
+  const location = useLocation()
+  const expandRailId = (location.state as { expandRailId?: number } | null)?.expandRailId
+  const { data: customRails } = useCustomRails()
+  useEffect(() => {
+    if (expandRailId == null || !customRails) return
+    const rail = customRails.find((r) => r.id === expandRailId)
+    if (rail) setExpandedRail(customRailAsDiscoverRail(rail, []))
+    navigate(location.pathname, { replace: true, state: null })
+  }, [expandRailId, customRails, navigate, location.pathname])
+
   const recommendFrom = useCallback(
     (item: RecommendationItem) =>
       navigate('/discover/recommended', {
@@ -1260,7 +1247,7 @@ function DiscoverBrowseTab({
         <DiscoverRailSkeleton />
       ) : null}
 
-      <PresetRails seriesIdFor={seriesIdFor} onOpen={setDetailItem} onShowMore={setExpandedRail} />
+      <DiscoverCustomRails onOpen={setDetailItem} onShowMore={setExpandedRail} />
 
       {trendingRail ? (
         <div>
@@ -1302,22 +1289,25 @@ function DiscoverBrowseTab({
           icon={IconCompass}
           title={t`Browse the catalogue`}
           action={
-            <Button
-              variant="subtle"
-              size="xs"
-              leftSection={<IconAdjustmentsHorizontal size={14} />}
-              onClick={() =>
-                setExpandedRail({
-                  key: 'catalogue',
-                  title: t`The whole catalogue`,
-                  feed: 'Popular',
-                  genre: null,
-                  items: [],
-                })
-              }
-            >
-              <Trans>Filter the catalogue</Trans>
-            </Button>
+            <Group gap={4} wrap="nowrap">
+              <AddRailButton placement="discover" />
+              <Button
+                variant="subtle"
+                size="xs"
+                leftSection={<IconAdjustmentsHorizontal size={14} />}
+                onClick={() =>
+                  setExpandedRail({
+                    key: 'catalogue',
+                    title: t`The whole catalogue`,
+                    feed: 'Popular',
+                    genre: null,
+                    items: [],
+                  })
+                }
+              >
+                <Trans>Filter the catalogue</Trans>
+              </Button>
+            </Group>
           }
         />
         {error ? (

@@ -99,4 +99,65 @@ public class HomeLayoutTests
         Assert.Contains("\"sections\"", HomeLayoutSpec.Serialize(HomeLayoutSpec.Default));
         Assert.Contains("\"key\"", HomeLayoutSpec.Serialize(HomeLayoutSpec.Default));
     }
+
+    [Fact]
+    public void Merge_keeps_a_known_rail_key_with_its_disabled_state()
+    {
+        var stored = new HomeLayoutSpec(true, [
+            new HomeSection(HomeSections.Stats),
+            new HomeSection(HomeSections.RailKey(5), Enabled: false),
+        ]);
+
+        var merged = stored.Merge([5]);
+
+        var rail = merged.Sections!.Single(s => s.Key == HomeSections.RailKey(5));
+        Assert.False(rail.Enabled);
+    }
+
+    [Fact]
+    public void Merge_drops_stale_and_malformed_rail_keys()
+    {
+        var stored = new HomeLayoutSpec(true, [
+            new HomeSection(HomeSections.RailKey(5)), // stale: 5 is not one of the caller's rails below
+            new HomeSection("rail:x"),
+            new HomeSection("rail:0"),
+            new HomeSection(HomeSections.Stats),
+        ]);
+
+        var merged = stored.Merge([7]);
+
+        Assert.DoesNotContain(merged.Sections!, s => s.Key == HomeSections.RailKey(5));
+        Assert.DoesNotContain(merged.Sections!, s => s.Key == "rail:x");
+        Assert.DoesNotContain(merged.Sections!, s => s.Key == "rail:0");
+        Assert.Contains(merged.Sections!, s => s.Key == HomeSections.RailKey(7));
+    }
+
+    [Fact]
+    public void Merge_appends_new_rails_enabled_after_the_static_sections_in_the_given_order()
+    {
+        var merged = HomeLayoutSpec.Default.Merge([9, 3]);
+
+        var tail = merged.Sections!.Skip(HomeSections.All.Length).ToList();
+        Assert.Equal([HomeSections.RailKey(9), HomeSections.RailKey(3)], tail.Select(s => s.Key));
+        Assert.All(tail, s => Assert.True(s.Enabled));
+    }
+
+    [Fact]
+    public void Parse_with_no_stored_layout_still_includes_the_callers_rails()
+    {
+        var spec = HomeLayoutSpec.Parse(null, [4]);
+
+        Assert.Contains(spec.Sections!, s => s.Key == HomeSections.RailKey(4));
+    }
+
+    [Fact]
+    public void Serialize_with_rail_ids_round_trips_through_parse()
+    {
+        var spec = new HomeLayoutSpec(true, [new HomeSection(HomeSections.RailKey(2))]);
+
+        var json = HomeLayoutSpec.Serialize(spec, [2]);
+        var parsed = HomeLayoutSpec.Parse(json, [2]);
+
+        Assert.Equal(HomeSections.RailKey(2), parsed.Sections![0].Key);
+    }
 }

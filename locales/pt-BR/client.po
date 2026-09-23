@@ -365,6 +365,10 @@ msgstr "{count, plural, one {# cap.} many {# cap.}other {# cap.}}"
 msgid "{count, plural, one {# series matches} other {# series match}}"
 msgstr ""
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "{count, plural, one {# title matches} other {# titles match}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{count, plural, one {# title} other {# titles}}"
@@ -1407,6 +1411,10 @@ msgstr "Adicione {chapterLanguageToken} ao formato do capítulo em Configuraçõ
 msgid "Add {title} to library"
 msgstr "Adicionar {title} à biblioteca"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Add a rail"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Add a series"
@@ -1426,6 +1434,10 @@ msgstr "Adicionar conexão"
 #, fuzzy
 msgid "Add one above, or tag a series from its detail page."
 msgstr "Adicione uma acima ou marque uma série na página de detalhes."
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Add rail"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 msgid "Add rule"
@@ -1760,6 +1772,10 @@ msgstr "qualquer"
 msgid "Any"
 msgstr "Qualquer"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Anything in the MangaBaka catalogue that matches these filters."
+msgstr ""
+
 #: src/components/RequestForm.tsx
 #, fuzzy
 msgid "Anything the admin should know"
@@ -1798,6 +1814,7 @@ msgstr "Aplica o formato de pasta de séries e o formato de capítulos acima a t
 msgid "Applies to chapters released later."
 msgstr "Aplica-se a capítulos lançados posteriormente."
 
+#: src/components/CatalogueFilters.tsx
 #: src/components/RatingImportModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -2081,7 +2098,7 @@ msgstr "Backups a manter (por tipo)"
 msgid "Backups, updates and instance-level details."
 msgstr "Backups, atualizações e detalhes no nível da instância."
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "balanced"
 msgstr "equilibrado"
@@ -2273,6 +2290,8 @@ msgstr "Não é possível ler este download"
 #: src/components/DiscoverPresets.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -2321,6 +2340,10 @@ msgstr "Limita o que Descobrir mostrará para esta conta."
 #, fuzzy
 msgid "cat {ratioValue}"
 msgstr "cat {ratioValue}"
+
+#: src/api/customRails.ts
+msgid "Catalogue"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -2790,6 +2813,7 @@ msgstr "Limpar o voto negativo"
 msgid "Clear the thumbs up"
 msgstr "Limpar o voto positivo"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear your saved default"
@@ -2855,7 +2879,7 @@ msgstr "Próximo à sua leitura no espaço de preferências"
 msgid "Close to your taste"
 msgstr "Próximo às suas preferências"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "closest"
 msgstr "mais próximo"
@@ -3149,6 +3173,14 @@ msgstr "Copie agora, ela será exibida apenas uma vez. O Maki armazena uma impre
 msgid "Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose it, revoke this one and create another."
 msgstr "Copie agora. Apenas a impressão digital é armazenada, então ele não pode ser exibido novamente. Se você perdê-lo, revogue este e crie outro."
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Copy to Discover"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Copy to Home"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Core"
@@ -3300,6 +3332,10 @@ msgstr "Cópia atual"
 msgid "Currently popular"
 msgstr "Atualmente popular"
 
+#: src/pages/SettingsPage.tsx
+msgid "Custom rail"
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Customize"
@@ -3380,6 +3416,7 @@ msgstr "Ordem padrão das fontes atualizada"
 msgid "Defining"
 msgstr "Definindo"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
@@ -3439,6 +3476,10 @@ msgstr "Excluir permanentemente"
 msgid "Delete profile"
 msgstr "Excluir perfil"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Delete rail"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete request"
@@ -3465,6 +3506,10 @@ msgstr "Excluir selecionados"
 #, fuzzy
 msgid "Delete series"
 msgstr "Excluir série"
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Delete the rail \"{railName}\"? Its filters go with it."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -3555,6 +3600,7 @@ msgstr "Desconectar"
 msgid "discord, webhook, apprise, alerts, events"
 msgstr "discord, webhook, apprise, alertas, eventos"
 
+#: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/registry.ts
@@ -3788,6 +3834,7 @@ msgstr "Drama"
 msgid "Dropped"
 msgstr "Abandonado"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Duplicate"
@@ -3823,6 +3870,7 @@ msgstr "Conquistado pela própria biblioteca, então todos nesta instância comp
 msgid "Ecchi"
 msgstr "Ecchi"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3833,6 +3881,10 @@ msgstr "Editar"
 #, fuzzy
 msgid "Edit {editName}"
 msgstr "Editar {editName}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Edit {label}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3848,6 +3900,10 @@ msgstr "Editar metadados"
 #, fuzzy
 msgid "Edit profile"
 msgstr "Editar perfil"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Edit rail"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4481,7 +4537,7 @@ msgstr "Revisão completa"
 msgid "Full screen"
 msgstr "Tela cheia"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "gems"
 msgstr "gemas"
@@ -4522,6 +4578,7 @@ msgid "Girls Love"
 msgstr "Girls Love"
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/rails/CustomRailEditor.tsx
 msgid "Give it a name"
 msgstr ""
 
@@ -4769,6 +4826,7 @@ msgstr "Histórico"
 msgid "Hold a feed token and read through an OPDS app"
 msgstr "Mantenha um token de feed e leia por um aplicativo OPDS"
 
+#: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
 #: src/pages/HomePage.tsx
 #: src/pages/SettingsPage.tsx
@@ -5386,6 +5444,10 @@ msgstr "Deixe as duas caixas vazias para ignorar."
 #, fuzzy
 msgid "Leave empty to use this profile only where you pin it to a series."
 msgstr "Deixe vazio para usar este perfil somente onde você o fixar a uma série."
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Leave out series in your library"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -6055,6 +6117,11 @@ msgstr "Mais ações de feedback de recomendação"
 msgid "Most missing"
 msgstr "Mais faltantes"
 
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Most popular"
+msgstr ""
+
 #: src/pages/stats/OverviewPanel.tsx
 #, fuzzy
 msgid "Most read"
@@ -6081,6 +6148,7 @@ msgstr "Mover {label} para cima"
 msgid "Move {selectedCount} series"
 msgstr "Mover {selectedCount} séries"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -6117,6 +6185,7 @@ msgstr "Mover para o topo"
 msgid "Move to top of queue"
 msgstr "Mover para o topo da fila"
 
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -6171,6 +6240,7 @@ msgstr "Mistério"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -6274,6 +6344,10 @@ msgstr "Nova senha"
 msgid "New profile"
 msgstr "Novo perfil"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "New rail"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New series"
@@ -6289,6 +6363,11 @@ msgstr "Nova tag…"
 #, fuzzy
 msgid "new version, check for updates, release, github"
 msgstr "nova versão, verificar atualizações, lançamento, github"
+
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Newest"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -6784,6 +6863,10 @@ msgstr "Nada corresponde"
 msgid "Nothing matches these filters. Try loosening one of them."
 msgstr "Nada corresponde a estes filtros. Tente flexibilizar um deles."
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "Nothing matches this rail right now."
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Nothing needs review."
@@ -6896,22 +6979,22 @@ msgstr "Notificar"
 msgid "Now {range}"
 msgstr "Agora {range}"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "obscure"
 msgstr "obscuro"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: balanced"
 msgstr "Obscuridade: equilibrado"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: hidden gems (+{obscurityDisplay})"
 msgstr "Obscuridade: joias escondidas (+{obscurityDisplay})"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Obscurity: mainstream ({obscurityDisplay})"
 msgstr "Obscuridade: convencional ({obscurityDisplay})"
@@ -6963,6 +7046,11 @@ msgstr "oidc, openid connect, sso, authelia, authentik, keycloak, emissor, id do
 #, fuzzy
 msgid "OK"
 msgstr "OK"
+
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Oldest"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -7133,6 +7221,10 @@ msgstr "Abrir página da fonte"
 #, fuzzy
 msgid "Open the page to check it's the right series"
 msgstr "Abra a página para verificar se é a série correta"
+
+#: src/components/CatalogueFilters.tsx
+msgid "Open the search with these filters from now on"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7428,6 +7520,10 @@ msgstr "Retomar de onde parou."
 msgid "Pick which sections appear and what order they run in. Turn Home off entirely if you don't read in Maki: the tab disappears and the library takes over as the start page."
 msgstr "Escolha quais seções aparecem e em que ordem. Desative Início completamente se você não lê no Maki: a aba desaparece e a biblioteca assume como página de abertura."
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Picks for you, ranked the same way as the Recommended tab with these settings."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -7463,7 +7559,7 @@ msgstr "Aponte o Maki para a pasta onde seu manga está armazenado, ou deve fica
 msgid "Polish"
 msgstr "Polonês"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "popular"
 msgstr "popular"
@@ -7673,6 +7769,22 @@ msgstr "Enfileirado {outstanding}"
 #, fuzzy
 msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
 msgstr "Capítulos enfileirados e baixando aparecem aqui. Inicie uma pesquisa na página de uma série ou na biblioteca."
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Rail added"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Rail deleted"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Rail options"
+msgstr ""
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Rail saved"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -7950,6 +8062,7 @@ msgstr "Feedback recente"
 msgid "Recent syncs"
 msgstr "Sincronizações recentes"
 
+#: src/api/customRails.ts
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -7962,11 +8075,16 @@ msgstr "Adicionados recentemente"
 msgid "Recently changed"
 msgstr "Alterado recentemente"
 
+#: src/api/customRails.ts
+msgid "Recently read"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Recommend from this"
 msgstr "Recomendar a partir disto"
 
+#: src/api/customRails.ts
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
@@ -8127,10 +8245,6 @@ msgstr "Remover arquivo"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "Remover favorito"
-
-#: src/components/DiscoverPresets.tsx
-msgid "Remove from Discover"
-msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -8373,6 +8487,7 @@ msgstr "Verificar arquivos novamente"
 msgid "Rescanned: {newFiles} new, {relinked} relinked, {removed} removed"
 msgstr "Verificado novamente: {newFiles} novos, {relinked} religados, {removed} removidos"
 
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Reset"
@@ -8645,6 +8760,7 @@ msgstr "Capítulo de exemplo"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UsersSection.tsx
@@ -8660,6 +8776,11 @@ msgstr "Salvar"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Salvar um cover.jpg na pasta da biblioteca de cada série"
 
+#: src/components/DiscoverPresets.tsx
+msgid "Save as a rail…"
+msgstr ""
+
+#: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Save as default"
@@ -9039,6 +9160,10 @@ msgstr "Ver todas as notificações"
 msgid "Seed from"
 msgstr "Seed de"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Seeded from"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Seeds"
@@ -9230,6 +9355,10 @@ msgstr "Série removida"
 msgid "Series with any of these never show up on Discover: not in rails, search, recommendations, or creator pages. Only you see this list."
 msgstr ""
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Series you already have that match these filters."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader, Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between. Chapters can be downloaded whole or streamed a page at a time."
@@ -9331,10 +9460,6 @@ msgstr "Mostrar um pop-up quando chegar uma notificação"
 msgid "Show all"
 msgstr "Mostrar tudo"
 
-#: src/components/DiscoverPresets.tsx
-msgid "Show as a rail on Discover"
-msgstr ""
-
 #: src/components/home/ContinueRail.tsx
 #, fuzzy
 msgid "Show earlier chapters"
@@ -9360,11 +9485,15 @@ msgstr "Mostrar menos"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
-#: src/components/DiscoverPresets.tsx
+#: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Show more"
 msgstr "Mostrar mais"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Show on"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -9589,6 +9718,10 @@ msgstr "Algo deu errado, o Maki tentará novamente"
 #, fuzzy
 msgid "Sort"
 msgstr "Ordenar"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Sort by"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -9980,6 +10113,10 @@ msgstr "Zonas de toque (clique nas bordas da página para virar)"
 msgid "Taste"
 msgstr "Preferências"
 
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Teen romcoms"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "Tell me about new chapters for"
@@ -10299,6 +10436,10 @@ msgstr "Isso remove permanentemente {selectedCount} linha(s) de capítulo, não 
 msgid "This queue item has no chapter to find a source for"
 msgstr "Este item da fila não tem capítulo para encontrar uma fonte"
 
+#: src/components/rails/CustomRailSection.tsx
+msgid "This rail needs the local MangaBaka database, which is switched off or still downloading."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "This re-downloads the poster for all {seriesTotalLabel} series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load."
@@ -10448,6 +10589,7 @@ msgstr "Fuso horário"
 msgid "Timezone (empty uses server timezone)"
 msgstr "Fuso horário (vazio usa o fuso do servidor)"
 
+#: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -10481,6 +10623,10 @@ msgstr "Pesquisa por título"
 #, fuzzy
 msgid "Titles"
 msgstr "Títulos"
+
+#: src/components/rails/CustomRailEditor.tsx
+msgid "Titles from"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -10545,6 +10691,11 @@ msgstr "Demorou demais para encontrar uma fonte"
 msgid "Top genres"
 msgstr "Principais gêneros"
 
+#: src/api/customRails.ts
+#: src/api/hooks.ts
+msgid "Top rated"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Torrent"
@@ -10587,7 +10738,7 @@ msgstr "Acompanhar progresso de leitura do OPDS"
 msgid "Tracker"
 msgstr "Tracker"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Trades a little similarity for picks that aren't near-copies of each other."
 msgstr "Troca um pouco de semelhança por escolhas que não sejam quase cópias umas das outras."
@@ -10976,7 +11127,7 @@ msgstr "UTC"
 msgid "Validating"
 msgstr "Validando"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "varied"
 msgstr "variado"
@@ -10986,12 +11137,12 @@ msgstr "variado"
 msgid "varied ({diversityChip})"
 msgstr "variado ({diversityChip})"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Variety: closest matches"
 msgstr "Variedade: correspondências mais próximas"
 
-#: src/pages/DiscoverPage.tsx
+#: src/components/discover/RecommenderDials.tsx
 #, fuzzy
 msgid "Variety: spread out ({diversityDisplay})"
 msgstr "Variedade: espalhado ({diversityDisplay})"
@@ -11491,6 +11642,7 @@ msgstr "Sua conta e a aparência do Maki."
 msgid "Your busiest month"
 msgstr "Seu mês mais movimentado"
 
+#: src/api/customRails.ts
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Your library"

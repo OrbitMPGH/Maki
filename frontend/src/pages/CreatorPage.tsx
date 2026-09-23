@@ -14,7 +14,6 @@ import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import {
-  BROWSE_SORTS,
   useCreator,
   useRootFolders,
   useSeriesIdLookup,
@@ -25,6 +24,7 @@ import {
 import {
   CatalogueFilterActions,
   CatalogueFilters,
+  useBrowseSortOptions,
   useCatalogueFilters,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
@@ -64,6 +64,7 @@ const ROLE_LABELS: Record<string, MessageDescriptor> = {
 export default function CreatorPage() {
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const sortOptions = useBrowseSortOptions()
   const { name = '' } = useParams()
   const [searchParams] = useSearchParams()
   const role = searchParams.get('role')
@@ -169,7 +170,7 @@ export default function CreatorPage() {
             w={150}
             value={sort}
             onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-            data={BROWSE_SORTS}
+            data={sortOptions}
             allowDeselect={false}
             aria-label={t`Sort`}
           />

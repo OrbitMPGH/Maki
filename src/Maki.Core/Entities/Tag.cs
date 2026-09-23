@@ -49,14 +49,14 @@ public class SavedFilter : IUserOwned
     public DateTime Created { get; set; }
 
     /// <summary>
-    /// Which page the preset belongs to: <see cref="LibraryScope"/> or <see cref="DiscoverScope"/>.
-    /// The two specs are different shapes, so a preset never crosses between them.
+    /// What the row is: a <see cref="LibraryScope"/> or <see cref="DiscoverScope"/> preset, or a custom
+    /// rail placed on Home (<see cref="HomeRailScope"/>) or Discover (<see cref="DiscoverRailScope"/>).
+    /// Each scope has its own spec shape, so a row never crosses between them.
     /// </summary>
     public string Scope { get; set; } = LibraryScope;
 
-    /// <summary>Discover only: shown as a rail of its own on the Discover page.</summary>
-    public bool Pinned { get; set; }
-
     public const string LibraryScope = "library";
     public const string DiscoverScope = "discover";
+    public const string HomeRailScope = Configuration.CustomRailPlacements.HomeScope;
+    public const string DiscoverRailScope = Configuration.CustomRailPlacements.DiscoverScope;
 }

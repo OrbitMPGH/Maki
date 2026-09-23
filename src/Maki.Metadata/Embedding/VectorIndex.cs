@@ -24,7 +24,8 @@ public sealed record FilterPlan(
     bool Impossible,
     bool[]? CreditMask = null,
     PlannedRule[]? Rules = null,
-    PlannedRule? Hidden = null)
+    PlannedRule? Hidden = null,
+    bool[]? Exclude = null)
 {
     public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, null, false);
 
@@ -32,7 +33,7 @@ public sealed record FilterPlan(
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
         MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
         Genres is null && Tags is null && ContentRatings is null && CreditMask is null &&
-        Rules is null && Hidden is null;
+        Rules is null && Hidden is null && Exclude is null;
 }
 
 /// <summary>A <see cref="CatalogueRule"/> resolved to this index's ids.</summary>
@@ -68,6 +69,11 @@ public readonly record struct PlannedTerm(int GenreId, int[]? TagIds, byte MinCl
 /// <c>popularity_global_current</c> — a global rank where 1 is the most popular, or
 /// <see cref="VectorIndex.Unknown"/>. Feeds the obscurity term.
 /// </param>
+/// <param name="StartDays">
+/// <c>published_start_date</c> as a <see cref="DateOnly.DayNumber"/>, or <see cref="VectorIndex.Unknown"/>.
+/// Optional so fixtures built without it still sort, through <see cref="VectorIndex.StartDayAt"/>'s
+/// year fallback.
+/// </param>
 public sealed record VectorIndexColumns(
     int[] Years,
     float[] Ratings,
@@ -80,7 +86,8 @@ public sealed record VectorIndexColumns(
     int[] Popularity,
     byte[]?[] TagBlobs,
     byte[] ContentRatings,
-    int[] Franchise);
+    int[] Franchise,
+    int[]? StartDays = null);
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
@@ -206,6 +213,22 @@ public sealed class VectorIndex(
 
     /// <summary>The row's release year, or <see cref="Unknown"/>. Feeds the browse orderings.</summary>
     public int YearAt(int row) => columns.Years[row];
+
+    /// <summary>
+    /// The row's first publication date as a <see cref="DateOnly.DayNumber"/>, falling back to
+    /// January 1st of <see cref="YearAt"/> when the dump has no date, or <see cref="Unknown"/>.
+    /// May be in the future: the dump lists announced titles.
+    /// </summary>
+    public int StartDayAt(int row)
+    {
+        if (columns.StartDays is { } days && days[row] != Unknown)
+        {
+            return days[row];
+        }
+
+        var year = columns.Years[row];
+        return year is >= 1 and <= 9999 ? new DateOnly(year, 1, 1).DayNumber : Unknown;
+    }
 
     /// <summary>The row's interned genre ids — resolve names through <see cref="TryGetGenreId"/>.</summary>
     public ReadOnlySpan<int> GenresAt(int row) => columns.Genres[row];
@@ -561,6 +584,11 @@ public sealed class VectorIndex(
         // First, and an array index rather than a set probe: this runs inside the parallel scan
         // over every row, twice per search, so it is the one filter test worth making branch-cheap.
         if (plan.CreditMask is { } credits && !credits[row])
+        {
+            return false;
+        }
+
+        if (plan.Exclude is { } excluded && excluded[row])
         {
             return false;
         }

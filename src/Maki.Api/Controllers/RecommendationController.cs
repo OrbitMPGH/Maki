@@ -29,6 +29,7 @@ public class RecommendationController(
     EmbeddingStore embeddings,
     IUserSettings userSettings,
     HiddenContentService hidden,
+    CustomRailService customRails,
     MalReviewClient reviews) : ControllerBase
 {
     [HttpPost]
@@ -233,9 +234,8 @@ public class RecommendationController(
         try
         {
             var clamped = await ScopeAsync(request.Filters, ct);
-            var items = await discover.GetFeedAsync(request with { Filters = clamped }, ct);
-            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
-            return Ok(items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id)).ToList());
+            var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+            return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct, exclude));
         }
         catch (InvalidOperationException ex)
         {
@@ -411,7 +411,8 @@ public class RecommendationController(
     public async Task<IActionResult> DiscoverCount([FromBody] DiscoverFeedRequest request, CancellationToken ct)
     {
         var scoped = await ScopeAsync(request.Filters, ct);
-        return Ok(new { count = await discover.CountAsync(request with { Filters = scoped }, ct) });
+        var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+        return Ok(new { count = await discover.CountAsync(request with { Filters = scoped }, ct, exclude) });
     }
 
     /// <summary>The caller's never-show list.</summary>
@@ -480,28 +481,11 @@ public class RecommendationController(
     private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
         suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
 
-    /// <summary>
-    /// A request's filters bounded by the caller: rules trimmed to sane sizes, content ratings
-    /// clamped to their ceiling, and their never-show list attached.
-    /// </summary>
-    private async Task<RecommendationFilters> ScopeAsync(RecommendationFilters? filters, CancellationToken ct)
-    {
-        var scoped = Sanitize(filters) with
-        {
-            ContentRatings = filters?.ContentRatings is { Count: > 0 } requested
-                ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
-                : ContentRating.Allowed(currentUser.MaxContentRating)
-        };
-        return await hidden.ApplyAsync(scoped, ct);
-    }
+    private Task<RecommendationFilters> ScopeAsync(RecommendationFilters? filters, CancellationToken ct) =>
+        hidden.ScopeAsync(filters, currentUser.MaxContentRating, ct);
 
-    /// <summary>Normalizes the client-supplied rules and drops any never-show list a request carried.</summary>
     private static RecommendationFilters Sanitize(RecommendationFilters? filters) =>
-        (filters ?? RecommendationFilters.None) with
-        {
-            Rules = CatalogueRules.Normalize(filters?.Rules),
-            Hidden = null,
-        };
+        HiddenContentService.Sanitize(filters);
 
     /// <summary>
     /// The viewer's suppression over a shared rail. Returns a new list every time: the cached rail
