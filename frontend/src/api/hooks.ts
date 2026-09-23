@@ -111,6 +111,7 @@ export function useSeriesDetail(id: number) {
   return useQuery({
     queryKey: ['series', id],
     queryFn: () => api<SeriesDto>(`/series/${id}`),
+    meta: { inlineNotFound: true },
     // Background source matching ends with a `sourceMatchFinished` push. A dropped hub connection
     // would otherwise leave the Sources card spinning with nothing to end it, so poll while — and
     // only while — there is something to wait for.
@@ -1249,6 +1250,7 @@ export function useSeriesFiles(seriesId: number, enabled = true) {
     queryKey: ['series-files', seriesId],
     queryFn: () => api<SeriesFileDto[]>(`/series/${seriesId}/files`),
     enabled,
+    meta: { inlineNotFound: true },
   })
 }
 
@@ -2476,7 +2478,8 @@ export interface LibrarySettings {
    */
   incognitoByRating?: Record<string, IncognitoMode>
   /** Also copy the downloaded poster into the series' library folder as "cover.jpg", for other
-   * tools (Komga, Kavita) that read a cover placed directly in the folder. Default off. */
+   * tools (Komga, Kavita) that read a cover placed directly in the folder. Default off. Leave it
+   * out of a write to keep the stored value. */
   writeCoverToFolder?: boolean
   /**
    * Naming format for a series' folder, e.g. "{Series TitleYear}". Always filled in on read.
@@ -3025,6 +3028,8 @@ export interface ScrobbleSettings {
   intervalMinutes: number
   planToRead: boolean
   libraryIds: string | null
+  /** The app registrations, interval and library filter are instance-wide; the server drops them for anyone else. */
+  isAdmin: boolean
 }
 
 export function useScrobbleSettings() {

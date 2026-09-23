@@ -31,6 +31,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import { useBackTarget } from '../../lib/navHistory'
 import {HeroBackdrop} from './HeroBackdrop'
+import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
 const LIBRARY_FALLBACK = { to: '/library', label: msg`Library` }
@@ -91,10 +92,13 @@ export function SeriesHero({
         const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
         if (!total || numbered.length === 0) return null
 
+        // Under a whole chapter short is not a gap: a source ending on 6.5 against a listed 7 is the
+        // same run, and the warning would otherwise say "roughly 0 chapters" are missing.
         const highest = Math.max(...numbered)
-        if (highest >= total) return null
+        const missing = Math.floor(total - highest)
+        if (missing < 1) return null
 
-        return { highest, total, missing: Math.floor(total - highest) }
+        return { highest, total, missing }
     }, [series, chapters])
 
     // What "Download all wanted" would actually queue, so the button can say so rather than making
@@ -123,11 +127,13 @@ export function SeriesHero({
 
     // One quiet line of facts rather than a row of coloured pills: none of these is a state anyone
     // acts on, so none of them earns a colour.
+    // Through the same label maps as the Discover modal, so the type and genres read the same (and
+    // in the reader's language) on a result and on the series it becomes.
     const facts = [
-        series.type,
+        series.type ? label(TYPE_LABELS[series.type] ?? series.type) : null,
         series.year ? String(series.year) : null,
         series.hasAnime ? (series.animeName ?? t`Anime adaptation`) : null,
-        series.genres.slice(0, 5).join(', ') || null,
+        series.genres.slice(0, 5).map((g) => label(GENRE_LABELS[g] ?? g)).join(', ') || null,
     ].filter(Boolean)
 
     // The canonical title is in this line too when a language preference moved the heading off it —

@@ -115,6 +115,21 @@ export default function ReaderToolbar({
     onHold(settingsOpen)
   }, [settingsOpen, onHold])
 
+  // Escape closes the settings first. Mantine only closes on Escape when focus is inside the
+  // dropdown, and focus is usually still on the gear, so the reader's own Escape (leave the reader)
+  // would win. Captured on the window so it runs before the reader's listener, which skips a key
+  // that is already handled.
+  useEffect(() => {
+    if (!settingsOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      setSettingsOpen(false)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [settingsOpen])
+
   // How much of the series is left, on the same footing as the series page: downloaded chapters as
   // the denominator, completed ones as the numerator. The manifest's counts are a snapshot from
   // when the chapter opened, so finishing this one on screen is added here rather than waited for —

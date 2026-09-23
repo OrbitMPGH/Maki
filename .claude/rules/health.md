@@ -41,3 +41,4 @@ paths:
 - `HealthScanService` hashes a file once and hands the hash to the analyzer via `knownHash`. Without it every archive in the library is read and SHA-256'd twice on a cache miss.
 
 - **Health messages are the last stored-prose conversion target and are deliberately still English.** `HealthCheckRecord.Message`, `HealthFinding.Message` and `HealthHistory.Message` hold rendered sentences; the three inbox raise sites go through `InboxMessage.Unkeyed`, which is the same path a pre-migration notification row renders through. `HealthHistory.Kind` is already a structured discriminator, so half the work is done. Admin-only, which is why it is last.
+- `HealthJobListener` fires on every Quartz run, and some jobs run every 15 seconds. It writes a `job` history row only when the job's status changes (first healthy run excluded). A row per run grew the history to thousands of pages in weeks.

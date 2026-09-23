@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { randomUUID } from '../../lib/uuid'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
@@ -164,12 +165,12 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
   const clear = (row: Row, action: 'clear-suppression' | 'clear-exposure' | 'clear-sentiment') =>
     run(row.id, () => feedback.mutateAsync({
       id: row.id, action, expectedRevision: row.state?.revision ?? 0,
-      clientMutationId: crypto.randomUUID(),
+      clientMutationId: randomUUID(),
     }))
 
   const setExcluded = (row: Row, ignoreAsSeed: boolean) =>
     run(row.id, () => signal.mutateAsync({
-      id: row.id, ignoreAsSeed, clientMutationId: crypto.randomUUID(),
+      id: row.id, ignoreAsSeed, clientMutationId: randomUUID(),
       expectedRevision: overrides?.find((item) => item.mangaBakaId === row.id)?.revision ?? 0,
     }))
 

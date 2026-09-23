@@ -10,6 +10,7 @@ import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
 import { loadLocale, resolveInitialLocale } from './i18n'
 import App from './App.tsx'
+import { ApiError } from './api/client'
 
 /**
  * One place that reports failures, so no call site can swallow one by forgetting a handler,
@@ -17,12 +18,19 @@ import App from './App.tsx'
  * need their own `onError` for extra work (resetting local state); the toast is automatic.
  *
  * `meta.errorMessage` overrides the text; `meta.silent` opts out entirely for flows that show
- * failure inline (bulk actions with per-row results).
+ * failure inline (bulk actions with per-row results). `meta.inlineNotFound` drops only a 404, for
+ * pages that render their own not-found state.
  */
 function reportError(error: unknown, meta?: Record<string, unknown>) {
   if (meta?.silent) return
+  if (meta?.inlineNotFound && error instanceof ApiError && error.status === 404) return
   notifications.show({
-    message: typeof meta?.errorMessage === 'string' ? meta.errorMessage : String(error),
+    message:
+      typeof meta?.errorMessage === 'string'
+        ? meta.errorMessage
+        : error instanceof Error
+          ? error.message
+          : String(error),
     color: 'red',
   })
 }
@@ -30,7 +38,8 @@ function reportError(error: unknown, meta?: Record<string, unknown>) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      // A 404 won't change on a second try; retrying only delays the page's not-found state.
+      retry: (failureCount, error) => failureCount < 1 && !(error instanceof ApiError && error.status === 404),
       refetchOnWindowFocus: false,
     },
   },

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { randomUUID } from '../../lib/uuid'
 import {
   Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, SimpleGrid, Stack, Text, Tooltip,
 } from '@mantine/core'
@@ -104,7 +105,7 @@ export function SignalsCard() {
       await undo.mutateAsync({
         eventId: item.id,
         expectedRevision: item.stateRevision,
-        clientMutationId: crypto.randomUUID(),
+        clientMutationId: randomUUID(),
       })
     } catch (cause) {
       setActionError(String(cause))

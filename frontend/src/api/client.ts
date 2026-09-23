@@ -45,6 +45,16 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export class ApiError extends Error {
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 type UnauthorizedHandler = () => void
 let onUnauthorized: UnauthorizedHandler | null = null
 
@@ -121,7 +131,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   }
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`API ${res.status}: ${errorMessage(body) ?? res.statusText}`)
+    throw new ApiError(res.status, `API ${res.status}: ${errorMessage(body) ?? res.statusText}`)
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
   const body = await res.text()
@@ -138,8 +148,9 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 function errorMessage(body: string): string | null {
   if (!body) return null
   try {
-    const parsed = JSON.parse(body) as { error?: string; message?: string }
-    return parsed.error ?? parsed.message ?? body
+    // `detail`/`title` are ASP.NET ProblemDetails, which bare `NotFound()` and model binding produce.
+    const parsed = JSON.parse(body) as { error?: string; message?: string; detail?: string; title?: string }
+    return parsed.error ?? parsed.message ?? parsed.detail ?? parsed.title ?? body
   } catch {
     return body
   }

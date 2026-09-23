@@ -102,6 +102,18 @@ public class NamingSettingsTests : IDisposable
     }
 
     [Fact]
+    public async Task A_payload_without_the_cover_switch_leaves_it_alone()
+    {
+        await _settings.SetAsync(SettingKeys.LibraryWriteCoverToFolder, "true");
+
+        await Controller().SetLibrary(Payload(), CancellationToken.None);
+        Assert.Equal("true", await _settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder));
+
+        await Controller().SetLibrary(Payload() with { WriteCoverToFolder = false }, CancellationToken.None);
+        Assert.Equal("false", await _settings.GetAsync(SettingKeys.LibraryWriteCoverToFolder));
+    }
+
+    [Fact]
     public async Task Preview_renders_both_formats_against_the_sample()
     {
         var result = await Controller().PreviewNaming(

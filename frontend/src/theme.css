@@ -2218,7 +2218,9 @@ body {
 /* --- Series detail panels -------------------------------------------------- */
 .series-split {
   display: grid;
-  grid-template-columns: minmax(40%, 1fr) minmax(min-content, 1fr);
+  /* Zero minimums: a `min-content` track took the Sources table's full width and pushed the page
+     sideways. The table scrolls inside its own container instead. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--mantine-spacing-lg);
   align-items: start;
 }
@@ -2237,6 +2239,7 @@ body {
 }
 .series-split-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: max-content max-content;
   gap: var(--mantine-spacing-lg);
   align-items: start;

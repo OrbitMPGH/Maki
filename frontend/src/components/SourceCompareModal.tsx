@@ -339,12 +339,23 @@ export function SourceCompareModal({
         onClose={onClose}
         size="95%"
         title={t`Compare sources`}
-        styles={{ body: { paddingTop: 0 } }}
+        // Full height with the column row taking what's left, so the row scrolls inside the modal
+        // and its horizontal scrollbar stays on screen. Otherwise the modal itself scrolls and a
+        // webtoon's tall pages push that scrollbar far below the fold.
+        styles={{
+          content: {
+            height: 'calc(100dvh - var(--modal-y-offset) * 2)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          },
+          body: { paddingTop: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
+        }}
         // Both modals hear the same Escape, so without this one keypress closes the zoom *and*
         // throws away the comparison behind it.
         closeOnEscape={zoom === null}
       >
-        <Stack gap="md">
+        <Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
           <Text size="sm" c="dimmed">
             <Trans>
               The same chapter as each source scans it, heaviest first. Drag the columns so your
@@ -403,7 +414,7 @@ export function SourceCompareModal({
             </Alert>
           )}
 
-          <ScrollArea type="auto" offsetScrollbars>
+          <ScrollArea type="auto" offsetScrollbars style={{ flex: 1, minHeight: 0 }}>
             <Group
               gap={0}
               align="stretch"
