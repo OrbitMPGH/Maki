@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { UnstyledButton } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
@@ -14,8 +14,9 @@ import {
  * The strip of section links pinned under the app header. Highlights whichever section is in the
  * upper part of the viewport. A click writes `?section=` so the link can be shared; scrolling
  * never does, or the back button would step through sections instead of leaving the page.
+ * `end` sits at the far side of the strip, so the window picker stays reachable while scrolled.
  */
-export function StatsRail() {
+export function StatsRail({ end }: { end?: ReactNode }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -88,8 +89,9 @@ export function StatsRail() {
   }, [active])
 
   return (
-    <nav ref={railRef} className="stats-rail" aria-label={t`Stats sections`}>
-      {STATS_SECTIONS.map((s) => {
+    <div className="stats-rail">
+      <nav ref={railRef} className="stats-rail-links" aria-label={t`Stats sections`}>
+        {STATS_SECTIONS.map((s) => {
         const SectionIcon = s.icon
         const isActive = active === s.key
         return (
@@ -119,6 +121,8 @@ export function StatsRail() {
           </UnstyledButton>
         )
       })}
-    </nav>
+      </nav>
+      {end && <div className="stats-rail-end">{end}</div>}
+    </div>
   )
 }

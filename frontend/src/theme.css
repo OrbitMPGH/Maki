@@ -3926,16 +3926,47 @@ body {
   top: var(--app-shell-header-height, 58px);
   z-index: 20;
   display: flex;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--mantine-spacing-md);
   margin: 0 calc(-1 * var(--mantine-spacing-lg)) var(--mantine-spacing-lg);
   padding-inline: var(--mantine-spacing-lg);
-  overflow-x: auto;
-  scrollbar-width: none;
   background: var(--app-bg);
   border-bottom: 1px solid var(--hairline);
 }
-.stats-rail::-webkit-scrollbar {
+.stats-rail-links {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stats-rail-links::-webkit-scrollbar {
   display: none;
+}
+/* The window picker rides the strip so the period can change while scrolled down. On a phone it
+   drops to its own line under the links. */
+.stats-rail-end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding-block: 6px;
+}
+.stats-range-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+@media (max-width: 61.9375em) {
+  .stats-rail-end {
+    flex-basis: 100%;
+    padding-block: 4px 8px;
+  }
+  .stats-section {
+    scroll-margin-top: calc(var(--app-shell-header-height, 58px) + 6.5rem);
+  }
 }
 .stats-rail-link {
   display: flex;

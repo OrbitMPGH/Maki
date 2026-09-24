@@ -13,6 +13,7 @@ export function RangeControl({
   month,
   onMonthChange,
   yearOptions,
+  size = 'sm',
 }: {
   preset: RangePreset
   onPresetChange: (preset: RangePreset) => void
@@ -21,15 +22,16 @@ export function RangeControl({
   month: number | null
   onMonthChange: (month: number | null) => void
   yearOptions: string[]
+  size?: 'xs' | 'sm'
 }) {
   const { t } = useLingui()
   const label = useLabel()
 
   return (
-    <>
+    <div className="stats-range-group">
       <div className="stats-range">
         <SegmentedControl
-          size="sm"
+          size={size}
           value={preset}
           onChange={(v) => onPresetChange(v as RangePreset)}
           data={RANGE_OPTIONS.map((option) => ({ value: option.value, label: label(option.label) }))}
@@ -43,7 +45,7 @@ export function RangeControl({
             value={String(year)}
             onChange={(v) => v && onYearChange(Number(v))}
             w={100}
-            size="sm"
+            size={size}
             aria-label={t`Year`}
           />
           <Select
@@ -54,11 +56,11 @@ export function RangeControl({
             value={month === null ? 'all' : String(month)}
             onChange={(v) => onMonthChange(v === null || v === 'all' ? null : Number(v))}
             w={140}
-            size="sm"
+            size={size}
             aria-label={t`Month`}
           />
         </>
       )}
-    </>
+    </div>
   )
 }

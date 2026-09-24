@@ -113,15 +113,6 @@ export default function StatsPage() {
         description={t`What you read, when you read it, and what the library holds.`}
         actions={
           <>
-            <RangeControl
-              preset={preset}
-              onPresetChange={setPreset}
-              year={year}
-              onYearChange={setYear}
-              month={month}
-              onMonthChange={setMonth}
-              yearOptions={yearOptions}
-            />
             {isAdmin && users && users.length > 1 && (
               <Select
                 data={users
@@ -146,7 +137,20 @@ export default function StatsPage() {
         }
       />
 
-      <StatsRail />
+      <StatsRail
+        end={
+          <RangeControl
+            preset={preset}
+            onPresetChange={setPreset}
+            year={year}
+            onYearChange={setYear}
+            month={month}
+            onMonthChange={setMonth}
+            yearOptions={yearOptions}
+            size="xs"
+          />
+        }
+      />
 
       <div className="stats-layout">
         {STATS_SECTIONS.map((s) => {
