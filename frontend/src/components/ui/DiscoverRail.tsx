@@ -269,7 +269,7 @@ export const RecommendationRow = memo(function RecommendationRow({
    where the catalogue card's optional reason line lives. */
 
 /** The strongest thing the engine can say about one pick, and the icon that says which kind it is. */
-function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
+export function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
   if (item.relationKind && item.relatedToTitle) {
     return { Glyph: IconAffiliate, text: relationPhrase(item.relationKind, item.relatedToTitle) }
   }

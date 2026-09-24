@@ -58,6 +58,28 @@ public class RecommendationController(
     }
 
     /// <summary>
+    /// The next cards for the Discovery Queue. <c>exclude</c> carries the ids the client still holds
+    /// or has swiped whose writes may not have landed yet.
+    /// </summary>
+    [HttpPost("queue")]
+    public async Task<IActionResult> Queue([FromBody] QueueRequest? request,
+        [FromServices] DiscoverQueueService queue, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await queue.DealAsync(request ?? new QueueRequest(), ct));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// The caller's own taste profile: what they read most, weighted the way the recommender weights
     /// its seeds.
     ///

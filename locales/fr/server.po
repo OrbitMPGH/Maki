@@ -503,6 +503,23 @@ msgstr "L'URL doit être une adresse complète en http:// ou https://"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "L'URL du webhook est requise"
 
+#. Two saves of the same title to the Want to read list raced each other.
+#: src/Maki.Api/Controllers/PlanToReadController.cs
+#. English: Your Want to read list changed. Refresh and try again.
+msgid "error.planToRead.changed"
+msgstr ""
+
+#: src/Maki.Api/Services/PlanToReadService.cs
+#. English: A valid catalogue title is required
+msgid "error.planToRead.invalidTitle"
+msgstr ""
+
+#. The client sent an origin other than taste, trending or manual.
+#: src/Maki.Api/Services/PlanToReadService.cs
+#. English: Unsupported origin for a Want to read entry
+msgid "error.planToRead.unsupportedOrigin"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
 #, fuzzy

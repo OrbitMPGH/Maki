@@ -41,6 +41,7 @@ import { TagChip, TagChips } from '../ui/TagChip'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
+import { PlanToReadButton } from './PlanToReadButton'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
 import { useLabel } from '../../i18n-context'
@@ -340,11 +341,16 @@ export function DiscoverDetailModal({
                     onClose={onClose}
                     addedFrom={feedbackContext ? 'recommendation' : 'library'}
                   />
-                  {feedbackContext && (
-                    <RecommendationFeedbackMenu
-                      providerId={item.providerId}
-                      surface={feedbackContext.surface}
-                    />
+                  {(feedbackContext || !inLibrarySeriesId) && (
+                    <Group gap="xs" justify="center" wrap="nowrap">
+                      {!inLibrarySeriesId && <PlanToReadButton item={item} />}
+                      {feedbackContext && (
+                        <RecommendationFeedbackMenu
+                          providerId={item.providerId}
+                          surface={feedbackContext.surface}
+                        />
+                      )}
+                    </Group>
                   )}
                 </Stack>
               </div>

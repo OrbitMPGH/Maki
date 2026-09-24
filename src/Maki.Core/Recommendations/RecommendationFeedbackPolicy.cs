@@ -83,6 +83,19 @@ public static class RecommendationFeedbackPolicy
     public const double LikedWeight = 1.6;
 
     /// <summary>
+    /// Seed weight for a Want-to-read save: about a third of the neutral 1.0 a shelf title gets.
+    /// Saving says "this looks interesting", not "I read it and liked it", so it steers gently.
+    /// </summary>
+    public const double PlannedWeight = 0.35;
+
+    /// <summary>
+    /// How old a save must be before it seeds. Every new seed changes the pool key and forces a cold
+    /// scan, so a swipe session saving a title every few seconds would rebuild the pool per deck;
+    /// with the window it rebuilds at most once per this interval.
+    /// </summary>
+    public static readonly TimeSpan PlannedSettle = TimeSpan.FromMinutes(10);
+
+    /// <summary>
     /// The highest rating that still means "less of this". 1 through 4 join the avoided set; 5 and
     /// above stay positive seeds.
     /// <para>

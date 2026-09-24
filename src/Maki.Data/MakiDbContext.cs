@@ -39,6 +39,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<RecommendationProfileState> RecommendationProfileStates => Set<RecommendationProfileState>();
     public DbSet<RecommendationMutationReceipt> RecommendationMutationReceipts => Set<RecommendationMutationReceipt>();
     public DbSet<AnimeSignal> AnimeSignals => Set<AnimeSignal>();
+    public DbSet<PlanToReadEntry> PlanToReadEntries => Set<PlanToReadEntry>();
     public DbSet<AuthEvent> AuthEvents => Set<AuthEvent>();
 
     public DbSet<Series> Series => Set<Series>();
@@ -241,6 +242,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.HasIndex(x => new { x.UserId, x.ClientMutationId }).IsUnique();
             e.HasIndex(x => x.ExpiresAtUtc);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
+        });
+        modelBuilder.Entity<PlanToReadEntry>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.Provider, x.ProviderId }).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.AddedAtUtc });
             e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });

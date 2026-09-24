@@ -58,11 +58,17 @@ public record SeedWeights(IReadOnlyList<long> LibraryIds, IReadOnlyDictionary<lo
 /// nothing. They are a separate channel the recommender subtracts with, so it is deliberately not
 /// part of either <see cref="SeedWeights"/> population.
 /// </param>
+/// <param name="Planned">
+/// Want-to-read ids that joined the effective seeds at
+/// <see cref="RecommendationFeedbackPolicy.PlannedWeight"/>. Kept apart so the pool can leave them out
+/// of the relations lookup: a saved, unread title must not pull its whole franchise in.
+/// </param>
 public record SeedSnapshot(
     SeedWeights Effective,
     SeedWeights Observed,
     IReadOnlyDictionary<long, SeriesReadSignal> Signals,
-    IReadOnlyDictionary<long, double> Avoided)
+    IReadOnlyDictionary<long, double> Avoided,
+    IReadOnlySet<long>? Planned = null)
 {
     /// <summary>
     /// A digest of every input behind this snapshot, for callers that key a cache on it.
@@ -281,6 +287,18 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         }
 
         var positiveIds = positiveRows.Select(r => r.Id).Distinct().ToList();
+
+        // Want-to-read saves are the weakest positive there is: the reader has not read them. They
+        // only fill ids nothing else seeds, since an absent weight means the neutral 1.0 and writing
+        // this one over a shelf row would lower it.
+        var planned = await PlannedSeedsAsync(db, scope.UserId,
+            positiveIds.Concat(liked).Concat(animeSeeds.Keys).Concat(ignored).Concat(avoided.Keys).ToHashSet(),
+            allowed, ct);
+        foreach (var id in planned)
+        {
+            effectiveWeights[id] = RecommendationFeedbackPolicy.PlannedWeight;
+        }
+
         return new SeedSnapshot(
             new SeedWeights(libraryIds, effectiveWeights,
                 positiveIds
@@ -290,12 +308,31 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
                     // shelf these are not on. Being a seed is also what keeps a matched title out of
                     // the recommender's own output, since it excludes everything it steered by.
                     .Concat(animeSeeds.Keys)
+                    .Concat(planned)
                     .Distinct().Order().ToList()),
             // The shelf half keeps its low-rated rows: it describes what the reader owns, and a
             // profile chart that dropped everything they disliked would describe a different shelf.
             new SeedWeights(libraryIds, Weigh(observedRows, signals, behavioural, addWeighting, now), observedIds),
             signals,
-            avoided);
+            avoided,
+            planned);
+    }
+
+    private async Task<HashSet<long>> PlannedSeedsAsync(MakiDbContext db, int userId,
+        HashSet<long> superseded, IReadOnlyList<string> allowed, CancellationToken ct)
+    {
+        var settled = DateTime.UtcNow - RecommendationFeedbackPolicy.PlannedSettle;
+        var ids = (await db.PlanToReadEntries.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Provider == "mangabaka" && x.AddedAtUtc <= settled &&
+                (x.ContentRating == null || allowed.Contains(x.ContentRating)))
+            .Select(x => x.ProviderId).ToListAsync(ct))
+            .Where(id => !superseded.Contains(id)).ToHashSet();
+        if (ids.Count > 0)
+        {
+            ids.ExceptWith(await RecommendationFeedbackService.SuppressedAsync(db, userId, ct));
+        }
+
+        return ids;
     }
 
     private Dictionary<long, double> Weigh(

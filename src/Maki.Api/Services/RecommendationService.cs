@@ -114,6 +114,51 @@ public class RecommendationService(
         RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default,
         PoolOrigin origin = PoolOrigin.Interactive)
     {
+        if (await ResolveAsync(request, scope, origin, ct) is not { } resolved)
+        {
+            return new RecommendationsResult([], [], DateTime.UtcNow);
+        }
+
+        var (pool, suppressed, version) = resolved;
+        // The caller is paging a pool that no longer exists, so their page number means nothing
+        // against this one and honouring it would skip or repeat titles. Serve the new pool from
+        // the top and say so, rather than an empty page: the client drops what it had and keeps
+        // this, so paging restarts instead of dead-ending mid-scroll.
+        var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
+        var similarVisible = Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList());
+        var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
+        var page = restart ? 0 : Math.Max(0, request.Page);
+        return pool with
+        {
+            Related = relatedVisible,
+            Similar = similarVisible.Skip(page * PageSize).Take(PageSize).ToList(),
+            Page = page,
+            HasMore = similarVisible.Count > (page + 1) * PageSize,
+            PoolVersion = version,
+            RestartRequired = restart,
+        };
+    }
+
+    /// <summary>
+    /// The whole suppression-filtered similar list of the pool <see cref="GetAsync"/> would page,
+    /// resolved once, for the Discovery Queue. Null when there are no seeds at all.
+    /// </summary>
+    internal async Task<IReadOnlyList<MangaBakaRecommendation>?> VisibleSimilarAsync(
+        RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default)
+    {
+        if (await ResolveAsync(request, scope, PoolOrigin.Interactive, ct) is not { } resolved)
+        {
+            return null;
+        }
+
+        return Spread(resolved.Pool.Similar.Where(p => !resolved.Suppressed.Contains(CatalogueId(p))).ToList());
+    }
+
+    private sealed record ResolvedPool(RecommendationsResult Pool, HashSet<long> Suppressed, string Version);
+
+    private async Task<ResolvedPool?> ResolveAsync(
+        RecommendationRequest request, ICurrentUser scope, PoolOrigin origin, CancellationToken ct)
+    {
         if (!await store.IsAvailableAsync(ct))
         {
             throw new LocalCatalogueUnavailableException("error.recommendation.needsLocalDb");
@@ -171,7 +216,7 @@ public class RecommendationService(
             : seeded.EligibleIds;
         if (seeds.Count == 0)
         {
-            return new RecommendationsResult([], [], DateTime.UtcNow);
+            return null;
         }
 
         // Only the weights of seeds actually in play affect this request; fold them into the key so
@@ -213,7 +258,14 @@ public class RecommendationService(
             {
                 var started = DateTime.UtcNow;
                 var exclude = new HashSet<long>(libraryIds.Concat(seeds));
-                var related = await store.GetRelatedAsync(seeds, exclude, filters.ContentRatings, ct);
+                // Want-to-read saves seed the similar scan only. Unread, a save would otherwise drag
+                // its sequels and spin-offs in as relations of something the reader never started.
+                var relationSeeds = request.SeedIds is { Count: > 0 } || snapshot.Planned is not { Count: > 0 } planned
+                    ? seeds
+                    : seeds.Where(id => !planned.Contains(id)).ToList();
+                var related = relationSeeds.Count > 0
+                    ? await store.GetRelatedAsync(relationSeeds, exclude, filters.ContentRatings, ct)
+                    : [];
                 foreach (var r in related)
                 {
                     exclude.Add(long.Parse(r.ProviderId));
@@ -251,24 +303,7 @@ public class RecommendationService(
             }
 
             var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
-
-            // The caller is paging a pool that no longer exists, so their page number means nothing
-            // against this one and honouring it would skip or repeat titles. Serve the new pool from
-            // the top and say so, rather than an empty page: the client drops what it had and keeps
-            // this, so paging restarts instead of dead-ending mid-scroll.
-            var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
-            var similarVisible = Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList());
-            var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
-            var page = restart ? 0 : Math.Max(0, request.Page);
-            return pool with
-            {
-                Related = relatedVisible,
-                Similar = similarVisible.Skip(page * PageSize).Take(PageSize).ToList(),
-                Page = page,
-                HasMore = similarVisible.Count > (page + 1) * PageSize,
-                PoolVersion = version,
-                RestartRequired = restart,
-            };
+            return new ResolvedPool(pool, suppressed, version);
         }
         finally
         {

@@ -25,6 +25,7 @@ import {
   IconAdjustmentsHorizontal,
   IconAffiliate,
   IconAlertTriangle,
+  IconCards,
   IconChevronRight,
   IconCompass,
   IconDeviceFloppy,
@@ -114,6 +115,7 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
 import { TasteTab } from './discover/TasteTab'
+import { QueueTab } from './discover/QueueTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import {
   DensityControl,
@@ -1483,16 +1485,17 @@ function DiscoverBrowseTab({
   )
 }
 
-type DiscoverTab = 'browse' | 'recommended' | 'taste'
+type DiscoverTab = 'browse' | 'recommended' | 'taste' | 'queue'
 const TAB_PATHS: Record<DiscoverTab, string> = {
   browse: '/discover',
   recommended: '/discover/recommended',
   taste: '/discover/taste',
+  queue: '/discover/queue',
 }
 
 /**
- * Discover shell: four URL-synced tabs - catalogue Browse (default), per-Genre, Recommended, and
- * the reader's own taste profile.
+ * Discover shell: four URL-synced tabs - catalogue Browse (default), Recommended, the reader's own
+ * taste profile, and the swipe Queue.
  */
 export default function DiscoverPage() {
   const { t } = useLingui()
@@ -1503,7 +1506,9 @@ export default function DiscoverPage() {
       ? 'recommended'
       : tab === 'taste'
         ? 'taste'
-        : 'browse'
+        : tab === 'queue'
+          ? 'queue'
+          : 'browse'
 
   // The rails are cached for an hour on both sides, so the only way back to a fresh catalogue is
   // this. It lives up here rather than in the tab so it can sit in the page header. The spinner
@@ -1569,6 +1574,9 @@ export default function DiscoverPage() {
           <Tabs.Tab value="taste" disabled={editing}>
             <Trans>Your Taste</Trans>
           </Tabs.Tab>
+          <Tabs.Tab value="queue" disabled={editing} leftSection={<IconCards size={14} />}>
+            <Trans>Queue</Trans>
+          </Tabs.Tab>
         </Tabs.List>
       </Tabs>
 
@@ -1576,6 +1584,8 @@ export default function DiscoverPage() {
         <RecommendedTab />
       ) : active === 'taste' ? (
         <TasteTab />
+      ) : active === 'queue' ? (
+        <QueueTab />
       ) : (
         <DiscoverBrowseTab
           refreshNonce={refreshNonce}

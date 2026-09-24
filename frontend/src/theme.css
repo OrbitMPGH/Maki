@@ -1303,6 +1303,232 @@ body {
   margin-bottom: 3px;
 }
 
+/* --- Discover page: the swipe Queue tab ------------------------------------ */
+
+.queue-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+}
+
+.queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 400px;
+}
+
+.queue-want-pill {
+  border-radius: var(--radius-pill);
+}
+
+.queue-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+}
+
+.queue-stack {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 2 / 3;
+}
+
+.queue-card {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-overlay);
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-raised, var(--shadow-card));
+  cursor: grab;
+  user-select: none;
+}
+.queue-card:active {
+  cursor: grabbing;
+}
+/* Cards behind the top one are inert and slightly receded, purely visual: interaction is already
+   disabled on them via `pointer-events: none`, set inline by SwipeCard. */
+.queue-stack .queue-card:nth-child(2) {
+  transform: scale(0.96) translateY(10px);
+  z-index: 1;
+}
+.queue-stack .queue-card:nth-child(3) {
+  transform: scale(0.92) translateY(18px);
+  z-index: 0;
+}
+.queue-stack .queue-card[data-top] {
+  z-index: 2;
+}
+
+.queue-card-action {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: inherit;
+}
+
+.queue-card-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.queue-card-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mantine-spacing-md);
+  text-align: center;
+  color: var(--ink-3);
+  background: var(--surface-2);
+}
+.queue-card-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.4) 40%, transparent 70%);
+}
+
+.queue-card-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--mantine-spacing-md);
+  color: var(--brand-fg-on-art);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.queue-card-title {
+  color: var(--brand-fg-on-art);
+  font-size: 1.15rem;
+}
+.queue-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--type-label);
+  color: rgba(255, 255, 255, 0.75);
+}
+.queue-card-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+.queue-card-why {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
+}
+.queue-card-synopsis {
+  color: rgba(255, 255, 255, 0.85);
+}
+.queue-card-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.queue-card-chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-chip);
+  background: rgba(255, 255, 255, 0.14);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-medium);
+}
+
+.queue-overlay {
+  position: absolute;
+  top: 24px;
+  z-index: 2;
+  padding: 6px 14px;
+  border-radius: var(--radius-control);
+  border: 2px solid currentColor;
+  font-weight: var(--fw-bold);
+  font-size: var(--type-label);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+.queue-overlay-want {
+  left: 24px;
+  color: var(--ok);
+  transform: rotate(-8deg);
+}
+.queue-overlay-skip {
+  right: 24px;
+  color: var(--danger);
+  transform: rotate(8deg);
+}
+.queue-overlay-not-for-me {
+  left: 50%;
+  top: auto;
+  bottom: 24px;
+  transform: translateX(-50%);
+  color: var(--warn);
+}
+
+.queue-hint {
+  animation: queue-hint-fade 4s ease forwards;
+}
+@keyframes queue-hint-fade {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.queue-action-bar {
+  position: sticky;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised, var(--shadow-card));
+}
+.queue-action {
+  transition: transform var(--dur-fast) var(--ease);
+}
+.queue-action:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.queue-action-want {
+  color: #fff;
+}
+.queue-action-not-for-me {
+  color: var(--warn);
+}
+.queue-action-skip {
+  color: var(--danger);
+}
+
+.queue-empty {
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+@media (max-width: 47.99em) {
+  .queue-stack {
+    max-width: none;
+  }
+  .queue-header {
+    max-width: none;
+    padding-inline: 16px;
+  }
+}
+
 /* --- Discover page: hero, seed grid, catalogue block, genre wall ----------- */
 /* Everything below is scoped to the Discover browse tab. The rail primitives it sits between
    (.discover-rail, .discover-rail-item) are shared with Home, the series page's related rows and

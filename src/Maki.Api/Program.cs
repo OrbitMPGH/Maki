@@ -240,6 +240,8 @@ try
     builder.Services.AddSingleton<DiscoverService>();
     builder.Services.AddScoped<HiddenContentService>();
     builder.Services.AddScoped<CustomRailService>();
+    builder.Services.AddScoped<DiscoverQueueService>();
+    builder.Services.AddScoped<PlanToReadService>();
 
     // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first
     // use) turns each series' description into a vector so Discover can match on "feel", not
