@@ -69,7 +69,9 @@ msgid "{0, plural, one {# seed} other {# seeds}}"
 msgstr "{0, plural, one {# seed} other {# seeds}}"
 
 #. placeholder {0}: selected.size
+#. placeholder {0}: value.length
 #: src/components/SeriesFilesSection.tsx
+#: src/components/TagBrowserModal.tsx
 msgid "{0, plural, one {# selected} other {# selected}}"
 msgstr "{0, plural, one {# selected} other {# selected}}"
 
@@ -698,6 +700,10 @@ msgstr "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exi
 msgid "{seriesWantedCount, plural, one {# in series} other {# in series}}"
 msgstr "{seriesWantedCount, plural, one {# in series} other {# in series}}"
 
+#: src/components/TagBrowserModal.tsx
+msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
+msgstr "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{shownCount} of {totalSeriesShown} series shown."
 msgstr "{shownCount} of {totalSeriesShown} series shown."
@@ -729,6 +735,10 @@ msgstr "{staleChapters, plural, one {# downloaded chapter came from another sour
 #: src/pages/discover/TasteTab.tsx
 msgid "{stopPercent} in"
 msgstr "{stopPercent} in"
+
+#: src/components/TagBrowserModal.tsx
+msgid "{subtags, plural, one {# subtag} other {# subtags}}"
+msgstr "{subtags, plural, one {# subtag} other {# subtags}}"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "{support, plural, one {# series} other {# series}}"
@@ -1414,6 +1424,10 @@ msgstr "All states"
 msgid "All statuses"
 msgstr "All statuses"
 
+#: src/components/TagBrowserModal.tsx
+msgid "All tags"
+msgstr "All tags"
+
 #: src/pages/stats/StatsRange.ts
 msgid "all time"
 msgstr "all time"
@@ -1933,6 +1947,18 @@ msgstr "Browse or search MangaBaka and ask an admin for a title. You can ask for
 msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
 msgstr "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
 
+#: src/components/CatalogueRules.tsx
+msgid "Browse tags"
+msgstr "Browse tags"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Browse tags to exclude"
+msgstr "Browse tags to exclude"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Browse tags to include"
+msgstr "Browse tags to include"
+
 #: src/api/hooks.ts
 #: src/pages/DiscoverPage.tsx
 msgid "Browse the catalogue"
@@ -2434,6 +2460,7 @@ msgid "Clear read or seen"
 msgstr "Clear read or seen"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/TagBrowserModal.tsx
 msgid "Clear search"
 msgstr "Clear search"
 
@@ -2490,8 +2517,10 @@ msgstr "Client secret"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/ImportReviewModal.tsx
+#: src/components/LuckyButton.tsx
 #: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Close"
@@ -3210,6 +3239,7 @@ msgstr "Don't want specials"
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Done"
@@ -3587,6 +3617,10 @@ msgstr "Every week"
 msgid "Every year"
 msgstr "Every year"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Everything"
+msgstr "Everything"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Everything else"
@@ -3615,6 +3649,10 @@ msgstr "Example: {example}"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Exclude"
 msgstr "Exclude"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Exclude {label}"
+msgstr "Exclude {label}"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Exclude from taste"
@@ -3692,6 +3730,10 @@ msgstr "Feed URL copied"
 #: src/pages/settings/registry.ts
 msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
 msgstr "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
+
+#: src/components/LuckyButton.tsx
+msgid "Feeling lucky"
+msgstr "Feeling lucky"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Feels like {becauseOfTitle}"
@@ -3989,6 +4031,7 @@ msgstr "gems"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -4451,9 +4494,17 @@ msgstr "Incidental"
 msgid "Include"
 msgstr "Include"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Include {label}"
+msgstr "Include {label}"
+
 #: src/components/CatalogueRules.tsx
 msgid "Include subtags"
 msgstr "Include subtags"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Include subtags when adding"
+msgstr "Include subtags when adding"
 
 #: src/components/CatalogueRules.tsx
 msgid "Includes subtags"
@@ -5739,6 +5790,7 @@ msgstr "No match"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "No matches"
@@ -6095,6 +6147,10 @@ msgstr "Nothing to queue, those chapters are already on disk"
 msgid "Nothing to recommend yet"
 msgstr "Nothing to recommend yet"
 
+#: src/components/LuckyButton.tsx
+msgid "Nothing to roll"
+msgstr "Nothing to roll"
+
 #: src/pages/CreatorPage.tsx
 msgid "Nothing to show"
 msgstr "Nothing to show"
@@ -6276,6 +6332,10 @@ msgstr "OPDS"
 #: src/pages/HealthPage.tsx
 msgid "Open"
 msgstr "Open"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Open {label}"
+msgstr "Open {label}"
 
 #: src/pages/RequestsPage.tsx
 msgid "Open {title}"
@@ -7192,6 +7252,10 @@ msgstr "Releasing"
 msgid "Remove"
 msgstr "Remove"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Remove {label}"
+msgstr "Remove {label}"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove {removingSourceName}?"
 msgstr "Remove {removingSourceName}?"
@@ -7597,6 +7661,11 @@ msgstr "Right to left"
 msgid "Right to left (manga)"
 msgstr "Right to left (manga)"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/LuckyButton.tsx
+msgid "Roll again"
+msgstr "Roll again"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Romance"
 msgstr "Romance"
@@ -7890,6 +7959,10 @@ msgstr "Search for a series and request it - it will show up here once you do."
 msgid "Search genres and tags"
 msgstr "Search genres and tags"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Search genres, tags or groups like Character Traits"
+msgstr "Search genres, tags or groups like Character Traits"
+
 #: src/pages/LibraryPage.tsx
 msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
 msgstr "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
@@ -7929,6 +8002,10 @@ msgstr "Search sources and add new series to the library"
 #: src/components/CatalogueRules.tsx
 msgid "Search tags"
 msgstr "Search tags"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Search tags or groups like Character Traits"
+msgstr "Search tags or groups like Character Traits"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Search the remaining sources for this title again. Sources already linked are left alone."
@@ -8829,6 +8906,7 @@ msgid "Tags"
 msgstr "Tags"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/TagBrowserModal.tsx
 msgid "Tags appear once the recommendation index is built"
 msgstr "Tags appear once the recommendation index is built"
 

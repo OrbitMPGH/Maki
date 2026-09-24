@@ -81,7 +81,9 @@ msgid "{0, plural, one {# seed} other {# seeds}}"
 msgstr "{0, plural, one {# tytuł bazowy} few {# tytuły bazowe} many {# tytułów bazowych} other {# tytułu bazowego}}"
 
 #. placeholder {0}: selected.size
+#. placeholder {0}: value.length
 #: src/components/SeriesFilesSection.tsx
+#: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "{0, plural, one {# selected} other {# selected}}"
 msgstr "{0, plural, one {# zaznaczony} few {# zaznaczone} many {# zaznaczonych} other {# zaznaczonego}}"
@@ -855,6 +857,10 @@ msgstr "{seriesTitle} nie ma {lowerLabel}. Odśwież serię, aby rozdział zaist
 msgid "{seriesWantedCount, plural, one {# in series} other {# in series}}"
 msgstr "{seriesWantedCount, plural, one {# w serii} few {# w serii} many {# w serii} other {# w serii}}"
 
+#: src/components/TagBrowserModal.tsx
+msgid "{shown, plural, one {Showing the first # result. Search to narrow it down.} other {Showing the first # results. Search to narrow it down.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{shownCount} of {totalSeriesShown} series shown."
@@ -894,6 +900,10 @@ msgstr "{staleChapters, plural, one {# pobrany rozdział pochodzi z innego źró
 #, fuzzy
 msgid "{stopPercent} in"
 msgstr "w {stopPercent}"
+
+#: src/components/TagBrowserModal.tsx
+msgid "{subtags, plural, one {# subtag} other {# subtags}}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1739,6 +1749,10 @@ msgstr "Wszystkie stany"
 msgid "All statuses"
 msgstr "Wszystkie statusy"
 
+#: src/components/TagBrowserModal.tsx
+msgid "All tags"
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "all time"
@@ -2380,6 +2394,18 @@ msgstr "Przeglądaj lub szukaj w MangaBaka i poproś administratora o tytuł. Mo
 msgid "Browse or search MangaBaka, pick a title, choose where it lives, and Maki handles the rest."
 msgstr "Przeglądaj lub szukaj w MangaBaka, wybierz tytuł, wskaż, gdzie ma się znajdować, a Maki zajmie się resztą."
 
+#: src/components/CatalogueRules.tsx
+msgid "Browse tags"
+msgstr ""
+
+#: src/components/TagBrowserModal.tsx
+msgid "Browse tags to exclude"
+msgstr ""
+
+#: src/components/TagBrowserModal.tsx
+msgid "Browse tags to include"
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2993,6 +3019,7 @@ msgid "Clear read or seen"
 msgstr "Wyczyść przeczytane lub obejrzane"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Clear search"
 msgstr "Wyczyść wyszukiwanie"
@@ -3062,8 +3089,10 @@ msgstr "Sekret klienta"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/ImportReviewModal.tsx
+#: src/components/LuckyButton.tsx
 #: src/components/RenameSeriesModal.tsx
 #: src/components/SourceCompareModal.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -3946,6 +3975,7 @@ msgstr "Nie pobieraj rozdziałów specjalnych"
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4409,6 +4439,10 @@ msgstr "Co tydzień"
 msgid "Every year"
 msgstr "Co rok"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Everything"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -4444,6 +4478,10 @@ msgstr "Przykład: {example}"
 #, fuzzy
 msgid "Exclude"
 msgstr "Wyklucz"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Exclude {label}"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -4539,6 +4577,10 @@ msgstr "Skopiowano URL kanału"
 #, fuzzy
 msgid "feed url, catalogue, catalog, panels, chunky, koreader, tachiyomi, mihon, streaming, token, track progress"
 msgstr "url kanału, katalog, katalog, panels, chunky, koreader, tachiyomi, mihon, strumieniowanie, token, śledzenie postępu"
+
+#: src/components/LuckyButton.tsx
+msgid "Feeling lucky"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -4903,6 +4945,7 @@ msgstr "perełki"
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -5474,10 +5517,18 @@ msgstr "Poboczny"
 msgid "Include"
 msgstr "Uwzględnij"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Include {label}"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Include subtags"
 msgstr "Uwzględnij tagi podrzędne"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Include subtags when adding"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -7057,6 +7108,7 @@ msgstr "Brak dopasowania"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7500,6 +7552,10 @@ msgstr "Nic do dodania do kolejki, te rozdziały są już na dysku"
 msgid "Nothing to recommend yet"
 msgstr "Jeszcze nic do polecenia"
 
+#: src/components/LuckyButton.tsx
+msgid "Nothing to roll"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Nothing to show"
@@ -7723,6 +7779,10 @@ msgstr "OPDS"
 #, fuzzy
 msgid "Open"
 msgstr "Otwórz"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Open {label}"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -8850,6 +8910,10 @@ msgstr "Wydawane"
 msgid "Remove"
 msgstr "Usuń"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Remove {label}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove {removingSourceName}?"
@@ -9352,6 +9416,11 @@ msgstr "Od prawej do lewej"
 msgid "Right to left (manga)"
 msgstr "Od prawej do lewej (manga)"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/LuckyButton.tsx
+msgid "Roll again"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Romance"
@@ -9712,6 +9781,10 @@ msgstr "Wyszukaj serię i zgłoś o nią prośbę - pojawi się tutaj, gdy to zr
 msgid "Search genres and tags"
 msgstr "Szukaj gatunków i tagów"
 
+#: src/components/TagBrowserModal.tsx
+msgid "Search genres, tags or groups like Character Traits"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."
@@ -9761,6 +9834,10 @@ msgstr "Przeszukuj źródła i dodawaj nowe serie do biblioteki"
 #, fuzzy
 msgid "Search tags"
 msgstr "Szukaj tagów"
+
+#: src/components/TagBrowserModal.tsx
+msgid "Search tags or groups like Character Traits"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -10866,6 +10943,7 @@ msgid "Tags"
 msgstr "Tagi"
 
 #: src/components/CatalogueRules.tsx
+#: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Tags appear once the recommendation index is built"
 msgstr "Tagi pojawią się po zbudowaniu indeksu rekomendacji"

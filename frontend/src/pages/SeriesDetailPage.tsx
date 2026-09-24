@@ -56,7 +56,7 @@ import {
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   useChapters,
   useSourceMappings,
@@ -71,6 +71,7 @@ import {
   useDownloadChapters,
   useDownloadNext,
   useSearchMissing,
+  useSeries,
   useSeriesDetail,
   useSetChaptersWanted,
   useSetIncognito,
@@ -127,6 +128,8 @@ import {
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
+import { LuckyButton } from '../components/LuckyButton'
+import { isUnfinished } from '../lib/lucky'
 import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
 
@@ -1078,10 +1081,44 @@ export default function SeriesDetailPage() {
   }, [heroTitleShown])
   useShellTitle(heroTitleHidden && series ? series.displayTitle : null)
 
+  // Arrived by a dice roll: offer another. Local state so a tab switch, which drops router state,
+  // does not take the pill with it.
+  const location = useLocation()
+  const arrivedLucky = Boolean((location.state as { lucky?: boolean } | null)?.lucky)
+  const [lucky, setLucky] = useState(arrivedLucky)
+  const [luckyFor, setLuckyFor] = useState(seriesId)
+  if (luckyFor !== seriesId) {
+    setLuckyFor(seriesId)
+    setLucky(arrivedLucky)
+  }
+  const { data: library } = useSeries()
+  const luckyPool = useMemo(
+    () =>
+      (library ?? [])
+        .filter((s) => s.id !== seriesId && isUnfinished(s))
+        .map((s) => ({ key: String(s.id), title: s.displayTitle, coverUrl: s.coverUrl })),
+    [library, seriesId],
+  )
+  const luckyPill = lucky ? (
+    <LuckyButton
+      variant="pill"
+      candidates={luckyPool}
+      onPick={(next) => {
+        window.scrollTo(0, 0)
+        navigate(`/series/${next}`, { state: { lucky: true }, replace: true })
+      }}
+      onDismiss={() => {
+        setLucky(false)
+        navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null })
+      }}
+    />
+  ) : null
+
   if (isLoading) {
     return (
         <SurfaceFrame width="full" pageStyle="editorial">
           <SeriesHeroSkeleton />
+          {luckyPill}
         </SurfaceFrame>
     )
   }
@@ -2489,6 +2526,7 @@ export default function SeriesDetailPage() {
             />
         )}
       </Tabs>
+      {luckyPill}
     </SurfaceFrame>
   )
 }

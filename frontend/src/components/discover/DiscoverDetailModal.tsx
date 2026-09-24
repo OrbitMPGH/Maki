@@ -1,5 +1,7 @@
+import { useRef } from 'react'
 import type { CSSProperties } from 'react'
 import {
+  ActionIcon,
   Badge,
   Box,
   CloseButton, Divider,
@@ -43,6 +45,8 @@ import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
+import { DiceIcon } from '../LuckyButton'
+import { prefersReducedMotion, useDiceTumble } from '../../lib/lucky'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 
@@ -52,6 +56,7 @@ export function DiscoverDetailModal({
   rootFolders,
   onClose,
   feedbackContext,
+  onReroll,
 }: {
   /** The card that was clicked; null closes the modal. Used for an instant header while detail loads. */
   item: RecommendationItem | null
@@ -60,8 +65,25 @@ export function DiscoverDetailModal({
   rootFolders: RootFolder[] | undefined
   onClose: () => void
   feedbackContext?: { surface: string }
+  /** Shows a dice beside the close button that swaps in another random pick. */
+  onReroll?: () => void
 }) {
   const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
+  const { scope: diceScope, tumble } = useDiceTumble()
+  const rerolling = useRef(false)
+  const reroll = () => {
+    if (!onReroll || rerolling.current) return
+    if (prefersReducedMotion()) {
+      onReroll()
+      return
+    }
+    rerolling.current = true
+    void tumble(500)
+    window.setTimeout(() => {
+      rerolling.current = false
+      onReroll()
+    }, 500)
+  }
 
   const title = detail?.title ?? item?.title ?? ''
   // The card's 334x500 thumbnail stands in until the detail row's full-size art arrives: it is
@@ -146,6 +168,19 @@ export function DiscoverDetailModal({
             aria-label={t`Close`}
             onClick={onClose}
           />
+          {onReroll && (
+            <Tooltip label={t`Roll again`}>
+              <ActionIcon
+                className="discover-modal-reroll"
+                size="lg"
+                variant="subtle"
+                aria-label={t`Roll again`}
+                onClick={reroll}
+              >
+                <DiceIcon spinRef={diceScope} />
+              </ActionIcon>
+            </Tooltip>
+          )}
 
           <Box className="series-hero" data-compact>
             <HeroBackdrop coverUrl={cover} />

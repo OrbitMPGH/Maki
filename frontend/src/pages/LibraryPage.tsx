@@ -50,7 +50,7 @@ import {
 } from '../components/ui/seriesNotifications'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import {
   allowedContentRatings,
@@ -85,6 +85,8 @@ import { Panel } from '../components/ui/Panel'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { TagChip } from '../components/ui/TagChip'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { LuckyButton } from '../components/LuckyButton'
+import { isUnfinished } from '../lib/lucky'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { POSTER_COLS_BY_DENSITY, useDensityOptions } from '../components/ui/viewPrefs'
@@ -275,6 +277,14 @@ export default function LibraryPage() {
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const luckyPool = useMemo(
+    () =>
+      (series ?? [])
+        .filter(isUnfinished)
+        .map((s) => ({ key: String(s.id), title: s.displayTitle, coverUrl: s.coverUrl })),
+    [series],
+  )
 
   // Everything down to `filtersOpen` is remembered for the tab session, so opening a series from
   // the grid and coming back lands on the same view rather than on an unfiltered library. Selection
@@ -895,6 +905,10 @@ export default function LibraryPage() {
                   value={sort}
                   onChange={(v) => setSort(v ?? 'added')}
                   comboboxProps={{ withinPortal: true }}
+                />
+                <LuckyButton
+                  candidates={luckyPool}
+                  onPick={(id) => navigate(`/series/${id}`, { state: { lucky: true } })}
                 />
                 <Text size="sm" c="var(--ink-3)" className="tnum" visibleFrom="sm" hidden={isLoading}>
                   {filtersActive ? (

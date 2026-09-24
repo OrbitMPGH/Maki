@@ -91,6 +91,8 @@ import { RecommenderDials } from '../components/discover/RecommenderDials'
 import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
 import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { LuckyButton } from '../components/LuckyButton'
+import { pickRandom } from '../lib/lucky'
 import {
   DiscoverRailRow,
   EngineCard,
@@ -548,6 +550,29 @@ function RecommendedTab() {
   const seriesIdFor = (item: RecommendationItem) =>
     seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 
+  const luckyItems = useMemo(() => {
+    const seen = new Set<string>()
+    const pages = data?.pages ?? []
+    return [...(pages[0]?.related ?? []), ...pages.flatMap((p) => p.similar)].filter((item) => {
+      if (seen.has(item.providerId)) return false
+      seen.add(item.providerId)
+      return true
+    })
+  }, [data])
+  const luckyPool = useMemo(
+    () =>
+      luckyItems.map((item) => ({
+        key: item.providerId,
+        title: item.title,
+        coverUrl: item.thumbUrlHiDpi ?? item.thumbUrl ?? item.coverUrl,
+      })),
+    [luckyItems],
+  )
+  const rerollDetail = () => {
+    const next = pickRandom(luckyItems, (item) => item.providerId === detailItem?.providerId)
+    if (next) setDetailItem(next)
+  }
+
   // Named locals for the panel's caption sentences below: Lingui names a placeholder after the
   // expression only when it is a plain identifier, so a member access or method call has to be
   // hoisted first or it extracts as an unlabelled {0}.
@@ -568,6 +593,10 @@ function RecommendedTab() {
         >
           {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
         </Button>
+        <LuckyButton
+          candidates={luckyPool}
+          onPick={(key) => setDetailItem(luckyItems.find((item) => item.providerId === key) ?? null)}
+        />
         <Button
           variant="default"
           leftSection={<IconRefresh size={16} />}
@@ -855,6 +884,7 @@ function RecommendedTab() {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        onReroll={luckyItems.length > 1 ? rerollDetail : undefined}
       />
     </>
   )

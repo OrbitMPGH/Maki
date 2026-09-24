@@ -6355,3 +6355,84 @@ body.reader-open {
   color: var(--brand);
   border-color: var(--brand);
 }
+
+/* ==========================================================================
+   Feeling lucky
+   ========================================================================== */
+
+.lucky-dice {
+  display: inline-flex;
+}
+.lucky-roll-cover {
+  width: 96px;
+  height: 136px;
+  overflow: hidden;
+  border-radius: var(--radius-thumb);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.lucky-roll-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.lucky-roll-title {
+  width: 96px;
+  margin-top: 6px;
+  color: var(--ink-hi);
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease);
+}
+.lucky-roll-title[data-shown] {
+  opacity: 1;
+}
+
+/* Centred on the content column, not the viewport: the desktop navbar offsets the page. */
+.lucky-pill {
+  position: fixed;
+  z-index: 100;
+  left: calc(50% + var(--app-shell-navbar-offset, 0px) / 2);
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px 4px 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--mantine-shadow-md);
+}
+.lucky-pill-roll {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-hi);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  transition: background-color var(--dur-base) var(--ease);
+}
+.lucky-pill-roll:hover {
+  background: var(--surface-hover);
+}
+.lucky-pill-roll .lucky-dice {
+  color: var(--brand);
+}
+
+.discover-modal-reroll {
+  position: absolute;
+  top: 14px;
+  right: 56px;
+  z-index: 3;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--app-bg) 55%, transparent);
+  border: 1px solid var(--border-strong);
+}
+.discover-modal-reroll:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
