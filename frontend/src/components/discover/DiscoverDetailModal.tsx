@@ -169,7 +169,7 @@ export function DiscoverDetailModal({
             onClick={onClose}
           />
           {onReroll && (
-            <Tooltip label={t`Roll again`}>
+            <Tooltip label={t`Roll again`} withArrow zIndex={1001}>
               <ActionIcon
                 className="discover-modal-reroll"
                 size="lg"
