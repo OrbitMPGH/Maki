@@ -16,7 +16,9 @@ public record NotificationField(
     string Key,
     NotificationFieldKind Kind,
     bool Required = false,
-    string? Placeholder = null);
+    string? Placeholder = null,
+    int? Min = null,
+    int? Max = null);
 
 /// <summary>
 /// What the settings UI needs to render and validate a connection form for one provider, so

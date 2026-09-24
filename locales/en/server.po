@@ -329,13 +329,43 @@ msgstr "Cannot rename: '{name}' already exists in the root folder"
 msgid "error.libraryImport.tooManyItems"
 msgstr "Too many items in one request ({count}); import in batches of {max} or fewer"
 
+#: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
+msgid "error.notifications.appriseTarget"
+msgstr "Set a config key or at least one notification URL."
+
 #: src/Maki.Api/Controllers/NotificationsController.cs
 msgid "error.notifications.deliveryFailed"
 msgstr "Notification delivery failed (check URL and any token)"
 
+#. {provider} is the service name (Telegram, ntfy, ...), {status} its HTTP status code.
+#. {hasDetail} is "yes" or "no"; {detail} is the service's own error text, untranslated.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.deliveryRejected"
+msgstr "{provider} returned {status}{hasDetail, select, yes {: {detail}} other {}}"
+
 #: src/Maki.Api/Controllers/NotificationsController.cs
 msgid "error.notifications.discordWebhookUrlRequired"
 msgstr "Discord webhook URL is required"
+
+#. {field} is the config field's key, e.g. botToken.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.fieldMustBeBoolean"
+msgstr "{field} must be true or false"
+
+#. {field} is the config field's key, e.g. priority.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.fieldMustBeNumber"
+msgstr "{field} must be a whole number"
+
+#. {field} is the config field's key, e.g. priority.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.fieldOutOfRange"
+msgstr "{field} must be between {min} and {max}"
+
+#. {field} is the config field's key, e.g. botToken.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+msgid "error.notifications.fieldRequired"
+msgstr "{field} is required"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 msgid "error.notifications.nameRequired"
@@ -1573,6 +1603,16 @@ msgstr "Import rejected, the library was left as it was"
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentMissing"
 msgstr "The torrent never appeared in qBittorrent"
+
+#. Label before a series title in an outbound notification, e.g. "Series: Naruto".
+#: src/Maki.Api/Services/NotificationService.cs
+msgid "notify.label.series"
+msgstr "Series"
+
+#. Label before a chapter number in an outbound notification, e.g. "Chapter: 12".
+#: src/Maki.Api/Services/NotificationService.cs
+msgid "notify.label.chapter"
+msgstr "Chapter"
 
 #. Sent outward to Discord or a webhook, whose recipient is a channel rather than a person, so it
 #. renders in the instance's own language rather than anyone's preference.

@@ -21,6 +21,7 @@ import type {
   MetadataLink,
   MetadataSearchResult,
   NotificationDto,
+  NotificationProviderDescriptor,
   NotificationRequest,
   LibraryFilterSpec,
   ImportDecision,
@@ -3841,13 +3842,21 @@ export function useNotifications() {
   })
 }
 
+export function useNotificationProviders() {
+  return useQuery({
+    queryKey: ['notifications', 'providers'],
+    queryFn: () => api<NotificationProviderDescriptor[]>('/notifications/providers'),
+    staleTime: Infinity,
+  })
+}
+
 export function useCreateNotification() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: NotificationRequest) =>
       api<NotificationDto>('/notifications', { method: 'POST', body: JSON.stringify(value) }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
     },
   })
 }
@@ -3858,7 +3867,7 @@ export function useUpdateNotification() {
     mutationFn: ({ id, value }: { id: number; value: NotificationRequest }) =>
       api<NotificationDto>(`/notifications/${id}`, { method: 'PUT', body: JSON.stringify(value) }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
     },
   })
 }
@@ -3868,7 +3877,7 @@ export function useDeleteNotification() {
   return useMutation({
     mutationFn: (id: number) => api<void>(`/notifications/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
     },
   })
 }

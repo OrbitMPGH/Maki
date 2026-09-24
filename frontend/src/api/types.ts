@@ -436,12 +436,35 @@ export interface AddSeriesRequest {
   clientMutationId?: string
 }
 
-export type NotificationType = 'Discord' | 'Webhook'
+export type NotificationType =
+  | 'Discord'
+  | 'Webhook'
+  | 'Telegram'
+  | 'Notifiarr'
+  | 'Ntfy'
+  | 'Gotify'
+  | 'Pushover'
+  | 'Apprise'
+  | 'SlackWebhook'
 
-export interface NotificationConfig {
-  webhookUrl: string | null
-  url: string | null
-  bearerToken: string | null
+/** Flat string map keyed by the provider descriptor's field keys. */
+export type NotificationConfig = Record<string, string>
+
+export type NotificationFieldKind = 'Text' | 'Secret' | 'Url' | 'Number' | 'Boolean'
+
+export interface NotificationFieldDescriptor {
+  key: string
+  kind: NotificationFieldKind
+  required: boolean
+  placeholder: string | null
+  min?: number | null
+  max?: number | null
+}
+
+export interface NotificationProviderDescriptor {
+  type: NotificationType
+  fields: NotificationFieldDescriptor[]
+  supportsPoster: boolean
 }
 
 export interface NotificationEvents {

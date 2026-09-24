@@ -66,7 +66,7 @@ public class DiscordNotificationProvider(
 
         var client = httpClientFactory.CreateClient(HttpClientName);
         var response = await client.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        NotificationDeliveryException.ThrowIfFailed("Discord", response);
     }
 
     private static MultipartFormDataContent MultipartWithPoster(NotificationMessage message, byte[] poster)
@@ -145,7 +145,7 @@ public class DiscordNotificationProvider(
     /// </summary>
     private static object[]? Fields(NotificationMessage message) =>
         NullIfBlank(message.ChapterNumber) is { } chapter
-            ? [new { name = "Chapter", value = Truncate(chapter, FieldValueLimit), inline = true }]
+            ? [new { name = message.ChapterLabel, value = Truncate(chapter, FieldValueLimit), inline = true }]
             : null;
 
     /// <summary>

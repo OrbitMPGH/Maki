@@ -549,6 +549,13 @@ try
     builder.Services.AddSingleton<INotificationCoverStore>(sp => sp.GetRequiredService<CoverService>());
     builder.Services.AddSingleton<INotificationProvider, DiscordNotificationProvider>();
     builder.Services.AddSingleton<INotificationProvider, WebhookNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, TelegramNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, NotifiarrNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, NtfyNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, GotifyNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, PushoverNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, AppriseNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, SlackWebhookNotificationProvider>();
     builder.Services.AddSingleton<NotificationService>();
 
     // In-app notifications: a separate, per-user pipeline. Singletons for the same reason

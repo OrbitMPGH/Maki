@@ -344,10 +344,10 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'notifications',
     tab: 'integrations',
-    title: msg`Discord & webhooks`,
+    title: msg`Outbound notifications`,
     admin: true,
     keywords: msg({
-      message: `discord, webhook, apprise, alerts, events, notifications, outbound`,
+      message: `discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
