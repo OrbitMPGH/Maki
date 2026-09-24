@@ -238,6 +238,12 @@ msgstr "{0, plural, one {Archivo de volumen asociado a # capítulo} many {Archiv
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Quieres # capítulo} many {Quieres # capítulos} other {Quieres # capítulos}}"
 
+#. placeholder {0}: card.totalChapters
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "{0} ch"
+msgstr "{0} cap."
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -488,8 +494,9 @@ msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}
 msgstr "{folderLabel}: vinculados {filesLinked, plural, one {# archivo} many {# archivos} other {# archivos}}, {filesUnrecognized, plural, one {# no reconocido} many {# no reconocidos} other {# no reconocidos}}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
-msgstr ""
+msgstr "{forwardKey} o Espacio lo abre, Esc vuelve a la serie."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -706,8 +713,9 @@ msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsOn} de {panelsTotal} paneles"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
-msgstr ""
+msgstr "{pending, plural, one {Se quiere # capítulo más. Aparecerá aquí en cuanto se descargue.} many {Se quieren # capítulos más. Aparecerán aquí en cuanto se descarguen.} other {Se quieren # capítulos más. Aparecerán aquí en cuanto se descarguen.}}"
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -746,8 +754,9 @@ msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{readCount} / {haveCount, plural, one {# capítulo} many {# capítulos} other {# capítulos}}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{readCount} of {seriesChapterCount} read"
-msgstr ""
+msgstr "{readCount} de {seriesChapterCount} leídos"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -905,6 +914,11 @@ msgstr "{support, plural, one {# serie} many {# series} other {# series}}"
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
 msgstr "{support} de {pushedDown} rebajados, {positiveSupport} de {shelfCount} en tu estantería"
 
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "{swipedCount} reviewed this session"
+msgstr "{swipedCount} revisados esta sesión"
+
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "{target, plural, one {# chapter} other {# chapters}}"
@@ -982,8 +996,9 @@ msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (otro perfil)"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
-msgstr ""
+msgstr "{unread, plural, one {Queda # capítulo anterior sin leer.} many {Quedan # capítulos anteriores sin leer.} other {Quedan # capítulos anteriores sin leer.}}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2743,8 +2758,9 @@ msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Capítulo {chapterId}: {pageCount, plural, one {# página} many {# páginas} other {# páginas}}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
-msgstr ""
+msgstr "El capítulo {gapFrom} no está descargado, así que se omite."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -2810,8 +2826,9 @@ msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
 msgstr "Capítulos {currentPageLabel} · {visibleAllCount} coincidentes"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
-msgstr ""
+msgstr "Los capítulos {gapFrom} a {gapTo} no están descargados, así que se omiten."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2899,6 +2916,11 @@ msgstr "Capítulos: {chapterRangeMin}–{chapterRangeMax}"
 #, fuzzy
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Capítulos: {chaptersMin}–{chaptersMax}"
+
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Check again"
+msgstr "Comprobar de nuevo"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -3463,6 +3485,21 @@ msgstr "No se pudo quitar {seriesTitle}: {reason}"
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "No se pudo actualizar la valoración de {surface}: {reason}"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Couldn't load the queue"
+msgstr "No se pudo cargar la cola"
+
+#: src/api/discoverQueue.ts
+#, fuzzy
+msgid "Couldn't save that. Try again."
+msgstr "No se pudo guardar. Inténtalo de nuevo."
+
+#: src/api/discoverQueue.ts
+#, fuzzy
+msgid "Couldn't undo. Try again."
+msgstr "No se pudo deshacer. Inténtalo de nuevo."
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "counts a little more than the rest"
@@ -3818,6 +3855,8 @@ msgstr "Carpeta raíz de destino"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Los CBZ desvinculados permanecen en la sección Archivos a menos que elijas eliminarlos."
 
+#: src/components/discover/PlanToReadDrawer.tsx
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -3958,8 +3997,9 @@ msgid "Double"
 msgstr "Doble"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Double page"
-msgstr ""
+msgstr "Página doble"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -4283,8 +4323,9 @@ msgid "Enabled"
 msgstr "Activado"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "End"
-msgstr ""
+msgstr "Fin"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -4320,8 +4361,9 @@ msgid "Error"
 msgstr "Error"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Esc"
-msgstr ""
+msgstr "Esc"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4479,6 +4521,11 @@ msgstr "Expandir"
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "Expandir {spanLabel}"
+
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Explore your taste"
+msgstr "Explora tus gustos"
 
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
@@ -4706,8 +4753,9 @@ msgid "First download in progress"
 msgstr "Primera descarga en curso"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "First page"
-msgstr ""
+msgstr "Primera página"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4863,6 +4911,11 @@ msgstr "Desde tus ajustes de MangaBaka. No hace falta OAuth."
 #, fuzzy
 msgid "From your shelf"
 msgstr "De tu estantería"
+
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "From your taste"
+msgstr "De tus gustos"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -5128,6 +5181,11 @@ msgstr "Pausa"
 #, fuzzy
 msgid "Hidden"
 msgstr "Oculto"
+
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Hidden {title}"
+msgstr "Ocultado {title}"
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -5439,6 +5497,7 @@ msgstr "Importado"
 msgid "Importing"
 msgstr "Importando"
 
+#: src/components/discover/PlanToReadDrawer.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "In library"
@@ -5728,12 +5787,14 @@ msgstr "Mantiene esta serie fuera de los envíos a los rastreadores y, en Comple
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Atajos de teclado"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Keyboard shortcuts (?)"
-msgstr ""
+msgstr "Atajos de teclado (?)"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5798,8 +5859,9 @@ msgid "last {lastSync} · next {nextSync}"
 msgstr "última {lastSync} · próxima {nextSync}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Last chapter on disk"
-msgstr ""
+msgstr "Último capítulo en disco"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5812,8 +5874,9 @@ msgid "Last error: {lastError}"
 msgstr "Último error: {lastError}"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Last page"
-msgstr ""
+msgstr "Última página"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6922,8 +6985,9 @@ msgid "Next chapter"
 msgstr "Capítulo siguiente"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Next page"
-msgstr ""
+msgstr "Página siguiente"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -7296,10 +7360,16 @@ msgstr "Aún no hay suficientes capítulos cronometrados."
 msgid "Not every source carries chapter {chapterNumber}, so some columns are showing their own first chapter instead. Each column says which one it got."
 msgstr "No todas las fuentes contienen el capítulo {chapterNumber}, por lo que algunas columnas muestran su propio primer capítulo. Cada columna indica cuál obtuvo."
 
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Not for me"
 msgstr "No es para mí"
+
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "NOT FOR ME"
+msgstr "NO ES PARA MÍ"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7464,6 +7534,11 @@ msgstr "No hay nada registrado para {windowLabel}"
 #, fuzzy
 msgid "Nothing saved yet."
 msgstr "Aún no se ha guardado nada."
+
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Nothing saved yet. Swipe right or tap the bookmark on a title to add it here."
+msgstr "Aún no has guardado nada. Desliza a la derecha o toca el marcador de un título para añadirlo aquí."
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -8118,6 +8193,11 @@ msgstr "Búsqueda simple por título. Encuentra coincidencias desde solo dos car
 msgid "Plan to read"
 msgstr "Pendiente de lectura"
 
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Planned"
+msgstr "Planeado"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Planning"
@@ -8221,8 +8301,9 @@ msgid "Previous chapter"
 msgstr "Capítulo anterior"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Previous page"
-msgstr ""
+msgstr "Página anterior"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -8333,6 +8414,11 @@ msgstr "Coloca estas fuentes, en este orden, al principio de la lista de priorid
 #, fuzzy
 msgid "qBittorrent"
 msgstr "qBittorrent"
+
+#: src/pages/DiscoverPage.tsx
+#, fuzzy
+msgid "Queue"
+msgstr "Cola"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8468,8 +8554,9 @@ msgid "Read {nextChapter}"
 msgstr "Leído {nextChapter}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Read {nextChapterLabel}"
-msgstr ""
+msgstr "Leer {nextChapterLabel}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8843,6 +8930,7 @@ msgstr "Publicado"
 msgid "Releasing"
 msgstr "Publicándose"
 
+#: src/components/discover/PlanToReadDrawer.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8889,6 +8977,11 @@ msgstr "Eliminar de la biblioteca"
 #, fuzzy
 msgid "Remove from queue"
 msgstr "Eliminar de la cola"
+
+#: src/components/discover/PlanToReadButton.tsx
+#, fuzzy
+msgid "Remove from want to read"
+msgstr "Quitar de Quiero leer"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -9085,6 +9178,7 @@ msgid "Request series"
 msgstr "Solicitar serie"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/PlanToReadDrawer.tsx
 #, fuzzy
 msgid "Requested"
 msgstr "Solicitado"
@@ -9148,8 +9242,9 @@ msgid "Reset bookmarks and resume positions for affected chapters across all use
 msgstr "Restablece los marcadores y las posiciones de reanudación de los capítulos afectados para todos los usuarios. El estado de completado y el historial de lectura se conservan."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Reset zoom"
-msgstr ""
+msgstr "Restablecer el zoom"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -9444,6 +9539,11 @@ msgstr "Guardar un cover.jpg en cada carpeta de serie"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Guardar un cover.jpg en la carpeta de biblioteca de cada serie"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Save a few titles and the queue turns personal within a few minutes."
+msgstr "Guarda algunos títulos y la cola se volverá personal en pocos minutos."
+
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
 msgid "Save as a rail…"
@@ -9509,6 +9609,11 @@ msgstr "Guardar códigos de recuperación"
 msgid "Saved"
 msgstr "Guardado"
 
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Saved {title}"
+msgstr "Guardado {title}"
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -9519,6 +9624,11 @@ msgstr "Guardado como predeterminado"
 #, fuzzy
 msgid "Saved filters"
 msgstr "Filtros guardados"
+
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Saved from Discover"
+msgstr "Guardado desde Descubrir"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10172,8 +10282,9 @@ msgid "Share of the series you've read."
 msgstr "Parte de las series que has leído."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Shift + Space"
-msgstr ""
+msgstr "Shift + Espacio"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -10232,8 +10343,9 @@ msgid "Show on"
 msgstr "Mostrar en"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Show or hide this list"
-msgstr ""
+msgstr "Mostrar u ocultar esta lista"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -10413,6 +10525,16 @@ msgstr "Tamaño"
 msgid "Size mismatch"
 msgstr "El tamaño no coincide"
 
+#: src/components/discover/queue/QueueActionBar.tsx
+#, fuzzy
+msgid "Skip"
+msgstr "Omitir"
+
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "SKIP"
+msgstr "OMITIR"
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -10427,6 +10549,16 @@ msgstr "Omitir configuración"
 #, fuzzy
 msgid "Skip specials on new series"
 msgstr "Omitir especiales en series nuevas"
+
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Skipped {title}"
+msgstr "Omitido {title}"
+
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Skipped titles come back in 30 days."
+msgstr "Los títulos omitidos vuelven a aparecer en 30 días."
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -10555,8 +10687,9 @@ msgid "Sources disagree on where a chapter starts: a credit page here, a colour 
 msgstr "Las fuentes no coinciden en dónde empieza un capítulo: aquí una página de créditos, allí una portada en color. Las páginas se comparan por su contenido de imagen, así que cada fila muestra el mismo dibujo en todas las columnas. Una fuente cuyo análisis no coincide con nada se deja en su propia primera página."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Space"
-msgstr ""
+msgstr "Espacio"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -10680,6 +10813,11 @@ msgstr "Empieza a leer en el cap. {startReadingAt}."
 msgid "Started"
 msgstr "Iniciada"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Starting with what's trending"
+msgstr "Empezando por las tendencias"
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "State"
@@ -10772,9 +10910,15 @@ msgstr "Sugerente"
 msgid "Supernatural"
 msgstr "Sobrenatural"
 
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Swipe, or use the buttons below"
+msgstr "Desliza o usa los botones de abajo"
+
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Switch reading direction"
-msgstr ""
+msgstr "Cambiar la dirección de lectura"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -10942,8 +11086,9 @@ msgid "That was your {label}"
 msgstr "Ese era tu {label}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "That's every chapter on disk."
-msgstr ""
+msgstr "Ese es todo el capítulo en disco."
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -11589,7 +11734,13 @@ msgstr "Tragedia"
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "Las traducciones distintas del inglés se generan automáticamente y se corrigen con el tiempo; todo lo que aún no está traducido vuelve al inglés."
 
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Trending"
+msgstr "Tendencia"
+
 #: src/api/hooks.ts
+#: src/components/discover/queue/queueWhy.ts
 #, fuzzy
 msgid "Trending now"
 msgstr "Tendencias actuales"
@@ -11614,6 +11765,7 @@ msgstr "Proxies de confianza"
 msgid "Try a shorter or alternative query."
 msgstr "Prueba una consulta más corta o alternativa."
 
+#: src/components/discover/queue/QueueEmptyState.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -11646,8 +11798,9 @@ msgid "Turning embeddings off…"
 msgstr "Desactivando embeddings…"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Turning pages"
-msgstr ""
+msgstr "Pasar páginas"
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -11718,6 +11871,7 @@ msgstr "No disponible"
 msgid "Underscore (_)"
 msgstr "Guion bajo (_)"
 
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
@@ -11828,8 +11982,9 @@ msgid "Up"
 msgstr "Arriba"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Up next"
-msgstr ""
+msgstr "A continuación"
 
 #: src/api/requests.ts
 #, fuzzy
@@ -12072,6 +12227,12 @@ msgstr "muy compacto"
 msgid "Vietnamese"
 msgstr "Vietnamita"
 
+#. placeholder {0}: card.title
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "View {0}"
+msgstr "Ver {0}"
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -12176,10 +12337,27 @@ msgstr "Esperando para leer"
 msgid "Want"
 msgstr "Querer"
 
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "WANT"
+msgstr "QUIERO"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Want {chapterLbl}"
 msgstr "Querer {chapterLbl}"
+
+#: src/components/discover/PlanToReadButton.tsx
+#: src/components/discover/PlanToReadDrawer.tsx
+#: src/components/discover/queue/QueueActionBar.tsx
+#, fuzzy
+msgid "Want to read"
+msgstr "Quiero leer"
+
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Want to read · {wantCount}"
+msgstr "Quiero leer · {wantCount}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12566,9 +12744,11 @@ msgstr "Devora"
 msgid "You turned a lot of pages"
 msgstr "Has pasado muchas páginas"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "You're caught up"
-msgstr ""
+msgstr "Estás al día"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12689,5 +12869,6 @@ msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (opcional)"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Zoom in and out"
-msgstr ""
+msgstr "Acercar y alejar"

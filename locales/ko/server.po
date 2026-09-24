@@ -433,7 +433,7 @@ msgstr "섹션은 최대 {max}개까지 저장할 수 있습니다"
 #. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr ""
+msgstr "'{title}'은(는) 다운로드된 파일과 함께 이미 라이브러리에 있습니다. 처음부터 다시 가져오려면 먼저 삭제하세요."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -458,7 +458,7 @@ msgstr "가져올 항목이 없습니다"
 #. English: Cannot rename: '{name}' already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr ""
+msgstr "이름을 바꿀 수 없습니다: 루트 폴더에 '{name}'이(가) 이미 있습니다"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -506,19 +506,22 @@ msgstr "웹훅 URL이 필요합니다"
 #. Two saves of the same title to the Want to read list raced each other.
 #: src/Maki.Api/Controllers/PlanToReadController.cs
 #. English: Your Want to read list changed. Refresh and try again.
+#, fuzzy
 msgid "error.planToRead.changed"
-msgstr ""
+msgstr "읽고 싶음 목록이 변경되었습니다. 새로고침 후 다시 시도하세요."
 
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: A valid catalogue title is required
+#, fuzzy
 msgid "error.planToRead.invalidTitle"
-msgstr ""
+msgstr "유효한 카탈로그 제목이 필요합니다"
 
 #. The client sent an origin other than taste, trending or manual.
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: Unsupported origin for a Want to read entry
+#, fuzzy
 msgid "error.planToRead.unsupportedOrigin"
-msgstr ""
+msgstr "읽고 싶음 항목에 지원되지 않는 출처입니다"
 
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
@@ -1637,7 +1640,7 @@ msgstr "백업에 maki.db가 없습니다. Maki 백업이 아닙니다."
 #. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr ""
+msgstr "백업이 더 최신 버전에서 생성되었습니다(마이그레이션 '{migration}'을(를) 이 빌드가 인식하지 못함). 복원하기 전에 Maki를 업그레이드하세요."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

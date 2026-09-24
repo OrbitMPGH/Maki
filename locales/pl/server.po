@@ -433,7 +433,7 @@ msgstr "Możesz mieć maksymalnie {max} sekcji."
 #. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr ""
+msgstr "'{title}' jest już w bibliotece z pobranymi plikami. Usuń ją najpierw, jeśli chcesz zaimportować ją ponownie od zera."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -458,7 +458,7 @@ msgstr "Brak elementów do zaimportowania"
 #. English: Cannot rename: '{name}' already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr ""
+msgstr "Nie można zmienić nazwy: '{name}' już istnieje w folderze głównym"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -506,19 +506,22 @@ msgstr "Wymagany jest URL webhooka"
 #. Two saves of the same title to the Want to read list raced each other.
 #: src/Maki.Api/Controllers/PlanToReadController.cs
 #. English: Your Want to read list changed. Refresh and try again.
+#, fuzzy
 msgid "error.planToRead.changed"
-msgstr ""
+msgstr "Twoja lista Chcę przeczytać się zmieniła. Odśwież i spróbuj ponownie."
 
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: A valid catalogue title is required
+#, fuzzy
 msgid "error.planToRead.invalidTitle"
-msgstr ""
+msgstr "Wymagany jest prawidłowy tytuł z katalogu"
 
 #. The client sent an origin other than taste, trending or manual.
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: Unsupported origin for a Want to read entry
+#, fuzzy
 msgid "error.planToRead.unsupportedOrigin"
-msgstr ""
+msgstr "Nieobsługiwane źródło dla wpisu na liście Chcę przeczytać"
 
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
@@ -1637,7 +1640,7 @@ msgstr "W kopii zapasowej brakuje pliku maki.db. To nie jest kopia zapasowa Maki
 #. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr ""
+msgstr "Kopia zapasowa pochodzi z nowszej wersji (migracja '{migration}' jest nieznana tej wersji). Zaktualizuj Maki przed jej przywróceniem."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

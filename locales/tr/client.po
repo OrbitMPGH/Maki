@@ -238,6 +238,12 @@ msgstr "{0, plural, one {# bölümü barındıran cilt dosyası} other {# bölü
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {# bölüm isteniyor} other {# bölüm isteniyor}}"
 
+#. placeholder {0}: card.totalChapters
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "{0} ch"
+msgstr "{0} B."
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -488,8 +494,9 @@ msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}
 msgstr "{folderLabel}: {filesLinked, plural, one {# dosya} other {# dosya}} bağlandı, {filesUnrecognized, plural, one {# tanınmadı} other {# tanınmadı}}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
-msgstr ""
+msgstr "{forwardKey} veya Boşluk açar, Esc seriye geri döner."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -706,8 +713,9 @@ msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsTotal} panelden {panelsOn} tanesi"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
-msgstr ""
+msgstr "{pending, plural, one {# bölüm daha isteniyor. İndirildiğinde burada görünür.} other {# bölüm daha isteniyor. İndirildiklerinde burada görünürler.}}"
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -746,8 +754,9 @@ msgid "{readCount} / {haveCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{readCount} / {haveCount, plural, one {# bölüm} other {# bölüm}}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{readCount} of {seriesChapterCount} read"
-msgstr ""
+msgstr "{seriesChapterCount} bölümden {readCount} tanesi okundu"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -905,6 +914,11 @@ msgstr "{support, plural, one {# seri} other {# seri}}"
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
 msgstr "{support} / {pushedDown} aşağı itildi, rafınızda {positiveSupport} / {shelfCount}"
 
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "{swipedCount} reviewed this session"
+msgstr "Bu oturumda {swipedCount} değerlendirildi"
+
 #: src/pages/stats/AchievementsPanel.tsx
 #, fuzzy
 msgid "{target, plural, one {# chapter} other {# chapters}}"
@@ -982,8 +996,9 @@ msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (başka bir profil)"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "{unread, plural, one {# earlier chapter is still unread.} other {# earlier chapters are still unread.}}"
-msgstr ""
+msgstr "{unread, plural, one {# önceki bölüm hâlâ okunmadı.} other {# önceki bölüm hâlâ okunmadı.}}"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2743,8 +2758,9 @@ msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Bölüm {chapterId}: {pageCount, plural, one {# sayfa} other {# sayfa}}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
-msgstr ""
+msgstr "{gapFrom}. bölüm indirilmemiş, bu yüzden atlanıyor."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -2810,8 +2826,9 @@ msgid "Chapters {currentPageLabel} · {visibleAllCount} matching"
 msgstr "Bölümler {currentPageLabel} · {visibleAllCount} eşleşiyor"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Chapters {gapFrom} to {gapTo} aren't downloaded, so this skips them."
-msgstr ""
+msgstr "{gapFrom}. ile {gapTo}. bölümler arasındakiler indirilmemiş, bu yüzden atlanıyor."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2899,6 +2916,11 @@ msgstr "Bölümler: {chapterRangeMin}–{chapterRangeMax}"
 #, fuzzy
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Bölümler: {chaptersMin}–{chaptersMax}"
+
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Check again"
+msgstr "Tekrar kontrol et"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -3463,6 +3485,21 @@ msgstr "{seriesTitle} kaldırılamadı: {reason}"
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface} geri bildirimi güncellenemedi: {reason}"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Couldn't load the queue"
+msgstr "Kuyruk yüklenemedi"
+
+#: src/api/discoverQueue.ts
+#, fuzzy
+msgid "Couldn't save that. Try again."
+msgstr "Kaydedilemedi. Tekrar deneyin."
+
+#: src/api/discoverQueue.ts
+#, fuzzy
+msgid "Couldn't undo. Try again."
+msgstr "Geri alınamadı. Tekrar deneyin."
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "counts a little more than the rest"
@@ -3818,6 +3855,8 @@ msgstr "Hedef kök klasör"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Ayrılan CBZ'ler, silmeyi seçmediğiniz sürece Dosyalar bölümünde kalır."
 
+#: src/components/discover/PlanToReadDrawer.tsx
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Details"
@@ -3958,8 +3997,9 @@ msgid "Double"
 msgstr "Çift"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Double page"
-msgstr ""
+msgstr "Çift sayfa"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -4283,8 +4323,9 @@ msgid "Enabled"
 msgstr "Etkin"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "End"
-msgstr ""
+msgstr "End"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -4320,8 +4361,9 @@ msgid "Error"
 msgstr "Hata"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Esc"
-msgstr ""
+msgstr "Esc"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -4479,6 +4521,11 @@ msgstr "Genişlet"
 #, fuzzy
 msgid "Expand {spanLabel}"
 msgstr "{spanLabel} genişlet"
+
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Explore your taste"
+msgstr "Zevkinizi keşfedin"
 
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
@@ -4706,8 +4753,9 @@ msgid "First download in progress"
 msgstr "İlk indirme devam ediyor"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "First page"
-msgstr ""
+msgstr "İlk sayfa"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4863,6 +4911,11 @@ msgstr "MangaBaka ayarlarınızdan alınır. OAuth gerekmez."
 #, fuzzy
 msgid "From your shelf"
 msgstr "Rafınızdan"
+
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "From your taste"
+msgstr "Zevkinizden"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -5128,6 +5181,11 @@ msgstr "Ara Verildi"
 #, fuzzy
 msgid "Hidden"
 msgstr "Gizli"
+
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Hidden {title}"
+msgstr "{title} gizlendi"
 
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
@@ -5439,6 +5497,7 @@ msgstr "İçe aktarıldı"
 msgid "Importing"
 msgstr "İçe aktarılıyor"
 
+#: src/components/discover/PlanToReadDrawer.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "In library"
@@ -5728,12 +5787,14 @@ msgstr "Bu seriyi takip hizmetine göndermenin dışında tutar; Full ise onu is
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Keyboard shortcuts"
-msgstr ""
+msgstr "Klavye kısayolları"
 
 #: src/pages/reader/ReaderToolbar.tsx
+#, fuzzy
 msgid "Keyboard shortcuts (?)"
-msgstr ""
+msgstr "Klavye kısayolları (?)"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5798,8 +5859,9 @@ msgid "last {lastSync} · next {nextSync}"
 msgstr "son {lastSync} · sonraki {nextSync}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Last chapter on disk"
-msgstr ""
+msgstr "Diskteki son bölüm"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5812,8 +5874,9 @@ msgid "Last error: {lastError}"
 msgstr "Son hata: {lastError}"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Last page"
-msgstr ""
+msgstr "Son sayfa"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6922,8 +6985,9 @@ msgid "Next chapter"
 msgstr "Sonraki bölüm"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Next page"
-msgstr ""
+msgstr "Sonraki sayfa"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -7296,10 +7360,16 @@ msgstr "Henüz süresi ölçülen yeterli bölüm yok."
 msgid "Not every source carries chapter {chapterNumber}, so some columns are showing their own first chapter instead. Each column says which one it got."
 msgstr "Her kaynak {chapterNumber} numaralı bölüme sahip değil, bu yüzden bazı sütunlar bunun yerine kendi ilk bölümlerini gösteriyor. Her sütun hangisini aldığını belirtir."
 
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Not for me"
 msgstr "Bana göre değil"
+
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "NOT FOR ME"
+msgstr "BANA GÖRE DEĞİL"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7464,6 +7534,11 @@ msgstr "{windowLabel} için kaydedilen bir şey yok"
 #, fuzzy
 msgid "Nothing saved yet."
 msgstr "Henüz kaydedilen yok."
+
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Nothing saved yet. Swipe right or tap the bookmark on a title to add it here."
+msgstr "Henüz bir şey kaydedilmedi. Bir başlığı buraya eklemek için sağa kaydırın veya yer imine dokunun."
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -8118,6 +8193,11 @@ msgstr "Basit başlık araması. Yalnızca iki karakterden itibaren eşleşir."
 msgid "Plan to read"
 msgstr "Okumayı planlıyor"
 
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Planned"
+msgstr "Planlandı"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Planning"
@@ -8221,8 +8301,9 @@ msgid "Previous chapter"
 msgstr "Önceki bölüm"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Previous page"
-msgstr ""
+msgstr "Önceki sayfa"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -8333,6 +8414,11 @@ msgstr "Bu kaynakları bu sırayla, yeni seriler otomatik eşleştiğinde kullan
 #, fuzzy
 msgid "qBittorrent"
 msgstr "qBittorrent"
+
+#: src/pages/DiscoverPage.tsx
+#, fuzzy
+msgid "Queue"
+msgstr "Kuyruk"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8468,8 +8554,9 @@ msgid "Read {nextChapter}"
 msgstr "{nextChapter} oku"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Read {nextChapterLabel}"
-msgstr ""
+msgstr "{nextChapterLabel} oku"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8843,6 +8930,7 @@ msgstr "Yayın durumu"
 msgid "Releasing"
 msgstr "Devam Ediyor"
 
+#: src/components/discover/PlanToReadDrawer.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8889,6 +8977,11 @@ msgstr "Kitaplıktan kaldır"
 #, fuzzy
 msgid "Remove from queue"
 msgstr "Kuyruktan kaldır"
+
+#: src/components/discover/PlanToReadButton.tsx
+#, fuzzy
+msgid "Remove from want to read"
+msgstr "Okumak istediklerimden kaldır"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -9085,6 +9178,7 @@ msgid "Request series"
 msgstr "Seri iste"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/PlanToReadDrawer.tsx
 #, fuzzy
 msgid "Requested"
 msgstr "İstendi"
@@ -9148,8 +9242,9 @@ msgid "Reset bookmarks and resume positions for affected chapters across all use
 msgstr "Etkilenen bölümler için tüm kullanıcılarda yer imlerini ve devam pozisyonlarını sıfırlar. Tamamlandı durumu ve okuma geçmişi korunur."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Reset zoom"
-msgstr ""
+msgstr "Yakınlaştırmayı sıfırla"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -9444,6 +9539,11 @@ msgstr "Her seri klasörüne bir cover.jpg kaydet"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Her serinin kitaplık klasörüne bir cover.jpg kaydet"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Save a few titles and the queue turns personal within a few minutes."
+msgstr "Birkaç başlık kaydedin, kuyruk birkaç dakika içinde kişiselleşsin."
+
 #: src/components/DiscoverPresets.tsx
 #, fuzzy
 msgid "Save as a rail…"
@@ -9509,6 +9609,11 @@ msgstr "Kurtarma kodlarınızı kaydedin"
 msgid "Saved"
 msgstr "Kaydedildi"
 
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Saved {title}"
+msgstr "{title} kaydedildi"
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -9519,6 +9624,11 @@ msgstr "Varsayılanınız olarak kaydedildi"
 #, fuzzy
 msgid "Saved filters"
 msgstr "Kaydedilen filtreler"
+
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Saved from Discover"
+msgstr "Keşfet'ten kaydedildi"
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10172,8 +10282,9 @@ msgid "Share of the series you've read."
 msgstr "Okuduğunuz serilerin payı."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Shift + Space"
-msgstr ""
+msgstr "Shift + Boşluk"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -10232,8 +10343,9 @@ msgid "Show on"
 msgstr "Şurada göster"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Show or hide this list"
-msgstr ""
+msgstr "Bu listeyi göster veya gizle"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -10413,6 +10525,16 @@ msgstr "Boyut"
 msgid "Size mismatch"
 msgstr "Boyut uyuşmazlığı"
 
+#: src/components/discover/queue/QueueActionBar.tsx
+#, fuzzy
+msgid "Skip"
+msgstr "Geç"
+
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "SKIP"
+msgstr "GEÇ"
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -10427,6 +10549,16 @@ msgstr "Kurulumu atla"
 #, fuzzy
 msgid "Skip specials on new series"
 msgstr "Yeni serilerde özel bölümleri atla"
+
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Skipped {title}"
+msgstr "{title} geçildi"
+
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Skipped titles come back in 30 days."
+msgstr "Geçilen başlıklar 30 gün sonra tekrar gelir."
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -10555,8 +10687,9 @@ msgid "Sources disagree on where a chapter starts: a credit page here, a colour 
 msgstr "Kaynaklar bir bölümün nerede başladığı konusunda hemfikir değil: burada bir emek sayfası, orada renkli bir kapak. Sayfalar görüntü içeriğine göre eşleştirilir, bu yüzden her satır her sütunda aynı çizimdir. Taraması hiçbir şeyle eşleşmeyen bir kaynak kendi ilk sayfasında bırakılır."
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Space"
-msgstr ""
+msgstr "Boşluk"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -10680,6 +10813,11 @@ msgstr "Okumaya b. {startReadingAt}'ten başlayın."
 msgid "Started"
 msgstr "Başlandı"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+#, fuzzy
+msgid "Starting with what's trending"
+msgstr "Şu anda yükselişte olanlarla başlıyoruz"
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "State"
@@ -10772,9 +10910,15 @@ msgstr "Üstü kapalı"
 msgid "Supernatural"
 msgstr "Doğaüstü"
 
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Swipe, or use the buttons below"
+msgstr "Kaydırın veya aşağıdaki düğmeleri kullanın"
+
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Switch reading direction"
-msgstr ""
+msgstr "Okuma yönünü değiştir"
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -10942,8 +11086,9 @@ msgid "That was your {label}"
 msgstr "İşte {label}"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "That's every chapter on disk."
-msgstr ""
+msgstr "Diskteki tüm bölümler bu kadar."
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -11589,7 +11734,13 @@ msgstr "Trajedi"
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "İngilizce dışındaki çeviriler makine yapımıdır ve zamanla düzeltilmektedir; hâlâ çevrilmemiş olan her şey İngilizceye döner."
 
+#: src/components/discover/PlanToReadDrawer.tsx
+#, fuzzy
+msgid "Trending"
+msgstr "Yükselişte"
+
 #: src/api/hooks.ts
+#: src/components/discover/queue/queueWhy.ts
 #, fuzzy
 msgid "Trending now"
 msgstr "Şu anda yükselişte"
@@ -11614,6 +11765,7 @@ msgstr "Güvenilen proxy'ler"
 msgid "Try a shorter or alternative query."
 msgstr "Daha kısa veya alternatif bir sorgu deneyin."
 
+#: src/components/discover/queue/QueueEmptyState.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 #, fuzzy
@@ -11646,8 +11798,9 @@ msgid "Turning embeddings off…"
 msgstr "Gömmeler kapatılıyor…"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Turning pages"
-msgstr ""
+msgstr "Sayfa çevirme"
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -11718,6 +11871,7 @@ msgstr "Kullanılamıyor"
 msgid "Underscore (_)"
 msgstr "Alt çizgi (_)"
 
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
@@ -11828,8 +11982,9 @@ msgid "Up"
 msgstr "Yukarı"
 
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "Up next"
-msgstr ""
+msgstr "Sırada"
 
 #: src/api/requests.ts
 #, fuzzy
@@ -12072,6 +12227,12 @@ msgstr "çok sıkı"
 msgid "Vietnamese"
 msgstr "Vietnamca"
 
+#. placeholder {0}: card.title
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "View {0}"
+msgstr "{0} adlı seriyi görüntüle"
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -12176,10 +12337,27 @@ msgstr "Okunmayı bekliyor"
 msgid "Want"
 msgstr "İste"
 
+#: src/components/discover/queue/SwipeCard.tsx
+#, fuzzy
+msgid "WANT"
+msgstr "İSTİYORUM"
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Want {chapterLbl}"
 msgstr "{chapterLbl} iste"
+
+#: src/components/discover/PlanToReadButton.tsx
+#: src/components/discover/PlanToReadDrawer.tsx
+#: src/components/discover/queue/QueueActionBar.tsx
+#, fuzzy
+msgid "Want to read"
+msgstr "Okumak istediklerim"
+
+#: src/pages/discover/QueueTab.tsx
+#, fuzzy
+msgid "Want to read · {wantCount}"
+msgstr "Okumak istediklerim · {wantCount}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -12566,9 +12744,11 @@ msgstr "Hızla tükettiğiniz"
 msgid "You turned a lot of pages"
 msgstr "Çok fazla sayfa çevirdiniz"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
 #: src/pages/reader/ChapterEnd.tsx
+#, fuzzy
 msgid "You're caught up"
-msgstr ""
+msgstr "Güncelsiniz"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12689,5 +12869,6 @@ msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (isteğe bağlı)"
 
 #: src/pages/reader/ShortcutSheet.tsx
+#, fuzzy
 msgid "Zoom in and out"
-msgstr ""
+msgstr "Yakınlaştır ve uzaklaştır"

@@ -431,7 +431,6 @@ msgstr "「ホーム」と「見つける」で保存できるレールは最大
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
-#, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
 msgstr ""
 
@@ -456,7 +455,6 @@ msgstr "インポートする項目がありません"
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Cannot rename: '{name}' already exists in the root folder
-#, fuzzy
 msgid "error.libraryImport.renameTargetExists"
 msgstr ""
 
@@ -506,19 +504,22 @@ msgstr "Webhook URLが必要です"
 #. Two saves of the same title to the Want to read list raced each other.
 #: src/Maki.Api/Controllers/PlanToReadController.cs
 #. English: Your Want to read list changed. Refresh and try again.
+#, fuzzy
 msgid "error.planToRead.changed"
-msgstr ""
+msgstr "「読みたい」リストが変更されました。更新してもう一度お試しください。"
 
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: A valid catalogue title is required
+#, fuzzy
 msgid "error.planToRead.invalidTitle"
-msgstr ""
+msgstr "有効なカタログタイトルが必要です"
 
 #. The client sent an origin other than taste, trending or manual.
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: Unsupported origin for a Want to read entry
+#, fuzzy
 msgid "error.planToRead.unsupportedOrigin"
-msgstr ""
+msgstr "サポートされていない「読みたい」の登録元です"
 
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
@@ -1635,7 +1636,6 @@ msgstr "バックアップにmaki.dbがありません。これはMakiのバッ�
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
-#, fuzzy
 msgid "error.system.backupTooNew"
 msgstr ""
 

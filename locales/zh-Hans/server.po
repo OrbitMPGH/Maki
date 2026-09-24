@@ -433,7 +433,7 @@ msgstr "最多只能保留 {max} 个推荐栏"
 #. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr ""
+msgstr "'{title}' 已存在于资料库中且含有已下载的文件。如需从头重新导入，请先删除它。"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -458,7 +458,7 @@ msgstr "没有要导入的项目"
 #. English: Cannot rename: '{name}' already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr ""
+msgstr "无法重命名：根文件夹中已存在 '{name}'"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -506,19 +506,22 @@ msgstr "Webhook URL 不能为空"
 #. Two saves of the same title to the Want to read list raced each other.
 #: src/Maki.Api/Controllers/PlanToReadController.cs
 #. English: Your Want to read list changed. Refresh and try again.
+#, fuzzy
 msgid "error.planToRead.changed"
-msgstr ""
+msgstr "你的想读列表已发生变化。请刷新后重试。"
 
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: A valid catalogue title is required
+#, fuzzy
 msgid "error.planToRead.invalidTitle"
-msgstr ""
+msgstr "需要一个有效的目录标题"
 
 #. The client sent an origin other than taste, trending or manual.
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: Unsupported origin for a Want to read entry
+#, fuzzy
 msgid "error.planToRead.unsupportedOrigin"
-msgstr ""
+msgstr "想读条目的来源不受支持"
 
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
@@ -1637,7 +1640,7 @@ msgstr "备份缺少 maki.db，不是有效的 Maki 备份。"
 #. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr ""
+msgstr "备份来自更新的版本（此版本无法识别迁移 '{migration}'）。请先升级 Maki 再还原此备份。"
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

@@ -433,7 +433,7 @@ msgstr "Du kannst höchstens {max} Rails speichern"
 #. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr ""
+msgstr "'{title}' befindet sich bereits mit heruntergeladenen Dateien in der Bibliothek. Lösche es zuerst, wenn du es von Grund auf neu importieren willst."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -458,7 +458,7 @@ msgstr "Keine Elemente zum Importieren"
 #. English: Cannot rename: '{name}' already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr ""
+msgstr "Umbenennen nicht möglich: '{name}' existiert bereits im Stammordner"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -506,19 +506,22 @@ msgstr "Webhook-URL ist erforderlich"
 #. Two saves of the same title to the Want to read list raced each other.
 #: src/Maki.Api/Controllers/PlanToReadController.cs
 #. English: Your Want to read list changed. Refresh and try again.
+#, fuzzy
 msgid "error.planToRead.changed"
-msgstr ""
+msgstr "Deine Liste „Möchte ich lesen“ hat sich geändert. Aktualisiere und versuch es noch einmal."
 
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: A valid catalogue title is required
+#, fuzzy
 msgid "error.planToRead.invalidTitle"
-msgstr ""
+msgstr "Ein gültiger Katalogtitel ist erforderlich"
 
 #. The client sent an origin other than taste, trending or manual.
 #: src/Maki.Api/Services/PlanToReadService.cs
 #. English: Unsupported origin for a Want to read entry
+#, fuzzy
 msgid "error.planToRead.unsupportedOrigin"
-msgstr ""
+msgstr "Nicht unterstützte Quelle für einen Eintrag in „Möchte ich lesen“"
 
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
@@ -1637,7 +1640,7 @@ msgstr "Sicherung enthält keine maki.db. Das ist keine Maki-Sicherung."
 #. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr ""
+msgstr "Das Backup stammt von einer neueren Version (Migration '{migration}' ist diesem Build unbekannt). Aktualisiere Maki, bevor du es wiederherstellst."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

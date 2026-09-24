@@ -200,6 +200,11 @@ msgstr "{0, plural, one {Volume file backing # chapter} other {Volume file backi
 msgid "{0, plural, one {Want # chapter} other {Want # chapters}}"
 msgstr "{0, plural, one {Want # chapter} other {Want # chapters}}"
 
+#. placeholder {0}: card.totalChapters
+#: src/components/discover/queue/SwipeCard.tsx
+msgid "{0} ch"
+msgstr "{0} ch"
+
 #. placeholder {0}: sideInterests.length
 #: src/pages/DiscoverPage.tsx
 msgid "{0} rows right now"
@@ -737,6 +742,10 @@ msgstr "{support, plural, one {# series} other {# series}}"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
 msgstr "{support} of {pushedDown} pushed down, {positiveSupport} of {shelfCount} on your shelf"
+
+#: src/pages/discover/QueueTab.tsx
+msgid "{swipedCount} reviewed this session"
+msgstr "{swipedCount} reviewed this session"
 
 #: src/pages/stats/AchievementsPanel.tsx
 msgid "{target, plural, one {# chapter} other {# chapters}}"
@@ -2358,6 +2367,10 @@ msgstr "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Chapters: {chaptersMin}–{chaptersMax}"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+msgid "Check again"
+msgstr "Check again"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Check for prebuilt now"
 msgstr "Check for prebuilt now"
@@ -2817,6 +2830,18 @@ msgstr "Could not remove {seriesTitle}: {reason}"
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "Could not update {surface} feedback: {reason}"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+msgid "Couldn't load the queue"
+msgstr "Couldn't load the queue"
+
+#: src/api/discoverQueue.ts
+msgid "Couldn't save that. Try again."
+msgstr "Couldn't save that. Try again."
+
+#: src/api/discoverQueue.ts
+msgid "Couldn't undo. Try again."
+msgstr "Couldn't undo. Try again."
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "counts a little more than the rest"
 msgstr "counts a little more than the rest"
@@ -3105,6 +3130,8 @@ msgstr "Destination root folder"
 msgid "Detached CBZs stay in the Files section unless you choose to delete them."
 msgstr "Detached CBZs stay in the Files section unless you choose to delete them."
 
+#: src/components/discover/PlanToReadDrawer.tsx
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Details"
 msgstr "Details"
@@ -3644,6 +3671,10 @@ msgstr "Expand"
 msgid "Expand {spanLabel}"
 msgstr "Expand {spanLabel}"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+msgid "Explore your taste"
+msgstr "Explore your taste"
+
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -3957,6 +3988,10 @@ msgstr "From your MangaBaka settings. No OAuth needed."
 msgid "From your shelf"
 msgstr "From your shelf"
 
+#: src/components/discover/PlanToReadDrawer.tsx
+msgid "From your taste"
+msgstr "From your taste"
+
 #: src/components/AnimeCoverageBar.tsx
 msgid "From: {start}"
 msgstr "From: {start}"
@@ -4171,6 +4206,10 @@ msgstr "Hiatus"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Hidden"
 msgstr "Hidden"
+
+#: src/pages/discover/QueueTab.tsx
+msgid "Hidden {title}"
+msgstr "Hidden {title}"
 
 #: src/components/DiscoverPresets.tsx
 msgid "Hidden everywhere"
@@ -4423,6 +4462,7 @@ msgstr "Imported"
 msgid "Importing"
 msgstr "Importing"
 
+#: src/components/discover/PlanToReadDrawer.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "In library"
 msgstr "In library"
@@ -5931,9 +5971,14 @@ msgstr "Not enough timed chapters yet."
 msgid "Not every source carries chapter {chapterNumber}, so some columns are showing their own first chapter instead. Each column says which one it got."
 msgstr "Not every source carries chapter {chapterNumber}, so some columns are showing their own first chapter instead. Each column says which one it got."
 
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Not for me"
 msgstr "Not for me"
+
+#: src/components/discover/queue/SwipeCard.tsx
+msgid "NOT FOR ME"
+msgstr "NOT FOR ME"
 
 #: src/pages/HealthPage.tsx
 msgid "Not imported"
@@ -6066,6 +6111,10 @@ msgstr "Nothing recorded for {windowLabel}"
 #: src/components/DiscoverPresets.tsx
 msgid "Nothing saved yet."
 msgstr "Nothing saved yet."
+
+#: src/components/discover/PlanToReadDrawer.tsx
+msgid "Nothing saved yet. Swipe right or tap the bookmark on a title to add it here."
+msgstr "Nothing saved yet. Swipe right or tap the bookmark on a title to add it here."
 
 #: src/pages/DiscoverPage.tsx
 msgid "Nothing to browse yet"
@@ -6596,6 +6645,10 @@ msgstr "Plain title search. Matches from just two characters."
 msgid "Plan to read"
 msgstr "Plan to read"
 
+#: src/components/discover/PlanToReadDrawer.tsx
+msgid "Planned"
+msgstr "Planned"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Planning"
 msgstr "Planning"
@@ -6770,6 +6823,10 @@ msgstr "Puts these sources, in this order, at the front of the global priority l
 #: src/pages/settings/registry.ts
 msgid "qBittorrent"
 msgstr "qBittorrent"
+
+#: src/pages/DiscoverPage.tsx
+msgid "Queue"
+msgstr "Queue"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Queue downloads and grab torrent releases"
@@ -7186,6 +7243,7 @@ msgstr "Released"
 msgid "Releasing"
 msgstr "Releasing"
 
+#: src/components/discover/PlanToReadDrawer.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7223,6 +7281,10 @@ msgstr "Remove from library"
 #: src/pages/ActivityPage.tsx
 msgid "Remove from queue"
 msgstr "Remove from queue"
+
+#: src/components/discover/PlanToReadButton.tsx
+msgid "Remove from want to read"
+msgstr "Remove from want to read"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Remove goal"
@@ -7381,6 +7443,7 @@ msgid "Request series"
 msgstr "Request series"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/discover/PlanToReadDrawer.tsx
 msgid "Requested"
 msgstr "Requested"
 
@@ -7673,6 +7736,10 @@ msgstr "Save a cover.jpg into each series folder"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "Save a cover.jpg into each series' library folder"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+msgid "Save a few titles and the queue turns personal within a few minutes."
+msgstr "Save a few titles and the queue turns personal within a few minutes."
+
 #: src/components/DiscoverPresets.tsx
 msgid "Save as a rail…"
 msgstr "Save as a rail…"
@@ -7726,6 +7793,10 @@ msgstr "Save your recovery codes"
 msgid "Saved"
 msgstr "Saved"
 
+#: src/pages/discover/QueueTab.tsx
+msgid "Saved {title}"
+msgstr "Saved {title}"
+
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "Saved as your default"
@@ -7734,6 +7805,10 @@ msgstr "Saved as your default"
 #: src/components/DiscoverPresets.tsx
 msgid "Saved filters"
 msgstr "Saved filters"
+
+#: src/components/discover/PlanToReadDrawer.tsx
+msgid "Saved from Discover"
+msgstr "Saved from Discover"
 
 #: src/pages/LibraryPage.tsx
 msgid "Saves the current search, sort and every filter in the panel as a named preset."
@@ -8458,6 +8533,14 @@ msgstr "Size"
 msgid "Size mismatch"
 msgstr "Size mismatch"
 
+#: src/components/discover/queue/QueueActionBar.tsx
+msgid "Skip"
+msgstr "Skip"
+
+#: src/components/discover/queue/SwipeCard.tsx
+msgid "SKIP"
+msgstr "SKIP"
+
 #: src/components/CatalogueRules.tsx
 msgid "Skip series where it is only a passing element"
 msgstr "Skip series where it is only a passing element"
@@ -8469,6 +8552,14 @@ msgstr "Skip setup"
 #: src/components/SetupWizard.tsx
 msgid "Skip specials on new series"
 msgstr "Skip specials on new series"
+
+#: src/pages/discover/QueueTab.tsx
+msgid "Skipped {title}"
+msgstr "Skipped {title}"
+
+#: src/components/discover/queue/QueueEmptyState.tsx
+msgid "Skipped titles come back in 30 days."
+msgstr "Skipped titles come back in 30 days."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Slice of Life"
@@ -8675,6 +8766,10 @@ msgstr "Start reading at ch. {startReadingAt}."
 msgid "Started"
 msgstr "Started"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
+msgid "Starting with what's trending"
+msgstr "Starting with what's trending"
+
 #: src/components/SeriesScrobbleSection.tsx
 msgid "State"
 msgstr "State"
@@ -8750,6 +8845,10 @@ msgstr "Suggestive"
 #: src/components/CatalogueFilters.tsx
 msgid "Supernatural"
 msgstr "Supernatural"
+
+#: src/pages/discover/QueueTab.tsx
+msgid "Swipe, or use the buttons below"
+msgstr "Swipe, or use the buttons below"
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Switch reading direction"
@@ -9411,7 +9510,12 @@ msgstr "Tragedy"
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 
+#: src/components/discover/PlanToReadDrawer.tsx
+msgid "Trending"
+msgstr "Trending"
+
 #: src/api/hooks.ts
+#: src/components/discover/queue/queueWhy.ts
 msgid "Trending now"
 msgstr "Trending now"
 
@@ -9431,6 +9535,7 @@ msgstr "Trusted proxies"
 msgid "Try a shorter or alternative query."
 msgstr "Try a shorter or alternative query."
 
+#: src/components/discover/queue/QueueEmptyState.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/stats/LibraryPanel.tsx
 msgid "Try again"
@@ -9516,6 +9621,7 @@ msgstr "Unavailable"
 msgid "Underscore (_)"
 msgstr "Underscore (_)"
 
+#: src/components/discover/queue/QueueActionBar.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
@@ -9803,6 +9909,11 @@ msgstr "very tight"
 msgid "Vietnamese"
 msgstr "Vietnamese"
 
+#. placeholder {0}: card.title
+#: src/components/discover/queue/SwipeCard.tsx
+msgid "View {0}"
+msgstr "View {0}"
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "View {title}"
@@ -9887,9 +9998,23 @@ msgstr "Waiting to read"
 msgid "Want"
 msgstr "Want"
 
+#: src/components/discover/queue/SwipeCard.tsx
+msgid "WANT"
+msgstr "WANT"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Want {chapterLbl}"
 msgstr "Want {chapterLbl}"
+
+#: src/components/discover/PlanToReadButton.tsx
+#: src/components/discover/PlanToReadDrawer.tsx
+#: src/components/discover/queue/QueueActionBar.tsx
+msgid "Want to read"
+msgstr "Want to read"
+
+#: src/pages/discover/QueueTab.tsx
+msgid "Want to read · {wantCount}"
+msgstr "Want to read · {wantCount}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Wanted"
@@ -10200,6 +10325,7 @@ msgstr "You tear through"
 msgid "You turned a lot of pages"
 msgstr "You turned a lot of pages"
 
+#: src/components/discover/queue/QueueEmptyState.tsx
 #: src/pages/reader/ChapterEnd.tsx
 msgid "You're caught up"
 msgstr "You're caught up"
