@@ -23,6 +23,10 @@ msgstr " · Pris en compte, masqué de l'insigne de l'en-tête"
 msgid "- skip -"
 msgstr "- ignorer -"
 
+#: src/components/NotificationsSection.tsx
+msgid "-2 (lowest) to 2 (emergency)."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "\"Main\" skips specials (decimal chapters like 10.5); \"Smart\" downloads a few at a time as you read."
@@ -260,6 +264,10 @@ msgstr "{actionError} Actualisez la page et réessayez."
 #, fuzzy
 msgid "{active, plural, one {# download in progress} other {# downloads in progress}}"
 msgstr "{active, plural, one {# téléchargement en cours} many {# téléchargements en cours} other {# téléchargements en cours}}"
+
+#: src/components/ImportListsSection.tsx
+msgid "{added} added, {requested} requested, {skipped} skipped, {errors} errors"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -640,6 +648,14 @@ msgstr "{markerLabel} L'adaptation animée commence ici · cliquer pour dévelop
 #, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} sur {total} correspondants, {positive} positifs, {avoided} évités, {superseded} déjà à vous"
+
+#: src/components/NotificationsSection.tsx
+msgid "{min} or more"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "{min} to {max}"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1313,6 +1329,10 @@ msgstr "👍 Aimé"
 msgid "👎 Disliked"
 msgstr "👎 Pas aimé"
 
+#: src/components/NotificationsSection.tsx
+msgid "1 (lowest) to 5 (highest)."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "1:1"
@@ -1433,6 +1453,10 @@ msgstr "Une actualisation a trouvé de nouveaux chapitres pour une série."
 msgid "A refresh is already running"
 msgstr "Une actualisation est déjà en cours"
 
+#: src/components/NotificationsSection.tsx
+msgid "A request was approved or rejected."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "A row for each smaller theme on your shelf."
@@ -1442,6 +1466,14 @@ msgstr "Une ligne pour chaque thème secondaire de votre étagère."
 #, fuzzy
 msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
 msgstr "Une ligne de statistiques : contenu de votre bibliothèque, progression de lecture et titres qu'il vous reste à lire."
+
+#: src/components/NotificationsSection.tsx
+msgid "A series was added to the library, by hand or from an approved request."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "A series was removed from the library."
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
@@ -1467,6 +1499,10 @@ msgstr "Un pouce vers le bas masque ce titre et fait descendre les titres qui lu
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "Un jeton sans valeur pour une série donnée ne produit rien. Les espaces environnants et les crochets vides sont nettoyés, donc {yearExampleToken} sur une série sans année se réduit à son titre."
+
+#: src/api/inbox.ts
+msgid "A tracker list sync added or requested series."
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "A typical sitting runs <0>{sittingDuration}</0>."
@@ -1510,6 +1546,10 @@ msgstr "il reste environ une minute"
 #, fuzzy
 msgid "Access all libraries"
 msgstr "Accéder à toutes les bibliothèques"
+
+#: src/components/NotificationsSection.tsx
+msgid "Access token"
+msgstr ""
 
 #: src/components/UserMenu.tsx
 #, fuzzy
@@ -1847,6 +1887,10 @@ msgstr ""
 msgid "All roots"
 msgstr "Toutes les racines"
 
+#: src/components/NotificationsSection.tsx
+msgid "All series"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "All states"
@@ -1957,6 +2001,10 @@ msgstr "Un administrateur décide où il sera ajouté et ce qui sera télécharg
 msgid "An admin will see it on the Requests page."
 msgstr "Un administrateur le verra sur la page Demandes."
 
+#: src/components/NotificationsSection.tsx
+msgid "An incoming webhook from Slack or Mattermost."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Analysis"
@@ -2044,6 +2092,7 @@ msgstr "Tout ce qui utilise encore cette clé cessera immédiatement de fonction
 msgid "Anything the admin should know"
 msgstr "Tout ce que l'administrateur doit savoir"
 
+#: src/components/NotificationsSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -2066,6 +2115,10 @@ msgstr "API uniquement"
 #, fuzzy
 msgid "Appearance"
 msgstr "Apparence"
+
+#: src/components/NotificationsSection.tsx
+msgid "Application token"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -2261,6 +2314,10 @@ msgstr "Automatique (priorité des sources)"
 msgid "Automatic download failed"
 msgstr "Échec du téléchargement automatique"
 
+#: src/components/NotificationsSection.tsx
+msgid "Automatic source matching found nothing for a new series."
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -2398,9 +2455,13 @@ msgid "Based on your recent activity"
 msgstr "Selon votre activité récente"
 
 #: src/components/NotificationsSection.tsx
+msgid "Bearer token"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
 #, fuzzy
-msgid "Bearer token (optional)"
-msgstr "Jeton Bearer (facultatif)"
+#~ msgid "Bearer token (optional)"
+#~ msgstr "Jeton Bearer (facultatif)"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -2470,6 +2531,10 @@ msgstr "Ajouter cette page aux favoris"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Bookmarks"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Bot token"
 msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
@@ -2875,6 +2940,10 @@ msgstr "Les modifications réajustent « {inForceName} », et donc toutes les s�
 msgid "Changes take effect after Maki restarts."
 msgstr "Les modifications prennent effet après le redémarrage de Maki."
 
+#: src/components/NotificationsSection.tsx
+msgid "Channel"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3037,6 +3106,10 @@ msgstr "Chapitres : {chapterRangeMin}–{chapterRangeMax}"
 #, fuzzy
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Chapitres : {chaptersMin}–{chaptersMax}"
+
+#: src/components/NotificationsSection.tsx
+msgid "Chat ID"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -3281,6 +3354,10 @@ msgstr "Confortable"
 msgid "comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga"
 msgstr "comicinfo, comicinfo.xml, cover.jpg, affiche de dossier, fichiers de bibliothèque, komga"
 
+#: src/components/NotificationsSection.tsx
+msgid "Comma separated Apprise URLs, used when there is no config key."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
@@ -3318,6 +3395,7 @@ msgid "Complete"
 msgstr "Complet"
 
 #: src/components/CatalogueFilters.tsx
+#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -3355,6 +3433,10 @@ msgstr "Téléchargements de chapitres simultanés"
 msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
 msgstr "simultanés, workers, nouvelle tentative, nombre maximal de tentatives, délai progressif, Smart Download, déclencheur de chapitres non lus"
 
+#: src/components/NotificationsSection.tsx
+msgid "Config key"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "configured, not connected"
@@ -3379,6 +3461,10 @@ msgstr "Confirmez votre mot de passe pour le désactiver"
 #, fuzzy
 msgid "Connect"
 msgstr "Connecter"
+
+#: src/components/ImportListsSection.tsx
+msgid "Connect {label} under Scrobbling to import from it."
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -3693,6 +3779,10 @@ msgstr "Créer, renommer et attribuer des tags de bibliothèque"
 msgid "Created"
 msgstr "Créé"
 
+#: src/components/NotificationsSection.tsx
+msgid "Created under Apps in Gotify."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Creators"
@@ -3964,6 +4054,10 @@ msgstr "Suppression en cours"
 msgid "Deletion review #{opId}"
 msgstr "Examen de suppression n°{opId}"
 
+#: src/components/NotificationsSection.tsx
+msgid "Delivers without a notification sound."
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Demographic"
 msgstr ""
@@ -3988,6 +4082,10 @@ msgstr "Les CBZ détachés restent dans la section Fichiers, sauf si vous choisi
 #, fuzzy
 msgid "Details"
 msgstr "Détails"
+
+#: src/components/NotificationsSection.tsx
+msgid "Device"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Devoured"
@@ -4038,14 +4136,23 @@ msgstr "Déconnecter"
 #: src/components/NotificationsSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "Discord & webhooks"
-msgstr "Discord et webhooks"
+#~ msgid "Discord & webhooks"
+#~ msgstr "Discord et webhooks"
+
+#: src/components/NotificationsSection.tsx
+msgid "Discord channel ID"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "discord, webhook, apprise, alerts, events, notifications, outbound"
-msgstr "discord, webhook, apprise, alertes, événements, notifications, sortant"
+#~ msgid "discord, webhook, apprise, alerts, events, notifications, outbound"
+#~ msgstr "discord, webhook, apprise, alertes, événements, notifications, sortant"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound, tags, requests, series added, series removed, manual match"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/SetupWizard.tsx
@@ -4267,6 +4374,7 @@ msgid "Downloading…"
 msgstr "Téléchargement…"
 
 #: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/registry.ts
@@ -4431,6 +4539,10 @@ msgstr "Activer {name}"
 msgid "Enable {sourceName}"
 msgstr "Activer {sourceName}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Enable import lists for everyone"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Enable single sign-on"
@@ -4475,6 +4587,10 @@ msgstr "Anglais (valeur par défaut du fournisseur)"
 #, fuzzy
 msgid "Enter your authenticator code"
 msgstr "Saisissez le code de votre application d'authentification"
+
+#: src/components/ImportListsSection.tsx
+msgid "Entries are filed as requests for an admin to approve."
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Era"
@@ -4900,6 +5016,10 @@ msgstr "premier"
 #, fuzzy
 msgid "First download in progress"
 msgstr "Premier téléchargement en cours"
+
+#: src/components/ImportListsSection.tsx
+msgid "First folder you can see"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "First page"
@@ -5409,6 +5529,10 @@ msgstr "Masquer ce titre"
 msgid "Higher for readers like you"
 msgstr "Plus élevé pour les lecteurs comme vous"
 
+#: src/components/NotificationsSection.tsx
+msgid "Higher numbers are more intrusive."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Historical"
@@ -5450,6 +5574,10 @@ msgstr "Accueil n'a rien à afficher. Réactivez des sections dans l'éditeur de
 #, fuzzy
 msgid "home sections, rails, continue reading, recently added, section order, edit layout, drag, reorder, hero, glance, discover layout, disable home, start page, landing page, opens on, default page"
 msgstr "sections d'accueil, rails, continuer la lecture, ajouts récents, ordre des sections, modifier la mise en page, glisser, réordonner, bannière, aperçu, mise en page Découvrir, désactiver l'accueil, page de démarrage, page d'accueil, page affichée à l'ouverture, page par défaut"
+
+#: src/components/NotificationsSection.tsx
+msgid "Home server"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -5529,6 +5657,7 @@ msgstr "Je confirme la suppression définitive de cette archive et de tous ses l
 msgid "I confirm removing the file links for this missing archive."
 msgstr "Je confirme la suppression des liens de fichiers pour cette archive manquante."
 
+#: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
@@ -5546,6 +5675,7 @@ msgstr "Ignorer ce téléchargement"
 msgid "Ignore this version"
 msgstr "Ignorer cette version"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5579,16 +5709,42 @@ msgstr "Importer une archive"
 msgid "Import completed"
 msgstr "Importation terminée"
 
+#: src/components/ImportListsSection.tsx
+msgid "Import entries with status"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Import everything, delete the {replacedFiles, plural, one {# file} other {# files}} it replaces"
 msgstr "Importer tout en supprimant les {replacedFiles, plural, one {# fichier} many {# fichiers} other {# fichiers}} qu'elle remplace"
+
+#: src/components/ImportListsSection.tsx
+msgid "Import from {label}"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Import library"
 msgstr "Importer la bibliothèque"
+
+#: src/api/inbox.ts
+msgid "Import list finished"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "import list, anilist, mal, kitsu, tracker, auto add"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "Import lists"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Import lists are turned off for this instance."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -6065,6 +6221,14 @@ msgstr "Dernière exécution {finishedAtLabel} : {downloadedCount} affiches tél
 msgid "Last run {finishedDate}."
 msgstr "Dernière exécution {finishedDate}."
 
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Last run failed: {lastError}"
@@ -6146,6 +6310,14 @@ msgstr "Laissez les deux champs vides pour ignorer."
 msgid "Leave empty to scrobble every library."
 msgstr "Laissez vide pour envoyer la progression de toutes les bibliothèques aux trackers."
 
+#: src/components/NotificationsSection.tsx
+msgid "Leave empty to send for every series. Instance events like health and updates ignore this."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Leave empty to send to every device."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Leave empty to use this profile only where you pin it to a series."
@@ -6214,6 +6386,7 @@ msgid "Libraries"
 msgstr "Bibliothèques"
 
 #: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
@@ -6592,6 +6765,10 @@ msgstr "Manhwa"
 msgid "Manual"
 msgstr "Manuel"
 
+#: src/components/NotificationsSection.tsx
+msgid "Manual match needed"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Mapped to"
@@ -6683,6 +6860,10 @@ msgstr "Mise en correspondance des sources restantes…"
 #, fuzzy
 msgid "Max"
 msgstr "Max"
+
+#: src/components/ImportListsSection.tsx
+msgid "Max per run"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -6830,6 +7011,10 @@ msgstr "Suivre"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Monitor catches"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Monitor for new chapters"
 msgstr ""
 
 #: src/components/ui/CoverCard.tsx
@@ -7016,9 +7201,17 @@ msgid "My account"
 msgstr "Mon compte"
 
 #: src/components/NotificationsSection.tsx
+msgid "My connection"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "My Discord server"
 msgstr "Mon serveur Discord"
+
+#: src/components/NotificationsSection.tsx
+msgid "My phone"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7116,6 +7309,10 @@ msgstr "neutre, part avec le poids de l'étagère"
 msgid "never"
 msgstr "jamais"
 
+#: src/components/ImportListsSection.tsx
+msgid "Never run."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -7128,6 +7325,7 @@ msgid "New chapter available"
 msgstr "Nouveau chapitre disponible"
 
 #: src/components/home/RecentlyAddedRail.tsx
+#: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "New chapters"
 msgstr "Nouveaux chapitres"
@@ -7627,6 +7825,10 @@ msgstr "Non lié à un chapitre"
 msgid "Not linked yet. Sign in with {displayName} once to enable it for this account."
 msgstr "Pas encore lié. Connectez-vous une fois avec {displayName} pour l'activer pour ce compte."
 
+#: src/components/ImportListsSection.tsx
+msgid "Not matched or ignored"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -7836,15 +8038,27 @@ msgstr "Rien à afficher pour le moment."
 msgid "Nothing unfinished to chart."
 msgstr ""
 
+#: src/components/ImportListsSection.tsx
+msgid "Nothing unmatched."
+msgstr ""
+
 #: src/components/NotificationBell.tsx
 #, fuzzy
 msgid "Nothing yet"
 msgstr "Rien pour le moment"
 
+#: src/components/NotificationsSection.tsx
+msgid "Notifiarr posts here through its Discord bot."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Notification settings"
 msgstr "Réglages des notifications"
+
+#: src/components/NotificationsSection.tsx
+msgid "Notification URLs"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
@@ -8014,8 +8228,20 @@ msgstr "One-shot"
 msgid "Ongoing"
 msgstr "En cours"
 
+#: src/components/NotificationsSection.tsx
+msgid "Only for tagged series"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Only Maki's reader records when you read. Chapters marked read from Kavita or OPDS apps do not carry a time."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Only needed for protected topics."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Only notify services with this tag."
 msgstr ""
 
 #: src/components/ContentRatingCards.tsx
@@ -8191,6 +8417,15 @@ msgstr "Autres choix pour vous"
 #, fuzzy
 msgid "Other sessions signed out"
 msgstr "Autres sessions déconnectées"
+
+#: src/components/NotificationsSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Outbound notifications"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Overrides the default channel of the webhook."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8464,6 +8699,7 @@ msgstr "Suggestions du moteur de recommandations, basées sur l'ensemble de votr
 msgid "Plain title search. Matches from just two characters."
 msgstr "Recherche simple par titre. Correspondances à partir de deux caractères."
 
+#: src/components/ImportListsSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Plan to read"
@@ -8536,6 +8772,10 @@ msgstr "Affiches : {coverFilesLabel} fichiers, {coverBytesLabel} : {coversMissin
 msgid "Posters: {coverFilesLabel} files, {coverBytesLabel} - every series has one"
 msgstr "Affiches : {coverFilesLabel} fichiers, {coverBytesLabel} : chaque série en possède une"
 
+#: src/components/NotificationsSection.tsx
+msgid "Posts into one topic of a forum group."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Pre-filled on the add form, where any single add can change it. \"No scrobble\" keeps a series off your trackers; \"Full\" also keeps it out of stats and history."
@@ -8584,6 +8824,7 @@ msgstr "Source précédente"
 msgid "Prime time"
 msgstr ""
 
+#: src/components/NotificationsSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Priority"
@@ -8659,6 +8900,10 @@ msgstr "téléchargez la nouvelle image et recréez le conteneur"
 #, fuzzy
 msgid "Pull the new image and recreate the container to update."
 msgstr "Récupérez la nouvelle image et recréez le conteneur pour mettre à jour."
+
+#: src/pages/SettingsPage.tsx
+msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you cannot add series yourself. Connect trackers under Scrobbling first."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -8904,6 +9149,7 @@ msgstr "Les lecteurs comme vous ont aussi terminé ceci"
 msgid "Readers like you also recommended this"
 msgstr "Les lecteurs comme vous ont aussi recommandé ceci"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9021,6 +9267,10 @@ msgstr "Reconstruction du cache d'images"
 #, fuzzy
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Reconstruction des affiches, {processedCount} sur {totalCount}"
+
+#: src/components/NotificationsSection.tsx
+msgid "Receives a JSON POST for each event."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -9456,6 +9706,10 @@ msgstr "Demande rejetée"
 msgid "Request replacement"
 msgstr "Demander un remplacement"
 
+#: src/components/NotificationsSection.tsx
+msgid "Request resolved"
+msgstr ""
+
 #: src/components/CommandPalette.tsx
 #: src/components/RequestForm.tsx
 #: src/nav.ts
@@ -9463,6 +9717,10 @@ msgstr "Demander un remplacement"
 #, fuzzy
 msgid "Request series"
 msgstr "Demander une série"
+
+#: src/components/NotificationsSection.tsx
+msgid "Request submitted"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -9480,6 +9738,7 @@ msgid "Requested, an admin will see it on the Requests page"
 msgstr "Demandé, un administrateur le verra sur la page Demandes"
 
 #: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
 #: src/nav.ts
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -9626,6 +9885,7 @@ msgid "Retried {retryCount}x - next attempt {nextAttemptTime}"
 msgstr "Nouvelle tentative {retryCount}x - prochain essai {nextAttemptTime}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
+#: src/components/ImportListsSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Retry"
@@ -9748,6 +10008,7 @@ msgid "Romance"
 msgstr "Romance"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/ImportListsSection.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -9779,6 +10040,10 @@ msgstr "Type de règle"
 #, fuzzy
 msgid "Rules"
 msgstr "Règles"
+
+#: src/components/ImportListsSection.tsx
+msgid "Run now"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -9997,6 +10262,10 @@ msgstr "Romances scolaires, sans adultes"
 msgid "Sci-Fi"
 msgstr "Science-fiction"
 
+#: src/components/NotificationsSection.tsx
+msgid "Scope"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Scopes"
@@ -10060,6 +10329,7 @@ msgstr "Rythme du défilement · {remainingChapters} chapitres restants · basé
 msgid "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads"
 msgstr "Rythme du défilement · {remainingChapters} chapitres restants · basé sur {sampleChapters} lectures similaires"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Search"
@@ -10328,6 +10598,10 @@ msgstr "Sélectionner les éléments filtrés"
 msgid "Select these chapters"
 msgstr "Sélectionner ces chapitres"
 
+#: src/components/NotificationsSection.tsx
+msgid "Selected"
+msgstr ""
+
 #: src/components/auth/AuthFrame.tsx
 #, fuzzy
 msgid "Self-hosted manga library and downloader."
@@ -10344,9 +10618,13 @@ msgid "Semantic search and recommendations are off."
 msgstr "La recherche sémantique et les recommandations sont désactivées."
 
 #: src/components/NotificationsSection.tsx
+msgid "Send events to chat apps, push services or a webhook. Each connection picks its own events."
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
 #, fuzzy
-msgid "Send events to Discord or a webhook. Each connection picks its own events."
-msgstr "Envoyez des événements sur Discord ou vers un webhook. Chaque connexion choisit ses propres événements."
+#~ msgid "Send events to Discord or a webhook. Each connection picks its own events."
+#~ msgstr "Envoyez des événements sur Discord ou vers un webhook. Chaque connexion choisit ses propres événements."
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -10357,6 +10635,10 @@ msgstr "Envoyez votre progression de lecture à AniList, MyAnimeList, Kitsu ou M
 #, fuzzy
 msgid "Send request"
 msgstr "Envoyer la demande"
+
+#: src/components/NotificationsSection.tsx
+msgid "Send silently"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -10384,6 +10666,10 @@ msgstr "Suites, préquelles, séries dérivées et histoires parallèles que Man
 #, fuzzy
 msgid "Series"
 msgstr "Séries"
+
+#: src/components/NotificationsSection.tsx
+msgid "Series added"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10436,6 +10722,7 @@ msgstr "Série introuvable"
 msgid "Series page"
 msgstr "Page de la série"
 
+#: src/components/NotificationsSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series removed"
@@ -10465,6 +10752,10 @@ msgstr "Séries de votre bibliothèque correspondant à ces filtres."
 #, fuzzy
 msgid "Series you finished a chapter of that still have more to read."
 msgstr "Séries dont vous avez terminé un chapitre et qu'il vous reste à lire."
+
+#: src/components/NotificationsSection.tsx
+msgid "Server URL"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10880,6 +11171,10 @@ msgstr "Instantané sur le disque : {snapshotSize}, actualisé à une heure inco
 msgid "Somebody filed a request"
 msgstr "Une demande a été déposée"
 
+#: src/components/NotificationsSection.tsx
+msgid "Someone asked for a series."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Something went wrong, Maki will try again"
@@ -11217,6 +11512,14 @@ msgstr "Changement de modèle… téléchargement du modèle et de son index."
 msgid "Switching to {kind}: downloading the model and index…"
 msgstr "Passage à {kind} : téléchargement du modèle et de l'index…"
 
+#: src/components/ImportListsSection.tsx
+msgid "Sync everything"
+msgstr ""
+
+#: src/components/ImportListsSection.tsx
+msgid "Sync everything from {label}?"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Sync interval (minutes)"
@@ -11238,6 +11541,10 @@ msgstr "Synchroniser les notes"
 #, fuzzy
 msgid "sync running… · last {lastSync} · next {nextSync}"
 msgstr "synchronisation en cours… · dernier {lastSync} · prochain {nextSync}"
+
+#: src/components/ImportListsSection.tsx
+msgid "Sync started, you will get a notification when it finishes"
+msgstr ""
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -11261,6 +11568,7 @@ msgid "Synopsis"
 msgstr "Synopsis"
 
 #: src/api/inbox.ts
+#: src/components/NotificationsSection.tsx
 #: src/nav.ts
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -11281,6 +11589,10 @@ msgstr "Contrôles système et maintenance de bibliothèque examinée."
 #, fuzzy
 msgid "System issues"
 msgstr "Problèmes système"
+
+#: src/components/NotificationsSection.tsx
+msgid "Tag"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -11330,6 +11642,10 @@ msgstr "Zones tactiles (cliquez sur les bords de la page pour tourner)"
 #, fuzzy
 msgid "Taste"
 msgstr "Goûts"
+
+#: src/components/NotificationsSection.tsx
+msgid "Team channel"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -11385,6 +11701,10 @@ msgstr ""
 #, fuzzy
 msgid "The anime covers through ch. {covered}."
 msgstr "L'anime couvre jusqu'au chap. {covered}."
+
+#: src/components/NotificationsSection.tsx
+msgid "The API token of your Pushover application."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -11561,6 +11881,10 @@ msgstr "Le point de départ de chaque série. Toute série peut être réglée a
 msgid "The titles climbing fastest in popularity right now."
 msgstr "Les titres dont la popularité augmente le plus vite actuellement."
 
+#: src/components/NotificationsSection.tsx
+msgid "The token @BotFather gave you."
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "The torrent keeps seeding whichever you pick."
@@ -11634,6 +11958,10 @@ msgstr "Ce compte n'a pas de connexion par mot de passe à protéger avec l'auth
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
 
+#: src/components/ImportListsSection.tsx
+msgid "This adds every matching entry from your {label} list at once, ignoring the per-run limit."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "This archive"
@@ -11663,6 +11991,10 @@ msgstr "Ce chapitre n'a pas de fichier lisible."
 #, fuzzy
 msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
 msgstr "Ce fichier n'est déjà plus sur le disque, rien n'est donc supprimé. Cela retire l'enregistrement qui lie encore ces chapitres à ce fichier, ils n'apparaîtront donc plus comme téléchargés."
+
+#: src/components/ImportListsSection.tsx
+msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
+msgstr ""
 
 #: src/pages/stats/StatsRange.ts
 msgid "this month"
@@ -11967,6 +12299,14 @@ msgstr "En haut"
 msgid "Top rated"
 msgstr "Les mieux notés"
 
+#: src/components/NotificationsSection.tsx
+msgid "Topic"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Topic ID"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -12147,6 +12487,10 @@ msgstr "Chapitre habituel"
 msgid "Typical sitting"
 msgstr ""
 
+#: src/components/ImportListsSection.tsx
+msgid "Un-ignore"
+msgstr ""
+
 #: src/api/client.ts
 #, fuzzy
 msgid "Unauthorized"
@@ -12288,6 +12632,10 @@ msgstr "En haut"
 
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Up next"
+msgstr ""
+
+#: src/components/NotificationsSection.tsx
+msgid "Up to {max}"
 msgstr ""
 
 #: src/api/requests.ts
@@ -12434,10 +12782,18 @@ msgstr "Utilisateur"
 msgid "User created"
 msgstr "Utilisateur créé"
 
+#: src/components/NotificationsSection.tsx
+msgid "User key"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "User updated"
 msgstr "Utilisateur mis à jour"
+
+#: src/components/NotificationsSection.tsx
+msgid "User, group or channel ID. Public channels can use @name."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
@@ -12463,6 +12819,10 @@ msgstr "Utilisateurs"
 #, fuzzy
 msgid "Users & security"
 msgstr "Utilisateurs et sécurité"
+
+#: src/components/NotificationsSection.tsx
+msgid "Uses a configuration saved on the Apprise server."
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -13160,6 +13520,10 @@ msgstr "Vos goûts"
 #, fuzzy
 msgid "Your Taste"
 msgstr "Vos goûts"
+
+#: src/components/NotificationsSection.tsx
+msgid "Your user or group key."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
