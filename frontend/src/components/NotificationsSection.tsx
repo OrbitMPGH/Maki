@@ -107,10 +107,10 @@ export function NotificationsSection() {
   const save = () => {
     if (!editing) return
     const onSuccess = () => {
-      toast.show({ message: now`Saved`, color: 'green' })
+      toast.show({ message: now`Saved`, color: 'var(--ok)' })
       close()
     }
-    const onError = (err: Error) => toast.show({ title: now`Save failed`, message: err.message, color: 'red' })
+    const onError = (err: Error) => toast.show({ title: now`Save failed`, message: err.message, color: 'var(--danger)' })
     if (editing.id === null) create.mutate(editing.form, { onSuccess, onError })
     else update.mutate({ id: editing.id, value: editing.form }, { onSuccess, onError })
   }
@@ -121,9 +121,9 @@ export function NotificationsSection() {
       onSuccess: (r) =>
         toast.show({
           message: r.success ? now`Test notification sent` : now`Test failed`,
-          color: r.success ? 'green' : 'red',
+          color: r.success ? 'var(--ok)' : 'var(--danger)',
         }),
-      onError: (err: Error) => toast.show({ title: now`Test failed`, message: err.message, color: 'red' }),
+      onError: (err: Error) => toast.show({ title: now`Test failed`, message: err.message, color: 'var(--danger)' }),
     })
   }
 

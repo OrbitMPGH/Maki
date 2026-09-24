@@ -153,7 +153,7 @@ export default function ImportPage() {
           one: `Imported ${ok}/# folder`,
           other: `Imported ${ok}/# folders`,
         }),
-        color: ok === data.length ? 'green' : 'yellow',
+        color: ok === data.length ? 'var(--ok)' : 'var(--warn)',
       })
       setProgress({})
       if (rootFolderId) scan.mutate(Number(rootFolderId))

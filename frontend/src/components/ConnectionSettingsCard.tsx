@@ -112,7 +112,7 @@ export function ConnectionForm({
         loading={test.isPending}
         onClick={() =>
           test.mutate(payload(), {
-            onSuccess: () => notifications.show({ message: now`${title} is reachable`, color: 'green' }),
+            onSuccess: () => notifications.show({ message: now`${title} is reachable`, color: 'var(--ok)' }),
           })
         }
       >
@@ -123,7 +123,7 @@ export function ConnectionForm({
         loading={save.isPending}
         onClick={() =>
           save.mutate(payload(), {
-            onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+            onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
           })
         }
       />

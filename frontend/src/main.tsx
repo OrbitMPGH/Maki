@@ -35,7 +35,7 @@ function reportError(error: unknown, meta?: Record<string, unknown>) {
         : error instanceof Error
           ? error.message
           : String(error),
-    color: 'red',
+    color: 'var(--danger)',
   })
 }
 

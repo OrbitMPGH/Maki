@@ -72,7 +72,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
     } catch (error) {
       const reason = String(error)
       notifications.show({
-        color: 'red', autoClose: false, message: <Group gap="xs" wrap="wrap">
+        color: 'var(--danger)', autoClose: false, message: <Group gap="xs" wrap="wrap">
           <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>
           <Button size="xs" variant="subtle" onClick={() => void submit(action, medium, command)}>
             <Trans>Retry</Trans>
@@ -101,7 +101,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
     } catch (error) {
       const reason = String(error)
       notifications.show({
-        color: 'red', autoClose: false, message: <Group gap="xs" wrap="wrap">
+        color: 'var(--danger)', autoClose: false, message: <Group gap="xs" wrap="wrap">
           <Text size="sm"><Trans>Could not update {surface} feedback: {reason}</Trans></Text>
           <Button size="xs" variant="subtle" onClick={() => void submitFranchise()}>
             <Trans>Retry</Trans>
@@ -117,7 +117,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
     <Group gap="xs" wrap="nowrap" justify="center">
       <Tooltip label={sentiment === 'liked' ? t`Remove your thumbs up` : t`More like this`} withArrow zIndex={2001}>
         <ActionIcon
-          size="lg" variant={sentiment === 'liked' ? 'filled' : 'default'} color="teal"
+          size="lg" variant={sentiment === 'liked' ? 'filled' : 'default'} color="var(--ok)"
           loading={busy} aria-pressed={sentiment === 'liked'} aria-label={t`Thumbs up`}
           onClick={() => void submit(sentiment === 'liked' ? 'clear-sentiment' : 'like')}
         >
@@ -126,7 +126,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
       </Tooltip>
       <Tooltip label={sentiment === 'disliked' ? t`Remove your thumbs down` : t`Not for me`} withArrow zIndex={2001}>
         <ActionIcon
-          size="lg" variant={sentiment === 'disliked' ? 'filled' : 'default'} color="red"
+          size="lg" variant={sentiment === 'disliked' ? 'filled' : 'default'} color="var(--danger)"
           loading={busy} aria-pressed={sentiment === 'disliked'} aria-label={t`Thumbs down`}
           onClick={() => void submit(sentiment === 'disliked' ? 'clear-sentiment' : 'dislike')}
         >

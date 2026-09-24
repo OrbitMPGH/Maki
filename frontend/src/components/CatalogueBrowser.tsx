@@ -240,11 +240,11 @@ export function CatalogueBrowser({
     saveDefaults.mutate(catalogue.build(), {
       onSuccess: () =>
         notifications.show({
-          color: 'green',
+          color: 'var(--ok)',
           message: catalogue.isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
       onError: (err) =>
-        notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
+        notifications.show({ color: 'var(--danger)', message: `Failed to save default: ${String(err)}` }),
     })
   }
 

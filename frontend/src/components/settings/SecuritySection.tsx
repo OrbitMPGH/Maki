@@ -117,9 +117,9 @@ export function SecuritySection() {
                 onSuccess: () =>
                   notifications.show({
                     message: now`Security settings saved. Restart Maki to apply them.`,
-                    color: 'green',
+                    color: 'var(--ok)',
                   }),
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           />
@@ -278,9 +278,9 @@ export function OidcSection() {
                 onSuccess: () =>
                   notifications.show({
                     message: now`Single sign-on saved. Restart Maki to apply it.`,
-                    color: 'green',
+                    color: 'var(--ok)',
                   }),
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           />

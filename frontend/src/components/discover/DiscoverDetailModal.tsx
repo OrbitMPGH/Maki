@@ -271,7 +271,7 @@ export function DiscoverDetailModal({
                             <Badge
                               size="sm"
                               variant="light"
-                              color={readerHintHigher ? 'teal' : 'orange'}
+                              color={readerHintHigher ? 'var(--ok)' : 'var(--warn)'}
                               leftSection={
                                 readerHintHigher ? (
                                   <IconTrendingUp size={12} />

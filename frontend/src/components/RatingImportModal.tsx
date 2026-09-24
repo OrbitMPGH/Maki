@@ -80,7 +80,7 @@ export function RatingImportModal({
         onSuccess: ({ applied }) => {
           notifications.show({
             message: plural(applied, { one: 'Imported # rating', other: 'Imported # ratings' }),
-            color: 'green',
+            color: 'var(--ok)',
           })
           onClose()
         },

@@ -431,7 +431,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const action = row.excluded
     ? { label: t`Use for taste`, color: undefined, variant: 'outline', run: () => onExclude(row, false) }
     : suppression !== 'none'
-      ? { label: t`Restore`, color: 'yellow', variant: 'outline', run: () => onClear(row, 'clear-suppression') }
+      ? { label: t`Restore`, color: 'var(--warn)', variant: 'outline', run: () => onClear(row, 'clear-suppression') }
       : exposure.length > 0
         ? { label: t`Clear seen`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-exposure') }
         : sentiment !== 'none'
@@ -455,7 +455,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
       <div className="signals-col signals-col-state">
         <Group gap={6} wrap="wrap">
           {rating !== null && (
-            <Badge size="sm" variant="light" color={rating <= 4 ? 'red' : 'teal'}>
+            <Badge size="sm" variant="light" color={rating <= 4 ? 'var(--danger)' : 'var(--ok)'}>
               {t`★ ${rating} rated`}
             </Badge>
           )}

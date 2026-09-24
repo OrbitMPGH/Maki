@@ -213,7 +213,7 @@ export default function ActivityPage() {
                               style={{ flex: 1 }}
                               radius="xl"
                               animated={q.status === 'Downloading'}
-                              color={q.status === 'Failed' ? 'red' : 'brand'}
+                              color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
                             />
                             <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
                               {q.pagesDone}/{q.pagesTotal}

@@ -39,7 +39,7 @@ export function LinkChaptersModal({
         onSuccess: () => {
           notifications.show({
             message: now`Linked ${chapterPhrase} to ${fileName}`,
-            color: 'green',
+            color: 'var(--ok)',
           })
           handleClose()
         },

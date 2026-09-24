@@ -154,7 +154,7 @@ export default function MetadataDumpProgress() {
         // or the closing frame jumps to the app's top-centre default.
         position: 'bottom-right',
         loading: false,
-        color: 'red',
+        color: 'var(--danger)',
         autoClose: 10000,
         withCloseButton: true,
         // The sentence is Maki's own and is translated; only the download job's own error text
@@ -170,7 +170,7 @@ export default function MetadataDumpProgress() {
         id: TOAST_ID,
         position: 'bottom-right',
         loading: false,
-        color: 'green',
+        color: 'var(--ok)',
         autoClose: 8000,
         withCloseButton: true,
         message: `${now`Metadata database ready.`} ${now`Discover and offline search are available now.`}`,

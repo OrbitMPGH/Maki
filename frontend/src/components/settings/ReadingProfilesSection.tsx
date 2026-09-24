@@ -111,7 +111,7 @@ export function ReadingProfilesSection() {
             create.mutate(input, {
               onSuccess: () => {
                 setCreating(false)
-                notifications.show({ message: now`Profile created`, color: 'green' })
+                notifications.show({ message: now`Profile created`, color: 'var(--ok)' })
               },
             })
           }
@@ -176,7 +176,7 @@ function DefaultRow() {
           onSubmit={(input) =>
             save.mutate(
               { defaults: input.prefs, pushToKavita: settings.pushToKavita },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )
           }
         />
@@ -249,7 +249,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
           onSubmit={(input) =>
             update.mutate(
               { id: profile.id, ...input },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )
           }
         />
@@ -265,7 +265,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
           remove.mutate(profile.id, {
             onSuccess: () => {
               setConfirming(false)
-              notifications.show({ message: now`Deleted "${name}"`, color: 'green' })
+              notifications.show({ message: now`Deleted "${name}"`, color: 'var(--ok)' })
             },
           })
         }

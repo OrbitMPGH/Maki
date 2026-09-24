@@ -270,8 +270,8 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
 
   const roleBadge = ((): { label: string; color: string } => {
     switch (entry.role) {
-      case 'positive': return { label: t`Positive`, color: 'teal' }
-      case 'avoided': return { label: t`Avoided`, color: 'red' }
+      case 'positive': return { label: t`Positive`, color: 'var(--ok)' }
+      case 'avoided': return { label: t`Avoided`, color: 'var(--danger)' }
       case 'neutral': return { label: t`Neutral`, color: 'gray' }
       case 'superseded':
         return entry.supersededBy === 'ignored'

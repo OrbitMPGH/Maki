@@ -200,9 +200,9 @@ export function SectionProperties({
                   onSuccess: () => {
                     setConfirmDelete(false)
                     onClose()
-                    notifications.show({ color: 'green', message: now`Rail deleted` })
+                    notifications.show({ color: 'var(--ok)', message: now`Rail deleted` })
                   },
-                  onError: (err) => notifications.show({ color: 'red', message: String(err) }),
+                  onError: (err) => notifications.show({ color: 'var(--danger)', message: String(err) }),
                 })
               }
             >

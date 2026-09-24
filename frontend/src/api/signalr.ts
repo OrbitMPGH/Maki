@@ -167,7 +167,7 @@ export function useLiveEvents() {
         notifications.show({
           title: item.title,
           message: item.body,
-          color: item.level === 'error' ? 'red' : item.level === 'warning' ? 'yellow' : undefined,
+          color: item.level === 'error' ? 'var(--danger)' : item.level === 'warning' ? 'var(--warn)' : undefined,
         })
       })
     })

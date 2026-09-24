@@ -213,7 +213,7 @@ export function SeriesActionsMenu({
                     <>
                         <Menu.Divider />
                         <Menu.Item
-                            color="red"
+                            color="var(--danger)"
                             leftSection={<IconTrash size={16} />}
                             closeMenuOnClick={false}
                             onClick={() => {

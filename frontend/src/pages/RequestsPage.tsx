@@ -112,7 +112,7 @@ export default function RequestsPage() {
           const range = chapterRangeInline(result.chapterStart, result.chapterEnd)
           notifications.show({
             message: now`Now ${range}`,
-            color: 'green',
+            color: 'var(--ok)',
           })
         },
       },
@@ -147,7 +147,7 @@ export default function RequestsPage() {
                     other: 'Approved, queued # chapters',
                   })
                 : now`Approved`,
-            color: 'green',
+            color: 'var(--ok)',
           })
         },
       },
@@ -161,7 +161,7 @@ export default function RequestsPage() {
       {
         onSuccess: () => {
           setRejecting(null)
-          notifications.show({ message: now`Request rejected`, color: 'gray' })
+          notifications.show({ message: now`Request rejected`, color: 'var(--neutral)' })
         },
       },
     )

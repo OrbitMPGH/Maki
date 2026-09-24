@@ -275,7 +275,7 @@ function SourceLanguageSection() {
             disabled &&
             save.mutate(
               { order, disabled, available: languages?.available ?? [] },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )
           }
         />
@@ -372,7 +372,7 @@ function SourcePrioritySection() {
             disabled &&
             save.mutate(
               { order, disabled },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )
           }
         />
@@ -453,7 +453,7 @@ function MetadataSection() {
                     message: result.alreadyRunning
                       ? now`A refresh is already running`
                       : now`Refresh started, downloading in the background if a new snapshot is available`,
-                    color: result.alreadyRunning ? 'gray' : 'green',
+                    color: result.alreadyRunning ? 'var(--neutral)' : 'var(--ok)',
                   }),
               })
             }
@@ -479,9 +479,9 @@ function RecommendationIndexSection() {
               ? now`Turning embeddings off…`
               : now`Switching to ${kind}: downloading the model and index…`
             : r.reason,
-          color: r.switching ? 'blue' : 'gray',
+          color: r.switching ? 'var(--info)' : 'var(--neutral)',
         }),
-      onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+      onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
     })
 
   return (
@@ -517,7 +517,7 @@ function useLibraryPatch() {
         writeCoverToFolder: settings?.writeCoverToFolder ?? false,
         ...changes,
       },
-      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
     )
   return { settings, patch }
 }
@@ -765,7 +765,7 @@ function NamingSection() {
                       failed > 0
                         ? now`Renamed ${renamed}, ${failed} failed`
                         : plural(renamed, { one: 'Renamed # series', other: 'Renamed # series' }),
-                    color: failed > 0 ? 'yellow' : 'green',
+                    color: failed > 0 ? 'var(--warn)' : 'var(--ok)',
                   })
                   setConfirmRenameAll(false)
                 },
@@ -850,7 +850,7 @@ function KavitaSyncSection() {
               settings &&
               save.mutate(
                 { defaults: settings.defaults, pushToKavita: e.currentTarget.checked },
-                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
               )
             }
           />
@@ -905,7 +905,7 @@ function OpdsSection() {
         onSuccess: (result) => {
           // Enabling for the first time mints the token, so this is the one save that reveals a URL.
           if (result.feedUrl) setRevealedPath(result.feedUrl)
-          notifications.show({ message: now`Saved`, color: 'green' })
+          notifications.show({ message: now`Saved`, color: 'var(--ok)' })
         },
       },
     )
@@ -914,7 +914,7 @@ function OpdsSection() {
     if (!feedUrl) return
     void navigator.clipboard
       .writeText(feedUrl)
-      .then(() => notifications.show({ message: now`Feed URL copied`, color: 'green' }))
+      .then(() => notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' }))
   }
 
   return (
@@ -1032,7 +1032,7 @@ function OpdsSection() {
                     setRotateModalOpen(false)
                     // The only moment the new URL exists in a readable form.
                     setRevealedPath(result.feedUrl)
-                    notifications.show({ message: now`New OPDS feed URL generated`, color: 'green' })
+                    notifications.show({ message: now`New OPDS feed URL generated`, color: 'var(--ok)' })
                   },
                 })
               }
@@ -1091,7 +1091,7 @@ function KavitaReadImportControl() {
           loading={status?.running ?? false}
           onClick={() =>
             start.mutate(undefined, {
-              onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             })
           }
         >
@@ -1270,7 +1270,7 @@ function DownloadSection() {
               },
               {
                 onSuccess: () =>
-                  notifications.show({ message: now`Saved`, color: 'green' }),
+                  notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
               },
             )
           }
@@ -1311,7 +1311,7 @@ function BackupSection() {
     notifications.show({
       title: now`Restore staged`,
       message: now`Maki is restarting to apply it. Reload in a moment.`,
-      color: 'blue',
+      color: 'var(--info)',
       autoClose: false,
     })
 
@@ -1322,7 +1322,7 @@ function BackupSection() {
       restarting()
     }
     const onError = (e: Error) =>
-      notifications.show({ title: now`Restore failed`, message: e.message, color: 'red' })
+      notifications.show({ title: now`Restore failed`, message: e.message, color: 'var(--danger)' })
 
     if (target.kind === 'existing') restore.mutate(target.name, { onSuccess, onError })
     else upload.mutate(target.file, { onSuccess, onError })
@@ -1410,7 +1410,7 @@ function BackupSection() {
           <Button
             onClick={() =>
               create.mutate(undefined, {
-                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'green' }),
+                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'var(--ok)' }),
               })
             }
             loading={create.isPending}
@@ -1442,7 +1442,7 @@ function BackupSection() {
             onClick={() =>
               saveRetention.mutate(
                 { retention: Number(retention) },
-                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
               )
             }
           />
@@ -1587,7 +1587,7 @@ function ProwlarrOptionsSection() {
                     categories: categories.join(',') || null,
                   },
                   {
-                    onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+                    onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
                   },
                 )
               }
@@ -1784,7 +1784,7 @@ function ScrobbleSection() {
             onClick={() =>
               form &&
               save.mutate(form, {
-                onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+                onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
               })
             }
           />
@@ -2166,7 +2166,7 @@ function UpdatesSection() {
                     message: r.updateAvailable
                       ? now`Maki ${checkedVersion} is available`
                       : now`Already up to date`,
-                    color: r.updateAvailable ? 'yellow' : 'green',
+                    color: r.updateAvailable ? 'var(--warn)' : 'var(--ok)',
                   })
                 },
               })
@@ -2237,10 +2237,10 @@ function ImageCacheSection() {
         setAwaitingStart(r.started)
         notifications.show({
           message: r.started ? now`Rebuilding image cache` : (r.message ?? now`Already running`),
-          color: r.started ? 'green' : 'yellow',
+          color: r.started ? 'var(--ok)' : 'var(--warn)',
         })
       },
-      onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+      onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
     })
 
   return (
@@ -2391,7 +2391,7 @@ function KavitaOwnerField() {
       value={bound?.userId != null ? String(bound.userId) : null}
       onChange={(value) =>
         save.mutate(value === null ? null : Number(value), {
-          onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+          onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
         })
       }
     />

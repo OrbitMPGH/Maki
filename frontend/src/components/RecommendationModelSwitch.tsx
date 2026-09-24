@@ -133,9 +133,9 @@ export function RecommendationModelSwitch({
                         })
                       : now`Downloaded the prebuilt index`
                     : r.reason,
-                  color: r.installed ? 'green' : 'yellow',
+                  color: r.installed ? 'var(--ok)' : 'var(--warn)',
                 }),
-              onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+              onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
             })
           }
         >

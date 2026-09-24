@@ -158,7 +158,7 @@ export function CustomRailForm({
     const body = { name: trimmed, placement, spec }
     const options = {
       onSuccess: (saved: CustomRail) => {
-        notifications.show({ color: 'green', message: rail ? now`Rail saved` : now`Rail added` })
+        notifications.show({ color: 'var(--ok)', message: rail ? now`Rail saved` : now`Rail added` })
         onSaved?.(saved)
       },
       onError: (err: unknown) => setError(String(err)),

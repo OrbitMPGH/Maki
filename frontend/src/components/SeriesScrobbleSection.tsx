@@ -51,7 +51,7 @@ function ReviewControls({
 
   // Errors are reported globally (see main.tsx); only success needs saying here.
   const notify = {
-    ok: (message: string) => notifications.show({ message, color: 'green' }),
+    ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
   }
 
   const doMatch = (remoteId: string) =>
@@ -142,7 +142,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
           loading={syncNow.isPending}
           onClick={() =>
             syncNow.mutate(undefined, {
-              onSuccess: (r) => notifications.show({ message: r.message, color: 'green' }),
+              onSuccess: (r) => notifications.show({ message: r.message, color: 'var(--ok)' }),
             })
           }
         >
@@ -196,7 +196,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                     {s.reviewReason ? (
                       <Table.Td colSpan={3}>
                         <Group gap={8} align="flex-start" wrap="nowrap">
-                          <Badge size="sm" color="yellow" variant="light">
+                          <Badge size="sm" color="var(--warn)" variant="light">
                             <Trans>Needs review</Trans>
                           </Badge>
                           {data.kavitaSeriesId != null && (

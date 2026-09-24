@@ -44,7 +44,7 @@ export function RecommenderDials({
             { value: 0, label: '·' },
             { value: 1, label: t`gems` },
           ]}
-          color={obscurity >= 0 ? 'grape' : 'blue'}
+          color={obscurity >= 0 ? 'grape' : 'var(--info)'}
         />
       </div>
       <div>

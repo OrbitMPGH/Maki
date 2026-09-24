@@ -113,7 +113,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
       { kavitaSeriesId: item.kavitaSeriesId, service: item.service, remoteId: remoteId.trim() },
       {
         onSuccess: (data) => {
-          notifications.show({ message: data.message, color: 'green' })
+          notifications.show({ message: data.message, color: 'var(--ok)' })
           setInput('')
         },
       },
@@ -186,10 +186,10 @@ export default function ScrobblePage() {
     const connected = searchParams.get('connected')
     const oauthError = searchParams.get('error')
     if (connected) {
-      notifications.show({ message: now`${connected} connected`, color: 'green' })
+      notifications.show({ message: now`${connected} connected`, color: 'var(--ok)' })
     }
     if (oauthError) {
-      notifications.show({ message: oauthError, color: 'red', autoClose: 10000 })
+      notifications.show({ message: oauthError, color: 'var(--danger)', autoClose: 10000 })
     }
     if (connected || oauthError) {
       setSearchParams({}, { replace: true })
@@ -243,7 +243,7 @@ export default function ScrobblePage() {
       />
 
       {error && (
-        <Alert color="red" variant="light" mb="md">
+        <Alert color="var(--danger)" variant="light" mb="md">
           {String(error)}
         </Alert>
       )}
@@ -260,7 +260,7 @@ export default function ScrobblePage() {
           <Trans>Needs review</Trans>
         </Title>
         {data && data.unmatched.length > 0 && (
-          <Badge variant="light" color="yellow">
+          <Badge variant="light" color="var(--warn)">
             {data.unmatched.length}
           </Badge>
         )}
@@ -313,7 +313,7 @@ export default function ScrobblePage() {
                       <Table.Td>
                         {error ? (
                           <Tooltip label={error} multiline maw={400}>
-                            <Text size="sm" c="red" lineClamp={1} className="scrobble-error-text">
+                            <Text size="sm" c="var(--danger)" lineClamp={1} className="scrobble-error-text">
                               {error}
                             </Text>
                           </Tooltip>

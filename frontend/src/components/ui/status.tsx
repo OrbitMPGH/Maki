@@ -34,14 +34,17 @@ export interface StatusVisual {
   Icon: Icon
 }
 
-/** Mantine palette keys the library badges use, resolved to CSS vars once instead of per instance. */
+/**
+ * Library badge fills, in the design tokens rather than Mantine's stock palette, so a cover's
+ * "Completed" is the same green as every other "ok" in the app and follows the light theme.
+ */
 export const BADGE_COLOR: Record<string, string> = {
-  blue: 'var(--mantine-color-blue-filled)',
-  teal: 'var(--mantine-color-teal-filled)',
-  yellow: 'var(--mantine-color-yellow-filled)',
-  red: 'var(--mantine-color-red-filled)',
-  gray: 'var(--mantine-color-gray-filled)',
-  grape: 'var(--mantine-color-grape-filled)',
+  blue: 'var(--info)',
+  teal: 'var(--ok)',
+  yellow: 'var(--warn)',
+  red: 'var(--danger)',
+  gray: 'var(--neutral)',
+  grape: 'var(--watched)',
 }
 
 /**
@@ -66,6 +69,11 @@ const STATUS_TOKEN: Record<string, string> = {
 /** Token stem for a `StatusVisual.color`, for `var(--x)` / `var(--x-soft)` pairs. */
 export function statusToken(color: string): string {
   return STATUS_TOKEN[color] ?? 'neutral'
+}
+
+/** The same, as a colour value a Mantine `color` prop takes. */
+export function statusColor(color: string): string {
+  return `var(--${statusToken(color)})`
 }
 
 /**

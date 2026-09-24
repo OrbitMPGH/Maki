@@ -55,7 +55,7 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
                 {review.score != null && (
                   <Badge
                     size="sm"
-                    color={ratingBandVisual(review.score * 10).color}
+                    color={`var(--${ratingBandVisual(review.score * 10).token})`}
                     leftSection={<IconStar size={11} />}
                   >
                     {review.score}

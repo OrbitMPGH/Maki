@@ -583,7 +583,7 @@ export default function LibraryPage() {
     notifications.update({
       id: 'bulk-action',
       loading: false,
-      color: errors.length ? 'yellow' : 'green',
+      color: errors.length ? 'var(--warn)' : 'var(--ok)',
       // Only the failure-free case goes through the catalogue: the "first error" text carries a raw
       // exception that translation must not obscure.
       message: errors.length
@@ -1199,7 +1199,7 @@ export default function LibraryPage() {
                       setSaveFilterOpen(false)
                     },
                     onError: (err) =>
-                      notifications.show({ color: 'red', message: `Failed to save filter: ${String(err)}` }),
+                      notifications.show({ color: 'var(--danger)', message: `Failed to save filter: ${String(err)}` }),
                   },
                 )
               }}
@@ -1256,12 +1256,12 @@ export default function LibraryPage() {
                     onSuccess: ({ updated }) => {
                       setTagModalOpen(false)
                       notifications.show({
-                        color: 'green',
+                        color: 'var(--ok)',
                         message: plural(updated, { one: 'Tagged # series', other: 'Tagged # series' }),
                       })
                     },
                     onError: (err) =>
-                      notifications.show({ color: 'red', message: `Failed to tag: ${String(err)}` }),
+                      notifications.show({ color: 'var(--danger)', message: `Failed to tag: ${String(err)}` }),
                   },
                 )
               }
@@ -1304,7 +1304,7 @@ export default function LibraryPage() {
                   setAutoMatchModalOpen(false)
                   exitSelectMode()
                   notifications.show({
-                    color: queued > 0 ? 'green' : undefined,
+                    color: queued > 0 ? 'var(--ok)' : undefined,
                     message:
                       queued > 0
                         ? plural(queued, {
@@ -1431,7 +1431,7 @@ export default function LibraryPage() {
                   onSuccess: ({ updated }) => {
                     setNotifyModalOpen(false)
                     notifications.show({
-                      color: 'green',
+                      color: 'var(--ok)',
                       message: plural(updated, {
                         one: 'Notifications updated for # series',
                         other: 'Notifications updated for # series',
@@ -1440,7 +1440,7 @@ export default function LibraryPage() {
                   },
                   onError: (err) =>
                     notifications.show({
-                      color: 'red',
+                      color: 'var(--danger)',
                       message: `Failed to update notifications: ${String(err)}`,
                     }),
                 },

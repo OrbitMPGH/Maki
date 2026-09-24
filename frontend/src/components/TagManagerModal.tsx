@@ -30,7 +30,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editLabel, setEditLabel] = useState('')
 
-  const fail = (err: unknown) => notifications.show({ color: 'red', message: String(err) })
+  const fail = (err: unknown) => notifications.show({ color: 'var(--danger)', message: String(err) })
 
   const create = () => {
     const label = newLabel.trim()

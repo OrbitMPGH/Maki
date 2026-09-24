@@ -134,7 +134,7 @@ function SavePresetModal({
       { name: trimmed, spec: current() },
       {
         onSuccess: () => {
-          notifications.show({ color: 'green', message: now`Filter saved` })
+          notifications.show({ color: 'var(--ok)', message: now`Filter saved` })
           setName('')
           onClose()
         },
@@ -221,10 +221,10 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
                 { terms },
                 {
                   onSuccess: () => {
-                    notifications.show({ color: 'green', message: now`Hidden list saved` })
+                    notifications.show({ color: 'var(--ok)', message: now`Hidden list saved` })
                     onClose()
                   },
-                  onError: (err) => notifications.show({ color: 'red', message: String(err) }),
+                  onError: (err) => notifications.show({ color: 'var(--danger)', message: String(err) }),
                 },
               )
             }

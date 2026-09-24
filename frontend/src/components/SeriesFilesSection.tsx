@@ -126,7 +126,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   <Button
                     size="xs"
                     variant="light"
-                    color="red"
+                    color="var(--danger)"
                     leftSection={<IconTrash size={15} />}
                     disabled={selected.size === 0}
                     onClick={() => setConfirmOpen(true)}
@@ -243,7 +243,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             <Tooltip label={f.onDisk ? t`Delete from disk` : t`Missing from disk`} withArrow>
                               <ActionIcon
                                 variant="subtle"
-                                color="red"
+                                color="var(--danger)"
                                 disabled={!f.onDisk}
                                 onClick={() => {
                                   setSelected(new Set([f.relativePath]))
@@ -281,7 +281,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                 />{' '}
                 <Trans>Chapters that share a volume archive will also lose their file.</Trans>
               </Text>
-              <Text size="sm" c="red">
+              <Text size="sm" c="var(--danger)">
                 <Trans>This action cannot be undone.</Trans>
               </Text>
               <Group justify="flex-end">
@@ -296,7 +296,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     deleteFiles.mutate([...selected], {
                       onSuccess: (r) => {
                         notifications.show({
-                          color: r.failed > 0 ? 'yellow' : 'green',
+                          color: r.failed > 0 ? 'var(--warn)' : 'var(--ok)',
                           message:
                             r.failed > 0
                               ? `${plural(r.deleted, { one: 'Deleted # file', other: 'Deleted # files' })}, ${plural(

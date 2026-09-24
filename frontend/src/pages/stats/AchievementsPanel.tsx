@@ -67,10 +67,10 @@ function GoalCard({ goal }: { goal: ReadingGoal }) {
           size={54}
           thickness={6}
           roundCaps
-          sections={[{ value: done * 100, color: done >= 1 ? 'green' : 'var(--brand)' }]}
+          sections={[{ value: done * 100, color: done >= 1 ? 'var(--ok)' : 'var(--brand)' }]}
         />
       </Group>
-      <Progress value={done * 100} size="xs" radius="xl" mt="sm" color={done >= 1 ? 'green' : undefined} />
+      <Progress value={done * 100} size="xs" radius="xl" mt="sm" color={done >= 1 ? 'var(--ok)' : undefined} />
     </Card>
   )
 }

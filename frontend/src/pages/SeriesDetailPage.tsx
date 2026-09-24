@@ -122,6 +122,7 @@ import {
   queueStatusVisual,
   seriesProgressVisual,
   seriesStatusVisual,
+  statusColor,
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -941,7 +942,7 @@ export default function SeriesDetailPage() {
             <Group gap={6} wrap="nowrap">
               <Badge
                   size="sm"
-                  color="blue"
+                  color="var(--info)"
                   variant="light"
                   leftSection={<IconDeviceTv size={12} />}
                   className="chapter-span-badge"
@@ -985,7 +986,7 @@ export default function SeriesDetailPage() {
             {downloaded.length > 0 && (
                 <Progress
                     value={(done / downloaded.length) * 100}
-                    color={watchedCount > readCount ? 'violet' : 'teal'}
+                    color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
                     size="sm"
                     radius="xl"
                 />
@@ -1104,8 +1105,8 @@ export default function SeriesDetailPage() {
   // outcomes that aren't failures but aren't wins either — a download action that found nothing
   // left to queue, which would otherwise report a cheerful "Queued 0".
   const notify = {
-    ok: (message: string) => notifications.show({ message, color: 'green' }),
-    info: (message: string) => notifications.show({ message, color: 'yellow' }),
+    ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
+    info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
   }
   const wantedFilterCount = chapters?.filter(chapterFilters.wanted).length ?? 0
   const missingFilterCount = chapters?.filter(chapterFilters.missing).length ?? 0
@@ -1460,7 +1461,7 @@ export default function SeriesDetailPage() {
                   {series.numberingClash && (
                       <Alert
                           mb="md"
-                          color="yellow"
+                          color="var(--warn)"
                           icon={<IconAlertTriangle size={18} />}
                           title={t`Sources disagree on chapter numbering`}
                       >
@@ -1692,7 +1693,7 @@ export default function SeriesDetailPage() {
                     </Text>
                 )}
                 {chapters && readTracking && progress.have > 0 && (
-                    <Badge size="sm" variant="light" color="teal" className="tnum">
+                    <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
                       <Trans>{readFilterCount} read</Trans>
                     </Badge>
                 )}
@@ -1866,7 +1867,7 @@ export default function SeriesDetailPage() {
                             <Button
                                 size="xs"
                                 variant="light"
-                                color="violet"
+                                color="var(--watched)"
                                 leftSection={<IconDeviceTv size={15} />}
                                 disabled={selected.size === 0}
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'watched'}
@@ -1877,7 +1878,7 @@ export default function SeriesDetailPage() {
                             <Button
                                 size="xs"
                                 variant="light"
-                                color="teal"
+                                color="var(--ok)"
                                 leftSection={<IconEyeCheck size={15} />}
                                 disabled={selected.size === 0}
                                 loading={setChaptersState.isPending && setChaptersState.variables?.state === 'read'}
@@ -1910,7 +1911,7 @@ export default function SeriesDetailPage() {
                       <Button
                           size="xs"
                           variant="light"
-                          color="yellow"
+                          color="var(--warn)"
                           leftSection={<IconLinkOff size={15} />}
                           disabled={selected.size === 0}
                           loading={unlinkChapters.isPending}
@@ -1930,7 +1931,7 @@ export default function SeriesDetailPage() {
                       <Button
                           size="xs"
                           variant="light"
-                          color="red"
+                          color="var(--danger)"
                           leftSection={<IconTrash size={15} />}
                           disabled={selected.size === 0}
                           onClick={() => setDeleteChaptersModalOpen(true)}
@@ -1963,7 +1964,7 @@ export default function SeriesDetailPage() {
                   <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
-                <Text size="sm" c="red">
+                <Text size="sm" c="var(--danger)">
                   <Trans>This action cannot be undone.</Trans>
                 </Text>
                 <Group justify="flex-end">
@@ -1971,7 +1972,7 @@ export default function SeriesDetailPage() {
                     <Trans>Cancel</Trans>
                   </Button>
                   <Button
-                      color="red"
+                      color="var(--danger)"
                       leftSection={<IconTrash size={16} />}
                       loading={deleteChapters.isPending}
                       onClick={() =>
@@ -2127,7 +2128,7 @@ export default function SeriesDetailPage() {
                                                   >
                                                     <Badge
                                                         size="sm"
-                                                        color={marker.kind === 'start' ? 'blue' : 'red'}
+                                                        color={marker.kind === 'start' ? 'var(--info)' : 'var(--danger)'}
                                                         variant="light"
                                                         className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
                                                         ref={
@@ -2196,12 +2197,12 @@ export default function SeriesDetailPage() {
                                                               w={72}
                                                               radius="xl"
                                                               animated={queueItem.status === 'Downloading'}
-                                                              color={queueItem.status === 'Failed' ? 'red' : 'brand'}
+                                                              color={queueItem.status === 'Failed' ? 'var(--danger)' : 'brand'}
                                                           />
                                                       )}
                                                       <Badge
                                                           size="sm"
-                                                          color={visual.color}
+                                                          color={statusColor(visual.color)}
                                                           variant="light"
                                                           leftSection={<visual.Icon size={12} />}
                                                           className="tnum"
@@ -2215,7 +2216,7 @@ export default function SeriesDetailPage() {
                                               )
                                             })()
                                         ) : c.hasFile ? (
-                                            <Badge size="sm" color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
+                                            <Badge size="sm" color="var(--ok)" variant="light" leftSection={<IconCircleCheck size={12} />}>
                                               <Trans>Downloaded</Trans>
                                             </Badge>
                                         ) : (
@@ -2236,7 +2237,7 @@ export default function SeriesDetailPage() {
                                             >
                                               <Badge
                                                   size="sm"
-                                                  color={watched ? 'violet' : 'teal'}
+                                                  color={watched ? 'var(--watched)' : 'var(--ok)'}
                                                   variant={watched || external ? 'light' : 'filled'}
                                                   leftSection={
                                                     watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
@@ -2248,7 +2249,7 @@ export default function SeriesDetailPage() {
                                         )}
                                         {/* Shown alongside Read when a finished chapter is being re-read. */}
                                         {inProgress && (
-                                            <Badge size="sm" color="blue" variant="light" className="tnum">
+                                            <Badge size="sm" color="var(--info)" variant="light" className="tnum">
                                               {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                                   in on first open, so show a plain label until then. */}
                                               {rowProgress && rowProgress.pageCount > 0 ? (
@@ -2267,7 +2268,7 @@ export default function SeriesDetailPage() {
                                               <Tooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
                                                 <ActionIcon
                                                     variant={read ? 'light' : 'subtle'}
-                                                    color={read ? 'teal' : 'gray'}
+                                                    color={read ? 'var(--ok)' : 'gray'}
                                                     onClick={() => setRead.mutate({ chapterId: c.id, read: !read })}
                                                     aria-label={t`Toggle read state of ${chapterLbl}`}
                                                 >
@@ -2412,7 +2413,7 @@ export default function SeriesDetailPage() {
                 checked={deleteSeriesFiles}
                 onChange={(e) => setDeleteSeriesFiles(e.currentTarget.checked)}
             />
-            <Text size="sm" c="red">
+            <Text size="sm" c="var(--danger)">
               <Trans>This action cannot be undone.</Trans>
             </Text>
             <Group justify="flex-end">
@@ -2420,7 +2421,7 @@ export default function SeriesDetailPage() {
                 <Trans>Cancel</Trans>
               </Button>
               <Button
-                  color="red"
+                  color="var(--danger)"
                   leftSection={<IconTrash size={16} />}
                   loading={deleteSeries.isPending}
                   onClick={() =>

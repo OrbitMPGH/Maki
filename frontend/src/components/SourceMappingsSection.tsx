@@ -188,7 +188,7 @@ export function SourceMappingsSection({
       { seriesId, sourceName: name, sourceSeriesId, url },
       {
         onSuccess: () => {
-          notifications.show({ message: now`Linked ${name}`, color: 'green' })
+          notifications.show({ message: now`Linked ${name}`, color: 'var(--ok)' })
           setModalOpen(false)
         },
       },
@@ -548,7 +548,7 @@ export function SourceMappingsSection({
                       onSuccess: () =>
                         notifications.show({
                           message: now`Chapter snapshots refreshed`,
-                          color: 'green',
+                          color: 'var(--ok)',
                         }),
                     })
                   }}
@@ -614,7 +614,7 @@ export function SourceMappingsSection({
                           message: failuresMsg
                             ? `${chaptersMsg}; ${filesMsg}; ${failuresMsg}`
                             : `${chaptersMsg}; ${filesMsg}`,
-                          color: failedCount > 0 ? 'orange' : 'green',
+                          color: failedCount > 0 ? 'var(--warn)' : 'var(--ok)',
                         })
                         setRemoving(null)
                       },
@@ -660,7 +660,7 @@ export function SourceMappingsSection({
                     onSuccess: () => {
                       notifications.show({
                         message: now`Source removed without cleanup`,
-                        color: 'orange',
+                        color: 'var(--warn)',
                       })
                       setFallbackOpen(false)
                       setRemoving(null)

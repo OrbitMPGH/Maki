@@ -124,10 +124,10 @@ export function PageLayoutEditor({
       { page, sections },
       {
         onSuccess: () => {
-          notifications.show({ color: 'green', message: now`Layout saved` })
+          notifications.show({ color: 'var(--ok)', message: now`Layout saved` })
           onExit()
         },
-        onError: (err) => notifications.show({ color: 'red', message: String(err) }),
+        onError: (err) => notifications.show({ color: 'var(--danger)', message: String(err) }),
       },
     )
   }

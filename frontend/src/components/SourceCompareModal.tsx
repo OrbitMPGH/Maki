@@ -218,7 +218,7 @@ export function SourceCompareModal({
         onSuccess: () => {
           setSaved(true)
           setBlind(false)
-          notifications.show({ message: now`Source priority updated`, color: 'green' })
+          notifications.show({ message: now`Source priority updated`, color: 'var(--ok)' })
         },
       },
     )
@@ -237,7 +237,7 @@ export function SourceCompareModal({
       },
       {
         onSuccess: () =>
-          notifications.show({ message: now`Default source order updated`, color: 'green' }),
+          notifications.show({ message: now`Default source order updated`, color: 'var(--ok)' }),
       },
     )
   }
@@ -339,7 +339,7 @@ export function SourceCompareModal({
                     other: `Queued # chapters from ${displayName}.`,
                   })
           notifications.show({
-            color: result.queued > 0 ? 'green' : undefined,
+            color: result.queued > 0 ? 'var(--ok)' : undefined,
             message,
           })
         },
@@ -354,7 +354,7 @@ export function SourceCompareModal({
       { chapterId: pick.id, sourceMappingId: panel.mappingId },
       {
         onSuccess: () => {
-          notifications.show({ color: 'green', message: now`Fetching ${label} again. The file is replaced when it lands.` })
+          notifications.show({ color: 'var(--ok)', message: now`Fetching ${label} again. The file is replaced when it lands.` })
           onClose()
         },
       },

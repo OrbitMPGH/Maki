@@ -33,7 +33,7 @@ export function ReadingCardMenu({
       await hide.mutateAsync({ seriesId, hidden: true })
     } catch (error) {
       const reason = String(error)
-      notifications.show({ color: 'red', message: t`Could not remove ${seriesTitle}: ${reason}` })
+      notifications.show({ color: 'var(--danger)', message: t`Could not remove ${seriesTitle}: ${reason}` })
       return
     }
     const id = notifications.show({

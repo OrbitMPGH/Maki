@@ -336,7 +336,7 @@ export function SeriesHero({
                                 // Never green while the sources are short of the full run: "all downloaded" and
                                 // "you have the whole series" are different claims, and the green tick is exactly
                                 // what makes someone unmonitor a series that's still missing its tail.
-                                color={sourceGap ? 'yellow' : progress.complete ? 'teal' : 'blue'}
+                                color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--info)'}
                                 radius="xl"
                             />
                             <Group justify="space-between" mt={9}>
@@ -375,7 +375,7 @@ export function SeriesHero({
                         {sourceGap && (
                             <Alert
                                 mt="md"
-                                color="yellow"
+                                color="var(--warn)"
                                 variant="light"
                                 radius="md"
                                 icon={<IconAlertTriangle size={16} />}

@@ -132,7 +132,7 @@ export function DiscoverLibraryRail({
               warnings.length > 0
                 ? warnings.join(' ')
                 : t`Now in your library. Matching sources in the background.`,
-            color: warnings.length > 0 ? 'yellow' : 'green',
+            color: warnings.length > 0 ? 'var(--warn)' : 'var(--ok)',
             autoClose: warnings.length > 0 ? false : undefined,
           })
         },
@@ -161,7 +161,7 @@ export function DiscoverLibraryRail({
           notifications.show({
             title: t`Requested ${title}`,
             message: t`An admin will see it on the Requests page.`,
-            color: 'green',
+            color: 'var(--ok)',
           })
         },
       },
@@ -183,7 +183,7 @@ export function DiscoverLibraryRail({
           <Button
             mt="md"
             fullWidth
-            color="teal"
+            color="var(--ok)"
             variant="light"
             rightSection={<IconArrowRight size={16} />}
             onClick={goToLibrary}
@@ -199,7 +199,7 @@ export function DiscoverLibraryRail({
           <Title order={3} fz={16}>
             <Trans>Add to library</Trans>
           </Title>
-          <Alert color="yellow" variant="light" mt="md">
+          <Alert color="var(--warn)" variant="light" mt="md">
             <Trans>
               You can add series, but only an admin can choose a root folder. Ask one to add this
               title, or to grant you admin.
@@ -276,7 +276,7 @@ export function DiscoverLibraryRail({
           <Title order={3} fz={16}>
             <Trans>Requested</Trans>
           </Title>
-          <Alert color="green" variant="light" icon={<IconCheck size={16} />} mt="md">
+          <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
             <Trans>An admin decides where it lands and what gets downloaded.</Trans>
           </Alert>
         </>
@@ -306,12 +306,12 @@ export function DiscoverLibraryRail({
       )}
 
       {addSeries.isError && (
-        <Alert color="red" variant="light" mt="sm">
+        <Alert color="var(--danger)" variant="light" mt="sm">
           {String(addSeries.error)}
         </Alert>
       )}
       {createRequest.isError && (
-        <Alert color="red" variant="light" mt="sm">
+        <Alert color="var(--danger)" variant="light" mt="sm">
           {String(createRequest.error)}
         </Alert>
       )}

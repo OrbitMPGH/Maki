@@ -118,10 +118,10 @@ export function RenameSeriesModal({
               rename.mutate(undefined, {
                 onSuccess: (result) => {
                   for (const warning of result.warnings) {
-                    notifications.show({ message: warning, color: 'yellow' })
+                    notifications.show({ message: warning, color: 'var(--warn)' })
                   }
 
-                  notifications.show({ message: now`Renamed`, color: 'green' })
+                  notifications.show({ message: now`Renamed`, color: 'var(--ok)' })
                   onClose()
                 },
               })

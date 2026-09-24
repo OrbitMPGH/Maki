@@ -103,9 +103,9 @@ function SsoCard() {
 
   useEffect(() => {
     if (linkResult.linked) {
-      notifications.show({ message: now`Single sign-on linked to your account`, color: 'green' })
+      notifications.show({ message: now`Single sign-on linked to your account`, color: 'var(--ok)' })
     } else if (linkResult.error) {
-      notifications.show({ message: linkResult.error, color: 'red' })
+      notifications.show({ message: linkResult.error, color: 'var(--danger)' })
     }
   }, [linkResult])
 
@@ -189,10 +189,10 @@ function PasswordCard() {
                     // Worth stating plainly: changing the password rotates the security stamp, which
                     // is what invalidates every other issued cookie.
                     message: now`Password changed. Other devices have been signed out.`,
-                    color: 'green',
+                    color: 'var(--ok)',
                   })
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               },
             )
           }
@@ -263,7 +263,7 @@ function TwoFactorCard() {
               onClick={() =>
                 start.mutate(undefined, {
                   onSuccess: setEnrolling,
-                  onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                  onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
                 })
               }
             >
@@ -290,9 +290,9 @@ function TwoFactorCard() {
               disable.mutate(disablePassword, {
                 onSuccess: () => {
                   setDisablePassword('')
-                  notifications.show({ message: now`Two-factor authentication disabled`, color: 'yellow' })
+                  notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           >
@@ -349,7 +349,7 @@ function TwoFactorCard() {
                   setCode('')
                   setRecoveryCodes(result.recoveryCodes)
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           >
@@ -430,7 +430,7 @@ function ApiKeysCard() {
                   setCreated(result)
                   setName('')
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               },
             )
           }
@@ -543,8 +543,8 @@ function SessionsCard() {
         onClick={() =>
           revoke.mutate(undefined, {
             onSuccess: () =>
-              notifications.show({ message: now`Other sessions signed out`, color: 'green' }),
-            onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+              notifications.show({ message: now`Other sessions signed out`, color: 'var(--ok)' }),
+            onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
           })
         }
       >
