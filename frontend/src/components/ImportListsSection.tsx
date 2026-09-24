@@ -10,7 +10,6 @@ import {
   Stack,
   Switch,
   Text,
-  Title,
 } from '@mantine/core'
 import { IconDownload, IconRefresh } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
@@ -92,7 +91,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
       <Panel p="md">
         <Text fw={700}>{label}</Text>
         <Text size="sm" c="var(--ink-3)" mt={4}>
-          <Trans>Connect {label} above to import from it.</Trans>
+          <Trans>Connect {label} under Scrobbling to import from it.</Trans>
         </Text>
       </Panel>
     )
@@ -340,9 +339,6 @@ export function ImportListsSection() {
 
   return (
     <>
-      <Title order={4} mb="sm">
-        <Trans>Import lists</Trans>
-      </Title>
       {data.enabled === false && (
         <Alert color="var(--ink-3)" mb="md">
           <Trans>Import lists are turned off for this instance.</Trans>
@@ -355,9 +351,9 @@ export function ImportListsSection() {
       </Stack>
 
       <Group gap="xs" mb="sm">
-        <Title order={4}>
+        <Text fw={600} size="sm">
           <Trans>Not matched or ignored</Trans>
-        </Title>
+        </Text>
         {review.length > 0 && (
           <Badge variant="light" color="var(--warn)">
             {review.length}
@@ -371,7 +367,7 @@ export function ImportListsSection() {
           ))}
         </Stack>
       ) : (
-        <Text size="sm" c="var(--ink-3)" mb="lg">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>Nothing unmatched.</Trans>
         </Text>
       )}

@@ -131,6 +131,7 @@ import { SettingsIndex } from '../components/settings/SettingsIndex'
 import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
+import { ImportListsSection } from '../components/ImportListsSection'
 import { ApiError } from '../api/client'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
@@ -1798,6 +1799,25 @@ function ScrobbleSection() {
 }
 
 function ImportListSettingsSection() {
+  const { can } = useAuth()
+  return (
+    <Panel>
+      <Title order={4} mb="xs">
+        <Trans>Import lists</Trans>
+      </Title>
+      <SettingsHelp mb="sm">
+        <Trans>
+          Pulls your tracker lists on a schedule and adds matching series to the library, or files
+          requests when you cannot add series yourself. Connect trackers under Scrobbling first.
+        </Trans>
+      </SettingsHelp>
+      {can('Admin') && <ImportListInstanceControls />}
+      <ImportListsSection />
+    </Panel>
+  )
+}
+
+function ImportListInstanceControls() {
   const { t } = useLingui()
   const { data } = useImportListSettings()
   const save = useSaveImportListSettings()
@@ -1812,44 +1832,33 @@ function ImportListSettingsSection() {
   const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
 
   return (
-    <Panel>
-      <Title order={4} mb="xs">
-        <Trans>Import lists</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
-        <Trans>
-          Periodically pulls your tracker lists (AniList, MyAnimeList, Kitsu) and adds or requests
-          matching series. Per-tracker filters and root folders are on the Scrobble page.
-        </Trans>
-      </SettingsHelp>
-      <Stack gap="xs">
-        <Switch
-          label={t`Enable import lists`}
-          checked={form?.enabled ?? true}
-          onChange={(e) => set({ enabled: e.currentTarget.checked })}
+    <Stack gap="xs" mb="lg">
+      <Switch
+        label={t`Enable import lists for everyone`}
+        checked={form?.enabled ?? true}
+        onChange={(e) => set({ enabled: e.currentTarget.checked })}
+      />
+      <NumberInput
+        label={t`Sync interval (minutes)`}
+        min={15}
+        max={1440}
+        clampBehavior="strict"
+        value={form?.intervalMinutes ?? 15}
+        onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
+      />
+      <Group justify="flex-end">
+        <SaveButton
+          dirty={dirty}
+          loading={save.isPending}
+          onClick={() =>
+            form &&
+            save.mutate(form, {
+              onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+            })
+          }
         />
-        <NumberInput
-          label={t`Sync interval (minutes)`}
-          min={15}
-          max={1440}
-          clampBehavior="strict"
-          value={form?.intervalMinutes ?? 15}
-          onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
-        />
-        <Group justify="flex-end">
-          <SaveButton
-            dirty={dirty}
-            loading={save.isPending}
-            onClick={() =>
-              form &&
-              save.mutate(form, {
-                onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
-              })
-            }
-          />
-        </Group>
-      </Stack>
-    </Panel>
+      </Group>
+    </Stack>
   )
 }
 

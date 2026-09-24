@@ -37,7 +37,6 @@ import {
 } from '../api/hooks'
 import { formatDateTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
-import { ImportListsSection } from '../components/ImportListsSection'
 
 function fmtTime(iso: string | null | undefined): string {
   return iso ? formatDateTime(iso) : '-'
@@ -255,8 +254,6 @@ export default function ScrobblePage() {
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} mb="lg">
         {data?.connections.map((c) => <ConnectionCard key={c.service} connection={c} />)}
       </SimpleGrid>
-
-      <ImportListsSection />
 
       <Group gap="xs" mb="sm">
         <Title order={4}>
