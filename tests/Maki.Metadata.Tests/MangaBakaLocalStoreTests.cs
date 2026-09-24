@@ -952,4 +952,17 @@ public class MangaBakaLocalStoreTests : IDisposable
 
         Assert.Empty(await missingFile.GetProfileRowsAsync([]));
     }
+
+    [Fact]
+    public async Task Kitsu_ids_resolve_through_the_kitsu_column()
+    {
+        _db.AddSeries(1, "Berserk", kitsuId: 8, malId: 2)
+            .AddSeries(2, "Other", kitsuId: 9)
+            .AddSeries(3, "A novel", kitsuId: 10, type: "novel");
+
+        var ids = await Store.GetIdsByExternalIdsAsync(
+            MangaBakaLocalStore.ExternalSource.Kitsu, [8L, 9L, 10L, 2L, 404L]);
+
+        Assert.Equal([(8L, 1L), (9L, 2L)], ids.Select(kv => (kv.Key, kv.Value)).Order());
+    }
 }

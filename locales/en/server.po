@@ -274,6 +274,37 @@ msgstr "Unsupported feedback sort"
 msgid "error.feedback.unsupportedState"
 msgstr "Unsupported feedback state"
 
+#: src/Maki.Api/Controllers/ImportListsController.cs
+msgid "error.importLists.unknownService"
+msgstr "Unknown tracker"
+
+#. The root folder picked for an import list is not one this user has been granted.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+msgid "error.importLists.rootFolderNotVisible"
+msgstr "That root folder is not available to you"
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+msgid "error.importLists.statusesInvalid"
+msgstr "Pick at least one list status: Reading, Plan to read or Completed"
+
+#. {max} is the upper limit, currently 100.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+msgid "error.importLists.maxPerRunInvalid"
+msgstr "Series per run must be between 1 and {max}"
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+msgid "error.importLists.monitorModeInvalid"
+msgstr "Unknown monitoring mode"
+
+#. An admin switched import lists off for the whole instance.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+msgid "error.importLists.disabled"
+msgstr "Import lists are turned off on this server"
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+msgid "error.importLists.running"
+msgstr "An import list run is already in progress"
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
@@ -1360,6 +1391,20 @@ msgstr "No sources matched"
 msgid "inbox.sourceMatch.none.body"
 msgstr "{series}: no source had a match, link one by hand to download"
 
+#: src/Maki.Api/Services/ImportListService.cs
+msgid "inbox.importList.finished.title"
+msgstr "Import list finished"
+
+#. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
+#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#: src/Maki.Api/Services/ImportListService.cs
+msgid "inbox.importList.finished.body"
+msgstr ""
+"{tracker}: {added, plural, other {# added}}"
+"{requested, plural, =0 {} other {, # requested}}"
+"{skipped, plural, =0 {} other {, # skipped}}"
+"{errors, plural, =0 {} one {, # error} other {, # errors}}"
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 msgid "inbox.update.available.title"
 msgstr "Update available"
@@ -1723,6 +1768,13 @@ msgstr "Series removed"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "notify.series.removed.body"
 msgstr "{series} was removed from the library{filesDeleted, select, yes {, files deleted} other {, files kept on disk}}"
+
+#. Stored as the Note of a series request an import list files for a user who cannot add series.
+#. Rendered once in the instance default language, since admins read it on the Requests page.
+#. {tracker} is a site name and is not translated.
+#: src/Maki.Api/Services/ImportListService.cs
+msgid "notify.importList.requestNote"
+msgstr "Imported from {tracker} list"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "notify.request.submitted.title"

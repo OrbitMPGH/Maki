@@ -56,6 +56,7 @@ public class InboxRendererTests
         { "inbox.sourceMatch.matched", new { sources = "MangaDex, MangaPill" } },
         { "inbox.sourceMatch.none", new { } },
         { "inbox.update.available", new { latest = "1.2.0", current = "1.1.0" } },
+        { "inbox.importList.finished", new { tracker = "AniList", added = 3, requested = 0, skipped = 2, errors = 1 } },
     };
 
     [Theory]

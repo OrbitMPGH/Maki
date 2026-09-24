@@ -515,3 +515,65 @@ export interface NotificationRequest {
   events: NotificationEvents
   tagIds: number[]
 }
+
+/** Matches the server's `ScrobbleStatus` vocabulary for an import-list-eligible entry. */
+export type ImportListStatus = 'Reading' | 'PlanToRead' | 'Completed'
+
+export interface ImportListTrackerPrefs {
+  enabled: boolean
+  statuses: ImportListStatus[]
+  rootFolderId: number | null
+  monitored: boolean
+  monitorNewItems: string
+  maxPerRun: number
+}
+
+export interface ImportListRunSummary {
+  at: string
+  added: number
+  requested: number
+  skipped: number
+  errors: number
+}
+
+export interface ImportListTrackerDto {
+  service: string
+  label: string
+  connected: boolean
+  prefs: ImportListTrackerPrefs
+  lastRun: ImportListRunSummary | null
+}
+
+/** Unmatched | Removed | Ignored | Added. */
+export type ImportListSkipReason = 'Unmatched' | 'Removed' | 'Ignored' | 'Added'
+
+export interface ImportListSkipDto {
+  id: number
+  service: string
+  remoteId: string
+  title: string
+  reason: ImportListSkipReason
+  createdAt: string
+}
+
+export interface ImportListsStatusDto {
+  enabled: boolean
+  intervalMinutes: number
+  trackers: ImportListTrackerDto[]
+  skipped: ImportListSkipDto[]
+}
+
+export interface ImportListRunResult {
+  added: number
+  requested: number
+  skipped: number
+  alreadyPresent: number
+  errors: number
+}
+
+/**
+ * `POST /importlists/run` reply. A `full` run kicks off in the background and answers 202 with
+ * `started: true`; the outcome arrives later via the inbox and `ImportListTrackerDto.lastRun`.
+ * A partial run still answers inline with the counts.
+ */
+export type ImportListRunResponse = ImportListRunResult | { started: true }

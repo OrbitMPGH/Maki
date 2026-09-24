@@ -388,6 +388,44 @@ msgstr "Desteklenmeyen geri bildirim sıralaması"
 msgid "error.feedback.unsupportedState"
 msgstr "Desteklenmeyen geri bildirim durumu"
 
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Unknown tracker
+msgid "error.importLists.unknownService"
+msgstr ""
+
+#. The root folder picked for an import list is not one this user has been granted.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: That root folder is not available to you
+msgid "error.importLists.rootFolderNotVisible"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Pick at least one list status: Reading, Plan to read or Completed
+msgid "error.importLists.statusesInvalid"
+msgstr ""
+
+#. {max} is the upper limit, currently 100.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Series per run must be between 1 and {max}
+msgid "error.importLists.maxPerRunInvalid"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Unknown monitoring mode
+msgid "error.importLists.monitorModeInvalid"
+msgstr ""
+
+#. An admin switched import lists off for the whole instance.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Import lists are turned off on this server
+msgid "error.importLists.disabled"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: An import list run is already in progress
+msgid "error.importLists.running"
+msgstr ""
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
 #, fuzzy
@@ -1932,6 +1970,18 @@ msgstr "Hiçbir kaynak eşleşmedi"
 msgid "inbox.sourceMatch.none.body"
 msgstr "{series}: hiçbir kaynak eşleşmedi, indirmek için birini elle bağlayın"
 
+#: src/Maki.Api/Services/ImportListService.cs
+#. English: Import list finished
+msgid "inbox.importList.finished.title"
+msgstr ""
+
+#. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
+#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#: src/Maki.Api/Services/ImportListService.cs
+#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
+msgid "inbox.importList.finished.body"
+msgstr ""
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
 #, fuzzy
@@ -2446,6 +2496,14 @@ msgstr ""
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: {series} was removed from the library{filesDeleted, select, yes {, files deleted} other {, files kept on disk}}
 msgid "notify.series.removed.body"
+msgstr ""
+
+#. Stored as the Note of a series request an import list files for a user who cannot add series.
+#. Rendered once in the instance default language, since admins read it on the Requests page.
+#. {tracker} is a site name and is not translated.
+#: src/Maki.Api/Services/ImportListService.cs
+#. English: Imported from {tracker} list
+msgid "notify.importList.requestNote"
 msgstr ""
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs

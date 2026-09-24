@@ -1785,6 +1785,32 @@ public class SettingsController(
         return await GetScrobble(ct);
     }
 
+    public record ImportListSettings(bool Enabled, int IntervalMinutes);
+
+    /// <summary>
+    /// The instance half of import lists: the scheduled pass's switch and interval. Each user's own
+    /// list settings live under <c>api/v1/importlists</c>.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("importlists")]
+    public async Task<IActionResult> GetImportLists(CancellationToken ct) => Ok(new ImportListSettings(
+        await settings.GetAsync(SettingKeys.ImportListEnabled, ct) != "false",
+        int.TryParse(await settings.GetAsync(SettingKeys.ImportListIntervalMinutes, ct), out var m)
+            && m >= ImportListService.MinIntervalMinutes
+            ? m
+            : ImportListService.DefaultIntervalMinutes));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("importlists")]
+    public async Task<IActionResult> SetImportLists([FromBody] ImportListSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.ImportListEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.ImportListIntervalMinutes,
+            Math.Max(request.IntervalMinutes, ImportListService.MinIntervalMinutes)
+                .ToString(CultureInfo.InvariantCulture), ct);
+        return await GetImportLists(ct);
+    }
+
     /// <summary>
     /// The <c>auth.*</c> settings. Applied at startup — the session cookie's Secure flag, HSTS, the
     /// trusted-proxy list and the lockout thresholds all configure objects the host builds once — so

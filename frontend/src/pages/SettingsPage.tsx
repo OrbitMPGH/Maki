@@ -94,6 +94,9 @@ import {
   useSaveMonitoringSettings,
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
+  useImportListSettings,
+  useSaveImportListSettings,
+  type ImportListSettings,
   useKavitaLibraries,
   useSaveSourceLanguages,
   useSaveSourcePriority,
@@ -1794,6 +1797,62 @@ function ScrobbleSection() {
   )
 }
 
+function ImportListSettingsSection() {
+  const { t } = useLingui()
+  const { data } = useImportListSettings()
+  const save = useSaveImportListSettings()
+  const [form, setForm] = useState<ImportListSettings | null>(null)
+
+  useEffect(() => {
+    if (data && form === null) setForm(data)
+  }, [data, form])
+
+  const set = (patch: Partial<ImportListSettings>) =>
+    setForm((f) => (f ? { ...f, ...patch } : f))
+  const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
+
+  return (
+    <Panel>
+      <Title order={4} mb="xs">
+        <Trans>Import lists</Trans>
+      </Title>
+      <SettingsHelp mb="sm">
+        <Trans>
+          Periodically pulls your tracker lists (AniList, MyAnimeList, Kitsu) and adds or requests
+          matching series. Per-tracker filters and root folders are on the Scrobble page.
+        </Trans>
+      </SettingsHelp>
+      <Stack gap="xs">
+        <Switch
+          label={t`Enable import lists`}
+          checked={form?.enabled ?? true}
+          onChange={(e) => set({ enabled: e.currentTarget.checked })}
+        />
+        <NumberInput
+          label={t`Sync interval (minutes)`}
+          min={15}
+          max={1440}
+          clampBehavior="strict"
+          value={form?.intervalMinutes ?? 15}
+          onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
+        />
+        <Group justify="flex-end">
+          <SaveButton
+            dirty={dirty}
+            loading={save.isPending}
+            onClick={() =>
+              form &&
+              save.mutate(form, {
+                onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+              })
+            }
+          />
+        </Group>
+      </Stack>
+    </Panel>
+  )
+}
+
 /**
  * The UI settings are one record with one PUT, so each control has to send the *whole* thing.
  * This hook keeps every call site honest about that: patch what changed, carry the rest over.
@@ -2495,6 +2554,7 @@ function useSectionNodes(): Record<string, ReactNode> {
         </ConnectionSettingsCard>
       ),
       scrobbling: <ScrobbleSection />,
+      'import-lists': <ImportListSettingsSection />,
       notifications: <NotificationsSection />,
 
       users: <UsersSection />,

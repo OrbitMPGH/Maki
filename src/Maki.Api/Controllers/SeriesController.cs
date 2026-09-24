@@ -942,6 +942,11 @@ public class SeriesController(
         }
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
+        // Still on somebody's tracker list, so an import list would add it straight back otherwise.
+        if (series.MangaBakaId is int removedMangaBakaId)
+        {
+            await ImportListService.MarkRemovedAsync(db, removedMangaBakaId, ct);
+        }
         coverService.DeleteCover(id);
         await stats.RecordAsync(
             StatsEventType.SeriesRemoved, null, title, payloadJson: payload, seriesKey: seriesKey, ct: ct);

@@ -3,6 +3,7 @@ import { Panel } from '../ui/Panel'
 import {
   INBOX_ADMIN_ONLY,
   INBOX_CATEGORIES,
+  INBOX_TYPE_DESCRIPTIONS,
   INBOX_TYPE_LABELS,
   useInboxPrefs,
   useSaveInboxPrefs,
@@ -90,15 +91,25 @@ export function NotificationPrefsSection() {
               // Belt and braces: the category flag already hides the System block from a reader,
               // but a type could be marked admin-only inside a mixed category later.
               .filter((type) => isAdmin || !INBOX_ADMIN_ONLY.includes(type))
-              .map((type) => (
-                <Group key={type} justify="space-between" wrap="nowrap" gap="md">
-                  <Text size="sm">{renderLabel(INBOX_TYPE_LABELS[type])}</Text>
-                  <Switch
-                    checked={prefs.types[type] ?? true}
-                    onChange={(e) => setType(type, e.currentTarget.checked)}
-                  />
-                </Group>
-              ))}
+              .map((type) => {
+                const description = INBOX_TYPE_DESCRIPTIONS[type]
+                return (
+                  <Group key={type} justify="space-between" wrap="nowrap" gap="md">
+                    <div>
+                      <Text size="sm">{renderLabel(INBOX_TYPE_LABELS[type])}</Text>
+                      {description && (
+                        <Text size="xs" c="var(--ink-3)">
+                          {renderLabel(description)}
+                        </Text>
+                      )}
+                    </div>
+                    <Switch
+                      checked={prefs.types[type] ?? true}
+                      onChange={(e) => setType(type, e.currentTarget.checked)}
+                    />
+                  </Group>
+                )
+              })}
           </Stack>
         </div>
       ))}

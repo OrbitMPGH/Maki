@@ -678,6 +678,13 @@ try
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
+    // The same four instances, in ScrobbleService's order, for consumers that only need the interface.
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.AniListTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MalTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaBakaTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.KitsuTracker>());
+    builder.Services.AddSingleton<ImportListService>();
+    builder.Services.AddScoped<SeriesRequestSubmitter>();
     builder.Services.AddSingleton<AnimeSignalSources>();
     builder.Services.AddSingleton<AnimeSignalSyncService>();
 
@@ -778,6 +785,15 @@ try
             .ForJob(Maki.Api.Jobs.ScrobbleJob.Key)
             .WithIdentity("scrobble-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Every-minute tick; ImportListService decides whether the configured interval has elapsed.
+        // Starts well after the scrobble tick so the first passes don't hit the trackers together.
+        q.AddJob<Maki.Api.Jobs.ImportListJob>(j => j.WithIdentity(Maki.Api.Jobs.ImportListJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ImportListJob.Key)
+            .WithIdentity("import-lists-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // Hourly tick; AnimeSignalSyncService decides whether its own (much longer) interval has

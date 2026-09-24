@@ -234,6 +234,109 @@ public class MangaBakaTracker(
         }
     }
 
+    private static IEnumerable<string> RemoteStatesFor(ScrobbleStatus status) => status switch
+    {
+        ScrobbleStatus.Reading => ["reading", "rereading"],
+        ScrobbleStatus.Completed => ["completed"],
+        ScrobbleStatus.PlanToRead => ["plan_to_read"],
+        _ => ["paused", "dropped", "considering"],
+    };
+
+    /// <summary>
+    /// The v2 library listing, because v1's entries carry no series id. Each row is
+    /// <c>{ entry, lists, series }</c>, and the embedded series' <c>source</c> object already holds
+    /// the AniList, MAL and Kitsu ids. One pass per <c>state</c>, like MAL: nothing documents that a
+    /// repeated <c>state</c> is ORed. A page that is empty or brings no new id ends the pass, so an
+    /// endpoint that ignores <c>page</c> cannot spin to the page bound.
+    /// </summary>
+    public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
+    {
+        const int pageSize = 100;
+        const int maxPages = 500;
+        var entries = new List<RemoteListEntry>();
+        var seen = new HashSet<long>();
+        foreach (var state in statuses.SelectMany(RemoteStatesFor).Distinct())
+        {
+            for (var page = 1; page <= maxPages; page++)
+            {
+                var data = await RequestAsync(userId, HttpMethod.Get,
+                    $"/v2/my/library?limit={pageSize}&page={page}&state={state}", auth: true, ct: ct);
+                if (data.ValueKind != JsonValueKind.Object ||
+                    !data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
+                {
+                    break;
+                }
+
+                var newIds = 0;
+                foreach (var row in rows.EnumerateArray())
+                {
+                    var entry = row.TryGetProperty("entry", out var e) && e.ValueKind == JsonValueKind.Object ? e : default;
+                    var series = row.TryGetProperty("series", out var s) && s.ValueKind == JsonValueKind.Object ? s : default;
+                    var seriesId = series.ValueKind == JsonValueKind.Object ? ToLong(series, "id") : null;
+                    seriesId ??= entry.ValueKind == JsonValueKind.Object ? ToLong(entry, "series_id") : null;
+                    if (seriesId is not { } id || entry.ValueKind != JsonValueKind.Object || !seen.Add(id))
+                    {
+                        continue;
+                    }
+
+                    newIds++;
+                    var status = StateToInternal.GetValueOrDefault(GetString(entry, "state") ?? "", ScrobbleStatus.Other);
+                    if (!statuses.Contains(status))
+                    {
+                        continue;
+                    }
+
+                    var source = series.ValueKind == JsonValueKind.Object &&
+                                 series.TryGetProperty("source", out var src) && src.ValueKind == JsonValueKind.Object
+                        ? src
+                        : default;
+                    entries.Add(new RemoteListEntry(
+                        id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        status,
+                        series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "",
+                        AniListId: SourceId(source, "anilist"),
+                        MalId: SourceId(source, "my_anime_list"),
+                        KitsuId: SourceId(source, "kitsu"),
+                        MangaBakaId: id));
+                }
+
+                var hasNext = data.TryGetProperty("pagination", out var pagination) &&
+                              pagination.ValueKind == JsonValueKind.Object && GetString(pagination, "next") is not null;
+                if (newIds == 0 || !hasNext)
+                {
+                    break;
+                }
+            }
+        }
+
+        return entries;
+    }
+
+    private static long? SourceId(JsonElement source, string site) =>
+        source.ValueKind == JsonValueKind.Object &&
+        source.TryGetProperty(site, out var entry) && entry.ValueKind == JsonValueKind.Object &&
+        ToLong(entry, "id") is > 0 and { } id
+            ? id
+            : null;
+
+    private static long? ToLong(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var p))
+        {
+            return null;
+        }
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.Number when p.TryGetInt64(out var n) => n,
+            JsonValueKind.String when long.TryParse(
+                p.GetString(), System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out var n) => n,
+            _ => null,
+        };
+    }
+
     // ---- search / matching ----
 
     public async Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(

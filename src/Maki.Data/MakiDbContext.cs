@@ -84,6 +84,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
+    public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
 
     public override int SaveChanges()
     {
@@ -475,6 +476,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => s.SyncedAt);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ImportListSkip>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.Service, x.RemoteId }).IsUnique();
+            e.HasIndex(x => x.MangaBakaId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ScrobbleUnmatched>(e =>

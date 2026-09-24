@@ -1485,7 +1485,7 @@ public class MangaBakaLocalStore(
     }
 
     /// <summary>Which provider's manga ids a lookup is keyed on.</summary>
-    public enum ExternalSource { AniList, MyAnimeList }
+    public enum ExternalSource { AniList, MyAnimeList, Kitsu }
 
     /// <summary>
     /// External manga id -> canonical MangaBaka id, for the ids that resolve.
@@ -1508,7 +1508,13 @@ public class MangaBakaLocalStore(
             return new Dictionary<long, long>();
         }
 
-        var column = source == ExternalSource.AniList ? "source_anilist_id" : "source_my_anime_list_id";
+        var column = source switch
+        {
+            ExternalSource.AniList => "source_anilist_id",
+            ExternalSource.MyAnimeList => "source_my_anime_list_id",
+            ExternalSource.Kitsu => "source_kitsu_id",
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null),
+        };
         var result = new Dictionary<long, long>(wanted.Count);
         var pending = new List<(long External, long SeriesId)>();
 

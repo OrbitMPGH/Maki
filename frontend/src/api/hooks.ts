@@ -18,6 +18,9 @@ import type {
   ChapterDto,
   LocalizedTitle,
   CompareSnapshot,
+  ImportListRunResponse,
+  ImportListsStatusDto,
+  ImportListTrackerPrefs,
   MetadataLink,
   MetadataSearchResult,
   NotificationDto,
@@ -3307,6 +3310,78 @@ export function useSaveScrobbleSettings() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'scrobble'] })
       void queryClient.invalidateQueries({ queryKey: ['scrobble'] })
+    },
+  })
+}
+
+// ---- Import lists ------------------------------------------------------------
+
+export interface ImportListSettings {
+  enabled: boolean
+  intervalMinutes: number
+}
+
+export function useImportListSettings() {
+  return useQuery({
+    queryKey: ['settings', 'importlists'],
+    queryFn: () => api<ImportListSettings>('/settings/importlists'),
+  })
+}
+
+export function useSaveImportListSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: ImportListSettings) =>
+      api<ImportListSettings>('/settings/importlists', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: (saved) => queryClient.setQueryData(['settings', 'importlists'], saved),
+  })
+}
+
+export function useImportLists() {
+  return useQuery({
+    queryKey: ['importlists'],
+    queryFn: () => api<ImportListsStatusDto>('/importlists'),
+  })
+}
+
+export function useSaveImportListPrefs() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: ImportListTrackerPrefs & { service: string }) =>
+      api<void>('/importlists/prefs', { method: 'PUT', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
+    },
+  })
+}
+
+export function useRunImportList() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: { service?: string; full: boolean }) =>
+      api<ImportListRunResponse>('/importlists/run', { method: 'POST', body: JSON.stringify(value) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
+    },
+  })
+}
+
+export function useRetryImportListSkip() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/importlists/skipped/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
+    },
+  })
+}
+
+export function useIgnoreImportListSkip() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/importlists/skipped/${id}/ignore`, { method: 'POST' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
     },
   })
 }

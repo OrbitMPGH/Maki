@@ -23,6 +23,7 @@ export type InboxEventType =
   | 'importFinished'
   | 'backupFinished'
   | 'sourceMatchFinished'
+  | 'importListFinished'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -90,7 +91,7 @@ export const INBOX_CATEGORIES: {
   {
     id: 'library',
     label: msg`Library`,
-    types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished'],
+    types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished', 'importListFinished'],
   },
   { id: 'downloads', label: msg`Downloads`, types: ['chapterDownloaded', 'downloadFailed'] },
   { id: 'progress', label: msg`Progress`, types: ['achievementUnlocked', 'levelUp'] },
@@ -127,6 +128,16 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   importFinished: msg`Library import finished`,
   backupFinished: msg`Backup taken`,
   sourceMatchFinished: msg`Source matching finished`,
+  importListFinished: msg`Import list finished`,
+}
+
+/**
+ * Shown under the label on the settings card, same table shape as `INBOX_TYPE_LABELS` and for the
+ * same reason: a rendered string here would be frozen in whichever language was active when the
+ * module loaded. Only event types that need more than their label carry an entry.
+ */
+export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
+  importListFinished: msg`A tracker list sync added or requested series.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

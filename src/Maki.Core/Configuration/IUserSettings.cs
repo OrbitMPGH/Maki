@@ -87,15 +87,17 @@ public static class UserSettingKeys
         SettingKeys.UserGamification,
         SettingKeys.NotificationsInbox,
         SettingKeys.ProgressLastNotifiedLevel,
+        SettingKeys.ImportListPrefs,
     ];
 
     /// <summary>
     /// Whether a key belongs to a user. Covers <see cref="Fixed"/> plus the generated
-    /// <c>scrobble.{service}.reading</c> / <c>.ratings</c> toggles, which are per-service and so
-    /// cannot be enumerated without knowing the registered trackers.
+    /// <c>scrobble.{service}.reading</c> / <c>.ratings</c> toggles and <c>importlist.lastrun.{service}</c>,
+    /// which are per-service and so cannot be enumerated without knowing the registered trackers.
     /// </summary>
     public static bool IsPerUser(string key) =>
         Fixed.Contains(key) ||
+        key.StartsWith(SettingKeys.ImportListLastRunPrefix, StringComparison.Ordinal) ||
         (key.StartsWith("scrobble.", StringComparison.Ordinal) &&
          (key.EndsWith(".reading", StringComparison.Ordinal) || key.EndsWith(".ratings", StringComparison.Ordinal)));
 }

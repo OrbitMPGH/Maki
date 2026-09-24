@@ -570,6 +570,127 @@ public class KitsuTracker(
         return results;
     }
 
+    private static IEnumerable<string> RemoteStatusesFor(ScrobbleStatus status) => status switch
+    {
+        ScrobbleStatus.Reading => ["current"],
+        ScrobbleStatus.Completed => ["completed"],
+        ScrobbleStatus.PlanToRead => ["planned"],
+        _ => ["on_hold", "dropped"],
+    };
+
+    /// <summary>
+    /// Paged by <c>page[offset]</c> until <c>links.next</c> disappears, rather than following that
+    /// link: it is an absolute URL and <see cref="RequestAsync"/> takes a path. The manga and its
+    /// mappings ride along in <c>included</c>, which is where the MAL and AniList ids come from.
+    /// </summary>
+    public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
+    {
+        if (statuses.Count == 0)
+        {
+            return [];
+        }
+
+        var remoteUserId = await RemoteUserIdAsync(userId, ct);
+        var statusFilter = string.Join(",", statuses.SelectMany(RemoteStatusesFor).Distinct());
+        const int pageSize = 500;
+        var entries = new List<RemoteListEntry>();
+        var seen = new HashSet<long>();
+        for (var offset = 0; offset < 100_000; offset += pageSize)
+        {
+            var data = await RequestAsync(userId, HttpMethod.Get,
+                $"/library-entries?filter[userId]={remoteUserId}&filter[kind]=manga&filter[status]={statusFilter}" +
+                "&include=manga,manga.mappings&fields[libraryEntries]=status,manga" +
+                "&fields[manga]=canonicalTitle,mappings&fields[mappings]=externalSite,externalId" +
+                $"&page[limit]={pageSize}&page[offset]={offset}", auth: true, ct: ct);
+            if (!data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array ||
+                rows.GetArrayLength() == 0)
+            {
+                break;
+            }
+
+            var included = new Dictionary<(string Type, string Id), JsonElement>();
+            if (data.TryGetProperty("included", out var inc) && inc.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in inc.EnumerateArray())
+                {
+                    if (GetString(item, "type") is { } type && GetString(item, "id") is { } id)
+                    {
+                        included[(type, id)] = item;
+                    }
+                }
+            }
+
+            foreach (var row in rows.EnumerateArray())
+            {
+                var attrs = row.TryGetProperty("attributes", out var a) ? a : default;
+                var status = StatusToInternal.GetValueOrDefault(GetString(attrs, "status") ?? "", ScrobbleStatus.Other);
+                var mangaId = RelationshipIds(row, "manga").FirstOrDefault();
+                if (mangaId is null || !long.TryParse(mangaId, out var kitsuId) ||
+                    !statuses.Contains(status) || !seen.Add(kitsuId))
+                {
+                    continue;
+                }
+
+                long? malId = null, aniListId = null;
+                var title = "";
+                if (included.TryGetValue(("manga", mangaId), out var manga))
+                {
+                    title = manga.TryGetProperty("attributes", out var ma) ? GetString(ma, "canonicalTitle") ?? "" : "";
+                    foreach (var mappingId in RelationshipIds(manga, "mappings"))
+                    {
+                        if (!included.TryGetValue(("mappings", mappingId), out var mapping) ||
+                            !mapping.TryGetProperty("attributes", out var mapAttrs) ||
+                            !long.TryParse(GetString(mapAttrs, "externalId"), out var externalId))
+                        {
+                            continue;
+                        }
+
+                        switch (GetString(mapAttrs, "externalSite"))
+                        {
+                            case "myanimelist/manga":
+                                malId ??= externalId;
+                                break;
+                            case "anilist/manga":
+                                aniListId ??= externalId;
+                                break;
+                        }
+                    }
+                }
+
+                entries.Add(new RemoteListEntry(
+                    mangaId, status, title, AniListId: aniListId, MalId: malId, KitsuId: kitsuId));
+            }
+
+            var hasNext = data.TryGetProperty("links", out var links) && GetString(links, "next") is not null;
+            if (!hasNext)
+            {
+                break;
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>The ids in a JSON:API relationship's <c>data</c>, whether it is to-one or to-many.</summary>
+    private static IEnumerable<string> RelationshipIds(JsonElement resource, string relationship)
+    {
+        if (resource.ValueKind != JsonValueKind.Object ||
+            !resource.TryGetProperty("relationships", out var rels) || rels.ValueKind != JsonValueKind.Object ||
+            !rels.TryGetProperty(relationship, out var rel) || rel.ValueKind != JsonValueKind.Object ||
+            !rel.TryGetProperty("data", out var data))
+        {
+            return [];
+        }
+
+        return data.ValueKind switch
+        {
+            JsonValueKind.Object => GetString(data, "id") is { } id ? [id] : [],
+            JsonValueKind.Array => data.EnumerateArray().Select(d => GetString(d, "id")).OfType<string>().ToList(),
+            _ => [],
+        };
+    }
+
     public string EntryUrl(string remoteId) => $"https://kitsu.app/manga/{remoteId}";
 
     /// <summary>First element of a JSON:API top-level array member ("data", "included"), or null.</summary>

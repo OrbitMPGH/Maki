@@ -34,13 +34,12 @@ public class SeriesRequestsController(
     ILocalizer localizer,
     IUserLocaleResolver locales,
     MakiDbContext db,
-    IEnumerable<IMetadataProvider> metadataProviders,
     SeriesCreationService seriesCreation,
     DownloadQueueService downloadQueue,
     DownloadBatchNotifier downloadBatches,
-    EventBroadcaster events,
     InboxService inbox,
     NotificationService notifications,
+    SeriesRequestSubmitter submitter,
     ICurrentUser currentUser,
     ILogger<SeriesRequestsController> logger) : ControllerBase
 {
@@ -118,37 +117,16 @@ public class SeriesRequestsController(
                 return this.Fail(localizer, "error.requests.seriesRequired");
             }
 
-            // Resolved from the provider rather than taken from the request body: the admin reviewing
-            // this has to be looking at the title that provider id actually resolves to, not at text
-            // a client supplied alongside it.
-            var metadata = await metadataProviders.First().GetAsync(body.MetadataProviderId, ct);
-            if (metadata is null)
+            if (await submitter.FillNewSeriesAsync(request, body.MetadataProviderId, ct) is { } failed)
             {
-                return this.Fail(localizer, "error.requests.metadataNotFound");
-            }
-
-            if (metadata.MangaBakaId is int mangaBakaId)
-            {
-                // IgnoreQueryFilters: the library is shared, and "already there" is true regardless of
-                // whether this user has been granted its root folder. Telling them to request it
-                // anyway would produce a request an admin can only reject.
-                var existing = await db.Series
-                    .IgnoreQueryFilters()
-                    .Where(s => s.MangaBakaId == mangaBakaId)
-                    .Select(s => (int?)s.Id)
-                    .FirstOrDefaultAsync(ct);
-
-                if (existing is not null)
+                if (failed.Error == SeriesRequestSubmitError.SeriesAlreadyExists)
                 {
                     const string key = "error.requests.seriesAlreadyExists";
-                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = existing });
+                    return Conflict(new { code = key, error = localizer.Get(key), seriesId = failed.ExistingSeriesId });
                 }
-            }
 
-            request.MetadataProviderId = body.MetadataProviderId;
-            request.Title = metadata.Title;
-            request.CoverUrl = metadata.CoverUrl;
-            request.Year = metadata.Year;
+                return this.Fail(localizer, "error.requests.metadataNotFound");
+            }
         }
         else
         {
@@ -174,48 +152,11 @@ public class SeriesRequestsController(
             request.Year = series.Year;
         }
 
-        // A second identical pending request is noise in the admin queue, not a stronger signal.
-        var duplicate = await db.SeriesRequests.AnyAsync(r =>
-            r.Status == SeriesRequestStatus.Pending &&
-            r.Kind == request.Kind &&
-            r.MetadataProviderId == request.MetadataProviderId &&
-            r.SeriesId == request.SeriesId &&
-            r.ChapterStart == request.ChapterStart &&
-            r.ChapterEnd == request.ChapterEnd, ct);
-
-        if (duplicate)
+        var submitted = await submitter.SubmitAsync(request, currentUser.UserName, ct);
+        if (submitted.Error == SeriesRequestSubmitError.AlreadyPending)
         {
             return this.Conflict(localizer, "error.requests.alreadyPending");
         }
-
-        db.SeriesRequests.Add(request);
-        await db.SaveChangesAsync(ct);
-
-        logger.LogInformation(
-            "{User} requested {Kind} '{Title}'", currentUser.UserName, request.Kind, request.Title);
-
-        await events.SeriesRequested(request.Id, request.Title, currentUser.UserName);
-        inbox.Raise(InboxEventType.RequestSubmitted, new InboxMessage(
-                Key: "inbox.request.submitted",
-                Params: InboxMessage.Args(new { user = currentUser.UserName, title = request.Title }),
-                Url: "/requests"),
-            InboxAudience.Admins);
-
-        var locale = await locales.DefaultAsync(ct);
-        notifications.Dispatch(NotificationEventType.RequestSubmitted, new NotificationMessage(
-            NotificationEventType.RequestSubmitted,
-            Title: localizer.GetFor(locale, "notify.request.submitted.title"),
-            Body: localizer.GetFor(locale, "notify.request.submitted.body", new
-            {
-                user = currentUser.UserName,
-                series = request.Title,
-                range = RangeKind(request.ChapterStart, request.ChapterEnd),
-                start = ChapterLabel(request.ChapterStart),
-                end = ChapterLabel(request.ChapterEnd),
-            }),
-            SeriesTitle: request.Title,
-            SeriesId: request.SeriesId,
-            Url: "/requests"));
 
         var dto = (await ToDtosAsync([request], ct))[0];
         return CreatedAtAction(nameof(List), new { id = request.Id }, dto);
@@ -673,18 +614,6 @@ public class SeriesRequestsController(
             logger.LogWarning(ex, "Could not send the resolved notification for request {Id}", request.Id);
         }
     }
-
-    /// <summary>Which shape a chapter range takes, as a select key for <c>notify.request.submitted.body</c>.</summary>
-    private static string RangeKind(decimal? start, decimal? end) => (start, end) switch
-    {
-        (null, null) => "all",
-        (not null, null) => "from",
-        (null, not null) => "upTo",
-        _ => "between",
-    };
-
-    private static string ChapterLabel(decimal? number) =>
-        number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
 
     /// <summary>Renders an edited chapter range the way the requests page labels it.</summary>
     private static string RangeLabel(decimal? start, decimal? end) => (start, end) switch

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -306,7 +307,7 @@ public class MalTracker(
                     }
                 }
 
-                var id = node.GetProperty("id").GetInt32().ToString();
+                var id = node.GetProperty("id").GetInt32().ToString(CultureInfo.InvariantCulture);
                 results.Add(new ScrobbleCandidate(
                     id, GetString(node, "title") ?? "",
                     names.Where(n => !string.IsNullOrEmpty(n)).Cast<string>().ToList(),
@@ -315,6 +316,67 @@ public class MalTracker(
         }
 
         return results;
+    }
+
+    private static IEnumerable<string> RemoteStatusesFor(ScrobbleStatus status) => status switch
+    {
+        ScrobbleStatus.Reading => ["reading"],
+        ScrobbleStatus.Completed => ["completed"],
+        ScrobbleStatus.PlanToRead => ["plan_to_read"],
+        _ => ["on_hold", "dropped"],
+    };
+
+    /// <summary>
+    /// One pass per MAL status, since the list endpoint filters on a single status. Paged by offset
+    /// for the same reason as <see cref="ListAnimeAsync"/>: <c>paging.next</c> is an absolute URL.
+    /// </summary>
+    public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
+    {
+        const int pageSize = 1000;
+        var entries = new List<RemoteListEntry>();
+        var seen = new HashSet<long>();
+        foreach (var remoteStatus in statuses.SelectMany(RemoteStatusesFor).Distinct())
+        {
+            for (var offset = 0; offset < 50_000; offset += pageSize)
+            {
+                var data = await RequestAsync(userId, HttpMethod.Get,
+                    $"/users/@me/mangalist?status={remoteStatus}&fields=list_status&nsfw=true" +
+                    $"&limit={pageSize}&offset={offset}", null, ct);
+                if (data.TryGetProperty("data", out var rows) && rows.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var row in rows.EnumerateArray())
+                    {
+                        if (!row.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
+                            GetInt(node, "id") is not { } mangaId || !seen.Add(mangaId))
+                        {
+                            continue;
+                        }
+
+                        var listStatus = row.TryGetProperty("list_status", out var ls) && ls.ValueKind == JsonValueKind.Object
+                            ? GetString(ls, "status")
+                            : null;
+                        var status = StatusToInternal.GetValueOrDefault(listStatus ?? remoteStatus, ScrobbleStatus.Other);
+                        if (!statuses.Contains(status))
+                        {
+                            continue;
+                        }
+
+                        entries.Add(new RemoteListEntry(
+                            mangaId.ToString(CultureInfo.InvariantCulture), status, GetString(node, "title") ?? "", MalId: mangaId));
+                    }
+                }
+
+                var hasNext = data.TryGetProperty("paging", out var paging) && paging.ValueKind == JsonValueKind.Object &&
+                              GetString(paging, "next") is not null;
+                if (!hasNext)
+                {
+                    break;
+                }
+            }
+        }
+
+        return entries;
     }
 
     public string EntryUrl(string remoteId) => $"https://myanimelist.net/manga/{remoteId}";

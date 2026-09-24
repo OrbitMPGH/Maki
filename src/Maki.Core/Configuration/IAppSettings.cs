@@ -556,6 +556,18 @@ public static class SettingKeys
     /// <summary>Per-tracker "push ratings to this service" toggle. Unset = on.</summary>
     public static string ScrobbleRatingsKey(string service) => $"scrobble.{service}.ratings";
 
+    /// <summary>Instance switch for the scheduled import list pass. Unset = on.</summary>
+    public const string ImportListEnabled = "importlist.enabled";
+    /// <summary>Minutes between scheduled import list passes. Default 360.</summary>
+    public const string ImportListIntervalMinutes = "importlist.interval";
+    public const string ImportListLastRunAt = "importlist.lastrunat";
+    /// <summary>Per-user <c>ImportListPrefs</c> JSON blob, keyed by tracker name.</summary>
+    public const string ImportListPrefs = "importlist.prefs";
+    public const string ImportListLastRunPrefix = "importlist.lastrun.";
+
+    /// <summary>Per-user JSON of the last import list run for one tracker.</summary>
+    public static string ImportListLastRunKey(string service) => $"{ImportListLastRunPrefix}{service}";
+
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";
 
