@@ -754,7 +754,7 @@ function BulkDeleteModal({
           <Button variant="default" onClick={close}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="var(--danger)" disabled={!confirmed} loading={pending} onClick={onConfirm}>
+          <Button color="var(--danger-fill)" disabled={!confirmed} loading={pending} onClick={onConfirm}>
             <Trans>Delete permanently</Trans>
           </Button>
         </Group>

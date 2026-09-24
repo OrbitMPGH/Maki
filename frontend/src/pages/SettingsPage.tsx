@@ -750,7 +750,7 @@ function NamingSection() {
             <Trans>Cancel</Trans>
           </Button>
           <Button
-            color="var(--danger)"
+            color="var(--danger-fill)"
             loading={renameMany.isPending}
             onClick={() =>
               renameMany.mutate((allSeries ?? []).map((s) => s.id), {
@@ -1024,7 +1024,7 @@ function OpdsSection() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="var(--danger)"
+              color="var(--danger-fill)"
               loading={rotate.isPending}
               onClick={() =>
                 rotate.mutate(undefined, {
@@ -1462,7 +1462,7 @@ function BackupSection() {
             <Button variant="default" onClick={() => setTarget(null)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button color="var(--danger)" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
+            <Button color="var(--danger-fill)" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
               <Trans>Restore &amp; restart</Trans>
             </Button>
           </Group>
@@ -2665,7 +2665,7 @@ export default function SettingsPage() {
               <Trans>Keep editing</Trans>
             </Button>
             <Button
-              color="var(--danger)"
+              color="var(--danger-fill)"
               onClick={() => {
                 if (pendingTab) switchTab(pendingTab)
                 setPendingTab(null)

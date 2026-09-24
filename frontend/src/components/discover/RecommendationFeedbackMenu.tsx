@@ -118,6 +118,7 @@ export function RecommendationFeedbackMenu({ providerId, surface }: { providerId
       <Tooltip label={sentiment === 'liked' ? t`Remove your thumbs up` : t`More like this`} withArrow zIndex={2001}>
         <ActionIcon
           size="lg" variant={sentiment === 'liked' ? 'filled' : 'default'} color="var(--ok)"
+          c={sentiment === 'liked' ? 'var(--ok-on)' : undefined}
           loading={busy} aria-pressed={sentiment === 'liked'} aria-label={t`Thumbs up`}
           onClick={() => void submit(sentiment === 'liked' ? 'clear-sentiment' : 'like')}
         >

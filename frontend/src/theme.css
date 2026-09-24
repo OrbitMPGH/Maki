@@ -36,12 +36,17 @@
   --brand-hover: #5c6cf0;
   --brand-on: #ffffff;
   --brand-fg: #b8c1ff;
+  /* Brand text that sits on cover art under a dark scrim, which stays dark in the light theme too. */
+  --brand-fg-on-art: var(--brand-fg);
   --brand-glow: rgba(109, 125, 255, 0.35);
 
   --ok: #3fb950;
+  --ok-on: #071a10;
   --warn: #d6a327;
   --info: #4c8dff;
   --danger: #f2554c;
+  /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
+  --danger-fill: #c0322b;
   --watched: #b197fc;
   --suggestive: #b0bd52;
   --suggestive-soft: color-mix(in srgb, var(--suggestive) 15%, transparent);
@@ -143,7 +148,10 @@
   --ink-2: #3d4454;
   --ink-3: #4a5162;
   --ink-4: #606879;
+  --brand-fg: #4553e6;
+  --brand-fg-on-art: #b8c1ff;
   --ok: #237b36;
+  --ok-on: #ffffff;
   --warn: #876000;
   --info: #245fbd;
   --danger: #c0322b;
@@ -688,7 +696,8 @@ body {
   justify-content: center;
   padding: 0 6px;
   font-variant-numeric: tabular-nums;
-  background: var(--brand);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
 }
 .cover-badge-read {
   background: var(--ok);
@@ -1037,7 +1046,8 @@ body {
   cursor: pointer;
 }
 .home-read-badge:hover {
-  background: var(--brand);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   opacity: 1;
 }
 /* Quick-add / owned cue, top-right of the poster. The poster's full-card button owns the action,
@@ -1057,13 +1067,11 @@ body {
   border: 0;
   border-radius: 50%;
   pointer-events: none;
-  color: #fff;
-  background: var(--mantine-color-teal-filled);
-}
-.discover-corner:hover {
-  background: var(--mantine-color-teal-filled-hover);
+  color: var(--ok-on);
+  background: var(--ok);
 }
 .discover-corner[data-add='true'] {
+  color: var(--mantine-primary-color-contrast);
   background: var(--mantine-color-brand-filled);
   opacity: 0;
   transform: scale(0.85);
@@ -1145,7 +1153,7 @@ body {
   align-items: center;
   gap: 4px;
   font-weight: 600;
-  color: var(--brand-fg);
+  color: var(--brand-fg-on-art);
 }
 .home-chapter-label[data-action] > svg {
   flex: none;
@@ -1270,7 +1278,7 @@ body {
   font-size: var(--type-label);
   font-weight: 600;
   line-height: 1.25;
-  color: var(--brand-fg, #b8c1ff);
+  color: var(--brand-fg-on-art);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2147,8 +2155,8 @@ body {
 }
 .setup-step[data-current] .setup-step-index {
   border-color: var(--brand);
-  background: var(--brand);
-  color: var(--brand-on);
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-primary-color-contrast);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
 }
 .setup-step-text {

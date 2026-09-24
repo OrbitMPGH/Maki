@@ -32,7 +32,7 @@ export function ConfirmDialog({
           <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="var(--danger)" loading={loading} onClick={onConfirm}>
+          <Button color="var(--danger-fill)" loading={loading} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </Group>

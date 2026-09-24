@@ -341,7 +341,7 @@ export default function ActivityPage() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="var(--danger)"
+              color="var(--danger-fill)"
               loading={clear.isPending}
               onClick={() => {
                 clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })

@@ -193,7 +193,7 @@ export function CustomRailSection({
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="var(--danger)"
+              color="var(--danger-fill)"
               loading={remove.isPending}
               onClick={() =>
                 remove.mutate(rail.id, {

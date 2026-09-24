@@ -476,7 +476,7 @@ export default function RequestsPage() {
             <Button variant="default" onClick={() => setRejecting(null)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button color="var(--danger)" onClick={submitReject} loading={reject.isPending}>
+            <Button color="var(--danger-fill)" onClick={submitReject} loading={reject.isPending}>
               <Trans>Reject</Trans>
             </Button>
           </Group>

@@ -1972,7 +1972,7 @@ export default function SeriesDetailPage() {
                     <Trans>Cancel</Trans>
                   </Button>
                   <Button
-                      color="var(--danger)"
+                      color="var(--danger-fill)"
                       leftSection={<IconTrash size={16} />}
                       loading={deleteChapters.isPending}
                       onClick={() =>
@@ -2421,7 +2421,7 @@ export default function SeriesDetailPage() {
                 <Trans>Cancel</Trans>
               </Button>
               <Button
-                  color="var(--danger)"
+                  color="var(--danger-fill)"
                   leftSection={<IconTrash size={16} />}
                   loading={deleteSeries.isPending}
                   onClick={() =>

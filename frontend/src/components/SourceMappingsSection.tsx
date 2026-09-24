@@ -583,7 +583,7 @@ export function SourceMappingsSection({
                 <Trans>Cancel</Trans>
               </Button>
               <Button
-                color="var(--danger)"
+                color="var(--danger-fill)"
                 leftSection={<IconTrash size={16} />}
                 disabled={missingSnapshots.length > 0 || !removing}
                 loading={removeMapping.isPending}
@@ -650,7 +650,7 @@ export function SourceMappingsSection({
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="var(--danger)"
+              color="var(--danger-fill)"
               loading={deleteMapping.isPending}
               onClick={() =>
                 removing &&

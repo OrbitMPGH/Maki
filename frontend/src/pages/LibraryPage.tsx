@@ -1341,7 +1341,7 @@ export default function LibraryPage() {
             <Trans>Cancel</Trans>
           </Button>
           <Button
-            color="var(--danger)"
+            color="var(--danger-fill)"
             leftSection={<IconTrash size={16} />}
             onClick={() => {
               setDeleteModalOpen(false)

@@ -174,7 +174,7 @@ export function ImportReviewModal({
 
           <Stack gap="xs">
             <Button
-              color="var(--danger)"
+              color="var(--danger-fill)"
               onClick={() => decide('Replace')}
               loading={settle.isPending}
               leftSection={<IconAlertTriangle size={16} />}

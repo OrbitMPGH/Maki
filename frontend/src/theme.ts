@@ -94,12 +94,16 @@ const dark: MantineColorsTuple = [
 
 /** Builds the Mantine theme for a given accent palette (defaults to indigo). */
 export function createAppTheme(accent: MantineColorsTuple = brand) {
-  return createTheme({ ...themeBase, colors: { brand: accent, dark } })
+  // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
+  const primaryShade = accent === rose ? ({ light: 6, dark: 6 } as const) : themeBase.primaryShade
+  return createTheme({ ...themeBase, primaryShade, colors: { brand: accent, dark } })
 }
 
 const themeBase: MantineThemeOverride = {
   primaryColor: 'brand',
   primaryShade: { light: 6, dark: 5 },
+  // Emerald and amber fills are too light for white labels; this flips them to black.
+  autoContrast: true,
   colors: { brand, dark },
   defaultRadius: 'md',
   fontFamily:
