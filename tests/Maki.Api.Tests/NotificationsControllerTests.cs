@@ -358,4 +358,57 @@ public class NotificationsControllerTests : IDisposable
         Assert.Equal("error.notifications.deliveryFailed", code);
         Assert.DoesNotContain("secret", error);
     }
+
+    private int SeedTag(string label)
+    {
+        using var db = _db.NewContext();
+        var tag = new Tag { Label = label };
+        db.Tags.Add(tag);
+        db.SaveChanges();
+        return tag.Id;
+    }
+
+    [Fact]
+    public async Task Tag_ids_and_new_events_round_trip()
+    {
+        var a = SeedTag("a");
+        var b = SeedTag("b");
+        var c = SeedTag("c");
+        var events = new NotificationsController.EventsDto(
+            false, false, false, false, false, false,
+            SeriesAdded: true, SeriesRemoved: false, RequestSubmitted: true, RequestResolved: false, ManualMatchNeeded: true);
+
+        var created = (NotificationsController.NotificationDto)((OkObjectResult)await Controller().Create(
+            DiscordRequest() with { Events = events, TagIds = [b, a, a] }, CancellationToken.None)).Value!;
+        Assert.Equal([a, b], created.TagIds);
+        Assert.Equal(events, created.Events);
+
+        await Controller().Update(created.Id, DiscordRequest() with { Events = events, TagIds = [c, b] }, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(await Controller().List(CancellationToken.None));
+        var listed = Assert.Single(Assert.IsAssignableFrom<IEnumerable<NotificationsController.NotificationDto>>(ok.Value));
+        Assert.Equal([b, c], listed.TagIds);
+        Assert.Equal(events, listed.Events);
+    }
+
+    [Fact]
+    public async Task Omitted_tag_ids_mean_every_series()
+    {
+        var created = (NotificationsController.NotificationDto)
+            ((OkObjectResult)await Controller().Create(DiscordRequest(), CancellationToken.None)).Value!;
+
+        Assert.Empty(created.TagIds);
+    }
+
+    [Fact]
+    public async Task Unknown_tag_ids_are_rejected()
+    {
+        var known = SeedTag("known");
+
+        var result = await Controller().Create(DiscordRequest() with { TagIds = [known, known + 100] }, CancellationToken.None);
+
+        Assert.Equal("error.notifications.unknownTag", Code(result));
+        using var db = _db.NewContext();
+        Assert.Empty(db.Notifications);
+    }
 }

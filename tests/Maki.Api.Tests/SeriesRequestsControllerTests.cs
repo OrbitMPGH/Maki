@@ -58,6 +58,7 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     private readonly RecordingInbox _inbox = new();
+    private readonly RecordingNotifications _notifications = new();
 
     public void Dispose()
     {
@@ -74,12 +75,13 @@ public class SeriesRequestsControllerTests : IDisposable
             sourceMatchQueue: new SourceMatchQueue(),
             stats: null!, identity: null!, appSettings: new FakeAppSettings(),
             naming: new NamingService(new FakeAppSettings()),
+            notifications: _notifications, locales: new TestUserLocaleResolver(), catalog: new TestLocalizer(),
             logger: NullLogger<SeriesCreationService>.Instance);
 
         return new SeriesRequestsController(
             new TestLocalizer(),
             new TestUserLocaleResolver(),
-            db, [_metadata], creation, _queue, _batches, _events, _inbox,
+            db, [_metadata], creation, _queue, _batches, _events, _inbox, _notifications,
             new TestCurrentUser(userId, userName, permissions),
             NullLogger<SeriesRequestsController>.Instance);
     }
@@ -157,6 +159,64 @@ public class SeriesRequestsControllerTests : IDisposable
 
         Assert.Single(_events.Requested);
         Assert.Equal("reader", _events.Requested[0].RequestedBy);
+    }
+
+    [Fact]
+    public async Task Creating_a_request_sends_an_outbound_notification()
+    {
+        var seriesId = SeedSeriesWithChapters(1, 2, 3);
+
+        await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId, ChapterStart: 2), default);
+
+        var (type, message) = Assert.Single(_notifications.Sent);
+        Assert.Equal(Maki.Core.Notifications.NotificationEventType.RequestSubmitted, type);
+        Assert.Equal(seriesId, message.SeriesId);
+        Assert.Contains("user=reader", message.Body);
+        Assert.Contains("range=from", message.Body);
+        Assert.Contains("start=2", message.Body);
+    }
+
+    [Fact]
+    public async Task Rejecting_sends_a_warning_outbound_naming_the_requester()
+    {
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default));
+        _notifications.Sent.Clear();
+
+        await AsAdmin().Reject(created.Id, new RejectSeriesRequestBody(null), default);
+
+        var (type, message) = Assert.Single(_notifications.Sent);
+        Assert.Equal(Maki.Core.Notifications.NotificationEventType.RequestResolved, type);
+        Assert.Equal(Maki.Core.Notifications.NotificationLevel.Warning, message.Level);
+        Assert.Contains("outcome=rejected", message.Body);
+        Assert.Contains("user=reader", message.Body);
+    }
+
+    [Fact]
+    public async Task Approving_a_new_series_request_announces_the_add_and_the_resolution()
+    {
+        var existing = _db.SeedSeries();
+        int rootFolderId;
+        using (var db = _db.NewContext())
+            rootFolderId = (await db.Series.SingleAsync(s => s.Id == existing)).RootFolderId;
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "987"), default));
+        _notifications.Sent.Clear();
+
+        var approved = Body<SeriesRequestDto>(await AsAdmin().Approve(created.Id,
+            new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default));
+
+        var added = Assert.Single(_notifications.Sent,
+            n => n.Type == Maki.Core.Notifications.NotificationEventType.SeriesAdded).Message;
+        Assert.Equal(approved.SeriesId, added.SeriesId);
+        Assert.Equal($"/series/{approved.SeriesId}", added.Url);
+        Assert.Contains("hasRequester=yes", added.Body);
+        Assert.Contains("user=reader", added.Body);
+        var resolved = Assert.Single(_notifications.Sent,
+            n => n.Type == Maki.Core.Notifications.NotificationEventType.RequestResolved).Message;
+        Assert.Equal(Maki.Core.Notifications.NotificationLevel.Info, resolved.Level);
+        Assert.Contains("outcome=approved", resolved.Body);
     }
 
     // ---- validation ----

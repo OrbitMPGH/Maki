@@ -24,20 +24,23 @@ public class NotificationsController(
 {
     public record EventsDto(
         bool ChapterDownloaded, bool DownloadFailed, bool NewChapterAvailable,
-        bool ImportCompleted, bool HealthIssue, bool UpdateAvailable);
+        bool ImportCompleted, bool HealthIssue, bool UpdateAvailable,
+        bool SeriesAdded = false, bool SeriesRemoved = false, bool RequestSubmitted = false,
+        bool RequestResolved = false, bool ManualMatchNeeded = false);
     public record NotificationDto(
         int Id, string Name, NotificationType Type, bool Enabled,
-        Dictionary<string, string> Config, EventsDto Events);
+        Dictionary<string, string> Config, EventsDto Events, int[] TagIds);
+    /// <param name="TagIds">Series events only reach this connection for series carrying one of these tags. Empty or absent means every series.</param>
     public record NotificationRequest(
         string Name, NotificationType Type, bool Enabled,
-        Dictionary<string, string>? Config, EventsDto Events);
+        Dictionary<string, string>? Config, EventsDto Events, int[]? TagIds = null);
 
     [HttpGet("providers")]
     public IActionResult Providers() => Ok(notifications.Descriptors);
 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct) =>
-        Ok((await db.Notifications.OrderBy(n => n.Id).ToListAsync(ct)).Select(ToDto));
+        Ok((await db.Notifications.Include(n => n.Tags).OrderBy(n => n.Id).ToListAsync(ct)).Select(ToDto));
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] NotificationRequest request, CancellationToken ct)
@@ -45,6 +48,11 @@ public class NotificationsController(
         if (Validate(request) is { } invalid)
         {
             return invalid;
+        }
+
+        if (await ValidateTagsAsync(request, ct) is { } badTags)
+        {
+            return badTags;
         }
 
         var entity = new Notification();
@@ -62,7 +70,12 @@ public class NotificationsController(
             return invalid;
         }
 
-        var entity = await db.Notifications.FirstOrDefaultAsync(n => n.Id == id, ct);
+        if (await ValidateTagsAsync(request, ct) is { } badTags)
+        {
+            return badTags;
+        }
+
+        var entity = await db.Notifications.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id, ct);
         if (entity is null)
         {
             return NotFound();
@@ -189,6 +202,20 @@ public class NotificationsController(
         return null;
     }
 
+    private async Task<IActionResult?> ValidateTagsAsync(NotificationRequest request, CancellationToken ct)
+    {
+        var ids = TagIds(request);
+        if (ids.Length == 0)
+        {
+            return null;
+        }
+
+        var known = await db.Tags.CountAsync(t => ids.Contains(t.Id), ct);
+        return known == ids.Length ? null : this.Fail(localizer, "error.notifications.unknownTag");
+    }
+
+    private static int[] TagIds(NotificationRequest request) => (request.TagIds ?? []).Distinct().ToArray();
+
     private IActionResult RangeFailure(NotificationField field) =>
         this.Fail(localizer, "error.notifications.fieldOutOfRange", new
         {
@@ -236,6 +263,22 @@ public class NotificationsController(
         entity.OnImportCompleted = request.Events.ImportCompleted;
         entity.OnHealthIssue = request.Events.HealthIssue;
         entity.OnUpdateAvailable = request.Events.UpdateAvailable;
+        entity.OnSeriesAdded = request.Events.SeriesAdded;
+        entity.OnSeriesRemoved = request.Events.SeriesRemoved;
+        entity.OnRequestSubmitted = request.Events.RequestSubmitted;
+        entity.OnRequestResolved = request.Events.RequestResolved;
+        entity.OnManualMatchNeeded = request.Events.ManualMatchNeeded;
+
+        var tagIds = TagIds(request);
+        foreach (var stale in entity.Tags.Where(t => !tagIds.Contains(t.TagId)).ToList())
+        {
+            entity.Tags.Remove(stale);
+        }
+
+        foreach (var tagId in tagIds.Where(id => entity.Tags.All(t => t.TagId != id)))
+        {
+            entity.Tags.Add(new NotificationTag { TagId = tagId });
+        }
     }
 
     /// <summary>Keeps only the descriptor's keys, under the descriptor's spelling, so nothing else gets stored.</summary>
@@ -268,6 +311,9 @@ public class NotificationsController(
 
         return new NotificationDto(n.Id, n.Name, n.Type, n.Enabled, config, new EventsDto(
             n.OnChapterDownloaded, n.OnDownloadFailed, n.OnNewChapterAvailable,
-            n.OnImportCompleted, n.OnHealthIssue, n.OnUpdateAvailable));
+            n.OnImportCompleted, n.OnHealthIssue, n.OnUpdateAvailable,
+            n.OnSeriesAdded, n.OnSeriesRemoved, n.OnRequestSubmitted,
+            n.OnRequestResolved, n.OnManualMatchNeeded),
+            n.Tags.Select(t => t.TagId).Order().ToArray());
     }
 }

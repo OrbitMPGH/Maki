@@ -11,6 +11,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
+using Maki.Core.Notifications;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
@@ -50,6 +51,8 @@ public class SeriesController(
     SourceAvailability sourceAvailability,
     ICurrentUser currentUser,
     IUserSettings userSettings,
+    NotificationService notifications,
+    IUserLocaleResolver locales,
     ILogger<SeriesController> logger) : ControllerBase
 {
     private string? _titleLanguage;
@@ -923,6 +926,8 @@ public class SeriesController(
         });
         var title = series.Title;
         var seriesKey = SeriesIdentity.For(series);
+        // The join rows cascade away with the series, and tag-scoped connections still need them.
+        var tagIds = await db.SeriesTags.Where(st => st.SeriesId == id).Select(st => st.TagId).ToListAsync(ct);
 
         // Before the delete cascades the provenance rows away, while they can still say whose
         // recommendation inputs this series was part of. Incremented in the database rather than on
@@ -940,6 +945,19 @@ public class SeriesController(
         coverService.DeleteCover(id);
         await stats.RecordAsync(
             StatsEventType.SeriesRemoved, null, title, payloadJson: payload, seriesKey: seriesKey, ct: ct);
+
+        // No SeriesId or link: both would point at a row that no longer exists.
+        var locale = await locales.DefaultAsync(ct);
+        notifications.Dispatch(NotificationEventType.SeriesRemoved, new NotificationMessage(
+            NotificationEventType.SeriesRemoved,
+            Title: localizer.GetFor(locale, "notify.series.removed.title"),
+            Body: localizer.GetFor(locale, "notify.series.removed.body", new
+            {
+                series = title,
+                filesDeleted = deleteFiles ? "yes" : "no",
+            }),
+            SeriesTitle: title,
+            SeriesTagIds: tagIds));
         return NoContent();
     }
 

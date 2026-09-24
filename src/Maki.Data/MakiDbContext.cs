@@ -70,6 +70,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
     public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationTag> NotificationTags => Set<NotificationTag>();
 
     /// <summary>
     /// The per-user in-app notification inbox. Not to be confused with <see cref="Notifications"/>,
@@ -332,6 +333,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // unique index is what stops the library growing two spellings of the same label.
             e.Property(t => t.Label).UseCollation("NOCASE");
             e.HasIndex(t => t.Label).IsUnique();
+        });
+
+        modelBuilder.Entity<NotificationTag>(e =>
+        {
+            e.ToTable("NotificationTags");
+            e.HasKey(j => new { j.NotificationId, j.TagId });
+            e.HasOne<Notification>().WithMany(n => n.Tags).HasForeignKey(j => j.NotificationId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<SavedFilter>(e =>

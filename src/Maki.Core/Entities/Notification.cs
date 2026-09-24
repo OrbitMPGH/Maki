@@ -41,4 +41,12 @@ public class Notification
     public bool OnImportCompleted { get; set; }
     public bool OnHealthIssue { get; set; }
     public bool OnUpdateAvailable { get; set; }
+    public bool OnSeriesAdded { get; set; }
+    public bool OnSeriesRemoved { get; set; }
+    public bool OnRequestSubmitted { get; set; }
+    public bool OnRequestResolved { get; set; }
+    public bool OnManualMatchNeeded { get; set; }
+
+    /// <summary>Limits series events to series carrying one of these tags. Empty means every series.</summary>
+    public ICollection<NotificationTag> Tags { get; set; } = [];
 }

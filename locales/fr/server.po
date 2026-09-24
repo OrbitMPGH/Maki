@@ -528,6 +528,11 @@ msgid "error.notifications.unknownType"
 msgstr "Type de notification inconnu"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
+#. English: One of the selected tags no longer exists
+msgid "error.notifications.unknownTag"
+msgstr ""
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: URL must be a full http:// or https:// address
 #, fuzzy
 msgid "error.notifications.urlMustBeHttp"
@@ -2419,6 +2424,61 @@ msgstr "Importation terminée"
 #, fuzzy
 msgid "notify.import.completed.body"
 msgstr "{folder} importé dans la bibliothèque"
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Series added
+msgid "notify.series.added.title"
+msgstr ""
+
+#. {hasRequester} is "yes" when the add came from approving somebody's request, and {user} is their
+#. display name.
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: {series} was added to the library{hasRequester, select, yes {. Requested by {user}} other {}}
+msgid "notify.series.added.body"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series removed
+msgid "notify.series.removed.title"
+msgstr ""
+
+#. {filesDeleted} is "yes" when the series folder was deleted from disk along with it.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: {series} was removed from the library{filesDeleted, select, yes {, files deleted} other {, files kept on disk}}
+msgid "notify.series.removed.body"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: New request
+msgid "notify.request.submitted.title"
+msgstr ""
+
+#. {range} is "all", "from", "upTo" or "between"; {start} and {end} are chapter numbers.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: {user} requested {series}{range, select, from {, chapter {start} onwards} upTo {, up to chapter {end}} between {, chapters {start} to {end}} other {}}
+msgid "notify.request.submitted.body"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: Request resolved
+msgid "notify.request.resolved.title"
+msgstr ""
+
+#. {outcome} is "approved" or "rejected". {user} is who made the request.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: {outcome, select, approved {Approved} other {Declined}}: {series}, requested by {user}
+msgid "notify.request.resolved.body"
+msgstr ""
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: No source matched
+msgid "notify.sourceMatch.none.title"
+msgstr ""
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: No source matched {series}. Link one by hand from the series page.
+msgid "notify.sourceMatch.none.body"
+msgstr ""
 
 #. The one outbound message with a person behind it: an admin pressed Test and is watching for it,
 #. so it renders in their language rather than the instance's. {name} is what they called the

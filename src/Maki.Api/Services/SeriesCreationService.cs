@@ -1,7 +1,9 @@
-﻿using Maki.Core.Configuration;
+﻿using Maki.Api.Localization;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
+using Maki.Core.Notifications;
 using Maki.Data;
 using Maki.Data.Identity;
 using System.Security.Cryptography;
@@ -78,6 +80,9 @@ public class SeriesCreationService(
     SeriesIdentityService identity,
     IAppSettings appSettings,
     NamingService naming,
+    NotificationService notifications,
+    IUserLocaleResolver locales,
+    IMessageCatalog catalog,
     ILogger<SeriesCreationService> logger)
 {
     /// <param name="deferSourceMatching">
@@ -207,6 +212,8 @@ public class SeriesCreationService(
             await creationTransaction.CommitAsync(ct);
         }
 
+        await NotifyAddedAsync(series, originatingRequest, ct);
+
         // The series row is already committed, so these steps can't fail the request — but they
         // can't be swallowed either. Collect what went wrong and hand it back with the result.
         var warnings = new List<string>();
@@ -275,6 +282,11 @@ public class SeriesCreationService(
                 {
                     await chapterSyncService.SyncSeriesAsync(series.Id, ct);
                 }
+                else
+                {
+                    await SourceMatchWorkerHostedService.NotifyManualMatchNeededAsync(
+                        notifications, locales, catalog, series, logger, ct);
+                }
             }
             catch (Exception ex)
             {
@@ -284,6 +296,34 @@ public class SeriesCreationService(
         }
 
         return new SeriesCreationResult(series, null, warnings);
+    }
+
+    private async Task NotifyAddedAsync(Series series, SeriesRequest? request, CancellationToken ct)
+    {
+        try
+        {
+            var requester = request is null
+                ? null
+                : await db.Users.Where(u => u.Id == request.UserId)
+                    .Select(u => u.DisplayName ?? u.UserName).FirstOrDefaultAsync(ct);
+            var locale = await locales.DefaultAsync(ct);
+            notifications.Dispatch(NotificationEventType.SeriesAdded, new NotificationMessage(
+                NotificationEventType.SeriesAdded,
+                Title: catalog.GetFor(locale, "notify.series.added.title"),
+                Body: catalog.GetFor(locale, "notify.series.added.body", new
+                {
+                    series = series.Title,
+                    hasRequester = requester is null ? "no" : "yes",
+                    user = requester ?? string.Empty,
+                }),
+                SeriesTitle: series.Title,
+                SeriesId: series.Id,
+                Url: $"/series/{series.Id}"));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not send the series added notification for {Title}", series.Title);
+        }
     }
 
     private async Task<NewChapterMonitorMode> DefaultedMonitorMode(NewChapterMonitorMode requested, CancellationToken ct) =>

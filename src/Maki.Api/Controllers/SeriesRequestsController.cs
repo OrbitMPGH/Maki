@@ -40,6 +40,7 @@ public class SeriesRequestsController(
     DownloadBatchNotifier downloadBatches,
     EventBroadcaster events,
     InboxService inbox,
+    NotificationService notifications,
     ICurrentUser currentUser,
     ILogger<SeriesRequestsController> logger) : ControllerBase
 {
@@ -199,6 +200,22 @@ public class SeriesRequestsController(
                 Params: InboxMessage.Args(new { user = currentUser.UserName, title = request.Title }),
                 Url: "/requests"),
             InboxAudience.Admins);
+
+        var locale = await locales.DefaultAsync(ct);
+        notifications.Dispatch(NotificationEventType.RequestSubmitted, new NotificationMessage(
+            NotificationEventType.RequestSubmitted,
+            Title: localizer.GetFor(locale, "notify.request.submitted.title"),
+            Body: localizer.GetFor(locale, "notify.request.submitted.body", new
+            {
+                user = currentUser.UserName,
+                series = request.Title,
+                range = RangeKind(request.ChapterStart, request.ChapterEnd),
+                start = ChapterLabel(request.ChapterStart),
+                end = ChapterLabel(request.ChapterEnd),
+            }),
+            SeriesTitle: request.Title,
+            SeriesId: request.SeriesId,
+            Url: "/requests"));
 
         var dto = (await ToDtosAsync([request], ct))[0];
         return CreatedAtAction(nameof(List), new { id = request.Id }, dto);
@@ -407,7 +424,7 @@ public class SeriesRequestsController(
             throw;
         }
 
-        NotifyResolved(request, approved: true, queued);
+        await NotifyResolvedAsync(request, approved: true, queued, ct);
 
         return Ok((await ToDtosAsync([request], ct))[0]);
     }
@@ -475,7 +492,7 @@ public class SeriesRequestsController(
         request.ResolutionNote = Trimmed(body.Note);
         await db.SaveChangesAsync(ct);
 
-        NotifyResolved(request, approved: false, queued: 0);
+        await NotifyResolvedAsync(request, approved: false, queued: 0, ct);
 
         return Ok((await ToDtosAsync([request], ct))[0]);
     }
@@ -594,7 +611,7 @@ public class SeriesRequestsController(
             await locales.ResolveAsync(request.UserId, ct), "error.requests.alreadyInLibrary");
         await db.SaveChangesAsync(ct);
 
-        NotifyResolved(request, approved: true, queued: 0);
+        await NotifyResolvedAsync(request, approved: true, queued: 0, ct);
 
         return Ok((await ToDtosAsync([request], ct))[0]);
     }
@@ -605,7 +622,7 @@ public class SeriesRequestsController(
     /// The resolution note is carried through verbatim, because on a rejection it <em>is</em> the
     /// answer — the request page shows the same text.
     /// </summary>
-    private void NotifyResolved(SeriesRequest request, bool approved, int queued)
+    private async Task NotifyResolvedAsync(SeriesRequest request, bool approved, int queued, CancellationToken ct)
     {
         // Three sentences rather than one built by concatenation: "approved and queued", "approved,
         // already here" and "declined" are different statements, and a language that reorders them
@@ -629,7 +646,45 @@ public class SeriesRequestsController(
                 SeriesId: approved ? request.SeriesId : null,
                 Url: approved && request.SeriesId is { } sid ? $"/series/{sid}" : "/requests"),
             InboxAudience.User(request.UserId));
+
+        // Outbound goes to the admins' channel rather than the requester, so it names who asked.
+        // The resolution is already saved, so a failure here must not turn it into an error response.
+        try
+        {
+            var requester = await db.Users.Where(u => u.Id == request.UserId)
+                .Select(u => u.DisplayName ?? u.UserName).FirstOrDefaultAsync(ct);
+            var locale = await locales.DefaultAsync(ct);
+            notifications.Dispatch(NotificationEventType.RequestResolved, new NotificationMessage(
+                NotificationEventType.RequestResolved,
+                Title: localizer.GetFor(locale, "notify.request.resolved.title"),
+                Body: localizer.GetFor(locale, "notify.request.resolved.body", new
+                {
+                    outcome = approved ? "approved" : "rejected",
+                    user = requester ?? string.Empty,
+                    series = request.Title,
+                }),
+                Level: approved ? NotificationLevel.Info : NotificationLevel.Warning,
+                SeriesTitle: request.Title,
+                SeriesId: request.SeriesId,
+                Url: request.SeriesId is { } seriesId ? $"/series/{seriesId}" : "/requests"));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not send the resolved notification for request {Id}", request.Id);
+        }
     }
+
+    /// <summary>Which shape a chapter range takes, as a select key for <c>notify.request.submitted.body</c>.</summary>
+    private static string RangeKind(decimal? start, decimal? end) => (start, end) switch
+    {
+        (null, null) => "all",
+        (not null, null) => "from",
+        (null, not null) => "upTo",
+        _ => "between",
+    };
+
+    private static string ChapterLabel(decimal? number) =>
+        number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
 
     /// <summary>Renders an edited chapter range the way the requests page labels it.</summary>
     private static string RangeLabel(decimal? start, decimal? end) => (start, end) switch

@@ -474,6 +474,11 @@ export interface NotificationEvents {
   importCompleted: boolean
   healthIssue: boolean
   updateAvailable: boolean
+  seriesAdded: boolean
+  seriesRemoved: boolean
+  requestSubmitted: boolean
+  requestResolved: boolean
+  manualMatchNeeded: boolean
 }
 
 export interface UpdateStatusDto {
@@ -498,6 +503,8 @@ export interface NotificationDto {
   enabled: boolean
   config: NotificationConfig
   events: NotificationEvents
+  /** Series-scoped events only fire for series carrying one of these tags. Empty means every series. */
+  tagIds: number[]
 }
 
 export interface NotificationRequest {
@@ -506,4 +513,5 @@ export interface NotificationRequest {
   enabled: boolean
   config: NotificationConfig
   events: NotificationEvents
+  tagIds: number[]
 }

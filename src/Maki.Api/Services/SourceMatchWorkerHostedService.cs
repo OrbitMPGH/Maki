@@ -1,4 +1,6 @@
 ﻿using Maki.Api.Hubs;
+using Maki.Api.Localization;
+using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Maki.Data;
@@ -96,6 +98,7 @@ public class SourceMatchWorkerHostedService(
         var progress = new HubProgress(events, series.Id, series.RootFolderId);
 
         var mapped = new List<string>();
+        var failed = false;
         try
         {
             var matcher = scope.ServiceProvider.GetRequiredService<SourceMatchService>();
@@ -112,6 +115,7 @@ public class SourceMatchWorkerHostedService(
             // Whatever happened, the series is done being told it is waiting: leaving the flag set
             // would spin the page's loader forever and re-queue the same failure at every start.
             logger.LogWarning(ex, "Auto source matching failed for {Title}", series.Title);
+            failed = true;
         }
 
         series.SourceMatchPending = false;
@@ -129,6 +133,15 @@ public class SourceMatchWorkerHostedService(
 
         await events.SourceMatchFinished(series.Id, series.RootFolderId, mapped.Count);
 
+        if (mapped.Count == 0 && !failed)
+        {
+            await NotifyManualMatchNeededAsync(
+                scope.ServiceProvider.GetRequiredService<NotificationService>(),
+                scope.ServiceProvider.GetRequiredService<IUserLocaleResolver>(),
+                scope.ServiceProvider.GetRequiredService<IMessageCatalog>(),
+                series, logger, ct);
+        }
+
         // Off by default: the SignalR event above already redraws the Sources card while the user is
         // looking at it. This is for people who add a series and walk away.
         var inbox = scope.ServiceProvider.GetRequiredService<InboxService>();
@@ -141,6 +154,34 @@ public class SourceMatchWorkerHostedService(
                 SeriesId: series.Id,
                 Url: $"/series/{series.Id}"),
             InboxAudience.SeriesTrackers(series.Id, series.RootFolderId));
+    }
+
+    /// <summary>
+    /// Outbound only: no source matched the title, so somebody has to link one by hand from the
+    /// series page. Shared with the synchronous match <see cref="SeriesCreationService"/> runs when
+    /// approving a request, which never reaches this worker.
+    /// </summary>
+    internal static async Task NotifyManualMatchNeededAsync(
+        NotificationService notifications, IUserLocaleResolver locales, IMessageCatalog catalog,
+        Series series, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            var locale = await locales.DefaultAsync(ct);
+            notifications.Dispatch(
+                NotificationEventType.ManualMatchNeeded, new NotificationMessage(
+                    NotificationEventType.ManualMatchNeeded,
+                    Title: catalog.GetFor(locale, "notify.sourceMatch.none.title"),
+                    Body: catalog.GetFor(locale, "notify.sourceMatch.none.body", new { series = series.Title }),
+                    Level: NotificationLevel.Warning,
+                    SeriesTitle: series.Title,
+                    SeriesId: series.Id,
+                    Url: $"/series/{series.Id}"));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not send the manual match notification for {Title}", series.Title);
+        }
     }
 
     /// <summary>

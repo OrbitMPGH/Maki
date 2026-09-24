@@ -1,10 +1,11 @@
-import { useMemo, useState, type ComponentType } from 'react'
+import { useMemo, useState, type ComponentType, type CSSProperties } from 'react'
 import {
   ActionIcon,
   Badge,
   Button,
   Group,
   Modal,
+  MultiSelect,
   NumberInput,
   PasswordInput,
   Select,
@@ -35,6 +36,7 @@ import {
   useDeleteNotification,
   useNotificationProviders,
   useNotifications,
+  useTags,
   useTestNotification,
   useUpdateNotification,
 } from '../api/hooks'
@@ -44,6 +46,7 @@ import type {
   NotificationProviderDescriptor,
   NotificationRequest,
   NotificationType,
+  TagDto,
 } from '../api/types'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
@@ -51,13 +54,44 @@ import type { MessageDescriptor } from '@lingui/core'
 import { Panel } from './ui/Panel'
 import { useLabel } from '../i18n-context'
 
-const EVENT_FIELDS: { key: keyof NotificationRequest['events']; label: MessageDescriptor; description: MessageDescriptor }[] = [
-  { key: 'chapterDownloaded', label: msg`Chapter downloaded`, description: msg`A chapter finished downloading and imported.` },
-  { key: 'downloadFailed', label: msg`Download failed`, description: msg`A chapter download failed.` },
-  { key: 'newChapterAvailable', label: msg`New chapter available`, description: msg`A refresh found new chapters for a series.` },
-  { key: 'importCompleted', label: msg`Import completed`, description: msg`A library import folder finished.` },
-  { key: 'healthIssue', label: msg`Health issue`, description: msg`A new system health problem was detected.` },
-  { key: 'updateAvailable', label: msg`Update available`, description: msg`A newer Maki release was published.` },
+interface EventField {
+  key: keyof NotificationRequest['events']
+  label: MessageDescriptor
+  description: MessageDescriptor
+}
+
+const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[] }[] = [
+  {
+    title: msg`Downloads`,
+    fields: [
+      { key: 'chapterDownloaded', label: msg`Chapter downloaded`, description: msg`A chapter finished downloading and imported.` },
+      { key: 'downloadFailed', label: msg`Download failed`, description: msg`A chapter download failed.` },
+      { key: 'newChapterAvailable', label: msg`New chapter available`, description: msg`A refresh found new chapters for a series.` },
+      { key: 'importCompleted', label: msg`Import completed`, description: msg`A library import folder finished.` },
+    ],
+  },
+  {
+    title: msg`Library`,
+    fields: [
+      { key: 'seriesAdded', label: msg`Series added`, description: msg`A series was added to the library, by hand or from an approved request.` },
+      { key: 'seriesRemoved', label: msg`Series removed`, description: msg`A series was removed from the library.` },
+      { key: 'manualMatchNeeded', label: msg`Manual match needed`, description: msg`Automatic source matching found nothing for a new series.` },
+    ],
+  },
+  {
+    title: msg`Requests`,
+    fields: [
+      { key: 'requestSubmitted', label: msg`Request submitted`, description: msg`Someone asked for a series.` },
+      { key: 'requestResolved', label: msg`Request resolved`, description: msg`A request was approved or rejected.` },
+    ],
+  },
+  {
+    title: msg`System`,
+    fields: [
+      { key: 'healthIssue', label: msg`Health issue`, description: msg`A new system health problem was detected.` },
+      { key: 'updateAvailable', label: msg`Update available`, description: msg`A newer Maki release was published.` },
+    ],
+  },
 ]
 
 /**
@@ -160,10 +194,52 @@ const EMPTY_EVENTS: NotificationRequest['events'] = {
   importCompleted: false,
   healthIssue: false,
   updateAvailable: false,
+  seriesAdded: false,
+  seriesRemoved: false,
+  requestSubmitted: false,
+  requestResolved: false,
+  manualMatchNeeded: false,
 }
 
 function toRequest(n: NotificationDto): NotificationRequest {
-  return { name: n.name, type: n.type, enabled: n.enabled, config: { ...n.config }, events: n.events }
+  return { name: n.name, type: n.type, enabled: n.enabled, config: { ...n.config }, events: n.events, tagIds: n.tagIds }
+}
+
+function TagDot({ color }: { color: string }) {
+  return <i className="tag-dot" style={{ '--bucket': `var(--mantine-color-${color}-6)` } as CSSProperties} />
+}
+
+function useTagOptions() {
+  const { data: tags } = useTags()
+  return useMemo(
+    () => (tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.label })),
+    [tags],
+  )
+}
+
+/** Coloured badges for the connections table; "All series" is the unscoped default. */
+function TagScope({ tagIds, tags }: { tagIds: number[]; tags: TagDto[] | undefined }) {
+  if (tagIds.length === 0) {
+    return (
+      <Text size="sm" c="var(--ink-3)">
+        <Trans>All series</Trans>
+      </Text>
+    )
+  }
+  const byId = new Map((tags ?? []).map((tag) => [tag.id, tag]))
+  return (
+    <Group gap={4} wrap="wrap">
+      {tagIds.map((id) => {
+        const tag = byId.get(id)
+        if (!tag) return null
+        return (
+          <Badge key={id} size="sm" variant="light" color={tag.color}>
+            {tag.label}
+          </Badge>
+        )
+      })}
+    </Group>
+  )
 }
 
 const isBlank = (v: string | undefined) => !v || v.trim() === ''
@@ -254,6 +330,8 @@ export function NotificationsSection() {
   const renderLabel = useLabel()
   const { data: providers } = useNotificationProviders()
   const { data: connections } = useNotifications()
+  const { data: tags } = useTags()
+  const tagOptions = useTagOptions()
   const create = useCreateNotification()
   const update = useUpdateNotification()
   const remove = useDeleteNotification()
@@ -267,7 +345,7 @@ export function NotificationsSection() {
     if (!providers || providers.length === 0) return
     setEditing({
       id: null,
-      form: { name: '', type: providers[0].type, enabled: true, config: {}, events: { ...EMPTY_EVENTS } },
+      form: { name: '', type: providers[0].type, enabled: true, config: {}, events: { ...EMPTY_EVENTS }, tagIds: [] },
     })
   }
   const openEdit = (n: NotificationDto) => setEditing({ id: n.id, form: toRequest(n) })
@@ -336,6 +414,7 @@ export function NotificationsSection() {
             <Table.Tr>
               <Table.Th><Trans>Name</Trans></Table.Th>
               <Table.Th><Trans>Type</Trans></Table.Th>
+              <Table.Th><Trans>Scope</Trans></Table.Th>
               <Table.Th><Trans>Status</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
@@ -346,6 +425,9 @@ export function NotificationsSection() {
                 <Table.Td>{n.name}</Table.Td>
                 <Table.Td>
                   <TypeBadge type={n.type} />
+                </Table.Td>
+                <Table.Td>
+                  <TagScope tagIds={n.tagIds} tags={tags} />
                 </Table.Td>
                 <Table.Td>
                   <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
@@ -417,17 +499,44 @@ export function NotificationsSection() {
               onChange={(e) => setForm({ enabled: e.currentTarget.checked })}
             />
 
+            <MultiSelect
+              label={t`Only for tagged series`}
+              description={t`Leave empty to send for every series. Instance events like health and updates ignore this.`}
+              data={tagOptions}
+              value={form.tagIds.map(String)}
+              onChange={(values) => setForm({ tagIds: values.map(Number) })}
+              renderOption={({ option, checked }) => {
+                const tag = (tags ?? []).find((tg) => String(tg.id) === option.value)
+                return (
+                  <Group gap="xs" wrap="nowrap">
+                    {tag && <TagDot color={tag.color} />}
+                    <span>{option.label}</span>
+                    {checked && <Text size="xs" c="var(--ink-3)" ml="auto"><Trans>Selected</Trans></Text>}
+                  </Group>
+                )
+              }}
+              clearable
+              searchable
+            />
+
             <Text size="sm" fw={600} mt="xs">
               <Trans>Events</Trans>
             </Text>
-            {EVENT_FIELDS.map((f) => (
-              <Switch
-                key={f.key}
-                label={renderLabel(f.label)}
-                description={renderLabel(f.description)}
-                checked={form.events[f.key]}
-                onChange={(e) => setEvent(f.key, e.currentTarget.checked)}
-              />
+            {EVENT_GROUPS.map((group) => (
+              <Stack key={group.title.id} gap="xs">
+                <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase">
+                  {renderLabel(group.title)}
+                </Text>
+                {group.fields.map((f) => (
+                  <Switch
+                    key={f.key}
+                    label={renderLabel(f.label)}
+                    description={renderLabel(f.description)}
+                    checked={form.events[f.key]}
+                    onChange={(e) => setEvent(f.key, e.currentTarget.checked)}
+                  />
+                ))}
+              </Stack>
             ))}
 
             <Group justify="space-between" mt="sm">

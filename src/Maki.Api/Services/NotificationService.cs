@@ -47,8 +47,16 @@ public class NotificationService(
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             targets = await db.Notifications
+                .Include(n => n.Tags)
                 .Where(n => n.Enabled)
                 .ToListAsync(ct);
+
+            if (targets.Any(t => t.Tags.Count > 0) && await SeriesTagsAsync(db, message, ct) is { } seriesTags)
+            {
+                targets = targets
+                    .Where(t => t.Tags.Count == 0 || t.Tags.Any(tag => seriesTags.Contains(tag.TagId)))
+                    .ToList();
+            }
         }
         catch (Exception ex)
         {
@@ -75,6 +83,25 @@ public class NotificationService(
                     connection.Name, connection.Type, type);
             }
         }
+    }
+
+    /// <summary>
+    /// The tags of the series a message is about, or null for an instance-wide message, which tag
+    /// scoping never filters.
+    /// </summary>
+    private static async Task<HashSet<int>?> SeriesTagsAsync(MakiDbContext db, NotificationMessage message, CancellationToken ct)
+    {
+        if (message.SeriesTagIds is { } carried)
+        {
+            return [.. carried];
+        }
+
+        if (message.SeriesId is not { } seriesId)
+        {
+            return null;
+        }
+
+        return [.. await db.SeriesTags.Where(st => st.SeriesId == seriesId).Select(st => st.TagId).ToListAsync(ct)];
     }
 
     /// <summary>Sends to a single connection; throws on failure (used by the Test endpoint).</summary>
@@ -126,6 +153,11 @@ public class NotificationService(
         NotificationEventType.ImportCompleted => c.OnImportCompleted,
         NotificationEventType.HealthIssue => c.OnHealthIssue,
         NotificationEventType.UpdateAvailable => c.OnUpdateAvailable,
+        NotificationEventType.SeriesAdded => c.OnSeriesAdded,
+        NotificationEventType.SeriesRemoved => c.OnSeriesRemoved,
+        NotificationEventType.RequestSubmitted => c.OnRequestSubmitted,
+        NotificationEventType.RequestResolved => c.OnRequestResolved,
+        NotificationEventType.ManualMatchNeeded => c.OnManualMatchNeeded,
         NotificationEventType.Test => true,
         _ => false
     };

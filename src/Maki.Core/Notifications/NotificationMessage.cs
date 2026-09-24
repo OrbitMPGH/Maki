@@ -8,7 +8,12 @@ public enum NotificationEventType
     NewChapterAvailable,
     ImportCompleted,
     HealthIssue,
-    UpdateAvailable
+    UpdateAvailable,
+    SeriesAdded,
+    SeriesRemoved,
+    RequestSubmitted,
+    RequestResolved,
+    ManualMatchNeeded
 }
 
 public enum NotificationLevel
@@ -22,6 +27,8 @@ public enum NotificationLevel
 /// One notification to deliver, provider-agnostic. Providers shape it into their own format.
 /// <c>SeriesLabel</c>/<c>ChapterLabel</c> are filled by <c>NotificationService</c> in the instance
 /// language before a provider sees the message.
+/// <c>SeriesTagIds</c> stands in for the tag lookup on <c>SeriesId</c> when the series is already
+/// gone (a removal), so tag-scoped connections still see it.
 /// </summary>
 public record NotificationMessage(
     NotificationEventType EventType,
@@ -33,4 +40,5 @@ public record NotificationMessage(
     string? ChapterNumber = null,
     string? Url = null,
     string SeriesLabel = "Series",
-    string ChapterLabel = "Chapter");
+    string ChapterLabel = "Chapter",
+    IReadOnlyCollection<int>? SeriesTagIds = null);
