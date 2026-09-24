@@ -26,6 +26,12 @@ public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUse
     private const int TopGenreCount = 15;
     private const int LargestSeriesCount = 10;
 
+    // Matches HousekeepingJob's DownloadQueue retention for Completed/Cancelled rows (Failed rows
+    // are kept indefinitely), so reliability and monitor-catch counts never undercount completions
+    // relative to failures older rows would still show.
+    private static readonly TimeSpan ReliabilityWindow = TimeSpan.FromDays(30);
+    private static readonly TimeSpan RequestResolvedWindow = TimeSpan.FromDays(90);
+
     public async Task<LibraryCompositionDto> GetAsync(CancellationToken ct)
     {
         var key = $"librarycomposition:{currentUser.UserId}";
@@ -133,6 +139,105 @@ public class LibraryCompositionService(MakiDbContext db, ICurrentUser currentUse
             })
             .ToList();
 
-        return new LibraryCompositionDto(totals, byType, byStatus, bySource, topGenres, growth, largest);
+        var byContentRating = (await series
+                .GroupBy(s => s.ContentRating)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToListAsync(ct))
+            // Null and "" both normalize to "unknown", so they need a second grouping pass rather
+            // than a straight projection, which would keep them as two separate rows.
+            .GroupBy(g => string.IsNullOrWhiteSpace(g.Key) ? "unknown" : g.Key)
+            .Select(g => new NamedCountDto(g.Key, g.Sum(x => x.Count)))
+            .OrderByDescending(g => g.Count).ThenBy(g => g.Name)
+            .ToList();
+
+        var sourceReliability = await GetSourceReliabilityAsync(ct);
+        var requests = await GetRequestSummaryAsync(ct);
+        var monitorCatches = await GetMonitorCatchesAsync(ct);
+
+        return new LibraryCompositionDto(
+            totals, byType, byStatus, bySource, topGenres, growth, largest,
+            byContentRating, sourceReliability, requests, monitorCatches);
+    }
+
+    // HousekeepingJob deletes Completed/Cancelled DownloadQueue rows after 30 days and keeps Failed,
+    // so a wider window would silently undercount completions relative to failures.
+    private async Task<IReadOnlyList<SourceReliabilityDto>> GetSourceReliabilityAsync(CancellationToken ct)
+    {
+        var since = DateTime.UtcNow - ReliabilityWindow;
+
+        var rows = await db.DownloadQueue
+            .AsNoTracking()
+            .Where(q => q.QueuedAt >= since &&
+                        (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Failed))
+            .Select(q => new
+            {
+                Name = q.SourceMapping != null ? q.SourceMapping.SourceName : null,
+                q.Protocol,
+                q.Status,
+                q.QueuedAt,
+                q.CompletedAt
+            })
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(r => string.IsNullOrWhiteSpace(r.Name) ? r.Protocol.ToString().ToLowerInvariant() : r.Name)
+            .Select(g =>
+            {
+                var completed = g.Where(r => r.Status == QueueStatus.Completed).ToList();
+                var failed = g.Count(r => r.Status == QueueStatus.Failed);
+
+                var durations = completed
+                    .Where(r => r.CompletedAt.HasValue)
+                    .Select(r => (r.CompletedAt!.Value - r.QueuedAt).TotalSeconds)
+                    .OrderBy(s => s)
+                    .ToList();
+
+                return new SourceReliabilityDto(
+                    g.Key, completed.Count, failed,
+                    durations.Count == 0 ? null : (int)Median(durations));
+            })
+            .OrderByDescending(r => r.Completed + r.Failed).ThenBy(r => r.Name)
+            .ToList();
+    }
+
+    private async Task<RequestSummaryDto> GetRequestSummaryAsync(CancellationToken ct)
+    {
+        var isAdmin = currentUser.Has(MakiPermission.Admin);
+        var source = isAdmin ? db.SeriesRequests.IgnoreQueryFilters() : db.SeriesRequests;
+
+        var open = await source.AsNoTracking()
+            .CountAsync(r => r.Status == SeriesRequestStatus.Pending || r.Status == SeriesRequestStatus.Processing, ct);
+
+        var since = DateTime.UtcNow - RequestResolvedWindow;
+        var resolved = await source.AsNoTracking()
+            .Where(r => r.ResolvedAt != null && r.ResolvedAt >= since)
+            .Select(r => new { r.Created, r.ResolvedAt })
+            .ToListAsync(ct);
+
+        var hours = resolved
+            .Select(r => (r.ResolvedAt!.Value - r.Created).TotalHours)
+            .OrderBy(h => h)
+            .ToList();
+
+        return new RequestSummaryDto(
+            isAdmin, open, resolved.Count,
+            hours.Count == 0 ? null : Median(hours));
+    }
+
+    private async Task<int> GetMonitorCatchesAsync(CancellationToken ct)
+    {
+        var since = DateTime.UtcNow - ReliabilityWindow;
+        return await db.DownloadQueue
+            .AsNoTracking()
+            .CountAsync(q =>
+                q.Origin == DownloadOrigin.MonitorRefresh &&
+                q.Status == QueueStatus.Completed &&
+                q.CompletedAt != null && q.QueuedAt >= since, ct);
+    }
+
+    private static double Median(List<double> sorted)
+    {
+        var mid = sorted.Count / 2;
+        return sorted.Count % 2 == 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
     }
 }

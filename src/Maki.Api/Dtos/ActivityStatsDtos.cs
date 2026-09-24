@@ -18,7 +18,14 @@ public record ActivityTotalsDto(
     /// Local dates in the window on which anything was read. Counted from read events rather than
     /// from <see cref="ReadingSeconds"/> so a Kavita-only user still gets a number.
     /// </summary>
-    int DaysActive);
+    int DaysActive,
+    /// <summary>
+    /// Pages turned in the built-in reader: a finished chapter counts all its pages, one in progress
+    /// counts up to its current page. Kavita imports carry no page count and add nothing.
+    /// </summary>
+    int PagesRead,
+    /// <summary>Series whose first genuine read (not an import, not a watched mark) fell in the window.</summary>
+    int SeriesStarted);
 
 /// <summary>One point of the activity timeline. Bucket is "yyyy-MM" or "yyyy-MM-dd" (local time).</summary>
 public record ActivityTimelinePointDto(

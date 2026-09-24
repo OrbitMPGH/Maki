@@ -3886,6 +3886,541 @@ body {
   }
 }
 
+/* --- Stats: one scrolling page --------------------------------------------- */
+/* Six sections under a rail of links pinned below the app header. Each section is the house
+   section header, one sentence in the display face, then panels. */
+.stats-layout {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+  min-width: 0;
+}
+.stats-section {
+  min-width: 0;
+  scroll-margin-top: calc(var(--app-shell-header-height, 58px) + 3.5rem);
+}
+.stats-section > .section-header {
+  margin-top: 0;
+}
+
+/* The window picker scrolls sideways on a phone rather than pushing the page wider. */
+.stats-range {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stats-range::-webkit-scrollbar {
+  display: none;
+}
+
+/* Bleeds to the shell's padding so it reads as a strip under the header, not a card. Solid
+   background rather than a blur: content scrolls under it on every frame. */
+.stats-rail {
+  position: sticky;
+  top: var(--app-shell-header-height, 58px);
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  margin: 0 calc(-1 * var(--mantine-spacing-lg)) var(--mantine-spacing-lg);
+  padding-inline: var(--mantine-spacing-lg);
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--app-bg);
+  border-bottom: 1px solid var(--hairline);
+}
+.stats-rail::-webkit-scrollbar {
+  display: none;
+}
+.stats-rail-link {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: -1px;
+  padding: 11px 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  transition: color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
+}
+.stats-rail-link:hover {
+  color: var(--ink);
+}
+.stats-rail-link.is-active {
+  border-bottom-color: var(--brand);
+  color: var(--ink-hi);
+}
+.stats-rail-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+  border-radius: var(--radius-control);
+}
+.stats-rail-chip,
+.stats-scope {
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.stats-scope {
+  padding: 2px 9px;
+  font-size: var(--type-label);
+}
+
+.stats-insight {
+  max-width: 60ch;
+  margin: 0 0 var(--mantine-spacing-md);
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.stats-insight em {
+  color: var(--brand-fg);
+  font-style: normal;
+}
+.stats-insight-dim {
+  color: var(--ink-3);
+  font-weight: var(--fw-semibold);
+}
+
+/* Two-panel rows where one side carries the chart and the other the facts beside it. */
+.stats-grid-main,
+.stats-grid-side {
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+  min-width: 0;
+}
+.stats-grid-main {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+.stats-grid-side {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+}
+
+/* A panel's own title and the one line under it that says what is being counted. */
+.stats-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 2px;
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-bold);
+}
+.stats-panel-sub {
+  margin: 0 0 var(--mantine-spacing-sm);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+
+.stats-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.stats-legend-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-inline-end: 6px;
+  border-radius: var(--radius-2xs);
+  vertical-align: -1px;
+}
+
+/* Label, figure, hint: the facts grid beside a chart. */
+.stats-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+}
+.stats-fact {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.stats-fact-label {
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.stats-fact-value {
+  color: var(--ink-hi);
+  font-size: 1.25rem;
+  font-weight: var(--fw-heavy);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.stats-fact-value small {
+  margin-inline-start: 3px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.stats-fact-hint {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+
+/* Cover, title with a sub line or meter, value on the right. Covers use .stats-thumb. */
+.stats-rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stats-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--hairline);
+}
+.stats-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.stats-row-title {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats-row-sub {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats-row-value {
+  color: var(--ink);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-bold);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.stats-row-value small {
+  display: block;
+  color: var(--ink-3);
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
+}
+.stats-row-meter {
+  height: 4px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+.stats-row-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+
+/* 100% stacked bar. The 2px gaps separate segments without relying on their colours. */
+.stats-split {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+.stats-split-seg {
+  min-width: 3px;
+  height: 100%;
+}
+.stats-split-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.stats-split-legend b {
+  color: var(--ink-hi);
+  font-weight: var(--fw-bold);
+}
+
+/* Weekday by hour. Cells take their intensity inline as a color-mix of --brand into
+   --surface-2; the minimum width makes the grid scroll sideways on a phone instead of shrinking
+   to dots. */
+.stats-matrix-scroll {
+  overflow-x: auto;
+}
+.stats-matrix {
+  display: grid;
+  grid-template-columns: max-content repeat(24, minmax(12px, 1fr));
+  gap: 3px;
+  align-items: center;
+  min-width: 26rem;
+}
+.stats-matrix-label {
+  padding-inline-end: 6px;
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.stats-matrix-hour {
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  text-align: center;
+  white-space: nowrap;
+}
+.stats-matrix-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--surface-2);
+}
+.stats-matrix-scale {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+  color: var(--ink-3);
+  font-size: var(--type-label);
+}
+.stats-matrix-scale > span {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* Column histogram: value above each bar, bucket label under it. Bar height is inline. */
+.stats-hist {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  align-items: end;
+  height: 140px;
+}
+.stats-hist-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  height: 100%;
+  min-width: 0;
+}
+.stats-hist-bar {
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--brand);
+}
+.stats-hist-value {
+  color: var(--ink-2);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-bold);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.stats-hist-label {
+  padding-top: 4px;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Your rating against the community's on a 0-10 track. Dot and line positions are inline. */
+.stats-dumbbell {
+  display: grid;
+  grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  font-size: var(--type-meta);
+}
+.stats-dumbbell-title {
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats-dumbbell-track {
+  position: relative;
+  height: 14px;
+}
+.stats-dumbbell-track::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--hairline);
+}
+.stats-dumbbell-line {
+  position: absolute;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--border-strong);
+}
+.stats-dumbbell-dot {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--neutral);
+}
+.stats-dumbbell-dot.is-you {
+  background: var(--brand);
+}
+.stats-dumbbell-gap {
+  min-width: 3ch;
+  color: var(--ink-3);
+  font-weight: var(--fw-bold);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.stats-dumbbell-gap.pos {
+  color: var(--brand-fg);
+}
+.stats-dumbbell-gap.neg {
+  color: var(--warn);
+}
+
+/* Diverging bars around a centre line: right is read more than owned, left owned more than read. */
+.stats-lean {
+  display: grid;
+  grid-template-columns: minmax(0, 8rem) minmax(0, 1fr) 3.5rem;
+  gap: 6px 10px;
+  align-items: center;
+  font-size: var(--type-meta);
+}
+.stats-lean-name {
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  text-align: end;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats-lean-track {
+  position: relative;
+  height: 12px;
+}
+.stats-lean-track::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 1px;
+  background: var(--border-strong);
+}
+.stats-lean-bar {
+  position: absolute;
+  top: 1px;
+  height: 10px;
+  border-radius: 3px;
+}
+.stats-lean-bar.pos {
+  left: 50%;
+  background: var(--brand);
+}
+.stats-lean-bar.neg {
+  right: 50%;
+  background: var(--warn);
+}
+.stats-lean-value {
+  color: var(--ink-3);
+  font-weight: var(--fw-bold);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.stats-lean-value.pos {
+  color: var(--brand-fg);
+}
+.stats-lean-value.neg {
+  color: var(--warn);
+}
+
+/* Stacked read/unread bars per series. The bar's own width is inline, relative to the largest. */
+.stats-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 10rem) minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  font-size: var(--type-meta);
+}
+.stats-stack-label {
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stats-stack-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+}
+.stats-stack-seg {
+  min-width: 2px;
+  height: 100%;
+}
+.stats-stack-seg.is-read {
+  background: var(--brand);
+}
+.stats-stack-seg.is-unread {
+  background: var(--neutral);
+}
+.stats-stack-value {
+  color: var(--ink-3);
+  font-weight: var(--fw-bold);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 61.9375em) {
+  .stats-grid-main,
+  .stats-grid-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 47.9375em) {
+  .stats-facts {
+    gap: 10px 14px;
+  }
+  .stats-lean {
+    grid-template-columns: minmax(0, 6rem) minmax(0, 1fr) 3rem;
+  }
+  .stats-dumbbell,
+  .stats-stack {
+    grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) auto;
+  }
+}
+
 /* --- Rewind --------------------------------------------------------------- */
 
 /* Fullscreen story overlay. Deliberately always dark, Wrapped-style, in both themes. */

@@ -1,5 +1,5 @@
 /**
- * The window the Overview tab reports on.
+ * The window the Stats page reports on.
  *
  * Kept apart from the components so the comparison arithmetic has one home: every headline tile
  * shows change against the previous window of the same length, and getting that off by a day makes
@@ -10,7 +10,7 @@ import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { monthName } from '../../format'
 
-export type RangePreset = '30d' | '90d' | '12m' | 'year' | 'all'
+export type RangePreset = '30d' | 'month' | '90d' | '12m' | 'year' | 'all'
 
 export interface DateRange {
   from: string
@@ -23,6 +23,7 @@ export interface DateRange {
  */
 export const RANGE_OPTIONS: { value: RangePreset; label: MessageDescriptor }[] = [
   { value: '30d', label: msg`30 days` },
+  { value: 'month', label: msg`This month` },
   { value: '90d', label: msg`90 days` },
   { value: '12m', label: msg`12 months` },
   { value: 'year', label: msg`Year` },
@@ -64,6 +65,10 @@ export function resolveRange(
   switch (preset) {
     case '30d':
       return { from: isoDate(daysAgo(29)), to: today }
+    case 'month': {
+      const d = new Date()
+      return { from: isoDate(new Date(d.getFullYear(), d.getMonth(), 1)), to: today }
+    }
     case '90d':
       return { from: isoDate(daysAgo(89)), to: today }
     case '12m': {
@@ -88,6 +93,20 @@ export function resolveRange(
 export function previousRange(preset: RangePreset, range: DateRange): DateRange | null {
   if (preset === 'all') {
     return null
+  }
+
+  // Month to date compares against the same stretch of last month, not the equally long window
+  // before it: the 1st to the 24th against the 1st to the 24th. A short last month clamps.
+  if (preset === 'month') {
+    const to = new Date(`${range.to}T00:00:00`)
+    const lastMonthStart = new Date(to.getFullYear(), to.getMonth() - 1, 1)
+    const lastMonthDays = new Date(to.getFullYear(), to.getMonth(), 0).getDate()
+    const lastMonthTo = new Date(
+      lastMonthStart.getFullYear(),
+      lastMonthStart.getMonth(),
+      Math.min(to.getDate(), lastMonthDays),
+    )
+    return { from: isoDate(lastMonthStart), to: isoDate(lastMonthTo) }
   }
 
   const from = new Date(`${range.from}T00:00:00`)
@@ -125,6 +144,8 @@ export function rangeLabel(preset: RangePreset, year: number, month: number | nu
   switch (preset) {
     case '30d':
       return now`the last 30 days`
+    case 'month':
+      return now`this month`
     case '90d':
       return now`the last 90 days`
     case '12m':

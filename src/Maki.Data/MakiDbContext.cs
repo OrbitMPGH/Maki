@@ -67,6 +67,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
     public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
+    public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
     public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
@@ -582,6 +583,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(b => b.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(b => _scope.Unrestricted || b.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ReadingSession>(e =>
+        {
+            e.HasIndex(s => new { s.UserId, s.EndedAt });
+            e.HasIndex(s => new { s.UserId, s.StartedAt });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
         });
     }
 }

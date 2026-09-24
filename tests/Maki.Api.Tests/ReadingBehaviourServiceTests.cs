@@ -238,4 +238,52 @@ public class ReadingBehaviourServiceTests : IDisposable
         Assert.Null(behaviour.BiggestDayCount);
         Assert.Empty(behaviour.Savoured);
     }
+    [Fact]
+    public async Task Stop_point_histogram_keeps_every_unfinished_series()
+    {
+        Seed(SeedSeries("Sampled"), downloaded: 40, read: 1);   // 2.5%: bucket 0
+        Seed(SeedSeries("Quarter"), downloaded: 20, read: 5);   // 25%: bucket 2
+        Seed(SeedSeries("Nearly"), downloaded: 10, read: 9);    // 90%: bucket 9
+        Seed(SeedSeries("Finished"), downloaded: 3, read: 3);   // not unfinished
+
+        var histogram = (await BehaviourAsync()).StopPointHistogram;
+
+        Assert.Equal(10, histogram.Count);
+        Assert.Equal([1, 0, 1, 0, 0, 0, 0, 0, 0, 1], histogram);
+    }
+
+    [Fact]
+    public async Task Measure_carries_the_number_behind_the_value()
+    {
+        Seed(SeedSeries("Slow"), downloaded: 6, read: 6, readSeconds: 900);
+        Seed(SeedSeries("Dropped"), downloaded: 20, read: 5);
+
+        var behaviour = await BehaviourAsync();
+
+        Assert.Equal(900, behaviour.Savoured[0].Measure);
+        Assert.Equal(0.25, behaviour.Abandoned.Single(a => a.Title == "Dropped").Measure, 5);
+    }
+
+    [Fact]
+    public async Task Named_user_overload_reads_that_user_under_their_folder_grants()
+    {
+        var other = _db.SeedUser("other", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        var granted = SeedSeries("Granted");
+        var hidden = SeedSeries("Hidden");
+        using (var db = _db.NewContext())
+        {
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder
+            {
+                UserId = other, RootFolderId = db.Series.Single(s => s.Id == granted).RootFolderId
+            });
+            db.SaveChanges();
+        }
+
+        Seed(granted, downloaded: 4, read: 4, userId: other);
+        Seed(hidden, downloaded: 4, read: 4, userId: other);
+
+        var service = Service();
+        Assert.Equal(4, (await service.GetAsync(other, allRootFolders: false, refresh: false)).ChaptersRead);
+        Assert.Equal(8, (await service.GetAsync(other, allRootFolders: true, refresh: false)).ChaptersRead);
+    }
 }

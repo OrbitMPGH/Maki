@@ -843,6 +843,36 @@ namespace Maki.Data.Migrations
                     b.ToTable("ReadingProfiles");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ReadingSession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ActiveSeconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChaptersCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("EndedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "EndedAt");
+
+                    b.HasIndex("UserId", "StartedAt");
+
+                    b.ToTable("ReadingSessions");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ReadingState", b =>
                 {
                     b.Property<int>("Id")
@@ -2237,6 +2267,15 @@ namespace Maki.Data.Migrations
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.ReadingProfile", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ReadingSession", b =>
                 {
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
                         .WithMany()

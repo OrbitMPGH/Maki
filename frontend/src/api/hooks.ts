@@ -11,6 +11,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
 import { affectedKeys } from './recommendationFeedback'
+import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type {
   AddSeriesRequest,
@@ -319,6 +320,8 @@ export interface BehaviourSeries {
   coverUrl: string | null
   /** Pre-formatted server-side, because the three lists measure different things. */
   value: string
+  /** The number behind `value`, for pages that format it themselves. */
+  measure: number
 }
 
 /**
@@ -341,6 +344,8 @@ export interface ReadingBehaviour {
   savoured: BehaviourSeries[]
   devoured: BehaviourSeries[]
   abandoned: BehaviourSeries[]
+  /** Ten buckets of where stalled series stopped, 0-10% through 90-100%. */
+  stopPointHistogram: number[]
   generatedAt: string
 }
 
@@ -3503,6 +3508,9 @@ export interface ActivityTotals {
   readingSeconds: number
   /** Distinct local dates in the window on which anything was read. */
   daysActive: number
+  pagesRead: number
+  /** Series whose first chapter was opened in the window. */
+  seriesStarted: number
 }
 
 /** bucket is "yyyy-MM" (month granularity) or "yyyy-MM-dd" (ranges ≤ 62 days). */
@@ -3642,6 +3650,12 @@ export interface LibraryComposition {
   topGenres: NamedCount[]
   growth: LibraryGrowth[]
   largest: SeriesSize[]
+  /** "unknown" for series with no rating. */
+  byContentRating: NamedCount[]
+  sourceReliability: SourceReliabilityDto[]
+  requests: RequestSummaryDto
+  /** Chapters the monitor fetched in the last 30 days. */
+  monitorCatches: number
 }
 
 /** No userId: the library is shared, and root-folder visibility is applied server-side. */

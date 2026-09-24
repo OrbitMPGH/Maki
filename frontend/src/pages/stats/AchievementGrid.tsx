@@ -88,12 +88,57 @@ function tierSoftColor(tier: number): string {
  * Marathoner grades on seconds, everything else on a plain count. Formatting by magnitude rather
  * than carrying a unit on the definition keeps the server's DTO free of display concerns.
  */
-function formatValue(achievement: Achievement, value: number): string {
+export function formatAchievementValue(achievement: Achievement, value: number): string {
   if (achievement.key === 'marathoner') {
     return formatReadingTime(value)
   }
 
   return formatNumber(value)
+}
+
+const formatValue = formatAchievementValue
+
+/** The tier floor the achievement is currently graded from: 0 until the first tier is earned. */
+export function achievementFloor(achievement: Achievement): number {
+  return achievement.tier > 0 ? achievement.tiers[achievement.tier - 1] : 0
+}
+
+/** 0..1 through the current tier. 1 for a maxed-out achievement (no next threshold). */
+export function achievementFraction(achievement: Achievement): number {
+  if (achievement.nextThreshold === null) return 1
+  const floor = achievementFloor(achievement)
+  const span = achievement.nextThreshold - floor
+  return span <= 0 ? 1 : Math.min(1, Math.max(0, (achievement.value - floor) / span))
+}
+
+/**
+ * Closest to its next tier first, maxed-out ones last, and an untouched lock (no progress at all)
+ * sorted after anything already underway. Stable within each of those three groups.
+ */
+export function sortAchievements(achievements: Achievement[]): Achievement[] {
+  const rank = (a: Achievement) => {
+    if (a.nextThreshold === null) return 2
+    return achievementFraction(a) > 0 ? 0 : 1
+  }
+  return [...achievements].sort((a, b) => {
+    const diff = rank(a) - rank(b)
+    return diff !== 0 ? diff : achievementFraction(b) - achievementFraction(a)
+  })
+}
+
+/** Across every achievement still short of its top tier, the one nearest to its next one. */
+export function closestToNextTier(achievements: Achievement[]): Achievement | null {
+  let best: Achievement | null = null
+  let bestFraction = -1
+  for (const a of achievements) {
+    if (a.nextThreshold === null) continue
+    const fraction = achievementFraction(a)
+    if (fraction > bestFraction) {
+      bestFraction = fraction
+      best = a
+    }
+  }
+  return best
 }
 
 function AchievementCard({ achievement }: { achievement: Achievement }) {
@@ -184,8 +229,8 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
 }
 
 export function AchievementGrid({ achievements }: { achievements: Achievement[] }) {
-  const reader = achievements.filter((a) => a.track === 'Reader')
-  const library = achievements.filter((a) => a.track === 'Library')
+  const reader = sortAchievements(achievements.filter((a) => a.track === 'Reader'))
+  const library = sortAchievements(achievements.filter((a) => a.track === 'Library'))
 
   return (
     <Stack gap="lg">

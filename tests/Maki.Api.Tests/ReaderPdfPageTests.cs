@@ -78,7 +78,7 @@ public sealed class ReaderPdfPageTests : IDisposable
     private ReaderController Controller(Maki.Data.MakiDbContext db) => new(
         new TestLocalizer(),
         db,
-        new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!, NullLogger<ReaderService>.Instance),
+        new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
         null!, // continue reading
         null!, // profiles
         null!, // read import

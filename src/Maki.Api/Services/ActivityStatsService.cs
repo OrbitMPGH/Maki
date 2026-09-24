@@ -19,7 +19,7 @@ namespace Maki.Api.Services;
 public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, TimeProvider clock)
 {
     /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
-    private static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
+    internal static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
 
     private const int TimelineDayBucketMaxDays = 62;
 
@@ -283,6 +283,8 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
             await db.ReadingStates.AsNoTracking().IgnoreQueryFilters()
                 .AnyAsync(r => r.UserId == userId, ct);
 
+        var (pagesRead, seriesStarted) = await PagesAndStartsAsync(userId, utcStart, utcEnd, ct);
+
         return new ActivityStatsDto(
             from, to, readTrackingAvailable,
             new ActivityTotalsDto(
@@ -294,7 +296,9 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
                 Count(StatsEventType.SeriesFinished),
                 dropped.Count,
                 Sum(StatsEventType.ReadingTime),
-                daysActive),
+                daysActive,
+                pagesRead,
+                seriesStarted),
             timeline,
             topRead,
             leastRead,
@@ -305,6 +309,44 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
             EventList(StatsEventType.SeriesRemoved),
             dropped,
             topByTime);
+    }
+
+    /// <summary>
+    /// Pages and series starts come off <c>ChapterProgress</c> rather than the event log, which has
+    /// no page numbers. Progress rows are written even for fully incognito series (only their events
+    /// are dropped), so those are excluded here by hand, along with anything outside the caller's
+    /// root folders. Imports (<c>PageCount == 0</c>) and watched marks are not reading.
+    /// </summary>
+    private async Task<(int PagesRead, int SeriesStarted)> PagesAndStartsAsync(
+        int userId, DateTime utcStart, DateTime utcEnd, CancellationToken ct)
+    {
+        var visible = (await db.Series.AsNoTracking()
+                .Where(s => s.Incognito != IncognitoMode.Full)
+                .Select(s => s.Id)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        var own = db.ChapterProgress.AsNoTracking().IgnoreQueryFilters()
+            .Where(p => p.UserId == userId && !p.Watched && p.PageCount > 0);
+
+        // Windowed on UpdatedAt, so re-reading an old chapter moves its pages into the current window.
+        var pageRows = await own
+            .Where(p => p.UnreadAt == null && p.ReadSeconds > 0
+                && p.UpdatedAt >= utcStart && p.UpdatedAt < utcEnd)
+            .Select(p => new { p.SeriesId, p.Completed, p.PageCount, p.PageIndex })
+            .ToListAsync(ct);
+        var pages = pageRows
+            .Where(p => visible.Contains(p.SeriesId))
+            .Sum(p => p.Completed ? p.PageCount : Math.Min(p.PageIndex + 1, p.PageCount));
+
+        var firstReads = await own
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, First = g.Min(p => p.StartedAt) })
+            .ToListAsync(ct);
+        var started = firstReads.Count(f =>
+            f.First >= utcStart && f.First < utcEnd && visible.Contains(f.SeriesId));
+
+        return (pages, started);
     }
 
     private sealed record RemovedSeriesSnapshot(

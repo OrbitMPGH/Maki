@@ -86,6 +86,19 @@
       ],
       "port": 5174,
       "autoPort": true
+    },
+    {
+      "name": "backend-sim-alt",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "src/Maki.Api",
+        "-p:OutDir=bin/Debug/alt/",
+        "-e",
+        "MAKI_CONFIG_DIR=C:\\Users\\Orbit\\Documents\\GitHub\\Maki\\.simulated"
+      ],
+      "port": 8991
     }
   ]
 }

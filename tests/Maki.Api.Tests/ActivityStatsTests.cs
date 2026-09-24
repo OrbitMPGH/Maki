@@ -598,4 +598,93 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.NotNull(stats.TopRead.Single(s => s.Title == "Live").CoverUrl);
         Assert.Null(stats.TopRead.Single(s => s.Title == "Gone").CoverUrl);
     }
+    private void AddProgress(int seriesId, int pageIndex, int pageCount, bool completed, DateTime at,
+        bool watched = false, DateTime? startedAt = null, DateTime? unreadAt = null, int userId = TestUser,
+        int readSeconds = 60)
+    {
+        using var db = _db.NewContext();
+        var chapter = new Chapter { SeriesId = seriesId, Number = db.Chapters.Count() + 1 };
+        db.Chapters.Add(chapter);
+        db.SaveChanges();
+        db.ChapterProgress.Add(new ChapterProgress
+        {
+            UserId = userId,
+            SeriesId = seriesId,
+            ChapterId = chapter.Id,
+            PageIndex = pageIndex,
+            PageCount = pageCount,
+            Completed = completed,
+            Watched = watched,
+            UnreadAt = unreadAt,
+            ReadSeconds = readSeconds,
+            StartedAt = startedAt ?? at,
+            UpdatedAt = at
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task PagesCountFinishedChaptersWholeAndOpenOnesToTheCurrentPage()
+    {
+        var seriesId = _db.SeedSeries("Paged");
+        var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        AddProgress(seriesId, 19, 20, completed: true, may);
+        AddProgress(seriesId, 4, 30, completed: false, may);
+        AddProgress(seriesId, 9, 10, completed: true, may.AddYears(-1)); // outside the window
+        AddProgress(seriesId, 5, 10, completed: false, may, unreadAt: may); // marked unread
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(25, stats.Totals.PagesRead);
+    }
+
+    [Fact]
+    public async Task PagesOnlyCountChaptersTurnedInTheReader()
+    {
+        var seriesId = _db.SeedSeries("Ticked");
+        var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        AddProgress(seriesId, 19, 20, completed: true, may);
+        // Mark-read, bulk mark-read, external sync and OPDS all land with no reader time.
+        AddProgress(seriesId, 29, 30, completed: true, may, readSeconds: 0);
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(20, stats.Totals.PagesRead);
+    }
+
+    [Fact]
+    public async Task PagesAndStartsIgnoreImportsWatchedAndIncognito()
+    {
+        var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        var imported = _db.SeedSeries("Imported");
+        AddProgress(imported, 0, 0, completed: true, may);
+        var watched = _db.SeedSeries("Watched");
+        AddProgress(watched, 0, 20, completed: true, may, watched: true);
+        var secret = _db.SeedSeries("Secret", configure: s => s.Incognito = IncognitoMode.Full);
+        AddProgress(secret, 19, 20, completed: true, may);
+        var other = _db.SeedUser("other", Maki.Core.Security.MakiPermission.None);
+        var theirs = _db.SeedSeries("Theirs");
+        AddProgress(theirs, 19, 20, completed: true, may, userId: other);
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(0, stats.Totals.PagesRead);
+        Assert.Equal(0, stats.Totals.SeriesStarted);
+    }
+
+    [Fact]
+    public async Task SeriesStartedCountsFirstReadsInsideTheWindowOnly()
+    {
+        var may = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        var fresh = _db.SeedSeries("Fresh");
+        AddProgress(fresh, 19, 20, completed: true, may);
+        AddProgress(fresh, 19, 20, completed: true, may.AddDays(1));
+        var old = _db.SeedSeries("Old");
+        AddProgress(old, 19, 20, completed: true, may, startedAt: may.AddYears(-1));
+        AddProgress(old, 19, 20, completed: true, may);
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(1, stats.Totals.SeriesStarted);
+    }
 }

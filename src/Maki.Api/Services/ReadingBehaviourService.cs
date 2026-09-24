@@ -8,7 +8,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>A series named as an example of how the reader reads, not of what they read.</summary>
-public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, string Value);
+/// <param name="Value">Server-formatted English, kept for the Taste tab. New callers format <paramref name="Measure"/>.</param>
+/// <param name="Measure">
+/// The number behind <paramref name="Value"/>: median seconds per chapter in
+/// <see cref="ReadingBehaviour.Savoured"/> and <see cref="ReadingBehaviour.Devoured"/>, the completion
+/// fraction (0 to 1) in <see cref="ReadingBehaviour.Abandoned"/>.
+/// </param>
+public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, string Value, double Measure);
 
 /// <summary>
 /// How somebody reads, as opposed to what. Every field is null when there is not enough to say,
@@ -33,6 +39,11 @@ public record BehaviourSeries(int SeriesId, string Title, string? CoverUrl, stri
 /// that records time: an OPDS or Kavita reader can have thousands of reads and no timed ones.
 /// </param>
 /// <param name="BiggestDayCount">Most chapters finished in one day, in the reader's own time zone.</param>
+/// <param name="StopPointHistogram">
+/// Unfinished series by how far in they are, ten buckets of a tenth each (bucket 0 is under 10%).
+/// Unlike <paramref name="MedianStopPoint"/> this keeps the barely-sampled ones, so the chart shows
+/// the whole shape.
+/// </param>
 public record ReadingBehaviour(
     int SeriesStarted,
     int SeriesFinished,
@@ -48,7 +59,8 @@ public record ReadingBehaviour(
     IReadOnlyList<BehaviourSeries> Savoured,
     IReadOnlyList<BehaviourSeries> Devoured,
     IReadOnlyList<BehaviourSeries> Abandoned,
-    DateTime GeneratedAt);
+    DateTime GeneratedAt,
+    IReadOnlyList<int> StopPointHistogram);
 
 /// <summary>
 /// The reading habits already implied by <c>ChapterProgress</c> and thrown away everywhere else.
@@ -85,27 +97,38 @@ public class ReadingBehaviourService(
     /// </summary>
     private const double MinProgressToAbandon = 0.1;
 
+    private const int HistogramBuckets = 10;
+
     private const int CacheSlots = 40;
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<int, (ReadingBehaviour Behaviour, DateTime GeneratedAt)> _cache = [];
+    private readonly Dictionary<(int UserId, bool AllRootFolders), (ReadingBehaviour Behaviour, DateTime GeneratedAt)> _cache = [];
 
+    public Task<ReadingBehaviour> GetAsync(
+        ICurrentUser scope, bool refresh, CancellationToken ct = default) =>
+        GetAsync(scope.UserId, scope.AllRootFolders, refresh, ct);
+
+    /// <summary>
+    /// For a named user, as the stats page's admin view needs. <paramref name="allRootFolders"/> and
+    /// that user's own folder grants decide which series count, same as for a signed-in caller.
+    /// </summary>
     public async Task<ReadingBehaviour> GetAsync(
-        ICurrentUser scope, bool refresh, CancellationToken ct = default)
+        int userId, bool allRootFolders, bool refresh, CancellationToken ct = default)
     {
+        var key = (userId, allRootFolders);
         await _lock.WaitAsync(ct);
         try
         {
             if (!refresh &&
-                _cache.TryGetValue(scope.UserId, out var hit) &&
+                _cache.TryGetValue(key, out var hit) &&
                 DateTime.UtcNow - hit.GeneratedAt < CacheFor)
             {
                 return hit.Behaviour;
             }
 
-            var behaviour = await BuildAsync(scope, ct);
-            _cache[scope.UserId] = (behaviour, DateTime.UtcNow);
+            var behaviour = await BuildAsync(userId, allRootFolders, ct);
+            _cache[key] = (behaviour, DateTime.UtcNow);
 
             while (_cache.Count > CacheSlots)
             {
@@ -122,10 +145,10 @@ public class ReadingBehaviourService(
 
     private sealed record ProgressRow(int SeriesId, int ReadSeconds, int PageCount, DateTime UpdatedAt);
 
-    private async Task<ReadingBehaviour> BuildAsync(ICurrentUser scope, CancellationToken ct)
+    private async Task<ReadingBehaviour> BuildAsync(int userId, bool allRootFolders, CancellationToken ct)
     {
         var started = DateTime.UtcNow;
-        var timeZone = await UserTimeZone.ResolveAsync(userSettings, scope.UserId, ct);
+        var timeZone = await UserTimeZone.ResolveAsync(userSettings, userId, ct);
 
         List<ProgressRow> progress;
         Dictionary<int, int> downloaded;
@@ -133,7 +156,7 @@ public class ReadingBehaviourService(
         using (var dbScope = scopeFactory.CreateScope())
         {
             var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
-            db.Scope.SetUser(scope.UserId, scope.AllRootFolders);
+            db.Scope.SetUser(userId, allRootFolders);
 
             // Visible, non-incognito series only, resolved under the scoped query so root-folder
             // visibility applies; the progress read below bypasses filters and intersects with this.
@@ -149,7 +172,7 @@ public class ReadingBehaviourService(
             // Watched chapters are excluded on the same rule ReadCounts.ReadFor uses: ticking off an
             // anime season is not reading, and it carries no time and no page count to measure.
             var rows = await db.ChapterProgress.IgnoreQueryFilters()
-                .Where(p => p.UserId == scope.UserId && p.Completed && !p.Watched)
+                .Where(p => p.UserId == userId && p.Completed && !p.Watched)
                 .Select(p => new ProgressRow(p.SeriesId, p.ReadSeconds, p.PageCount, p.UpdatedAt))
                 .ToListAsync(ct);
             progress = [.. rows.Where(r => visibleIds.Contains(r.SeriesId))];
@@ -164,7 +187,8 @@ public class ReadingBehaviourService(
         if (progress.Count == 0)
         {
             return new ReadingBehaviour(
-                0, 0, null, null, null, 0, 0, 0, null, null, null, [], [], [], DateTime.UtcNow);
+                0, 0, null, null, null, 0, 0, 0, null, null, null, [], [], [], DateTime.UtcNow,
+                new int[HistogramBuckets]);
         }
 
         var bySeries = progress.GroupBy(p => p.SeriesId).ToList();
@@ -185,6 +209,11 @@ public class ReadingBehaviourService(
         var seriesStarted = completion.Count;
         var seriesFinished = completion.Count(c => c.Fraction >= 1.0);
         var unfinished = completion.Where(c => c.Fraction < 1.0).ToList();
+        var histogram = new int[HistogramBuckets];
+        foreach (var u in unfinished)
+        {
+            histogram[Math.Min(HistogramBuckets - 1, (int)(u.Fraction * HistogramBuckets))]++;
+        }
 
         // ---- pace ----
         // Zero seconds means unknown, not instant: Kavita imports and OPDS page fetches never carry
@@ -230,7 +259,8 @@ public class ReadingBehaviourService(
                     .Select(u => (u.SeriesId, Median: u.Fraction)),
                 titles,
                 f => $"{Math.Round(f * 100)}% in"),
-            GeneratedAt: DateTime.UtcNow);
+            GeneratedAt: DateTime.UtcNow,
+            StopPointHistogram: histogram);
 
         logger.LogInformation(
             "Built reading behaviour over {Chapters} chapter(s) in {Elapsed:F1}s",
@@ -252,7 +282,7 @@ public class ReadingBehaviourService(
             .Where(r => titles.ContainsKey(r.SeriesId))
             .Take(Named)
             .Select(r => new BehaviourSeries(
-                r.SeriesId, titles[r.SeriesId].Title, titles[r.SeriesId].CoverUrl, format(r.Median)))];
+                r.SeriesId, titles[r.SeriesId].Title, titles[r.SeriesId].CoverUrl, format(r.Median), r.Median))];
 
     /// <summary>Median, or null for an empty set. Even counts take the mean of the middle pair.</summary>
     private static double? Median(List<double> values)

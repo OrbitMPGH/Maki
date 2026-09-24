@@ -38,7 +38,7 @@ public sealed class ReaderServiceTests : IDisposable
         }
     }
 
-    private ReaderService Reader()
+    private ReaderService Reader(ReadingSessionService? sessions = null)
     {
         // Narrowed the way a request is: ReaderService reads its owner off the scope.
         var context = _db.NewContext(TestUser);
@@ -48,7 +48,7 @@ public sealed class ReaderServiceTests : IDisposable
         var pusher = InertKavitaPusher.For(scopeFactory);
         return new ReaderService(context, _archives,
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
-            pusher, NullLogger<ReaderService>.Instance);
+            pusher, sessions ?? new ReadingSessionService(context), NullLogger<ReaderService>.Instance);
     }
 
     private List<StatsEvent> Events()
@@ -490,6 +490,99 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Equal(400, row.ReportedSeconds);
     }
 
+    // ---- reading sessions ----
+
+    private List<ReadingSession> Sessions()
+    {
+        using var db = _db.NewContext();
+        return db.ReadingSessions.OrderBy(s => s.Id).ToList();
+    }
+
+    [Fact]
+    public async Task ATimedReportOpensASession()
+    {
+        var (_, chapters) = SeedFromCbz("sit.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 0, null, new(60, false), CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 2, null, new(30, false), CancellationToken.None);
+
+        var session = Assert.Single(Sessions());
+        Assert.Equal(TestUser, session.UserId);
+        Assert.Equal(90, session.ActiveSeconds);
+        Assert.Equal(1, session.ChaptersCompleted);
+    }
+
+    [Fact]
+    public async Task AReportWithNoTimeOpensNoSession()
+    {
+        // OPDS and MarkRead report no time: a page request is not proof anyone read it.
+        var (_, chapters) = SeedFromCbz("nosession.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None);
+
+        Assert.Empty(Sessions());
+    }
+
+    [Fact]
+    public async Task AZeroSecondCompletionCreditsTheOpenSession()
+    {
+        var (_, chapters) = SeedFromCbz("zerosit.cbz", ["001.jpg", "002.jpg"], [(1m, null), (2m, null)]);
+        var reader = Reader();
+        var first = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(first!, 0, null, new(60, false), CancellationToken.None);
+
+        var second = await reader.SliceAsync(chapters[2m], CancellationToken.None);
+        await reader.SaveProgressAsync(second!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+
+        var session = Assert.Single(Sessions());
+        Assert.Equal(60, session.ActiveSeconds);
+        Assert.Equal(1, session.ChaptersCompleted);
+    }
+
+    /// <summary>
+    /// A sitting is a side stat. If recording it fails, the completion it rode in on must still emit
+    /// its read, or <c>wasCompleted</c> is true next time and the read is lost for good.
+    /// </summary>
+    [Fact]
+    public async Task ASessionFailureDoesNotCostTheCompletion()
+    {
+        var (seriesId, chapters) = SeedFromCbz("sitfail.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var broken = _db.NewContext(TestUser);
+        await broken.DisposeAsync();
+        var reader = Reader(new ReadingSessionService(broken));
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        var completed = await reader.SaveProgressAsync(slice!, 1, null, new(90, true), CancellationToken.None);
+
+        Assert.True(completed);
+        Assert.Contains(Events(), e => e.Type == StatsEventType.ChaptersRead && e.Value == 1);
+        Assert.Contains(Events(), e => e.Type == StatsEventType.ReadingTime && e.Value == 90);
+        using var db = _db.NewContext(TestUser);
+        Assert.Equal(1, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+        Assert.Empty(Sessions());
+    }
+
+    [Fact]
+    public async Task AFullyIncognitoSeriesOpensNoSession()
+    {
+        var (seriesId, chapters) = SeedFromCbz("hiddensit.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == seriesId).Incognito = IncognitoMode.Full;
+            db.SaveChanges();
+        }
+
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, new(120, true), CancellationToken.None);
+
+        Assert.Empty(Sessions());
+    }
+
     [Fact]
     public async Task MarkingUnreadKeepsTheTimeAlreadySpentAndLogged()
     {
@@ -605,6 +698,27 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.True(row.Completed);
         Assert.False(row.Watched);
         Assert.Contains(Events(), e => e.Type == StatsEventType.ReadingTime && e.Value == 120);
+    }
+
+    /// <summary>A watched tick is not a start, so the first genuine read redates the row.</summary>
+    [Fact]
+    public async Task ReadingAWatchedChapterRedatesItsStart()
+    {
+        var (_, chapters) = SeedFromCbz("restart.cbz", ["001.jpg", "002.jpg"], [(1m, null)]);
+        var reader = Reader();
+        await reader.MarkWatchedAsync([chapters[1m]], CancellationToken.None);
+        var ticked = DateTime.UtcNow.AddYears(-1);
+        using (var db = _db.NewContext(TestUser))
+        {
+            db.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).StartedAt = ticked;
+            db.SaveChanges();
+        }
+
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 0, null, new(30, false), CancellationToken.None);
+
+        using var after = _db.NewContext(TestUser);
+        Assert.True(after.ChapterProgress.Single(p => p.ChapterId == chapters[1m]).StartedAt > ticked.AddDays(1));
     }
 
     /// <summary>A watched chapter re-read a second time is a plain re-read and emits nothing more.</summary>

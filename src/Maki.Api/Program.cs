@@ -610,6 +610,10 @@ try
     builder.Services.AddScoped<ActivityStatsService>();
     builder.Services.AddScoped<UserViewResolver>();
     builder.Services.AddScoped<LibraryCompositionService>();
+    builder.Services.AddScoped<StatsInsightsService>();
+    builder.Services.AddScoped<StatsStandingService>();
+    builder.Services.AddScoped<ReadingSessionService>();
+    builder.Services.AddScoped<ReadingSessionBackfillService>();
     // Backs UserMetricsService's short-lived snapshot cache. The metrics are recomputed from the
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.
@@ -970,6 +974,11 @@ try
         // Seed the activity log from pre-existing data (once, marker-gated). Runs
         // before Kestrel/Quartz so live event hooks can't overlap the backfill window.
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist
+        // on the stats page from the first release rather than only for reads after upgrade.
+        scope.ServiceProvider.GetRequiredService<ReadingSessionBackfillService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // After the backfill, so rows it just seeded are already keyed and this pass has nothing

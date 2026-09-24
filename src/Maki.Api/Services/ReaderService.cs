@@ -16,6 +16,7 @@ public class ReaderService(
     ReaderArchiveCache archives,
     ReadingProgressService progress,
     KavitaProgressPusher kavitaPush,
+    ReadingSessionService sessions,
     ILogger<ReaderService> logger)
 {
     /// <summary>Where a chapter lives inside its backing archive.</summary>
@@ -314,11 +315,19 @@ public class ReaderService(
             db.ChapterProgress.Add(row);
         }
 
+        // A watched tick is not a start: the first genuine read dates the series, not the tick.
+        if (row.Watched)
+        {
+            row.StartedAt = now;
+        }
+
         // The resume position is free to move backwards; completion is not.
         row.PageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, slice.PageCount - 1));
         row.PageCount = slice.PageCount;
         row.Completed = completed ?? (row.Completed || row.PageIndex >= slice.PageCount - 1);
-        row.ReadSeconds += Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
+        var justCompleted = row.Completed && !wasCompleted;
+        var reportedSeconds = Math.Clamp(time.Seconds, 0, MaxSecondsPerReport);
+        row.ReadSeconds += reportedSeconds;
         // Read here, so it is no longer external, deliberately un-read, or merely watched.
         row.External = false;
         row.UnreadAt = null;
@@ -326,24 +335,48 @@ public class ReaderService(
         row.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
 
-        if (row.Completed && !wasCompleted)
+        if (justCompleted)
         {
             // Flush first: the leftover under the threshold is time spent on this chapter, and
             // waiting for a threshold that will never be crossed again would lose it for good.
             await FlushReadingTimeAsync(row, slice.Series, ct);
             await OnChapterCompletedAsync(slice.Series, chapter, ct);
-            return true;
         }
-
         // The threshold assumes another report is coming. On the write that says the sitting is
         // over, none is: a chapter left unfinished would otherwise hold its last few minutes
         // until it was completed, which for an abandoned one is never.
-        if (time.Final || row.ReadSeconds - row.ReportedSeconds >= ReadingTimeFlushSeconds)
+        else if (time.Final || row.ReadSeconds - row.ReportedSeconds >= ReadingTimeFlushSeconds)
         {
             await FlushReadingTimeAsync(row, slice.Series, ct);
         }
 
-        return false;
+        await RecordSessionAsync(slice.Series, reportedSeconds, justCompleted, now, ct);
+        return justCompleted;
+    }
+
+    // Last, and never fatal: a sitting is a side stat, so a failure here must not cost the
+    // completion events above.
+    private async Task RecordSessionAsync(Series series, int seconds, bool completedChapter,
+        DateTime now, CancellationToken ct)
+    {
+        if (series.Incognito == IncognitoMode.Full || (seconds <= 0 && !completedChapter))
+        {
+            return;
+        }
+
+        try
+        {
+            await sessions.RecordAsync(UserId, seconds, completedChapter, now, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Recording reading session for user {UserId} failed", UserId);
+            // Drop the half-written row so the next SaveChanges on this context does not retry it.
+            foreach (var entry in db.ChangeTracker.Entries<ReadingSession>().ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+        }
     }
 
     /// <summary>
