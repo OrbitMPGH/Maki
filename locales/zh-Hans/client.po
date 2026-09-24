@@ -2150,11 +2150,6 @@ msgstr "归档"
 msgid "Archives inventoried"
 msgstr "已盘点归档"
 
-#: src/pages/stats/sections/ProgressSection.tsx
-#, fuzzy
-msgid "Around the house"
-msgstr "家中周边"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
@@ -6112,6 +6107,10 @@ msgstr "布局已保存"
 #, fuzzy
 msgid "Lead with big cover tiles instead of a plain row."
 msgstr "使用大型封面卡片展示重点，而不是普通横排。"
+
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Leaderboard"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Lean"

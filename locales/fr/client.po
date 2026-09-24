@@ -2150,11 +2150,6 @@ msgstr "Archive"
 msgid "Archives inventoried"
 msgstr "Archives inventoriées"
 
-#: src/pages/stats/sections/ProgressSection.tsx
-#, fuzzy
-msgid "Around the house"
-msgstr "À la maison"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
@@ -6112,6 +6107,10 @@ msgstr "Mise en page enregistrée"
 #, fuzzy
 msgid "Lead with big cover tiles instead of a plain row."
 msgstr "Commencez par de grandes vignettes de couverture plutôt que par une simple ligne."
+
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Leaderboard"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Lean"

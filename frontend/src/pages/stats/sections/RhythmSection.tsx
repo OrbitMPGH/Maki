@@ -196,7 +196,9 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
                 {sittings ? sittings.perWeek.toFixed(1) : '-'}
               </span>
               <span className="stats-fact-hint">
-                {perSittingMedian !== null ? t`${perSittingMedian} ch per sitting` : '-'}
+                {perSittingMedian !== null && perSittingMedian > 0
+                  ? t`${perSittingMedian} ch per sitting`
+                  : '-'}
               </span>
             </div>
           </div>

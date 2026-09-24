@@ -219,7 +219,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
           {summary.showStreaks && (
             <Text size="xs" c="var(--ink-3)" mt="sm" className="tnum">
               <Trans>
-                <em>{streak}</em> day streak, best <em>{best}</em>
+                <b>{streak}</b> day streak, best <b>{best}</b>
               </Trans>
             </Text>
           )}
@@ -245,7 +245,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
         {showLeaderboard && (
           <Panel p="md">
             <p className="stats-panel-title">
-              <Trans>Around the house</Trans>
+              <Trans>Leaderboard</Trans>
             </p>
             {leaderboard && leaderboard.length >= 2 ? (
               <Table className="panel-table ops-table" highlightOnHover>

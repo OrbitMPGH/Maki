@@ -3901,6 +3901,13 @@ body {
 .stats-section > .section-header {
   margin-top: 0;
 }
+/* Rows stacked directly in a section keep the same gap the two-panel grids use inside a row. */
+.stats-section > * + * {
+  margin-top: var(--mantine-spacing-lg);
+}
+.stats-section > .section-header + * {
+  margin-top: 0;
+}
 
 /* The window picker scrolls sideways on a phone rather than pushing the page wider. */
 .stats-range {

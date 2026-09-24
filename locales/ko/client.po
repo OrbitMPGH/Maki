@@ -2150,11 +2150,6 @@ msgstr "보관 파일"
 msgid "Archives inventoried"
 msgstr "보관 파일 확인 완료"
 
-#: src/pages/stats/sections/ProgressSection.tsx
-#, fuzzy
-msgid "Around the house"
-msgstr "집 주변"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
@@ -6112,6 +6107,10 @@ msgstr "레이아웃 저장됨"
 #, fuzzy
 msgid "Lead with big cover tiles instead of a plain row."
 msgstr "일반 행 대신 큰 표지 타일을 먼저 표시합니다."
+
+#: src/pages/stats/sections/ProgressSection.tsx
+msgid "Leaderboard"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Lean"
