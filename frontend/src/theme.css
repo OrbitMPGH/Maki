@@ -1961,8 +1961,8 @@ body {
 }
 
 /* --- Auth band (sign-in, first-run setup) --------------------------------- */
-/* The series hero's recipe with a painted art layer instead of a poster. These screens live
-   outside the AppShell, so the band is the whole viewport rather than a full-bleed strip. */
+/* A painted glow instead of a poster. These screens live outside the AppShell, so the band is the
+   whole viewport rather than a full-bleed strip. */
 .auth-frame {
   position: relative;
   overflow: hidden;
@@ -1972,18 +1972,47 @@ body {
   align-items: flex-end;
   background: var(--app-bg);
 }
-/* Off-centre on purpose: two lobes at opposite corners, so it reads as light falling across the
-   band rather than as a centred gradient wash. */
+/* Off-centre on purpose, so it reads as light falling across the band rather than as a centred
+   gradient wash. One layer: stacking translucent scrims over it quantises at every step. */
 .auth-backdrop-art {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(74% 62% at 84% 8%, var(--brand-glow) 0%, transparent 62%),
-    radial-gradient(56% 58% at 8% 96%, color-mix(in srgb, var(--brand) 26%, transparent) 0%, transparent 64%),
-    radial-gradient(38% 34% at 66% 78%, color-mix(in srgb, var(--brand) 12%, transparent) 0%, transparent 70%);
+    radial-gradient(
+      95% 85% at 86% 4%,
+      color-mix(in srgb, var(--brand-glow) 55%, transparent) 0%,
+      color-mix(in srgb, var(--brand-glow) 49.7%, transparent) 15%,
+      color-mix(in srgb, var(--brand-glow) 36.5%, transparent) 30%,
+      color-mix(in srgb, var(--brand-glow) 21.7%, transparent) 45%,
+      color-mix(in srgb, var(--brand-glow) 10.4%, transparent) 60%,
+      color-mix(in srgb, var(--brand-glow) 3.8%, transparent) 75%,
+      transparent 100%
+    ),
+    radial-gradient(
+      50% 45% at 66% 80%,
+      color-mix(in srgb, var(--brand) 6%, transparent) 0%,
+      color-mix(in srgb, var(--brand) 5.4%, transparent) 15%,
+      color-mix(in srgb, var(--brand) 4%, transparent) 30%,
+      color-mix(in srgb, var(--brand) 2.4%, transparent) 45%,
+      color-mix(in srgb, var(--brand) 1.1%, transparent) 60%,
+      color-mix(in srgb, var(--brand) 0.4%, transparent) 75%,
+      transparent 100%
+    );
+}
+/* Dither. A faint glow stretched over the whole viewport on near-black only has a handful of
+   8-bit steps to work with, so without grain it bands into visible blocks. */
+.auth-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='4' intercept='-1.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .auth-content {
   position: relative;
+  z-index: 1;
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) min(420px, 100%);

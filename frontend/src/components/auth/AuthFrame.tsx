@@ -2,15 +2,14 @@ import type { ReactNode } from 'react'
 import { Paper, Text, Title } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { IconBrandMark } from '../IconBrandMark'
-import { HeroBackdrop } from '../series/HeroBackdrop'
 
 /**
  * The band behind sign-in and first-run setup, so the first screen anyone sees belongs to the same
  * product as the series page.
  *
  * The art is CSS rather than a cover: nobody is signed in yet, and fetching library art anonymously
- * would leak what the instance holds to anyone who can reach the login form. The three scrim layers
- * are the hero's own, rendered with no image behind them.
+ * would leak what the instance holds to anyone who can reach the login form. No hero scrims either:
+ * with no image to protect they only stack more 8-bit layers, and the steps show as blocks.
  */
 export function AuthFrame({
   title,
@@ -28,7 +27,6 @@ export function AuthFrame({
   return (
     <div className="auth-frame">
       <div className="auth-backdrop-art" aria-hidden />
-      <HeroBackdrop coverUrl={null} />
 
       <div className="auth-content">
         <div className="auth-identity">
