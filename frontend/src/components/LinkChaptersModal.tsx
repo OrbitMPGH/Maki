@@ -77,7 +77,7 @@ export function LinkChaptersModal({
                   disabled={!f.onDisk || link.isPending}
                   p="xs"
                   style={{
-                    borderRadius: 8,
+                    borderRadius: 'var(--radius-thumb)',
                     border: `1px solid ${picked === f.relativePath ? 'var(--mantine-color-brand-5)' : 'var(--border)'}`,
                     opacity: f.onDisk ? 1 : 0.5,
                   }}

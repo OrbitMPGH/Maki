@@ -304,7 +304,7 @@ export function AnimeCoverageBar({
                 </Text>
                 <IconChevronDown
                     size={13}
-                    style={{ transform: rawOpen ? 'rotate(180deg)' : undefined, transition: 'transform 140ms ease' }}
+                    style={{ transform: rawOpen ? 'rotate(180deg)' : undefined, transition: 'transform var(--dur-base) var(--ease)' }}
                 />
               </UnstyledButton>
               <Collapse expanded={rawOpen}>

@@ -73,7 +73,7 @@ export function PriorityList({
             style={{
               position: 'relative',
               transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
-              transition: 'transform 150ms ease',
+              transition: 'transform var(--dur-base) var(--ease)',
               pointerEvents: dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
             }}
           >
@@ -105,7 +105,7 @@ export function PriorityList({
               onDragEnd={commitDrag}
               style={{
                 cursor: 'grab',
-                borderRadius: 4,
+                borderRadius: 'var(--mantine-radius-xs)',
                 opacity: dragFromIndex === i ? 0 : 1,
               }}
             >

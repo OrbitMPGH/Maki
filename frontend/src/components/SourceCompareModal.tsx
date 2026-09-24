@@ -475,7 +475,7 @@ export function SourceCompareModal({
                     style={{
                       flex: `0 0 ${COLUMN_WIDTH}px`,
                       transform: shift ? `translateX(${shift * COLUMN_WIDTH}px)` : undefined,
-                      transition: 'transform 150ms ease',
+                      transition: 'transform var(--dur-base) var(--ease)',
                       opacity: dragFromIndex === i ? 0 : 1,
                       pointerEvents:
                         dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
@@ -608,7 +608,7 @@ export function SourceCompareModal({
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   border: '1px dashed var(--ink-3)',
-                                  borderRadius: 4,
+                                  borderRadius: 'var(--mantine-radius-xs)',
                                   opacity: 0.4,
                                 }}
                               >

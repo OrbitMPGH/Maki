@@ -64,7 +64,7 @@ export function StatTile({
           {loading ? (
             <Skeleton h={22} w={64} mt={10} mb={3} />
           ) : (
-            <Text fz={26} fw={750} lh={1.1} mt={6} className="tnum">
+            <Text fz={26} fw={800} lh={1.1} mt={6} className="tnum">
               {value}
             </Text>
           )}

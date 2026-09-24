@@ -429,7 +429,7 @@ function CompositionCard({
                   style={{
                     width: 10,
                     height: 10,
-                    borderRadius: 3,
+                    borderRadius: 'var(--mantine-radius-xs)',
                     background: d.color,
                     flexShrink: 0,
                   }}

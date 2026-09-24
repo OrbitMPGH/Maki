@@ -950,7 +950,7 @@ export default function SeriesDetailPage() {
               >
                 {span.label}
               </Badge>
-              <Text size="sm" fw={550} className="tnum">
+              <Text size="sm" fw={600} className="tnum">
                 {spanRangeLabel(span)}
               </Text>
             </Group>
@@ -2091,7 +2091,7 @@ export default function SeriesDetailPage() {
                                               </Badge>
                                             </Tooltip>
                                         )}
-                                        <Text size="sm" fw={550} className="tnum">
+                                        <Text size="sm" fw={600} className="tnum">
                                           {c.isOneShot || c.number === null
                                               ? chapterLabel(c)
                                               : c.fileVolume !== null

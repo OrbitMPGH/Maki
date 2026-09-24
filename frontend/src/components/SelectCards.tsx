@@ -41,7 +41,7 @@ export function SelectCards<T extends string>({
             aria-pressed={active}
             style={{
               padding: '12px 14px',
-              borderRadius: 10,
+              borderRadius: 'var(--radius-surface)',
               border: `1px ${(fillLeft && index < selectedIndex) ? 'dashed' : 'solid'} ${active || (fillLeft && index < selectedIndex) ? 'var(--brand)' : 'var(--border)'}`,
               background: active || (fillLeft && index < selectedIndex) ? 'var(--surface-hover)' : 'transparent',
               boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,

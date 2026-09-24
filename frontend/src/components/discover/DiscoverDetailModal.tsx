@@ -166,7 +166,7 @@ export function DiscoverDetailModal({
                       className="discover-poster-skeleton"
                       w={176}
                       h={264}
-                      radius={11}
+                      radius="var(--radius-hero)"
                       style={{ flexShrink: 0 }}
                     />
                   )}

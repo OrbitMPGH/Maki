@@ -113,7 +113,7 @@ function CompositionCard({ title, items }: { title: string; items: NamedCount[] 
                   style={{
                     width: 10,
                     height: 10,
-                    borderRadius: 3,
+                    borderRadius: 'var(--mantine-radius-xs)',
                     background: d.color,
                     flexShrink: 0,
                   }}

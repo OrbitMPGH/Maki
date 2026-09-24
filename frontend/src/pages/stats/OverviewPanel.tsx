@@ -400,7 +400,7 @@ export function OverviewPanel({
                             style={{
                               width: 10,
                               height: 10,
-                              borderRadius: 3,
+                              borderRadius: 'var(--mantine-radius-xs)',
                               background: g.color,
                               flexShrink: 0,
                             }}

@@ -182,7 +182,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
                             }}
                           />
                         </Tooltip>
-                        <Text size="sm" fw={550}>
+                        <Text size="sm" fw={600}>
                           {s.label}
                         </Text>
                         {s.url && (

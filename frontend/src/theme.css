@@ -66,6 +66,12 @@
   --radius-control: 6px;
   --radius-surface: 9px;
   --radius-overlay: 13px;
+  --radius-2xs: 2px;
+  --radius-chip: 7px;
+  --radius-thumb: 8px;
+  --radius-hero: 12px;
+  /* Bars, badges and anything whose ends should be fully round, whatever its height. */
+  --radius-pill: 999px;
   --line-soft: color-mix(in srgb, var(--border) 76%, transparent);
 
   /* Type scale. Sizes are per role, so pick the tier by what the text *is*; if none
@@ -83,6 +89,14 @@
   --type-label: 0.6875rem;
   --type-badge: 0.625rem;
 
+  /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-strong: 650;
+  --fw-bold: 700;
+  --fw-heavy: 800;
+
   /* Layer ladder. The two themes elevate by opposite means, so "raised" and "sunken"
      are defined per theme instead of assuming one direction reads in both. Dark
      elevates by lightening (shadow on near-black is invisible); light elevates by
@@ -94,6 +108,10 @@
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 0.12s;
+  --dur-base: 0.15s;
+  --dur-medium: 0.18s;
+  --dur-slow: 0.35s;
 
   --font-display: 'Bricolage Grotesque Variable', 'Inter Variable', ui-sans-serif, -apple-system,
     'Segoe UI', Roboto, sans-serif;
@@ -106,7 +124,7 @@
 .auth-panel-title,
 .brand-wordmark {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: -0.025em;
 }
 
@@ -303,7 +321,7 @@ body {
 }
 *::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-thumb);
   border: 2px solid transparent;
   background-clip: content-box;
 }
@@ -394,7 +412,7 @@ body {
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-hero);
   background: color-mix(in srgb, var(--brand) 16%, var(--surface-2));
   border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--border));
 }
@@ -412,13 +430,13 @@ body {
   border-radius: var(--radius-control);
   color: var(--ink-2);
   font-size: var(--type-body);
-  font-weight: 550;
+  font-weight: var(--fw-semibold);
   line-height: 1;
   text-decoration: none;
   position: relative;
   transition:
-    background-color 0.15s var(--ease),
-    color 0.15s var(--ease);
+    background-color var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
 }
 .nav-link:hover {
   background: var(--surface-hover);
@@ -440,7 +458,7 @@ body {
   transform: translateY(-50%);
   width: 3px;
   height: 18px;
-  border-radius: 3px;
+  border-radius: var(--radius-pill);
   background: var(--brand);
   box-shadow: 0 0 10px var(--brand-glow);
 }
@@ -463,7 +481,7 @@ body {
   color: var(--ink-2);
   font-size: var(--type-meta);
   cursor: pointer;
-  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
+  transition: background-color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
 }
 .command-palette-trigger:hover {
   background: var(--surface-hover);
@@ -480,10 +498,10 @@ body {
 .command-palette-trigger-kbd {
   display: none;
   font-size: var(--type-label);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--ink-4);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--mantine-radius-xs);
   padding: 1px 5px;
 }
 @media (min-width: 48em) {
@@ -500,7 +518,7 @@ body {
    is an UnstyledButton laid out as a grid of text. */
 .inbox-row {
   width: 100%;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease);
 }
 .inbox-row:hover,
 .inbox-row:focus-visible {
@@ -512,7 +530,7 @@ body {
 .inbox-cover {
   position: relative;
   flex-shrink: 0;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   overflow: hidden;
   background: var(--surface-hover);
 }
@@ -530,7 +548,7 @@ body {
   bottom: 0;
   display: flex;
   padding: 1px;
-  border-radius: 3px 0 0 0;
+  border-radius: var(--mantine-radius-xs) 0 0 0;
   background: var(--surface);
 }
 
@@ -558,7 +576,7 @@ body {
 }
 .nav-section-label {
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -586,9 +604,9 @@ body {
   contain-intrinsic-size: auto 320px;
   container-type: inline-size;
   transition:
-    transform 0.18s var(--ease),
-    box-shadow 0.18s var(--ease),
-    border-color 0.18s var(--ease);
+    transform var(--dur-medium) var(--ease),
+    box-shadow var(--dur-medium) var(--ease),
+    border-color var(--dur-medium) var(--ease);
 }
 .cover-card:hover {
   transform: translateY(-4px);
@@ -610,7 +628,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.35s var(--ease);
+  transition: transform var(--dur-slow) var(--ease);
 }
 .cover-card:hover .cover-poster img {
   transform: scale(1.05);
@@ -667,9 +685,9 @@ body {
   gap: 4px;
   height: 20px;
   padding: 0 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-pill);
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -795,7 +813,7 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: var(--type-body);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   line-height: 1.25;
   color: #fff;
 }
@@ -808,13 +826,13 @@ body {
 .cover-bar {
   flex: 1;
   height: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, white 16%, transparent);
   overflow: hidden;
 }
 .cover-bar-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-pill);
   background: var(--brand);
 }
 .cover-bar-fill[data-complete] {
@@ -852,7 +870,7 @@ body {
      and there is exactly one of these nodes in the app, so the cost doesn't grow with the grid.
      The global prefers-reduced-motion rule below already neutralises it. */
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--dur-fast) var(--ease);
   backface-visibility: hidden;
 }
 .tip[data-open] {
@@ -1031,13 +1049,13 @@ body {
 .home-resume-bar {
   height: 4px;
   margin-top: 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, white 16%, transparent);
   overflow: hidden;
 }
 .home-resume-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-pill);
   background: var(--brand);
 }
 .home-read-badge {
@@ -1075,7 +1093,7 @@ body {
   background: var(--mantine-color-brand-filled);
   opacity: 0;
   transform: scale(0.85);
-  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
 }
 .discover-corner[data-add='true']:hover {
   background: var(--mantine-color-brand-filled-hover);
@@ -1089,7 +1107,7 @@ body {
   color: var(--brand-on);
   opacity: 0.92;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
 }
 .cover-card:hover .discover-corner[data-play='true'],
 .reading-card:hover .discover-corner[data-play='true'] {
@@ -1116,7 +1134,7 @@ body {
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  transition: opacity 0.15s var(--ease), transform 0.18s var(--ease), background 0.15s var(--ease);
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-medium) var(--ease), background var(--dur-base) var(--ease);
 }
 .reading-card-menu:hover,
 .continue-tile-menu:hover {
@@ -1152,7 +1170,7 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--brand-fg-on-art);
 }
 .home-chapter-label[data-action] > svg {
@@ -1160,7 +1178,7 @@ body {
 }
 .home-chapter-sep {
   color: color-mix(in srgb, white 55%, transparent);
-  font-weight: 400;
+  font-weight: var(--fw-regular);
 }
 .discover-card:hover .discover-corner[data-add='true'],
 .discover-card:focus-within .discover-corner[data-add='true'] {
@@ -1238,7 +1256,7 @@ body {
   gap: 5px;
   min-width: 0;
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   line-height: 1.25;
   color: var(--brand-fg, #b8c1ff);
 }
@@ -1263,11 +1281,11 @@ body {
 }
 .engine-chip {
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--ink-3);
   font-size: var(--type-badge);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1276,7 +1294,7 @@ body {
 .discover-reason {
   display: block;
   font-size: var(--type-label);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   line-height: 1.25;
   color: var(--brand-fg-on-art);
   white-space: nowrap;
@@ -1328,7 +1346,7 @@ body {
   min-width: 0;
   padding: 13px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-hero);
   background: var(--surface-2);
 }
 
@@ -1361,7 +1379,7 @@ body {
 }
 .discover-hero-eyebrow {
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -1380,14 +1398,14 @@ body {
 }
 .discover-hero-poster {
   flex-shrink: 0;
-  border-radius: 11px;
+  border-radius: var(--radius-hero);
 }
 .discover-hero-poster:hover .series-hero-poster {
   transform: translateY(-2px);
 }
 .discover-hero-poster .series-hero-poster {
   display: block;
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--dur-medium) var(--ease);
 }
 .discover-hero-title:hover {
   color: var(--brand-fg, var(--brand));
@@ -1413,7 +1431,7 @@ body {
   padding: 4px 9px;
   border-radius: var(--radius-control);
   font-size: var(--type-micro);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   color: var(--ink-2);
   background: color-mix(in srgb, var(--surface) 70%, transparent);
   border: 1px solid var(--border-strong);
@@ -1430,14 +1448,14 @@ body {
 .discover-hero-strip,
 .series-hero-glass-panel {
   border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
-  border-radius: 12px;
+  border-radius: var(--radius-hero);
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(18px) saturate(0.85);
 }
 .discover-hero-strip-label {
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -1450,7 +1468,7 @@ body {
 }
 .discover-hero-strip-mode {
   font-size: var(--type-badge);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--brand-fg, var(--brand));
@@ -1473,13 +1491,13 @@ body {
   min-width: 0;
   padding: 4px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-thumb);
   background: none;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .discover-hero-strip-item:hover {
   background: color-mix(in srgb, var(--surface) 60%, transparent);
@@ -1494,14 +1512,14 @@ body {
   width: 34px;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: 5px;
+  border-radius: var(--mantine-radius-xs);
 }
 .discover-hero-strip-fallback {
   display: grid;
   place-items: center;
   background: var(--surface-2);
   color: var(--ink-4);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 .discover-hero-strip-copy {
   display: flex;
@@ -1513,7 +1531,7 @@ body {
   overflow: hidden;
   color: var(--ink-hi);
   font-size: var(--type-meta);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1542,7 +1560,7 @@ body {
   overflow: hidden;
   color: var(--brand-fg, var(--brand));
   font-size: var(--type-badge);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1554,7 +1572,7 @@ body {
   left: 5px;
   height: 2px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--brand) 18%, transparent);
 }
 .discover-hero-strip-progress > span {
@@ -1584,7 +1602,7 @@ body {
 .discover-seeds-label {
   flex: none;
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -1606,11 +1624,11 @@ body {
   max-width: 190px;
   padding: 4px 10px 4px 4px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: inherit;
   text-decoration: none;
-  transition: border-color 140ms ease, background 140ms ease;
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .discover-seed:hover {
   border-color: var(--border-strong);
@@ -1634,7 +1652,7 @@ body {
 }
 .discover-seed-title {
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   line-height: 1.15;
   color: var(--ink-hi);
   overflow: hidden;
@@ -1673,11 +1691,11 @@ body {
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: var(--app-bg);
   border: 1px solid var(--border-strong);
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
 }
@@ -1734,7 +1752,7 @@ body {
   background: var(--surface);
   text-align: left;
   cursor: pointer;
-  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
 }
 .discover-genre-tile:hover {
   border-color: var(--brand);
@@ -1754,11 +1772,11 @@ body {
   z-index: calc(3 - var(--n));
   width: 36px;
   height: 54px;
-  border-radius: 4px;
+  border-radius: var(--mantine-radius-xs);
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid rgba(0, 0, 0, 0.4);
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--dur-medium) var(--ease);
 }
 .discover-genre-peek img {
   width: 100%;
@@ -1773,7 +1791,7 @@ body {
 }
 .discover-genre-name {
   font-size: var(--type-subhead);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   line-height: 1.2;
   color: var(--ink-hi);
 }
@@ -1801,7 +1819,7 @@ body {
 }
 .discover-taste-lead {
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -1812,12 +1830,12 @@ body {
   gap: 7px;
   padding: 4px 9px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: var(--surface-2);
 }
 .discover-taste-chip b {
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--ink-2);
 }
 .discover-taste-chip i {
@@ -1825,7 +1843,7 @@ body {
   display: block;
   width: 34px;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--radius-pill);
   background: var(--border-strong);
 }
 .discover-taste-chip i::after {
@@ -1833,7 +1851,7 @@ body {
   position: absolute;
   inset: 0 auto 0 0;
   width: var(--w);
-  border-radius: 2px;
+  border-radius: var(--radius-pill);
   background: var(--brand);
 }
 .discover-taste-chip em {
@@ -1844,7 +1862,7 @@ body {
 .discover-taste-more {
   margin-left: auto;
   font-size: var(--type-meta);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   color: var(--brand-fg, var(--brand));
 }
 
@@ -1906,7 +1924,7 @@ body {
 }
 .spoiler-tag > * {
   filter: blur(4.5px);
-  transition: filter 0.12s var(--ease);
+  transition: filter var(--dur-fast) var(--ease);
   user-select: none;
 }
 .spoiler-tag:hover > *,
@@ -2084,7 +2102,7 @@ body {
 .setup-rail-wordmark {
   font-family: var(--font-display);
   font-size: var(--type-feature);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1;
   letter-spacing: -0.02em;
   color: var(--ink-hi);
@@ -2092,7 +2110,7 @@ body {
 .setup-rail-caption {
   margin-top: 4px;
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-4);
@@ -2125,7 +2143,7 @@ body {
   padding: 10px;
   border-radius: var(--radius-surface);
   color: var(--ink-3);
-  transition: background 150ms ease, color 150ms ease;
+  transition: background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 .setup-step:hover {
   background: color-mix(in srgb, var(--surface-hover) 70%, transparent);
@@ -2145,7 +2163,7 @@ body {
   border-radius: 50%;
   background: var(--surface);
   font-size: var(--type-micro);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   font-variant-numeric: tabular-nums;
 }
 .setup-step[data-done] .setup-step-index {
@@ -2168,7 +2186,7 @@ body {
 }
 .setup-step-label {
   font-size: var(--type-body);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 .setup-step-hint {
   overflow: hidden;
@@ -2215,7 +2233,7 @@ body {
 }
 .setup-eyebrow {
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--brand-fg, var(--brand));
@@ -2224,7 +2242,7 @@ body {
   margin: 10px 0 0;
   font-family: var(--font-display);
   font-size: var(--type-route);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1.05;
   letter-spacing: -0.025em;
   color: var(--ink-hi);
@@ -2258,7 +2276,7 @@ body {
 }
 .setup-row-label {
   font-size: var(--type-subhead);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--ink-hi);
 }
 .setup-row-description {
@@ -2286,11 +2304,11 @@ body {
   gap: 8px;
   padding: 7px 14px 7px 9px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--type-meta);
-  font-weight: 550;
+  font-weight: var(--fw-semibold);
   color: var(--ink-2);
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .setup-swatch:hover {
   border-color: var(--border-strong);
@@ -2349,7 +2367,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   background: transparent;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .setup-choice:hover {
   border-color: var(--border-strong);
@@ -2360,7 +2378,7 @@ body {
 }
 .setup-choice-title {
   font-size: var(--type-body);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--ink-hi);
 }
 .setup-choice-description {
@@ -2388,10 +2406,10 @@ body {
 }
 .setup-service-state {
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--neutral-soft);
   font-size: var(--type-badge);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -2403,7 +2421,7 @@ body {
 }
 .setup-service-chevron {
   color: var(--ink-4);
-  transition: transform 200ms var(--ease);
+  transition: transform var(--dur-medium) var(--ease);
 }
 .setup-service[data-open] .setup-service-chevron {
   transform: rotate(180deg);
@@ -2450,7 +2468,7 @@ body {
 .setup-next-heading {
   margin: 36px 0 12px;
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -2465,7 +2483,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   background: color-mix(in srgb, var(--surface) 50%, transparent);
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .setup-next-card:hover {
   border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
@@ -2522,7 +2540,7 @@ body {
   }
   .setup-mobile-step {
     font-size: var(--type-label);
-    font-weight: 700;
+    font-weight: var(--fw-bold);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--ink-3);
@@ -2535,7 +2553,7 @@ body {
   }
   .setup-mobile-progress span {
     height: 3px;
-    border-radius: 2px;
+    border-radius: var(--radius-pill);
     background: var(--border);
   }
   .setup-mobile-progress span[data-filled] {
@@ -2660,7 +2678,7 @@ body {
   width: fit-content;
   color: var(--ink-2);
   text-decoration: none;
-  transition: color 0.15s var(--ease);
+  transition: color var(--dur-base) var(--ease);
 
 }
 .series-hero-back:hover {
@@ -2677,7 +2695,7 @@ body {
   width: 224px;
   height: 336px;
   object-fit: cover;
-  border-radius: 11px;
+  border-radius: var(--radius-hero);
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow: 0 26px 58px -16px rgba(0, 0, 0, 0.9);
   flex-shrink: 0;
@@ -2709,7 +2727,7 @@ body {
   border-radius: var(--radius-control);
   border: 1px solid transparent;
   font-size: var(--type-meta);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   white-space: nowrap;
 }
 /* Same size and shape so the pair sits as a set, a step down in weight so it doesn't compete with
@@ -2782,14 +2800,14 @@ body {
   gap: 8px;
   height: 42px;
   padding: 0 14px;
-  border-radius: 11px;
+  border-radius: var(--radius-hero);
   color: var(--band);
   background: color-mix(in srgb, var(--band) 15%, transparent);
   border: 1px solid color-mix(in srgb, var(--band) 34%, transparent);
 }
 .hero-score-n {
   font-size: var(--type-figure);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1;
 }
 .hero-figure-rule {
@@ -2821,13 +2839,13 @@ body {
 .hero-stat-n {
   color: var(--ink-hi);
   font-size: var(--type-figure);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1.05;
 }
 .hero-stat-l {
   color: var(--ink-4);
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -2971,7 +2989,7 @@ body {
 .tag-bucket-name {
   color: var(--bucket);
   font-size: var(--type-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -2983,7 +3001,7 @@ body {
 .tag-bucket-count {
   color: var(--ink-4);
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 .tag-chips {
   display: flex;
@@ -2996,11 +3014,11 @@ body {
   gap: 7px;
   padding: 3px 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: var(--surface-2);
   color: var(--ink-2);
   font-size: var(--type-meta);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   white-space: nowrap;
 }
 .tag-dot {
@@ -3024,8 +3042,8 @@ body {
   font-family: inherit;
   cursor: pointer;
   text-decoration: none;
-  transition: color 0.15s var(--ease), background 0.15s var(--ease),
-    border-color 0.15s var(--ease);
+  transition: color var(--dur-base) var(--ease), background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
 }
 .tag-chip[data-interactive]:hover {
   background: var(--surface-hover);
@@ -3072,14 +3090,14 @@ body {
 .tag-more {
   padding: 3px 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: none;
   color: var(--ink-3);
   font-family: inherit;
   font-size: var(--type-meta);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   cursor: pointer;
-  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+  transition: color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .tag-more:hover {
   color: var(--ink-hi);
@@ -3108,10 +3126,10 @@ body {
   border-bottom: 2px solid transparent;
   border-radius: 0;
   font-size: var(--type-body);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.15s var(--ease);
+  transition: color var(--dur-base) var(--ease);
 }
 .series-tab:hover {
   color: var(--ink-2);
@@ -3142,7 +3160,7 @@ body {
 .series-tab-count {
   margin-left: 9px;
   color: var(--ink-4);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 .series-body {
@@ -3182,7 +3200,7 @@ body {
   color: var(--ink-hi);
   font-family: var(--font-display);
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1.25;
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
@@ -3195,7 +3213,7 @@ body {
   background: color-mix(in srgb, var(--brand) 14%, transparent);
   color: var(--brand-fg);
   font-size: var(--type-micro);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
 }
 .section-header-rule {
   flex: 1;
@@ -3215,13 +3233,13 @@ body {
 .empty-state-title {
   color: var(--ink-hi);
   font-size: var(--type-section);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   line-height: 1.3;
 }
 .empty-state[data-compact] .empty-state-title {
   color: var(--ink-2);
   font-size: var(--type-body);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 /* --- Series detail panels -------------------------------------------------- */
@@ -3307,7 +3325,7 @@ body {
 .panel-table thead th {
   border-bottom: 1px solid var(--border);
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -3406,9 +3424,9 @@ body {
   content: '';
   width: 2px;
   height: 100%;
-  border-radius: 1px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--info) 60%, transparent);
-  transition: background 120ms ease, width 120ms ease;
+  transition: background var(--dur-fast) var(--ease), width var(--dur-fast) var(--ease);
 }
 .chapter-span-line:hover::before {
   width: 3px;
@@ -3417,7 +3435,7 @@ body {
 .chapter-span-line:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 1px;
-  border-radius: 2px;
+  border-radius: var(--radius-2xs);
 }
 /* Missing anchors can be off-page or filtered out. Fade each
    clipped edge independently, including both edges on a continuation page. */
@@ -3591,7 +3609,7 @@ body {
 
 /* --- Misc ---------------------------------------------------------------- */
 .hover-raise {
-  transition: transform 0.15s var(--ease), border-color 0.15s var(--ease), background-color 0.15s var(--ease);
+  transition: transform var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease), background-color var(--dur-base) var(--ease);
 }
 .hover-raise:hover {
   border-color: var(--border-strong);
@@ -3639,7 +3657,7 @@ body {
 .stats-thumb {
   width: 32px;
   height: 44px;
-  border-radius: 4px;
+  border-radius: var(--mantine-radius-xs);
   object-fit: cover;
   flex-shrink: 0;
   background: var(--surface-2);
@@ -3651,7 +3669,7 @@ body {
 .stats-thumb-lg {
   width: 44px;
   height: 62px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
 }
 
 .signals-row + .signals-row {
@@ -3710,14 +3728,14 @@ body {
 .stats-figure-n {
   color: var(--ink-hi);
   font-size: var(--type-figure);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1.05;
 }
 .stats-figure-delta {
   padding: 2px 7px;
   border-radius: var(--radius-control);
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   white-space: nowrap;
   color: var(--ink-3);
   background: var(--surface-2);
@@ -3730,7 +3748,7 @@ body {
 .stats-figure-l {
   color: var(--ink-4);
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -3806,13 +3824,13 @@ body {
 .rewind-progress-track {
   flex: 1;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
   background: rgba(255, 255, 255, 0.22);
 }
 .rewind-progress-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #fff;
 }
 
@@ -3829,13 +3847,13 @@ body {
 
 .rewind-eyebrow {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.18em;
   opacity: 0.75;
 }
 .rewind-title {
   font-size: clamp(2rem, 6vw, 3.4rem);
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
   line-height: 1.1;
   text-wrap: balance;
 }
@@ -3845,12 +3863,12 @@ body {
 }
 .rewind-big-number {
   font-size: clamp(3.5rem, 12vw, 6.5rem);
-  font-weight: 850;
+  font-weight: var(--fw-heavy);
   line-height: 1;
 }
 .rewind-big-suffix {
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   opacity: 0.8;
   margin-top: 4px;
 }
@@ -3861,7 +3879,7 @@ body {
 .rewind-rank {
   display: inline-block;
   min-width: 1.4em;
-  font-weight: 750;
+  font-weight: var(--fw-heavy);
   opacity: 0.55;
 }
 .rewind-dim {
@@ -3870,12 +3888,12 @@ body {
 }
 .rewind-summary-number {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: var(--fw-heavy);
   line-height: 1.1;
 }
 .rewind-summary-label {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.7;
@@ -3914,7 +3932,7 @@ body {
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: var(--radius-surface);
 }
 .rewind-scrim {
   position: absolute;
@@ -3937,7 +3955,7 @@ body {
   aspect-ratio: 2 / 3;
   margin: 0 auto 18px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-hero);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 30px 60px -18px rgba(0, 0, 0, 0.9);
 }
@@ -3951,7 +3969,7 @@ body {
   aspect-ratio: 2 / 3;
   margin-inline: -8px;
   object-fit: cover;
-  border-radius: 9px;
+  border-radius: var(--radius-surface);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.85);
 }
@@ -3972,7 +3990,7 @@ body {
   height: 38px;
   flex-shrink: 0;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--mantine-radius-xs);
   background: rgba(255, 255, 255, 0.08);
 }
 .rewind-list-title {
@@ -4004,7 +4022,7 @@ body.reader-open {
   height: min(88dvh, 138vw);
   aspect-ratio: 2 / 3;
   max-width: 92vw;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   background: rgba(255, 255, 255, 0.05);
   animation: reader-page-pulse 1.6s ease-in-out infinite;
 }
@@ -4112,7 +4130,7 @@ body.reader-open {
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(10, 10, 11, 0.86);
   backdrop-filter: blur(8px);
   color: #fff;
@@ -4126,14 +4144,14 @@ body.reader-open {
 .reader-next-chapter-bar {
   width: 160px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.18);
   overflow: hidden;
 }
 .reader-next-chapter-fill {
   height: 100%;
   background: var(--brand);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: width 60ms linear;
 }
 
@@ -4147,7 +4165,7 @@ body.reader-open {
   height: 56px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 160ms var(--ease);
+  transition: opacity var(--dur-base) var(--ease);
   background: rgba(10, 10, 11, 0.86);
   backdrop-filter: blur(8px);
   color: #fff;
@@ -4177,7 +4195,7 @@ body.reader-open {
   z-index: 2;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 160ms var(--ease);
+  transition: opacity var(--dur-base) var(--ease);
   background: rgba(10, 10, 11, 0.9);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -4197,7 +4215,7 @@ body.reader-open {
   position: relative;
   padding: 0;
   border: 2px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--mantine-radius-xs);
   background: none;
   cursor: pointer;
   line-height: 0;
@@ -4212,21 +4230,21 @@ body.reader-open {
   left: 3px;
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--radius-2xs);
   background: var(--warn);
 }
 .reader-strip-item img {
   display: block;
   height: 96px;
   width: auto;
-  border-radius: 2px;
+  border-radius: var(--radius-2xs);
 }
 .reader-strip-item span {
   position: absolute;
   right: 2px;
   bottom: 2px;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   font-size: var(--type-badge);
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.85);
@@ -4246,7 +4264,7 @@ body.reader-open {
   gap: 2px;
   max-width: min(560px, 86vw);
   padding: 10px 20px;
-  border-radius: 12px;
+  border-radius: var(--radius-hero);
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(10, 10, 11, 0.86);
   backdrop-filter: blur(8px);
@@ -4262,7 +4280,7 @@ body.reader-open {
 }
 .reader-chapter-banner-label {
   font-size: var(--type-section);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: #fff;
 }
 .reader-chapter-banner-pages {
@@ -4308,7 +4326,7 @@ body.reader-open {
   aspect-ratio: 2 / 3;
   flex-shrink: 0;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-thumb);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.85);
 }
@@ -4320,7 +4338,7 @@ body.reader-open {
 }
 .reader-end-eyebrow {
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
@@ -4329,7 +4347,7 @@ body.reader-open {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(2.2rem, 6vw, 3.4rem);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1;
   letter-spacing: -0.02em;
   color: #fff;
@@ -4354,7 +4372,7 @@ body.reader-open {
   flex: 1;
   max-width: 220px;
   height: 4px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
@@ -4373,7 +4391,7 @@ body.reader-open {
 .reader-end-next-label {
   font-family: var(--font-display);
   font-size: 1.5rem;
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   letter-spacing: -0.01em;
   color: #fff;
 }
@@ -4440,7 +4458,7 @@ body.reader-open {
   overflow-y: auto;
   padding: 20px 24px 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   background: #121215;
   box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
   color: #fff;
@@ -4456,7 +4474,7 @@ body.reader-open {
   margin: 0;
   font-family: var(--font-display);
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: -0.01em;
 }
 .reader-shortcuts-groups {
@@ -4467,7 +4485,7 @@ body.reader-open {
 .reader-shortcuts-groups h3 {
   margin: 0 0 8px;
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
@@ -4497,11 +4515,11 @@ body.reader-open {
   padding: 1px 7px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-bottom-width: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: rgba(255, 255, 255, 0.06);
   font-family: inherit;
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   line-height: 1.6;
   text-align: center;
   color: #fff;
@@ -4518,7 +4536,7 @@ body.reader-open {
   bottom: 12px;
   z-index: 2;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--type-micro);
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.75);
@@ -4562,9 +4580,9 @@ body.reader-open {
   color: inherit;
   position: relative;
   transition:
-    transform 0.15s var(--ease),
-    box-shadow 0.15s var(--ease),
-    border-color 0.15s var(--ease);
+    transform var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
   content-visibility: auto;
   contain-intrinsic-size: auto 84px;
 }
@@ -4603,7 +4621,7 @@ body.reader-open {
 }
 
 .row-cover {
-  border-radius: 8px;
+  border-radius: var(--radius-thumb);
   overflow: hidden;
   flex-shrink: 0;
   background: var(--surface-2);
@@ -4642,7 +4660,7 @@ body.reader-open {
   flex-wrap: nowrap;
 }
 .row-title {
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   font-size: var(--type-body);
   line-height: 1.3;
   white-space: nowrap;
@@ -4674,7 +4692,7 @@ body.reader-open {
 .row-bar {
   flex: 1;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
   overflow: hidden;
 }
@@ -4788,7 +4806,7 @@ body.reader-open {
   margin-top: var(--mantine-spacing-md);
   color: var(--ink-4);
   font-size: var(--type-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -4877,20 +4895,20 @@ body.reader-open {
    most series need one row, a few need four. */
 .anime-coverage-track {
   position: relative;
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: color-mix(in srgb, var(--ink-4) 9%, transparent);
   border: 1px solid var(--hairline);
 }
 .anime-coverage-span {
   position: absolute;
   height: 24px;
-  border-radius: 5px;
+  border-radius: var(--mantine-radius-xs);
   display: flex;
   align-items: center;
   padding-inline: 8px;
   overflow: hidden;
   border: 1px solid;
-  transition: filter 120ms ease;
+  transition: filter var(--dur-fast) var(--ease);
 }
 .anime-coverage-span:hover {
   filter: brightness(1.25);
@@ -4918,7 +4936,7 @@ body.reader-open {
 }
 .anime-coverage-span-label {
   font-size: var(--type-label);
-  font-weight: 550;
+  font-weight: var(--fw-semibold);
   color: var(--ink-hi);
   white-space: nowrap;
   overflow: hidden;
@@ -4935,7 +4953,7 @@ body.reader-open {
   bottom: 2px;
   width: 2px;
   transform: translateX(-50%);
-  border-radius: 1px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--danger) 70%, transparent);
 }
 .anime-coverage-progress {
@@ -4944,7 +4962,7 @@ body.reader-open {
   bottom: -4px;
   width: 2px;
   transform: translateX(-50%);
-  border-radius: 1px;
+  border-radius: var(--radius-pill);
   background: var(--ink-hi);
   box-shadow: 0 0 0 2px var(--surface);
 }
@@ -4965,7 +4983,7 @@ body.reader-open {
 .anime-coverage-swatch {
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   border: 1px solid;
   flex: 0 0 auto;
 }
@@ -5135,7 +5153,7 @@ body.reader-open {
 .figure-strip-n {
   color: var(--ink-hi);
   font-size: var(--type-figure);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   line-height: 1.05;
 }
 .figure-strip-item[data-zero] .figure-strip-n {
@@ -5144,7 +5162,7 @@ body.reader-open {
 .figure-strip-l {
   color: var(--ink-4);
   font-size: var(--type-label);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -5155,7 +5173,7 @@ body.reader-open {
   gap: 7px;
   color: var(--ink-2);
   font-size: var(--type-meta);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   white-space: nowrap;
 }
 .status-dot::before {
@@ -5230,12 +5248,12 @@ body.reader-open {
   display: grid;
   gap: 0.2rem;
   min-width: 0;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 .import-step-copy small {
   color: var(--ink-3);
   font-size: var(--type-micro);
-  font-weight: 400;
+  font-weight: var(--fw-regular);
   line-height: 1.35;
 }
 .import-control-row {
@@ -5331,7 +5349,7 @@ body.reader-open {
   color: var(--ink-3);
   font-size: var(--type-meta);
   line-height: 1.35;
-  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+  transition: color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
 }
 .settings-index-link:hover {
   color: var(--ink);
@@ -5339,7 +5357,7 @@ body.reader-open {
 .settings-index-link[data-active] {
   border-left-color: var(--brand);
   color: var(--ink-hi);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 @media (max-width: 74.9375em) {
   .settings-layout {
@@ -5361,7 +5379,7 @@ body.reader-open {
   gap: 6px;
   color: var(--warn);
   font-size: var(--type-meta);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   white-space: nowrap;
 }
 .save-control-hint::before {
@@ -5573,7 +5591,7 @@ body.reader-open {
   padding: 0.8rem 1rem 0.45rem;
   color: var(--ink-3);
   font-size: var(--type-label);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.08em;
   line-height: 1.25;
   text-transform: uppercase;
@@ -5703,15 +5721,15 @@ body.reader-open {
   background: var(--surface-sunken);
   box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
   transition:
-    border-color 0.18s var(--ease),
-    box-shadow 0.18s var(--ease);
+    border-color var(--dur-medium) var(--ease),
+    box-shadow var(--dur-medium) var(--ease);
 }
 .continue-tile-poster img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.35s var(--ease);
+  transition: transform var(--dur-slow) var(--ease);
 }
 .continue-tile-poster:hover {
   border-color: var(--brand);
@@ -5744,7 +5762,7 @@ body.reader-open {
   gap: 0.4rem;
   color: var(--ink-3);
   font-size: var(--type-badge);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: 0.075em;
   text-transform: uppercase;
 }
@@ -5761,7 +5779,7 @@ body.reader-open {
   -webkit-line-clamp: 2;
   color: var(--ink-hi);
   font-size: var(--type-section);
-  font-weight: 650;
+  font-weight: var(--fw-strong);
   letter-spacing: -0.02em;
   line-height: 1.12;
   text-decoration: none;
@@ -5793,7 +5811,7 @@ body.reader-open {
   overflow: hidden;
   flex: 1 1 auto;
   height: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-pill);
   /* The tile's own ground shows through here, not poster art, so this track is themed rather
      than the fixed light-on-dark that .home-resume-bar uses over a scrim. */
   background: color-mix(in srgb, var(--ink-3) 30%, transparent);
@@ -5871,7 +5889,7 @@ body.reader-open {
 .utility-modal-title {
   color: var(--ink-hi);
   font-size: var(--type-section);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   line-height: 1.3;
 }
 .utility-modal-close {
@@ -6050,7 +6068,7 @@ body.reader-open {
   width: 48px;
   height: 72px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-thumb);
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -6233,7 +6251,7 @@ body.reader-open {
   font-size: 11px;
   line-height: 1;
   padding: 3px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
   color: var(--ink-3);
   border: 1px solid var(--border);
@@ -6256,7 +6274,7 @@ body.reader-open {
   width: 24px;
   height: 36px;
   object-fit: cover;
-  border-radius: 3px;
+  border-radius: var(--mantine-radius-xs);
   flex: 0 0 auto;
 }
 @media (max-width: 36em) {

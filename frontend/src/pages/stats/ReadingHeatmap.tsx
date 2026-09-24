@@ -119,7 +119,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                         style={{
                           width: 11,
                           height: 11,
-                          borderRadius: 2,
+                          borderRadius: 'var(--radius-2xs)',
                           background: SHADES[level(cell.chapters, cell.seconds)],
                         }}
                       />
@@ -136,7 +136,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
           <Trans>Less</Trans>
         </Text>
         {SHADES.map((shade) => (
-          <Box key={shade} style={{ width: 11, height: 11, borderRadius: 2, background: shade }} />
+          <Box key={shade} style={{ width: 11, height: 11, borderRadius: 'var(--radius-2xs)', background: shade }} />
         ))}
         <Text size="xs" c="var(--ink-3)">
           <Trans>More</Trans>

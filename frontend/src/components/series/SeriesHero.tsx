@@ -414,7 +414,7 @@ export function SeriesHeroSkeleton() {
                 <Skeleton h={14} w={84} mb="md" />
                 <Group className="series-hero-content">
                     <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
-                        <Skeleton className="series-hero-poster" radius={11} />
+                        <Skeleton className="series-hero-poster" radius="var(--radius-hero)" />
                         <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                             <Skeleton h={58} w="62%" />
                             <Skeleton h={14} w="38%" mt="md" />

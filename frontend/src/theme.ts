@@ -114,7 +114,7 @@ const themeBase: MantineThemeOverride = {
     fontWeight: '700',
     sizes: {
       h1: { fontSize: '1.9rem', lineHeight: '1.2', fontWeight: '800' },
-      h2: { fontSize: '1.5rem', lineHeight: '1.25', fontWeight: '750' },
+      h2: { fontSize: '1.5rem', lineHeight: '1.25', fontWeight: '800' },
       h3: { fontSize: '1.2rem', lineHeight: '1.3' },
       h4: { fontSize: '1rem', lineHeight: '1.4' },
     },

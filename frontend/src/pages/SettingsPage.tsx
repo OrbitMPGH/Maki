@@ -2084,7 +2084,7 @@ function AppearanceSection() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '8px 12px',
-                borderRadius: 10,
+                borderRadius: 'var(--radius-surface)',
                 border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
                 background: active ? 'var(--surface-hover)' : 'transparent',
                 boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
