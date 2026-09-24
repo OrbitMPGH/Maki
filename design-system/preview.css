@@ -1,0 +1,171 @@
+/* What the previews need that theme.css does not carry: page basics, the parts Mantine draws
+   at runtime (Button, Badge, Paper, Card, Table, Modal, Skeleton), the markup of components whose
+   app version is Mantine layout props, and icon sizes the app passes as a `size` prop.
+   build.mjs puts this first in components/bundle.css and the theme.css rules after it. */
+
+html, body { margin: 0; }
+body {
+  background-color: var(--app-bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--type-body);
+  line-height: 1.55;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+/* Mantine's global reset. */
+button, input, select, textarea { font: inherit; }
+.mk-preview { padding: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.mk-preview[data-stack] { display: grid; align-items: start; }
+.mk-icon { width: 1em; height: 1em; flex-shrink: 0; }
+
+/* --- Brand lockup ---------------------------------------------------------- */
+.brand-mark img, .brand-mark svg { width: 42px; height: 42px; }
+.brand-wordmark { font-size: 1.125rem; line-height: 1; color: var(--ink-hi); }
+
+/* --- Button (Mantine, radius md) ------------------------------------------ */
+.mk-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 2.25rem;
+  padding: 0 1.125rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--primary-on);
+}
+.mk-button:hover { background: var(--primary-hover); }
+.mk-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mk-button[data-variant='default'] { background: var(--surface-2); color: var(--ink); border-color: var(--border-strong); }
+.mk-button[data-variant='default']:hover { background: var(--surface-hover); }
+.mk-button[data-variant='light'] { background: color-mix(in srgb, var(--brand) 15%, transparent); color: var(--brand-fg); }
+.mk-button[data-variant='subtle'] { background: transparent; color: var(--brand-fg); }
+.mk-button[data-variant='subtle']:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); }
+.mk-button[data-color='danger'] { background: var(--danger-fill); color: #ffffff; }
+.mk-button[data-size='xs'] { height: var(--control-height-xs); padding: 0 0.875rem; font-size: var(--type-micro); }
+.mk-button[data-size='md'] { height: var(--control-height-md); padding: 0 1.375rem; font-size: 1rem; }
+
+/* --- Badge (Mantine light variant, radius sm, weight 600) ----------------- */
+.mk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 1.25rem;
+  padding: 0 0.625rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--type-label);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--tone, var(--brand-fg));
+  background: var(--tone-soft, color-mix(in srgb, var(--brand) 15%, transparent));
+}
+.mk-badge[data-variant='filled'] { color: var(--primary-on); background: var(--tone, var(--primary)); }
+
+/* --- PageHeader (Mantine Group, Title and Text in the app) ----------------- */
+.page-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.page-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.page-header-title {
+  margin: 0;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+.page-header-description { margin: 0; max-width: 620px; color: var(--ink-3); font-size: var(--type-body); }
+.page-header-actions { display: flex; gap: 10px; }
+.page-header[data-compact] .page-header-title { font-size: var(--type-feature); line-height: 1.2; }
+.page-header[data-compact] .page-header-description { font-size: var(--type-meta); }
+
+/* --- Panel (Mantine Paper withBorder, radius lg, p lg) --------------------- */
+.panel {
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+}
+.panel h3 { margin: 0 0 4px; color: var(--ink-hi); font-size: 1.2rem; line-height: 1.3; font-weight: var(--fw-bold); }
+.panel p { margin: 0; color: var(--ink-3); }
+.panel.table-panel { padding: 0; }
+
+/* --- SectionHeader --------------------------------------------------------- */
+.mk-preview .section-header,
+.mk-preview .figure-strip { margin: 0; }
+.section-header-icon { width: 20px; height: 20px; }
+
+/* --- StatTile (Mantine Card, Group and Text in the app) -------------------- */
+.stat-tile {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 180px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.stat-label { color: var(--ink-3); font-size: var(--type-micro); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { margin-top: 6px; color: var(--ink-hi); font-size: 26px; font-weight: var(--fw-heavy); line-height: 1.1; }
+.stat-hint { margin-top: 4px; color: var(--ink-3); font-size: var(--type-micro); }
+.stat-delta { margin-top: 4px; font-size: var(--type-micro); font-weight: var(--fw-semibold); }
+.stat-icon { width: 20px; height: 20px; opacity: 0.9; }
+
+/* --- EmptyState (Mantine Stack in the app) --------------------------------- */
+.empty-state { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: var(--spacing-xl) 0; }
+.empty-state[data-compact] { padding: var(--spacing-sm) 0; }
+.empty-state-description { max-width: 520px; color: var(--ink-3); font-size: var(--type-body); }
+.empty-state .mk-button { margin-top: var(--spacing-sm); }
+
+/* --- Cards: the grid sets their width in the app, the preview does here ---- */
+.mk-preview > .cover-card { width: 180px; }
+.cover-badge .mk-icon { width: 11px; height: 11px; }
+.cover-badge-circle .mk-icon { width: 12px; height: 12px; }
+.discover-corner .mk-icon { width: 16px; height: 16px; }
+/* The add corner only shows on hover in the app; data-shown pins it open in a preview. */
+.discover-corner[data-add='true'][data-shown] { opacity: 1; transform: scale(1); }
+.discover-rating .mk-icon { width: 10px; height: 10px; color: var(--rating); }
+.engine-why-line .mk-icon { width: 13px; height: 13px; }
+
+/* --- Table (Mantine Table, verticalSpacing sm, horizontalSpacing md) ------- */
+.mk-table { width: 100%; border-collapse: collapse; color: var(--ink); font-size: var(--type-body); }
+.mk-table th, .mk-table td { padding: var(--spacing-sm) var(--spacing-md); text-align: left; }
+.mk-table th { font-weight: var(--fw-bold); }
+
+/* --- Skeleton (Mantine Skeleton) ------------------------------------------- */
+.mk-skeleton { display: block; border-radius: var(--radius-md); background: var(--dark-4); animation: mk-skeleton-fade 1.5s linear infinite; }
+[data-theme='light'] .mk-skeleton { background: #dee2e6; }
+@keyframes mk-skeleton-fade { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mk-skeleton { animation: none; } }
+
+/* --- Modal (Mantine Modal with the utility-modal classes theme.ts sets) ---- */
+.mk-overlay { position: relative; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, 0.55); }
+.utility-modal-content {
+  width: min(440px, 100%);
+  border: 1px solid var(--border-raised);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+}
+.utility-modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--spacing-md) var(--spacing-lg); }
+.utility-modal-title { margin: 0; }
+.utility-modal-close { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: var(--radius-md); cursor: pointer; }
+.utility-modal-close .mk-icon { width: 18px; height: 18px; }
+.utility-modal-body { padding: var(--spacing-lg); }
+.utility-modal-body p { margin: 0; font-size: var(--type-body); }
+.mk-actions { display: flex; justify-content: flex-end; gap: var(--spacing-sm); margin-top: var(--spacing-sm); }
+
+/* --- Tooltip: fixed to the viewport in the app, placed by hand here -------- */
+.mk-preview .tip { position: absolute; }

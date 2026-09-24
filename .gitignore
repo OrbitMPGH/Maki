@@ -16,6 +16,9 @@ design-time.db*
 node_modules/
 frontend/dist/
 
+# Design system build output (scripts/design-system/build.mjs)
+design-system/out/
+
 # IDE
 .vs/
 .vscode/*

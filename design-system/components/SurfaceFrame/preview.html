@@ -1,0 +1,28 @@
+<!-- @dsCard group="Layout" height=300 subtitle="An operational frame with a panel table inside" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>SurfaceFrame preview</title></head>
+<body>
+<div class="mk-preview" data-stack>
+  <div class="surface-frame surface-frame--wide surface-frame--operational" data-page-style="operational">
+    <div class="page-header" data-compact style="margin-bottom:16px">
+      <div class="page-header-text">
+        <h1 class="page-header-title">Requests</h1>
+        <p class="page-header-description">Series other users asked for. Approve to add them to the library.</p>
+      </div>
+    </div>
+    <div class="panel table-panel">
+      <table class="mk-table panel-table">
+        <thead><tr><th>Series</th><th>Requested by</th><th>When</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Kaiju No. 8</td><td>sam</td><td class="tnum">2h ago</td><td><span class="status-dot" style="--dot:var(--warn)">Pending</span></td></tr>
+          <tr data-selected><td>Oshi no Ko</td><td>alex</td><td class="tnum">Yesterday</td><td><span class="status-dot" style="--dot:var(--warn)">Pending</span></td></tr>
+          <tr><td>Blue Lock</td><td>sam</td><td class="tnum">3 days ago</td><td><span class="status-dot" style="--dot:var(--ok)">Approved</span></td></tr>
+          <tr><td>Kagurabachi</td><td>jo</td><td class="tnum">Last week</td><td><span class="status-dot" style="--dot:var(--danger)">Declined</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>
