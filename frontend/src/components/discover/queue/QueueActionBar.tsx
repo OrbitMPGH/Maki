@@ -65,7 +65,7 @@ export function QueueActionBar({
           <IconMoodSad size={18} />
         </ActionIcon>
       </Tooltip>
-      <Tooltip label={t`Want to read`} withArrow>
+      <Tooltip label={t`Add to shortlist`} withArrow>
         <ActionIcon
           className="queue-action queue-action-want"
           size="xl"
@@ -73,7 +73,7 @@ export function QueueActionBar({
           color="var(--brand)"
           radius="xl"
           disabled={disabled}
-          aria-label={t`Want to read`}
+          aria-label={t`Add to shortlist`}
           onClick={onWant}
         >
           <IconHeart size={22} />

@@ -353,10 +353,10 @@ msgstr "URL must be a full http:// or https:// address"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook URL is required"
 
-#. Two saves of the same title to the Want to read list raced each other.
+#. Two saves of the same title to the Shortlist raced each other.
 #: src/Maki.Api/Controllers/PlanToReadController.cs
 msgid "error.planToRead.changed"
-msgstr "Your Want to read list changed. Refresh and try again."
+msgstr "Your Shortlist changed. Refresh and try again."
 
 #: src/Maki.Api/Services/PlanToReadService.cs
 msgid "error.planToRead.invalidTitle"
@@ -365,7 +365,7 @@ msgstr "A valid catalogue title is required"
 #. The client sent an origin other than taste, trending or manual.
 #: src/Maki.Api/Services/PlanToReadService.cs
 msgid "error.planToRead.unsupportedOrigin"
-msgstr "Unsupported origin for a Want to read entry"
+msgstr "Unsupported origin for a shortlist entry"
 
 #: src/Maki.Api/Controllers/ProgressController.cs
 msgid "error.progress.unknownPeriodOrMetric"

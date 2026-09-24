@@ -11,7 +11,7 @@ export interface PlanToReadEntry {
   requestStatus: 'pending' | null
 }
 
-/** The Want-to-read list, newest first. */
+/** The Shortlist, newest first. */
 export function usePlanToRead(): UseQueryResult<PlanToReadEntry[]> {
   return useQuery({
     queryKey: ['plan-to-read'],

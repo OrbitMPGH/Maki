@@ -1,5 +1,6 @@
 import {
   IconActivity,
+  IconBookmarks,
   IconFolderDown,
   IconHistory,
   IconHeartbeat,
@@ -36,6 +37,7 @@ export const NAV_SECTIONS: { label: MessageDescriptor; items: NavItem[] }[] = [
       // needs `end` any more, since nothing here prefix-matches anything else.
       { label: msg`Home`, path: '/home', icon: IconHome },
       { label: msg`Library`, path: '/library', icon: IconLibrary },
+      { label: msg`Shortlist`, path: '/shortlist', icon: IconBookmarks },
       { label: msg`Add series`, path: '/add', icon: IconPlus },
       { label: msg`Discover`, path: '/discover', icon: IconSparkles },
       { label: msg`Import`, path: '/import', icon: IconFolderDown },

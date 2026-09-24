@@ -62,6 +62,7 @@ import LibraryPage from './pages/LibraryPage'
 // Discover are the two largest pages in the app, and none of which someone landing on Home needs.
 const SeriesDetailPage = lazy(() => import('./pages/SeriesDetailPage'))
 const AddSeriesPage = lazy(() => import('./pages/AddSeriesPage'))
+const ShortlistPage = lazy(() => import('./pages/ShortlistPage'))
 const CreatorPage = lazy(() => import('./pages/CreatorPage'))
 const ActivityPage = lazy(() => import('./pages/ActivityPage'))
 const RequestsPage = lazy(() => import('./pages/RequestsPage'))
@@ -472,6 +473,7 @@ function AppShellRoutes() {
               element={homeEnabled ? <HomePage /> : <Navigate to="/library" replace />}
             />
             <Route path="/library" element={<LibraryPage />} />
+            <Route path="/shortlist" element={<ShortlistPage />} />
             <Route path="/series/:id" element={<SeriesDetailPage />} />
             <Route path="/add" element={<AddSeriesPage />} />
             <Route path="/creator/:name" element={<CreatorPage />} />

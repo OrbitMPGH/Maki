@@ -7,8 +7,8 @@ import { usePlanToRead, usePlanToReadAdd, usePlanToReadRemove } from '../../api/
 import type { RecommendationItem } from '../../api/hooks'
 
 /**
- * Bookmark toggle for the Want-to-read list. Hidden once the title is already in the library: a
- * shelf row cannot also be "planned" for it.
+ * Bookmark toggle for the Shortlist. Hidden once the title is already in the library: a shelf row
+ * cannot also be "planned" for it.
  */
 export function PlanToReadButton({
   item,
@@ -41,14 +41,14 @@ export function PlanToReadButton({
   }
 
   return (
-    <Tooltip label={planned ? t`Remove from want to read` : t`Want to read`} withArrow zIndex={2001}>
+    <Tooltip label={planned ? t`Remove from shortlist` : t`Add to shortlist`} withArrow zIndex={2001}>
       <ActionIcon
         size="lg"
         variant={planned ? 'filled' : 'default'}
         color="var(--info)"
         loading={busy}
         aria-pressed={planned}
-        aria-label={planned ? t`Remove from want to read` : t`Want to read`}
+        aria-label={planned ? t`Remove from shortlist` : t`Add to shortlist`}
         onClick={() => void toggle()}
       >
         {planned ? <IconBookmarkFilled size={18} /> : <IconBookmark size={18} />}

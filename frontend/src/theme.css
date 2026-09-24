@@ -6528,3 +6528,74 @@ body.reader-open {
   color: var(--brand);
   border-color: var(--brand);
 }
+
+/* --- Shortlist page -------------------------------------------------------- */
+/* Unlike .cover-card (poster fills the whole card), a Shortlist card needs room below the poster
+   for the title and two text buttons, so it is its own layout rather than a reuse of that class. */
+.shortlist-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shortlist-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--mantine-radius-lg);
+  overflow: hidden;
+  background: linear-gradient(160deg, #1c2030, #10131b);
+  cursor: pointer;
+  transition: border-color var(--dur-medium) var(--ease), box-shadow var(--dur-medium) var(--ease);
+}
+.shortlist-cover:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--mantine-shadow-lg);
+}
+.shortlist-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.shortlist-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.shortlist-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+.shortlist-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shortlist-title-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.shortlist-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.shortlist-actions > button,
+.shortlist-actions > a {
+  width: 100%;
+}

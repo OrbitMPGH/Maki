@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Badge, Center, Loader, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { IconCards } from '@tabler/icons-react'
+import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useQueueDeck, type QueueCard, type SwipeKind } from '../../api/discoverQueue'
 import { usePlanToRead } from '../../api/planToRead'
 import { useRootFolders } from '../../api/hooks'
-import { PlanToReadDrawer } from '../../components/discover/PlanToReadDrawer'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
 import { CardStack, type CardStackHandle } from '../../components/discover/queue/CardStack'
 import { QueueActionBar } from '../../components/discover/queue/QueueActionBar'
@@ -39,7 +39,6 @@ export function QueueTab() {
   const { data: planEntries } = usePlanToRead()
   const { data: rootFolders } = useRootFolders()
 
-  const [drawerOpen, setDrawerOpen] = useState(false)
   const [detailCard, setDetailCard] = useState<QueueCard | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const [showHint, setShowHint] = useState(false)
@@ -86,10 +85,9 @@ export function QueueTab() {
     [topCard],
   )
 
-  const modalOpen = detailCard != null
-  const blocked = drawerOpen || modalOpen
+  const blocked = detailCard != null
 
-  // Keyboard control, bound only while this tab is mounted and no modal or drawer covers it.
+  // Keyboard control, bound only while this tab is mounted and no modal covers it.
   useEffect(() => {
     if (blocked) return
     const handler = (e: KeyboardEvent) => {
@@ -133,14 +131,14 @@ export function QueueTab() {
         <Text size="sm" c="var(--ink-3)">
           <Trans>{swipedCount} reviewed this session</Trans>
         </Text>
-        <UnstyledButton className="queue-want-pill" onClick={() => setDrawerOpen(true)}>
+        <UnstyledButton className="queue-want-pill" component={Link} to="/shortlist">
           <Badge
             size="lg"
             variant="light"
             color="var(--info)"
             leftSection={<IconCards size={14} />}
           >
-            <Trans>Want to read · {wantCount}</Trans>
+            <Trans>Shortlist · {wantCount}</Trans>
           </Badge>
         </UnstyledButton>
       </div>
@@ -185,8 +183,6 @@ export function QueueTab() {
       />
 
       <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
-
-      <PlanToReadDrawer opened={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       <DiscoverDetailModal
         item={detailCard}
