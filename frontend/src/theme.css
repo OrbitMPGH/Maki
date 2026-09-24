@@ -128,6 +128,21 @@
   letter-spacing: -0.025em;
 }
 
+/* Mantine centres each slider mark label on its mark, so the end labels hang past the track and
+   the wrapper's own box sizes to the label. Inside a modal that overhang became a scrollbar. */
+:is(.mantine-Slider-markWrapper, .mantine-RangeSlider-markWrapper) {
+  width: 0;
+}
+:is(.mantine-Slider-markLabel, .mantine-RangeSlider-markLabel) {
+  width: max-content;
+}
+[style*='--mark-offset: 0%'] > :is(.mantine-Slider-markLabel, .mantine-RangeSlider-markLabel) {
+  transform: translate(0, calc(var(--mantine-spacing-xs) / 2));
+}
+[style*='--mark-offset: 100%'] > :is(.mantine-Slider-markLabel, .mantine-RangeSlider-markLabel) {
+  transform: translate(calc(-100% + var(--slider-size)), calc(var(--mantine-spacing-xs) / 2));
+}
+
 /* --- Selectable accents -------------------------------------------------- */
 /* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
    CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide. */
