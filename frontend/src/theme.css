@@ -3081,6 +3081,44 @@ body {
 .term-pill {
   border: 1px solid transparent;
 }
+.tag-browser-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+.tag-browser-row:hover {
+  background: var(--surface-hover);
+}
+.tag-browser-row[data-state='include'] {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+.tag-browser-row[data-state='exclude'] {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+.tag-browser-name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 0;
+  color: var(--ink-2);
+}
+.tag-browser-name:disabled {
+  cursor: default;
+}
+.tag-browser-spacer {
+  flex-shrink: 0;
+  width: 20px;
+}
+.tag-browser-footer {
+  border-top: 1px solid var(--border);
+}
 /* The blur is for the tag's name. A 6px dot rendered through it is just a smudge, and it gives
    away nothing anyway. */
 .tag-chip.spoiler-tag > .tag-dot {

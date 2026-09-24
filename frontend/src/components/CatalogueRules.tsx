@@ -18,7 +18,7 @@ import {
   useCombobox,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconEyeOff, IconPlus, IconSitemap, IconTarget, IconTrash } from '@tabler/icons-react'
+import { IconEyeOff, IconListTree, IconPlus, IconSitemap, IconTarget, IconTrash } from '@tabler/icons-react'
 import { usePageState } from '../lib/pageState'
 import {
   useDiscoverCount,
@@ -32,6 +32,8 @@ import {
   type TagOption,
 } from '../api/hooks'
 import { useGenreOptions } from './CatalogueFilters'
+import { TagBrowserModal } from './TagBrowserModal'
+import { rankTagMatches } from '../lib/tagTree'
 
 type GenreState = 'include' | 'exclude'
 
@@ -389,6 +391,7 @@ export function TermPicker({
   )
 
   const needle = search.trim().toLowerCase()
+  const [tagNeedle] = useDebouncedValue(needle, 100)
   const genres = kinds.includes('genre')
     ? genreOptions.filter(
         (g) => !picked.has(`genre:${g.value.toLowerCase()}`) && (!needle || g.label.toLowerCase().includes(needle)),
@@ -396,15 +399,18 @@ export function TermPicker({
     : []
   const tags = useMemo(() => {
     if (!kinds.includes('tag')) return []
+    const skip = (option: TagOption) => picked.has(`tag:${option.name.toLowerCase()}`)
+    if (tagNeedle) return rankTagMatches(tagOptions ?? [], tagNeedle, OPTION_LIMIT, skip).items
     const out: TagOption[] = []
     for (const option of tagOptions ?? []) {
-      if (picked.has(`tag:${option.name.toLowerCase()}`)) continue
-      if (needle && !option.name.toLowerCase().includes(needle)) continue
+      if (skip(option)) continue
       out.push(option)
       if (out.length >= OPTION_LIMIT) break
     }
     return out
-  }, [kinds, tagOptions, picked, needle])
+  }, [kinds, tagOptions, picked, tagNeedle])
+  const [browsing, setBrowsing] = useState(false)
+  const canBrowse = kinds.includes('tag')
 
   const add = (term: CatalogueTerm) => {
     onChange([...value, term])
@@ -420,100 +426,140 @@ export function TermPicker({
 
   // Enter takes the best match without an arrow press first, which is what typing a name expects.
   useEffect(() => {
-    if (needle) combobox.selectFirstOption()
+    if (tagNeedle) combobox.selectFirstOption()
     // `combobox` is a fresh object each render; only a new search should move the selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needle])
+  }, [tagNeedle])
 
   return (
-    <Combobox store={combobox} onOptionSubmit={onSubmit} withinPortal>
-      <Combobox.DropdownTarget>
-        <PillsInput label={label} onClick={() => combobox.openDropdown()} size="sm">
-          <Pill.Group>
-            {value.map((term, i) => (
-              <TermPill
-                key={`${term.kind}:${term.name}`}
-                term={term}
-                tone={tone}
-                info={tagInfo.get(term.name.toLowerCase())}
-                allowHide={allowHide}
-                onOpenOptions={() => combobox.closeDropdown()}
-                onChange={(next) => onChange(value.map((v, j) => (j === i ? next : v)))}
-                onRemove={() => onChange(value.filter((_, j) => j !== i))}
-              />
-            ))}
-            <Combobox.EventsTarget>
-              <PillsInput.Field
-                value={search}
-                placeholder={value.length ? undefined : (placeholder ?? (kinds.includes('genre') ? t`Search genres and tags` : t`Search tags`))}
-                onFocus={() => combobox.openDropdown()}
-                onBlur={() => combobox.closeDropdown()}
-                onChange={(e) => {
-                  combobox.openDropdown()
-                  combobox.updateSelectedOptionIndex()
-                  setSearch(e.currentTarget.value)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Backspace' && search.length === 0 && value.length > 0) {
-                    e.preventDefault()
-                    onChange(value.slice(0, -1))
-                  }
-                }}
-              />
-            </Combobox.EventsTarget>
-          </Pill.Group>
-        </PillsInput>
-      </Combobox.DropdownTarget>
+    <>
+      <Combobox store={combobox} onOptionSubmit={onSubmit} withinPortal>
+        <Combobox.DropdownTarget>
+          <PillsInput
+            label={label}
+            onClick={() => combobox.openDropdown()}
+            size="sm"
+            rightSectionPointerEvents="all"
+            rightSection={
+              canBrowse ? (
+                <Tooltip label={t`Browse tags`} withArrow openDelay={300}>
+                  <ActionIcon
+                    variant="subtle"
+                    color="var(--neutral)"
+                    aria-label={t`Browse tags`}
+                    // The input would take focus and reopen its dropdown under the modal.
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      combobox.closeDropdown()
+                      setBrowsing(true)
+                    }}
+                  >
+                    <IconListTree size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              ) : undefined
+            }
+          >
+            <Pill.Group>
+              {value.map((term, i) => (
+                <TermPill
+                  key={`${term.kind}:${term.name}`}
+                  term={term}
+                  tone={tone}
+                  info={tagInfo.get(term.name.toLowerCase())}
+                  allowHide={allowHide}
+                  onOpenOptions={() => combobox.closeDropdown()}
+                  onChange={(next) => onChange(value.map((v, j) => (j === i ? next : v)))}
+                  onRemove={() => onChange(value.filter((_, j) => j !== i))}
+                />
+              ))}
+              <Combobox.EventsTarget>
+                <PillsInput.Field
+                  value={search}
+                  placeholder={value.length ? undefined : (placeholder ?? (kinds.includes('genre') ? t`Search genres and tags` : t`Search tags`))}
+                  onFocus={() => combobox.openDropdown()}
+                  onBlur={() => combobox.closeDropdown()}
+                  onChange={(e) => {
+                    combobox.openDropdown()
+                    combobox.updateSelectedOptionIndex()
+                    setSearch(e.currentTarget.value)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace' && search.length === 0 && value.length > 0) {
+                      e.preventDefault()
+                      onChange(value.slice(0, -1))
+                    }
+                  }}
+                />
+              </Combobox.EventsTarget>
+            </Pill.Group>
+          </PillsInput>
+        </Combobox.DropdownTarget>
 
-      <Combobox.Dropdown>
-        <Combobox.Options mah={300} style={{ overflowY: 'auto' }}>
-          {genres.length > 0 && (
-            <Combobox.Group label={t`Genres`}>
-              {genres.map((g) => (
-                <Combobox.Option value={`genre:${g.value}`} key={g.value}>
-                  {g.label}
-                </Combobox.Option>
-              ))}
-            </Combobox.Group>
-          )}
-          {tags.length > 0 && (
-            <Combobox.Group label={kinds.includes('genre') ? t`Tags` : undefined}>
-              {tags.map((option) => (
-                <Combobox.Option value={`tag:${option.name}`} key={option.name}>
-                  <Group justify="space-between" gap="xs" wrap="nowrap">
-                    <div style={{ minWidth: 0 }}>
-                      <Text size="sm" truncate>
-                        {option.name}
-                      </Text>
-                      {option.path && (
-                        <Text size="xs" c="var(--ink-3)" truncate>
-                          {option.path}
+        <Combobox.Dropdown>
+          <Combobox.Options mah={300} style={{ overflowY: 'auto' }}>
+            {genres.length > 0 && (
+              <Combobox.Group label={t`Genres`}>
+                {genres.map((g) => (
+                  <Combobox.Option value={`genre:${g.value}`} key={g.value}>
+                    {g.label}
+                  </Combobox.Option>
+                ))}
+              </Combobox.Group>
+            )}
+            {tags.length > 0 && (
+              <Combobox.Group label={kinds.includes('genre') ? t`Tags` : undefined}>
+                {tags.map((option) => (
+                  <Combobox.Option value={`tag:${option.name}`} key={option.name}>
+                    <Group justify="space-between" gap="xs" wrap="nowrap">
+                      <div style={{ minWidth: 0 }}>
+                        <Text size="sm" truncate>
+                          {option.name}
                         </Text>
-                      )}
-                    </div>
-                    <Text size="xs" c="var(--ink-4)">
-                      {option.count.toLocaleString()}
-                    </Text>
-                  </Group>
-                </Combobox.Option>
-              ))}
-            </Combobox.Group>
-          )}
-          {isLoading && kinds.includes('tag') && (
-            <Combobox.Empty>
-              <Loader size="xs" />
-            </Combobox.Empty>
-          )}
-          {!isLoading && genres.length === 0 && tags.length === 0 && (
-            <Combobox.Empty>
-              {noTags && !kinds.includes('genre')
-                ? t`Tags appear once the recommendation index is built`
-                : t`No matches`}
-            </Combobox.Empty>
-          )}
-        </Combobox.Options>
-      </Combobox.Dropdown>
-    </Combobox>
+                        {option.path && (
+                          <Text size="xs" c="var(--ink-3)" truncate>
+                            {option.path}
+                          </Text>
+                        )}
+                      </div>
+                      <Text size="xs" c="var(--ink-4)">
+                        {option.count.toLocaleString()}
+                      </Text>
+                    </Group>
+                  </Combobox.Option>
+                ))}
+              </Combobox.Group>
+            )}
+            {isLoading && kinds.includes('tag') && (
+              <Combobox.Empty>
+                <Loader size="xs" />
+              </Combobox.Empty>
+            )}
+            {!isLoading && genres.length === 0 && tags.length === 0 && (
+              <Combobox.Empty>
+                {noTags && !kinds.includes('genre')
+                  ? t`Tags appear once the recommendation index is built`
+                  : t`No matches`}
+              </Combobox.Empty>
+            )}
+          </Combobox.Options>
+        </Combobox.Dropdown>
+      </Combobox>
+      {canBrowse && (
+        <TagBrowserModal
+          opened={browsing}
+          onClose={() => setBrowsing(false)}
+          kinds={kinds}
+          tone={tone}
+          value={value}
+          onChange={onChange}
+        />
+      )}
+    </>
   )
 }
 
