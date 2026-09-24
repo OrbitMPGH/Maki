@@ -3,7 +3,14 @@ namespace Maki.Core.Entities;
 public enum NotificationType
 {
     Discord = 0,
-    Webhook = 1
+    Webhook = 1,
+    Telegram = 2,
+    Notifiarr = 3,
+    Ntfy = 4,
+    Gotify = 5,
+    Pushover = 6,
+    Apprise = 7,
+    SlackWebhook = 8
 }
 
 /// <summary>
@@ -22,7 +29,7 @@ public class Notification
 
     public NotificationType Type { get; set; }
 
-    /// <summary>Provider-specific config, JSON. Discord: {"webhookUrl"}. Webhook: {"url","bearerToken"?}.</summary>
+    /// <summary>Provider-specific config, JSON object of string fields. Keys are declared by the provider's <c>Descriptor</c>.</summary>
     public string ConfigJson { get; set; } = "{}";
 
     public bool Enabled { get; set; } = true;

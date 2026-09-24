@@ -11,6 +11,8 @@ public interface INotificationProvider
 {
     NotificationType Type { get; }
 
+    NotificationProviderDescriptor Descriptor { get; }
+
     /// <summary>Sends the message using the connection's <c>ConfigJson</c>. Throws on delivery failure.</summary>
     Task SendAsync(Notification connection, NotificationMessage message, CancellationToken ct = default);
 }
