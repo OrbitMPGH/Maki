@@ -74,9 +74,24 @@ export const SwipeCard = forwardRef<SwipeCardHandle, {
   // only when this starts it, and it only does that outside the guard.
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isTop) return
+    dragged.current = false
     const nearEdge = e.clientX < EDGE_GUARD || e.clientX > window.innerWidth - EDGE_GUARD
     if (nearEdge) return
     dragControls.start(e)
+  }
+
+  // A pointer-up after a drag still fires click on the card button underneath, so a real drag
+  // marks itself and the click that follows is swallowed once.
+  const dragged = useRef(false)
+  const handleDrag = (_event: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) => {
+    if (Math.abs(info.offset.x) > 4 || Math.abs(info.offset.y) > 4) dragged.current = true
+  }
+  const handleOpen = () => {
+    if (dragged.current) {
+      dragged.current = false
+      return
+    }
+    onOpen()
   }
 
   const handleDragEnd = (_event: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) => {
@@ -111,9 +126,10 @@ export const SwipeCard = forwardRef<SwipeCardHandle, {
       dragElastic={0.7}
       dragMomentum={false}
       onPointerDown={handlePointerDown}
+      onDrag={handleDrag}
       onDragEnd={handleDragEnd}
     >
-      <button type="button" className="queue-card-action" aria-label={t`View ${card.title}`} onClick={onOpen} />
+      <button type="button" className="queue-card-action" aria-label={t`View ${card.title}`} onClick={handleOpen} />
 
       {cover ? (
         <img src={cover} alt={card.title} className="queue-card-cover" loading="lazy" decoding="async" />
