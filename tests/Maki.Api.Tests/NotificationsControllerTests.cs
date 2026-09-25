@@ -57,7 +57,8 @@ public class NotificationsControllerTests : IDisposable
         }
 
         var service = new NotificationService(_db.ScopeFactory(), providers, NullLogger<NotificationService>.Instance);
-        return new NotificationsController(new TestLocalizer(), _db.NewContext(), service);
+        return new NotificationsController(new TestLocalizer(), _db.NewContext(), service,
+            NullLogger<NotificationsController>.Instance);
     }
 
     private static NotificationsController.EventsDto Events() => new(true, false, false, false, false, false);

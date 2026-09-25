@@ -20,7 +20,8 @@ namespace Maki.Api.Controllers;
 public class NotificationsController(
     ILocalizer localizer,
     MakiDbContext db,
-    NotificationService notifications) : ControllerBase
+    NotificationService notifications,
+    ILogger<NotificationsController> logger) : ControllerBase
 {
     public record EventsDto(
         bool ChapterDownloaded, bool DownloadFailed, bool NewChapterAvailable,
@@ -137,10 +138,14 @@ public class NotificationsController(
         }
         catch (InvalidOperationException ex)
         {
-            return StatusCode(StatusCodes.Status502BadGateway, new { success = false, error = ex.Message });
+            logger.LogWarning(ex, "Test notification through {Provider} failed", request.Type);
+            const string key = "error.notifications.deliveryFailed";
+            return StatusCode(StatusCodes.Status502BadGateway,
+                new { success = false, code = key, error = localizer.Get(key) });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Test notification through {Provider} failed", request.Type);
             const string key = "error.notifications.deliveryFailed";
             return StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = key, error = localizer.Get(key) });
@@ -184,7 +189,7 @@ public class NotificationsController(
                     this.Fail(localizer, "error.notifications.fieldMustBeNumber", new { field = field.Key }),
                 NotificationFieldKind.Number when (field.Min is { } min && number < min) || (field.Max is { } max && number > max) =>
                     RangeFailure(field),
-                NotificationFieldKind.Boolean when value is not ("true" or "false") =>
+                NotificationFieldKind.Boolean when !bool.TryParse(value, out _) =>
                     this.Fail(localizer, "error.notifications.fieldMustBeBoolean", new { field = field.Key }),
                 _ => null
             };

@@ -261,7 +261,7 @@ public class ImportListService(
                             errors = result.Errors,
                         }),
                         Level: result.Errors > 0 ? NotificationLevel.Warning : NotificationLevel.Info,
-                        Url: "/scrobble"),
+                        Url: "/settings?tab=integrations&s=import-lists"),
                     InboxAudience.User(userId));
             }
 

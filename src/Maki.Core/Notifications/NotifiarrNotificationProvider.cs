@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using Maki.Core.Entities;
 
@@ -19,12 +20,17 @@ public class NotifiarrNotificationProvider(IHttpClientFactory httpClientFactory)
             new NotificationField("channelId", NotificationFieldKind.Text, Required: true)
         ]);
 
+    public const string ChannelIdKey = "error.notifications.notifiarrChannelId";
+
+    public string? Validate(NotificationFields fields) =>
+        fields["channelId"] is { } channelId && !long.TryParse(channelId, NumberStyles.Integer, CultureInfo.InvariantCulture, out _) ? ChannelIdKey : null;
+
     public async Task SendAsync(Notification connection, NotificationMessage message, CancellationToken ct = default)
     {
         var fields = NotificationConfig.Fields(connection.ConfigJson);
         var apiKey = fields.Require("apiKey");
         var channelIdText = fields.Require("channelId");
-        if (!long.TryParse(channelIdText, out var channelId))
+        if (!long.TryParse(channelIdText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var channelId))
         {
             throw new InvalidOperationException("Notifiarr channel id is not a valid number");
         }
@@ -53,7 +59,7 @@ public class NotifiarrNotificationProvider(IHttpClientFactory httpClientFactory)
 
         var client = httpClientFactory.CreateClient(DiscordNotificationProvider.HttpClientName);
         // Notifiarr's docs only document the key-in-path form, not an X-API-Key header.
-        var response = await client.PostAsJsonAsync(
+        using var response = await client.PostAsJsonAsync(
             $"https://notifiarr.com/api/v1/notification/passthrough/{apiKey}", payload, ct);
 
         NotificationDeliveryException.ThrowIfFailed("Notifiarr", response);

@@ -37,7 +37,7 @@ public class GotifyNotificationProvider(IHttpClientFactory httpClientFactory) : 
         request.Headers.Add("X-Gotify-Key", appToken);
 
         var client = httpClientFactory.CreateClient(DiscordNotificationProvider.HttpClientName);
-        var response = await client.SendAsync(request, ct);
+        using var response = await client.SendAsync(request, ct);
         NotificationDeliveryException.ThrowIfFailed("Gotify", response);
     }
 

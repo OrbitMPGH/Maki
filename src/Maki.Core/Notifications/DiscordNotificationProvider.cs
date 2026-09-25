@@ -65,7 +65,7 @@ public class DiscordNotificationProvider(
         };
 
         var client = httpClientFactory.CreateClient(HttpClientName);
-        var response = await client.SendAsync(request, ct);
+        using var response = await client.SendAsync(request, ct);
         NotificationDeliveryException.ThrowIfFailed("Discord", response);
     }
 

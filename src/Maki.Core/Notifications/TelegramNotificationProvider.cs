@@ -90,9 +90,16 @@ public class TelegramNotificationProvider(
             response = await client.PostAsJsonAsync($"https://api.telegram.org/bot{botToken}/sendMessage", payload, ct);
         }
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new NotificationDeliveryException("Telegram", (int)response.StatusCode, await DescriptionAsync(response, ct));
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new NotificationDeliveryException("Telegram", (int)response.StatusCode, await DescriptionAsync(response, ct));
+            }
+        }
+        finally
+        {
+            response.Dispose();
         }
     }
 

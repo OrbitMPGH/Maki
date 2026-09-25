@@ -46,7 +46,7 @@ public class WebhookNotificationProvider(IHttpClientFactory httpClientFactory) :
         }
 
         var client = httpClientFactory.CreateClient(DiscordNotificationProvider.HttpClientName);
-        var response = await client.SendAsync(request, ct);
+        using var response = await client.SendAsync(request, ct);
         NotificationDeliveryException.ThrowIfFailed("Webhook", response);
     }
 }

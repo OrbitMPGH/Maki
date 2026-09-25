@@ -54,7 +54,7 @@ public class NtfyNotificationProvider(IHttpClientFactory httpClientFactory) : IN
         }
 
         var client = httpClientFactory.CreateClient(DiscordNotificationProvider.HttpClientName);
-        var response = await client.SendAsync(request, ct);
+        using var response = await client.SendAsync(request, ct);
         NotificationDeliveryException.ThrowIfFailed("ntfy", response);
     }
 

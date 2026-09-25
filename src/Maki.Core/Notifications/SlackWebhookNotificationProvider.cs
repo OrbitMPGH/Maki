@@ -41,7 +41,7 @@ public class SlackWebhookNotificationProvider(IHttpClientFactory httpClientFacto
         }
 
         var client = httpClientFactory.CreateClient(DiscordNotificationProvider.HttpClientName);
-        var response = await client.PostAsJsonAsync(webhookUrl, payload, ct);
+        using var response = await client.PostAsJsonAsync(webhookUrl, payload, ct);
         NotificationDeliveryException.ThrowIfFailed("Slack", response);
     }
 

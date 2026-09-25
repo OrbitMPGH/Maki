@@ -85,7 +85,7 @@ public class PushoverNotificationProvider(
         }
 
         var client = httpClientFactory.CreateClient(DiscordNotificationProvider.HttpClientName);
-        var response = await client.PostAsync(Endpoint, form, ct);
+        using var response = await client.PostAsync(Endpoint, form, ct);
         NotificationDeliveryException.ThrowIfFailed("Pushover", response);
     }
 

@@ -61,7 +61,14 @@ public class AppriseNotificationProvider(IHttpClientFactory httpClientFactory) :
                 ct);
         }
 
-        NotificationDeliveryException.ThrowIfFailed("Apprise", response);
+        try
+        {
+            NotificationDeliveryException.ThrowIfFailed("Apprise", response);
+        }
+        finally
+        {
+            response.Dispose();
+        }
     }
 
     private static string Body(NotificationMessage message)
