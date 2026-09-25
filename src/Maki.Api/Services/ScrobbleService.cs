@@ -922,7 +922,7 @@ public class ScrobbleService(
     /// collect the ones whose score differs from the local rating. Results land in
     /// <see cref="GetRatingImport"/> for the UI to poll, then apply.
     /// </summary>
-    public void QueueRatingImportPreview(int userId, string service)
+    public void QueueRatingImportPreview(int userId, bool allRootFolders, string service)
     {
         var tracker = FindTracker(service);
         if (tracker is null)
@@ -936,7 +936,7 @@ public class ScrobbleService(
         {
             try
             {
-                var targets = await LibraryRemoteIdsAsync(userId, service, CancellationToken.None);
+                var targets = await LibraryRemoteIdsAsync(userId, allRootFolders, service, CancellationToken.None);
                 foreach (var (seriesId, title, localRating, remoteId) in targets)
                 {
                     try
@@ -971,7 +971,7 @@ public class ScrobbleService(
 
     /// <summary>Writes the previewed remote scores for the chosen series to local ratings.</summary>
     public async Task<int> ApplyRatingImportAsync(
-        int userId, string service, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
+        int userId, bool allRootFolders, string service, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
     {
         var wanted = new HashSet<int>(seriesIds);
         var scores = GetRatingImport(userId, service).Items
@@ -984,6 +984,7 @@ public class ScrobbleService(
 
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
 
         // Lands in this user's own state rows, creating them on demand — the import is "pull my scores
         // down from the tracker", not "overwrite the library's scores".
@@ -1010,10 +1011,11 @@ public class ScrobbleService(
 
     /// <summary>Library series carrying a remote id for the given tracker: (id, title, localRating, remoteId).</summary>
     private async Task<List<(int SeriesId, string Title, int? LocalRating, string RemoteId)>>
-        LibraryRemoteIdsAsync(int userId, string service, CancellationToken ct)
+        LibraryRemoteIdsAsync(int userId, bool allRootFolders, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
         var rows = await db.Series.AsNoTracking()
             .Select(s => new
             {

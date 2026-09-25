@@ -298,7 +298,7 @@ public class ScrobbleController(
             return this.Fail(localizer, "error.scrobble.unknownService");
         }
 
-        scrobbler.QueueRatingImportPreview(UserId, service);
+        scrobbler.QueueRatingImportPreview(UserId, currentUser.AllRootFolders, service);
         return Ok(new { started = true });
     }
 
@@ -321,7 +321,7 @@ public class ScrobbleController(
     public async Task<IActionResult> ApplyRatingImport(
         string service, [FromBody] ApplyRatingImportRequest request, CancellationToken ct)
     {
-        var applied = await scrobbler.ApplyRatingImportAsync(UserId, service, request.SeriesIds, ct);
+        var applied = await scrobbler.ApplyRatingImportAsync(UserId, currentUser.AllRootFolders, service, request.SeriesIds, ct);
         return Ok(new { applied });
     }
 
