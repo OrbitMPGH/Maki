@@ -9,6 +9,7 @@ import {
   Progress,
   Select,
   Stack,
+  Switch,
   Table,
   Text,
 } from '@mantine/core'
@@ -56,6 +57,8 @@ interface ScanCandidate {
   comicCount: number
   recognizedCount: number
   matches: MetadataSearchResult[]
+  /** Set when the folder belongs to a series already in the library that has no files yet. */
+  existingSeriesId: number | null
 }
 
 interface ImportResultDto {
@@ -90,6 +93,7 @@ export default function ImportPage() {
   const [progress, setProgress] = useState<Record<string, ImportProgressEvent>>({})
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [updateComicInfo, setUpdateComicInfo] = useState(true)
+  const [showInLibrary, setShowInLibrary] = useState(false)
 
   useHubEvent<ImportProgressEvent>('importProgress', (evt) => {
     setProgress((p) => ({ ...p, [evt.folderName]: evt }))
@@ -103,7 +107,9 @@ export default function ImportPage() {
       setResults(null)
       const initial: Record<string, string> = {}
       for (const c of data) {
-        if (c.matches.length > 0) initial[c.folderName] = c.matches[0].providerId
+        if (c.matches.length > 0 && c.existingSeriesId === null) {
+          initial[c.folderName] = c.matches[0].providerId
+        }
       }
       setSelection(initial)
     },
@@ -162,8 +168,12 @@ export default function ImportPage() {
     onError: () => setProgress({}),
   })
 
+  const inLibraryCount = candidates?.filter((c) => c.existingSeriesId !== null).length ?? 0
+  const visibleCandidates = candidates?.filter((c) => showInLibrary || c.existingSeriesId === null) ?? null
+  const visibleFolders = new Set(visibleCandidates?.map((c) => c.folderName))
+  // A hidden row never imports, even if it was ticked while the toggle was on.
   const selectedItems = Object.entries(selection)
-    .filter(([, providerId]) => providerId !== '')
+    .filter(([folderName, providerId]) => providerId !== '' && visibleFolders.has(folderName))
     .map(([folderName, metadataProviderId]) => ({ folderName, metadataProviderId }))
   const selectedCount = selectedItems.length
 
@@ -310,14 +320,30 @@ export default function ImportPage() {
         </Stack>
       )}
 
-      {candidates && candidates.length === 0 && (
+      {inLibraryCount > 0 && (
+        <Switch
+          mb="md"
+          checked={showInLibrary}
+          onChange={(e) => setShowInLibrary(e.currentTarget.checked)}
+          label={
+            <Plural
+              value={inLibraryCount}
+              one="Show # series already in the library"
+              other="Show # series already in the library"
+            />
+          }
+          description={t`Their folders have comics that are not linked yet. Importing links them into the existing series.`}
+        />
+      )}
+
+      {visibleCandidates && visibleCandidates.length === 0 && (
         <EmptyState
           title={t`Nothing to import`}
           description={t`Every folder in this root is already claimed by a series in the library.`}
         />
       )}
 
-      {candidates && candidates.length > 0 && (
+      {visibleCandidates && visibleCandidates.length > 0 && (
         <Panel p={0} className="table-panel">
           <Table.ScrollContainer minWidth={720}>
             <Table className="panel-table import-table">
@@ -336,7 +362,7 @@ export default function ImportPage() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {candidates.map((c) => {
+                {visibleCandidates.map((c) => {
                   const selected = selection[c.folderName] ?? ''
                   const match = c.matches.find((m) => m.providerId === selected)
                   const rowProgress = progress[c.folderName]
@@ -362,9 +388,15 @@ export default function ImportPage() {
                         <Text size="sm" fw={600}>
                           {c.folderName}
                         </Text>
-                        <Text size="xs" c="var(--ink-3)">
-                          <Trans>searched as “{cleanedTitle}”</Trans>
-                        </Text>
+                        {c.existingSeriesId !== null ? (
+                          <Badge size="xs" variant="light">
+                            <Trans>In library</Trans>
+                          </Badge>
+                        ) : (
+                          <Text size="xs" c="var(--ink-3)">
+                            <Trans>searched as “{cleanedTitle}”</Trans>
+                          </Text>
+                        )}
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">

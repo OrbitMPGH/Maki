@@ -417,7 +417,6 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        var seriesDir = Path.Combine(series.RootFolder.Path, series.FolderName);
         var records = await db.ChapterFiles.Where(f => f.SeriesId == id).ToListAsync(ct);
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == id && c.ChapterFileId != null)
@@ -434,15 +433,22 @@ public class SeriesController(
                     .Select(c => c.Number!.Value.ToString("0.###", CultureInfo.InvariantCulture))
                     .ToList());
 
-        var onDisk = Directory.Exists(seriesDir)
-            ? Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories).Where(ComicFile.IsComic).ToArray()
-            : [];
         // Case-sensitive filesystems allow two files whose paths differ only in case;
         // they collapse to one entry here, so keep the first and don't throw.
         var diskByRelPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var f in onDisk.OrderBy(f => f, StringComparer.Ordinal))
+        foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
         {
-            diskByRelPath.TryAdd(Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)), f);
+            var seriesDir = Path.Combine(series.RootFolder.Path, folder);
+            if (!Directory.Exists(seriesDir))
+            {
+                continue;
+            }
+
+            foreach (var f in Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories)
+                         .Where(ComicFile.IsComic).OrderBy(f => f, StringComparer.Ordinal))
+            {
+                diskByRelPath.TryAdd(Path.Combine(folder, Path.GetRelativePath(seriesDir, f)), f);
+            }
         }
 
         var files = new List<SeriesFileDto>();
@@ -899,6 +905,36 @@ public class SeriesController(
                     Directory.Delete(folder, recursive: false);
                 }
             }
+
+            // Folders this series only has some files in (a keep-new-standard import's original
+            // folder). Only the files it tracks go, never the whole folder.
+            var extraFolders = (await SeriesFolders.ForAsync(db, series, ct)).Skip(1).ToList();
+            if (extraFolders.Count > 0)
+            {
+                if (deleteFiles)
+                {
+                    var paths = await db.ChapterFiles.Where(f => f.SeriesId == id)
+                        .Select(f => f.RelativePath).ToListAsync(ct);
+                    foreach (var path in paths)
+                    {
+                        if (LibraryPaths.TopFolder(path) is { } top && extraFolders.Contains(top, LibraryPaths.FolderComparer)
+                            && LibraryPaths.Resolve(series.RootFolder.Path, path) is { } absolute
+                            && System.IO.File.Exists(absolute))
+                        {
+                            System.IO.File.Delete(absolute);
+                        }
+                    }
+                }
+
+                foreach (var extra in extraFolders)
+                {
+                    var extraPath = Path.Combine(series.RootFolder.Path, extra);
+                    if (Directory.Exists(extraPath) && !Directory.EnumerateFileSystemEntries(extraPath).Any())
+                    {
+                        Directory.Delete(extraPath, recursive: false);
+                    }
+                }
+            }
         }
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed
@@ -1007,6 +1043,9 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.rootFolderNotFound");
         }
 
+        // Every folder the series has files in moves with it, or the stored paths of a
+        // keep-new-standard import's original folder would point into the old root.
+        var folders = await SeriesFolders.ForAsync(db, series, ct);
         var oldFolder = Path.Combine(series.RootFolder.Path, series.FolderName);
         var newFolder = Path.Combine(destination.Path, series.FolderName);
 
@@ -1020,16 +1059,26 @@ public class SeriesController(
                 return this.Conflict(localizer, "error.series.activeDownloadMove");
             }
 
-            if (Directory.Exists(newFolder))
+            foreach (var folder in folders)
             {
-                return this.Conflict(localizer, "error.series.destinationExists", new { folder = newFolder });
+                var target = Path.Combine(destination.Path, folder);
+                if (Directory.Exists(target))
+                {
+                    return this.Conflict(localizer, "error.series.destinationExists", new { folder = target });
+                }
             }
 
-            if (Directory.Exists(oldFolder))
+            foreach (var folder in folders)
             {
+                var source = Path.Combine(series.RootFolder.Path, folder);
+                if (!Directory.Exists(source))
+                {
+                    continue;
+                }
+
                 try
                 {
-                    MoveDirectory(oldFolder, newFolder);
+                    MoveDirectory(source, Path.Combine(destination.Path, folder));
                 }
                 catch (Exception ex)
                 {
@@ -1039,7 +1088,7 @@ public class SeriesController(
                 }
             }
         }
-        else if (!Directory.Exists(newFolder))
+        else if (!folders.Any(f => Directory.Exists(Path.Combine(destination.Path, f))))
         {
             return this.Fail(localizer, "error.series.filesNotMoved", new { folder = newFolder });
         }

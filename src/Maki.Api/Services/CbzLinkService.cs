@@ -41,6 +41,9 @@ public class CbzLinkService(
         var linked = 0;
         var unrecognized = 0;
 
+        // The folder the files are actually in. Not always Series.FolderName: a keep-new-standard
+        // import links the original folder while FolderName already names the standard one.
+        var folderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(seriesDir));
         var ordered = files.OrderBy(f => f).ToList();
         var index = 0;
         var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record)>();
@@ -58,7 +61,7 @@ public class CbzLinkService(
             var chapterFile = new ChapterFile
             {
                 SeriesId = series.Id,
-                RelativePath = Path.Combine(series.FolderName, relativePath),
+                RelativePath = Path.Combine(folderName, relativePath),
                 Size = new FileInfo(file).Length,
                 SourceName = sourceName,
                 ReleaseName = releaseName,
@@ -145,17 +148,24 @@ public class CbzLinkService(
     {
         var rootFolder = series.RootFolder
             ?? throw new InvalidOperationException("Series has no root folder loaded");
-        var seriesDir = Path.Combine(rootFolder.Path, series.FolderName);
-
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var dbFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
 
-        var onDisk = Directory.Exists(seriesDir)
-            ? Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories).Where(ComicFile.IsComic).ToArray()
-            : [];
-        var diskRelPaths = onDisk
-            .Select(f => Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f)))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
+        foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
+        {
+            var seriesDir = Path.Combine(rootFolder.Path, folder);
+            if (!Directory.Exists(seriesDir))
+            {
+                continue;
+            }
+
+            onDisk.AddRange(Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories)
+                .Where(ComicFile.IsComic)
+                .Select(f => (seriesDir, f, Path.Combine(folder, Path.GetRelativePath(seriesDir, f)))));
+        }
+
+        var diskRelPaths = onDisk.Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // 1. Files deleted from disk: drop the record, free the chapters.
         var removed = 0;
@@ -232,10 +242,17 @@ public class CbzLinkService(
 
         // 3. Files on disk we have no record of yet.
         var knownRelPaths = dbFiles.Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var newFiles = onDisk
-            .Where(f => !knownRelPaths.Contains(Path.Combine(series.FolderName, Path.GetRelativePath(seriesDir, f))))
-            .ToList();
-        var (linkedNew, unrecognized) = await LinkFilesAsync(series, seriesDir, newFiles, "rescan", ct: ct);
+        var newFiles = onDisk.Where(f => !knownRelPaths.Contains(f.RelativePath)).ToList();
+        var linkedNew = 0;
+        var unrecognized = 0;
+        foreach (var group in newFiles.GroupBy(f => f.SeriesDir))
+        {
+            var (linked, skipped) = await LinkFilesAsync(
+                series, group.Key, group.Select(f => f.AbsolutePath), "rescan", ct: ct);
+            linkedNew += linked;
+            unrecognized += skipped;
+        }
+
         if (newFiles.Count == 0)
         {
             // LinkFilesAsync runs the estimator itself; cover the no-new-files path too.

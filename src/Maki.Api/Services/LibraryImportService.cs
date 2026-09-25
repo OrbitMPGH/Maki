@@ -1,4 +1,5 @@
-﻿using Maki.Api.Hubs;
+﻿using System.Globalization;
+using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -6,6 +7,7 @@ using Maki.Core.Import;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
+using Maki.Core.Paths;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -35,12 +37,17 @@ public static class ImportStage
 /// Comics in the folder, not CBZ files: a RAR volume, a plain zip and a folder of loose pages all
 /// count, because the import builds a CBZ out of each of them.
 /// </param>
+/// <param name="ExistingSeriesId">
+/// Set when the folder is the folder of a series already in the library that has no files yet.
+/// Importing it links its comics into that series; the page hides these rows unless asked.
+/// </param>
 public record ImportScanCandidate(
     string FolderName,
     string CleanedTitle,
     int ComicCount,
     int RecognizedCount,
-    IReadOnlyList<MetadataSearchResult> Matches);
+    IReadOnlyList<MetadataSearchResult> Matches,
+    int? ExistingSeriesId = null);
 
 public record ImportRequestItem(string FolderName, string MetadataProviderId);
 
@@ -81,24 +88,30 @@ public class LibraryImportService(
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct)
             ?? throw new InvalidOperationException("Root folder not found");
 
-        // A folder is "claimed" only if its series already has downloaded/linked files.
-        // Series that were added but never downloaded stay importable so their on-disk
-        // files can be linked in without re-adding the series.
+        // A folder is "claimed" once any series has files in it: its own folder, or the original
+        // folder a keep-new-standard import left the files in while FolderName moved on. A series
+        // that was added but never downloaded stays importable so files dropped into its folder
+        // can be linked in without re-adding it.
         var seriesInRoot = await db.Series
+            .AsNoTracking()
             .Where(s => s.RootFolderId == rootFolderId)
-            .Select(s => new { s.Id, s.FolderName })
             .ToListAsync(ct);
         var rootSeriesIds = seriesInRoot.Select(s => s.Id).ToList();
-        var idsWithFiles = (await db.ChapterFiles
-                .Where(f => rootSeriesIds.Contains(f.SeriesId))
-                .Select(f => f.SeriesId)
-                .Distinct()
-                .ToListAsync(ct))
-            .ToHashSet();
+        var files = await db.ChapterFiles
+            .Where(f => rootSeriesIds.Contains(f.SeriesId))
+            .Select(f => new { f.SeriesId, f.RelativePath })
+            .ToListAsync(ct);
+        var idsWithFiles = files.Select(f => f.SeriesId).ToHashSet();
         var claimed = seriesInRoot
             .Where(s => idsWithFiles.Contains(s.Id))
             .Select(s => s.FolderName)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            .Concat(files.Select(f => LibraryPaths.TopFolder(f.RelativePath)).OfType<string>())
+            .ToHashSet(LibraryPaths.FolderComparer);
+        var withoutFiles = new Dictionary<string, Series>(LibraryPaths.FolderComparer);
+        foreach (var series in seriesInRoot.Where(s => !idsWithFiles.Contains(s.Id)))
+        {
+            withoutFiles.TryAdd(series.FolderName, series);
+        }
 
         var provider = metadataProviders.First();
         var candidates = new List<ImportScanCandidate>();
@@ -112,26 +125,47 @@ public class LibraryImportService(
             }
 
             var comics = ComicSourceScanner.Scan(dir);
+            var existing = withoutFiles.GetValueOrDefault(folderName);
+            if (existing is not null && comics.Count == 0)
+            {
+                // The empty folder Maki made when the series was added: nothing here to import.
+                continue;
+            }
+
             var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
             var cleanedTitle = ReleaseNameParser.CleanFolderTitle(folderName);
 
             IReadOnlyList<MetadataSearchResult> matches = [];
-            try
+            if (existing?.MangaBakaId is { } mangaBakaId)
             {
-                // Deliberately unfiltered: this names folders that are already sitting in the
-                // caller's own root folder, so a ceiling here hides nothing they cannot already see
-                // and would instead leave those folders permanently unmatchable, with nothing on
-                // screen to say why. The ceiling governs discovering new series, not adopting files.
-                matches = (await provider.SearchAsync(cleanedTitle, ContentRating.Pornographic, ct))
-                    .Take(5)
-                    .ToList();
+                // Importing matches the series by provider id, so offering anything else would
+                // add a second copy instead of filling this one.
+                matches =
+                [
+                    new MetadataSearchResult(mangaBakaId.ToString(CultureInfo.InvariantCulture), existing.Title,
+                        null, existing.Year, existing.Status, null, null)
+                ];
             }
-            catch (Exception ex)
+            else
             {
-                logger.LogWarning(ex, "Metadata search failed for {Title}", cleanedTitle);
+                try
+                {
+                    // Deliberately unfiltered: this names folders that are already sitting in the
+                    // caller's own root folder, so a ceiling here hides nothing they cannot already see
+                    // and would instead leave those folders permanently unmatchable, with nothing on
+                    // screen to say why. The ceiling governs discovering new series, not adopting files.
+                    matches = (await provider.SearchAsync(cleanedTitle, ContentRating.Pornographic, ct))
+                        .Take(5)
+                        .ToList();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Metadata search failed for {Title}", cleanedTitle);
+                }
             }
 
-            candidates.Add(new ImportScanCandidate(folderName, cleanedTitle, comics.Count, recognized, matches));
+            candidates.Add(new ImportScanCandidate(
+                folderName, cleanedTitle, comics.Count, recognized, matches, existing?.Id));
         }
 
         return candidates;

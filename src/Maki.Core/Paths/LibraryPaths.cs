@@ -37,4 +37,18 @@ public static class LibraryPaths
             return null;
         }
     }
+
+    /// <summary>Folder names compare the way the host's filesystem does.</summary>
+    public static StringComparer FolderComparer { get; } =
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+    /// <summary>
+    /// The root-level folder a stored relative path sits in, or null for a file directly in the
+    /// root (a manual link can point there).
+    /// </summary>
+    public static string? TopFolder(string relativePath)
+    {
+        var separator = relativePath.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
+        return separator > 0 ? relativePath[..separator] : null;
+    }
 }

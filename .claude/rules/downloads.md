@@ -7,6 +7,7 @@ paths:
   - "src/Maki.Core/Parsing/ReleaseNameParser.cs"
   - "src/Maki.Core/Import/**"
   - "src/Maki.Api/Services/LibraryImport*.cs"
+  - "src/Maki.Api/Services/ImportPathRepair*.cs"
   - "src/Maki.Api/Services/TorrentImport*.cs"
   - "src/Maki.Api/Services/SourceMappingRemoval*.cs"
   - "src/Maki.Api/Controllers/Queue*.cs"
@@ -52,3 +53,4 @@ Migrated out of the root CLAUDE.md so this only loads when touching the download
 
 - **`DownloadQueueItem.ErrorMessage` is still English prose** and is the next stored-prose column due for conversion to a key plus params, following the `UserNotification` pattern. Six write sites.
 - **`QueueItemDto`'s `Release` / `One-shot` / `Vol.{v} Ch.{n}` labels belong on the client.** They are pure formatting of structured data the client already has, and `Vol.`/`Ch.` need per-language abbreviations. `Status` already sends the enum name and is fine as it is.
+- **A series can have files in more than one root-level folder.** The keep-new-standard folder naming mode imports a folder by leaving the files where they are and pointing `Series.FolderName` at the standard folder future downloads go to, so `FolderName` alone does not say where a series' files are. `SeriesFolders.ForAsync` does: `FolderName` plus the top folder of every `ChapterFile.RelativePath`, minus folders another series owns. Rescan, the Files tab, delete and move go through it; `CbzLinkService.LinkFilesAsync` prefixes paths with the folder it was handed, never `FolderName`. Rows stored under the wrong folder before that fix are repointed once at startup by `ImportPathRepairService`. The import scan counts a folder as claimed once any series has a file in it.
