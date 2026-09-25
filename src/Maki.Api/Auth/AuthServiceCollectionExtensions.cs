@@ -133,6 +133,9 @@ public static class AuthServiceCollectionExtensions
                 o.Cookie.HttpOnly = true;
                 o.Cookie.SameSite = SameSiteMode.Lax;
                 o.ExpireTimeSpan = TimeSpan.FromDays(30);
+                // Without this a remembered browser keeps skipping 2FA after a password change or a
+                // sign-out-everywhere, both of which rotate the security stamp.
+                o.Events.OnValidatePrincipal = SecurityStampValidator.ValidateAsync<ITwoFactorSecurityStampValidator>;
             })
             // Where the OpenID Connect handler deposits its result. It is not a session: the
             // callback endpoint reads it, decides which Maki account the subject belongs to, issues

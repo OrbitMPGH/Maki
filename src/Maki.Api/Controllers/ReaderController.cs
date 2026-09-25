@@ -6,6 +6,7 @@ using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Progress;
 using Maki.Core.Reading;
+using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -64,7 +65,9 @@ public class ReaderController(
     UserMetricsService metrics,
     AchievementService achievements,
     AppPaths paths,
-    ILogger<ReaderController> logger) : ControllerBase
+    ILogger<ReaderController> logger,
+    ICurrentUser currentUser,
+    KavitaUserResolver kavitaUser) : ControllerBase
 {
     private const int ThumbnailWidth = 200;
 
@@ -360,8 +363,30 @@ public class ReaderController(
                         Mode = ResizeMode.Max
                     }));
 
+                    // Written aside and moved into place: an aborted request would otherwise leave a
+                    // truncated JPEG at the final path, served as immutable for a year.
                     Directory.CreateDirectory(dir);
-                    await image.SaveAsJpegAsync(cached, new JpegEncoder { Quality = 80 }, ct);
+                    var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
+                    try
+                    {
+                        await image.SaveAsJpegAsync(tmp, new JpegEncoder { Quality = 80 }, ct);
+                        try
+                        {
+                            System.IO.File.Move(tmp, cached, overwrite: true);
+                        }
+                        catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
+                                                          System.IO.File.Exists(cached))
+                        {
+                            // Another request finished the same thumbnail and is serving it (Windows
+                            // refuses to replace an open file); the bytes match, so use that one.
+                            System.IO.File.Delete(tmp);
+                        }
+                    }
+                    catch
+                    {
+                        if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
+                        throw;
+                    }
                 }, ct);
             }
             catch (Exception e)
@@ -553,21 +578,48 @@ public class ReaderController(
     /// call per series — so this returns immediately and the UI polls <c>GET import/kavita</c>.
     /// </summary>
     [HttpPost("import/kavita")]
-    public IActionResult StartKavitaImport() =>
-        readImport.Start()
+    public async Task<IActionResult> StartKavitaImport(CancellationToken ct)
+    {
+        if (!await MayUseKavitaImportAsync(ct))
+        {
+            return this.Forbidden(localizer, "error.reader.kavitaImportForbidden");
+        }
+
+        return readImport.Start()
             ? Accepted(new { started = true })
             : this.Conflict(localizer, "error.reader.importAlreadyRunning");
+    }
 
     [HttpGet("import/kavita")]
-    public IActionResult KavitaImportStatus() => Ok(new
+    public async Task<IActionResult> KavitaImportStatus(CancellationToken ct)
     {
-        running = readImport.State.Running,
-        finishedAt = readImport.State.FinishedAt,
-        result = readImport.State.Result,
-        error = readImport.State.ErrorKey is { } key
+        if (!await MayUseKavitaImportAsync(ct))
+        {
+            return this.Forbidden(localizer, "error.reader.kavitaImportForbidden");
+        }
+
+        // The raw text comes from outside Maki and can carry the Kavita URL, so only an admin sees
+        // it. It is already logged by the import service.
+        var state = readImport.State;
+        string? error = state.ErrorKey is { } key
             ? localizer.Get(key)
-            : readImport.State.RawError,
-    });
+            : state.RawError is null
+                ? null
+                : currentUser.Has(MakiPermission.Admin)
+                    ? state.RawError
+                    : localizer.Get("error.reader.kavitaImportFailed");
+        return Ok(new
+        {
+            running = state.Running,
+            finishedAt = state.FinishedAt,
+            result = state.Result,
+            error,
+        });
+    }
+
+    /// <summary>The import writes the Kavita-bound user's progress, so only that user or an admin may run it.</summary>
+    private async Task<bool> MayUseKavitaImportAsync(CancellationToken ct) =>
+        currentUser.Has(MakiPermission.Admin) || await kavitaUser.ResolveAsync(ct) == currentUser.UserId;
 
     [HttpGet("chapter/{id:int}/bookmarks")]
     public async Task<IActionResult> Bookmarks(int id, CancellationToken ct) =>
@@ -647,7 +699,8 @@ public class ReaderController(
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the ordered fallback below picks it up in its proper place.
         var inProgress = await db.ChapterProgress
-            .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0)
+            .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0 &&
+                        db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
             .OrderByDescending(p => p.UpdatedAt)
             .FirstOrDefaultAsync(ct);
         if (inProgress is not null)

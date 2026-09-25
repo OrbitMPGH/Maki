@@ -9,6 +9,7 @@ using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
@@ -54,6 +55,7 @@ public class AccountController(
     }
 
     [HttpPost("password")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(request.CurrentPassword) || string.IsNullOrEmpty(request.NewPassword))
@@ -63,6 +65,19 @@ public class AccountController(
 
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
+
+        // Checked through the sign-in manager first so a wrong current password counts toward
+        // lockout, the same as a failed login. The reply matches what ChangePasswordAsync gives.
+        var check = await signInManager.CheckPasswordSignInAsync(user, request.CurrentPassword, lockoutOnFailure: true);
+        if (check.IsLockedOut)
+        {
+            return this.Fail(localizer, "error.account.lockedOut");
+        }
+
+        if (!check.Succeeded)
+        {
+            return BadRequest(new { error = Describe(IdentityResult.Failed(userManager.ErrorDescriber.PasswordMismatch())) });
+        }
 
         var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded)
@@ -171,13 +186,14 @@ public class AccountController(
     /// session would want, so it must not be reachable with the session cookie alone.
     /// </summary>
     [HttpPost("2fa/disable")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> DisableTwoFactor([FromBody] DisableTwoFactorRequest request, CancellationToken ct)
     {
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
 
         if (string.IsNullOrEmpty(request.Password) ||
-            !await userManager.CheckPasswordAsync(user, request.Password))
+            !(await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true)).Succeeded)
         {
             return this.Fail(localizer, "error.account.incorrectPassword");
         }

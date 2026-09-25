@@ -213,6 +213,17 @@ public class OidcSignInService(
         if (options.MapsPermissions)
         {
             var mapped = OidcClaimMapper.Map(options, claims, user.Permissions);
+            if (user.Permissions.Grants(MakiPermission.Admin) && !mapped.Grants(MakiPermission.Admin) &&
+                await new AdminGuard(db).IsLastAdminAsync(user.Id, ct))
+            {
+                // Same rule as the Users page: dropping the last usable admin cannot be undone from
+                // the UI, so a claim mapping does not get to do it either.
+                logger.LogWarning(
+                    "Single sign-on claims would remove Admin from {UserName}, the last administrator; keeping it",
+                    user.UserName);
+                mapped |= MakiPermission.Admin;
+            }
+
             if (mapped != user.Permissions)
             {
                 logger.LogInformation("Single sign-on changed {UserName} from {Before} to {After}",

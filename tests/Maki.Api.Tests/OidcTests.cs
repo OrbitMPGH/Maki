@@ -491,6 +491,29 @@ public class OidcTests
         Assert.True(result.User.Permissions.Grants(MakiPermission.DownloadChapters));
     }
 
+    [Fact]
+    public async Task ClaimsCannotStripAdminFromTheLastAdministrator()
+    {
+        using var fixture = new TestDb();
+        (string, string)[] settings =
+        [
+            (SettingKeys.AuthOidcAutoProvision, "true"),
+            (SettingKeys.AuthOidcAdminClaim, "groups=maki-admins"),
+        ];
+        var first = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1",
+            Claims(("preferred_username", "ada"), ("groups", "maki-admins")), default);
+        Assert.NotNull(first.User);
+        Assert.True(first.User.Permissions.Grants(MakiPermission.Admin));
+
+        var again = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1",
+            Claims(("preferred_username", "ada")), default);
+
+        Assert.NotNull(again.User);
+        Assert.True(again.User.Permissions.Grants(MakiPermission.Admin));
+        using var db = fixture.NewContext();
+        Assert.True(db.Users.Single(u => u.Id == again.User.Id).Permissions.Grants(MakiPermission.Admin));
+    }
+
     // ---- fixture plumbing ----
 
     private static Claim[] Claims(params (string Type, string Value)[] claims) =>

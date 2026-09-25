@@ -42,6 +42,11 @@ public static class ApiResults
         this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
         controller.NotFound(Body(localizer, key, args));
 
+    /// <summary>403 with a localized message, for a signed-in caller who may not do this.</summary>
+    public static IActionResult Forbidden(
+        this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
+        controller.StatusCode(StatusCodes.Status403Forbidden, Body(localizer, key, args));
+
     /// <summary>409, for a request that conflicts with the current state rather than being malformed.</summary>
     public static IActionResult Conflict(
         this ControllerBase controller, ILocalizer localizer, string key, object? args = null) =>
