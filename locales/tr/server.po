@@ -43,6 +43,12 @@ msgstr "Bu kod geçerli değil"
 msgid "error.account.invalidContentRating"
 msgstr "Derecelendirme şunlardan biri olmalı: {ratings}"
 
+#. The signed-in user typed their current password wrong too many times.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Too many incorrect password attempts. Try again later.
+msgid "error.account.lockedOut"
+msgstr ""
+
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Name is required
 #, fuzzy
@@ -426,6 +432,12 @@ msgstr ""
 msgid "error.importLists.running"
 msgstr ""
 
+#. {allowed} is a comma-separated list of the accepted values, which are code and never translated.
+#: src/Maki.Api/Controllers/InboxController.cs
+#. English: seriesDefault must be one of: {allowed}
+msgid "error.inbox.unknownSeriesDefault"
+msgstr ""
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
 #, fuzzy
@@ -559,6 +571,11 @@ msgstr ""
 msgid "error.notifications.nameRequired"
 msgstr "Ad gerekli"
 
+#: src/Maki.Core/Notifications/NotifiarrNotificationProvider.cs
+#. English: Channel ID must be a number
+msgid "error.notifications.notifiarrChannelId"
+msgstr ""
+
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Unknown notification type
 #, fuzzy
@@ -635,6 +652,16 @@ msgstr "Zaten devam eden bir içe aktarma var"
 #, fuzzy
 msgid "error.reader.invalidState"
 msgstr "Durum read, watched, unread değerlerinden biri olmalı"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: The Kavita import failed. An administrator can see the details.
+msgid "error.reader.kavitaImportFailed"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: Only the user bound to Kavita or an administrator can run the Kavita import
+msgid "error.reader.kavitaImportForbidden"
+msgstr ""
 
 #. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
 #: src/Maki.Api/Services/KavitaReadImportService.cs
@@ -1153,6 +1180,12 @@ msgstr "Desteklenmeyen dil: {language}"
 msgid "error.settings.urlInvalid"
 msgstr "{service} URL'si tam bir http:// veya https:// adresi olmalı (örn. http://localhost:8080) veya temizlemek için boş bırakılmalı"
 
+#. {entry} is the value the admin typed into the trusted proxies list.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: "{entry}" is not an IP address or CIDR network
+msgid "error.settings.trustedProxyInvalid"
+msgstr ""
+
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Series already has a mapping for this source
 #, fuzzy
@@ -1256,6 +1289,11 @@ msgstr "Bilinmeyen kaynak: {name}"
 #, fuzzy
 msgid "error.stats.invalidDateRange"
 msgstr "'to' değeri 'from' değerinden önce olamaz"
+
+#: src/Maki.Api/Controllers/StatsController.cs
+#. English: Dates must be between 1900 and 9998
+msgid "error.stats.dateOutOfRange"
+msgstr ""
 
 #: src/Maki.Api/Controllers/StatsController.cs
 #. English: utcOffsetMinutes out of range

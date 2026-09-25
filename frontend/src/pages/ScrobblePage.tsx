@@ -37,9 +37,20 @@ import {
 } from '../api/hooks'
 import { formatDateTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { onErrorToast } from '../lib/errors'
 
 function fmtTime(iso: string | null | undefined): string {
   return iso ? formatDateTime(iso) : '-'
+}
+
+/** Appends a counter only to keys that collide, so a unique key never carries a positional suffix. */
+function dedupeKeys(keys: string[]): string[] {
+  const seen = new Map<string, number>()
+  return keys.map((key) => {
+    const count = (seen.get(key) ?? 0) + 1
+    seen.set(key, count)
+    return count === 1 ? key : `${key}#${count}`
+  })
 }
 
 function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
@@ -85,6 +96,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
               loading={disconnect.isPending}
               onClick={() =>
                 disconnect.mutate(connection.service, {
+                  onError: onErrorToast,
                 })
               }
             >
@@ -116,6 +128,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           notifications.show({ message: data.message, color: 'var(--ok)' })
           setInput('')
         },
+        onError: onErrorToast,
       },
     )
   }
@@ -162,8 +175,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           onClick={() =>
             ignore.mutate(
               { kavitaSeriesId: item.kavitaSeriesId, service: item.service },
-              {
-              },
+              { onError: onErrorToast },
             )
           }
         >
@@ -304,10 +316,11 @@ export default function ScrobblePage() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {data.recent.map((r, i) => {
+                {dedupeKeys(data.recent.map((r) => `${r.at}-${r.service}-${r.title}`)).map((key, i) => {
+                  const r = data.recent[i]
                   const { title, service, error, chapter, volume, status, at } = r
                   return (
-                    <Table.Tr key={i}>
+                    <Table.Tr key={key}>
                       <Table.Td>{title || '#'}</Table.Td>
                       <Table.Td data-priority="low">{service}</Table.Td>
                       <Table.Td>
@@ -362,30 +375,33 @@ export default function ScrobblePage() {
         <ScrollArea.Autosize mah={320}>
           {data && data.log.length > 0 ? (
             <Stack gap={2}>
-              {data.log.map((l, i) => (
-                // component="div": the line contains a Badge (a div), invalid inside <p>
-                <Text key={i} size="xs" ff="monospace" component="div">
-                  <Text
-                    span
-                    c={
-                      l.level === 'error'
-                        ? 'var(--danger)'
-                        : l.level === 'warning'
-                          ? 'var(--warn)'
-                          : 'var(--ink-3)'
-                    }
-                  >
-                    {fmtTime(l.timestamp)}
-                  </Text>{' '}
-                  {l.service && (
-                    <Badge size="xs" variant="light" mr={4}>
-                      {l.service}
-                    </Badge>
-                  )}
-                  {l.title && <Text span fw={600}>{l.title} </Text>}
-                  {l.message}
-                </Text>
-              ))}
+              {dedupeKeys(data.log.map((l) => `${l.timestamp}-${l.service}-${l.message}`)).map((key, i) => {
+                const l = data.log[i]
+                return (
+                  // component="div": the line contains a Badge (a div), invalid inside <p>
+                  <Text key={key} size="xs" ff="monospace" component="div">
+                    <Text
+                      span
+                      c={
+                        l.level === 'error'
+                          ? 'var(--danger)'
+                          : l.level === 'warning'
+                            ? 'var(--warn)'
+                            : 'var(--ink-3)'
+                      }
+                    >
+                      {fmtTime(l.timestamp)}
+                    </Text>{' '}
+                    {l.service && (
+                      <Badge size="xs" variant="light" mr={4}>
+                        {l.service}
+                      </Badge>
+                    )}
+                    {l.title && <Text span fw={600}>{l.title} </Text>}
+                    {l.message}
+                  </Text>
+                )
+              })}
             </Stack>
           ) : (
             <Text size="sm" c="var(--ink-3)">

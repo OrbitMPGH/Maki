@@ -23,6 +23,7 @@ import { ConfirmDialog } from './ui/ConfirmDialog'
 import { relativeTime } from './ui/time'
 import { useLabel } from '../i18n-context'
 import { useAuth } from '../auth/AuthProvider'
+import { onErrorToast } from '../lib/errors'
 import { MONITOR_OPTIONS } from './series/SeriesActionsMenu'
 import {
   useIgnoreImportListSkip,
@@ -39,9 +40,6 @@ import type {
   ImportListTrackerPrefs,
   ImportListsStatusDto,
 } from '../api/types'
-
-const onErrorToast = (err: unknown) =>
-  notifications.show({ color: 'var(--danger)', message: String(err) })
 
 /** Mirrors the backend's `ScrobbleStatus` values, in the order they read best. */
 const STATUS_OPTIONS: { value: ImportListStatus; label: MessageDescriptor }[] = [

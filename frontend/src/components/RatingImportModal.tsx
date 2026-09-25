@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Button,
@@ -41,11 +41,13 @@ export function RatingImportModal({
   const { data, isFetching } = useRatingImport(service, opened)
   const apply = useApplyRatingImport()
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const defaultedRef = useRef<string | null>(null)
 
   // Kick off a fresh preview each time the modal opens.
   useEffect(() => {
     if (opened) {
       setSelected(new Set())
+      defaultedRef.current = null
       start.mutate(service)
     }
     // start.mutate is stable; only re-run on open/service change.
@@ -54,13 +56,14 @@ export function RatingImportModal({
 
   const items = data?.items ?? []
   const running = data?.running ?? true
+  const computedAt = data?.computedAt ?? null
 
-  // Default every previewed item to checked once the run finishes.
   useEffect(() => {
-    if (!running && items.length > 0) {
+    if (!running && items.length > 0 && computedAt !== defaultedRef.current) {
+      defaultedRef.current = computedAt
       setSelected(new Set(items.map((i) => i.seriesId)))
     }
-  }, [running, items])
+  }, [running, items, computedAt])
 
   const allChecked = items.length > 0 && selected.size === items.length
   const selectedCount = selected.size

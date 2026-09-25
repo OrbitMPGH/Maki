@@ -33,6 +33,11 @@ msgstr "That code is not valid"
 msgid "error.account.invalidContentRating"
 msgstr "Rating must be one of: {ratings}"
 
+#. The signed-in user typed their current password wrong too many times.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.lockedOut"
+msgstr "Too many incorrect password attempts. Try again later."
+
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.nameRequired"
 msgstr "Name is required"
@@ -305,6 +310,11 @@ msgstr "Import lists are turned off on this server"
 msgid "error.importLists.running"
 msgstr "An import list run is already in progress"
 
+#. {allowed} is a comma-separated list of the accepted values, which are code and never translated.
+#: src/Maki.Api/Controllers/InboxController.cs
+msgid "error.inbox.unknownSeriesDefault"
+msgstr "seriesDefault must be one of: {allowed}"
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
@@ -402,6 +412,10 @@ msgstr "{field} is required"
 msgid "error.notifications.nameRequired"
 msgstr "Name is required"
 
+#: src/Maki.Core/Notifications/NotifiarrNotificationProvider.cs
+msgid "error.notifications.notifiarrChannelId"
+msgstr "Channel ID must be a number"
+
 #: src/Maki.Api/Controllers/NotificationsController.cs
 msgid "error.notifications.unknownType"
 msgstr "Unknown notification type"
@@ -453,6 +467,14 @@ msgstr "An import is already running"
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.invalidState"
 msgstr "State must be one of read, watched, unread"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.kavitaImportFailed"
+msgstr "The Kavita import failed. An administrator can see the details."
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+msgid "error.reader.kavitaImportForbidden"
+msgstr "Only the user bound to Kavita or an administrator can run the Kavita import"
 
 #. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
 #: src/Maki.Api/Services/KavitaReadImportService.cs
@@ -813,6 +835,11 @@ msgstr ""
 "{service} URL must be a full http:// or https:// address (e.g. "
 "http://localhost:8080), or blank to clear it"
 
+#. {entry} is the value the admin typed into the trusted proxies list.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.trustedProxyInvalid"
+msgstr "\"{entry}\" is not an IP address or CIDR network"
+
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 msgid "error.sourceMapping.alreadyMapped"
 msgstr "Series already has a mapping for this source"
@@ -882,6 +909,10 @@ msgstr "Unknown source: {name}"
 #: src/Maki.Api/Controllers/StatsController.cs
 msgid "error.stats.invalidDateRange"
 msgstr "'to' must not be before 'from'"
+
+#: src/Maki.Api/Controllers/StatsController.cs
+msgid "error.stats.dateOutOfRange"
+msgstr "Dates must be between 1900 and 9998"
 
 #: src/Maki.Api/Controllers/StatsController.cs
 msgid "error.stats.utcOffsetOutOfRange"

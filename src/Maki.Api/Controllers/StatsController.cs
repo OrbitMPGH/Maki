@@ -32,6 +32,30 @@ public class StatsController(
     LibraryCompositionService library,
     UserViewResolver userView) : ControllerBase
 {
+    // Keeps the day arithmetic (to + 1 day, shifted by the offset) inside DateTime's range.
+    private static readonly DateOnly EarliestDate = new(1900, 1, 1);
+    private static readonly DateOnly LatestDate = new(9998, 12, 31);
+
+    private IActionResult? InvalidWindow(DateOnly from, DateOnly to, int utcOffsetMinutes)
+    {
+        if (to < from)
+        {
+            return this.Fail(localizer, "error.stats.invalidDateRange");
+        }
+
+        if (from < EarliestDate || to > LatestDate)
+        {
+            return this.Fail(localizer, "error.stats.dateOutOfRange");
+        }
+
+        if (Math.Abs(utcOffsetMinutes) > 14 * 60)
+        {
+            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
+        }
+
+        return null;
+    }
+
     /// <summary>Distinct years with recorded activity, newest first — for the year picker.</summary>
     [HttpGet("years")]
     public async Task<IActionResult> Years([FromQuery] int? userId, CancellationToken ct)
@@ -59,14 +83,9 @@ public class StatsController(
             return Forbid();
         }
 
-        if (to < from)
+        if (InvalidWindow(from, to, utcOffsetMinutes) is { } invalid)
         {
-            return this.Fail(localizer, "error.stats.invalidDateRange");
-        }
-
-        if (Math.Abs(utcOffsetMinutes) > 14 * 60)
-        {
-            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
+            return invalid;
         }
 
         return Ok(await activity.StatsAsync(target, from, to, utcOffsetMinutes, ct));
@@ -87,14 +106,9 @@ public class StatsController(
             return Forbid();
         }
 
-        if (to < from)
+        if (InvalidWindow(from, to, utcOffsetMinutes) is { } invalid)
         {
-            return this.Fail(localizer, "error.stats.invalidDateRange");
-        }
-
-        if (Math.Abs(utcOffsetMinutes) > 14 * 60)
-        {
-            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
+            return invalid;
         }
 
         return Ok(await insights.GetAsync(target, from, to, utcOffsetMinutes, ct));

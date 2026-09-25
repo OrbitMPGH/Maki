@@ -90,7 +90,7 @@ public sealed class TitleLanguageTests : IDisposable
             settings: null!, naming: null!, flareSolverr: null!, prowlarr: null!, qbittorrent: null!,
             kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
             mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
-            embeddingIndexer: null!, embeddingOptions: null!, prebuiltIndex: null!, recoGraph: null!,
+            embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,
             recoGraphCache: null!, coReadInstaller: null!, coReadCache: null!, readerCohortInstaller: null!,
             readerCohortCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!,
             modelSwitcher: null!, db: db, updateCheck: null!, currentUser: new TestCurrentUser(userId),

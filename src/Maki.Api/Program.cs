@@ -1053,15 +1053,23 @@ try
             ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
         };
         forwarded.KnownProxies.Clear();
-        forwarded.KnownNetworks.Clear();
+        forwarded.KnownIPNetworks.Clear();
         foreach (var entry in authOptions.TrustedProxies)
         {
             if (entry.Contains('/'))
             {
                 var parts = entry.Split('/', 2);
-                if (IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefix))
+                if (IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefix) && prefix >= 0)
                 {
-                    forwarded.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(network, prefix));
+                    // System.Net.IPNetwork rejects host bits and oversized prefixes that the old
+                    // HttpOverrides type tolerated, so normalise rather than fail startup.
+                    var bytes = network.GetAddressBytes();
+                    prefix = Math.Min(prefix, bytes.Length * 8);
+                    for (var bit = prefix; bit < bytes.Length * 8; bit++)
+                    {
+                        bytes[bit / 8] &= (byte)~(0x80 >> (bit % 8));
+                    }
+                    forwarded.KnownIPNetworks.Add(new System.Net.IPNetwork(new IPAddress(bytes), prefix));
                 }
             }
             else if (IPAddress.TryParse(entry, out var proxy))

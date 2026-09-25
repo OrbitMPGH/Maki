@@ -14,9 +14,8 @@ namespace Maki.Api.Controllers;
 /// Named Library filter presets ("ongoing, behind, action"). The spec is stored as opaque JSON and
 /// applied by the Library grid — see <see cref="LibraryFilterSpec"/>.
 /// <para>
-/// Readable by any signed-in user, writable only by an admin: the presets are currently one
-/// instance-wide list, so an unprivileged account could otherwise rename or delete everyone else's.
-/// The restriction goes away when saved filters become per-user.
+/// Presets are per-user: the <c>SavedFilter</c> owner query filter scopes every read and write to the
+/// signed-in caller, so each account sees and edits only its own list.
 /// </para>
 /// </summary>
 [ApiController]

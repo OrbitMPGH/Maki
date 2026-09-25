@@ -55,7 +55,6 @@ public class SettingsController(
     EmbeddingStore embeddingStore,
     EmbeddingIndexStatus embeddingStatus,
     SeriesEmbeddingIndexer embeddingIndexer,
-    EmbeddingOptions embeddingOptions,
     PrebuiltIndexInstaller prebuiltIndex,
     RecoGraphInstaller recoGraph,
     RecoGraphCache recoGraphCache,
@@ -1841,7 +1840,7 @@ public class SettingsController(
             var address = entry.Contains('/') ? entry.Split('/', 2)[0] : entry;
             if (!System.Net.IPAddress.TryParse(address, out _))
             {
-                return BadRequest(new { error = $"\"{entry}\" is not an IP address or CIDR network" });
+                return this.Fail(localizer, "error.settings.trustedProxyInvalid", new { entry });
             }
         }
 

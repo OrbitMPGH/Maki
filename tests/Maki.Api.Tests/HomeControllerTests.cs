@@ -324,7 +324,9 @@ public class HomeControllerTests : IDisposable
                 null!, // user metrics
                 null!, // achievements
                 null!, // app paths
-                null!  // logger
+                null!, // logger
+                null!, // current user
+                null!  // kavita user resolver
             );
 
             var result = await controller.Continue(seriesId, CancellationToken.None);

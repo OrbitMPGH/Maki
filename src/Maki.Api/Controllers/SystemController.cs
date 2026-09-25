@@ -15,7 +15,6 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/system")]
 public class SystemController(
     AppPaths paths,
-    HealthCheckService healthCheck,
     BackupService backups,
     UpdateCheckService updateCheck,
     MemoryDiagnostics memory,
