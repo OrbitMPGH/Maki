@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Entities;
 
@@ -15,6 +16,11 @@ namespace Maki.Core.Scrobbling;
 /// True when the list call itself carried the relation data, so the sync never has to ask again.
 /// AniList sets it; MyAnimeList cannot, because its list endpoint has no relation field.
 /// </param>
+/// <param name="Format">Upper-cased media format, see <see cref="AnimeListFields.NormalizeFormat"/>.</param>
+/// <param name="StartDate">First air date, only when the provider knows the full day.</param>
+/// <param name="EndDate">Last air date, only when the provider knows the full day.</param>
+/// <param name="Episodes">Total episode count, null when unknown.</param>
+/// <param name="Progress">Episodes the watcher has seen.</param>
 public record AnimeListEntry(
     long AnimeId,
     string Title,
@@ -23,7 +29,47 @@ public record AnimeListEntry(
     long? AniListMangaId = null,
     long? MalMangaId = null,
     bool RelationsResolved = false,
-    long? MalAnimeId = null);
+    long? MalAnimeId = null,
+    string? Format = null,
+    DateOnly? StartDate = null,
+    DateOnly? EndDate = null,
+    int? Episodes = null,
+    int? Progress = null);
+
+/// <summary>Normalizers shared by the anime list readers, so both trackers store the same shapes.</summary>
+public static class AnimeListFields
+{
+    private static readonly HashSet<string> Formats =
+        ["TV", "TV_SHORT", "ONA", "MOVIE", "OVA", "SPECIAL", "MUSIC"];
+
+    /// <summary>
+    /// Upper-cases a provider's media format and keeps it only when it is one of the anime formats
+    /// both trackers name the same way. AniList sends "TV_SHORT", MyAnimeList "tv_short"; MAL's
+    /// "unknown" and anything unrecognised become null.
+    /// </summary>
+    public static string? NormalizeFormat(string? raw)
+    {
+        var upper = raw?.Trim().ToUpperInvariant();
+        return upper is not null && Formats.Contains(upper) ? upper : null;
+    }
+
+    /// <summary>A date only when year, month and day are all known and valid. A partial date is null, never guessed.</summary>
+    public static DateOnly? DateOf(int? year, int? month, int? day) =>
+        year is { } y and >= 1 and <= 9999 && month is { } m and >= 1 and <= 12 && day is { } d and >= 1 &&
+        d <= DateTime.DaysInMonth(y, m)
+            ? new DateOnly(y, m, d)
+            : null;
+
+    /// <summary>
+    /// MyAnimeList's dates come as <c>YYYY</c>, <c>YYYY-MM</c> or <c>YYYY-MM-DD</c>. Only the full form
+    /// becomes a date.
+    /// </summary>
+    public static DateOnly? ParseFullDate(string? raw) =>
+        DateOnly.TryParseExact(raw?.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None,
+            out var date)
+            ? date
+            : null;
+}
 
 /// <summary>The manga one anime was adapted from, in whichever ids the provider knows.</summary>
 public record AnimeRelatedManga(long? AniListMangaId, long? MalMangaId);

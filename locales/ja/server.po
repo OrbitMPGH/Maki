@@ -81,6 +81,23 @@ msgstr "現在のパスワードと新しいパスワードが必要です"
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "二要素認証はすでに有効です"
 
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+#. English: Turn on anime taste signals to use this
+msgid "error.animeResume.notEnabled"
+msgstr ""
+
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+#. English: Series not found
+msgid "error.animeResume.seriesNotFound"
+msgstr ""
+
+#. The reader's anime list no longer says where this series' anime ends, usually because a sync
+#. changed it after the page loaded.
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+#. English: Could not work out where the anime ends for this series
+msgid "error.animeResume.unavailable"
+msgstr ""
+
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: Anime taste signals are switched off on this server
 #, fuzzy

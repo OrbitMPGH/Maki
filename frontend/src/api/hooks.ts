@@ -10,6 +10,7 @@ import { msg, t } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api, getInitialize, xsrfHeader } from './client'
 import { useAuth } from '../auth/AuthProvider'
+import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
@@ -865,6 +866,7 @@ export const HOME_SECTIONS = [
   'downloading',
   'continue',
   'jumpback',
+  'fromanime',
   'recent',
   'recommended',
   'popular',
@@ -884,6 +886,7 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   downloading: msg`Downloading now`,
   recent: msg`Recently added`,
   jumpback: msg`Jump back in`,
+  fromanime: msg`Continue from the anime`,
   recommended: msg`You might like`,
   popular: msg`Currently popular`,
 }
@@ -1325,6 +1328,8 @@ export interface MangaBakaDetail {
   animeStart: string | null
   animeEnd: string | null
   readerHint: ReaderCohortHint | null
+  /** Where to pick the manga back up, when the reader finished this one's anime. Null otherwise. */
+  animeResume: AnimeResume | null
 }
 
 /**

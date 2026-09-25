@@ -3,6 +3,7 @@ import {
   IconBook,
   IconBookmarks,
   IconChartBar,
+  IconDeviceTv,
   IconDownload,
   IconFlame,
   IconPlayerPlay,
@@ -48,6 +49,11 @@ export const HOME_SECTION_DEFS: SectionRegistry = {
     label: HOME_SECTION_LABELS.jumpback,
     description: msg`Series you finished a chapter of that still have more to read.`,
     hero: true,
+  },
+  fromanime: {
+    icon: IconDeviceTv,
+    label: HOME_SECTION_LABELS.fromanime,
+    description: msg`Series whose anime you finished, starting after the last adapted chapter.`,
   },
   recent: {
     icon: IconBookmarks,

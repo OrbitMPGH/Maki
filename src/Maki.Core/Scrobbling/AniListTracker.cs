@@ -481,7 +481,8 @@ public class AniListTracker(
     /// <para>
     /// perPage is 25 rather than AniList's 50 because the relation sub-selection multiplies the
     /// query's complexity budget: 50 rows each expanding their relations is rejected outright on a
-    /// large list, and a rejection costs the whole page rather than one row.
+    /// large list, and a rejection costs the whole page rather than one row. The format, episode
+    /// and date fields are scalars on the media node and do not move that budget.
     /// </para>
     /// </summary>
     public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
@@ -499,8 +500,9 @@ public class AniListTracker(
             query($userId:Int,$page:Int){ Page(page:$page, perPage:25){
               pageInfo { hasNextPage }
               mediaList(userId:$userId, type:ANIME, sort: [MEDIA_ID]){
-                score(format: POINT_10) status
-                media { id idMal title { romaji english }
+                score(format: POINT_10) status progress
+                media { id idMal title { romaji english } format episodes
+                  startDate { year month day } endDate { year month day }
                   relations { edges { relationType node { id idMal type format } } } } } } }
             """;
 
@@ -594,8 +596,18 @@ public class AniListTracker(
             AniListMangaId: pick?.Id,
             MalMangaId: pick?.IdMal,
             RelationsResolved: true,
-            MalAnimeId: GetInt(media, "idMal"));
+            MalAnimeId: GetInt(media, "idMal"),
+            Format: AnimeListFields.NormalizeFormat(GetString(media, "format")),
+            StartDate: FuzzyDateOf(media, "startDate"),
+            EndDate: FuzzyDateOf(media, "endDate"),
+            Episodes: GetInt(media, "episodes") is { } episodes and > 0 ? episodes : null,
+            Progress: GetInt(row, "progress"));
     }
+
+    private static DateOnly? FuzzyDateOf(JsonElement media, string name) =>
+        media.TryGetProperty(name, out var d) && d.ValueKind == JsonValueKind.Object
+            ? AnimeListFields.DateOf(GetInt(d, "year"), GetInt(d, "month"), GetInt(d, "day"))
+            : null;
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
 }

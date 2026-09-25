@@ -74,6 +74,36 @@ public class HomeLayoutTests
     }
 
     [Fact]
+    public void Merge_appends_from_anime_enabled_to_a_layout_stored_before_it_existed()
+    {
+        var stored = new HomeLayoutSpec(true, [
+            new PageSection(HomeSections.Glance),
+            new PageSection(HomeSections.Downloading),
+            new PageSection(HomeSections.ContinueReading),
+            new PageSection(HomeSections.JumpBackIn, Enabled: false),
+            new PageSection(HomeSections.RecentlyAdded),
+            new PageSection(HomeSections.Recommended),
+            new PageSection(HomeSections.Popular),
+        ]);
+
+        var merged = stored.Merge();
+
+        var last = merged.Sections![^1];
+        Assert.Equal(HomeSections.FromAnime, last.Key);
+        Assert.True(last.Enabled);
+        Assert.Null(last.Hero);
+        Assert.Equal(HomeSections.All.Length, merged.Sections.Count);
+    }
+
+    [Fact]
+    public void From_anime_ships_right_after_jump_back_in()
+    {
+        var keys = HomeLayoutSpec.Default.Sections!.Select(s => s.Key).ToList();
+
+        Assert.Equal(keys.IndexOf(HomeSections.JumpBackIn) + 1, keys.IndexOf(HomeSections.FromAnime));
+    }
+
+    [Fact]
     public void Merge_drops_keys_this_build_does_not_know()
     {
         var stored = new HomeLayoutSpec(true, [

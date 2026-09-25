@@ -63,5 +63,11 @@ public class UserSeriesState : IUserOwned
     /// </summary>
     public DateTime? HiddenFromHomeAt { get; set; }
 
+    /// <summary>
+    /// The chapter number the "start where the anime ended" callout covered to when this reader
+    /// dismissed it. The callout stays hidden only while it would say the same number.
+    /// </summary>
+    public double? AnimeResumeDismissedAt { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }

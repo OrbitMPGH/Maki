@@ -333,6 +333,9 @@ export function useSetChaptersState(seriesId: number) {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['home'] })
+      // Ticking a season off (or back on) can change whether the anime-resume callout has
+      // anything left to offer.
+      void queryClient.invalidateQueries({ queryKey: ['anime-resume', 'series', seriesId] })
     },
   })
 }

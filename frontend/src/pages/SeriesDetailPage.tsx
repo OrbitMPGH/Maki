@@ -93,6 +93,7 @@ import {
   type ChapterProgressDto,
   type ChapterReadState,
 } from '../api/reader'
+import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from '../api/animeResume'
 import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
@@ -109,6 +110,7 @@ import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
+import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
@@ -335,6 +337,14 @@ export default function SeriesDetailPage() {
   const { data: continueAt } = useContinueReading(seriesId)
   const { data: files} = useSeriesFiles(seriesId, true)
   const setRead = useSetChapterRead(seriesId)
+  // Only worth asking once there is an anime to have finished, and only meaningful with read
+  // tracking on: the callout's own "Read ch. N" action needs somewhere to record progress.
+  const { data: animeResume } = useSeriesAnimeResume(
+      seriesId,
+      readTracking && Boolean(series?.animeStart || series?.animeEnd),
+  )
+  const applyAnimeResume = useApplyAnimeResume(seriesId)
+  const dismissAnimeResumeMutation = useDismissAnimeResume(seriesId)
   const readProgress = useMemo(
       () => new Map((progressRows ?? []).map((p) => [p.chapterId, p])),
       [progressRows],
@@ -1208,6 +1218,70 @@ export default function SeriesDetailPage() {
           },
       )
 
+  const markAnimeWatched = (coveredTo: number) =>
+      applyAnimeResume.mutate(
+          { markWatched: true, coveredTo },
+          {
+            onSuccess: (result) => {
+              const to = result.coveredTo
+              notifications.show({ color: 'var(--ok)', message: <Trans>Marked ch. 1 to {to} watched</Trans> })
+            },
+            onError: (error) => notifications.show({ color: 'var(--danger)', message: String(error) }),
+          },
+      )
+
+  const readFromAnime = () => {
+    if (!animeResume) return
+    const resumeAt = animeResume.resumeAt
+    applyAnimeResume.mutate(
+        { markWatched: false },
+        {
+          onSuccess: (result) => {
+            const chapterId = result.resumeChapterId ?? animeResume.resumeChapterId
+            if (animeResume.resumeDownloaded && chapterId != null) {
+              navigate(`/read/${chapterId}`)
+            } else {
+              changeTab('chapters')
+              notifications.show({ message: <Trans>Chapter {resumeAt} is not downloaded yet</Trans> })
+            }
+          },
+          onError: (error) => notifications.show({ color: 'var(--danger)', message: String(error) }),
+        },
+    )
+  }
+
+  // Same shape as `ReadingCardMenu`'s remove: `mutateAsync` rather than `mutate` with callbacks,
+  // since the callout unmounts as soon as the query invalidates and per-call callbacks would never
+  // fire for a component that's gone.
+  const dismissAnimeResume = async () => {
+    try {
+      await dismissAnimeResumeMutation.mutateAsync({})
+    } catch (error) {
+      notifications.show({ color: 'var(--danger)', message: String(error) })
+      return
+    }
+    const id = notifications.show({
+      autoClose: 8000,
+      message: (
+        <Group gap="xs" wrap="nowrap" justify="space-between">
+          <Text size="sm">
+            <Trans>Won't suggest resuming from this anime again.</Trans>
+          </Text>
+          <Button
+              size="xs"
+              variant="subtle"
+              onClick={() => {
+                notifications.hide(id)
+                void dismissAnimeResumeMutation.mutateAsync({ undo: true })
+              }}
+          >
+            <Trans>Undo</Trans>
+          </Button>
+        </Group>
+      ),
+    })
+  }
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <Tabs
@@ -1405,6 +1479,16 @@ export default function SeriesDetailPage() {
 
         <Tabs.Panel value="details">
           <Stack className="series-detail-overview" gap="lg">
+            {animeResume && (
+                <AnimeResumeCallout
+                    resume={animeResume}
+                    variant="library"
+                    pending={applyAnimeResume.isPending || dismissAnimeResumeMutation.isPending}
+                    onMarkWatched={markAnimeWatched}
+                    onRead={readFromAnime}
+                    onDismiss={() => void dismissAnimeResume()}
+                />
+            )}
             <div className="series-split">
               <Paper className="series-detail-synopsis" withBorder radius="lg" p="lg">
                 <Title order={3} fz={17}>
@@ -1431,6 +1515,7 @@ export default function SeriesDetailPage() {
                           end={series.animeEnd}
                           totalChapters={series.totalChapters ?? lastChapterNumber}
                           readChapter={highestReadChapter}
+                          hideResumeHint={Boolean(animeResume)}
                       />
                     </>
                 )}

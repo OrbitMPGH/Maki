@@ -30,7 +30,8 @@ public class RecommendationController(
     IUserSettings userSettings,
     HiddenContentService hidden,
     CustomRailService customRails,
-    MalReviewClient reviews) : ControllerBase
+    MalReviewClient reviews,
+    AnimeResumeService animeResume) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Get([FromBody] RecommendationRequest? request, CancellationToken ct)
@@ -586,7 +587,12 @@ public class RecommendationController(
         // the hint is the caller's alone, so mixing them at the query would put a user in a path
         // that has no business knowing about one. Same split MangaBakaRecommendation's "why" flags
         // already use, which the recommender fills rather than the store.
-        return Ok(detail with { ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct) });
+        return Ok(detail with
+        {
+            ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct),
+            AnimeResume = await animeResume.ForCatalogueAsync(
+                id, detail.AnimeStart, detail.AnimeEnd, detail.TotalChapters, ct),
+        });
     }
 
     /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>

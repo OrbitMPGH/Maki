@@ -7,6 +7,7 @@ import {
   IconBook,
   IconBookmarks,
   IconChevronRight,
+  IconDeviceTv,
   IconDownload,
   IconFlame,
   IconLayoutDashboard,
@@ -14,6 +15,7 @@ import {
   IconPlus,
   IconSparkles,
 } from '@tabler/icons-react'
+import { useHomeFromAnime } from '../api/animeResume'
 import {
   HOME_HERO_DEFAULTS,
   useDiscover,
@@ -49,6 +51,7 @@ import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
+import { AnimeResumeRail } from '../components/home/AnimeResumeRail'
 import { ProgressCard } from '../components/home/ProgressCard'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
@@ -115,6 +118,7 @@ export default function HomePage() {
 
   const { data: reading, isLoading: readingLoading } = useHomeReading(12, needsReading)
   const { data: recent } = useHomeRecentlyAdded(12, on('recent'))
+  const { data: fromAnime } = useHomeFromAnime(12, on('fromanime'))
   const { data: queue } = useQueue()
   const { data: rails } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
@@ -285,6 +289,13 @@ export default function HomePage() {
       <>
         <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
         <ReadingSection items={jumpBackIn} rail="jumpback" hero={heroOn('jumpback')} />
+      </>
+    ),
+
+    fromanime: fromAnime && fromAnime.length > 0 && (
+      <>
+        <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
+        <AnimeResumeRail items={fromAnime} />
       </>
     ),
 

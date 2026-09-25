@@ -27,7 +27,10 @@ export function ConfirmDialog({
   return (
     <Modal opened={opened} onClose={onClose} title={title} centered>
       <Stack gap="sm">
-        <Text size="sm">{children}</Text>
+        {/* `component="div"`: a caller that needs a form control (a NumberInput, say) alongside
+            the confirmation copy can't nest one inside a `<p>`, which is what Text renders by
+            default. */}
+        <Text size="sm" component="div">{children}</Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>

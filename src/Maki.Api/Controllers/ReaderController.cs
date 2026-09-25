@@ -498,7 +498,7 @@ public class ReaderController(
 
     /// <summary>Largest set one call will act on. Bounds the per-chapter <c>read</c> pass, which
     /// has to open each chapter's archive to learn its page count.</summary>
-    private const int MaxBulkChapters = 2000;
+    internal const int MaxBulkChapters = 2000;
 
     /// <summary>
     /// Bulk read-state change, for the chapter table's select mode and for ticking a whole anime

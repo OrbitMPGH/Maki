@@ -60,6 +60,20 @@ msgstr "Current and new password are required"
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "Two-factor authentication is already enabled"
 
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+msgid "error.animeResume.notEnabled"
+msgstr "Turn on anime taste signals to use this"
+
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+msgid "error.animeResume.seriesNotFound"
+msgstr "Series not found"
+
+#. The reader's anime list no longer says where this series' anime ends, usually because a sync
+#. changed it after the page loaded.
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+msgid "error.animeResume.unavailable"
+msgstr "Could not work out where the anime ends for this series"
+
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 msgid "error.animeSignals.disabled"
 msgstr "Anime taste signals are switched off on this server"

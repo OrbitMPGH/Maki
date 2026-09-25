@@ -341,6 +341,17 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         return Ok(items);
     }
 
+    /// <summary>
+    /// Library series whose anime the reader finished, starting after the last chapter it adapts.
+    /// Taken from the action rather than the constructor because only this rail needs it.
+    /// </summary>
+    [HttpGet("from-anime")]
+    public async Task<IActionResult> FromAnime(
+        [FromServices] AnimeResumeService animeResume,
+        [FromQuery] int limit = 12,
+        CancellationToken ct = default) =>
+        Ok(await animeResume.RailAsync(Math.Clamp(limit, 1, 50), ct));
+
     /// <summary>Labels for a set of chapter ids, in one query.</summary>
     private async Task<Dictionary<int, string>> ChapterLabelsAsync(
         IReadOnlyCollection<int> chapterIds, CancellationToken ct)

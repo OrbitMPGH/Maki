@@ -441,7 +441,7 @@ public class MalTracker(
         for (var offset = 0; offset < maxOffset; offset += pageSize)
         {
             var data = await RequestAsync(userId, HttpMethod.Get,
-                $"/users/@me/animelist?fields=list_status&nsfw=true&limit={pageSize}&offset={offset}", null, ct);
+                $"/users/@me/animelist?fields=list_status,media_type,num_episodes,start_date,end_date&nsfw=true&limit={pageSize}&offset={offset}", null, ct);
             if (!data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
             {
                 break;
@@ -467,7 +467,12 @@ public class MalTracker(
                         ? AnimeStatusToInternal.GetValueOrDefault(
                             GetString(ls, "status") ?? string.Empty, AnimeWatchStatus.Planning)
                         : AnimeWatchStatus.Planning,
-                    MalAnimeId: animeId));
+                    MalAnimeId: animeId,
+                    Format: AnimeListFields.NormalizeFormat(GetString(node, "media_type")),
+                    StartDate: AnimeListFields.ParseFullDate(GetString(node, "start_date")),
+                    EndDate: AnimeListFields.ParseFullDate(GetString(node, "end_date")),
+                    Episodes: PositiveOrNull(GetInt(node, "num_episodes")),
+                    Progress: hasStatus ? GetInt(ls, "num_episodes_watched") : null));
             }
 
             truncated = count >= pageSize && offset + pageSize >= maxOffset;

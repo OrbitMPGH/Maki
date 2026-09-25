@@ -1481,9 +1481,8 @@ msgid "A short strip of what your library leans towards."
 msgstr "Ein kurzer Überblick über die Schwerpunkte deiner Bibliothek."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-#, fuzzy
-msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
-msgstr "Eine gut bewertete Serie lenkt Empfehlungen zu ähnlichen Manga. Eine niedrige Bewertung oder eine abgebrochene Serie drängt sie weg."
+msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away. Finishing one can also suggest where to start reading its manga."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -2053,6 +2052,11 @@ msgstr "Anime-Adaption"
 msgid "Anime coverage"
 msgstr "Anime-Abdeckung"
 
+#. placeholder {0}: item.coveredTo
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Anime ends at ch. {0}"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Anime you've watched"
@@ -2458,11 +2462,6 @@ msgstr "Basierend auf deiner letzten Aktivität"
 msgid "Bearer token"
 msgstr ""
 
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-#~ msgid "Bearer token (optional)"
-#~ msgstr "Bearer-Token (optional)"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Because of what you collect"
@@ -2825,6 +2824,10 @@ msgstr "Kap. {from}–{to}"
 msgid "ch. {from}+"
 msgstr "Kap. {from}+"
 
+#: src/components/home/AnimeResumeRail.tsx
+msgid "ch. {next}"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ch. {nextChapter} onward not adapted"
@@ -2973,6 +2976,10 @@ msgstr "Kapitel {number}"
 #, fuzzy
 msgid "Chapter {number}"
 msgstr "Kapitel {number}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapter {resumeAt} is not downloaded yet"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3572,6 +3579,11 @@ msgstr "Weiter"
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
+msgid "Continue from the anime"
+msgstr ""
+
+#: src/api/hooks.ts
+#: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Continue reading"
@@ -4134,20 +4146,8 @@ msgid "Disconnect"
 msgstr "Verbindung trennen"
 
 #: src/components/NotificationsSection.tsx
-#: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "Discord & webhooks"
-#~ msgstr "Discord und Webhooks"
-
-#: src/components/NotificationsSection.tsx
 msgid "Discord channel ID"
 msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "discord, webhook, apprise, alerts, events, notifications, outbound"
-#~ msgstr "Discord, Webhook, Apprise, Warnungen, Ereignisse, Benachrichtigungen, ausgehend"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6187,6 +6187,10 @@ msgstr "letzte {lastSync} · nächste {nextSync}"
 msgid "Last chapter on disk"
 msgstr ""
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Last chapter to mark watched"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Last download failed: {lastError}. The next scheduled run retries."
@@ -6780,10 +6784,18 @@ msgstr "Zugeordnet zu"
 msgid "Mark all read"
 msgstr "Alle als gelesen markieren"
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Mark ch. 1 to {coveredTo} watched"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Mark chapters read in Kavita too"
 msgstr "Kapitel auch in Kavita als gelesen markieren"
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Mark chapters watched"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6801,6 +6813,7 @@ msgstr "in Kavita als gelesen markieren, an Kavita übertragen, Lesestatus impor
 msgid "Mark unread"
 msgstr "Als ungelesen markieren"
 
+#: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark watched"
@@ -6810,6 +6823,10 @@ msgstr "Als angesehen markieren"
 #, fuzzy
 msgid "Marked as already read or seen. Your taste profile was not changed."
 msgstr "Als bereits gelesen oder gesehen markiert. Dein Geschmacksprofil wurde nicht geändert."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked ch. 1 to {to} watched"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7865,6 +7882,10 @@ msgstr "Nicht festgelegt"
 msgid "Not synced yet"
 msgstr "Noch nicht synchronisiert"
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Not this anime?"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -8339,6 +8360,7 @@ msgid "Open Recommended with these filters from now on"
 msgstr "Empfohlene Suche ab jetzt mit diesen Filtern öffnen"
 
 #: src/components/home/ReadingCardMenu.tsx
+#: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -9080,6 +9102,10 @@ msgstr ""
 #, fuzzy
 msgid "Read a few chapters and this fills in."
 msgstr "Lies ein paar Kapitel, dann wird dies ausgefüllt."
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Read ch. {resumeAt}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10621,11 +10647,6 @@ msgstr "Semantische Suche und Empfehlungen sind deaktiviert."
 msgid "Send events to chat apps, push services or a webhook. Each connection picks its own events."
 msgstr ""
 
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-#~ msgid "Send events to Discord or a webhook. Each connection picks its own events."
-#~ msgstr "Ereignisse an Discord oder einen Webhook senden. Für jede Verbindung lassen sich eigene Ereignisse auswählen."
-
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka."
@@ -10727,6 +10748,10 @@ msgstr "Serienseite"
 #, fuzzy
 msgid "Series removed"
 msgstr "Serie entfernt"
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Series whose anime you finished, starting after the last adapted chapter."
+msgstr ""
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
@@ -12509,6 +12534,7 @@ msgstr "Unterstrich (_)"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo"
 msgstr "Rückgängig"
@@ -13028,6 +13054,10 @@ msgstr "Warnung"
 msgid "Watched"
 msgstr "Angesehen"
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Watching"
@@ -13256,6 +13286,10 @@ msgstr "Wenn nichts ausgewählt ist, sieht dieses Konto eine leere Bibliothek: Z
 msgid "won't be recommended again"
 msgstr "wird nicht erneut empfohlen"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Won't suggest resuming from this anime again."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -13351,6 +13385,14 @@ msgstr ""
 #, fuzzy
 msgid "You finish what you start."
 msgstr "Du bringst zu Ende, was du beginnst."
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "You finished {animeTitle} ({coveredLabel}). That likely covers up to ch. {coveredTo}; {nextLabel} adapts ch. {nextFrom} to {nextTo}. Start reading at ch. {resumeAt}, or watch {nextLabel} first."
+msgstr ""
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

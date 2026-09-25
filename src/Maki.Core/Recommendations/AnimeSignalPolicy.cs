@@ -128,8 +128,8 @@ public static class AnimeSignalPolicy
 
     /// <summary>
     /// What an unscored but completed anime stands in at, on the 0-1 pre-scale range.
-    /// <see cref="AnimeSignalSyncService"/> stores scored entries only, so this branch is reachable
-    /// today only for rows a sync wrote before that change; nothing new lands here.
+    /// <see cref="AnimeSignalGrouping.Group"/> drops unscored rows before they reach the policy, so
+    /// nothing the seed builder or the panel passes lands here.
     /// </summary>
     public const double UnscoredCredit = 0.8;
 

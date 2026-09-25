@@ -29,6 +29,7 @@ import { altTitleLabel, readableTitles } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
 import { formatNumber } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
+import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
@@ -420,6 +421,14 @@ export function DiscoverDetailModal({
                       </Text>
                     )}
 
+                    {detail?.animeResume && (
+                        <AnimeResumeCallout
+                            resume={detail.animeResume}
+                            variant="catalogue"
+                            inLibrarySeriesId={inLibrarySeriesId ?? detail.animeResume?.inLibrarySeriesId ?? null}
+                        />
+                    )}
+
                     {(detail?.animeStart || detail?.animeEnd) && (
                         <>
                           <Divider color="var(--hairline)"/>
@@ -431,6 +440,7 @@ export function DiscoverDetailModal({
                               end={detail.animeEnd}
                               totalChapters={detail.totalChapters}
                               tooltipZIndex={1001}
+                              hideResumeHint={Boolean(detail?.animeResume)}
                           />
                         </>
                     )}

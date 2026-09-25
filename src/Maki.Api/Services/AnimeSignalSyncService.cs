@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
 using Maki.Core.Scrobbling;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
@@ -256,11 +257,7 @@ public class AnimeSignalSyncService(
 
             foreach (var entry in entries)
             {
-                // An unscored entry carries no opinion: it neither seeds (unscored Completed) nor
-                // avoids (unscored Dropped), so it is not worth storing at all. Dropping it here
-                // rather than in AnimeSignalPolicy means a reader who later scores it just gets
-                // picked up on the next sync like any other new entry.
-                if (entry.Score is null)
+                if (!Worth(entry))
                 {
                     continue;
                 }
@@ -280,6 +277,11 @@ public class AnimeSignalSyncService(
                 // not a manga relation, and an existing row from before the column existed has to
                 // pick it up on an ordinary refresh or it never dedupes against the other tracker.
                 row.MalAnimeId = entry.MalAnimeId ?? row.MalAnimeId;
+                row.Format = entry.Format;
+                row.StartDate = entry.StartDate;
+                row.EndDate = entry.EndDate;
+                row.Episodes = entry.Episodes;
+                row.Progress = entry.Progress;
                 if (entry.RelationsResolved)
                 {
                     row.AniListMangaId = entry.AniListMangaId;
@@ -288,9 +290,9 @@ public class AnimeSignalSyncService(
                 }
             }
 
-            // A row the tracker no longer lists, or now lists unscored, is treated the same way: not
-            // stored. An empty or failed fetch threw above rather than reaching this.
-            var listed = entries.Where(e => e.Score is not null).Select(e => e.AnimeId).ToHashSet();
+            // A row the tracker no longer lists, or now lists in a way Worth rejects, is treated the
+            // same way: not stored. An empty or failed fetch threw above rather than reaching this.
+            var listed = entries.Where(Worth).Select(e => e.AnimeId).ToHashSet();
             foreach (var row in existing.Where(x => !listed.Contains(x.Key)).Select(x => x.Value))
             {
                 if (row.Id != 0)
@@ -404,6 +406,16 @@ public class AnimeSignalSyncService(
         return new AnimeSignalSyncSummary(fetched, matched, removed, looked,
             failed ? "one or more lists could not be read" : null, lookupFailures);
     }
+
+    /// <summary>
+    /// Which entries are stored. A score carries an opinion for the recommender, and an unscored
+    /// Completed or Watching entry still says how far the reader got, which the anime resume
+    /// callout needs. An unscored Planning, OnHold or Dropped entry says neither, so it is skipped.
+    /// <see cref="AnimeSignalGrouping.Group"/> drops unscored rows, so storing them does not seed.
+    /// </summary>
+    private static bool Worth(AnimeListEntry entry) =>
+        entry.Score is not null ||
+        entry.Status is AnimeWatchStatus.Completed or AnimeWatchStatus.Watching;
 
     /// <summary>
     /// A slow or unreachable provider, not a real failure of this pass: one MAL relation lookup can

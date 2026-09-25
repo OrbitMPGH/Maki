@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
 import {
   Alert, Badge, Button, Card, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
@@ -87,6 +88,20 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   const setStrength = useSetAnimeSignalsStrength()
   const [toggleError, setToggleError] = useState('')
 
+  // A finished sync can change which series have a finished-anime match, so the callout on the
+  // series page and the Discover modal (and Home's rail) need fresh data once one completes.
+  const queryClient = useQueryClient()
+  const wasSyncing = useRef(false)
+  useEffect(() => {
+    const syncing = data?.syncing ?? false
+    if (wasSyncing.current && !syncing) {
+      void queryClient.invalidateQueries({ queryKey: ['anime-resume'] })
+      void queryClient.invalidateQueries({ queryKey: ['recommendation-detail'] })
+      void queryClient.invalidateQueries({ queryKey: ['home', 'from-anime'] })
+    }
+    wasSyncing.current = syncing
+  }, [data?.syncing, queryClient])
+
   async function toggle(next: boolean) {
     setToggleError('')
     try { await setEnabled.mutateAsync(next) } catch (cause) { setToggleError(String(cause)) }
@@ -131,7 +146,8 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
             <Text size="xs" c="var(--ink-3)" maw={520}>
               <Trans>
                 A show you scored well nudges recommendations toward similar manga. A low score or
-                a dropped show pushes them away.
+                a dropped show pushes them away. Finishing one can also suggest where to start
+                reading its manga.
               </Trans>
             </Text>
           </div>

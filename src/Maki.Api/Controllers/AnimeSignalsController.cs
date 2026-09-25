@@ -50,7 +50,8 @@ public class AnimeSignalsController(
         var stored = await db.AnimeSignals.AsNoTracking()
             .Where(x => x.UserId == user.UserId)
             .Select(x => new AnimeSignalRow(
-                x.Service, x.AnimeId, x.MalAnimeId, x.Title, x.Score, x.Status, x.MangaBakaId))
+                x.Service, x.AnimeId, x.MalAnimeId, x.Title, x.Score, x.Status, x.MangaBakaId,
+                x.Format, x.StartDate, x.EndDate, x.Episodes, x.Progress))
             .ToListAsync(ct);
 
         // The same grouping the seeds are built from, so the panel lists what actually steers the

@@ -48,6 +48,7 @@ export function AnimeCoverageBar({
   totalChapters,
   readChapter,
   tooltipZIndex,
+  hideResumeHint,
 }: {
   start: string | null | undefined
   end: string | null | undefined
@@ -60,6 +61,13 @@ export function AnimeCoverageBar({
    * inside one have to lift them: DiscoverDetailModal sits at 1000 and uses 1001 for its own.
    */
   tooltipZIndex?: number
+  /**
+   * Suppresses the bar's own "Start reading at ch. N" line. Set when an `AnimeResumeCallout` is
+   * already rendered alongside it: that callout says the same thing with more authority (it knows
+   * about partial seasons and reading progress), and printing it twice reads as the page repeating
+   * itself.
+   */
+  hideResumeHint?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -285,7 +293,7 @@ export function AnimeCoverageBar({
           )}
         </Group>
 
-        {startReadingAt !== null && (
+        {!hideResumeHint && startReadingAt !== null && (
             <Text size="xs" c="var(--ink-3)" mt={8} className="tnum">
               <Trans>The anime covers through ch. {covered}.</Trans>{' '}
               <Trans>Start reading at ch. {startReadingAt}.</Trans>

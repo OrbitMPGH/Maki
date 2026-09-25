@@ -10,7 +10,12 @@ public record AnimeSignalRow(
     string? Title,
     int? Score,
     AnimeWatchStatus Status,
-    long? MangaBakaId);
+    long? MangaBakaId,
+    string? Format = null,
+    DateOnly? StartDate = null,
+    DateOnly? EndDate = null,
+    int? Episodes = null,
+    int? Progress = null);
 
 /// <summary>
 /// One opinion about one work, after the rows that say it twice have been folded together.
@@ -67,12 +72,33 @@ public static class AnimeSignalGrouping
         _ => 4,
     };
 
+    /// <summary>
+    /// One signal per work, for the recommender and the panel. Unscored rows leave first: the sync
+    /// stores unscored Completed and Watching entries for the anime resume callout, and they must
+    /// not seed or avoid, which also means an unscored row a sync stored before that change stops
+    /// seeding.
+    /// </summary>
     public static IReadOnlyList<AnimeSignalGroup> Group(IEnumerable<AnimeSignalRow> rows) =>
         rows
+            .Where(r => r.Score is not null)
             .GroupBy(DedupeKey, StringComparer.Ordinal)
             .Select(MergeTrackers)
             .GroupBy(a => a.MangaBakaId is { } id ? $"manga:{id}" : $"anime:{a.Key}", StringComparer.Ordinal)
             .Select(MergeSeasons)
+            .ToList();
+
+    /// <summary>
+    /// Every anime on the list after cross-tracker dedupe, seasons kept apart, scored or not. Same
+    /// dedupe as <see cref="Group"/>, stopping before the season merge.
+    /// </summary>
+    public static IReadOnlyList<AnimeWatchedSeason> Watched(IEnumerable<AnimeSignalRow> rows) =>
+        rows
+            .GroupBy(DedupeKey, StringComparer.Ordinal)
+            .Select(MergeTrackers)
+            .Select(a => new AnimeWatchedSeason(
+                a.AnimeId, a.MalAnimeId, a.Title, a.Services,
+                a.Score is { } score ? (int)Math.Round(score, MidpointRounding.AwayFromZero) : null,
+                a.Status, a.Format, a.StartDate, a.EndDate, a.Episodes, a.Progress, a.MangaBakaId))
             .ToList();
 
     /// <summary>
@@ -91,8 +117,11 @@ public static class AnimeSignalGrouping
         // between two requests over identical data.
         var ordered = rows.OrderBy(r => r.Service, StringComparer.Ordinal).ThenBy(r => r.AnimeId).ToList();
         var rank = ordered.Min(r => StatusRank(r.Status));
+        var first = ordered.FirstOrDefault(r => r.Service == "anilist") ?? ordered[0];
         return new Anime(
             rows.Key,
+            first.AnimeId,
+            ordered.Select(r => r.MalAnimeId).FirstOrDefault(id => id is not null),
             ordered.Select(r => r.MangaBakaId).FirstOrDefault(id => id is not null),
             ordered.Select(r => r.Title).FirstOrDefault(t => !string.IsNullOrWhiteSpace(t)) ?? string.Empty,
             ordered.Select(r => r.Service).Distinct(StringComparer.Ordinal).ToList(),
@@ -100,7 +129,12 @@ public static class AnimeSignalGrouping
             // or a rating the reader changed on one side and not the other. Either way it is one
             // opinion, so it averages rather than counting twice.
             Average(ordered.Select(r => (double?)r.Score)),
-            ordered.First(r => StatusRank(r.Status) == rank).Status);
+            ordered.First(r => StatusRank(r.Status) == rank).Status,
+            ordered.Select(r => r.Format).FirstOrDefault(f => f is not null),
+            ordered.Select(r => r.StartDate).FirstOrDefault(d => d is not null),
+            ordered.Select(r => r.EndDate).FirstOrDefault(d => d is not null),
+            ordered.Select(r => r.Episodes).FirstOrDefault(e => e is not null),
+            ordered.Max(r => r.Progress));
     }
 
     private static AnimeSignalGroup MergeSeasons(IGrouping<string, Anime> anime)
@@ -146,9 +180,16 @@ public static class AnimeSignalGrouping
     /// <summary>One anime, after the trackers that both listed it were folded together.</summary>
     private sealed record Anime(
         string Key,
+        long AnimeId,
+        long? MalAnimeId,
         long? MangaBakaId,
         string Title,
         IReadOnlyList<string> Services,
         double? Score,
-        AnimeWatchStatus Status);
+        AnimeWatchStatus Status,
+        string? Format,
+        DateOnly? StartDate,
+        DateOnly? EndDate,
+        int? Episodes,
+        int? Progress);
 }

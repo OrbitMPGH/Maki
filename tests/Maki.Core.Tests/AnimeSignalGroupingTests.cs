@@ -123,7 +123,7 @@ public class AnimeSignalGroupingTests
         var groups = AnimeSignalGrouping.Group(
         [
             Row("anilist", 1, AnimeWatchStatus.Completed, 9, mangaBakaId: 7),
-            Row("anilist", 2, AnimeWatchStatus.Dropped, null, mangaBakaId: 7),
+            Row("anilist", 2, AnimeWatchStatus.Dropped, 6, mangaBakaId: 7),
         ]);
 
         var group = Assert.Single(groups);
@@ -137,8 +137,8 @@ public class AnimeSignalGroupingTests
     {
         var groups = AnimeSignalGrouping.Group(
         [
-            Row("anilist", 1, AnimeWatchStatus.Dropped, null, mangaBakaId: 7),
-            Row("anilist", 2, AnimeWatchStatus.Planning, null, mangaBakaId: 7),
+            Row("anilist", 1, AnimeWatchStatus.Dropped, 6, mangaBakaId: 7),
+            Row("anilist", 2, AnimeWatchStatus.Planning, 9, mangaBakaId: 7),
         ]);
 
         var group = Assert.Single(groups);
@@ -234,5 +234,69 @@ public class AnimeSignalGroupingTests
         Assert.Equal(
             forwards.OrderBy(g => g.Key).Select(g => (g.Key, g.Title, g.Score, g.Status)),
             backwards.OrderBy(g => g.Key).Select(g => (g.Key, g.Title, g.Score, g.Status)));
+    }
+
+    /// <summary>
+    /// The sync stores unscored Completed and Watching rows for the anime resume callout. They
+    /// carry no opinion, so the recommender must not see them, legacy unscored rows included.
+    /// </summary>
+    [Fact]
+    public void Group_drops_unscored_rows()
+    {
+        var groups = AnimeSignalGrouping.Group(
+        [
+            Row("anilist", 1, AnimeWatchStatus.Completed, null, mangaBakaId: 7),
+            Row("anilist", 2, AnimeWatchStatus.Dropped, null, mangaBakaId: 8),
+            Row("anilist", 3, AnimeWatchStatus.Completed, 9, mangaBakaId: 9),
+        ]);
+
+        var group = Assert.Single(groups);
+        Assert.Equal(9, group.MangaBakaId);
+        Assert.Equal(1, group.AnimeCount);
+    }
+
+    [Fact]
+    public void Watched_keeps_seasons_apart_and_keeps_unscored_rows()
+    {
+        var seasons = AnimeSignalGrouping.Watched(
+        [
+            Row("anilist", 1, AnimeWatchStatus.Completed, null, mangaBakaId: 7, title: "Vinland Saga"),
+            Row("anilist", 2, AnimeWatchStatus.Watching, 8, mangaBakaId: 7, title: "Vinland Saga Season 2"),
+        ]);
+
+        Assert.Equal(2, seasons.Count);
+        Assert.Equal([1L, 2L], seasons.Select(s => s.AnimeId).Order());
+        Assert.All(seasons, s => Assert.Equal(7, s.MangaBakaId));
+        Assert.Null(seasons.Single(s => s.AnimeId == 1).Score);
+    }
+
+    /// <summary>
+    /// One show on two trackers is one season. Each field comes from whichever tracker knows it,
+    /// progress is the furthest either recorded, and the id is AniList's when it is there.
+    /// </summary>
+    [Fact]
+    public void Watched_dedupes_trackers_preferring_known_fields_and_max_progress()
+    {
+        var seasons = AnimeSignalGrouping.Watched(
+        [
+            new AnimeSignalRow("mal", 55, 55, "Shingeki no Kyojin", 8, AnimeWatchStatus.Watching, 7,
+                Format: "TV", StartDate: new DateOnly(2013, 4, 7), EndDate: null, Episodes: 25, Progress: 20),
+            new AnimeSignalRow("anilist", 101, 55, "Attack on Titan", 9, AnimeWatchStatus.Completed, null,
+                Format: null, StartDate: null, EndDate: new DateOnly(2013, 9, 29), Episodes: null, Progress: 12),
+        ]);
+
+        var season = Assert.Single(seasons);
+        Assert.Equal(101, season.AnimeId);
+        Assert.Equal(55, season.MalAnimeId);
+        Assert.Equal("Attack on Titan", season.Title);
+        Assert.Equal(["anilist", "mal"], season.Services);
+        Assert.Equal(9, season.Score);
+        Assert.Equal(AnimeWatchStatus.Completed, season.Status);
+        Assert.Equal("TV", season.Format);
+        Assert.Equal(new DateOnly(2013, 4, 7), season.StartDate);
+        Assert.Equal(new DateOnly(2013, 9, 29), season.EndDate);
+        Assert.Equal(25, season.Episodes);
+        Assert.Equal(20, season.Progress);
+        Assert.Equal(7, season.MangaBakaId);
     }
 }

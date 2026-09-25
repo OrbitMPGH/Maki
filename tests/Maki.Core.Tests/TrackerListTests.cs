@@ -152,6 +152,44 @@ public class TrackerListTests
         await Assert.ThrowsAsync<TrackerException>(() => AniList(handler).ListAsync(UserId, ReadingAndPlanned));
     }
 
+    /// <summary>
+    /// The anime list carries format, air dates, episode count and progress. A date missing its day
+    /// is null, never a guessed first of the month.
+    /// </summary>
+    [Fact]
+    public async Task AniList_anime_list_reads_format_dates_episodes_and_progress()
+    {
+        const string page = """
+            {"data":{"Page":{"pageInfo":{"hasNextPage":false},"mediaList":[
+              {"score":9,"status":"COMPLETED","progress":25,
+               "media":{"id":16498,"idMal":16498,"title":{"romaji":"Shingeki no Kyojin","english":"Attack on Titan"},
+                        "format":"TV","episodes":25,
+                        "startDate":{"year":2013,"month":4,"day":7},"endDate":{"year":2013,"month":9,"day":29},
+                        "relations":{"edges":[]}}},
+              {"score":0,"status":"CURRENT","progress":3,
+               "media":{"id":1,"idMal":null,"title":{"romaji":"Airing"},
+                        "format":"ONA","episodes":null,
+                        "startDate":{"year":2026,"month":7,"day":null},"endDate":{"year":null,"month":null,"day":null},
+                        "relations":{"edges":[]}}}]}}}
+            """;
+        var handler = new Handler()
+            .On((_, body) => body.Contains("Viewer"), """{"data":{"Viewer":{"id":77}}}""")
+            .On((_, body) => body.Contains("mediaList"), page);
+
+        var list = await AniList(handler).ListAnimeAsync(UserId);
+
+        Assert.Equal(2, list.Count);
+        var aot = list[0];
+        Assert.Equal(("TV", 25, 25), (aot.Format, aot.Episodes, aot.Progress));
+        Assert.Equal(new DateOnly(2013, 4, 7), aot.StartDate);
+        Assert.Equal(new DateOnly(2013, 9, 29), aot.EndDate);
+        var airing = list[1];
+        Assert.Equal(("ONA", (int?)null, 3), (airing.Format, airing.Episodes, airing.Progress));
+        Assert.Null(airing.StartDate);
+        Assert.Null(airing.EndDate);
+        Assert.Null(airing.Score);
+    }
+
     // ---- MyAnimeList ----
 
     private static MalTracker Mal(Handler handler) => new(
@@ -191,6 +229,47 @@ public class TrackerListTests
         var handler = new Handler().Always(HttpStatusCode.Unauthorized, """{"error":"invalid_token"}""");
 
         await Assert.ThrowsAsync<TrackerException>(() => Mal(handler).ListAsync(UserId, ReadingAndPlanned));
+    }
+
+    /// <summary>
+    /// MAL names formats in lower case and dates as YYYY, YYYY-MM or YYYY-MM-DD. Only the full form
+    /// becomes a date, "unknown" is no format, and zero episodes means the count is not known.
+    /// </summary>
+    [Fact]
+    public async Task Mal_anime_list_reads_format_dates_episodes_and_progress()
+    {
+        const string page = """
+            {"data":[
+              {"node":{"id":16498,"title":"Shingeki no Kyojin","media_type":"tv","num_episodes":25,
+                       "start_date":"2013-04-07","end_date":"2013-09-29"},
+               "list_status":{"status":"completed","score":9,"num_episodes_watched":25}},
+              {"node":{"id":2,"title":"Film","media_type":"movie","num_episodes":1,"start_date":"2015-08"},
+               "list_status":{"status":"watching","score":0,"num_episodes_watched":0}},
+              {"node":{"id":3,"title":"Mystery","media_type":"unknown","num_episodes":0,"start_date":"2027"},
+               "list_status":{"status":"plan_to_watch","score":0,"num_episodes_watched":0}},
+              {"node":{"id":4,"title":"Short","media_type":"tv_short","num_episodes":12}}],"paging":{}}
+            """;
+        var handler = new Handler()
+            .OnUrl("/users/@me/animelist?fields=list_status,media_type,num_episodes,start_date,end_date&nsfw=true", page);
+
+        var list = await Mal(handler).ListAnimeAsync(UserId);
+
+        Assert.Equal(4, list.Count);
+        var aot = list[0];
+        Assert.Equal(("TV", 25, 25, 9), (aot.Format, aot.Episodes, aot.Progress, aot.Score));
+        Assert.Equal(new DateOnly(2013, 4, 7), aot.StartDate);
+        Assert.Equal(new DateOnly(2013, 9, 29), aot.EndDate);
+        var film = list[1];
+        Assert.Equal(("MOVIE", 1, 0), (film.Format, film.Episodes, film.Progress));
+        Assert.Null(film.StartDate);
+        Assert.Null(film.EndDate);
+        var mystery = list[2];
+        Assert.Null(mystery.Format);
+        Assert.Null(mystery.Episodes);
+        Assert.Null(mystery.StartDate);
+        var shortOne = list[3];
+        Assert.Equal("TV_SHORT", shortOne.Format);
+        Assert.Null(shortOne.Progress);
     }
 
     // ---- Kitsu ----

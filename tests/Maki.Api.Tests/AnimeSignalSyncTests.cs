@@ -72,11 +72,12 @@ public class AnimeSignalSyncTests : IDisposable
     }
 
     /// <summary>
-    /// An unscored entry carries no opinion either way, so it is not worth storing: an unscored
-    /// Completed no longer seeds and an unscored Dropped no longer avoids.
+    /// An unscored Planning, OnHold or Dropped entry says nothing worth keeping. An unscored
+    /// Completed or Watching one still says how far the reader got, which the anime resume callout
+    /// reads, so it is stored (and <c>AnimeSignalGrouping.Group</c> keeps it out of the seeds).
     /// </summary>
     [Fact]
-    public async Task An_unscored_entry_is_not_stored()
+    public async Task Only_unscored_completed_and_watching_entries_are_stored()
     {
         var userId = _fixture.SeedUser();
         OptIn(userId);
@@ -84,46 +85,39 @@ public class AnimeSignalSyncTests : IDisposable
         var source = new FakeAnimeListSource(
             [
                 new AnimeListEntry(1, "Unscored completed", null, AnimeWatchStatus.Completed),
-                new AnimeListEntry(2, "Scored", 8, AnimeWatchStatus.Completed),
+                new AnimeListEntry(2, "Unscored watching", null, AnimeWatchStatus.Watching),
+                new AnimeListEntry(3, "Unscored planning", null, AnimeWatchStatus.Planning),
+                new AnimeListEntry(4, "Unscored dropped", null, AnimeWatchStatus.Dropped),
+                new AnimeListEntry(5, "Unscored on hold", null, AnimeWatchStatus.OnHold),
+                new AnimeListEntry(6, "Scored planning", 8, AnimeWatchStatus.Planning),
             ],
             failing: 0);
 
         var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
 
-        Assert.Equal(2, summary.Fetched);
-        Assert.Equal(1, summary.Looked);
+        Assert.Equal(6, summary.Fetched);
+        Assert.Equal(3, summary.Looked);
 
         using var db = _fixture.NewContext();
-        var rows = await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync();
-        Assert.Single(rows);
-        Assert.Equal(2, rows[0].AnimeId);
+        var ids = await db.AnimeSignals.Where(x => x.UserId == userId).Select(x => x.AnimeId).OrderBy(x => x)
+            .ToListAsync();
+        Assert.Equal([1L, 2L, 6L], ids);
     }
 
-    /// <summary>A row a previous sync stored unscored is removed once the entry comes back unscored again.</summary>
+    /// <summary>A stored row whose entry comes back unscored and no longer Completed or Watching is removed.</summary>
     [Fact]
-    public async Task A_previously_stored_unscored_row_is_removed_on_the_next_pass()
+    public async Task A_stored_row_that_comes_back_unscored_and_dropped_is_removed()
     {
         var userId = _fixture.SeedUser();
         OptIn(userId);
-
-        using (var seed = _fixture.NewContext())
-        {
-            seed.AnimeSignals.Add(new AnimeSignal
-            {
-                UserId = userId,
-                Service = "mal",
-                AnimeId = 1,
-                Title = "Unscored completed",
-                Score = null,
-                Status = AnimeWatchStatus.Completed,
-                UpdatedAtUtc = DateTime.UtcNow,
-                MatchAttemptedAtUtc = DateTime.UtcNow,
-            });
-            seed.SaveChanges();
-        }
+        SeedRow(userId, 1, null, AnimeWatchStatus.Completed);
+        SeedRow(userId, 2, null, AnimeWatchStatus.Completed);
 
         var source = new FakeAnimeListSource(
-            [new AnimeListEntry(1, "Unscored completed", null, AnimeWatchStatus.Completed)],
+            [
+                new AnimeListEntry(1, "Anime 1", null, AnimeWatchStatus.Dropped),
+                new AnimeListEntry(2, "Anime 2", null, AnimeWatchStatus.Completed),
+            ],
             failing: 0);
 
         var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
@@ -131,7 +125,76 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.Equal(1, summary.Removed);
 
         using var db = _fixture.NewContext();
-        Assert.Empty(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync());
+        var row = Assert.Single(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync());
+        Assert.Equal(2, row.AnimeId);
+    }
+
+    [Fact]
+    public async Task Format_dates_episodes_and_progress_round_trip()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+
+        var source = new FakeAnimeListSource(
+            [
+                new AnimeListEntry(1, "Season 1", null, AnimeWatchStatus.Watching,
+                    Format: "TV", StartDate: new DateOnly(2019, 7, 7), EndDate: new DateOnly(2019, 12, 29),
+                    Episodes: 24, Progress: 12),
+            ],
+            failing: 0);
+
+        await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        using var db = _fixture.NewContext();
+        var row = Assert.Single(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync());
+        Assert.Equal("TV", row.Format);
+        Assert.Equal(new DateOnly(2019, 7, 7), row.StartDate);
+        Assert.Equal(new DateOnly(2019, 12, 29), row.EndDate);
+        Assert.Equal(24, row.Episodes);
+        Assert.Equal(12, row.Progress);
+    }
+
+    /// <summary>
+    /// Rows stored before the columns existed pick them up on an ordinary refresh, without a new
+    /// relation lookup.
+    /// </summary>
+    [Fact]
+    public async Task An_existing_row_gains_format_and_progress_on_refresh()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+        SeedRow(userId, 1, 8, AnimeWatchStatus.Watching);
+
+        var source = new FakeAnimeListSource(
+            [new AnimeListEntry(1, "Anime 1", 8, AnimeWatchStatus.Completed, Format: "ONA", Episodes: 12, Progress: 12)],
+            failing: 0);
+
+        var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        Assert.Equal(0, summary.Looked);
+        using var db = _fixture.NewContext();
+        var row = Assert.Single(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync());
+        Assert.Equal("ONA", row.Format);
+        Assert.Equal(12, row.Progress);
+        Assert.Equal(12, row.Episodes);
+        Assert.Equal(AnimeWatchStatus.Completed, row.Status);
+    }
+
+    private void SeedRow(int userId, long animeId, int? score, AnimeWatchStatus status)
+    {
+        using var seed = _fixture.NewContext();
+        seed.AnimeSignals.Add(new AnimeSignal
+        {
+            UserId = userId,
+            Service = "mal",
+            AnimeId = animeId,
+            Title = $"Anime {animeId}",
+            Score = score,
+            Status = status,
+            UpdatedAtUtc = DateTime.UtcNow,
+            MatchAttemptedAtUtc = DateTime.UtcNow,
+        });
+        seed.SaveChanges();
     }
 
     /// <summary>A real cancellation must still propagate rather than being swallowed as a lookup failure.</summary>

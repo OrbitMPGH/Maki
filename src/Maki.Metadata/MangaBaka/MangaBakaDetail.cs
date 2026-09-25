@@ -1,4 +1,5 @@
 ﻿using Maki.Core.Entities;
+using Maki.Core.Recommendations;
 
 namespace Maki.Metadata.MangaBaka;
 
@@ -65,7 +66,9 @@ public record MangaBakaDetail(
     /// not be placeable, and even when both are fine only about one series in nine has cohorts that
     /// disagree with the crowd by enough to be worth a line.
     /// </summary>
-    ReaderCohortHint? ReaderHint = null);
+    ReaderCohortHint? ReaderHint = null,
+    /// <summary>Filled by the controller, never the store.</summary>
+    CatalogueAnimeResumeDto? AnimeResume = null);
 
 /// <summary>
 /// One dump row reduced to what a taste profile aggregates over. Tags carry their bucket and

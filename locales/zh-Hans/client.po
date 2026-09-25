@@ -1481,9 +1481,8 @@ msgid "A short strip of what your library leans towards."
 msgstr "简要展示你的资料库主要包含哪些内容。"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
-#, fuzzy
-msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away."
-msgstr "评分高的动画会将推荐推向相似漫画。低分或弃看的动画会将推荐推离这些内容。"
+msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away. Finishing one can also suggest where to start reading its manga."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -2053,6 +2052,11 @@ msgstr "动画改编"
 msgid "Anime coverage"
 msgstr "动画覆盖范围"
 
+#. placeholder {0}: item.coveredTo
+#: src/components/home/AnimeResumeRail.tsx
+msgid "Anime ends at ch. {0}"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Anime you've watched"
@@ -2458,11 +2462,6 @@ msgstr "根据你最近的活动"
 msgid "Bearer token"
 msgstr ""
 
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-#~ msgid "Bearer token (optional)"
-#~ msgstr "Bearer 令牌（可选）"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Because of what you collect"
@@ -2825,6 +2824,10 @@ msgstr "第 {from}–{to} 章"
 msgid "ch. {from}+"
 msgstr "第 {from} 章起"
 
+#: src/components/home/AnimeResumeRail.tsx
+msgid "ch. {next}"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ch. {nextChapter} onward not adapted"
@@ -2973,6 +2976,10 @@ msgstr "第 {number} 章"
 #, fuzzy
 msgid "Chapter {number}"
 msgstr "第 {number} 章"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapter {resumeAt} is not downloaded yet"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3572,6 +3579,11 @@ msgstr "继续"
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
+msgid "Continue from the anime"
+msgstr ""
+
+#: src/api/hooks.ts
+#: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Continue reading"
@@ -4134,20 +4146,8 @@ msgid "Disconnect"
 msgstr "断开连接"
 
 #: src/components/NotificationsSection.tsx
-#: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "Discord & webhooks"
-#~ msgstr "Discord 和 webhook"
-
-#: src/components/NotificationsSection.tsx
 msgid "Discord channel ID"
 msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "discord, webhook, apprise, alerts, events, notifications, outbound"
-#~ msgstr "discord, webhook, apprise, 告警, 事件, 通知, 出站"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6187,6 +6187,10 @@ msgstr "上次 {lastSync} · 下次 {nextSync}"
 msgid "Last chapter on disk"
 msgstr ""
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Last chapter to mark watched"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Last download failed: {lastError}. The next scheduled run retries."
@@ -6780,10 +6784,18 @@ msgstr "映射到"
 msgid "Mark all read"
 msgstr "全部标记为已读"
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Mark ch. 1 to {coveredTo} watched"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Mark chapters read in Kavita too"
 msgstr "同时在 Kavita 中将章节标记为已读"
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Mark chapters watched"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6801,6 +6813,7 @@ msgstr "在 kavita 中标记已读, 推送到 kavita, 导入阅读状态, kavita
 msgid "Mark unread"
 msgstr "标记为未读"
 
+#: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark watched"
@@ -6810,6 +6823,10 @@ msgstr "标记为看过"
 #, fuzzy
 msgid "Marked as already read or seen. Your taste profile was not changed."
 msgstr "已标记为已读或看过。你的品味资料没有改变。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked ch. 1 to {to} watched"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7865,6 +7882,10 @@ msgstr "未设置"
 msgid "Not synced yet"
 msgstr "尚未同步"
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Not this anime?"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -8339,6 +8360,7 @@ msgid "Open Recommended with these filters from now on"
 msgstr "以后使用这些筛选条件打开推荐内容"
 
 #: src/components/home/ReadingCardMenu.tsx
+#: src/components/series/AnimeResumeCallout.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -9080,6 +9102,10 @@ msgstr ""
 #, fuzzy
 msgid "Read a few chapters and this fills in."
 msgstr "阅读几章后这里会填充内容。"
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Read ch. {resumeAt}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10621,11 +10647,6 @@ msgstr "语义搜索和推荐已关闭。"
 msgid "Send events to chat apps, push services or a webhook. Each connection picks its own events."
 msgstr ""
 
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-#~ msgid "Send events to Discord or a webhook. Each connection picks its own events."
-#~ msgstr "将事件发送到 Discord 或 webhook。每个连接都可以单独选择要发送的事件。"
-
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Send reading progress to AniList, MyAnimeList, Kitsu or MangaBaka."
@@ -10727,6 +10748,10 @@ msgstr "系列页面"
 #, fuzzy
 msgid "Series removed"
 msgstr "系列已移除"
+
+#: src/components/home/homeSectionDefs.ts
+msgid "Series whose anime you finished, starting after the last adapted chapter."
+msgstr ""
 
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
@@ -12509,6 +12534,7 @@ msgstr "下划线（_）"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/pages/discover/FeedbackLab.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Undo"
 msgstr "撤销"
@@ -13028,6 +13054,10 @@ msgstr "警告"
 msgid "Watched"
 msgstr "已看过"
 
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Watching"
@@ -13256,6 +13286,10 @@ msgstr "未选择任何内容时，此账户会看到空资料库：访问权限
 msgid "won't be recommended again"
 msgstr "不会再次推荐"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Won't suggest resuming from this anime again."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -13351,6 +13385,14 @@ msgstr ""
 #, fuzzy
 msgid "You finish what you start."
 msgstr "你开始的内容都会读完。"
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "You finished {animeTitle} ({coveredLabel}). That likely covers up to ch. {coveredTo}; {nextLabel} adapts ch. {nextFrom} to {nextTo}. Start reading at ch. {resumeAt}, or watch {nextLabel} first."
+msgstr ""
+
+#: src/components/series/AnimeResumeCallout.tsx
+msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
