@@ -155,7 +155,7 @@ public class TrackerListTests
     // ---- MyAnimeList ----
 
     private static MalTracker Mal(Handler handler) => new(
-        new Factory(handler), new Settings(), new TokenStore("mal"), Options);
+        new Factory(handler), new Settings(), new TokenStore("mal"), Options, NullLogger<MalTracker>.Instance);
 
     [Fact]
     public async Task Mal_pages_each_status_and_filters()
@@ -322,5 +322,27 @@ public class TrackerListTests
         var handler = new Handler().Always(HttpStatusCode.Unauthorized, """{"message":"No session found","status":401}""");
 
         await Assert.ThrowsAsync<TrackerException>(() => MangaBaka(handler).ListAsync(UserId, ReadingAndPlanned));
+    }
+
+    // ---- dead remote ids ----
+
+    [Fact]
+    public async Task Mal_404_on_an_entry_is_entry_not_found()
+    {
+        var handler = new Handler().OnUrl("/manga/42", """{"error":"not_found"}""", HttpStatusCode.NotFound);
+
+        await Assert.ThrowsAsync<TrackerEntryNotFoundException>(() => Mal(handler).GetEntryAsync(UserId, "42"));
+    }
+
+    [Fact]
+    public async Task MangaBaka_404_on_the_library_entry_is_not_entry_not_found()
+    {
+        var handler = new Handler()
+            .OnUrl("/v2/series/42", """{"status":200,"data":{"id":42,"title":"Frieren","total_chapters":"10"}}""")
+            .OnUrl("/v1/my/library/42", """{"status":404,"message":"not in library"}""", HttpStatusCode.NotFound);
+
+        var entry = await MangaBaka(handler).GetEntryAsync(UserId, "42");
+
+        Assert.Null(entry.Status);
     }
 }

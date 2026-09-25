@@ -1591,7 +1591,7 @@ public class MangaBakaLocalStore(
                     continue;
                 }
 
-                if (row.State == "merged" && long.TryParse(row.MergedWith, out var canonical))
+                if (row.State == "merged" && long.TryParse(row.MergedWith, NumberStyles.Integer, CultureInfo.InvariantCulture, out var canonical))
                 {
                     next.Add((external, canonical));
                 }

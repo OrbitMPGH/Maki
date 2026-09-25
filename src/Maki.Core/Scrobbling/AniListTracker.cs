@@ -173,43 +173,49 @@ public class AniListTracker(
                 throw new TrackerException($"AniList request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 429)
+            try
             {
-                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
-                logger.LogWarning("AniList rate limited, waiting {Wait}s", wait.TotalSeconds);
-                await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
-                continue;
-            }
-
-            // A 5xx is AniList having a moment, not a bad request — worth another go.
-            if ((int)response.StatusCode >= 500 && !lastAttempt)
-            {
-                logger.LogWarning(
-                    "AniList returned {Status}; retrying (attempt {Attempt}/{Max})",
-                    (int)response.StatusCode, attempt, maxAttempts);
-                response.Dispose();
-                await Task.Delay(BackoffFor(attempt), ct);
-                continue;
-            }
-
-            var body = await response.Content.ReadAsStringAsync(ct);
-            using var json = JsonDocument.Parse(body);
-            if (!response.IsSuccessStatusCode ||
-                (json.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind != JsonValueKind.Null))
-            {
-                var detail = Truncate(json.RootElement.TryGetProperty("errors", out var e2) ? e2.GetRawText() : body);
-                // AniList answers 404 "Not Found." when a Media id no longer resolves (deleted or
-                // merged entry). That's not transient — surface it as actionable so the caller drops
-                // the stale mapping and re-matches, instead of erroring on the dead id every sync.
-                if ((int)response.StatusCode == 404)
+                if ((int)response.StatusCode == 429)
                 {
-                    throw new TrackerEntryNotFoundException($"AniList entry not found (404): {detail}");
+                    var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
+                    logger.LogWarning("AniList rate limited, waiting {Wait}s", wait.TotalSeconds);
+                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    continue;
                 }
 
-                throw new TrackerException($"AniList API error ({(int)response.StatusCode}): {detail}");
-            }
+                // A 5xx is AniList having a moment, not a bad request, so worth another go.
+                if ((int)response.StatusCode >= 500 && !lastAttempt)
+                {
+                    logger.LogWarning(
+                        "AniList returned {Status}; retrying (attempt {Attempt}/{Max})",
+                        (int)response.StatusCode, attempt, maxAttempts);
+                    await Task.Delay(BackoffFor(attempt), ct);
+                    continue;
+                }
 
-            return json.RootElement.GetProperty("data").Clone();
+                var body = await response.Content.ReadAsStringAsync(ct);
+                using var json = JsonDocument.Parse(body);
+                if (!response.IsSuccessStatusCode ||
+                    (json.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind != JsonValueKind.Null))
+                {
+                    var detail = Truncate(json.RootElement.TryGetProperty("errors", out var e2) ? e2.GetRawText() : body);
+                    // AniList answers 404 "Not Found." when a Media id no longer resolves (deleted or
+                    // merged entry). That's not transient. Surface it as actionable so the caller drops
+                    // the stale mapping and re-matches, instead of erroring on the dead id every sync.
+                    if ((int)response.StatusCode == 404)
+                    {
+                        throw new TrackerEntryNotFoundException($"AniList entry not found (404): {detail}");
+                    }
+
+                    throw new TrackerException($"AniList API error ({(int)response.StatusCode}): {detail}");
+                }
+
+                return json.RootElement.GetProperty("data").Clone();
+            }
+            finally
+            {
+                response.Dispose();
+            }
         }
 
         throw new TrackerException("AniList API rate limit persisted after retry");
@@ -359,6 +365,7 @@ public class AniListTracker(
         var entries = new List<RemoteListEntry>();
         var seen = new HashSet<long>();
         const int maxChunks = 200;
+        var truncated = false;
         for (var chunk = 1; chunk <= maxChunks; chunk++)
         {
             var data = await QueryAsync(
@@ -401,10 +408,19 @@ public class AniListTracker(
 
             if (collection.TryGetProperty("hasNextChunk", out var next) && next.ValueKind == JsonValueKind.True)
             {
+                truncated = chunk == maxChunks;
                 continue;
             }
 
             break;
+        }
+
+        if (truncated)
+        {
+            logger.LogWarning(
+                "AniList manga list for user {UserId} stopped at the {MaxChunks}-chunk cap ({Count} entries); " +
+                "the rest of the list was not read",
+                userId, maxChunks, entries.Count);
         }
 
         return entries;

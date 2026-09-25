@@ -104,7 +104,7 @@ public class MangaBakaTracker(
     /// </param>
     private async Task<JsonElement> RequestAsync(
         int userId, HttpMethod method, string path, bool auth = false, int[]? okStatuses = null,
-        object? jsonBody = null, CancellationToken ct = default)
+        object? jsonBody = null, bool notFoundIsGone = false, CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         string? apiKey = null;
@@ -146,23 +146,35 @@ public class MangaBakaTracker(
                 throw new TrackerException($"MangaBaka request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 429)
+            try
             {
-                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(5);
-                await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
-                continue;
-            }
+                if ((int)response.StatusCode == 429)
+                {
+                    var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(5);
+                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    continue;
+                }
 
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if ((int)response.StatusCode >= 400 && !(okStatuses ?? []).Contains((int)response.StatusCode))
+                var body = await response.Content.ReadAsStringAsync(ct);
+                if (notFoundIsGone && (int)response.StatusCode == 404)
+                {
+                    throw new TrackerEntryNotFoundException($"MangaBaka {method} {path} not found (404)");
+                }
+
+                if ((int)response.StatusCode >= 400 && !(okStatuses ?? []).Contains((int)response.StatusCode))
+                {
+                    throw new TrackerException(
+                        $"MangaBaka {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
+                }
+
+                return body.Length == 0
+                    ? default
+                    : JsonDocument.Parse(body).RootElement.Clone();
+            }
+            finally
             {
-                throw new TrackerException(
-                    $"MangaBaka {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
+                response.Dispose();
             }
-
-            return body.Length == 0
-                ? default
-                : JsonDocument.Parse(body).RootElement.Clone();
         }
 
         throw new TrackerException($"MangaBaka {method} {path} rate limited after retry");
@@ -173,7 +185,8 @@ public class MangaBakaTracker(
     public async Task<RemoteEntry> GetEntryAsync(
         int userId, string remoteId, CancellationToken ct = default)
     {
-        var seriesResponse = await RequestAsync(userId, HttpMethod.Get, $"/v2/series/{remoteId}", ct: ct);
+        var seriesResponse = await RequestAsync(userId, HttpMethod.Get, $"/v2/series/{remoteId}",
+            notFoundIsGone: true, ct: ct);
         var series = seriesResponse.TryGetProperty("data", out var sd) && sd.ValueKind == JsonValueKind.Object
             ? sd
             : default;
@@ -258,6 +271,7 @@ public class MangaBakaTracker(
         var seen = new HashSet<long>();
         foreach (var state in statuses.SelectMany(RemoteStatesFor).Distinct())
         {
+            var truncated = false;
             for (var page = 1; page <= maxPages; page++)
             {
                 var data = await RequestAsync(userId, HttpMethod.Get,
@@ -303,10 +317,19 @@ public class MangaBakaTracker(
 
                 var hasNext = data.TryGetProperty("pagination", out var pagination) &&
                               pagination.ValueKind == JsonValueKind.Object && GetString(pagination, "next") is not null;
+                truncated = newIds > 0 && hasNext && page == maxPages;
                 if (newIds == 0 || !hasNext)
                 {
                     break;
                 }
+            }
+
+            if (truncated)
+            {
+                logger.LogWarning(
+                    "MangaBaka {State} list for user {UserId} stopped at the {MaxPages}-page cap ({Count} entries); " +
+                    "the rest of the list was not read",
+                    state, userId, maxPages, entries.Count);
             }
         }
 

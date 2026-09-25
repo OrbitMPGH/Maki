@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace Maki.Core.Scrobbling;
 
@@ -15,7 +16,8 @@ public class MalTracker(
     IHttpClientFactory httpClientFactory,
     IAppSettings settings,
     IScrobbleTokenStore tokens,
-    ScrobbleTrackerOptions options) : IScrobbleTracker, IAnimeListSource
+    ScrobbleTrackerOptions options,
+    ILogger<MalTracker> logger) : IScrobbleTracker, IAnimeListSource
 {
     public const string HttpClientName = "scrobble";
 
@@ -201,27 +203,39 @@ public class MalTracker(
                 throw new TrackerException($"MAL request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 401 && attempt == 0)
+            try
             {
-                await RefreshAsync(userId, ct);
-                token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
-                continue;
-            }
+                if ((int)response.StatusCode == 401 && attempt == 0)
+                {
+                    await RefreshAsync(userId, ct);
+                    token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
+                    continue;
+                }
 
-            if ((int)response.StatusCode == 429)
+                if ((int)response.StatusCode == 429)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                    continue;
+                }
+
+                var body = await response.Content.ReadAsStringAsync(ct);
+                if ((int)response.StatusCode == 404)
+                {
+                    throw new TrackerEntryNotFoundException($"MAL {method} {path} not found (404)");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new TrackerException(
+                        $"MAL API {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
+                }
+
+                return JsonDocument.Parse(body).RootElement.Clone();
+            }
+            finally
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), ct);
-                continue;
+                response.Dispose();
             }
-
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new TrackerException(
-                    $"MAL API {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
-            }
-
-            return JsonDocument.Parse(body).RootElement.Clone();
         }
 
         throw new TrackerException($"MAL API {method} {path} failed after retry");
@@ -336,9 +350,11 @@ public class MalTracker(
         const int pageSize = 1000;
         var entries = new List<RemoteListEntry>();
         var seen = new HashSet<long>();
+        const int maxOffset = 50_000;
         foreach (var remoteStatus in statuses.SelectMany(RemoteStatusesFor).Distinct())
         {
-            for (var offset = 0; offset < 50_000; offset += pageSize)
+            var truncated = false;
+            for (var offset = 0; offset < maxOffset; offset += pageSize)
             {
                 var data = await RequestAsync(userId, HttpMethod.Get,
                     $"/users/@me/mangalist?status={remoteStatus}&fields=list_status&nsfw=true" +
@@ -369,10 +385,19 @@ public class MalTracker(
 
                 var hasNext = data.TryGetProperty("paging", out var paging) && paging.ValueKind == JsonValueKind.Object &&
                               GetString(paging, "next") is not null;
+                truncated = hasNext && offset + pageSize >= maxOffset;
                 if (!hasNext)
                 {
                     break;
                 }
+            }
+
+            if (truncated)
+            {
+                logger.LogWarning(
+                    "MAL {Status} list for user {UserId} stopped at the {Max}-entry cap ({Count} entries); " +
+                    "the rest of the list was not read",
+                    remoteStatus, userId, maxOffset, entries.Count);
             }
         }
 
@@ -411,7 +436,9 @@ public class MalTracker(
         const int pageSize = 1000;
         var entries = new List<AnimeListEntry>();
         var seen = new HashSet<long>();
-        for (var offset = 0; offset < 20_000; offset += pageSize)
+        const int maxOffset = 20_000;
+        var truncated = false;
+        for (var offset = 0; offset < maxOffset; offset += pageSize)
         {
             var data = await RequestAsync(userId, HttpMethod.Get,
                 $"/users/@me/animelist?fields=list_status&nsfw=true&limit={pageSize}&offset={offset}", null, ct);
@@ -443,10 +470,19 @@ public class MalTracker(
                     MalAnimeId: animeId));
             }
 
+            truncated = count >= pageSize && offset + pageSize >= maxOffset;
             if (count < pageSize)
             {
                 break;
             }
+        }
+
+        if (truncated)
+        {
+            logger.LogWarning(
+                "MAL anime list for user {UserId} stopped at the {Max}-entry cap ({Count} entries); " +
+                "the rest of the list was not read",
+                userId, maxOffset, entries.Count);
         }
 
         return entries;

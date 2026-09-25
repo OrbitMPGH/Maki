@@ -313,51 +313,58 @@ public class KitsuTracker(
                 throw new TrackerException($"Kitsu request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 401 && auth && attempt == 0)
+            try
             {
-                var token = await tokens.GetAsync(userId, Name, ct);
-                if (token?.RefreshToken is not null)
+                if ((int)response.StatusCode == 401 && auth && attempt == 0)
                 {
-                    await RefreshAsync(userId, token.RefreshToken, ct);
+                    var token = await tokens.GetAsync(userId, Name, ct);
+                    if (token?.RefreshToken is not null)
+                    {
+                        await RefreshAsync(userId, token.RefreshToken, ct);
+                        continue;
+                    }
+
+                    await LoginAsync(userId, ct);
                     continue;
                 }
 
-                await LoginAsync(userId, ct);
-                continue;
-            }
-
-            if ((int)response.StatusCode == 429)
-            {
-                var wait = RetryAfter(response) ?? TimeSpan.FromSeconds(5);
-
-                // A second 429, or one asking for a wait long enough that sitting on it would stall
-                // the whole scrobble tick, becomes a tracker-wide cooldown instead of a sleep.
-                if (attempt > 0 || wait > MaxInlineWait)
+                if ((int)response.StatusCode == 429)
                 {
-                    throw Block($"Kitsu rate-limited {method} {path} (429)", wait);
+                    var wait = RetryAfter(response) ?? TimeSpan.FromSeconds(5);
+
+                    // A second 429, or one asking for a wait long enough that sitting on it would stall
+                    // the whole scrobble tick, becomes a tracker-wide cooldown instead of a sleep.
+                    if (attempt > 0 || wait > MaxInlineWait)
+                    {
+                        throw Block($"Kitsu rate-limited {method} {path} (429)", wait);
+                    }
+
+                    await Task.Delay(wait, ct);
+                    continue;
                 }
 
-                await Task.Delay(wait, ct);
-                continue;
-            }
+                var responseBody = await response.Content.ReadAsStringAsync(ct);
+                if (IsCloudflareChallenge(response, responseBody))
+                {
+                    throw Block($"Kitsu {method} {path} was Cloudflare-challenged");
+                }
 
-            var responseBody = await response.Content.ReadAsStringAsync(ct);
-            if (IsCloudflareChallenge(response, responseBody))
+                if ((int)response.StatusCode == 404)
+                {
+                    throw new TrackerEntryNotFoundException($"Kitsu {method} {path} not found (404)");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new TrackerException($"Kitsu API {method} {path} failed ({(int)response.StatusCode}): {Truncate(responseBody)}");
+                }
+
+                return responseBody.Length == 0 ? default : JsonDocument.Parse(responseBody).RootElement.Clone();
+            }
+            finally
             {
-                throw Block($"Kitsu {method} {path} was Cloudflare-challenged");
+                response.Dispose();
             }
-
-            if ((int)response.StatusCode == 404)
-            {
-                throw new TrackerEntryNotFoundException($"Kitsu {method} {path} not found (404)");
-            }
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new TrackerException($"Kitsu API {method} {path} failed ({(int)response.StatusCode}): {Truncate(responseBody)}");
-            }
-
-            return responseBody.Length == 0 ? default : JsonDocument.Parse(responseBody).RootElement.Clone();
         }
 
         throw new TrackerException($"Kitsu API {method} {path} failed after retry");
@@ -596,7 +603,9 @@ public class KitsuTracker(
         const int pageSize = 500;
         var entries = new List<RemoteListEntry>();
         var seen = new HashSet<long>();
-        for (var offset = 0; offset < 100_000; offset += pageSize)
+        const int maxOffset = 100_000;
+        var truncated = false;
+        for (var offset = 0; offset < maxOffset; offset += pageSize)
         {
             var data = await RequestAsync(userId, HttpMethod.Get,
                 $"/library-entries?filter[userId]={remoteUserId}&filter[kind]=manga&filter[status]={statusFilter}" +
@@ -663,10 +672,19 @@ public class KitsuTracker(
             }
 
             var hasNext = data.TryGetProperty("links", out var links) && GetString(links, "next") is not null;
+            truncated = hasNext && offset + pageSize >= maxOffset;
             if (!hasNext)
             {
                 break;
             }
+        }
+
+        if (truncated)
+        {
+            logger.LogWarning(
+                "Kitsu list for user {UserId} stopped at the {Max}-entry cap ({Count} entries); " +
+                "the rest of the list was not read",
+                userId, maxOffset, entries.Count);
         }
 
         return entries;
