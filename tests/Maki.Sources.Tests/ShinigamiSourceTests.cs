@@ -161,3 +161,22 @@ public class ShinigamiSourceTests
         await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(chapter));
     }
 }
+
+[Collection(BaseUrlOverrideCollection.Name)]
+public class ShinigamiBaseUrlOverrideTests
+{
+    private const string SeriesId = "5c612573-fe38-42df-8618-dc3de1c9d04a";
+
+    [Theory]
+    [InlineData("https://shinigami.example/series/" + SeriesId, SeriesId)]
+    [InlineData("https://www.shinigami.example/series/" + SeriesId, SeriesId)]
+    [InlineData("https://12.shinigami.asia/series/" + SeriesId, SeriesId)]
+    [InlineData("https://other.example/series/" + SeriesId, null)]
+    public void ResolveSeriesIdFromUrl_AcceptsTheOverriddenHost(string url, string? expected)
+    {
+        using var _ = new BaseUrlOverride("MAKI_SOURCE_SHINIGAMI_BASEURL", "https://shinigami.example");
+        ISource source = new ShinigamiSource(new FakeHttpClientFactory([]));
+
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+}

@@ -33,7 +33,8 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
     {
         var host = url.Host;
         if (!host.Equals("shinigami.asia", StringComparison.OrdinalIgnoreCase) &&
-            !host.EndsWith(".shinigami.asia", StringComparison.OrdinalIgnoreCase))
+            !host.EndsWith(".shinigami.asia", StringComparison.OrdinalIgnoreCase) &&
+            !StripWww(host).Equals(StripWww(new Uri(BaseUrl).Host), StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
@@ -216,6 +217,9 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
             ReleaseDate: releaseDate,
             Url: $"{BaseUrl}/chapter/{chapterId}");
     }
+
+    private static string StripWww(string host) =>
+        host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? host[4..] : host;
 
     private static string? CoverUrl(JsonElement item) =>
         NonBlankString(item, "cover_portrait_url") ?? NonBlankString(item, "cover_image_url");
