@@ -83,10 +83,59 @@ public class MangaWorldSourceTests
         var chapter = Assert.Single(chapters);
         Assert.Null(chapter.Number);
         Assert.Null(chapter.Volume);
-        // Null-number chapters need a non-null title so ChapterIdentity can dedupe by it.
-        Assert.Equal("Oneshot", chapter.Title);
+        // Null-number chapters need a non-null title so ChapterIdentity can dedupe by it: the
+        // chapter anchor's own full text (span label plus date, run together with no separator
+        // in the markup), never an invented English literal.
+        Assert.Equal("Oneshot27 Giugno 2023", chapter.Title);
         Assert.Equal("649af99e8e54383f7f49f1ff", chapter.SourceChapterId);
         Assert.Equal(new DateTime(2023, 6, 27), chapter.ReleaseDate);
+    }
+
+    [Fact]
+    public async Task ListChapters_null_number_chapter_with_no_anchor_text_falls_back_to_the_volume_name()
+    {
+        // Synthetic markup: a chapter div carrying no span (so ChapterNumberParser sees a null
+        // number, and the anchor itself has no text to fall back to).
+        const string html = """
+            <html><body><div class="chapters-wrapper">
+              <div class="volume-element">
+                <p class="volume-name">Volume 7</p>
+                <div class="volume-chapters">
+                  <div class="chapter">
+                    <a class="chap" href="https://www.mangaworld.mx/manga/1/foo/read/aaaaaaaaaaaaaaaaaaaaaaaa"></a>
+                  </div>
+                </div>
+              </div>
+            </div></body></html>
+            """;
+        var source = new MangaWorldSource(new FakeHtmlFetcher(new() { ["/manga/1/foo"] = html }));
+
+        var chapter = Assert.Single(await source.ListChaptersAsync("1/foo"));
+
+        Assert.Null(chapter.Number);
+        Assert.Equal(7, chapter.Volume);
+        Assert.Equal("Volume 7", chapter.Title);
+    }
+
+    [Fact]
+    public async Task ListChapters_null_number_chapter_with_no_text_or_volume_falls_back_to_the_chapter_id()
+    {
+        // No span, no enclosing volume-element, no text anywhere in the anchor: the last resort
+        // is the chapter id itself, never an invented English word.
+        const string html = """
+            <html><body><div class="chapters-wrapper">
+              <div class="chapter">
+                <a class="chap" href="https://www.mangaworld.mx/manga/1/foo/read/bbbbbbbbbbbbbbbbbbbbbbbb"></a>
+              </div>
+            </div></body></html>
+            """;
+        var source = new MangaWorldSource(new FakeHtmlFetcher(new() { ["/manga/1/foo"] = html }));
+
+        var chapter = Assert.Single(await source.ListChaptersAsync("1/foo"));
+
+        Assert.Null(chapter.Number);
+        Assert.Null(chapter.Volume);
+        Assert.Equal("bbbbbbbbbbbbbbbbbbbbbbbb", chapter.Title);
     }
 
     [Fact]

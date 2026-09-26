@@ -150,8 +150,9 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
                 parsed.Number,
                 parsed.Volume,
                 // Null-number chapters (oneshots, extras) need a non-null title: ChapterIdentity
-                // dedupes them by title rather than number, and the site itself has no chapter titles.
-                Title: parsed.Number is null ? (numberRaw ?? "Untitled") : null,
+                // dedupes them by title rather than number. Never an invented English literal —
+                // Core writes this into ComicInfo.xml and the reader renders it unlocalised.
+                Title: parsed.Number is null ? FallbackTitle(link, volumeRaw, chapterId) : null,
                 Language: "it",
                 releaseDate,
                 Url: href));
@@ -159,6 +160,23 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
 
         // Site lists newest first; normalize to ascending and drop duplicates.
         return SourceChapterList.Normalize(chapters);
+    }
+
+    /// <summary>
+    /// Title for a null-number chapter, always the site's own text and never invented English.
+    /// The chapter anchor's full text (span label plus date, e.g. "Oneshot27 Giugno 2023") covers
+    /// every real case; the enclosing volume name and finally the chapter id are last resorts for a
+    /// chapter div so bare it carries no text of its own.
+    /// </summary>
+    private static string FallbackTitle(IElement? link, string? volumeRaw, string chapterId)
+    {
+        var anchorText = link?.TextContent.Trim();
+        if (!string.IsNullOrEmpty(anchorText))
+        {
+            return anchorText;
+        }
+
+        return !string.IsNullOrEmpty(volumeRaw) ? volumeRaw : chapterId;
     }
 
     /// <summary>
