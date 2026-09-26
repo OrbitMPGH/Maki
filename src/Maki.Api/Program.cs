@@ -342,7 +342,7 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
-    // Shinigami — the website (numbered subdomain) is Cloudflare-challenged, but its JSON API
+    // Shinigami: the website (numbered subdomain) is Cloudflare-challenged, but its JSON API
     // (api.shngm.io) answers plain HTTP with no challenge, so this client's base address is the
     // API host, not BaseUrl. Both are separately env-overridable since the site's leading number
     // rotates independently of the API host.

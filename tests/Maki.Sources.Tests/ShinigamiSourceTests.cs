@@ -75,6 +75,30 @@ public class ShinigamiSourceTests
     }
 
     [Fact]
+    public async Task An_untitled_unparseable_chapter_gets_a_synthetic_title_but_a_numbered_one_stays_null()
+    {
+        var source = new ShinigamiSource(new FakeHttpClientFactory(new()
+        {
+            ["chapter"] = """
+                {"retcode":0,"message":"success","meta":{"page":1,"total_page":1},"data":[
+                    {"chapter_id":"a","manga_id":"m","chapter_title":"","chapter_number":"TBA","release_date":null},
+                    {"chapter_id":"b","manga_id":"m","chapter_title":"","chapter_number":5,"release_date":null}
+                ]}
+                """
+        }));
+
+        var chapters = await source.ListChaptersAsync(SeriesId);
+
+        var untitled = Assert.Single(chapters, c => c.SourceChapterId == "a");
+        Assert.Null(untitled.Number);
+        Assert.Equal("Chapter TBA", untitled.Title);
+
+        var numbered = Assert.Single(chapters, c => c.SourceChapterId == "b");
+        Assert.Equal(5, numbered.Number);
+        Assert.Null(numbered.Title);
+    }
+
+    [Fact]
     public async Task Chapter_list_asks_for_a_large_page_size_and_stops_when_meta_says_one_page()
     {
         var factory = new FakeHttpClientFactory(new()

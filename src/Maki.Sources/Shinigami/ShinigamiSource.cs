@@ -131,7 +131,7 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
         var root = await GetAsync($"v1/chapter/detail/{chapter.SourceChapterId}", ct);
         var data = root.TryGetProperty("data", out var d) ? d : root;
 
-        var baseUrl = data.TryGetProperty("base_url", out var bu) ? bu.GetString() : null;
+        var baseUrl = data.TryGetProperty("base_url", out var bu) ? bu.GetString()?.TrimEnd('/') : null;
 
         var pages = new List<PageRequest>();
         if (!string.IsNullOrEmpty(baseUrl) &&
@@ -139,7 +139,9 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
             ch.TryGetProperty("path", out var pathEl) &&
             ch.TryGetProperty("data", out var filesEl) && filesEl.ValueKind == JsonValueKind.Array)
         {
-            var path = pathEl.GetString();
+            // Trimmed on both sides and rejoined with explicit slashes: base_url has none today and
+            // path is wrapped in them, but neither is guaranteed to stay that way.
+            var path = pathEl.GetString()?.Trim('/');
             if (!string.IsNullOrEmpty(path))
             {
                 var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
@@ -148,7 +150,7 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
                     var name = file.GetString();
                     if (!string.IsNullOrEmpty(name))
                     {
-                        pages.Add(new PageRequest($"{baseUrl}{path}{name}", headers));
+                        pages.Add(new PageRequest($"{baseUrl}/{path}/{name}", headers));
                     }
                 }
             }
@@ -177,6 +179,23 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
 
         var chapterTitle = row.TryGetProperty("chapter_title", out var titleEl) ? titleEl.GetString() : null;
 
+        // A null Number is keyed only by (Volume, Language) in SourceChapterList.Normalize, so a
+        // blank title on more than one of them would collapse into a single row. A numbered chapter
+        // keeps a null Title; an unparseable one gets a synthetic label to stay distinct.
+        string? title;
+        if (!string.IsNullOrWhiteSpace(chapterTitle))
+        {
+            title = chapterTitle;
+        }
+        else if (parsed.Number is null)
+        {
+            title = string.IsNullOrEmpty(rawNumber) ? "Extra" : $"Chapter {rawNumber}";
+        }
+        else
+        {
+            title = null;
+        }
+
         DateTime? releaseDate = null;
         if (row.TryGetProperty("release_date", out var dateEl) && dateEl.ValueKind == JsonValueKind.String &&
             DateTime.TryParse(dateEl.GetString(), CultureInfo.InvariantCulture,
@@ -192,7 +211,7 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
             rawNumber,
             parsed.Number,
             parsed.Volume,
-            Title: string.IsNullOrWhiteSpace(chapterTitle) ? null : chapterTitle,
+            Title: title,
             Language: "id",
             ReleaseDate: releaseDate,
             Url: $"{BaseUrl}/chapter/{chapterId}");
