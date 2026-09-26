@@ -21,6 +21,7 @@ import {
   type RecommendationFilters,
   type RecommendationItem,
 } from '../api/hooks'
+import { ApiError } from '../api/client'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
@@ -98,10 +99,12 @@ export default function CreatorPage() {
     if (sameCreator) return
     setDetailItem(null)
     setApplied({})
+    setSort('popular')
     setPages(1)
+    setFiltersOpen(false)
     catalogue.reset()
     // catalogue.reset is stable by design; see useCatalogueFilters.
-  }, [sameCreator, decoded, role, catalogue.reset, setApplied, setPages])
+  }, [sameCreator, decoded, role, catalogue.reset, setApplied, setSort, setPages, setFiltersOpen])
 
   const appliedCount = Object.keys(applied).length
 
@@ -116,7 +119,7 @@ export default function CreatorPage() {
     [decoded, role, applied, appliedCount, sort, pages],
   )
 
-  const { data, isFetching, error } = useCreator(decoded.length > 0 ? request : null)
+  const { data, isFetching, error, refetch } = useCreator(decoded.length > 0 ? request : null)
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
 
@@ -124,15 +127,25 @@ export default function CreatorPage() {
   const canLoadMore = items.length >= PAGE_SIZE * pages && items.length < MAX_WORKS
 
   if (error) {
+    const notFound = error instanceof ApiError && error.status === 404
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
         <PageHeader title={decoded} />
-        <EmptyState
-          title={t`No such creator`}
-          description={t`Nobody by that name is credited in the local MangaBaka database.`}
-          actionLabel={t`Back to Discover`}
-          actionTo="/discover"
-        />
+        {notFound ? (
+          <EmptyState
+            title={t`No such creator`}
+            description={t`Nobody by that name is credited in the local MangaBaka database.`}
+            actionLabel={t`Back to Discover`}
+            actionTo="/discover"
+          />
+        ) : (
+          <EmptyState
+            title={t`Failed to load this creator`}
+            description={error instanceof Error ? error.message : String(error)}
+            actionLabel={t`Retry`}
+            onAction={() => void refetch()}
+          />
+        )}
       </SurfaceFrame>
     )
   }

@@ -3492,9 +3492,17 @@ msgstr "disabled"
 msgid "Disabled"
 msgstr "Disabled"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard"
+msgstr "Discard"
+
 #: src/pages/SettingsPage.tsx
 msgid "Discard changes"
 msgstr "Discard changes"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard changes?"
+msgstr "Discard changes?"
 
 #: src/components/ImportReviewModal.tsx
 msgid "Discard download"
@@ -4069,8 +4077,16 @@ msgid "Failed to initialize"
 msgstr "Failed to initialize"
 
 #: src/pages/LibraryPage.tsx
-msgid "Failed to load library: {loadErrorMessage}"
-msgstr "Failed to load library: {loadErrorMessage}"
+msgid "Failed to load library"
+msgstr "Failed to load library"
+
+#: src/pages/LibraryPage.tsx
+#~ msgid "Failed to load library: {loadErrorMessage}"
+#~ msgstr "Failed to load library: {loadErrorMessage}"
+
+#: src/pages/CreatorPage.tsx
+msgid "Failed to load this creator"
+msgstr "Failed to load this creator"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Falling means you moved."
@@ -8352,6 +8368,8 @@ msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/CreatorPage.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Retry"
 msgstr "Retry"
 
@@ -8370,6 +8388,10 @@ msgstr "Retry download"
 #: src/pages/SettingsPage.tsx
 msgid "Retry Handling"
 msgstr "Retry Handling"
+
+#: src/pages/LibraryPage.tsx
+msgid "Retrying…"
+msgstr "Retrying…"
 
 #: src/pages/LibraryPage.tsx
 msgid "Reusing the name of the active preset overwrites it."
@@ -11392,6 +11414,10 @@ msgstr "Your requests"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Your source changes have not been saved. Closing now discards them."
+msgstr "Your source changes have not been saved. Closing now discards them."
 
 #: src/components/series/SeriesHero.tsx
 msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."

@@ -240,7 +240,7 @@ export default function ActivityPage() {
                                 <ActionIcon
                                   variant="subtle"
                                   color="var(--neutral)"
-                                  disabled={index === 0}
+                                  disabled={index === 0 || reorder.isPending}
                                   onClick={() => moveToTop(index)}
                                   aria-label={t`Move to top of queue`}
                                 >
@@ -251,7 +251,7 @@ export default function ActivityPage() {
                                 <ActionIcon
                                   variant="subtle"
                                   color="var(--neutral)"
-                                  disabled={index === 0}
+                                  disabled={index === 0 || reorder.isPending}
                                   onClick={() => moveItem(index, -1)}
                                   aria-label={t`Move up in queue`}
                                 >
@@ -262,7 +262,7 @@ export default function ActivityPage() {
                                 <ActionIcon
                                   variant="subtle"
                                   color="var(--neutral)"
-                                  disabled={index === queueItems.length - 1}
+                                  disabled={index === queueItems.length - 1 || reorder.isPending}
                                   onClick={() => moveItem(index, 1)}
                                   aria-label={t`Move down in queue`}
                                 >

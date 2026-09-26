@@ -1878,12 +1878,31 @@ export function useClearQueue() {
   })
 }
 
-/** Sets the active queue's dispatch order. `orderedIds` is the full list in the desired order. */
+/** Sets the active queue's dispatch order, applied optimistically against every cached queue page. */
 export function useReorderQueue() {
   const queryClient = useQueryClient()
+  // Queue list pages are keyed ['queue', page, pageSize]; this predicate keeps the reorder off
+  // ['queue', 'import-plan', id], whose cached value has no `items`.
+  const isQueuePage = (q: { queryKey: readonly unknown[] }) => typeof q.queryKey[1] === 'number'
   return useMutation({
     mutationFn: (orderedIds: number[]) =>
       api<void>('/queue/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds }) }),
+    onMutate: async (orderedIds) => {
+      await queryClient.cancelQueries({ queryKey: ['queue'] })
+      const previous = queryClient.getQueriesData<QueueHistoryDto>({ queryKey: ['queue'], predicate: isQueuePage })
+      const rank = new Map(orderedIds.map((id, index) => [id, index]))
+      queryClient.setQueriesData<QueueHistoryDto>({ queryKey: ['queue'], predicate: isQueuePage }, (data) => {
+        if (!data || !Array.isArray(data.items)) return data
+        const items = [...data.items].sort(
+          (a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0),
+        )
+        return { ...data, items }
+      })
+      return { previous }
+    },
+    onError: (_err, _orderedIds, context) => {
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data))
+    },
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['queue'] }),
   })
 }

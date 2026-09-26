@@ -78,6 +78,7 @@ import {
   CHAPTER_MAX,
   CHAPTER_MIN,
   filtersFromSpec,
+  normalizeStoredYears,
   useStatusOptions,
   useTypeOptions,
   useCatalogueFilters,
@@ -250,7 +251,8 @@ function RecommendedTab() {
   const [seedSearch, setSeedSearch] = useState('')
   const [debouncedSearch] = useDebouncedValue(seedSearch, 300)
   const { data: seedSearchResults } = useMetadataSearch(debouncedSearch)
-  const [years, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
+  const [yearsStored, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
+  const years = normalizeStoredYears(yearsStored)
   const [types, setTypes] = usePageState<string[]>(`${MEM}:types`, [])
   const [statuses, setStatuses] = usePageState<string[]>(`${MEM}:statuses`, [])
   const terms = useTermFilters(`${MEM}:terms`)

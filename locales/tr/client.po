@@ -4200,10 +4200,18 @@ msgstr "devre dışı"
 msgid "Disabled"
 msgstr "Devre dışı"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discard changes"
 msgstr "Değişiklikleri at"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard changes?"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4895,9 +4903,17 @@ msgid "Failed to initialize"
 msgstr "Başlatılamadı"
 
 #: src/pages/LibraryPage.tsx
+msgid "Failed to load library"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Failed to load library: {loadErrorMessage}"
-msgstr "Kitaplık yüklenemedi: {loadErrorMessage}"
+#~ msgid "Failed to load library: {loadErrorMessage}"
+#~ msgstr "Kitaplık yüklenemedi: {loadErrorMessage}"
+
+#: src/pages/CreatorPage.tsx
+msgid "Failed to load this creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10062,6 +10078,8 @@ msgstr "{retryCount}x yeniden denendi, sonraki deneme {nextAttemptTime}"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/CreatorPage.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "Yeniden dene"
@@ -10085,6 +10103,10 @@ msgstr "İndirmeyi yeniden dene"
 #, fuzzy
 msgid "Retry Handling"
 msgstr "Yeniden Deneme İşleyişi"
+
+#: src/pages/LibraryPage.tsx
+msgid "Retrying…"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13740,6 +13762,10 @@ msgstr ""
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Rafınız, puanlarınız ve okuma geçmişiniz sıralamayı besler. Beğeni, gizleme ve görülme işaretleri yalnızca birer başlığı etkiler."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Your source changes have not been saved. Closing now discards them."
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy

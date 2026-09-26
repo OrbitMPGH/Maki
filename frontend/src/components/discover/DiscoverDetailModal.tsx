@@ -48,6 +48,7 @@ import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
 import { DiceIcon } from '../LuckyButton'
 import { prefersReducedMotion, useDiceTumble } from '../../lib/lucky'
+import { cleanSynopsis } from '../../lib/synopsis'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 
@@ -408,7 +409,7 @@ export function DiscoverDetailModal({
                     {(detail?.description || item.description) && (
                       <Spoiler maxHeight={120} showLabel={t`Show more`} hideLabel={t`Show less`}>
                         <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
-                          {detail?.description ?? item.description}
+                          {cleanSynopsis(detail?.description ?? item.description)}
                         </Text>
                       </Spoiler>
                     )}

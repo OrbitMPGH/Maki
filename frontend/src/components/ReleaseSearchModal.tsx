@@ -134,7 +134,7 @@ export function ReleaseSearchModal({
                     <Button
                       size="compact-xs"
                       variant="light"
-                      loading={grab.isPending}
+                      loading={grab.isPending && grab.variables?.release.guid === r.guid}
                       onClick={() =>
                         grab.mutate(
                           { seriesId, release: r },

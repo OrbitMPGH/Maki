@@ -4200,10 +4200,18 @@ msgstr "désactivé"
 msgid "Disabled"
 msgstr "Désactivé"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discard changes"
 msgstr "Abandonner les modifications"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard changes?"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4895,9 +4903,17 @@ msgid "Failed to initialize"
 msgstr "Échec de l'initialisation"
 
 #: src/pages/LibraryPage.tsx
+msgid "Failed to load library"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Failed to load library: {loadErrorMessage}"
-msgstr "Impossible de charger la bibliothèque : {loadErrorMessage}"
+#~ msgid "Failed to load library: {loadErrorMessage}"
+#~ msgstr "Impossible de charger la bibliothèque : {loadErrorMessage}"
+
+#: src/pages/CreatorPage.tsx
+msgid "Failed to load this creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10062,6 +10078,8 @@ msgstr "Nouvelle tentative {retryCount}x - prochain essai {nextAttemptTime}"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/CreatorPage.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "Réessayer"
@@ -10085,6 +10103,10 @@ msgstr "Réessayer le téléchargement"
 #, fuzzy
 msgid "Retry Handling"
 msgstr "Gestion des nouvelles tentatives"
+
+#: src/pages/LibraryPage.tsx
+msgid "Retrying…"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13740,6 +13762,10 @@ msgstr ""
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "Votre étagère, vos notes et votre lecture alimentent le classement. Pouce, masquer et vu ne touchent qu'un seul titre à la fois."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Your source changes have not been saved. Closing now discards them."
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy

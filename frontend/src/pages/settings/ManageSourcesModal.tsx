@@ -17,6 +17,7 @@ import {
 } from '../../api/hooks'
 import { languageName } from '../../api/titles'
 import { SourceIcon, baseLanguage, sourceHost } from '../../sourceIcons'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 
 type StateFilter = 'all' | 'on' | 'off'
 type Pane = 'catalogue' | 'priority'
@@ -231,6 +232,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
   const [adultOnly, setAdultOnly] = useState(false)
   const [languageFilter, setLanguageFilter] = useState<string | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
   // Seed once per opening. A background refetch of the priority must not wipe a draft in progress.
@@ -316,7 +318,17 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
 
   function close() {
     save.reset()
+    setConfirmDiscard(false)
     onClose()
+  }
+
+  // Escape and click-outside route through the Modal's own onClose, same as Cancel, so a dirty reorder can't slip out unconfirmed.
+  function requestClose() {
+    if (dirty) {
+      setConfirmDiscard(true)
+    } else {
+      close()
+    }
   }
 
   function submit() {
@@ -500,12 +512,12 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
   )
 
   return (
+    <>
     <Modal
       opened={opened}
-      onClose={close}
+      onClose={requestClose}
       size={980}
       closeOnEscape={!filtersOpen}
-      closeOnClickOutside={!dirty}
       fullScreen={narrow}
       closeButtonProps={{ 'aria-label': t`Close` }}
       styles={{
@@ -540,7 +552,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
             <Button variant="subtle" color="gray" onClick={resetToDefaults} disabled={!sources}>
               <Trans>Reset to defaults</Trans>
             </Button>
-            <Button variant="default" onClick={close} disabled={save.isPending}>
+            <Button variant="default" onClick={requestClose} disabled={save.isPending}>
               <Trans>Cancel</Trans>
             </Button>
             <Button onClick={submit} disabled={!dirty || !priority} loading={save.isPending}>
@@ -550,6 +562,16 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
         </footer>
       </div>
     </Modal>
+    <ConfirmDialog
+      opened={confirmDiscard}
+      onClose={() => setConfirmDiscard(false)}
+      title={<Trans>Discard changes?</Trans>}
+      confirmLabel={<Trans>Discard</Trans>}
+      onConfirm={close}
+    >
+      <Trans>Your source changes have not been saved. Closing now discards them.</Trans>
+    </ConfirmDialog>
+    </>
   )
 }
 

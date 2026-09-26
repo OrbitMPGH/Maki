@@ -63,7 +63,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
   const [filter, setFilter] = useState<Filter>('all')
   const [sort, setSort] = useState<'recent' | 'title'>('recent')
   const [actionError, setActionError] = useState('')
-  const [pending, setPending] = useState<number | null>(null)
+  const [pending, setPending] = useState<Set<number>>(new Set())
 
   const { data: lab } = useFeedbackLab()
   useEffect(() => {
@@ -158,8 +158,18 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
 
   async function run(id: number, work: () => Promise<unknown>) {
     setActionError('')
-    setPending(id)
-    try { await work() } catch (cause) { setActionError(String(cause)) } finally { setPending(null) }
+    setPending((prev) => new Set(prev).add(id))
+    try {
+      await work()
+    } catch (cause) {
+      setActionError(String(cause))
+    } finally {
+      setPending((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
   }
 
   const clear = (row: Row, action: 'clear-suppression' | 'clear-exposure' | 'clear-sentiment') =>
@@ -253,7 +263,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
             <Stack gap={0}>
               {visible.map((row) => (
                 <SignalRow
-                  key={row.id} row={row} busy={pending === row.id}
+                  key={row.id} row={row} busy={pending.has(row.id)}
                   onClear={clear} onExclude={setExcluded}
                 />
               ))}

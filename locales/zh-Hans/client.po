@@ -4200,10 +4200,18 @@ msgstr "已禁用"
 msgid "Disabled"
 msgstr "已禁用"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discard changes"
 msgstr "放弃更改"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard changes?"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4895,9 +4903,17 @@ msgid "Failed to initialize"
 msgstr "初始化失败"
 
 #: src/pages/LibraryPage.tsx
+msgid "Failed to load library"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Failed to load library: {loadErrorMessage}"
-msgstr "加载资料库失败：{loadErrorMessage}"
+#~ msgid "Failed to load library: {loadErrorMessage}"
+#~ msgstr "加载资料库失败：{loadErrorMessage}"
+
+#: src/pages/CreatorPage.tsx
+msgid "Failed to load this creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10062,6 +10078,8 @@ msgstr "已重试 {retryCount} 次 - 下次尝试时间 {nextAttemptTime}"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/CreatorPage.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "重试"
@@ -10085,6 +10103,10 @@ msgstr "重试下载"
 #, fuzzy
 msgid "Retry Handling"
 msgstr "重试处理"
+
+#: src/pages/LibraryPage.tsx
+msgid "Retrying…"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13740,6 +13762,10 @@ msgstr ""
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "你的书架、评分和阅读记录会影响排名。点赞、隐藏和看过状态各只影响一个标题。"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Your source changes have not been saved. Closing now discards them."
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy

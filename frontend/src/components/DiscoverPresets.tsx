@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import {
@@ -196,9 +196,15 @@ export function HiddenContentButton() {
 
 function HiddenContentModal({ onClose }: { onClose: () => void }) {
   const { t } = useLingui()
-  const { data } = useHiddenContent()
+  const { data, isLoading, isError } = useHiddenContent()
   const save = useSaveHiddenContent()
-  const [terms, setTerms] = useState<CatalogueTerm[]>(() => data?.terms ?? [])
+  const [terms, setTerms] = useState<CatalogueTerm[]>([])
+  const dirty = useRef(false)
+
+  // Sync from the query until the user actually edits the list (seeding once on mount raced the fetch).
+  useEffect(() => {
+    if (!dirty.current && data) setTerms(data.terms ?? [])
+  }, [data])
 
   return (
     <Modal opened onClose={onClose} title={t`Hidden everywhere`} size="lg">
@@ -209,13 +215,29 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
             or creator pages. Only you see this list.
           </Trans>
         </Text>
-        <TermPicker kinds={['genre', 'tag']} tone="exclude" value={terms} onChange={setTerms} allowHide={false} />
+        {isLoading ? (
+          <Text size="sm" c="var(--ink-3)">
+            <Trans>Loading…</Trans>
+          </Text>
+        ) : (
+          <TermPicker
+            kinds={['genre', 'tag']}
+            tone="exclude"
+            value={terms}
+            onChange={(next) => {
+              dirty.current = true
+              setTerms(next)
+            }}
+            allowHide={false}
+          />
+        )}
         <Group justify="flex-end">
           <Button variant="subtle" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
           <Button
             loading={save.isPending}
+            disabled={isLoading || isError}
             onClick={() =>
               save.mutate(
                 { terms },

@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
@@ -263,7 +263,7 @@ export default function LibraryPage() {
   const densityOptions = useDensityOptions()
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
-  const { data: series, isLoading, error } = useSeries()
+  const { data: series, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
   const { me } = useAuth()
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
@@ -420,6 +420,16 @@ export default function LibraryPage() {
     () => (tags ?? []).map((t) => ({ value: String(t.id), label: `${t.label} (${t.seriesCount})` })),
     [tags],
   )
+
+  // A tag deleted or renamed elsewhere leaves an orphaned pill; drop stale ids once tags load.
+  useEffect(() => {
+    if (tags == null) return
+    const known = new Set(tagOptions.map((o) => o.value))
+    setTagFilter((current) => {
+      const next = current.filter((id) => known.has(id))
+      return next.length === current.length ? current : next
+    })
+  }, [tags, tagOptions, setTagFilter])
 
   const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
   const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
@@ -689,9 +699,9 @@ export default function LibraryPage() {
   const totalSeries = stats.total
   const shownCount = visible.length
   const totalSeriesShown = series?.length ?? 0
-  const loadErrorMessage = error ? String(error) : null
-  // The header, figures and toolbar hold their place while the list loads, so the grid lands where it will stay.
-  const showChrome = isLoading || (series != null && series.length > 0)
+  const loadErrorMessage = error ? (error instanceof Error ? error.message : String(error)) : null
+  // Kept mounted through loading and error too, so the grid lands where it will stay and an error isn't a dead end.
+  const showChrome = isLoading || error != null || (series != null && series.length > 0)
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
@@ -1523,9 +1533,12 @@ export default function LibraryPage() {
 
       {isLoading && <PosterSkeletons density={density} viewMode={viewMode} />}
       {error && (
-        <Text c="var(--danger)" ta="center" py="xl">
-          <Trans>Failed to load library: {loadErrorMessage}</Trans>
-        </Text>
+        <EmptyState
+          title={t`Failed to load library`}
+          description={loadErrorMessage}
+          actionLabel={isRefetchingSeries ? t`Retrying…` : t`Retry`}
+          onAction={() => void refetchSeries()}
+        />
       )}
       {series && series.length === 0 && (
         <EmptyState

@@ -279,7 +279,8 @@ export function SignalsCard() {
                       </div>
                       {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && (
                         <Button
-                          size="xs" variant="subtle" loading={undo.isPending}
+                          size="xs" variant="subtle"
+                          loading={undo.isPending && undo.variables?.eventId === item.id}
                           onClick={() => void undoItem(item)}
                         >
                           <Trans>Undo</Trans>

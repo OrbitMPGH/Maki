@@ -67,7 +67,8 @@ function ReviewControls({
           <Button
             size="compact-xs"
             variant="light"
-            loading={match.isPending}
+            disabled={match.isPending}
+            loading={match.isPending && match.variables?.remoteId === c.id}
             onClick={() => doMatch(c.id)}
           >
             <Trans>Use</Trans>
@@ -88,8 +89,8 @@ function ReviewControls({
         <Button
           size="compact-xs"
           variant="default"
-          disabled={!manual.trim()}
-          loading={match.isPending}
+          disabled={!manual.trim() || match.isPending}
+          loading={match.isPending && match.variables?.remoteId === manual.trim()}
           onClick={() => doMatch(manual.trim())}
         >
           <Trans>Link</Trans>

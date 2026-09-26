@@ -134,6 +134,7 @@ import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { useShellTitle } from '../lib/shellTitle'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
+import { cleanSynopsis } from '../lib/synopsis'
 
 function chapterLabel(c: ChapterDto): string {
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
@@ -1496,7 +1497,7 @@ export default function SeriesDetailPage() {
                 </Title>
                 {series.overview ? (
                     <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '100ch' }}>
-                      {series.overview}
+                      {cleanSynopsis(series.overview)}
                     </Text>
                 ) : (
                     <Text size="sm" mt="sm" c="var(--ink-3)">

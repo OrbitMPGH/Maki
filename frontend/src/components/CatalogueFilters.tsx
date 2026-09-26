@@ -27,7 +27,13 @@ export function useBrowseSortOptions() {
 }
 
 export const YEAR_MIN = 1950
-export const YEAR_MAX = 2026
+// +1 so a series announced for next year isn't clamped out of the "no constraint" upper end.
+export const YEAR_MAX = new Date().getFullYear() + 1
+
+/** A stored upper bound near an older YEAR_MAX sentinel reads as a real constraint once the year ticks over; treat it as "no constraint" again. */
+export function normalizeStoredYears([min, max]: [number, number]): [number, number] {
+  return max >= YEAR_MAX - 1 ? [min, YEAR_MAX] : [min, max]
+}
 export const CHAPTER_MIN = 0
 export const CHAPTER_MAX = 500 // upper handle here means "500+" (no maximum)
 
@@ -184,10 +190,11 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
   const terms = useTermFilters(at('terms'), initial)
   const [types, setTypes] = usePageState<string[]>(at('types'), initial?.types ?? [])
   const [statuses, setStatuses] = usePageState<string[]>(at('statuses'), initial?.statuses ?? [])
-  const [years, setYears] = usePageState<[number, number]>(at('years'), [
+  const [yearsStored, setYears] = usePageState<[number, number]>(at('years'), [
     initial?.yearMin ?? YEAR_MIN,
     initial?.yearMax ?? YEAR_MAX,
   ])
+  const years = normalizeStoredYears(yearsStored)
   const [chapters, setChapters] = usePageState<[number, number]>(at('chapters'), [
     initial?.minChapters ?? CHAPTER_MIN,
     initial?.maxChapters ?? CHAPTER_MAX,

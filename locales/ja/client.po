@@ -4200,10 +4200,18 @@ msgstr "無効"
 msgid "Disabled"
 msgstr "無効"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Discard changes"
 msgstr "変更を破棄"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Discard changes?"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -4895,9 +4903,17 @@ msgid "Failed to initialize"
 msgstr "初期化に失敗しました"
 
 #: src/pages/LibraryPage.tsx
+msgid "Failed to load library"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
-msgid "Failed to load library: {loadErrorMessage}"
-msgstr "ライブラリを読み込めませんでした：{loadErrorMessage}"
+#~ msgid "Failed to load library: {loadErrorMessage}"
+#~ msgstr "ライブラリを読み込めませんでした：{loadErrorMessage}"
+
+#: src/pages/CreatorPage.tsx
+msgid "Failed to load this creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -10062,6 +10078,8 @@ msgstr "{retryCount}回再試行 - 次の試行{nextAttemptTime}"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/CreatorPage.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "再試行"
@@ -10085,6 +10103,10 @@ msgstr "ダウンロードを再試行"
 #, fuzzy
 msgid "Retry Handling"
 msgstr "再試行処理"
+
+#: src/pages/LibraryPage.tsx
+msgid "Retrying…"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13740,6 +13762,10 @@ msgstr ""
 #, fuzzy
 msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
 msgstr "棚、評価、読書履歴がランキングに反映されます。評価・非表示・視聴済みはそれぞれ1タイトルのみに影響します。"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Your source changes have not been saved. Closing now discards them."
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
