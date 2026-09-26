@@ -79,6 +79,35 @@ public class AnimeSamaSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_keeps_every_text_special()
+    {
+        const string html = """
+            <html><body>
+            <h3 id="titreOeuvre">Foo</h3>
+            <script>
+            $(document).ready(function(){
+                resetListe();
+                creerListe(1, 2);newSP("Bonus A");newSP("Bonus B");
+                finirListe(3);
+            });
+            </script>
+            </body></html>
+            """;
+        var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
+        {
+            ["/catalogue/foo/scan/vf/"] = html,
+            ["get_nb_chap_et_img.php"] = """{"1":5,"2":5,"3":5,"4":5,"5":5}"""
+        }));
+
+        var chapters = await source.ListChaptersAsync("foo/scan/vf");
+
+        Assert.Equal(5, chapters.Count);
+        Assert.Equal(
+            new[] { "Bonus A", "Bonus B" },
+            chapters.Where(c => c.Number is null).Select(c => c.Title));
+    }
+
+    [Fact]
     public async Task ListChapters_throws_on_error_json()
     {
         var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
