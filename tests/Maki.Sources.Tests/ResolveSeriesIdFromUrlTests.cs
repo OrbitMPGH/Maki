@@ -8,6 +8,7 @@ using Maki.Sources.MangaPill;
 using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
+using Maki.Sources.ComicWalker;
 
 namespace Maki.Sources.Tests;
 
@@ -114,6 +115,20 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://comic-walker.com/detail/KC_002386_S", "KC_002386_S")]
+    [InlineData("https://comic-walker.com/detail/KC_002386_S/", "KC_002386_S")]
+    // Episode URLs name the series too, but the plan requires rejecting them, not resolving to the series.
+    [InlineData("https://comic-walker.com/detail/KC_002386_S/episodes/KC_0023860007600021_E", null)]
+    // Legacy site, ids in a different format that does not map.
+    [InlineData("https://comic-walker.com/contents/detail/KDCW_00002386010000_00", null)]
+    [InlineData("https://example.com/detail/KC_002386_S", null)]
+    public void ComicWalker(string url, string? expected)
+    {
+        ISource source = new ComicWalkerSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

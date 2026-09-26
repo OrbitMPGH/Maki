@@ -40,6 +40,7 @@ using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using System.Net;
 using Maki.Sources.TopManhua;
+using Maki.Sources.ComicWalker;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -327,7 +328,9 @@ try
                  // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
                  (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
-                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/")
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
+                 // Comic Walker (KadoComi): plain JSON API behind CloudFront, no challenge.
+                 (ComicWalkerSource.HttpClientName, "https://comic-walker.com/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -533,7 +536,8 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
-    
+    builder.Services.AddSingleton<ISource, ComicWalkerSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
