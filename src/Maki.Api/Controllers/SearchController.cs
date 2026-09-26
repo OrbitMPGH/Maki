@@ -52,7 +52,7 @@ public class SearchController(
 
         foreach (var source in sourceRegistry.All)
         {
-            var seriesId = source.ResolveSeriesIdFromUrl(target);
+            var seriesId = await source.ResolveSeriesIdFromUrlAsync(target, ct);
             if (seriesId is null)
             {
                 continue;
