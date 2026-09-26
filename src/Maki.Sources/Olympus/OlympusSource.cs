@@ -4,6 +4,7 @@ using AngleSharp.Html.Parser;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
+using Microsoft.Extensions.Logging;
 
 namespace Maki.Sources.Olympus;
 
@@ -16,14 +17,40 @@ namespace Maki.Sources.Olympus;
 /// Chapter lists live on a second host, "panel." + the series host, derived from
 /// <see cref="BaseUrl"/> rather than a second env var.
 /// </summary>
-public class OlympusSource(IHtmlFetcher fetcher) : ISource
+public class OlympusSource : ISource
 {
     private static readonly HtmlParser Parser = new();
 
+    private readonly IHtmlFetcher _fetcher;
+    private readonly ILogger<OlympusSource>? _logger;
     private readonly SourceCatalog _catalog = new(TimeSpan.FromMinutes(30));
 
     /// <summary>Id-to-slug map, rebuilt every time the catalog is fetched (warm or forced).</summary>
     private volatile IReadOnlyDictionary<string, string> _slugById = new Dictionary<string, string>();
+
+    public OlympusSource(IHtmlFetcher fetcher, ILogger<OlympusSource>? logger = null)
+    {
+        _fetcher = fetcher;
+        _logger = logger;
+
+        // Fire-and-forget: ResolveSeriesIdFromUrl is synchronous and has no way to fetch on its
+        // own, so this gives it a populated id-to-slug map soon after startup instead of only
+        // after the first search or link. A failure here isn't fatal, the next real call
+        // (Search/GetSeries/ListChapters) retries the fetch normally.
+        _ = WarmCatalogAsync();
+    }
+
+    private async Task WarmCatalogAsync()
+    {
+        try
+        {
+            await _catalog.LoadAsync(FetchCatalogAsync, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Olympus catalog warm-up failed; will retry on the next real call");
+        }
+    }
 
     public string Name => "olympus";
     public string DisplayName => "Olympus Scanlation";
@@ -122,9 +149,12 @@ public class OlympusSource(IHtmlFetcher fetcher) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        // Verified live: the slug segment of this endpoint is ignored (a stale or placeholder
-        // slug returns the same chapter body), so no catalog lookup is needed just to fetch pages.
-        var json = await GetJsonAsync($"{BaseUrl}/api/capitulo/comic-x/{chapter.SourceChapterId}", ct);
+        // Verified live: the slug segment of this endpoint is ignored today (a stale slug returns
+        // the same chapter body), so a cold catalog doesn't block a download. But if the site ever
+        // starts validating it, silently using a placeholder would break downloads without any
+        // error to point at, so the real slug is used whenever the map already has it.
+        var slug = _slugById.TryGetValue(chapter.SourceSeriesId, out var known) ? known : "x";
+        var json = await GetJsonAsync($"{BaseUrl}/api/capitulo/comic-{slug}/{chapter.SourceChapterId}", ct);
 
         var pages = json.TryGetProperty("chapter", out var chapterEl) &&
                     chapterEl.TryGetProperty("pages", out var pagesEl) &&
@@ -277,7 +307,7 @@ public class OlympusSource(IHtmlFetcher fetcher) : ISource
 
     private async Task<JsonElement> GetJsonAsync(string url, CancellationToken ct)
     {
-        var body = await fetcher.GetHtmlAsync(url, ct);
+        var body = await _fetcher.GetHtmlAsync(url, ct);
         if (body.TrimStart().StartsWith('<'))
         {
             // FlareSolverr wraps a JSON response in a <pre> tag like a browser's raw-JSON viewer.

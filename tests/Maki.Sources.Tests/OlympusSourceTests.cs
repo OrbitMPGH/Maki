@@ -19,7 +19,9 @@ public class OlympusSourceTests
         ["chapters?page=3&direction=desc&type=comic"] = FakeHttpClientFactory.Fixture("olympus-chapters-1.json"),
         ["chapters?page=4&direction=desc&type=comic"] = FakeHttpClientFactory.Fixture("olympus-chapters-1.json"),
         [ChaptersPage5] = FakeHttpClientFactory.Fixture("olympus-chapters-5.json"),
-        ["api/capitulo/comic-x/114575"] = FakeHttpClientFactory.Fixture("olympus-pages.json"),
+        // Matches whichever slug GetPagesAsync ends up using: the real one once the catalog is
+        // warm, "comic-x" while cold. The dedicated real-vs-placeholder tests pin down which is which.
+        ["api/capitulo/"] = FakeHttpClientFactory.Fixture("olympus-pages.json"),
     };
 
     [Fact]
@@ -117,8 +119,8 @@ public class OlympusSourceTests
 
         // Pages 2-4 in this fixture set repeat page 1's 40 rows verbatim (see HappyPathFixtures),
         // so Normalize's (Number, Volume, Language) dedupe collapses them to one copy: page 1's
-        // 40 unique chapters plus page 5's 26 (which don't overlap page 1's numbers) is 66, not
-        // the live site's 186 — that full count is only asserted by the live harness.
+        // 40 unique chapters plus page 5's 26 (which don't overlap page 1's numbers) is 66. The
+        // live site's real count (186) is asserted only by the live harness, not here.
         Assert.Equal(66, chapters.Count);
         Assert.All(chapters, c => Assert.Equal("es", c.Language));
         Assert.All(chapters, c => Assert.Null(c.Volume));
@@ -144,7 +146,7 @@ public class OlympusSourceTests
     }
 
     [Fact]
-    public async Task GetPages_returns_the_page_list_with_referer_and_ignores_the_slug()
+    public async Task GetPages_returns_the_page_list_with_referer()
     {
         var source = new OlympusSource(new FakeHtmlFetcher(HappyPathFixtures()));
 
@@ -154,6 +156,38 @@ public class OlympusSourceTests
         var page = Assert.Single(pages.Pages);
         Assert.Equal("https://media.imagesolymp.xyz/comics/10/114575/c-10-1.webp", page.Url);
         Assert.Equal("https://olympusxyz.com/", page.Headers!["Referer"]);
+    }
+
+    [Fact]
+    public async Task GetPages_uses_the_real_slug_once_the_catalog_knows_it()
+    {
+        var fetcher = new FakeHtmlFetcher(HappyPathFixtures());
+        var source = new OlympusSource(fetcher);
+
+        // Forces the id-to-slug map to hold the real slug for "10" before fetching pages.
+        await source.GetSeriesAsync("10");
+
+        await source.GetPagesAsync(new SourceChapter(
+            "olympus", "10", "114575", "183.05", 183.05m, null, null, "es", null));
+
+        Assert.Contains(fetcher.Requested, u => u.Contains("api/capitulo/comic-10-05-2025-nivel-solo5324/114575"));
+    }
+
+    [Fact]
+    public async Task GetPages_falls_back_to_a_placeholder_slug_while_the_catalog_is_cold()
+    {
+        // No fixture for the catalog list: the constructor's warm-up fetch fails and is swallowed,
+        // so the id-to-slug map stays empty and this must not depend on it.
+        var fetcher = new FakeHtmlFetcher(new()
+        {
+            ["api/capitulo/"] = FakeHttpClientFactory.Fixture("olympus-pages.json"),
+        });
+        var source = new OlympusSource(fetcher);
+
+        await source.GetPagesAsync(new SourceChapter(
+            "olympus", "10", "114575", "183.05", 183.05m, null, null, "es", null));
+
+        Assert.Contains(fetcher.Requested, u => u.Contains("api/capitulo/comic-x/114575"));
     }
 
     [Fact]
