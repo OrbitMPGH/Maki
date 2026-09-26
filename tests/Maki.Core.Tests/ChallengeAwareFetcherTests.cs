@@ -145,6 +145,15 @@ public class ChallengeAwareFetcherTests
     }
 
     [Fact]
+    public async Task Unchallenged_fetch_works_without_a_flaresolverr_url()
+    {
+        var (fetcher, handler) = Build(flareUrl: null);
+
+        Assert.Equal("<html>direct</html>", await fetcher.GetHtmlAsync(Target));
+        Assert.Empty(handler.FlarePayloads);
+    }
+
+    [Fact]
     public async Task Challenge_without_a_flaresolverr_url_throws_instead_of_returning_the_shell()
     {
         var (fetcher, handler) = Build(flareUrl: null);

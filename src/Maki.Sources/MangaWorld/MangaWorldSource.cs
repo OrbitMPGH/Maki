@@ -10,9 +10,9 @@ namespace Maki.Sources.MangaWorld;
 
 /// <summary>
 /// MangaWorld scraper (Italian scanlations aggregator). Passive Cloudflare today (a plain client
-/// gets 200, no cf-mitigated), but still built on <see cref="IHtmlFetcher"/> so a future challenge
-/// falls back to FlareSolverr. Series id is "{numericId}/{slug}" so URLs rebuild without a lookup;
-/// chapter id is the 24-hex id after "/read/".
+/// gets 200, no cf-mitigated), so it doesn't declare NeedsFlareSolverr, but it is still built on
+/// <see cref="IHtmlFetcher"/> so a future challenge falls back to FlareSolverr. Series id is
+/// "{numericId}/{slug}" so URLs rebuild without a lookup; chapter id is the 24-hex id after "/read/".
 /// </summary>
 public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
 {
@@ -25,7 +25,7 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
     public string BaseUrl =>
         Environment.GetEnvironmentVariable("MAKI_SOURCE_MANGAWORLD_BASEURL")?.TrimEnd('/') ?? "https://www.mangaworld.mx";
 
-    public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceCapabilities Capabilities => SourceCapabilities.None;
     public IReadOnlyList<string> SupportedLanguages => ["it"];
 
     [GeneratedRegex(@"capitolo\s*(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
