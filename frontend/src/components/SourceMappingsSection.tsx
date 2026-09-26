@@ -93,6 +93,7 @@ const SOURCE_ICONS: Record<string, string> = {
   tonarinoyj: '/source-icons/tonarinoyj.png',
   comiczenon: '/source-icons/comiczenon.png',
   kuragebunch: '/source-icons/kuragebunch.png',
+  toonily: '/source-icons/toonily.png',
 }
 
 export function SourceMappingsSection({

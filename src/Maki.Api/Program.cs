@@ -36,6 +36,7 @@ using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
+using Maki.Sources.Toonily;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using Maki.Sources.GigaViewer;
@@ -561,6 +562,7 @@ try
     builder.Services.AddSingleton<ISource, TonarinoYjSource>();
     builder.Services.AddSingleton<ISource, ComicZenonSource>();
     builder.Services.AddSingleton<ISource, KurageBunchSource>();
+    builder.Services.AddSingleton<ISource, ToonilySource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
