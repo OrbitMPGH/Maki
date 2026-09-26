@@ -14,6 +14,7 @@ using Maki.Sources.MangaLib;
 using Maki.Sources.Dynasty;
 using Maki.Sources.AnimeSama;
 using Maki.Sources.ManhwaWeb;
+using Maki.Sources.Olympus;
 
 namespace Maki.Sources.Tests;
 
@@ -226,5 +227,100 @@ public class ResolveSeriesIdFromUrlTests
     {
         ISource source = new ManhwaWebSource(new FakeHttpClientFactory(new()));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    private const string OlympusSeriesUrl = "https://olympusxyz.com/series/comic-10-05-2025-nivel-solo5324";
+
+    /// <summary>
+    /// Olympus's URL carries only the slug, and the id-to-slug map only exists once the catalog has
+    /// been fetched. The sync method never fetches, so it is null until something (here the async
+    /// path) has loaded the catalog, and resolves from memory after that.
+    /// </summary>
+    [Fact]
+    public async Task Olympus_sync_call_never_fetches_and_resolves_once_the_catalog_is_loaded()
+    {
+        var fetcher = new FakeHtmlFetcher(new()
+        {
+            ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json")
+        });
+        ISource source = new OlympusSource(fetcher);
+        var seriesUrl = new Uri(OlympusSeriesUrl);
+
+        Assert.Null(source.ResolveSeriesIdFromUrl(seriesUrl));
+        Assert.Empty(fetcher.Requested);
+
+        await source.ResolveSeriesIdFromUrlAsync(seriesUrl);
+
+        Assert.Equal("10", source.ResolveSeriesIdFromUrl(seriesUrl));
+        Assert.Null(source.ResolveSeriesIdFromUrl(
+            new Uri("https://olympusxyz.com/capitulo/114575/comic-10-05-2025-nivel-solo5324")));
+        Assert.Null(source.ResolveSeriesIdFromUrl(
+            new Uri("https://example.com/series/comic-10-05-2025-nivel-solo5324")));
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+    }
+
+    [Fact]
+    public async Task Olympus_async_call_resolves_on_a_cold_catalog()
+    {
+        var fetcher = new FakeHtmlFetcher(new()
+        {
+            ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json")
+        });
+        ISource source = new OlympusSource(fetcher);
+
+        Assert.Equal("10", await source.ResolveSeriesIdFromUrlAsync(new Uri(OlympusSeriesUrl)));
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+
+        // Not an Olympus series URL: rejected before any fetch.
+        Assert.Null(await source.ResolveSeriesIdFromUrlAsync(
+            new Uri("https://olympusxyz.com/capitulo/114575/comic-10-05-2025-nivel-solo5324")));
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+    }
+
+    /// <summary>
+    /// A slug the cached catalog doesn't carry (a new series, or a slug that rotated after the
+    /// catalog was fetched) forces a refetch, but no more than once a minute, so a URL that will
+    /// never resolve can't make every attempt refetch the whole list.
+    /// </summary>
+    [Fact]
+    public async Task Olympus_async_miss_refreshes_the_catalog_at_most_once_a_minute()
+    {
+        var fixtures = new Dictionary<string, string>
+        {
+            ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json")
+        };
+        var fetcher = new FakeHtmlFetcher(fixtures);
+        var clock = new ManualClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        ISource source = new OlympusSource(fetcher, time: clock);
+        var rotatedUrl = new Uri("https://olympusxyz.com/series/comic-11-05-2025-nivel-solo9999");
+
+        Assert.Null(await source.ResolveSeriesIdFromUrlAsync(rotatedUrl));
+        Assert.Null(await source.ResolveSeriesIdFromUrlAsync(rotatedUrl));
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+
+        fixtures["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json")
+            .Replace("10-05-2025-nivel-solo5324", "11-05-2025-nivel-solo9999");
+        clock.Now += TimeSpan.FromSeconds(30);
+        Assert.Null(await source.ResolveSeriesIdFromUrlAsync(rotatedUrl));
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+
+        clock.Now += TimeSpan.FromSeconds(31);
+        Assert.Equal("10", await source.ResolveSeriesIdFromUrlAsync(rotatedUrl));
+        Assert.Equal(2, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+    }
+
+    /// <summary>No fixture for the catalog list: the fetch fails, is logged, and resolves to null.</summary>
+    [Fact]
+    public async Task Olympus_resolves_null_when_the_catalog_fetch_fails()
+    {
+        ISource source = new OlympusSource(new FakeHtmlFetcher(new()));
+
+        Assert.Null(await source.ResolveSeriesIdFromUrlAsync(new Uri(OlympusSeriesUrl)));
+    }
+
+    private sealed class ManualClock(DateTimeOffset now) : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = now;
+        public override DateTimeOffset GetUtcNow() => Now;
     }
 }

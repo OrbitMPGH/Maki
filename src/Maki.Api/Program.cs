@@ -41,6 +41,7 @@ using Maki.Sources.Toonily;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using Maki.Sources.GigaViewer;
+using Maki.Sources.Olympus;
 using System.Net;
 using Maki.Sources.TopManhua;
 using Maki.Sources.MangaLib;
@@ -592,6 +593,7 @@ try
     builder.Services.AddSingleton<ISource, DynastySource>();
     builder.Services.AddSingleton<ISource, AnimeSamaSource>();
     builder.Services.AddSingleton<ISource, ManhwaWebSource>();
+    builder.Services.AddSingleton<ISource, OlympusSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();

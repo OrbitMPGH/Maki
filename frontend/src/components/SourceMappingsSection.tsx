@@ -98,6 +98,7 @@ const SOURCE_ICONS: Record<string, string> = {
   dynasty: '/source-icons/dynasty.png',
   animesama: '/source-icons/animesama.png',
   manhwaweb: '/source-icons/manhwaweb.png',
+  olympus: '/source-icons/olympus.webp',
 }
 
 export function SourceMappingsSection({
