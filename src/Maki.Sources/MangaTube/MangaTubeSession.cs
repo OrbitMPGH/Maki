@@ -15,6 +15,16 @@ internal readonly record struct MangaTubeResponse(HttpStatusCode Status, string?
         using var doc = JsonDocument.Parse(Body);
         return doc.RootElement.Clone();
     }
+
+    /// <summary>Throws with the status attached, so RateLimitDetector sees a 429/503 even when the body is JSON.</summary>
+    public void EnsureSuccess(string path)
+    {
+        if ((int)Status is < 200 or > 299)
+        {
+            throw new HttpRequestException(
+                $"Manga-Tube returned {(int)Status} ({Status}) for {path}.", null, Status);
+        }
+    }
 }
 
 internal readonly record struct MangaTubeChallenge(string Arg1, string Arg2, string Arg3, string Token);

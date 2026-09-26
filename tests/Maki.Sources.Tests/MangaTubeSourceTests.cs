@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.MangaTube;
 
@@ -115,6 +116,57 @@ public class MangaTubeSourceTests
         var chapters = await licensedSource.ListChaptersAsync("solo_leveling");
 
         Assert.Empty(chapters);
+    }
+
+    [Fact]
+    public async Task ListChapters_throws_on_an_error_status_with_a_json_body()
+    {
+        var handler = new StatusCodeHandler(HttpStatusCode.InternalServerError, """{"success":false,"error":["server-error"]}""");
+        var source = new MangaTubeSource(new SingleHandlerFactory(handler));
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => source.ListChaptersAsync("one_piece"));
+        Assert.Equal(HttpStatusCode.InternalServerError, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListChapters_surfaces_a_429_as_a_rate_limit()
+    {
+        var handler = new StatusCodeHandler(HttpStatusCode.TooManyRequests, """{"success":false,"error":["too-many-requests"]}""");
+        var source = new MangaTubeSource(new SingleHandlerFactory(handler));
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => source.ListChaptersAsync("one_piece"));
+        Assert.True(RateLimitDetector.IsRateLimit(ex, out _));
+    }
+
+    [Fact]
+    public async Task ListChapters_throws_when_data_chapters_is_missing()
+    {
+        var source = SourceFor(new() { ["one_piece/chapters"] = """{"success":true,"data":{}}""" });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("one_piece"));
+    }
+
+    [Fact]
+    public async Task GetSeries_and_Search_throw_on_a_rate_limit_status()
+    {
+        var handler = new StatusCodeHandler(HttpStatusCode.ServiceUnavailable, """{"success":false}""");
+        var source = new MangaTubeSource(new SingleHandlerFactory(handler));
+
+        var seriesEx = await Assert.ThrowsAsync<HttpRequestException>(() => source.GetSeriesAsync("one_piece"));
+        var searchEx = await Assert.ThrowsAsync<HttpRequestException>(() => source.SearchAsync("one piece"));
+        Assert.True(RateLimitDetector.IsRateLimit(seriesEx, out _));
+        Assert.True(RateLimitDetector.IsRateLimit(searchEx, out _));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_a_rate_limit_rather_than_ChapterLocked_on_429()
+    {
+        var handler = new StatusCodeHandler(HttpStatusCode.TooManyRequests, """{"success":false}""");
+        var source = new MangaTubeSource(new SingleHandlerFactory(handler));
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => source.GetPagesAsync(
+            new SourceChapter("mangatube", "one_piece", "19830", "1193", 1193m, null, "Ch. 1193", "de", null)));
+        Assert.True(RateLimitDetector.IsRateLimit(ex, out _));
     }
 
     [Fact]

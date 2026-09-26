@@ -92,8 +92,8 @@ public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var response = await _session.SendAsync(
-            HttpMethod.Get, $"api/manga/{sourceSeriesId}/chapters", SeriesHeaders(sourceSeriesId), ct);
+        var path = $"api/manga/{sourceSeriesId}/chapters";
+        var response = await _session.SendAsync(HttpMethod.Get, path, SeriesHeaders(sourceSeriesId), ct);
 
         // A fully licensed-out title 401s here rather than 200ing an empty list. That is a
         // stable site state (the title lost its public chapters, not a broken request), so it
@@ -103,13 +103,15 @@ public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
             return [];
         }
 
+        response.EnsureSuccess(path);
         var root = response.AsJson();
         var rows = root.TryGetProperty("data", out var d) && d.TryGetProperty("chapters", out var c) && c.ValueKind == JsonValueKind.Array
             ? c
             : default;
         if (rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            // An empty list here would wipe every stored chapter link for the series.
+            throw new InvalidOperationException($"Manga-Tube response for {path} has no data.chapters array.");
         }
 
         var chapters = new List<SourceChapter>();
@@ -174,11 +176,8 @@ public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var response = await _session.SendAsync(
-            HttpMethod.Get,
-            $"api/manga/{chapter.SourceSeriesId}/chapter/{chapter.SourceChapterId}",
-            SeriesHeaders(chapter.SourceSeriesId),
-            ct);
+        var path = $"api/manga/{chapter.SourceSeriesId}/chapter/{chapter.SourceChapterId}";
+        var response = await _session.SendAsync(HttpMethod.Get, path, SeriesHeaders(chapter.SourceSeriesId), ct);
 
         if (response.Status == HttpStatusCode.Unauthorized)
         {
@@ -186,6 +185,7 @@ public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
                 $"Chapter {chapter.NumberRaw} of {chapter.SourceSeriesId} is licence-restricted on Manga-Tube.");
         }
 
+        response.EnsureSuccess(path);
         var root = response.AsJson();
         var pageArray = root.TryGetProperty("data", out var d) &&
                         d.TryGetProperty("chapter", out var ch) &&
@@ -240,6 +240,7 @@ public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
     private async Task<JsonElement> GetJsonAsync(string path, IReadOnlyDictionary<string, string>? headers, CancellationToken ct)
     {
         var response = await _session.SendAsync(HttpMethod.Get, path, headers, ct);
+        response.EnsureSuccess(path);
         return response.AsJson();
     }
 
