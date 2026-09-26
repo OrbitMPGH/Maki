@@ -30,7 +30,10 @@ public static class LibraryPaths
                 ? StringComparison.OrdinalIgnoreCase
                 : StringComparison.Ordinal;
 
-            return full.StartsWith(root + Path.DirectorySeparatorChar, comparison) ? full : null;
+            // TrimEndingDirectorySeparator is a no-op on a drive root ("C:\", "/"), so root already
+            // ends with the separator there; adding another would make the containment check fail.
+            var prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+            return full.StartsWith(prefix, comparison) ? full : null;
         }
         catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
         {

@@ -86,7 +86,17 @@ public static class CbzReader
         }
 
         // ZipArchive is not thread-safe, so every request gets its own instance.
-        var archive = ZipFile.OpenRead(cbzPath);
+        ZipArchive archive;
+        try
+        {
+            archive = ZipFile.OpenRead(cbzPath);
+        }
+        catch (InvalidDataException)
+        {
+            // A corrupt central directory throws this, same "not readable" outcome as below.
+            return null;
+        }
+
         try
         {
             var entry = archive.GetEntry(entryName);
@@ -97,6 +107,12 @@ public static class CbzReader
             }
 
             return new OwningStream(entry.Open(), archive);
+        }
+        catch (InvalidDataException)
+        {
+            // A truncated or corrupt entry throws this out of Open(), treated as a missing entry.
+            archive.Dispose();
+            return null;
         }
         catch
         {
