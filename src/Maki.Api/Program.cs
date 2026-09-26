@@ -587,7 +587,6 @@ try
     builder.Services.AddSingleton<ISource, ToonilySource>();
     builder.Services.AddSingleton<ISource, MangaLibSource>();
     builder.Services.AddSingleton<ISource, DynastySource>();
-    
     builder.Services.AddSingleton<ISource, AnimeSamaSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
