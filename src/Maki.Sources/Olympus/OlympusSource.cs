@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
 using Maki.Core.Http;
@@ -162,6 +163,11 @@ public class OlympusSource : ISource
         for (var page = 2; page <= lastPage; page++)
         {
             var json = await GetJsonAsync(ChaptersUrl(slug, page), ct);
+            if (IsError(json))
+            {
+                throw new InvalidOperationException($"Olympus series {sourceSeriesId} chapter page {page} returned an error");
+            }
+
             AddChapters(chapters, sourceSeriesId, slug, json);
         }
 
@@ -176,16 +182,26 @@ public class OlympusSource : ISource
         // error to point at, so the real slug is used whenever the map already has it.
         var slug = _slugById.TryGetValue(chapter.SourceSeriesId, out var known) ? known : "x";
         var json = await GetJsonAsync($"{BaseUrl}/api/capitulo/comic-{slug}/{chapter.SourceChapterId}", ct);
+        if (IsError(json))
+        {
+            // Surfaced as a 404 so ChapterDownloadProcessor re-resolves the chapter or tries an
+            // alternate source instead of parking it as early access.
+            throw new HttpRequestException(
+                $"Olympus chapter {chapter.SourceChapterId} returned an error", null, HttpStatusCode.NotFound);
+        }
 
-        var pages = json.TryGetProperty("chapter", out var chapterEl) &&
-                    chapterEl.TryGetProperty("pages", out var pagesEl) &&
-                    pagesEl.ValueKind == JsonValueKind.Array
-            ? pagesEl.EnumerateArray()
-                .Select(p => p.GetString())
-                .Where(url => !string.IsNullOrEmpty(url))
-                .Select(url => new PageRequest(url!, new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" }))
-                .ToList()
-            : [];
+        if (!json.TryGetProperty("chapter", out var chapterEl) ||
+            !chapterEl.TryGetProperty("pages", out var pagesEl) ||
+            pagesEl.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException($"Olympus chapter {chapter.SourceChapterId} response has no pages array");
+        }
+
+        var pages = pagesEl.EnumerateArray()
+            .Select(p => p.GetString())
+            .Where(url => !string.IsNullOrEmpty(url))
+            .Select(url => new PageRequest(url!, new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" }))
+            .ToList();
 
         if (pages.Count == 0)
         {
@@ -199,7 +215,7 @@ public class OlympusSource : ISource
     {
         if (!json.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return;
+            throw new InvalidOperationException($"Olympus series {sourceSeriesId} chapter list has no data array");
         }
 
         foreach (var row in rows.EnumerateArray())
@@ -287,36 +303,39 @@ public class OlympusSource : ISource
     private async Task<List<SourceSeriesResult>> FetchCatalogAsync(CancellationToken ct)
     {
         var json = await GetJsonAsync($"{BaseUrl}/api/series/list", ct);
+        if (IsError(json) || !json.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
+        {
+            // Thrown before _slugById is touched, so a failed forced refresh keeps the last good map.
+            throw new InvalidOperationException("Olympus catalog response has no data array");
+        }
+
         var results = new List<SourceSeriesResult>();
         var slugById = new Dictionary<string, string>();
 
-        if (json.TryGetProperty("data", out var rows) && rows.ValueKind == JsonValueKind.Array)
+        foreach (var row in rows.EnumerateArray())
         {
-            foreach (var row in rows.EnumerateArray())
+            // Keiyoushi filters this same list client-side; 9 of 879 rows today are prose
+            // novels (novel_id shape), not comics.
+            var type = row.TryGetProperty("type", out var t) ? t.GetString() : null;
+            if (type != "comic")
             {
-                // Keiyoushi filters this same list client-side; 9 of 879 rows today are prose
-                // novels (novel_id shape), not comics.
-                var type = row.TryGetProperty("type", out var t) ? t.GetString() : null;
-                if (type != "comic")
-                {
-                    continue;
-                }
-
-                var id = row.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.Number
-                    ? idEl.GetInt64()
-                    : (long?)null;
-                var slug = row.TryGetProperty("slug", out var s) ? s.GetString() : null;
-                var name = row.TryGetProperty("name", out var nm) ? nm.GetString() : null;
-                if (id is null || string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(name))
-                {
-                    continue;
-                }
-
-                var idString = id.Value.ToString(CultureInfo.InvariantCulture);
-                var cover = row.TryGetProperty("cover", out var c) ? c.GetString() : null;
-                slugById[idString] = slug;
-                results.Add(new SourceSeriesResult(idString, name, $"{BaseUrl}/series/comic-{slug}", cover));
+                continue;
             }
+
+            var id = row.TryGetProperty("id", out var idEl) && idEl.ValueKind == JsonValueKind.Number
+                ? idEl.GetInt64()
+                : (long?)null;
+            var slug = row.TryGetProperty("slug", out var s) ? s.GetString() : null;
+            var name = row.TryGetProperty("name", out var nm) ? nm.GetString() : null;
+            if (id is null || string.IsNullOrEmpty(slug) || string.IsNullOrEmpty(name))
+            {
+                continue;
+            }
+
+            var idString = id.Value.ToString(CultureInfo.InvariantCulture);
+            var cover = row.TryGetProperty("cover", out var c) ? c.GetString() : null;
+            slugById[idString] = slug;
+            results.Add(new SourceSeriesResult(idString, name, $"{BaseUrl}/series/comic-{slug}", cover));
         }
 
         _slugById = slugById;

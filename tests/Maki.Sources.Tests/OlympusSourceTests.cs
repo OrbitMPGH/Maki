@@ -1,3 +1,4 @@
+using System.Net;
 using Maki.Core.Sources;
 using Maki.Sources.Olympus;
 
@@ -111,6 +112,28 @@ public class OlympusSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_throws_when_a_later_page_returns_an_error()
+    {
+        // A partial list would be cached and would drop every missing chapter's link, so an error
+        // body on page 2 or later has to fail the whole call rather than read as an empty page.
+        var fixtures = HappyPathFixtures();
+        fixtures["chapters?page=2&direction=desc&type=comic"] = FakeHttpClientFactory.Fixture("olympus-series-404.json");
+        var source = new OlympusSource(new FakeHtmlFetcher(fixtures));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("10"));
+    }
+
+    [Fact]
+    public async Task ListChapters_throws_when_a_page_has_no_data_array()
+    {
+        var fixtures = HappyPathFixtures();
+        fixtures["chapters?page=3&direction=desc&type=comic"] = """{"meta":{"last_page":5}}""";
+        var source = new OlympusSource(new FakeHtmlFetcher(fixtures));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("10"));
+    }
+
+    [Fact]
     public async Task ListChapters_walks_every_page_and_parses_numbers_and_language()
     {
         var source = new OlympusSource(new FakeHtmlFetcher(HappyPathFixtures()));
@@ -201,6 +224,44 @@ public class OlympusSourceTests
 
         await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(
             new SourceChapter("olympus", "10", "1", "1", 1m, null, null, "es", null)));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_not_found_on_an_error_response()
+    {
+        // Not ChapterLockedException: a 404 lets the download processor re-resolve the chapter or
+        // fall back to another source instead of scheduling an early-access recheck.
+        var fetcher = new FakeHtmlFetcher(new()
+        {
+            ["api/capitulo/"] = FakeHttpClientFactory.Fixture("olympus-series-404.json"),
+        });
+        var source = new OlympusSource(fetcher);
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => source.GetPagesAsync(
+            new SourceChapter("olympus", "10", "1", "1", 1m, null, null, "es", null)));
+        Assert.Equal(HttpStatusCode.NotFound, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_failed_forced_catalog_refresh_keeps_the_last_good_slug_map()
+    {
+        var fixtures = new Dictionary<string, string>
+        {
+            ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json"),
+            [SeriesUrl] = FakeHttpClientFactory.Fixture("olympus-series.json"),
+        };
+        var source = new OlympusSource(new FakeHtmlFetcher(fixtures));
+        await source.GetSeriesAsync("10");
+
+        // The series fetch errors, which forces a catalog refresh, and that refresh errors too.
+        fixtures["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-series-404.json");
+        fixtures[SeriesUrl] = FakeHttpClientFactory.Fixture("olympus-series-404.json");
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetSeriesAsync("10"));
+
+        fixtures[SeriesUrl] = FakeHttpClientFactory.Fixture("olympus-series.json");
+        var detail = await source.GetSeriesAsync("10");
+
+        Assert.Equal("Subo de nivel solo", detail.Title);
     }
 
     [Fact]
