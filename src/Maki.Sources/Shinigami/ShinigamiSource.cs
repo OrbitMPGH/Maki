@@ -217,15 +217,15 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
             Url: $"{BaseUrl}/chapter/{chapterId}");
     }
 
-    private static string? CoverUrl(JsonElement item)
-    {
-        if (item.TryGetProperty("cover_portrait_url", out var p) && p.ValueKind == JsonValueKind.String)
-        {
-            return p.GetString();
-        }
+    private static string? CoverUrl(JsonElement item) =>
+        NonBlankString(item, "cover_portrait_url") ?? NonBlankString(item, "cover_image_url");
 
-        return item.TryGetProperty("cover_image_url", out var c) ? c.GetString() : null;
-    }
+    private static string? NonBlankString(JsonElement item, string property) =>
+        item.TryGetProperty(property, out var value)
+        && value.ValueKind == JsonValueKind.String
+        && !string.IsNullOrWhiteSpace(value.GetString())
+            ? value.GetString()
+            : null;
 
     private static string StatusName(int status) => status switch
     {

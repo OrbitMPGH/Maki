@@ -25,6 +25,21 @@ public class ShinigamiSourceTests
     }
 
     [Fact]
+    public async Task Search_falls_back_to_cover_image_when_portrait_is_empty()
+    {
+        var source = new ShinigamiSource(new FakeHttpClientFactory(new()
+        {
+            ["manga/list"] = FakeHttpClientFactory.Fixture("shinigami-search.json")
+        }));
+
+        var results = await source.SearchAsync("solo leveling");
+
+        var sideStory = Assert.Single(results, r => r.Title == "Solo Leveling Side Story");
+        Assert.Equal("https://assets.shngm.id/thumbnail/cover/1ee5e6608288.jpeg", sideStory.CoverUrl);
+        Assert.All(results, r => Assert.False(string.IsNullOrWhiteSpace(r.CoverUrl)));
+    }
+
+    [Fact]
     public async Task Search_sends_the_q_parameter_not_search()
     {
         var factory = new FakeHttpClientFactory(new()
