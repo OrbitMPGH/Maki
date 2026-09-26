@@ -15,13 +15,12 @@ public class ToonilySourceTests
     [Fact]
     public async Task Search_parses_the_admin_ajax_response()
     {
-        var source = new ToonilySource(
-            new FakeHtmlFetcher(new()),
-            new FakeHttpClientFactory(new()
-            {
-                ["admin-ajax"] = FakeHttpClientFactory.Fixture("toonily-search.html")
-            }));
+        var fetcher = new FakeHtmlFetcher(new()
+        {
+            ["admin-ajax"] = FakeHttpClientFactory.Fixture("toonily-search.html")
+        });
 
+        var source = new ToonilySource(fetcher);
         var results = await source.SearchAsync("secret class");
 
         Assert.True(results.Count >= 10);
@@ -33,6 +32,15 @@ public class ToonilySourceTests
 
         // Every hit is a slug, never the full href the markup carries.
         Assert.All(results, r => Assert.DoesNotContain("https://", r.SourceSeriesId));
+
+        // The POST carries a form body and the mature-titles cookie, so adult titles show up
+        // on either the direct request or FlareSolverr's browser (both accept cookies).
+        var sent = Assert.Single(fetcher.Requests);
+        Assert.Equal("https://toonily.com/wp-admin/admin-ajax.php", sent.Url);
+        Assert.NotNull(sent.FormBody);
+        Assert.Contains("action=madara_load_more", sent.FormBody);
+        Assert.Contains("vars%5Bs%5D=secret", sent.FormBody, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("1", sent.Cookies!["toonily-mature"]);
     }
 
     [Fact]
@@ -43,14 +51,17 @@ public class ToonilySourceTests
             ["/search/"] = FakeHttpClientFactory.Fixture("toonily-search-get.html")
         });
 
-        // No "admin-ajax" fixture registered, so the POST 404s and the fallback runs.
-        var source = new ToonilySource(fetcher, new FakeHttpClientFactory(new()));
-
+        // No "admin-ajax" fixture registered, so the POST throws and the fallback runs.
+        var source = new ToonilySource(fetcher);
         var results = await source.SearchAsync("secret class");
 
         Assert.NotEmpty(results);
         Assert.Contains(results, r => r.SourceSeriesId == "secret-class-38c3e37a");
-        Assert.Equal("https://toonily.com/search/secret-class", Assert.Single(fetcher.Requested));
+
+        Assert.Equal(2, fetcher.Requests.Count);
+        var fallback = fetcher.Requests[1];
+        Assert.Equal("https://toonily.com/search/secret-class", fallback.Url);
+        Assert.Equal("1", fallback.Cookies!["toonily-mature"]);
     }
 
     [Fact]
@@ -60,8 +71,7 @@ public class ToonilySourceTests
             new FakeHtmlFetcher(new()
             {
                 ["/serie/"] = FakeHttpClientFactory.Fixture("toonily-series.html")
-            }),
-            new FakeHttpClientFactory(new()));
+            }));
 
         var detail = await source.GetSeriesAsync("secret-class-38c3e37a");
 
@@ -82,8 +92,7 @@ public class ToonilySourceTests
             new FakeHtmlFetcher(new()
             {
                 ["/serie/"] = FakeHttpClientFactory.Fixture("toonily-series.html")
-            }),
-            new FakeHttpClientFactory(new()));
+            }));
 
         var chapters = await source.ListChaptersAsync("secret-class-38c3e37a");
 
@@ -106,8 +115,7 @@ public class ToonilySourceTests
             new FakeHtmlFetcher(new()
             {
                 ["/chapter-242"] = FakeHttpClientFactory.Fixture("toonily-chapter.html")
-            }),
-            new FakeHttpClientFactory(new()));
+            }));
 
         var pages = await source.GetPagesAsync(new SourceChapter(
             "toonily", "secret-class-38c3e37a", "chapter-242", "Chapter 242", 242, null, null, "en", null));
@@ -136,8 +144,7 @@ public class ToonilySourceTests
             """;
 
         var source = new ToonilySource(
-            new FakeHtmlFetcher(new() { ["/chapter-1"] = html }),
-            new FakeHttpClientFactory(new()));
+            new FakeHtmlFetcher(new() { ["/chapter-1"] = html }));
 
         await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(new SourceChapter(
             "toonily", "secret-class-38c3e37a", "chapter-1", "Chapter 1", 1, null, null, "en", null)));
@@ -162,8 +169,7 @@ public class ToonilySourceTests
             """;
 
         var source = new ToonilySource(
-            new FakeHtmlFetcher(new() { ["/serie/"] = html }),
-            new FakeHttpClientFactory(new()));
+            new FakeHtmlFetcher(new() { ["/serie/"] = html }));
 
         var chapters = await source.ListChaptersAsync("secret-class-38c3e37a");
 

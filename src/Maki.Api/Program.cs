@@ -342,19 +342,6 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
-    // Toonily search only: the admin-ajax POST is how mature titles show up without a cookie the
-    // fetcher can't send. Every other Toonily request goes through IHtmlFetcher instead.
-    var toonilyLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
-    builder.Services.AddHttpClient(ToonilySource.HttpClientName, client =>
-        {
-            client.BaseAddress = new Uri("https://toonily.com/");
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
-            client.DefaultRequestHeaders.Referrer = new Uri("https://toonily.com/");
-            client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .AddHttpMessageHandler(() => new RateLimitingHandler(toonilyLimiter))
-        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
-
     var topManhuaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(TopManhuaSource.HttpClientName, client =>
     {

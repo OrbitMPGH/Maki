@@ -13,20 +13,19 @@ namespace Maki.Sources.Toonily;
 /// Toonily scraper (Madara WordPress theme, adult Korean manhwa, English). Passive Cloudflare on
 /// 2026-09-26 (every probed page answered 200 to a plain client), so every GET goes through
 /// <see cref="IHtmlFetcher"/> (direct with cached clearance first, FlareSolverr on a miss). Search
-/// is the exception: the GET search hides mature titles unless a cookie is sent, which
-/// <see cref="IHtmlFetcher"/> cannot do, so the primary search path is a POST to Madara's
-/// admin-ajax endpoint on a plain named client instead; the GET search is kept only as a fallback
-/// if that POST is ever blocked, and mature titles will be missing from that fallback's results.
-/// Series id is the slug path segment (<c>secret-class-38c3e37a</c>); chapter id is the chapter
-/// slug (<c>chapter-242</c>).
+/// is a POST to Madara's admin-ajax endpoint, sent through <see cref="IHtmlFetcher.FetchAsync"/>
+/// with the <c>toonily-mature</c> cookie so mature titles show up on either path (direct or
+/// FlareSolverr). The GET search is kept only as a fallback if that POST ever throws, carrying the
+/// same cookie. Series id is the slug path segment (<c>secret-class-38c3e37a</c>); chapter id is
+/// the chapter slug (<c>chapter-242</c>).
 /// </summary>
-public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory httpClientFactory) : ISource
+public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
 {
-    public const string HttpClientName = "source-toonily";
-
     private static readonly HtmlParser Parser = new();
 
-    private HttpClient SearchClient => httpClientFactory.CreateClient(HttpClientName);
+    /// <summary>Opts search into mature titles; series and chapter pages serve them without it.</summary>
+    private static readonly IReadOnlyDictionary<string, string> MatureCookie =
+        new Dictionary<string, string> { ["toonily-mature"] = "1" };
 
     public string Name => "toonily";
     public string DisplayName => "Toonily";
@@ -56,14 +55,8 @@ public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory http
         }
         catch (HttpRequestException)
         {
-            // The POST endpoint threw or answered 403/503 (Cloudflare challenge or outage). The GET
-            // fallback only shows non-mature titles without a cookie IHtmlFetcher cannot send.
-            return await SearchViaFallbackAsync(title, ct);
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            // The named client's own Timeout fired (a hanging POST), not the caller cancelling;
-            // fall back the same way a thrown or 403/503 response would.
+            // The POST endpoint threw (FlareSolverr itself unreachable, or a raw HTTP-level
+            // failure). Fall back to the GET search, carrying the same mature cookie.
             return await SearchViaFallbackAsync(title, ct);
         }
     }
@@ -84,16 +77,8 @@ public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory http
             ["vars[s]"] = title
         };
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "wp-admin/admin-ajax.php")
-        {
-            Content = new FormUrlEncodedContent(form)
-        };
-        request.Headers.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
-
-        using var response = await SearchClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
-
-        var html = await response.Content.ReadAsStringAsync(ct);
+        var html = await fetcher.FetchAsync(
+            new HtmlFetchRequest($"{BaseUrl}/wp-admin/admin-ajax.php", MatureCookie, BuildFormBody(form)), ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
         return ToResults(MadaraParser.ParseArchive(doc));
     }
@@ -106,10 +91,14 @@ public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory http
             return [];
         }
 
-        var html = await fetcher.GetHtmlAsync($"{BaseUrl}/search/{slug}", ct);
+        var html = await fetcher.FetchAsync(new HtmlFetchRequest($"{BaseUrl}/search/{slug}", MatureCookie), ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
         return ToResults(MadaraParser.ParseArchive(doc));
     }
+
+    /// <summary>application/x-www-form-urlencoded body (the only kind FlareSolverr's POST accepts).</summary>
+    private static string BuildFormBody(IReadOnlyDictionary<string, string> form) =>
+        string.Join("&", form.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
     /// <summary>Title lowercased with every run of non-[a-z0-9] collapsed to a single hyphen.</summary>
     internal static string SearchSlug(string title)

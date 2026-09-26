@@ -129,7 +129,7 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://example.com/serie/secret-class-38c3e37a/", null)]
     public void Toonily(string url, string? expected)
     {
-        ISource source = new ToonilySource(null!, null!);
+        ISource source = new ToonilySource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
