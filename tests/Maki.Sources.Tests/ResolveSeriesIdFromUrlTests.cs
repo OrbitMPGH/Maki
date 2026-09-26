@@ -1,6 +1,7 @@
 ﻿using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.Atsumaru;
+using Maki.Sources.Dynasty;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
@@ -114,6 +115,21 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://dynasty-scans.com/series/citrus", "citrus")]
+    [InlineData("https://dynasty-scans.com/series/citrus.json", "citrus")]
+    [InlineData("https://dynasty-scans.com/series/citrus_1", "citrus_1")]
+    [InlineData("https://dynasty-scans.com/chapters/citrus_ch01", null)]
+    [InlineData("https://dynasty-scans.com/doujins/some-doujin", null)]
+    [InlineData("https://dynasty-scans.com/anthologies/some-anthology", null)]
+    [InlineData("https://dynasty-scans.com/authors/saburouta", null)]
+    [InlineData("https://example.com/series/citrus", null)]
+    public void DynastyScans(string url, string? expected)
+    {
+        ISource source = new DynastySource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
