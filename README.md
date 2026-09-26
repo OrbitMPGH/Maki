@@ -63,6 +63,7 @@ built-in reader.
   - **MangaLib** (Russian)
   - **Dynasty Scans** (English, yuri)
   - **Anime-Sama** (French, requires FlareSolverr)
+  - **ManhwaWeb** (Spanish)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
   Sources are drag-ordered by preference and can be switched off globally. A disabled source is
   skipped by auto-matching and stops every series from using it, while each series' own per-source

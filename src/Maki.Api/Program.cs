@@ -28,6 +28,7 @@ using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaLivre;
+using Maki.Sources.ManhwaWeb;
 using Maki.Sources.SenManga;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
@@ -343,7 +344,9 @@ try
                  ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/"),
                  ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/"),
                  // Dynasty Scans — plain nginx, no Cloudflare.
-                 (DynastySource.HttpClientName, "https://dynasty-scans.com/")
+                 (DynastySource.HttpClientName, "https://dynasty-scans.com/"),
+                 // ManhwaWeb: separate JSON API host, no Cloudflare in front of it.
+                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -588,6 +591,7 @@ try
     builder.Services.AddSingleton<ISource, MangaLibSource>();
     builder.Services.AddSingleton<ISource, DynastySource>();
     builder.Services.AddSingleton<ISource, AnimeSamaSource>();
+    builder.Services.AddSingleton<ISource, ManhwaWebSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();

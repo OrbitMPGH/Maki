@@ -97,6 +97,7 @@ const SOURCE_ICONS: Record<string, string> = {
   mangalib: '/source-icons/mangalib.svg',
   dynasty: '/source-icons/dynasty.png',
   animesama: '/source-icons/animesama.png',
+  manhwaweb: '/source-icons/manhwaweb.png',
 }
 
 export function SourceMappingsSection({
