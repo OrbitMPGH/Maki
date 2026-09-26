@@ -27,6 +27,50 @@ public class TeamXSourceTests
         </body></html>
         """;
 
+    /// <summary>Declares 3 pages in its pager and carries one unlocked chapter of its own.</summary>
+    private const string PageOneOfThree = """
+        <!DOCTYPE html><html><body>
+        <div class="author-info-title"><h1>Test Series</h1></div>
+        <div class="chapter-card" data-date="1700000300" data-number="10">
+            <a href="https://olympustaff.com/series/TS/10" class="chapter-link"></a>
+            <div class="chapter-title">فصل عاشر</div>
+        </div>
+        <ul class="pagination">
+            <li class="page-item active"><span class="page-link">1</span></li>
+            <li class="page-item"><a class="page-link" href="https://olympustaff.com/series/TS?page=2">2</a></li>
+            <li class="page-item"><a class="page-link" href="https://olympustaff.com/series/TS?page=3">3</a></li>
+        </ul>
+        </body></html>
+        """;
+
+    /// <summary>Every card on this page is locked, so ParseChapterCards returns none of them.</summary>
+    private const string PageTwoAllLocked = """
+        <!DOCTYPE html><html><body>
+        <div class="author-info-title"><h1>Test Series</h1></div>
+        <div class="chapter-card" data-date="1700000200" data-number="9">
+            <a href="https://olympustaff.com/series/TS/9" class="chapter-link"></a>
+            <span class="status-badge locked"></span>
+            <div class="chapter-title">الفصل 9</div>
+        </div>
+        <div class="chapter-card" data-date="1700000150" data-number="8">
+            <a href="https://olympustaff.com/series/TS/8" class="chapter-link"></a>
+            <span class="status-badge locked"></span>
+            <div class="chapter-title">الفصل 8</div>
+        </div>
+        </body></html>
+        """;
+
+    /// <summary>The oldest page, behind an all-locked page 2, holding a chapter the walk must still reach.</summary>
+    private const string PageThreeUnlocked = """
+        <!DOCTYPE html><html><body>
+        <div class="author-info-title"><h1>Test Series</h1></div>
+        <div class="chapter-card" data-date="1700000000" data-number="1">
+            <a href="https://olympustaff.com/series/TS/1" class="chapter-link"></a>
+            <div class="chapter-title">فصل اول</div>
+        </div>
+        </body></html>
+        """;
+
     /// <summary>
     /// A chapter page whose div.image_list only holds the promo banner (no img.manga-chapter-img
     /// and no canvas[data-src]): a not-yet-released or paid chapter the site still lists, not a
@@ -173,6 +217,28 @@ public class TeamXSourceTests
         var chapter = Assert.Single(chapters);
         Assert.Equal(6m, chapter.Number);
         Assert.Equal("فصل مميز", chapter.Title);
+    }
+
+    [Fact]
+    public async Task ListChapters_does_not_stop_at_a_page_of_only_locked_chapters()
+    {
+        var fetcher = new FakeHtmlFetcher(new()
+        {
+            ["?page=2"] = PageTwoAllLocked,
+            ["?page=3"] = PageThreeUnlocked,
+            ["/series/TS"] = PageOneOfThree,
+        });
+
+        var chapters = await new TeamXSource(fetcher).ListChaptersAsync("TS");
+
+        // Page 2 has no unlocked chapters at all (ParseChapterCards drops every card on it), but
+        // page 3 behind it must still be walked and its chapter kept: an all-locked page must never
+        // be mistaken for the end of the list and strand every older page behind it.
+        Assert.Equal(2, chapters.Count);
+        Assert.Contains(chapters, c => c.Number == 1m);
+        Assert.Contains(chapters, c => c.Number == 10m);
+        Assert.DoesNotContain(chapters, c => c.Number is 9m or 8m);
+        Assert.Contains("https://olympustaff.com/series/TS?page=3", fetcher.Requested);
     }
 
     [Fact]

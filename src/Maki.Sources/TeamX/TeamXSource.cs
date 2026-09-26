@@ -165,6 +165,9 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
             }
         }
 
+        // No early stop on an empty result: ParseChapterCards has already dropped locked cards, so
+        // a page consisting only of locked chapters would otherwise end the walk and lose every
+        // older page behind it. lastPage came from the pager above, so it is trusted outright.
         for (var page = 2; page <= lastPage; page++)
         {
             var pageUrl = $"{firstUrl}?page={page}";
@@ -172,13 +175,7 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
             var pageDoc = await Parser.ParseDocumentAsync(pageHtml, ct);
             RequireSeriesPage(pageDoc, pageUrl, pageHtml);
 
-            var pageChapters = ParseChapterCards(sourceSeriesId, pageDoc);
-            if (pageChapters.Count == 0)
-            {
-                break;
-            }
-
-            chapters.AddRange(pageChapters);
+            chapters.AddRange(ParseChapterCards(sourceSeriesId, pageDoc));
         }
 
         return SourceChapterList.Normalize(chapters);
