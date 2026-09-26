@@ -6,6 +6,7 @@ using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.FlameComics;
+using Maki.Sources.Shinigami;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 
@@ -114,6 +115,20 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://11.shinigami.asia/series/5c612573-fe38-42df-8618-dc3de1c9d04a", "5c612573-fe38-42df-8618-dc3de1c9d04a")]
+    [InlineData("https://12.shinigami.asia/series/5c612573-fe38-42df-8618-dc3de1c9d04a/", "5c612573-fe38-42df-8618-dc3de1c9d04a")]
+    [InlineData("https://shinigami.asia/series/5c612573-fe38-42df-8618-dc3de1c9d04a", "5c612573-fe38-42df-8618-dc3de1c9d04a")]
+    [InlineData("https://11.shinigami.asia/chapter/5c612573-fe38-42df-8618-dc3de1c9d04a", null)]
+    [InlineData("https://api.shngm.io/v1/manga/detail/5c612573-fe38-42df-8618-dc3de1c9d04a", null)]
+    [InlineData("https://shinigami.example/series/5c612573-fe38-42df-8618-dc3de1c9d04a", null)]
+    [InlineData("https://11.shinigami.asia/series/not-a-guid", null)]
+    public void Shinigami(string url, string? expected)
+    {
+        ISource source = new ShinigamiSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

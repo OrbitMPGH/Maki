@@ -29,6 +29,7 @@ using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaLivre;
 using Maki.Sources.SenManga;
+using Maki.Sources.Shinigami;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
@@ -341,6 +342,23 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
+    // Shinigami — the website (numbered subdomain) is Cloudflare-challenged, but its JSON API
+    // (api.shngm.io) answers plain HTTP with no challenge, so this client's base address is the
+    // API host, not BaseUrl. Both are separately env-overridable since the site's leading number
+    // rotates independently of the API host.
+    var shinigamiApiUrl = Environment.GetEnvironmentVariable("MAKI_SOURCE_SHINIGAMI_APIURL")?.TrimEnd('/')
+        ?? "https://api.shngm.io";
+    var shinigamiLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(ShinigamiSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri($"{shinigamiApiUrl}/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(shinigamiLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     var topManhuaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(TopManhuaSource.HttpClientName, client =>
     {
@@ -533,6 +551,7 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
+    builder.Services.AddSingleton<ISource, ShinigamiSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
