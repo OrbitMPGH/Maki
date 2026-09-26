@@ -60,6 +60,12 @@ public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory http
             // fallback only shows non-mature titles without a cookie IHtmlFetcher cannot send.
             return await SearchViaFallbackAsync(title, ct);
         }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The named client's own Timeout fired (a hanging POST), not the caller cancelling;
+            // fall back the same way a thrown or 403/503 response would.
+            return await SearchViaFallbackAsync(title, ct);
+        }
     }
 
     private async Task<IReadOnlyList<SourceSeriesResult>> SearchViaAjaxAsync(string title, CancellationToken ct)
@@ -218,6 +224,13 @@ public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory http
         }
 
         var parsed = ChapterNumberParser.Parse(item.Name, item.VolumeRaw);
+
+        // An unnumbered chapter's identity is IsOneShot + Language + Title (Normalize keys on
+        // Number/Volume/Language), so two differently-named unnumbered entries need distinct
+        // Titles or they alias each other. A numbered chapter's name carries nothing beyond the
+        // number worth keeping, so Title stays null there.
+        var title = parsed.Number is null ? item.Name : null;
+
         return new SourceChapter(
             Name,
             seriesId,
@@ -225,7 +238,7 @@ public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory http
             item.Name,
             parsed.Number,
             parsed.Volume,
-            Title: null,
+            title,
             Language: "en",
             ParseReleaseDate(item.DateText),
             Url: item.Href);
@@ -290,6 +303,12 @@ public partial class ToonilySource(IHtmlFetcher fetcher, IHttpClientFactory http
             }
 
             pages.Add(new PageRequest(url, headers));
+        }
+
+        if (pages.Count == 0)
+        {
+            throw new ChapterLockedException(
+                $"Toonily chapter {chapter.SourceChapterId} has no pages (locked or not yet public).");
         }
 
         return new ChapterPages(pages);

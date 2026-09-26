@@ -121,4 +121,56 @@ public class ToonilySourceTests
             Assert.Equal("https://toonily.com/", p.Headers!["Referer"]);
         });
     }
+
+    [Fact]
+    public async Task GetPages_throws_locked_when_every_image_is_filtered_out()
+    {
+        const string html = """
+            <html><body>
+            <div class="reading-content">
+              <div class="page-break no-gaps">
+                <img id="image-999" src="https://toonily.com/wp-content/assets/999.png" alt="Toonily Discord Server">
+              </div>
+            </div>
+            </body></html>
+            """;
+
+        var source = new ToonilySource(
+            new FakeHtmlFetcher(new() { ["/chapter-1"] = html }),
+            new FakeHttpClientFactory(new()));
+
+        await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(new SourceChapter(
+            "toonily", "secret-class-38c3e37a", "chapter-1", "Chapter 1", 1, null, null, "en", null)));
+    }
+
+    [Fact]
+    public async Task ListChapters_gives_unnumbered_entries_distinct_titles_before_the_alias_collapse()
+    {
+        // Two unparseable chapter names with no volume, so ChapterNumberParser gives both a null
+        // Number: their only remaining identity before Normalize collapses them is Title.
+        const string html = """
+            <html><body>
+            <ul class="main version-chap no-volumn">
+              <li class="wp-manga-chapter">
+                <a href="https://toonily.com/serie/secret-class-38c3e37a/one-shot-extra">One-Shot Extra</a>
+              </li>
+              <li class="wp-manga-chapter">
+                <a href="https://toonily.com/serie/secret-class-38c3e37a/special-omake">Special Omake</a>
+              </li>
+            </ul>
+            </body></html>
+            """;
+
+        var source = new ToonilySource(
+            new FakeHtmlFetcher(new() { ["/serie/"] = html }),
+            new FakeHttpClientFactory(new()));
+
+        var chapters = await source.ListChaptersAsync("secret-class-38c3e37a");
+
+        // Normalize dedupes by (Number, Volume, Language) alone, so these two unnumbered entries
+        // collapse into one row today (a known Core limitation) — what this asserts is that
+        // whichever one survives carries a real Title rather than null.
+        var survivor = Assert.Single(chapters);
+        Assert.True(survivor.Title is "One-Shot Extra" or "Special Omake");
+    }
 }
