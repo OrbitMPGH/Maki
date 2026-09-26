@@ -47,7 +47,8 @@ public class ComicWalkerSourceTests
     {
         var chapters = await WithWork().ListChaptersAsync("KC_002386_S");
 
-        // The fixture holds 18 episodes; only the active "normal" ones survive.
+        // The fixture holds 18 episodes; only the 5 active "normal" ones survive.
+        Assert.Equal(5, chapters.Count);
         Assert.All(chapters, c => Assert.Equal("ja", c.Language));
         Assert.DoesNotContain(chapters, c => c.Title!.Contains("投票"));
 
@@ -151,6 +152,20 @@ public class ComicWalkerSourceTests
 
         await Assert.ThrowsAsync<NotSupportedException>(() => source.GetPagesAsync(new SourceChapter(
             "comicwalker", "KC_002386_S", "some-id", "第1話", 1m, null, null, "ja", null)));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_on_a_manuscript_missing_drmImageUrl_or_drmHash()
+    {
+        // A viewer response shape change here must not silently drop a page.
+        var source = SourceFor(new()
+        {
+            ["contents/viewer"] = "{\"manuscripts\":[{\"drmMode\":\"xor\",\"page\":1}]}"
+        });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(new SourceChapter(
+            "comicwalker", "KC_002386_S", "some-id", "第1話", 1m, null, null, "ja", null)));
+        Assert.Contains("contents/viewer", ex.Message);
     }
 
     [Fact]

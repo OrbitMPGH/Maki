@@ -180,7 +180,7 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
             var drmHash = manuscript.TryGetProperty("drmHash", out var drmHashEl) ? drmHashEl.GetString() : null;
             if (string.IsNullOrEmpty(imageUrl) || string.IsNullOrEmpty(drmHash))
             {
-                continue;
+                throw Unexpected(url, body);
             }
 
             pages.Add((page, new PageRequest(imageUrl, Headers: null, XorKeyHex: drmHash)));

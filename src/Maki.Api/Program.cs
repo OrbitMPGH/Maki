@@ -329,7 +329,6 @@ try
                  (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
                  (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
-                 // Comic Walker (KadoComi): plain JSON API behind CloudFront, no challenge.
                  (ComicWalkerSource.HttpClientName, "https://comic-walker.com/")
              })
     {
