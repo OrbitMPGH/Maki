@@ -5,6 +5,7 @@ using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
+using Maki.Sources.ManhwaWeb;
 using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
@@ -114,6 +115,19 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://manhwaweb.com/manhwa/solo-leveling-ragnarok_1783909089054", "solo-leveling-ragnarok_1783909089054")]
+    [InlineData("https://www.manhwaweb.com/manhwa/solo-leveling-ragnarok_1783909089054", "solo-leveling-ragnarok_1783909089054")]
+    [InlineData("https://manhwaweb.com/manhwa/solo-leveling-ragnarok_1783909089054/", "solo-leveling-ragnarok_1783909089054")]
+    [InlineData("https://manhwaweb.com/leer/solo-leveling-ragnarok_1783909089054-1_01", null)]
+    [InlineData("https://manhwawebbackend-production.up.railway.app/manhwa/solo-leveling-ragnarok_1783909089054", null)]
+    [InlineData("https://example.com/manhwa/solo-leveling-ragnarok_1783909089054", null)]
+    public void ManhwaWeb(string url, string? expected)
+    {
+        ISource source = new ManhwaWebSource(new FakeHttpClientFactory(new()));
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

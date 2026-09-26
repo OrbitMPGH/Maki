@@ -28,6 +28,7 @@ using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaLivre;
+using Maki.Sources.ManhwaWeb;
 using Maki.Sources.SenManga;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
@@ -327,7 +328,9 @@ try
                  // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
                  (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
-                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/")
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
+                 // ManhwaWeb — separate JSON API host, no Cloudflare in front of it.
+                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -533,7 +536,8 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
-    
+    builder.Services.AddSingleton<ISource, ManhwaWebSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();

@@ -86,6 +86,7 @@ const SOURCE_ICONS: Record<string, string> = {
   topmanhua: '/source-icons/topmanhua.png',
   webtoons: '/source-icons/webtoons.ico',
   weebcentral: '/source-icons/weebcentral.ico',
+  manhwaweb: '/source-icons/manhwaweb.png',
 }
 
 export function SourceMappingsSection({
