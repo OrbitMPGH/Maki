@@ -329,7 +329,7 @@ try
                  (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
                  (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
-                 // ManhwaWeb — separate JSON API host, no Cloudflare in front of it.
+                 // ManhwaWeb: separate JSON API host, no Cloudflare in front of it.
                  (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/")
              })
     {

@@ -105,6 +105,23 @@ public class ManhwaWebSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_keeps_the_raw_label_as_title_when_the_number_is_unparseable()
+    {
+        var source = SourceFor(new()
+        {
+            ["manhwa/see/test-series"] = FakeHttpClientFactory.Fixture("manhwaweb-series-oddchapter.json")
+        });
+
+        var chapters = await source.ListChaptersAsync("test-series_1");
+
+        var numbered = chapters.Single(c => c.Number == 1m);
+        Assert.Null(numbered.Title);
+
+        var special = chapters.Single(c => c.Number is null);
+        Assert.Equal("Especial", special.Title);
+    }
+
+    [Fact]
     public async Task GetPages_orders_pages_and_carries_the_referer()
     {
         var source = SourceFor(new()
@@ -131,5 +148,36 @@ public class ManhwaWebSourceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(new SourceChapter(
             "manhwaweb", "comic-el-chetado_1691379040764",
             "comic-el-chetado_1691379040764-5_01", "5", 5m, null, null, "es", null)));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_locked_rather_than_returning_empty_when_img_is_empty()
+    {
+        // The site has no paid chapters, so an empty img[] is never "not unlocked yet" - it means
+        // the chapter isn't actually up. This must never surface as a zero-page ChapterPages, or
+        // the download pipeline writes an empty CBZ instead of retrying.
+        var source = SourceFor(new()
+        {
+            ["chapters/see/"] = FakeHttpClientFactory.Fixture("manhwaweb-pages-empty.json")
+        });
+
+        await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(new SourceChapter(
+            "manhwaweb", "solo-leveling-ragnarok_1783909089054",
+            "solo-leveling-ragnarok_1783909089054-999_01", "999", 999m, null, null, "es", null)));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_locked_and_names_the_roto_flag_when_the_chapter_is_marked_broken()
+    {
+        var source = SourceFor(new()
+        {
+            ["chapters/see/"] = FakeHttpClientFactory.Fixture("manhwaweb-pages-broken.json")
+        });
+
+        var ex = await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(new SourceChapter(
+            "manhwaweb", "solo-leveling-ragnarok_1783909089054",
+            "solo-leveling-ragnarok_1783909089054-999_01", "999", 999m, null, null, "es", null)));
+
+        Assert.Contains("roto=si", ex.Message);
     }
 }

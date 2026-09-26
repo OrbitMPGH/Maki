@@ -141,7 +141,10 @@ public class ManhwaWebSource(IHttpClientFactory httpClientFactory) : ISource
                 rawNumber,
                 parsed.Number,
                 Volume: null,
-                Title: null,
+                // An unparseable number has nothing else to identify it by, so the raw label
+                // keeps it distinct from every other null-number chapter instead of collapsing
+                // them all into one row.
+                Title: parsed.Number is null ? rawNumber : null,
                 Language: "es",
                 ReleaseDate: DateTimeOffset.FromUnixTimeMilliseconds(create.Value).UtcDateTime,
                 Url: url));
@@ -176,6 +179,21 @@ public class ManhwaWebSource(IHttpClientFactory httpClientFactory) : ISource
                     pages.Add(new PageRequest(url, headers));
                 }
             }
+        }
+
+        // No paid chapters on this site, so an empty page list here means something is actually
+        // wrong (not yet uploaded, or the "roto" flag marking it broken) rather than a locked
+        // chapter that will open later on its own. The queue should still retry it quietly
+        // instead of writing an empty CBZ or failing the chapter permanently.
+        if (pages.Count == 0)
+        {
+            var roto = doc.RootElement.TryGetProperty("roto", out var rotoEl) && rotoEl.ValueKind == JsonValueKind.String
+                ? rotoEl.GetString()
+                : null;
+            var reason = !string.IsNullOrEmpty(roto) && !string.Equals(roto, "no", StringComparison.OrdinalIgnoreCase)
+                ? $"roto={roto}"
+                : "no pages in the response";
+            throw new ChapterLockedException($"ManhwaWeb chapter {chapter.SourceChapterId} has no pages ({reason})");
         }
 
         return new ChapterPages(pages);
