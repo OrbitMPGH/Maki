@@ -59,7 +59,7 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
 
             results.Add(new SourceSeriesResult(
                 slugUrl,
-                PickTitle(item),
+                PickSearchTitle(item),
                 $"{BaseUrl}/ru/manga/{slugUrl}",
                 PickCover(item)));
         }
@@ -285,6 +285,15 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
         return GetNonEmptyString(item, "rus_name")
             ?? GetNonEmptyString(item, "eng_name")
             ?? GetNonEmptyString(item, "name")
+            ?? "Unknown";
+    }
+
+    // Search titles feed SourceMatchService, which scores against English/romaji titles only.
+    private static string PickSearchTitle(JsonElement item)
+    {
+        return GetNonEmptyString(item, "eng_name")
+            ?? GetNonEmptyString(item, "name")
+            ?? GetNonEmptyString(item, "rus_name")
             ?? "Unknown";
     }
 

@@ -21,13 +21,14 @@ public class MangaLibSourceTests
         });
 
     [Fact]
-    public async Task Search_maps_hits_preferring_the_russian_title()
+    public async Task Search_maps_hits_preferring_the_english_title()
     {
         var results = await WithSearch().SearchAsync("one piece");
 
         Assert.Equal(5, results.Count);
         Assert.Equal("206--one-piece", results[0].SourceSeriesId);
-        Assert.Equal("Ван Пис", results[0].Title);
+        Assert.Equal("One Piece", results[0].Title);
+        Assert.Equal("One Piece A", results[1].Title);
         Assert.Equal("https://mangalib.me/ru/manga/206--one-piece", results[0].Url);
         Assert.Equal(
             "https://cover.cdnlibs.org/uploads/cover/one-piece/cover/89a48c0c-4c5d-4636-8143-5933ae1da6bb.jpg",
@@ -35,11 +36,10 @@ public class MangaLibSourceTests
     }
 
     [Fact]
-    public async Task Search_falls_back_to_english_then_original_title()
+    public async Task Search_falls_back_to_original_title()
     {
         var results = await WithSearch().SearchAsync("one piece");
 
-        // rus_name is blank on this fixture row; eng_name carries the title instead.
         Assert.Equal("One Piece Special - Roronoa Zoro Falls Into the Sea", results[3].Title);
         // Both rus_name and eng_name are blank here; only "name" is left.
         Assert.Equal("One piece dj - Sani de Kakurenbo", results[4].Title);
