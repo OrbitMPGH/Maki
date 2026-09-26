@@ -15,6 +15,7 @@ using Maki.Sources.Dynasty;
 using Maki.Sources.AnimeSama;
 using Maki.Sources.ManhwaWeb;
 using Maki.Sources.Olympus;
+using Maki.Sources.Shinigami;
 
 namespace Maki.Sources.Tests;
 
@@ -322,5 +323,19 @@ public class ResolveSeriesIdFromUrlTests
     {
         public DateTimeOffset Now { get; set; } = now;
         public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    [Theory]
+    [InlineData("https://11.shinigami.asia/series/5c612573-fe38-42df-8618-dc3de1c9d04a", "5c612573-fe38-42df-8618-dc3de1c9d04a")]
+    [InlineData("https://12.shinigami.asia/series/5c612573-fe38-42df-8618-dc3de1c9d04a/", "5c612573-fe38-42df-8618-dc3de1c9d04a")]
+    [InlineData("https://shinigami.asia/series/5c612573-fe38-42df-8618-dc3de1c9d04a", "5c612573-fe38-42df-8618-dc3de1c9d04a")]
+    [InlineData("https://11.shinigami.asia/chapter/5c612573-fe38-42df-8618-dc3de1c9d04a", null)]
+    [InlineData("https://api.shngm.io/v1/manga/detail/5c612573-fe38-42df-8618-dc3de1c9d04a", null)]
+    [InlineData("https://shinigami.example/series/5c612573-fe38-42df-8618-dc3de1c9d04a", null)]
+    [InlineData("https://11.shinigami.asia/series/not-a-guid", null)]
+    public void Shinigami(string url, string? expected)
+    {
+        ISource source = new ShinigamiSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
