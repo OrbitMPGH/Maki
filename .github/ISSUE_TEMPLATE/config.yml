@@ -3,6 +3,9 @@ contact_links:
   - name: Documentation
     url: https://github.com/OrbitMPGH/Maki#readme
     about: Quick start, Docker setup, backup & restore, and development notes.
+  - name: Questions and discussion
+    url: https://github.com/OrbitMPGH/Maki/discussions
+    about: Setup help, ideas, and general chat. Use this if you're not sure it's a bug.
   - name: Security issue
     url: https://github.com/OrbitMPGH/Maki/security/advisories/new
     about: Report a vulnerability privately instead of opening a public issue.

@@ -8,7 +8,7 @@ Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you t
 
 ## User-facing text style
 
-**All new user-facing text goes through `t`/`<Trans>` (frontend) or `this.Fail(localizer, key)`/`ILocalizer` (backend). Never a raw English literal.** The app ships in fourteen languages; a literal is invisible to the extractor and silently stays English. `.claude/rules/i18n.md` has the details, but it does not load on page files, which is why this line is here.
+**All new user-facing text goes through `t`/`<Trans>` (frontend) or `this.Fail(localizer, key)`/`ILocalizer` (backend). Never a raw English literal.** The app ships in eleven languages; a literal is invisible to the extractor and silently stays English. `.claude/rules/i18n.md` has the details, but it does not load on page files, which is why this line is here.
 
 No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", no rule-of-three lists, no "leverage"/"seamless"/"robust"/"delve" filler, no over-hedged "note that"/"it's worth mentioning" throat-clearing. Write plain, direct sentences like a developer explaining something to a teammate.
 
