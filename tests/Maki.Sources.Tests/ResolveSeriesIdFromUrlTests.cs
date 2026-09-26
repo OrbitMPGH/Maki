@@ -116,4 +116,18 @@ public class ResolveSeriesIdFromUrlTests
         ISource source = new MangakakalotSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
+
+    [Theory]
+    [InlineData("https://comic.naver.com/webtoon/list?titleId=769209", "769209")]
+    [InlineData("https://m.comic.naver.com/webtoon/list?titleId=769209", "769209")]
+    [InlineData("https://comic.naver.com/webtoon/list?titleId=769209&tab=wed", "769209")]
+    [InlineData("https://comic.naver.com/webtoon/detail?titleId=769209&no=182", null)]
+    [InlineData("https://comic.naver.com/bestChallenge/list?titleId=769209", null)]
+    [InlineData("https://comic.naver.com/challenge/list?titleId=769209", null)]
+    [InlineData("https://www.webtoons.com/en/fantasy/tower-of-god/list?title_no=95", null)]
+    public void NaverWebtoon(string url, string? expected)
+    {
+        ISource source = new Maki.Sources.NaverWebtoon.NaverWebtoonSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
 }
