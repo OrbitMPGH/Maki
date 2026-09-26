@@ -17,6 +17,7 @@ using Maki.Sources.ManhwaWeb;
 using Maki.Sources.Olympus;
 using Maki.Sources.Shinigami;
 using Maki.Sources.Manhwa18Net;
+using Maki.Sources.CuuTruyen;
 
 namespace Maki.Sources.Tests;
 
@@ -352,6 +353,19 @@ public class ResolveSeriesIdFromUrlTests
     public void Manhwa18Net(string url, string? expected)
     {
         ISource source = new Manhwa18NetSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://cuutruyen.net/mangas/2637", "2637")]
+    [InlineData("https://cuutruyen.net/mangas/2637/", "2637")]
+    [InlineData("https://cuutruyen.net/mangas/2637/chapters/87003", null)]
+    [InlineData("https://cuutruyen.net/mangas/not-a-number", null)]
+    [InlineData("https://cuutruyen.net/", null)]
+    [InlineData("https://example.com/mangas/2637", null)]
+    public void CuuTruyen(string url, string? expected)
+    {
+        ISource source = new CuuTruyenSource(null!, Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

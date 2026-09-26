@@ -49,6 +49,7 @@ using Maki.Sources.TopManhua;
 using Maki.Sources.MangaLib;
 using Maki.Sources.Dynasty;
 using Maki.Sources.AnimeSama;
+using Maki.Sources.CuuTruyen;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -542,6 +543,19 @@ try
     builder.Services.AddHttpClient(FlareSolverrClient.HttpClientName, client =>
         client.Timeout = TimeSpan.FromSeconds(90)); // FS solves can take a while
 
+    // CuuTruyen: the API side goes through IHtmlFetcher, but page bytes are
+    // binary and need unscrambling before they reach the downloader, so this client fetches raw
+    // images only. No BaseAddress: URLs already point at whichever storage-* host the page rewrite
+    // picked. ~1 MB pages, so a longer timeout than the plain-HTML sources above.
+    var cuuTruyenLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(CuuTruyenSource.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     builder.Services.AddSingleton<SettingsService>();
     builder.Services.AddSingleton<IAppSettings>(sp => sp.GetRequiredService<SettingsService>());
 
@@ -616,6 +630,7 @@ try
 
     builder.Services.AddSingleton<ISource, ShinigamiSource>();
     builder.Services.AddSingleton<ISource, Manhwa18NetSource>();
+    builder.Services.AddSingleton<ISource, CuuTruyenSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
