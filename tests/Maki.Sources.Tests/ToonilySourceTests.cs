@@ -1,3 +1,4 @@
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.Toonily;
 
@@ -41,6 +42,36 @@ public class ToonilySourceTests
         Assert.Contains("action=madara_load_more", sent.FormBody);
         Assert.Contains("vars%5Bs%5D=secret", sent.FormBody, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("1", sent.Cookies!["toonily-mature"]);
+    }
+
+    [Fact]
+    public async Task Search_falls_back_to_the_get_search_when_the_post_times_out()
+    {
+        var fetcher = new TimingOutPostFetcher(new FakeHtmlFetcher(new()
+        {
+            ["/search/"] = FakeHttpClientFactory.Fixture("toonily-search-get.html")
+        }));
+
+        var source = new ToonilySource(fetcher);
+        var results = await source.SearchAsync("secret class");
+
+        Assert.Contains(results, r => r.SourceSeriesId == "secret-class-38c3e37a");
+    }
+
+    [Fact]
+    public async Task Search_does_not_fall_back_when_the_caller_cancels()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var inner = new FakeHtmlFetcher(new()
+        {
+            ["/search/"] = FakeHttpClientFactory.Fixture("toonily-search-get.html")
+        });
+
+        var source = new ToonilySource(new TimingOutPostFetcher(inner));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => source.SearchAsync("secret class", cts.Token));
+        Assert.Empty(inner.Requests);
     }
 
     [Fact]
@@ -178,5 +209,18 @@ public class ToonilySourceTests
         // whichever one survives carries a real Title rather than null.
         var survivor = Assert.Single(chapters);
         Assert.True(survivor.Title is "One-Shot Extra" or "Special Omake");
+    }
+
+    /// <summary>Throws what HttpClient throws when its Timeout fires, for every POST.</summary>
+    private sealed class TimingOutPostFetcher(IHtmlFetcher inner) : IHtmlFetcher
+    {
+        public Task<string> GetHtmlAsync(string url, CancellationToken ct = default) =>
+            FetchAsync(new HtmlFetchRequest(url), ct);
+
+        public Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default) =>
+            request.FormBody is not null
+                ? throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.",
+                    new TimeoutException())
+                : inner.FetchAsync(request, ct);
     }
 }

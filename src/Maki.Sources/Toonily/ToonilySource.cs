@@ -59,6 +59,12 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
             // failure). Fall back to the GET search, carrying the same mature cookie.
             return await SearchViaFallbackAsync(title, ct);
         }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The fetcher client's own Timeout fired on the POST, not the caller cancelling.
+            // The fetcher lets that escape without trying FlareSolverr, so fall back here too.
+            return await SearchViaFallbackAsync(title, ct);
+        }
     }
 
     private async Task<IReadOnlyList<SourceSeriesResult>> SearchViaAjaxAsync(string title, CancellationToken ct)
