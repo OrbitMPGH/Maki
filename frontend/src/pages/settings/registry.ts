@@ -286,7 +286,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Sources`,
     admin: true,
     keywords: msg({
-      message: `scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, toonily, manhwa`,
+      message: `scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
