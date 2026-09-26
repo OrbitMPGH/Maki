@@ -28,15 +28,30 @@ public class OlympusSource : ISource
     /// <summary>Id-to-slug map, rebuilt every time the catalog is fetched (warm or forced).</summary>
     private volatile IReadOnlyDictionary<string, string> _slugById = new Dictionary<string, string>();
 
+    /// <summary>Guards <see cref="TriggerWarmupIfIdle"/> so a burst of cold lookups starts one
+    /// warm-up, not one per call. 0 = idle, 1 = a warm-up is in flight.</summary>
+    private int _warmupInFlight;
+
     public OlympusSource(IHtmlFetcher fetcher, ILogger<OlympusSource>? logger = null)
     {
         _fetcher = fetcher;
         _logger = logger;
+    }
 
-        // Fire-and-forget: ResolveSeriesIdFromUrl is synchronous and has no way to fetch on its
-        // own, so this gives it a populated id-to-slug map soon after startup instead of only
-        // after the first search or link. A failure here isn't fatal, the next real call
-        // (Search/GetSeries/ListChapters) retries the fetch normally.
+    /// <summary>
+    /// Starts a fire-and-forget catalog fetch unless one is already running. No network call
+    /// happens just from constructing this class (every source is instantiated at startup
+    /// whether enabled or not, and this class is built directly in unit tests). The first real
+    /// trigger is a cold <see cref="ResolveSeriesIdFromUrl"/> call, matching the on-demand loading
+    /// every other call already does through <see cref="SlugForIdAsync"/> and <see cref="SourceCatalog"/>.
+    /// </summary>
+    private void TriggerWarmupIfIdle()
+    {
+        if (Interlocked.CompareExchange(ref _warmupInFlight, 1, 0) != 0)
+        {
+            return;
+        }
+
         _ = WarmCatalogAsync();
     }
 
@@ -48,7 +63,11 @@ public class OlympusSource : ISource
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Olympus catalog warm-up failed; will retry on the next real call");
+            _logger?.LogWarning(ex, "Olympus catalog warm-up failed; will retry on the next cold lookup");
+        }
+        finally
+        {
+            Volatile.Write(ref _warmupInFlight, 0);
         }
     }
 
@@ -90,8 +109,10 @@ public class OlympusSource : ISource
             }
         }
 
-        // Catalog is cold (nothing searched or linked yet this process). Synchronous by
-        // interface contract, so it can't warm itself here; the caller searches first.
+        // Not found, cold catalog or a slug nothing on the current list carries. Synchronous by
+        // interface contract, so it can't await here: this call still returns null, but it starts
+        // (or leaves running) a fire-and-forget warm-up so the next call has a chance to resolve.
+        TriggerWarmupIfIdle();
         return null;
     }
 

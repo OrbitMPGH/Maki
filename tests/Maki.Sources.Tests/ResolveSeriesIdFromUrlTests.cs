@@ -120,23 +120,33 @@ public class ResolveSeriesIdFromUrlTests
 
     /// <summary>
     /// Olympus's id-to-slug map only exists once the catalog has been fetched (the id isn't in the
-    /// URL at all). The constructor kicks off a fire-and-forget warm-up so this works soon after
-    /// startup rather than only after the first search or link.
+    /// URL at all), and nothing warms it eagerly at construction (every source is built at startup
+    /// whether enabled or not, and a live fetch there would run on every app start regardless).
+    /// The first cold call instead kicks off a fire-and-forget warm-up and still returns null;
+    /// with a fake fetcher that warm-up's only await resolves already-completed fixture data, so it
+    /// runs to completion before the call returns, and the very next call resolves normally.
     /// </summary>
     [Fact]
-    public void Olympus_resolves_once_the_constructor_warm_up_has_populated_the_catalog()
+    public void Olympus_first_cold_call_returns_null_and_warms_the_catalog_for_the_next_one()
     {
-        ISource source = new OlympusSource(new FakeHtmlFetcher(new()
+        var fetcher = new FakeHtmlFetcher(new()
         {
             ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json")
-        }));
+        });
+        ISource source = new OlympusSource(fetcher);
+        var seriesUrl = new Uri("https://olympusxyz.com/series/comic-10-05-2025-nivel-solo5324");
 
-        Assert.Equal("10", source.ResolveSeriesIdFromUrl(
-            new Uri("https://olympusxyz.com/series/comic-10-05-2025-nivel-solo5324")));
+        Assert.Null(source.ResolveSeriesIdFromUrl(seriesUrl));
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
+
+        Assert.Equal("10", source.ResolveSeriesIdFromUrl(seriesUrl));
         Assert.Null(source.ResolveSeriesIdFromUrl(
             new Uri("https://olympusxyz.com/capitulo/114575/comic-10-05-2025-nivel-solo5324")));
         Assert.Null(source.ResolveSeriesIdFromUrl(
             new Uri("https://example.com/series/comic-10-05-2025-nivel-solo5324")));
+
+        // The map was already warm for these later calls, so no further catalog fetch happened.
+        Assert.Equal(1, fetcher.Requested.Count(u => u.Contains("api/series/list")));
     }
 
     /// <summary>No fixture for the catalog list: the warm-up fetch fails and is swallowed.</summary>
