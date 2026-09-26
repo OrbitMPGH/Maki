@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Maki.Core.Http;
 
-/// <summary>Thin client for a FlareSolverr instance (POST /v1, cmd=request.get).</summary>
+/// <summary>Thin client for a FlareSolverr instance (POST /v1, cmd=request.get or request.post).</summary>
 public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
 {
     public const string HttpClientName = "flaresolverr";
@@ -14,17 +14,42 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
         string UserAgent,
         IReadOnlyDictionary<string, string> Cookies);
 
-    public async Task<FlareSolution> GetAsync(string flareSolverrUrl, string targetUrl, CancellationToken ct = default)
+    public Task<FlareSolution> GetAsync(string flareSolverrUrl, string targetUrl, CancellationToken ct = default) =>
+        SolveAsync(flareSolverrUrl, targetUrl, postData: null, cookies: null, ct);
+
+    /// <summary>
+    /// Solves <paramref name="targetUrl"/>. A non-null <paramref name="postData"/> switches the command
+    /// to <c>request.post</c> (form-urlencoded string, the only body FlareSolverr takes), and
+    /// <paramref name="cookies"/> are set in the browser before navigation. FlareSolverr v3 dropped
+    /// custom request headers, so cookies are the only per-request state it still accepts.
+    /// </summary>
+    public async Task<FlareSolution> SolveAsync(
+        string flareSolverrUrl,
+        string targetUrl,
+        string? postData,
+        IReadOnlyDictionary<string, string>? cookies,
+        CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         var endpoint = flareSolverrUrl.TrimEnd('/') + "/v1";
 
-        var response = await client.PostAsJsonAsync(endpoint, new
+        var payload = new Dictionary<string, object>
         {
-            cmd = "request.get",
-            url = targetUrl,
-            maxTimeout = 60000
-        }, ct);
+            ["cmd"] = postData is null ? "request.get" : "request.post",
+            ["url"] = targetUrl,
+            ["maxTimeout"] = 60000
+        };
+        if (postData is not null)
+        {
+            payload["postData"] = postData;
+        }
+
+        if (cookies is { Count: > 0 })
+        {
+            payload["cookies"] = cookies.Select(c => new { name = c.Key, value = c.Value }).ToArray();
+        }
+
+        var response = await client.PostAsJsonAsync(endpoint, payload, ct);
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadFromJsonAsync<FlareResponse>(ct)
