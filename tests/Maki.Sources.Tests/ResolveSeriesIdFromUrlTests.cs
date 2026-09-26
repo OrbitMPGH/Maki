@@ -6,6 +6,7 @@ using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.FlameComics;
+using Maki.Sources.GigaViewer;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 
@@ -126,6 +127,23 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://shonenjumpplus.com/episode/10834108156648240735", "10834108156648240735")]
+    [InlineData("https://shonenjumpplus.com/episode/10834108156648240735/", "10834108156648240735")]
+    [InlineData("https://shonenjumpplus.com/volume/4856001361007452473", null)]
+    [InlineData("https://shonenjumpplus.com/series", null)]
+    [InlineData("https://shonenjumpplus.com/search?q=x", null)]
+    // Digits only: a slug must not resolve here.
+    [InlineData("https://shonenjumpplus.com/episode/not-a-number", null)]
+    // Every GigaViewer site is its own source and only accepts its own host.
+    [InlineData("https://www.sunday-webry.com/episode/3269754496548997914", null)]
+    [InlineData("https://comic-days.com/episode/10834108156648240735", null)]
+    public void GigaViewer(string url, string? expected)
+    {
+        ISource source = new ShonenJumpPlusSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
