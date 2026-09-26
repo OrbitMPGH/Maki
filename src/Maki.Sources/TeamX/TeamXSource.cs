@@ -268,6 +268,15 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
             }
         }
 
+        if (pages.Count == 0)
+        {
+            // div.image_list exists but holds neither element kind: a not-yet-released or paid
+            // chapter the site still lists, not a broken page. Never hand back zero pages for a
+            // listed chapter; the download pipeline retries a locked chapter instead of failing it
+            // permanently.
+            throw new ChapterLockedException($"Team-X chapter {url} has no images yet");
+        }
+
         return new ChapterPages(pages);
     }
 

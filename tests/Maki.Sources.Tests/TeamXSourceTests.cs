@@ -27,6 +27,23 @@ public class TeamXSourceTests
         </body></html>
         """;
 
+    /// <summary>
+    /// A chapter page whose div.image_list only holds the promo banner (no img.manga-chapter-img
+    /// and no canvas[data-src]) — a not-yet-released or paid chapter the site still lists, not a
+    /// broken page.
+    /// </summary>
+    private const string ChapterWithNoImages = """
+        <!DOCTYPE html><html><body>
+        <div class="image_list">
+            <div class="mb-3 mt-2">
+                <a href="https://truthnovel.top/">
+                    <img src="https://i.ibb.co/XxgjtmZX/promo.png" alt="promo">
+                </a>
+            </div>
+        </div>
+        </body></html>
+        """;
+
     [Fact]
     public async Task Search_parses_cards_and_strips_the_thumbnail_prefix()
     {
@@ -206,6 +223,22 @@ public class TeamXSourceTests
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(chapter));
         Assert.Contains("https://olympustaff.com/series/SL/200", ex.Message);
+    }
+
+    [Fact]
+    public async Task GetPages_throws_locked_when_image_list_has_no_images()
+    {
+        var source = new TeamXSource(new FakeHtmlFetcher(new()
+        {
+            ["/series/SL/200"] = ChapterWithNoImages
+        }));
+
+        var chapter = new SourceChapter(
+            "teamx", "SL", "200", "200", 200m, null, null, "ar", null);
+
+        // An image_list that holds only the promo banner is an unreleased or paid chapter the site
+        // still lists, not a broken page — never zero pages for a chapter the pipeline is holding.
+        await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(chapter));
     }
 
     [Fact]
