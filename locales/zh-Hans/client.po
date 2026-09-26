@@ -49,6 +49,16 @@ msgstr "（无法访问）"
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
 msgstr "{0, plural, other {# 个改编作品}}"
 
+#. placeholder {0}: selected.size
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
+msgstr ""
+
+#. placeholder {0}: chapterIds.length
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "{0, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
 #. placeholder {0}: r.failed
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -1148,6 +1158,14 @@ msgstr "{turnedOn, plural, other {已开启 # 个}}"
 #, fuzzy
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel}（另一个配置文件）"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{unlinkedFilesOnDisk, plural, one {# file in the series folder isn't linked to any chapter.} other {# files in the series folder aren't linked to any chapter.}}"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{unlinkedOnDisk, plural, one {# file in this folder isn't linked to any chapter, so it can't be read yet.} other {# files in this folder aren't linked to any chapter, so they can't be read yet.}}"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -2810,6 +2828,7 @@ msgstr "无法读取此下载"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/layout/SectionProperties.tsx
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -3031,6 +3050,11 @@ msgstr "第 {start}–{end} 章"
 msgid "Ch. {start}–{end}"
 msgstr "第 {start}–{end} 章"
 
+#. placeholder {0}: c.number
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Ch.{0}"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Ch.{chapter}"
@@ -3060,6 +3084,10 @@ msgstr "更改"
 #, fuzzy
 msgid "Change how individual titles affect recommendations."
 msgstr "更改各个标题对推荐的影响。"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Change linked chapters"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3323,6 +3351,7 @@ msgstr "选择根文件夹"
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "声明中用于指定权限的值，例如 <0>DownloadChapters</0>。无法匹配任何内容的值会被忽略。"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -3379,6 +3408,7 @@ msgid "Clear read or seen"
 msgstr "清除已读或看过状态"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Clear search"
@@ -5180,6 +5210,11 @@ msgstr "文件"
 msgid "Film / OVA"
 msgstr "电影 / OVA"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Filter by chapter number or title"
+msgstr ""
+
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Filter chapters"
@@ -6756,10 +6791,15 @@ msgid "Light"
 msgstr "浅色"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Link"
 msgstr "关联"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link {chapterLbl} to a file"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -6786,6 +6826,23 @@ msgstr "关联来源并刷新。"
 msgid "Link and unlink per-series sources"
 msgstr "关联和取消关联每个系列的来源"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters to {fileName}"
+msgstr ""
+
+#: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters to this file"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link files"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Link files and report results"
@@ -6795,6 +6852,10 @@ msgstr "关联文件并报告结果"
 #, fuzzy
 msgid "Link source"
 msgstr "关联来源"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link to a file already on disk"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6808,6 +6869,7 @@ msgid "Linked"
 msgstr "已关联"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "已将 {chapterPhrase} 与 {fileName} 关联"
@@ -6860,6 +6922,10 @@ msgstr "实时下载队列：页面会被获取、验证，然后每次两个打
 #, fuzzy
 msgid "Load more"
 msgstr "加载更多"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Loading chapters…"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
@@ -7340,6 +7406,7 @@ msgstr "最低评分：任意"
 msgid "minutes read"
 msgstr "阅读分钟数"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -7832,6 +7899,10 @@ msgstr "这里没有章节记录阅读时间，因此无法报告阅读速度。
 msgid "No chapters known."
 msgstr "没有已知章节。"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "No chapters match that filter."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters match this search and filter."
@@ -8209,6 +8280,7 @@ msgstr "不适合我"
 msgid "Not imported"
 msgstr "未导入"
 
+#: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8600,11 +8672,19 @@ msgstr "最早"
 msgid "OLED black"
 msgstr "OLED 黑色"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Omnibus volumes and odd file names need linking by hand."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On"
 msgstr "开启"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "On another file"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8643,6 +8723,7 @@ msgid "One tile per genre, each opening its most popular titles."
 msgstr "每种类型显示一个方块，点击后打开最受欢迎的作品。"
 
 #: src/api/queue.ts
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
@@ -11103,6 +11184,10 @@ msgstr "选择此页上的所有文件"
 msgid "Select filtered"
 msgstr "选择筛选结果"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Select missing ({missingCount})"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Select these chapters"
@@ -12247,6 +12332,10 @@ msgstr "泰语"
 msgid "That chapter no longer exists"
 msgstr "该章节已不存在"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "That was your {label}"
@@ -12631,6 +12720,10 @@ msgstr "此修复需要手动选择来源"
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "这会使用 <0>{backupName}</0> 替换当前资料库和设置，然后重启 Maki。当前数据不会保留；如果需要恢复，请先备份。Docker 和 systemd 会自动重新启动 Maki；否则请手动重新启动。"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
@@ -12715,6 +12808,10 @@ msgstr "点赞。此标题现在会影响你的推荐，也不会再次推荐给
 #, fuzzy
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgstr "对推荐进行点赞、隐藏或忽略后，内容会显示在这里。"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -13533,6 +13630,12 @@ msgstr "查看版本"
 #, fuzzy
 msgid "Vol. {volume}"
 msgstr "第 {volume} 卷"
+
+#. placeholder {0}: c.volume
+#. placeholder {1}: c.number
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Vol.{0} Ch.{1}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

@@ -432,9 +432,10 @@ public class SeriesController(
                     .Select(c => c.Number!.Value.ToString("0.###", CultureInfo.InvariantCulture))
                     .ToList());
 
-        // Case-sensitive filesystems allow two files whose paths differ only in case;
-        // they collapse to one entry here, so keep the first and don't throw.
-        var diskByRelPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // Keyed by LibraryPaths.ComparisonKey so a row stored with the other OS's separator still
+        // finds its file. Case-sensitive filesystems allow two files whose paths differ only in
+        // case; they collapse to one entry here, so keep the first and don't throw.
+        var diskByRelPath = new Dictionary<string, (string RelPath, string AbsPath)>(StringComparer.OrdinalIgnoreCase);
         foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
         {
             var seriesDir = Path.Combine(series.RootFolder.Path, folder);
@@ -446,7 +447,8 @@ public class SeriesController(
             foreach (var f in Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories)
                          .Where(ComicFile.IsComic).OrderBy(f => f, StringComparer.Ordinal))
             {
-                diskByRelPath.TryAdd(Path.Combine(folder, Path.GetRelativePath(seriesDir, f)), f);
+                var relPath = Path.Combine(folder, Path.GetRelativePath(seriesDir, f));
+                diskByRelPath.TryAdd(LibraryPaths.ComparisonKey(relPath), (relPath, f));
             }
         }
 
@@ -456,8 +458,10 @@ public class SeriesController(
         // 1. Files Maki has a record for (linked, unlinked, or missing-from-disk).
         foreach (var record in records)
         {
-            seenRelPaths.Add(record.RelativePath);
-            var present = diskByRelPath.TryGetValue(record.RelativePath, out var absPath);
+            var key = LibraryPaths.ComparisonKey(record.RelativePath);
+            seenRelPaths.Add(key);
+            var present = diskByRelPath.TryGetValue(key, out var disk);
+            var absPath = disk.AbsPath;
             var parsed = ReleaseNameParser.ParseFileName(record.RelativePath);
             var mapped = chaptersByFile.GetValueOrDefault(record.Id, []);
 
@@ -480,9 +484,9 @@ public class SeriesController(
         }
 
         // 2. Files on disk with no record yet (never imported — a rescan would adopt them).
-        foreach (var (relPath, absPath) in diskByRelPath)
+        foreach (var (key, (relPath, absPath)) in diskByRelPath)
         {
-            if (seenRelPaths.Contains(relPath))
+            if (seenRelPaths.Contains(key))
             {
                 continue;
             }

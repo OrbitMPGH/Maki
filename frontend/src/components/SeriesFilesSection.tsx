@@ -3,6 +3,7 @@ import { ActionIcon, Badge, Button, Checkbox, Group, Loader, Modal, Paper, Stack
 import {
   IconFileTypePdf,
   IconFileZip,
+  IconLink,
   IconRefresh,
   IconTrash,
   IconX,
@@ -17,6 +18,8 @@ import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
 import { Panel } from './ui/Panel'
+import { useAuth } from '../auth/AuthProvider'
+import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
@@ -29,6 +32,9 @@ function mappedLabel(file: SeriesFileDto): string {
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const { can } = useAuth()
+  const canLink = can('EditMetadata')
+  const [linkFile, setLinkFile] = useState<SeriesFileDto | null>(null)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -36,6 +42,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const deleteFiles = useDeleteSeriesFiles(seriesId)
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
+  const unlinkedOnDisk = files?.filter((f) => f.onDisk && f.status !== 'linked').length ?? 0
 
   const exitSelectMode = () => {
     setSelectMode(false)
@@ -105,6 +112,24 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           </Text>
         ) : (
         <>
+          {unlinkedOnDisk > 0 && canLink && !selectMode && (
+            <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm">
+              <Group gap="xs" wrap="nowrap" align="flex-start">
+                <IconLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                <Text size="sm" c="var(--ink-2)">
+                  <Plural
+                    value={unlinkedOnDisk}
+                    one="# file in this folder isn't linked to any chapter, so it can't be read yet."
+                    other="# files in this folder aren't linked to any chapter, so they can't be read yet."
+                  />{' '}
+                  <Trans>
+                    That happens with omnibus volumes and names the matcher can't parse. Use the link
+                    button on a row to pick the chapters it contains.
+                  </Trans>
+                </Text>
+              </Group>
+            </Paper>
+          )}
           {selectMode && (
             <Paper bg="var(--surface-sunken)" px="sm" py="xs" mt="sm" style={{ borderRadius: 'var(--radius-control)' }}>
               <Group gap="xs" justify="space-between">
@@ -157,7 +182,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     <Table.Th w={160}><Trans>Status</Trans></Table.Th>
                     <Table.Th><Trans>Mapped to</Trans></Table.Th>
                     <Table.Th w={90}><Trans>Size</Trans></Table.Th>
-                    {!selectMode && <Table.Th w={40} />}
+                    {!selectMode && <Table.Th w={canLink ? 76 : 40} />}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -227,6 +252,15 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 {mappedLabel(f)}
                               </Text>
                             </Tooltip>
+                          ) : f.mappedChapters.length === 0 && f.onDisk && canLink && !selectMode ? (
+                            <Button
+                              size="compact-xs"
+                              variant="light"
+                              leftSection={<IconLink size={13} />}
+                              onClick={() => setLinkFile(f)}
+                            >
+                              <Trans>Link chapters</Trans>
+                            </Button>
                           ) : (
                             <Text size="sm" c={f.mappedChapters.length ? undefined : 'var(--ink-3)'} className="tnum">
                               {mappedLabel(f)}
@@ -240,6 +274,23 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                         </Table.Td>
                         {!selectMode && (
                           <Table.Td>
+                            <Group gap={2} wrap="nowrap" justify="flex-end">
+                            {canLink && (
+                              <Tooltip
+                                label={f.mappedChapters.length > 0 ? t`Change linked chapters` : t`Link chapters to this file`}
+                                withArrow
+                              >
+                                <ActionIcon
+                                  variant="subtle"
+                                  color={f.mappedChapters.length > 0 ? 'gray' : 'brand'}
+                                  disabled={!f.onDisk}
+                                  onClick={() => setLinkFile(f)}
+                                  aria-label={t`Link chapters to ${fileName}`}
+                                >
+                                  <IconLink size={17} />
+                                </ActionIcon>
+                              </Tooltip>
+                            )}
                             <Tooltip label={f.onDisk ? t`Delete from disk` : t`Missing from disk`} withArrow>
                               <ActionIcon
                                 variant="subtle"
@@ -255,6 +306,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 <IconTrash size={17} />
                               </ActionIcon>
                             </Tooltip>
+                            </Group>
                           </Table.Td>
                         )}
                       </Table.Tr>
@@ -321,6 +373,8 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           </Modal>
         </>
       ))}
+
+      <LinkFileToChaptersModal seriesId={seriesId} file={linkFile} onClose={() => setLinkFile(null)} />
     </div>
   )
 }

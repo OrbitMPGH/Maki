@@ -49,6 +49,16 @@ msgstr "(erişilemiyor)"
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
 msgstr "{0, plural, one {# uyarlama} other {# uyarlama}}"
 
+#. placeholder {0}: selected.size
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
+msgstr ""
+
+#. placeholder {0}: chapterIds.length
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "{0, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
 #. placeholder {0}: r.failed
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -1148,6 +1158,14 @@ msgstr "{turnedOn, plural, one {# açıldı} other {# açıldı}}"
 #, fuzzy
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (başka bir profil)"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{unlinkedFilesOnDisk, plural, one {# file in the series folder isn't linked to any chapter.} other {# files in the series folder aren't linked to any chapter.}}"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{unlinkedOnDisk, plural, one {# file in this folder isn't linked to any chapter, so it can't be read yet.} other {# files in this folder aren't linked to any chapter, so they can't be read yet.}}"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -2810,6 +2828,7 @@ msgstr "Bu indirme okunamıyor"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/layout/SectionProperties.tsx
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -3031,6 +3050,11 @@ msgstr "b. {start}–{end}"
 msgid "Ch. {start}–{end}"
 msgstr "B. {start}–{end}"
 
+#. placeholder {0}: c.number
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Ch.{0}"
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Ch.{chapter}"
@@ -3060,6 +3084,10 @@ msgstr "Değiştir"
 #, fuzzy
 msgid "Change how individual titles affect recommendations."
 msgstr "Bireysel başlıkların önerileri nasıl etkilediğini değiştirin."
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Change linked chapters"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3323,6 +3351,7 @@ msgstr "Kök klasör seçin"
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "Değerleri izinleri adlandıran hak talebi, örn. <0>DownloadChapters</0>. Hiçbir şeyle eşleşmeyen değerler yok sayılır."
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -3379,6 +3408,7 @@ msgid "Clear read or seen"
 msgstr "Okundu veya görüldü işaretini temizle"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Clear search"
@@ -5180,6 +5210,11 @@ msgstr "Dosyalar"
 msgid "Film / OVA"
 msgstr "Film / OVA"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Filter by chapter number or title"
+msgstr ""
+
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Filter chapters"
@@ -6756,10 +6791,15 @@ msgid "Light"
 msgstr "Açık"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Link"
 msgstr "Bağla"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link {chapterLbl} to a file"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -6786,6 +6826,23 @@ msgstr "Bir kaynak bağlayın ve yenileyin."
 msgid "Link and unlink per-series sources"
 msgstr "Seri bazında kaynakları bağlar ve ayırır"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters to {fileName}"
+msgstr ""
+
+#: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters to this file"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link files"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Link files and report results"
@@ -6795,6 +6852,10 @@ msgstr "Dosyaları bağla ve sonuçları bildir"
 #, fuzzy
 msgid "Link source"
 msgstr "Kaynağı bağla"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link to a file already on disk"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6808,6 +6869,7 @@ msgid "Linked"
 msgstr "Bağlandı"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #, fuzzy
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "{chapterPhrase} bölümü {fileName} dosyasına bağlandı"
@@ -6860,6 +6922,10 @@ msgstr "Canlı indirme kuyruğu: sayfalar aynı anda ikişer ikişer getirilir, 
 #, fuzzy
 msgid "Load more"
 msgstr "Daha fazla yükle"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Loading chapters…"
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
@@ -7340,6 +7406,7 @@ msgstr "Asgari puan: herhangi"
 msgid "minutes read"
 msgstr "okunan dakika"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -7832,6 +7899,10 @@ msgstr "Burada hiçbir bölümün okuma süresi yok, bu yüzden bildirilecek bir
 msgid "No chapters known."
 msgstr "Bilinen bölüm yok."
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "No chapters match that filter."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters match this search and filter."
@@ -8209,6 +8280,7 @@ msgstr "Bana göre değil"
 msgid "Not imported"
 msgstr "İçe aktarılmadı"
 
+#: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8600,11 +8672,19 @@ msgstr "En eski"
 msgid "OLED black"
 msgstr "OLED siyahı"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Omnibus volumes and odd file names need linking by hand."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On"
 msgstr "Açık"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "On another file"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8643,6 +8723,7 @@ msgid "One tile per genre, each opening its most popular titles."
 msgstr "Her tür için en popüler başlıkları açan bir kutucuk."
 
 #: src/api/queue.ts
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
@@ -11103,6 +11184,10 @@ msgstr "Bu sayfadaki her dosyayı seç"
 msgid "Select filtered"
 msgstr "Filtrelenenleri seç"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Select missing ({missingCount})"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Select these chapters"
@@ -12247,6 +12332,10 @@ msgstr "Tayca"
 msgid "That chapter no longer exists"
 msgstr "Bu bölüm artık mevcut değil"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "That was your {label}"
@@ -12631,6 +12720,10 @@ msgstr "Bu onarım için elle seçilmiş bir kaynak gerekli"
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "Geçerli kitaplığınız ve ayarlarınız <0>{backupName}</0> ile değiştirilir, ardından Maki yeniden başlatılır. Geçerli veriler saklanmaz; geri dönebilmek istiyorsanız önce yedek alın. Docker ve systemd Maki'yi kendileri yeniden başlatır; diğer durumlarda Maki'yi yeniden başlatmanız gerekir."
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
@@ -12715,6 +12808,10 @@ msgstr "Beğendim. Bu başlık artık önerilerinizi yönlendiriyor ve size tekr
 #, fuzzy
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgstr "Bir öneriyi beğenin, gizleyin veya kapatın, burada görünür."
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -13533,6 +13630,12 @@ msgstr "Sürümü görüntüle"
 #, fuzzy
 msgid "Vol. {volume}"
 msgstr "C. {volume}"
+
+#. placeholder {0}: c.volume
+#. placeholder {1}: c.number
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Vol.{0} Ch.{1}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

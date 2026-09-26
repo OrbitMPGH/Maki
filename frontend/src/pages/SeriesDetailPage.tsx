@@ -411,7 +411,9 @@ export default function SeriesDetailPage() {
   const [chapterPage, setChapterPage] = useState(1)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [linkModalOpen, setLinkModalOpen] = useState(false)
+  // Chapter ids the link dialog is working on; null keeps it closed. Set from the selection
+  // bar or from a single missing row's link button.
+  const [linkChapterIds, setLinkChapterIds] = useState<number[] | null>(null)
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
@@ -419,6 +421,7 @@ export default function SeriesDetailPage() {
   // Without DownloadChapters the two buttons that queue downloads become one that asks an admin to.
   const { can } = useAuth()
   const canDownload = can('DownloadChapters')
+  const canLinkFiles = can('EditMetadata')
   const createRequest = useCreateSeriesRequest()
   // Already in cache: the sources section below this page fetches the same query. Two enabled
   // mappings is the floor for "find better copy" having anything to show.
@@ -508,6 +511,10 @@ export default function SeriesDetailPage() {
 
   // What "Download all wanted" would actually queue, so the button can say so rather than making
   // the user open the Chapters tab to find out.
+  const unlinkedFilesOnDisk = useMemo(
+      () => (files ?? []).filter((f) => f.onDisk && f.status !== 'linked').length,
+      [files],
+  )
   const missingWanted = useMemo(
       () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile).length,
       [chapters],
@@ -1898,6 +1905,31 @@ export default function SeriesDetailPage() {
                 />
             )}
 
+            {/* Two closed issues came from people who had a file on disk and could not find how to
+                tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
+            {!selectMode && canLinkFiles && unlinkedFilesOnDisk > 0 && (
+                <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg">
+                  <Group justify="space-between" wrap="wrap" gap="xs">
+                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 240 }}>
+                      <IconLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <Text size="sm" c="var(--ink-2)">
+                        <Plural
+                            value={unlinkedFilesOnDisk}
+                            one="# file in the series folder isn't linked to any chapter."
+                            other="# files in the series folder aren't linked to any chapter."
+                        />{' '}
+                        <Trans>Omnibus volumes and odd file names need linking by hand.</Trans>
+                      </Text>
+                    </Group>
+                    <Group gap="xs">
+                      <Button size="xs" variant="light" leftSection={<IconLink size={14} />} onClick={() => changeTab('files')}>
+                        <Trans>Link files</Trans>
+                      </Button>
+                    </Group>
+                  </Group>
+                </Paper>
+            )}
+
             {selectMode && (
                 <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="lg">
                   <Group justify="space-between" wrap="wrap" gap="xs">
@@ -2037,7 +2069,7 @@ export default function SeriesDetailPage() {
                           variant="light"
                           leftSection={<IconLink size={15} />}
                           disabled={selected.size === 0}
-                          onClick={() => setLinkModalOpen(true)}
+                          onClick={() => setLinkChapterIds([...selected])}
                       >
                         <Trans>Link to file</Trans>
                       </Button>
@@ -2128,11 +2160,11 @@ export default function SeriesDetailPage() {
 
             <LinkChaptersModal
                 seriesId={seriesId}
-                chapterIds={[...selected]}
-                opened={linkModalOpen}
+                chapterIds={linkChapterIds ?? []}
+                opened={linkChapterIds !== null}
                 onClose={() => {
-                  setLinkModalOpen(false)
-                  exitSelectMode()
+                  setLinkChapterIds(null)
+                  if (selectMode) exitSelectMode()
                 }}
             />
 
@@ -2420,6 +2452,18 @@ export default function SeriesDetailPage() {
                                                 </ActionIcon>
                                               </Tooltip>
                                             </>
+                                        )}
+                                        {!c.hasFile && canLinkFiles && (
+                                            <Tooltip label={t`Link to a file already on disk`} withArrow>
+                                              <ActionIcon
+                                                  variant="subtle"
+                                                  color="gray"
+                                                  onClick={() => setLinkChapterIds([c.id])}
+                                                  aria-label={t`Link ${chapterLbl} to a file`}
+                                              >
+                                                <IconLink size={17} />
+                                              </ActionIcon>
+                                            </Tooltip>
                                         )}
                                         {!c.hasFile && canDownload && (
                                             <Tooltip label={t`Download this chapter`} withArrow>

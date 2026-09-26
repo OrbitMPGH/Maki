@@ -6435,6 +6435,13 @@ body.reader-open {
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
   background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
+.series-detail-chapter-hint,
+.series-files-hint {
+  border-left: 2px solid var(--warn);
+  border-right: 0;
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
 .series-detail-chapter-table {
   overflow: hidden;
 }

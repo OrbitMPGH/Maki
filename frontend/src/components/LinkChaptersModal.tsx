@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Badge, Button, Group, Loader, Modal, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core'
-import { IconFileZip } from '@tabler/icons-react'
+import { IconFileZip, IconLinkOff } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -23,6 +23,12 @@ export function LinkChaptersModal({
   const { data: files, isLoading } = useSeriesFiles(seriesId, opened)
   const link = useLinkChapters()
   const [picked, setPicked] = useState<string | null>(null)
+  // Files nothing points at yet float to the top: that is almost always the omnibus or the
+  // oddly named release the user opened this dialog for.
+  const sorted = useMemo(() => {
+    const rank = (f: SeriesFileDto) => (!f.onDisk ? 2 : f.status === 'linked' ? 1 : 0)
+    return [...(files ?? [])].sort((a, b) => rank(a) - rank(b))
+  }, [files])
   const chapterCount = chapterIds.length
   const chapterPhrase = plural(chapterCount, { one: '# chapter', other: '# chapters' })
 
@@ -70,7 +76,7 @@ export function LinkChaptersModal({
         ) : (
           <ScrollArea.Autosize mah="min(420px, 45dvh)">
             <Stack gap={4}>
-              {files.map((f) => (
+              {sorted.map((f) => (
                 <UnstyledButton
                   key={f.relativePath}
                   onClick={() => setPicked(f.relativePath)}
@@ -90,6 +96,11 @@ export function LinkChaptersModal({
                       </Text>
                     </Group>
                     <Group gap={6} wrap="nowrap">
+                      {f.onDisk && f.status !== 'linked' && (
+                        <Badge size="sm" variant="light" color="var(--warn)" leftSection={<IconLinkOff size={11} />}>
+                          <Trans>Not linked</Trans>
+                        </Badge>
+                      )}
                       {f.parsedLabel && (
                         <Badge size="sm" variant="light" color={f.isVolume ? 'indigo' : 'var(--neutral)'} className="tnum">
                           {f.parsedLabel}

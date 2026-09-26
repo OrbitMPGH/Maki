@@ -41,6 +41,14 @@ public static class LibraryPaths
         }
     }
 
+    /// <summary>
+    /// A comparison key for a stored relative path. Rows written under Docker hold <c>/</c> while
+    /// a Windows scan builds <c>\</c>, and a library moved between the two must still match its
+    /// own files rather than showing every one twice.
+    /// </summary>
+    public static string ComparisonKey(string relativePath) =>
+        relativePath.Replace('\\', '/').TrimStart('/');
+
     /// <summary>Folder names compare the way the host's filesystem does.</summary>
     public static StringComparer FolderComparer { get; } =
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;

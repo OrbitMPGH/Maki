@@ -42,6 +42,16 @@ msgstr "(inaccessible)"
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
 msgstr "{0, plural, one {# adaptation} other {# adaptations}}"
 
+#. placeholder {0}: selected.size
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
+msgstr "{0, plural, one {# chapter selected} other {# chapters selected}}"
+
+#. placeholder {0}: chapterIds.length
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "{0, plural, one {# chapter} other {# chapters}}"
+msgstr "{0, plural, one {# chapter} other {# chapters}}"
+
 #. placeholder {0}: r.failed
 #: src/components/SeriesFilesSection.tsx
 msgid "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
@@ -930,6 +940,14 @@ msgstr "{turnedOn, plural, one {# turned on} other {# turned on}}"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (another profile)"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{unlinkedFilesOnDisk, plural, one {# file in the series folder isn't linked to any chapter.} other {# files in the series folder aren't linked to any chapter.}}"
+msgstr "{unlinkedFilesOnDisk, plural, one {# file in the series folder isn't linked to any chapter.} other {# files in the series folder aren't linked to any chapter.}}"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{unlinkedOnDisk, plural, one {# file in this folder isn't linked to any chapter, so it can't be read yet.} other {# files in this folder aren't linked to any chapter, so they can't be read yet.}}"
+msgstr "{unlinkedOnDisk, plural, one {# file in this folder isn't linked to any chapter, so it can't be read yet.} other {# files in this folder aren't linked to any chapter, so they can't be read yet.}}"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "{unread, plural, one {# chapter} other {# chapters}} you own but have not read."
@@ -2275,6 +2293,7 @@ msgstr "Can't read this download"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/layout/SectionProperties.tsx
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -2456,6 +2475,11 @@ msgstr "ch. {start}–{end}"
 msgid "Ch. {start}–{end}"
 msgstr "Ch. {start}–{end}"
 
+#. placeholder {0}: c.number
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Ch.{0}"
+msgstr "Ch.{0}"
+
 #: src/api/queue.ts
 msgid "Ch.{chapter}"
 msgstr "Ch.{chapter}"
@@ -2479,6 +2503,10 @@ msgstr "Change"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Change how individual titles affect recommendations."
 msgstr "Change how individual titles affect recommendations."
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Change linked chapters"
+msgstr "Change linked chapters"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Change own content rating"
@@ -2692,6 +2720,7 @@ msgstr "Choose a root folder"
 msgid "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 msgstr "Claim whose values name permissions, e.g. <0>DownloadChapters</0>. Values that match nothing are ignored."
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -2738,6 +2767,7 @@ msgid "Clear read or seen"
 msgstr "Clear read or seen"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/TagBrowserModal.tsx
 msgid "Clear search"
 msgstr "Clear search"
@@ -4202,6 +4232,11 @@ msgstr "Files"
 msgid "Film / OVA"
 msgstr "Film / OVA"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Filter by chapter number or title"
+msgstr "Filter by chapter number or title"
+
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Filter chapters"
 msgstr "Filter chapters"
@@ -5480,9 +5515,14 @@ msgid "Light"
 msgstr "Light"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Link"
 msgstr "Link"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link {chapterLbl} to a file"
+msgstr "Link {chapterLbl} to a file"
 
 #: src/components/LinkChaptersModal.tsx
 msgid "Link {chapterPhrase} to a file"
@@ -5504,6 +5544,23 @@ msgstr "Link a source and refresh."
 msgid "Link and unlink per-series sources"
 msgstr "Link and unlink per-series sources"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters"
+msgstr "Link chapters"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters to {fileName}"
+msgstr "Link chapters to {fileName}"
+
+#: src/components/LinkFileToChaptersModal.tsx
+#: src/components/SeriesFilesSection.tsx
+msgid "Link chapters to this file"
+msgstr "Link chapters to this file"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link files"
+msgstr "Link files"
+
 #: src/pages/ImportPage.tsx
 msgid "Link files and report results"
 msgstr "Link files and report results"
@@ -5511,6 +5568,10 @@ msgstr "Link files and report results"
 #: src/components/SourceMappingsSection.tsx
 msgid "Link source"
 msgstr "Link source"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link to a file already on disk"
+msgstr "Link to a file already on disk"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Link to file"
@@ -5522,6 +5583,7 @@ msgid "Linked"
 msgstr "Linked"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/LinkFileToChaptersModal.tsx
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "Linked {chapterPhrase} to {fileName}"
 
@@ -5564,6 +5626,10 @@ msgstr "Live download queue: pages are fetched, validated and packaged into CBZ 
 #: src/pages/NotificationsPage.tsx
 msgid "Load more"
 msgstr "Load more"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Loading chapters…"
+msgstr "Loading chapters…"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
@@ -5953,6 +6019,7 @@ msgstr "Minimum rating: any"
 msgid "minutes read"
 msgstr "minutes read"
 
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -6354,6 +6421,10 @@ msgstr "No chapter here carries a reading time, so there is no pace to report."
 msgid "No chapters known."
 msgstr "No chapters known."
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "No chapters match that filter."
+msgstr "No chapters match that filter."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "No chapters match this search and filter."
 msgstr "No chapters match this search and filter."
@@ -6657,6 +6728,7 @@ msgstr "Not for me"
 msgid "Not imported"
 msgstr "Not imported"
 
+#: src/components/LinkChaptersModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 msgid "Not linked"
@@ -6973,10 +7045,18 @@ msgstr "Oldest"
 msgid "OLED black"
 msgstr "OLED black"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Omnibus volumes and odd file names need linking by hand."
+msgstr "Omnibus volumes and odd file names need linking by hand."
+
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "On"
 msgstr "On"
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "On another file"
+msgstr "On another file"
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -7008,6 +7088,7 @@ msgid "One tile per genre, each opening its most popular titles."
 msgstr "One tile per genre, each opening its most popular titles."
 
 #: src/api/queue.ts
+#: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "One-shot"
 msgstr "One-shot"
@@ -9002,6 +9083,10 @@ msgstr "Select every file on this page"
 msgid "Select filtered"
 msgstr "Select filtered"
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Select missing ({missingCount})"
+msgstr "Select missing ({missingCount})"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Select these chapters"
 msgstr "Select these chapters"
@@ -9930,6 +10015,10 @@ msgstr "Thai"
 msgid "That chapter no longer exists"
 msgstr "That chapter no longer exists"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+msgstr "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+
 #: src/pages/rewind/slides.tsx
 msgid "That was your {label}"
 msgstr "That was your {label}"
@@ -10238,6 +10327,10 @@ msgstr "This repair needs a source chosen by hand"
 msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 msgstr "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
+msgstr "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
+
 #: src/components/SourceCompareModal.tsx
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
 msgstr "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
@@ -10305,6 +10398,10 @@ msgstr "Thumbs up. This title now steers your recommendations, and it will not b
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgstr "Thumbs, hide or dismiss a recommendation and it shows up here."
+
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
+msgstr "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Time"
@@ -10967,6 +11064,12 @@ msgstr "View release"
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Vol. {volume}"
 msgstr "Vol. {volume}"
+
+#. placeholder {0}: c.volume
+#. placeholder {1}: c.number
+#: src/components/LinkFileToChaptersModal.tsx
+msgid "Vol.{0} Ch.{1}"
+msgstr "Vol.{0} Ch.{1}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Vol.{fileVolume}"
