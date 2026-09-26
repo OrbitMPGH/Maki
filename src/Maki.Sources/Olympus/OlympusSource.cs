@@ -22,6 +22,10 @@ public class OlympusSource : ISource
 {
     private static readonly HtmlParser Parser = new();
 
+    /// <summary>Floor between catalog fetches that a URL-resolve miss may force, so a pasted URL
+    /// nothing in the catalog carries can't make every attempt refetch the whole list.</summary>
+    private static readonly TimeSpan ResolveRefreshInterval = TimeSpan.FromMinutes(1);
+
     private readonly IHtmlFetcher _fetcher;
     private readonly ILogger<OlympusSource>? _logger;
     private readonly SourceCatalog _catalog = new(TimeSpan.FromMinutes(30));
@@ -29,47 +33,15 @@ public class OlympusSource : ISource
     /// <summary>Id-to-slug map, rebuilt every time the catalog is fetched (warm or forced).</summary>
     private volatile IReadOnlyDictionary<string, string> _slugById = new Dictionary<string, string>();
 
-    /// <summary>Guards <see cref="TriggerWarmupIfIdle"/> so a burst of cold lookups starts one
-    /// warm-up, not one per call. 0 = idle, 1 = a warm-up is in flight.</summary>
-    private int _warmupInFlight;
+    private readonly SemaphoreSlim _resolveRefreshLock = new(1, 1);
+    private readonly TimeProvider _time;
+    private long _catalogFetchedAtTicks;
 
-    public OlympusSource(IHtmlFetcher fetcher, ILogger<OlympusSource>? logger = null)
+    public OlympusSource(IHtmlFetcher fetcher, ILogger<OlympusSource>? logger = null, TimeProvider? time = null)
     {
         _fetcher = fetcher;
         _logger = logger;
-    }
-
-    /// <summary>
-    /// Starts a fire-and-forget catalog fetch unless one is already running. No network call
-    /// happens just from constructing this class (every source is instantiated at startup
-    /// whether enabled or not, and this class is built directly in unit tests). The first real
-    /// trigger is a cold <see cref="ResolveSeriesIdFromUrl"/> call, matching the on-demand loading
-    /// every other call already does through <see cref="SlugForIdAsync"/> and <see cref="SourceCatalog"/>.
-    /// </summary>
-    private void TriggerWarmupIfIdle()
-    {
-        if (Interlocked.CompareExchange(ref _warmupInFlight, 1, 0) != 0)
-        {
-            return;
-        }
-
-        _ = WarmCatalogAsync();
-    }
-
-    private async Task WarmCatalogAsync()
-    {
-        try
-        {
-            await _catalog.LoadAsync(FetchCatalogAsync, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning(ex, "Olympus catalog warm-up failed; will retry on the next cold lookup");
-        }
-        finally
-        {
-            Volatile.Write(ref _warmupInFlight, 0);
-        }
+        _time = time ?? TimeProvider.System;
     }
 
     public string Name => "olympus";
@@ -93,15 +65,58 @@ public class OlympusSource : ISource
         }
     }
 
-    public string? ResolveSeriesIdFromUrl(Uri url)
+    /// <summary>Reads only the id-to-slug map already in memory, so it is null until a catalog
+    /// fetch has happened. <see cref="ResolveSeriesIdFromUrlAsync"/> loads it.</summary>
+    public string? ResolveSeriesIdFromUrl(Uri url) => SlugFromUrl(url) is { } slug ? IdForSlug(slug) : null;
+
+    public async ValueTask<string?> ResolveSeriesIdFromUrlAsync(Uri url, CancellationToken ct = default)
     {
-        var tail = SourceUrl.PathTail(url, BaseUrl, "/series/", firstSegmentOnly: true);
-        if (tail is null || !tail.StartsWith("comic-", StringComparison.Ordinal))
+        if (SlugFromUrl(url) is not { } slug)
         {
             return null;
         }
 
-        var slug = tail["comic-".Length..];
+        try
+        {
+            await _catalog.LoadAsync(FetchCatalogAsync, ct);
+            if (IdForSlug(slug) is { } id)
+            {
+                return id;
+            }
+
+            // A slug newer than the cached catalog (a new series or a rotated slug) needs a refetch,
+            // but at most once per ResolveRefreshInterval.
+            await _resolveRefreshLock.WaitAsync(ct);
+            try
+            {
+                var fetchedAt = new DateTime(Interlocked.Read(ref _catalogFetchedAtTicks), DateTimeKind.Utc);
+                if (_time.GetUtcNow().UtcDateTime - fetchedAt >= ResolveRefreshInterval)
+                {
+                    await FetchCatalogAsync(ct);
+                }
+            }
+            finally
+            {
+                _resolveRefreshLock.Release();
+            }
+
+            return IdForSlug(slug);
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            _logger?.LogWarning(ex, "Olympus catalog fetch failed while resolving {Url}", url);
+            return null;
+        }
+    }
+
+    private string? SlugFromUrl(Uri url)
+    {
+        var tail = SourceUrl.PathTail(url, BaseUrl, "/series/", firstSegmentOnly: true);
+        return tail is not null && tail.StartsWith("comic-", StringComparison.Ordinal) ? tail["comic-".Length..] : null;
+    }
+
+    private string? IdForSlug(string slug)
+    {
         foreach (var (id, candidate) in _slugById)
         {
             if (candidate == slug)
@@ -110,10 +125,6 @@ public class OlympusSource : ISource
             }
         }
 
-        // Not found, cold catalog or a slug nothing on the current list carries. Synchronous by
-        // interface contract, so it can't await here: this call still returns null, but it starts
-        // (or leaves running) a fire-and-forget warm-up so the next call has a chance to resolve.
-        TriggerWarmupIfIdle();
         return null;
     }
 
@@ -339,6 +350,7 @@ public class OlympusSource : ISource
         }
 
         _slugById = slugById;
+        Interlocked.Exchange(ref _catalogFetchedAtTicks, _time.GetUtcNow().UtcDateTime.Ticks);
         return results;
     }
 
