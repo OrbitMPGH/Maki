@@ -4,7 +4,7 @@ using System.Text.Json;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace Maki.Sources.MangaDenizi;
@@ -12,7 +12,8 @@ namespace Maki.Sources.MangaDenizi;
 /// <summary>
 /// MangaDenizi source: Turkish manga/manhwa aggregator, a Laravel JSON API (no HTML parsing).
 /// Every reader page is tile-scrambled ("tiled-v1"), so GetPagesAsync fetches and descrambles
-/// each page itself through the Data hatch (see MangaDeniziDescrambler) and re-encodes it as JPEG.
+/// each page itself through the Data hatch (see MangaDeniziDescrambler) and re-encodes it as
+/// lossy WebP, matching the .webp extension PageDownloader derives from the page's own URL.
 /// </summary>
 public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
 {
@@ -225,8 +226,12 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         using var source = Image.Load<Rgb24>(raw);
         using var descrambled = MangaDeniziDescrambler.Descramble(source, grid, seed);
 
+        // PageDownloader names the saved file from PageRequest.Url's own extension, and every
+        // MangaDenizi image URL ends in .webp - re-encoding to JPEG here would write JPEG bytes
+        // under a .webp name, which Maki would then serve back as image/webp.
         using var output = new MemoryStream();
-        await descrambled.SaveAsJpegAsync(output, new JpegEncoder { Quality = 90 }, ct);
+        await descrambled.SaveAsWebpAsync(
+            output, new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = 90 }, ct);
         return output.ToArray();
     }
 

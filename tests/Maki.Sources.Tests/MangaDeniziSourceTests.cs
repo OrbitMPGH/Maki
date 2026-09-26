@@ -103,7 +103,11 @@ public class MangaDeniziSourceTests
             Assert.NotNull(p.Data);
             Assert.NotEmpty(p.Data!);
             Assert.Equal("https://mangadenizi.net/", p.Headers!["Referer"]);
-            // Every page must come back as a real, decodable JPEG - never the raw scrambled bytes.
+            // PageDownloader names the saved file from the .webp extension on the page's own URL,
+            // so the bytes returned here must actually be WebP - never JPEG under a .webp name,
+            // and never the raw scrambled bytes.
+            Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(p.Data!, 0, 4));
+            Assert.Equal("WEBP", System.Text.Encoding.ASCII.GetString(p.Data!, 8, 4));
             using var decoded = Image.Load(p.Data!);
             Assert.True(decoded.Width > 0 && decoded.Height > 0);
         });
@@ -321,9 +325,11 @@ public class MangaDeniziDescramblerTests
 
         using var descrambled = MangaDeniziDescrambler.Descramble(scrambled, 10, 316064641u);
 
-        // JPEG re-encoding (the descrambler's own output path, and the fixture's own capture)
-        // is lossy, so pixels differ by a few units even for an identical image - compare the
-        // mean absolute per-channel difference against a small threshold instead of exact equality.
+        // The expected fixture was captured once through a lossy JPEG encode (the Python port
+        // used to verify the algorithm by eye), so pixels differ by a few units even for an
+        // identical image - compare the mean absolute per-channel difference against a small
+        // threshold instead of exact equality. Descramble itself only rearranges pixels; the
+        // source's own lossy WebP re-encode happens in ProcessPageAsync, not here.
         var matches = MeanAbsoluteDifference(expected, descrambled);
         Assert.True(matches < 8.0, $"Descrambled output differs from the known-good fixture by {matches}");
 
