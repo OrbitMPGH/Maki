@@ -110,6 +110,7 @@ const SOURCE_ICONS: Record<string, string> = {
   taiyo: '/source-icons/taiyo.png',
   comicwalker: '/source-icons/comicwalker.png',
   rawkuma: '/source-icons/rawkuma.png',
+  teamx: '/source-icons/teamx.png',
 }
 
 export function SourceMappingsSection({

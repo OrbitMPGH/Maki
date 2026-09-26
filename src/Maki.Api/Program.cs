@@ -58,6 +58,7 @@ using Maki.Sources.MangaTube;
 using Maki.Sources.MangaDenizi;
 using Maki.Sources.ComicWalker;
 using Maki.Sources.Rawkuma;
+using Maki.Sources.TeamX;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -716,7 +717,8 @@ try
     builder.Services.AddSingleton<ISource, TaiyoSource>();
     builder.Services.AddSingleton<ISource, ComicWalkerSource>();
     builder.Services.AddSingleton<ISource, RawkumaSource>();
-
+    builder.Services.AddSingleton<ISource, TeamXSource>();
+    
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();

@@ -22,6 +22,7 @@ using Maki.Sources.MangaWorld;
 using Maki.Sources.MangaTube;
 using Maki.Sources.ComicWalker;
 using Maki.Sources.Rawkuma;
+using Maki.Sources.TeamX;
 
 namespace Maki.Sources.Tests;
 
@@ -483,6 +484,23 @@ public class ResolveSeriesIdFromUrlTests
     public void Rawkuma(string url, string? expected)
     {
         ISource source = new RawkumaSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://olympustaff.com/series/SL", "SL")]
+    [InlineData("https://olympustaff.com/series/SL/", "SL")]
+    [InlineData("https://olympustaff.com/series/solo-leveling-ragnarok", "solo-leveling-ragnarok")]
+    // Slugs are case-sensitive; the tail must survive untouched.
+    [InlineData("https://olympustaff.com/series/sl", "sl")]
+    // A chapter URL names an extra path segment and must not resolve as a series.
+    [InlineData("https://olympustaff.com/series/SL/200", null)]
+    [InlineData("https://olympustaff.com/series?type=manhwa", null)]
+    [InlineData("https://olympustaff.com/search?keyword=solo", null)]
+    [InlineData("https://example.com/series/SL", null)]
+    public void TeamX(string url, string? expected)
+    {
+        ISource source = new TeamXSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
