@@ -102,6 +102,7 @@ const SOURCE_ICONS: Record<string, string> = {
   shinigami: '/source-icons/shinigami.png',
   manhwa18net: '/source-icons/manhwa18net.ico',
   cuutruyen: '/source-icons/cuutruyen.ico',
+  mangaworld: '/source-icons/mangaworld.png',
 }
 
 export function SourceMappingsSection({

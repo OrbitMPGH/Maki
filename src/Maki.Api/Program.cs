@@ -50,6 +50,7 @@ using Maki.Sources.MangaLib;
 using Maki.Sources.Dynasty;
 using Maki.Sources.AnimeSama;
 using Maki.Sources.CuuTruyen;
+using Maki.Sources.MangaWorld;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -631,6 +632,7 @@ try
     builder.Services.AddSingleton<ISource, ShinigamiSource>();
     builder.Services.AddSingleton<ISource, Manhwa18NetSource>();
     builder.Services.AddSingleton<ISource, CuuTruyenSource>();
+    builder.Services.AddSingleton<ISource, MangaWorldSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
