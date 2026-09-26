@@ -29,7 +29,7 @@ public class TeamXSourceTests
 
     /// <summary>
     /// A chapter page whose div.image_list only holds the promo banner (no img.manga-chapter-img
-    /// and no canvas[data-src]) — a not-yet-released or paid chapter the site still lists, not a
+    /// and no canvas[data-src]): a not-yet-released or paid chapter the site still lists, not a
     /// broken page.
     /// </summary>
     private const string ChapterWithNoImages = """
@@ -237,7 +237,7 @@ public class TeamXSourceTests
             "teamx", "SL", "200", "200", 200m, null, null, "ar", null);
 
         // An image_list that holds only the promo banner is an unreleased or paid chapter the site
-        // still lists, not a broken page — never zero pages for a chapter the pipeline is holding.
+        // still lists, not a broken page: never zero pages for a chapter the pipeline is holding.
         await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(chapter));
     }
 
