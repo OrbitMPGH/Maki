@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Maki.Core.Sources;
 using Maki.Sources.MangaDenizi;
 using SixLabors.ImageSharp;
@@ -120,6 +121,22 @@ public class MangaDeniziSourceTests
             "mangadenizi", "solo-leveling", "solo-leveling/999", "999", 999m, null, null, "tr", null);
 
         await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(chapter));
+    }
+
+    [Theory]
+    [InlineData("{\"grid\":10,\"seed\":1}")]              // method missing entirely
+    [InlineData("{\"method\":null,\"grid\":10,\"seed\":1}")] // method present but null
+    [InlineData("{\"method\":42,\"grid\":10,\"seed\":1}")]   // method present but not a string
+    public async Task ProcessPage_throws_when_scramble_is_present_but_has_no_usable_method(string scrambleJson)
+    {
+        using var doc = JsonDocument.Parse($"{{\"image_url\":\"https://img.mangadenizi.net/page.webp\",\"scramble\":{scrambleJson}}}");
+        var raw = new byte[] { 1, 2, 3 };
+
+        var ex = await Assert.ThrowsAsync<NotSupportedException>(() => MangaDeniziSource.ProcessPageAsync(
+            raw, doc.RootElement, "https://img.mangadenizi.net/page.webp", CancellationToken.None));
+
+        // Never the raw scrambled bytes: nothing usable comes back from a call that throws.
+        Assert.Contains("page.webp", ex.Message);
     }
 
     [Fact]

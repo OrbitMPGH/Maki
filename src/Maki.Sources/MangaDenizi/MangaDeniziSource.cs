@@ -189,8 +189,9 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
     }
 
     /// <summary>
-    /// Descrambles one page's already-fetched bytes if it carries a "tiled-v1" scramble, or
-    /// passes them through unchanged. An unrecognised non-null method throws rather than ever
+    /// Descrambles one page's already-fetched bytes if it carries a "tiled-v1" scramble. An
+    /// absent or null "scramble" passes the bytes through unchanged; a present "scramble" object
+    /// naming anything else - including a missing or null "method" - throws rather than ever
     /// writing a scrambled page to disk.
     /// </summary>
     internal static async Task<byte[]> ProcessPageAsync(byte[] raw, JsonElement page, string url, CancellationToken ct)
@@ -204,14 +205,12 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
             ? methodEl.GetString()
             : null;
 
-        if (method is null)
-        {
-            return raw;
-        }
-
+        // A present, non-null scramble object with anything other than "tiled-v1" - including a
+        // missing or null method - means pages are scrambled some way we don't recognise. Throw
+        // rather than ever writing those bytes out as if they were clean.
         if (method != "tiled-v1")
         {
-            throw new NotSupportedException($"Unknown MangaDenizi scramble method '{method}' for page {url}");
+            throw new NotSupportedException($"Unknown MangaDenizi scramble method '{method ?? "(none)"}' for page {url}");
         }
 
         if (!scrambleEl.TryGetProperty("grid", out var gridEl) || !scrambleEl.TryGetProperty("seed", out var seedEl))
