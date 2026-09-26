@@ -54,14 +54,15 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
     public async Task<MangaTubeResponse> SendAsync(
         HttpMethod method, string path, IReadOnlyDictionary<string, string>? headers, CancellationToken ct)
     {
-        var response = await SendOnceAsync(method, path, headers, ct);
+        var sentCookie = _cookie;
+        var response = await SendOnceAsync(method, path, headers, sentCookie, ct);
         if (!IsChallenge(response))
         {
             return response;
         }
 
-        await SolveChallengeAsync(ct);
-        response = await SendOnceAsync(method, path, headers, ct);
+        await SolveChallengeAsync(sentCookie, ct);
+        response = await SendOnceAsync(method, path, headers, _cookie, ct);
         if (IsChallenge(response))
         {
             throw new InvalidOperationException($"Manga-Tube challenge solve failed twice in a row for {path}.");
@@ -71,13 +72,13 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
     }
 
     private async Task<MangaTubeResponse> SendOnceAsync(
-        HttpMethod method, string path, IReadOnlyDictionary<string, string>? headers, CancellationToken ct)
+        HttpMethod method, string path, IReadOnlyDictionary<string, string>? headers, string? cookie, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(method, path);
         request.Headers.TryAddWithoutValidation("Accept", "application/json");
-        if (_cookie is not null)
+        if (cookie is not null)
         {
-            request.Headers.TryAddWithoutValidation("Cookie", _cookie);
+            request.Headers.TryAddWithoutValidation("Cookie", cookie);
         }
 
         if (headers is not null)
@@ -99,18 +100,20 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
     private static bool IsChallenge(MangaTubeResponse response) =>
         response.Body.Contains("_challange", StringComparison.Ordinal);
 
-    private async Task SolveChallengeAsync(CancellationToken ct)
+    /// <param name="rejectedCookie">The cookie the challenged request carried, null if it had none.
+    /// The server can revoke a pass before its stated expiry, so only a different cookie counts as fresh.</param>
+    private async Task SolveChallengeAsync(string? rejectedCookie, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
         try
         {
             // Another caller may have solved it while this one waited for the gate.
-            if (_cookie is not null && PassExpiresAt is { } expiry && expiry > DateTimeOffset.UtcNow.AddMinutes(1))
+            if (_cookie is not null && !string.Equals(_cookie, rejectedCookie, StringComparison.Ordinal))
             {
                 return;
             }
 
-            var shell = await SendOnceAsync(HttpMethod.Get, "/", null, ct);
+            var shell = await SendOnceAsync(HttpMethod.Get, "/", null, null, ct);
             var challenge = ParseChallenge(shell.Body);
 
             // The page's own script waits ~1s before solving; matched here rather than fired

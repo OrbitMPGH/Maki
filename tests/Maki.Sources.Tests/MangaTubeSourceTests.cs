@@ -253,6 +253,25 @@ public class MangaTubeSourceTests
     }
 
     [Fact]
+    public async Task Session_re_solves_when_the_server_rejects_an_unexpired_pass()
+    {
+        var handler = new ChallengeHandler(
+            challengeHtml: FakeHttpClientFactory.Fixture("mangatube-challenge.html"),
+            realResponsesByPathSubstring: new()
+            {
+                ["api/manga/one_piece"] = FakeHttpClientFactory.Fixture("mangatube-series.json"),
+            });
+        var source = new MangaTubeSource(new SingleHandlerFactory(handler));
+
+        await source.GetSeriesAsync("one_piece");
+        handler.RevokeCurrentPass();
+        var detail = await source.GetSeriesAsync("one_piece");
+
+        Assert.Equal("One Piece", detail.Title);
+        Assert.Equal(2, handler.SolveAttempts);
+    }
+
+    [Fact]
     public void Solve_divides_and_formats_like_JavaScript_Number_toString()
     {
         // Sample values from the site's own challenge script.
@@ -306,17 +325,20 @@ public class MangaTubeSourceTests
     /// <summary>
     /// Models the real site's handshake: any request without the solved cookie gets the
     /// challenge shell, "GET /" serves the shell explicitly, "POST /" grades the solve and
-    /// sets the pass cookie, and only a request carrying that exact cookie reaches the real
-    /// fixture keyed by a path substring.
+    /// sets a fresh pass cookie, and only a request carrying the latest, unrevoked cookie
+    /// reaches the real fixture keyed by a path substring.
     /// </summary>
     private sealed class ChallengeHandler(
         string challengeHtml, Dictionary<string, string> realResponsesByPathSubstring) : HttpMessageHandler
     {
-        private const string PassCookie = "__mtbpass=1790000000000:solved-cookie-value";
+        private string? _passCookie;
 
         public int ShellFetches { get; private set; }
         public int SolveAttempts { get; private set; }
         public string? LastSolutionSubmitted { get; private set; }
+
+        /// <summary>The server drops the current pass even though its stated expiry is years away.</summary>
+        public void RevokeCurrentPass() => _passCookie = null;
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
@@ -326,11 +348,12 @@ public class MangaTubeSourceTests
             {
                 SolveAttempts++;
                 LastSolutionSubmitted = request.Headers.GetValues("x-challange-arg4").Single();
+                _passCookie = $"__mtbpass=4102444800000:solved-{SolveAttempts}";
                 var response = new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent("""{"responseCode":0}""", Encoding.UTF8, "application/json")
                 };
-                response.Headers.TryAddWithoutValidation("Set-Cookie", $"{PassCookie}; HttpOnly; path=/");
+                response.Headers.TryAddWithoutValidation("Set-Cookie", $"{_passCookie}; HttpOnly; path=/");
                 return Task.FromResult(response);
             }
 
@@ -343,8 +366,9 @@ public class MangaTubeSourceTests
                 });
             }
 
-            var hasPass = request.Headers.TryGetValues("Cookie", out var cookies) &&
-                          cookies.Any(c => c.Contains(PassCookie, StringComparison.Ordinal));
+            var hasPass = _passCookie is not null &&
+                          request.Headers.TryGetValues("Cookie", out var cookies) &&
+                          cookies.Any(c => c.Contains(_passCookie, StringComparison.Ordinal));
             if (!hasPass)
             {
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
