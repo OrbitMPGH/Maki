@@ -35,7 +35,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
     public string BaseUrl => "https://taiyo.moe";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
     public IReadOnlyList<string> SupportedLanguages => ["pt-br"];
-    public IReadOnlyList<string> CoverHosts => ["cdn.taiyo.moe"];
+    public IReadOnlyList<string> CoverHosts => [];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
@@ -53,7 +53,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
         if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
             response.Dispose();
-            _meilisearchConfig = null;
+            await InvalidateMeilisearchConfigAsync(config, ct);
             config = await GetMeilisearchConfigAsync(ct);
             (url, response) = await PostMultiSearchAsync(config, title, ct);
         }
@@ -373,6 +373,28 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
             var config = await DiscoverMeilisearchConfigAsync(ct);
             _meilisearchConfig = config;
             return config;
+        }
+        finally
+        {
+            _meilisearchLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Clears the cached config only if it still holds the exact instance a failed request used.
+    /// Guards against a race where another caller already rediscovered a fresh key between our
+    /// request failing and this call: without the identity check we could throw away a key that
+    /// works, forcing an unnecessary rediscovery for everyone.
+    /// </summary>
+    private async Task InvalidateMeilisearchConfigAsync(MeilisearchConfig used, CancellationToken ct)
+    {
+        await _meilisearchLock.WaitAsync(ct);
+        try
+        {
+            if (ReferenceEquals(_meilisearchConfig, used))
+            {
+                _meilisearchConfig = null;
+            }
         }
         finally
         {
