@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { IconPlayerPlay } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -25,7 +26,8 @@ export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: R
   )
 }
 
-function ReadingCard({ item }: { item: HomeReadingItem }) {
+// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem }) {
   const { t } = useLingui()
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
   const resumePct =
@@ -85,4 +87,4 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
       </div>
     </Link>
   )
-}
+})

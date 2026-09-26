@@ -48,6 +48,7 @@ import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
 import { RecommendationCard, RecommendationRow } from './ui/DiscoverRail'
+import { useWindowedRows, WINDOW_MIN_ITEMS } from './ui/useWindowedRows'
 import {
   POSTER_COLS_BY_DENSITY,
   ViewPrefsControls,
@@ -483,31 +484,39 @@ export function Results({
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: (item: RecommendationItem) => void
 }) {
+  // Same windowing as Library; all three callers page up to the 600-item ceiling in the window scroll.
+  const windowed = useWindowedRows(items.length, items.length >= WINDOW_MIN_ITEMS)
+  const slice = items.slice(windowed.start, windowed.end)
+
   return prefs.viewMode === 'grid' ? (
-    <SimpleGrid cols={prefs.cols} spacing="md">
-      {items.map((item) => (
-        <RecommendationCard
-          key={item.providerId}
-          item={item}
-          inLibrarySeriesId={seriesIdFor(item)}
-          onOpen={onOpen}
-          reasonOverride={null}
-        />
-      ))}
-    </SimpleGrid>
+    <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
+      <SimpleGrid ref={windowed.innerRef} cols={prefs.cols} spacing="md">
+        {slice.map((item) => (
+          <RecommendationCard
+            key={item.providerId}
+            item={item}
+            inLibrarySeriesId={seriesIdFor(item)}
+            onOpen={onOpen}
+            reasonOverride={null}
+          />
+        ))}
+      </SimpleGrid>
+    </div>
   ) : (
-    <Stack gap="xs">
-      {items.map((item) => (
-        <RecommendationRow
-          key={item.providerId}
-          item={item}
-          inLibrarySeriesId={seriesIdFor(item)}
-          density={prefs.density}
-          onOpen={onOpen}
-          reasonOverride={null}
-        />
-      ))}
-    </Stack>
+    <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
+      <Stack ref={windowed.innerRef} gap="xs">
+        {slice.map((item) => (
+          <RecommendationRow
+            key={item.providerId}
+            item={item}
+            inLibrarySeriesId={seriesIdFor(item)}
+            density={prefs.density}
+            onOpen={onOpen}
+            reasonOverride={null}
+          />
+        ))}
+      </Stack>
+    </div>
   )
 }
 

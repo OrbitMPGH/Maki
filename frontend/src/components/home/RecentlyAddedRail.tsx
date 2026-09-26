@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { IconBook } from '@tabler/icons-react'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
@@ -21,7 +22,8 @@ export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) 
   )
 }
 
-function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
+// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
   const navigate = useNavigate()
   const { t } = useLingui()
   const { newChapterCount } = item
@@ -86,4 +88,4 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
       </div>
     </Link>
   )
-}
+})

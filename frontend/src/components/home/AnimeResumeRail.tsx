@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import type { HomeAnimeResumeItem } from '../../api/animeResume'
 import { Trans } from '@lingui/react/macro'
@@ -20,7 +21,8 @@ export function AnimeResumeRail({ items }: { items: HomeAnimeResumeItem[] }) {
   )
 }
 
-function AnimeResumeCard({ item }: { item: HomeAnimeResumeItem }) {
+// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+const AnimeResumeCard = memo(function AnimeResumeCard({ item }: { item: HomeAnimeResumeItem }) {
   const next = Math.floor(item.coveredTo) + 1
 
   return (
@@ -52,4 +54,4 @@ function AnimeResumeCard({ item }: { item: HomeAnimeResumeItem }) {
       </div>
     </Link>
   )
-}
+})

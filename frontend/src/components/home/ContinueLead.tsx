@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@mantine/core'
 import { IconPlayerPlay } from '@tabler/icons-react'
@@ -35,7 +36,14 @@ export function ContinueLead({ items, rail }: { items: HomeReadingItem[]; rail: 
   )
 }
 
-function ContinueTile({ item, rail }: { item: HomeReadingItem; rail: ReadingRailKind }) {
+// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+const ContinueTile = memo(function ContinueTile({
+  item,
+  rail,
+}: {
+  item: HomeReadingItem
+  rail: ReadingRailKind
+}) {
   const { t } = useLingui()
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
   // Same rule as ReadingRail's card: no pageCount means no bar and no "page x of y".
@@ -121,4 +129,4 @@ function ContinueTile({ item, rail }: { item: HomeReadingItem; rail: ReadingRail
       </div>
     </div>
   )
-}
+})
