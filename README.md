@@ -66,6 +66,7 @@ built-in reader.
   - **ManhwaWeb** (Spanish)
   - **Olympus Scanlation** (es, requires FlareSolverr)
   - **Shinigami** (Indonesian, manhwa/manhua/manga)
+  - **Manhwa18.net** (adult, requires FlareSolverr)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
   Sources are drag-ordered by preference and can be switched off globally. A disabled source is
   skipped by auto-matching and stops every series from using it, while each series' own per-source

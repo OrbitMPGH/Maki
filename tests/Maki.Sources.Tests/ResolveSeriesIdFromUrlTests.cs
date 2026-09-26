@@ -16,6 +16,7 @@ using Maki.Sources.AnimeSama;
 using Maki.Sources.ManhwaWeb;
 using Maki.Sources.Olympus;
 using Maki.Sources.Shinigami;
+using Maki.Sources.Manhwa18Net;
 
 namespace Maki.Sources.Tests;
 
@@ -336,6 +337,21 @@ public class ResolveSeriesIdFromUrlTests
     public void Shinigami(string url, string? expected)
     {
         ISource source = new ShinigamiSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://manhwa18.net/manga/secret-class", "secret-class")]
+    [InlineData("https://manhwa18.net/manga/secret-class/", "secret-class")]
+    // A chapter URL adds a second segment and must not resolve to its series.
+    [InlineData("https://manhwa18.net/manga/secret-class/chapter-318", null)]
+    [InlineData("https://manhwa18.net/tim-kiem?q=secret+class", null)]
+    // manhwa18.com is an unrelated site; must not be confused with manhwa18.net.
+    [InlineData("https://manhwa18.com/manga/secret-class", null)]
+    [InlineData("https://example.com/manga/secret-class", null)]
+    public void Manhwa18Net(string url, string? expected)
+    {
+        ISource source = new Manhwa18NetSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

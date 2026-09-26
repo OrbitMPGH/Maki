@@ -29,6 +29,7 @@ using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaLivre;
 using Maki.Sources.ManhwaWeb;
+using Maki.Sources.Manhwa18Net;
 using Maki.Sources.SenManga;
 using Maki.Sources.Shinigami;
 using Maki.Sources.MangaDex;
@@ -614,7 +615,8 @@ try
     builder.Services.AddSingleton<ISource, OlympusSource>();
 
     builder.Services.AddSingleton<ISource, ShinigamiSource>();
-    
+    builder.Services.AddSingleton<ISource, Manhwa18NetSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
