@@ -1,0 +1,306 @@
+{
+  "work": {
+    "code": "KC_002386_S",
+    "title": "Ｒｅ：ゼロから始める異世界生活 第四章 聖域と強欲の魔女",
+    "summary": "魔女教大罪司教『怠惰』を討伐し、エミリアとの再会を果たしたナツキ・スバル。辛い決別を乗り越えて和解した二人、しかし彼らには新たな波乱が待ち受けていて……。謎多き“聖域”にて繰り広げられる、待望のリゼロ第4章のコミカライズがスタート!",
+    "serializationStatus": "ongoing",
+    "language": "ja",
+    "bookCover": "https://cdn.comic-walker.com/integration/bibliodb/cover-image/prd/image/bw/coverImage_3688754.jpg",
+    "originalThumbnail": "https://cdn.comic-walker.com/integration/cdpf/resources/002386/32d4777d-cc12-4003-bb00-820dfbfd720c.jpg",
+    "isOneShot": false,
+    "ratingLevel": "general"
+  },
+  "latestEpisodes": {
+    "total": 18,
+    "result": [
+      {
+        "id": "01a046b0-9bc2-7d16-bc15-17825eb66174",
+        "code": "KC_0023860007600021_E",
+        "title": "第73話②　あなたのその勇気",
+        "subTitle": "",
+        "updateDate": "2026-09-21T02:00:00Z",
+        "deliveryPeriod": "9999-12-31T14:59:59Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 122,
+          "pageCount": 13,
+          "episodetype": "normal"
+        },
+        "isActive": true
+      },
+      {
+        "id": "01a046b0-9bc2-7d15-8af2-c90313133936",
+        "code": "KC_0023860007600011_E",
+        "title": "第73話①　あなたのその勇気",
+        "subTitle": "",
+        "updateDate": "2026-09-07T02:00:00Z",
+        "deliveryPeriod": "9999-12-31T14:59:59Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 121,
+          "pageCount": 12,
+          "episodetype": "normal"
+        },
+        "isActive": true
+      },
+      {
+        "id": "019efbfd-697d-7b20-9abd-0b1ccc8a4eb6",
+        "code": "KC_0023860007300011_E",
+        "title": "※アライブクイーン投票用：7/31（金）まで投票受付中！",
+        "subTitle": "",
+        "updateDate": "2026-06-26T02:00:00Z",
+        "deliveryPeriod": "2026-07-31T14:59:00Z",
+        "serviceId": "web",
+        "type": "pr",
+        "internal": {
+          "episodeNo": 116,
+          "pageCount": 3,
+          "episodetype": "pr"
+        },
+        "isActive": false
+      },
+      {
+        "id": "019e6d2b-d098-7245-a39d-8a54320d5593",
+        "code": "KC_0023860007200021_E",
+        "title": "第70話 後編　空白の生",
+        "subTitle": "",
+        "updateDate": "2026-06-01T02:00:00Z",
+        "deliveryPeriod": "9999-12-31T14:59:59Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 115,
+          "pageCount": 15,
+          "episodetype": "normal"
+        },
+        "isActive": true
+      },
+      {
+        "id": "019dd33b-4b56-7d31-ba26-d8961b062cd7",
+        "code": "KC_0023860007200011_E",
+        "title": "第70話 前編　空白の生",
+        "subTitle": "",
+        "updateDate": "2026-05-04T02:00:00Z",
+        "deliveryPeriod": "9999-12-31T14:59:59Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 114,
+          "pageCount": 16,
+          "episodetype": "normal"
+        },
+        "isActive": true
+      },
+      {
+        "id": "019d23f4-ee3a-7126-b8f4-e613346c30f0",
+        "code": "KC_0023860007100021_E",
+        "title": "第69話➁　ド派手な初陣",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 113,
+          "pageCount": 13,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "019d23f4-ee3a-7125-9840-296435bee46e",
+        "code": "KC_0023860007100011_E",
+        "title": "第69話①　ド派手な初陣",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 112,
+          "pageCount": 12,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "0196fb04-0103-77fb-96f5-35bdaa90e0bf",
+        "code": "KC_0023860006200041_E",
+        "title": "第60話 後編②　エリオール大森林の永久凍土",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 95,
+          "pageCount": 7,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "0196fb04-0103-77fa-babd-b5382814f689",
+        "code": "KC_0023860006200031_E",
+        "title": "第60話 後編①　エリオール大森林の永久凍土",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 94,
+          "pageCount": 14,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "0196673e-5ce7-75bc-92d9-cf697099560d",
+        "code": "KC_0023860006200021_E",
+        "title": "第60話 前編②　エリオール大森林の永久凍土",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 93,
+          "pageCount": 8,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "0196673e-5ce7-75bb-bfc8-de9820452c68",
+        "code": "KC_0023860006200011_E",
+        "title": "第60話 前編①　エリオール大森林の永久凍土",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 92,
+          "pageCount": 8,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "018f381e-9efd-727f-aab8-e6d29a2b68cc",
+        "code": "KC_0023860005000041_E",
+        "title": "第48話後編②　クウェインの石は一人じゃ上がらない",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 69,
+          "pageCount": 11,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "018f381e-9efd-727e-b31f-a1f6044e9d1c",
+        "code": "KC_0023860005000031_E",
+        "title": "第48話後編①　クウェインの石は一人じゃ上がらない",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 68,
+          "pageCount": 10,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "018e895a-460d-7d8b-895c-b33f5f60822d",
+        "code": "KC_0023860005000021_E",
+        "title": "第48話前編②　ガーフィールの結界",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 67,
+          "pageCount": 13,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "018e895a-460d-7d8a-81da-d529dcd049d8",
+        "code": "KC_0023860005000011_E",
+        "title": "第48話前編①　ガーフィールの結界",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 66,
+          "pageCount": 13,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "018d6d6d-1243-7a75-a43c-d114c7e4d490",
+        "code": "KC_0023860000800021_E",
+        "title": "第8話後編　試験結果",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 9,
+          "pageCount": 18,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "018d6d6d-1243-7a74-9693-91c7aaf90359",
+        "code": "KC_0023860000800011_E",
+        "title": "第8話　試験結果",
+        "subTitle": "",
+        "updateDate": "2026-07-09T02:00:00Z",
+        "deliveryPeriod": "2026-07-10T02:00:00Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 8,
+          "pageCount": 16,
+          "episodetype": "normal"
+        },
+        "isActive": false
+      },
+      {
+        "id": "018d6d6c-d9ac-77f4-b984-b753dcb562cd",
+        "code": "KC_0023860000100011_E",
+        "title": "第1話　帰り着いた場所で",
+        "subTitle": "外伝",
+        "updateDate": "2019-10-29T02:00:00Z",
+        "deliveryPeriod": "9999-12-31T14:59:59Z",
+        "serviceId": "web",
+        "type": "normal",
+        "internal": {
+          "episodeNo": 1,
+          "pageCount": 40,
+          "episodetype": "normal"
+        },
+        "isActive": true
+      }
+    ]
+  }
+}
