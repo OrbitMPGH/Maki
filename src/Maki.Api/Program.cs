@@ -534,8 +534,6 @@ try
             client.Timeout = TimeSpan.FromSeconds(30);
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(challengeLimiter))
-        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
-
         // 429 only: Cloudflare answers challenges with 503, and ChallengeAwareFetcher must still
         // see that itself to hand off to FlareSolverr.
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler(treat503AsRateLimit: false));
