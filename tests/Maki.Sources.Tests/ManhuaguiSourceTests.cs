@@ -128,3 +128,21 @@ public class ManhuaguiSourceTests
         Assert.Equal("https://www.manhuagui.com/", first.Headers!["Referer"]);
     }
 }
+
+[Collection(BaseUrlOverrideCollection.Name)]
+public class ManhuaguiBaseUrlOverrideTests
+{
+    [Theory]
+    [InlineData("https://mirror.example/comic/1128/", "1128")]
+    [InlineData("https://www.mirror.example/comic/1128", "1128")]
+    [InlineData("https://www.manhuagui.com/comic/1128/", "1128")]
+    [InlineData("https://mirror.example/comic/1128/909042.html", null)]
+    [InlineData("https://other.example/comic/1128/", null)]
+    public void ResolveSeriesIdFromUrl_AcceptsTheOverriddenHost(string url, string? expected)
+    {
+        using var _ = new BaseUrlOverride("MAKI_SOURCE_MANHUAGUI_BASEURL", "https://mirror.example");
+        ISource source = new ManhuaguiSource(new FakeHttpClientFactory([]));
+
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+}

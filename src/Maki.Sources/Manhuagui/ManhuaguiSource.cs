@@ -65,7 +65,8 @@ public partial class ManhuaguiSource(IHttpClientFactory httpClientFactory) : ISo
 
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
-        if (!AllowedHosts.Contains(url.Host))
+        if (!AllowedHosts.Contains(url.Host)
+            && SourceUrl.PathTail(url, BaseUrl, "/comic/", firstSegmentOnly: true) is null)
         {
             return null;
         }
