@@ -1,0 +1,48 @@
+{
+  "expiresAt": "2026-09-26T05:24:56.429027729Z",
+  "scrollDirection": "rtl",
+  "startPosition": "left",
+  "displayAds": true,
+  "manuscripts": [
+    {
+      "drmMode": "xor",
+      "drmHash": "24ac9a635305132d",
+      "drmImageUrl": "https://cdn.comic-walker.com/images/2386/1/1/20240201230153/1/3_dbc822ce26a4c4ff9691abe136a9c71889c7ab85277c7b52b08db24fa968e4ca.webp?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZG4uY29taWMtd2Fsa2VyLmNvbS9pbWFnZXMvMjM4Ni8xLzEvMjAyNDAyMDEyMzAxNTMvMS8qLndlYnAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTA0MDAyOTZ9fX1dfQ__&Signature=e1RZKa5FyVZ4pbhODldYQLkeTHyBCqv7ctIo~FebCShAUr1nMznzCeeE3QlNTvN~-xKWFO8q6fAHQFi~e0HpmANQtVJYR-BSN8x8PCdc7u-C30d0SRWJ5nqaM13AbAqW4Gs4~cahmsoiGq33FpRWjwmJhLuAX-67T7mOPNnNzlTY4scDyxhwfvrzniykAFgnVhOv0ooDsOJQ-92JuuWf9fp0uYx-hbwc5506dMHg-VJWU5788PGHDXs-hlynv00MYOxbf2e8c7qibO9ldpRieG~~gaI7BcmYrCH5a~HJyI~H8NLt44AXWwCp6MRdSksqhJT~zD~P38bJBWCbObGslA__&Key-Pair-Id=K1PEJ01D50HCBF",
+      "page": 3,
+      "width": 1114,
+      "height": 1600
+    },
+    {
+      "drmMode": "xor",
+      "drmHash": "f6424e5dccf22015",
+      "drmImageUrl": "https://cdn.comic-walker.com/images/2386/1/1/20240201230153/1/1_4c4f8f6d37ad285aeeb0da206a1b19b70415e131cb835ab728fe742f454af080.webp?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZG4uY29taWMtd2Fsa2VyLmNvbS9pbWFnZXMvMjM4Ni8xLzEvMjAyNDAyMDEyMzAxNTMvMS8qLndlYnAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTA0MDAyOTZ9fX1dfQ__&Signature=e1RZKa5FyVZ4pbhODldYQLkeTHyBCqv7ctIo~FebCShAUr1nMznzCeeE3QlNTvN~-xKWFO8q6fAHQFi~e0HpmANQtVJYR-BSN8x8PCdc7u-C30d0SRWJ5nqaM13AbAqW4Gs4~cahmsoiGq33FpRWjwmJhLuAX-67T7mOPNnNzlTY4scDyxhwfvrzniykAFgnVhOv0ooDsOJQ-92JuuWf9fp0uYx-hbwc5506dMHg-VJWU5788PGHDXs-hlynv00MYOxbf2e8c7qibO9ldpRieG~~gaI7BcmYrCH5a~HJyI~H8NLt44AXWwCp6MRdSksqhJT~zD~P38bJBWCbObGslA__&Key-Pair-Id=K1PEJ01D50HCBF",
+      "page": 1,
+      "width": 1114,
+      "height": 1600
+    },
+    {
+      "drmMode": "xor",
+      "drmHash": "98e99144c974f66c",
+      "drmImageUrl": "https://cdn.comic-walker.com/images/2386/1/1/20240201230153/1/2_a9b28f2ba8c0401b183e562a993214989315c4b38ff7b926c697d1a3b106f5b4.webp?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZG4uY29taWMtd2Fsa2VyLmNvbS9pbWFnZXMvMjM4Ni8xLzEvMjAyNDAyMDEyMzAxNTMvMS8qLndlYnAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTA0MDAyOTZ9fX1dfQ__&Signature=e1RZKa5FyVZ4pbhODldYQLkeTHyBCqv7ctIo~FebCShAUr1nMznzCeeE3QlNTvN~-xKWFO8q6fAHQFi~e0HpmANQtVJYR-BSN8x8PCdc7u-C30d0SRWJ5nqaM13AbAqW4Gs4~cahmsoiGq33FpRWjwmJhLuAX-67T7mOPNnNzlTY4scDyxhwfvrzniykAFgnVhOv0ooDsOJQ-92JuuWf9fp0uYx-hbwc5506dMHg-VJWU5788PGHDXs-hlynv00MYOxbf2e8c7qibO9ldpRieG~~gaI7BcmYrCH5a~HJyI~H8NLt44AXWwCp6MRdSksqhJT~zD~P38bJBWCbObGslA__&Key-Pair-Id=K1PEJ01D50HCBF",
+      "page": 2,
+      "width": 1114,
+      "height": 1600
+    },
+    {
+      "drmMode": "xor",
+      "drmHash": "3e944336049add7b",
+      "drmImageUrl": "https://cdn.comic-walker.com/images/2386/1/1/20240201230153/1/5_b8f88b5f65d0662c334eb278d003e11c10a829a2348e1f3bacbb3a01b6b5e37e.webp?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZG4uY29taWMtd2Fsa2VyLmNvbS9pbWFnZXMvMjM4Ni8xLzEvMjAyNDAyMDEyMzAxNTMvMS8qLndlYnAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTA0MDAyOTZ9fX1dfQ__&Signature=e1RZKa5FyVZ4pbhODldYQLkeTHyBCqv7ctIo~FebCShAUr1nMznzCeeE3QlNTvN~-xKWFO8q6fAHQFi~e0HpmANQtVJYR-BSN8x8PCdc7u-C30d0SRWJ5nqaM13AbAqW4Gs4~cahmsoiGq33FpRWjwmJhLuAX-67T7mOPNnNzlTY4scDyxhwfvrzniykAFgnVhOv0ooDsOJQ-92JuuWf9fp0uYx-hbwc5506dMHg-VJWU5788PGHDXs-hlynv00MYOxbf2e8c7qibO9ldpRieG~~gaI7BcmYrCH5a~HJyI~H8NLt44AXWwCp6MRdSksqhJT~zD~P38bJBWCbObGslA__&Key-Pair-Id=K1PEJ01D50HCBF",
+      "page": 5,
+      "width": 1114,
+      "height": 1600
+    },
+    {
+      "drmMode": "xor",
+      "drmHash": "a1c1068a39d9b8c5",
+      "drmImageUrl": "https://cdn.comic-walker.com/images/2386/1/1/20240201230153/1/4_1a34b4f4dd409ec820dff692a575097f112489d80ed92eeca32e0c2687959afc.webp?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZG4uY29taWMtd2Fsa2VyLmNvbS9pbWFnZXMvMjM4Ni8xLzEvMjAyNDAyMDEyMzAxNTMvMS8qLndlYnAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTA0MDAyOTZ9fX1dfQ__&Signature=e1RZKa5FyVZ4pbhODldYQLkeTHyBCqv7ctIo~FebCShAUr1nMznzCeeE3QlNTvN~-xKWFO8q6fAHQFi~e0HpmANQtVJYR-BSN8x8PCdc7u-C30d0SRWJ5nqaM13AbAqW4Gs4~cahmsoiGq33FpRWjwmJhLuAX-67T7mOPNnNzlTY4scDyxhwfvrzniykAFgnVhOv0ooDsOJQ-92JuuWf9fp0uYx-hbwc5506dMHg-VJWU5788PGHDXs-hlynv00MYOxbf2e8c7qibO9ldpRieG~~gaI7BcmYrCH5a~HJyI~H8NLt44AXWwCp6MRdSksqhJT~zD~P38bJBWCbObGslA__&Key-Pair-Id=K1PEJ01D50HCBF",
+      "page": 4,
+      "width": 836,
+      "height": 1200
+    }
+  ]
+}
