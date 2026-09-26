@@ -86,6 +86,14 @@ const SOURCE_ICONS: Record<string, string> = {
   topmanhua: '/source-icons/topmanhua.png',
   webtoons: '/source-icons/webtoons.ico',
   weebcentral: '/source-icons/weebcentral.ico',
+  shonenjumpplus: '/source-icons/shonenjumpplus.png',
+  comicdays: '/source-icons/comicdays.png',
+  sundaywebry: '/source-icons/sundaywebry.png',
+  magcomi: '/source-icons/magcomi.png',
+  tonarinoyj: '/source-icons/tonarinoyj.png',
+  comiczenon: '/source-icons/comiczenon.png',
+  kuragebunch: '/source-icons/kuragebunch.png',
+  toonily: '/source-icons/toonily.png',
   mangalib: '/source-icons/mangalib.svg',
 }
 
