@@ -785,6 +785,7 @@ try
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
+    builder.Services.AddScoped<FileRelinkPlanner>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();

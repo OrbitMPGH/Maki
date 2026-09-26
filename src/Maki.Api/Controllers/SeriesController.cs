@@ -33,6 +33,7 @@ public class SeriesController(
     CoverService coverService,
     ChapterSyncService chapterSyncService,
     CbzLinkService cbzLinkService,
+    FileRelinkPlanner relinkPlanner,
     SeriesCreationService seriesCreation,
     SeriesRenameService seriesRename,
     SeriesMetadataRefreshService metadataRefresh,
@@ -247,6 +248,58 @@ public class SeriesController(
         var result = await cbzLinkService.RescanSeriesAsync(series, ct);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Previews a volumes-first rebuild of the chapter-to-file map: which chapters would move to
+    /// which file, and which single-chapter files would be left backing nothing. Read-only.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpGet("{id:int}/relink/plan")]
+    public async Task<IActionResult> RelinkPlan(int id, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.RootFolder is null)
+        {
+            return this.Fail(localizer, "error.series.noRootFolder");
+        }
+
+        return Ok(await relinkPlanner.PlanAsync(series, ct));
+    }
+
+    /// <summary>
+    /// Applies the volumes-first rebuild. The plan is recomputed here rather than taken from the
+    /// client, so what gets applied is what is on disk now. Deleting the superseded files needs
+    /// DeleteSeries on top of EditMetadata.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/relink")]
+    public async Task<IActionResult> Relink(int id, [FromBody] RelinkRequest request, CancellationToken ct)
+    {
+        if (request.DeleteSuperseded && !currentUser.Has(MakiPermission.DeleteSeries))
+        {
+            return Forbid();
+        }
+
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (series.RootFolder is null)
+        {
+            return this.Fail(localizer, "error.series.noRootFolder");
+        }
+
+        return Ok(await relinkPlanner.ApplyAsync(series, request.DeleteSuperseded, ct));
+    }
+
+    public record RelinkRequest(bool DeleteSuperseded);
 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)

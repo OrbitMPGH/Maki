@@ -49,6 +49,16 @@ msgstr "（无法访问）"
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
 msgstr "{0, plural, other {# 个改编作品}}"
 
+#. placeholder {0}: r.moved
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# chapter link moved} other {# chapter links moved}}"
+msgstr ""
+
+#. placeholder {0}: plan.moved
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# chapter link moves} other {# chapter links move}}"
+msgstr ""
+
 #. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
@@ -64,6 +74,26 @@ msgstr ""
 #, fuzzy
 msgid "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
 msgstr "{0, plural, other {# 个无法删除（文件被锁定或权限不足）}}"
+
+#. placeholder {0}: r.failed
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file could not be deleted (locked or permission denied)} other {# files could not be deleted (locked or permission denied)}}"
+msgstr ""
+
+#. placeholder {0}: plan.unrecognized
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file could not be parsed and needs linking by hand.} other {# files could not be parsed and need linking by hand.}}"
+msgstr ""
+
+#. placeholder {0}: r.deleted
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file deleted} other {# files deleted}}"
+msgstr ""
+
+#. placeholder {0}: plan.supersededCount
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file superseded} other {# files superseded}}"
+msgstr ""
 
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
@@ -111,11 +141,21 @@ msgstr "{0, plural, other {已选择 # 个}}"
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, other {# 个标题}}"
 
+#. placeholder {0}: plan.unrecognized
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# unparsed file} other {# unparsed files}}"
+msgstr ""
+
 #. placeholder {0}: selected.length
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 msgstr "{0, plural, other {#× 个章节行}}"
+
+#. placeholder {0}: plan.supersededCount
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {Also delete the # superseded file from disk} other {Also delete the # superseded files from disk}}"
+msgstr ""
 
 #. placeholder {0}: result.queuedCount
 #: src/pages/RequestsPage.tsx
@@ -1569,6 +1609,10 @@ msgstr "检测到新的系统健康问题。"
 msgid "A newer Maki release was published."
 msgstr "Maki 发布了更新版本。"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A refresh found new chapters for a series."
@@ -1613,6 +1657,10 @@ msgstr "简要展示你的资料库主要包含哪些内容。"
 #, fuzzy
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away. Finishing one can also suggest where to start reading its manga."
 msgstr "给某部动画打高分会让推荐偏向类似的漫画；低分或弃看则会让推荐远离它们。看完整部动画后，系统还可以建议从漫画的哪里开始阅读。"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "A single-chapter file named for its chapter."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -1943,6 +1991,10 @@ msgstr "冒险"
 #, fuzzy
 msgid "Affected chapters:"
 msgstr "受影响的章节："
+
+#: src/components/RelinkFilesModal.tsx
+msgid "After:"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -2542,6 +2594,10 @@ msgstr "背景"
 msgid "Backlog"
 msgstr "待读积压"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Backs nothing after the move."
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -2623,6 +2679,10 @@ msgstr "以这些标题为推荐基础。搜索会从 MangaBaka 添加任意标�
 #, fuzzy
 msgid "Based on your recent activity"
 msgstr "根据你最近的活动"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Basis"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -2833,6 +2893,7 @@ msgstr "无法读取此下载"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -3075,6 +3136,7 @@ msgstr "第 {from}–{to} 章"
 msgid "Ch.{from}+"
 msgstr "第 {from} 章起"
 
+#: src/components/RelinkFilesModal.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Change"
@@ -3887,6 +3949,10 @@ msgstr "核心"
 msgid "Corrupt"
 msgstr "已损坏"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Could not build a plan for this series."
+msgstr ""
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -4280,6 +4346,10 @@ msgstr "已删除的文件会从磁盘移除，无法通过 Maki 恢复。"
 #, fuzzy
 msgid "Deleting"
 msgstr "正在删除"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Deleting files needs the Delete series permission."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4878,6 +4948,10 @@ msgstr "Esc"
 msgid "Esc closes"
 msgstr "按 Esc 关闭"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Estimated"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Events"
@@ -4887,6 +4961,10 @@ msgstr "事件"
 #, fuzzy
 msgid "Every chapter"
 msgstr "每个章节"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Every chapter is already on the best file available. Nothing to change."
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -5182,6 +5260,7 @@ msgstr "正在获取元数据"
 msgid "Fetching pages…"
 msgstr "正在获取页面……"
 
+#: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "File"
@@ -5466,15 +5545,27 @@ msgstr "法语"
 msgid "From"
 msgstr "从"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "From file name"
+msgstr ""
+
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
 msgid "From MyAnimeList"
 msgstr "来自 MyAnimeList"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "From page names"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "From the metadata provider, not your own tags"
 msgstr "来自元数据提供方，而不是你自己的标签"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "From volume metadata"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -5527,6 +5618,10 @@ msgstr "全屏"
 #, fuzzy
 msgid "Fully read owned"
 msgstr "已读完的收藏"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Gains"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -5589,6 +5684,10 @@ msgstr "为其他人创建账户，并设置资料库访问权限和阅读历史
 #, fuzzy
 msgid "Give up on a chapter after (minutes)"
 msgstr "在（分钟）后放弃章节"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Gives up ch."
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6826,6 +6925,10 @@ msgstr "关联来源并刷新。"
 msgid "Link and unlink per-series sources"
 msgstr "关联和取消关联每个系列的来源"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link by hand"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 msgid "Link chapters"
 msgstr ""
@@ -6840,8 +6943,8 @@ msgid "Link chapters to this file"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Link files"
-msgstr ""
+#~ msgid "Link files"
+#~ msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -6972,6 +7075,10 @@ msgstr "正在查找章节……"
 #, fuzzy
 msgid "loose"
 msgstr "宽松"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Loses"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8673,8 +8780,8 @@ msgid "OLED black"
 msgstr "OLED 黑色"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Omnibus volumes and odd file names need linking by hand."
-msgstr ""
+#~ msgid "Omnibus volumes and odd file names need linking by hand."
+#~ msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -8734,6 +8841,10 @@ msgstr "单话"
 #, fuzzy
 msgid "Ongoing"
 msgstr "连载中"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Only files whose every chapter now lives on a volume. This cannot be undone."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -9747,6 +9858,10 @@ msgstr "阅读统计需要 Kavita"
 msgid "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 msgstr "阅读统计需要 Kavita：在设置中连接它，Maki 就会开始跟踪你阅读的章节。无论如何都会跟踪下载和资料库变化。"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Reading volume archives…"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "Reading your ratings from {label}…"
@@ -9777,6 +9892,10 @@ msgstr "原因（可选）"
 msgid "Rebuild all"
 msgstr "全部重建"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "Rebuild chapter links from the folder, volumes first"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Rebuild every poster"
@@ -9801,6 +9920,10 @@ msgstr "正在重建图像缓存"
 #, fuzzy
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "正在重建海报，{processedCount} / {totalCount}"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10013,6 +10136,27 @@ msgstr "已发布"
 #, fuzzy
 msgid "Releasing"
 msgstr "发布中"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Relink"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Relink and delete"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Relink files"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Relink files, volumes first"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -11705,6 +11849,7 @@ msgid "Sittings per week"
 msgstr "每周阅读次数"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -12135,6 +12280,10 @@ msgstr "暗示性"
 msgid "Supernatural"
 msgstr "超自然"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Superseded"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Switch reading direction"
@@ -12271,6 +12420,10 @@ msgstr "要排除的标签"
 msgid "Tags to include"
 msgstr "要包含的标签"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Takes ch."
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Tap zones"
@@ -12333,8 +12486,12 @@ msgid "That chapter no longer exists"
 msgstr "该章节已不存在"
 
 #: src/components/SeriesFilesSection.tsx
-msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+#~ msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+#~ msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -12385,6 +12542,10 @@ msgstr "目录需要本地 MangaBaka 数据库（设置，然后选择元数据�
 #, fuzzy
 msgid "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
 msgstr "目录横栏需要本地 MangaBaka 数据库（设置 → 元数据 → 本地数据库）。"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "The chapter numbers are in the archive's page file names. Certain."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -12470,6 +12631,10 @@ msgstr "与众不同"
 #, fuzzy
 msgid "The profile and its reader settings are removed. This can't be undone."
 msgstr "配置及其阅读器设置将被删除。此操作无法撤销。"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

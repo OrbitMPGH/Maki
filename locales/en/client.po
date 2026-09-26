@@ -42,6 +42,16 @@ msgstr "(inaccessible)"
 msgid "{0, plural, one {# adaptation} other {# adaptations}}"
 msgstr "{0, plural, one {# adaptation} other {# adaptations}}"
 
+#. placeholder {0}: r.moved
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# chapter link moved} other {# chapter links moved}}"
+msgstr "{0, plural, one {# chapter link moved} other {# chapter links moved}}"
+
+#. placeholder {0}: plan.moved
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# chapter link moves} other {# chapter links move}}"
+msgstr "{0, plural, one {# chapter link moves} other {# chapter links move}}"
+
 #. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
@@ -56,6 +66,26 @@ msgstr "{0, plural, one {# chapter} other {# chapters}}"
 #: src/components/SeriesFilesSection.tsx
 msgid "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
 msgstr "{0, plural, one {# could not be deleted (locked or permission denied)} other {# could not be deleted (locked or permission denied)}}"
+
+#. placeholder {0}: r.failed
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file could not be deleted (locked or permission denied)} other {# files could not be deleted (locked or permission denied)}}"
+msgstr "{0, plural, one {# file could not be deleted (locked or permission denied)} other {# files could not be deleted (locked or permission denied)}}"
+
+#. placeholder {0}: plan.unrecognized
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file could not be parsed and needs linking by hand.} other {# files could not be parsed and need linking by hand.}}"
+msgstr "{0, plural, one {# file could not be parsed and needs linking by hand.} other {# files could not be parsed and need linking by hand.}}"
+
+#. placeholder {0}: r.deleted
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file deleted} other {# files deleted}}"
+msgstr "{0, plural, one {# file deleted} other {# files deleted}}"
+
+#. placeholder {0}: plan.supersededCount
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# file superseded} other {# files superseded}}"
+msgstr "{0, plural, one {# file superseded} other {# files superseded}}"
 
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
@@ -96,10 +126,20 @@ msgstr "{0, plural, one {# selected} other {# selected}}"
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, one {# title} other {# titles}}"
 
+#. placeholder {0}: plan.unrecognized
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {# unparsed file} other {# unparsed files}}"
+msgstr "{0, plural, one {# unparsed file} other {# unparsed files}}"
+
 #. placeholder {0}: selected.length
 #: src/components/SourceMappingsSection.tsx
 msgid "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 msgstr "{0, plural, one {#× chapter row} other {#× chapter rows}}"
+
+#. placeholder {0}: plan.supersededCount
+#: src/components/RelinkFilesModal.tsx
+msgid "{0, plural, one {Also delete the # superseded file from disk} other {Also delete the # superseded files from disk}}"
+msgstr "{0, plural, one {Also delete the # superseded file from disk} other {Also delete the # superseded files from disk}}"
 
 #. placeholder {0}: result.queuedCount
 #: src/pages/RequestsPage.tsx
@@ -1272,6 +1312,10 @@ msgstr "A new system health problem was detected."
 msgid "A newer Maki release was published."
 msgstr "A newer Maki release was published."
 
+#: src/components/RelinkFilesModal.tsx
+msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
+msgstr "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
+
 #: src/components/NotificationsSection.tsx
 msgid "A refresh found new chapters for a series."
 msgstr "A refresh found new chapters for a series."
@@ -1307,6 +1351,10 @@ msgstr "A short strip of what your library leans towards."
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away. Finishing one can also suggest where to start reading its manga."
 msgstr "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away. Finishing one can also suggest where to start reading its manga."
+
+#: src/components/RelinkFilesModal.tsx
+msgid "A single-chapter file named for its chapter."
+msgstr "A single-chapter file named for its chapter."
 
 #: src/components/SetupWizard.tsx
 msgid "A small local model lets Discover recommend by feel and lets you search for a plot rather than a title. Its index downloads prebuilt, so your machine skips the heavy work."
@@ -1575,6 +1623,10 @@ msgstr "Adventure"
 #: src/pages/HealthPage.tsx
 msgid "Affected chapters:"
 msgstr "Affected chapters:"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "After:"
+msgstr "After:"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Aggregator"
@@ -2062,6 +2114,10 @@ msgstr "Background"
 msgid "Backlog"
 msgstr "Backlog"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Backs nothing after the move."
+msgstr "Backs nothing after the move."
+
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Backup & Restore"
@@ -2127,6 +2183,10 @@ msgstr "Base recommendations on these titles. Search adds any title from MangaBa
 #: src/api/hooks.ts
 msgid "Based on your recent activity"
 msgstr "Based on your recent activity"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Basis"
+msgstr "Basis"
 
 #: src/components/NotificationsSection.tsx
 msgid "Bearer token"
@@ -2298,6 +2358,7 @@ msgstr "Can't read this download"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -2496,6 +2557,7 @@ msgstr "Ch.{from}–{to}"
 msgid "Ch.{from}+"
 msgstr "Ch.{from}+"
 
+#: src/components/RelinkFilesModal.tsx
 #: src/components/settings/AccountSection.tsx
 msgid "Change"
 msgstr "Change"
@@ -3159,6 +3221,10 @@ msgstr "Core"
 msgid "Corrupt"
 msgstr "Corrupt"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Could not build a plan for this series."
+msgstr "Could not build a plan for this series."
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -3477,6 +3543,10 @@ msgstr "Deleted files are removed from disk and cannot be recovered from Maki."
 #: src/pages/HealthPage.tsx
 msgid "Deleting"
 msgstr "Deleting"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Deleting files needs the Delete series permission."
+msgstr "Deleting files needs the Delete series permission."
 
 #: src/pages/HealthPage.tsx
 msgid "Deletion review #{opId}"
@@ -3963,6 +4033,10 @@ msgstr "Esc"
 msgid "Esc closes"
 msgstr "Esc closes"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Estimated"
+msgstr "Estimated"
+
 #: src/components/NotificationsSection.tsx
 msgid "Events"
 msgstr "Events"
@@ -3970,6 +4044,10 @@ msgstr "Events"
 #: src/components/ui/seriesNotifications.ts
 msgid "Every chapter"
 msgstr "Every chapter"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Every chapter is already on the best file available. Nothing to change."
+msgstr "Every chapter is already on the best file available. Nothing to change."
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Every day"
@@ -4208,6 +4286,7 @@ msgstr "Fetching metadata"
 msgid "Fetching pages…"
 msgstr "Fetching pages…"
 
+#: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 msgid "File"
 msgstr "File"
@@ -4441,13 +4520,25 @@ msgstr "French"
 msgid "From"
 msgstr "From"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "From file name"
+msgstr "From file name"
+
 #: src/components/discover/DiscoverReviews.tsx
 msgid "From MyAnimeList"
 msgstr "From MyAnimeList"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "From page names"
+msgstr "From page names"
+
 #: src/pages/LibraryPage.tsx
 msgid "From the metadata provider, not your own tags"
 msgstr "From the metadata provider, not your own tags"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "From volume metadata"
+msgstr "From volume metadata"
 
 #: src/pages/DiscoverPage.tsx
 msgid "From your library"
@@ -4490,6 +4581,10 @@ msgstr "Full screen"
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Fully read owned"
 msgstr "Fully read owned"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Gains"
+msgstr "Gains"
 
 #: src/components/discover/RecommenderDials.tsx
 msgid "gems"
@@ -4541,6 +4636,10 @@ msgstr "Give others their own account, library access and reading history."
 #: src/pages/SettingsPage.tsx
 msgid "Give up on a chapter after (minutes)"
 msgstr "Give up on a chapter after (minutes)"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Gives up ch."
+msgstr "Gives up ch."
 
 #: src/pages/DiscoverPage.tsx
 msgid "Go to library"
@@ -5544,6 +5643,10 @@ msgstr "Link a source and refresh."
 msgid "Link and unlink per-series sources"
 msgstr "Link and unlink per-series sources"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Link by hand"
+msgstr "Link by hand"
+
 #: src/components/SeriesFilesSection.tsx
 msgid "Link chapters"
 msgstr "Link chapters"
@@ -5558,8 +5661,8 @@ msgid "Link chapters to this file"
 msgstr "Link chapters to this file"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Link files"
-msgstr "Link files"
+#~ msgid "Link files"
+#~ msgstr "Link files"
 
 #: src/pages/ImportPage.tsx
 msgid "Link files and report results"
@@ -5667,6 +5770,10 @@ msgstr "Looking up chapters…"
 #: src/pages/discover/TasteTab.tsx
 msgid "loose"
 msgstr "loose"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Loses"
+msgstr "Loses"
 
 #: src/pages/HealthPage.tsx
 msgid "Low disk error (%)"
@@ -7046,8 +7153,8 @@ msgid "OLED black"
 msgstr "OLED black"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Omnibus volumes and odd file names need linking by hand."
-msgstr "Omnibus volumes and odd file names need linking by hand."
+#~ msgid "Omnibus volumes and odd file names need linking by hand."
+#~ msgstr "Omnibus volumes and odd file names need linking by hand."
 
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -7097,6 +7204,10 @@ msgstr "One-shot"
 #: src/pages/stats/labels.ts
 msgid "Ongoing"
 msgstr "Ongoing"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Only files whose every chapter now lives on a volume. This cannot be undone."
+msgstr "Only files whose every chapter now lives on a volume. This cannot be undone."
 
 #: src/components/NotificationsSection.tsx
 msgid "Only for tagged series"
@@ -7920,6 +8031,10 @@ msgstr "Reading stats need Kavita"
 msgid "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 msgstr "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Reading volume archives…"
+msgstr "Reading volume archives…"
+
 #: src/components/RatingImportModal.tsx
 msgid "Reading your ratings from {label}…"
 msgstr "Reading your ratings from {label}…"
@@ -7944,6 +8059,10 @@ msgstr "Reason (optional)"
 msgid "Rebuild all"
 msgstr "Rebuild all"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "Rebuild chapter links from the folder, volumes first"
+msgstr "Rebuild chapter links from the folder, volumes first"
+
 #: src/pages/SettingsPage.tsx
 msgid "Rebuild every poster"
 msgstr "Rebuild every poster"
@@ -7963,6 +8082,10 @@ msgstr "Rebuilding image cache"
 #: src/pages/SettingsPage.tsx
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Rebuilding posters, {processedCount} of {totalCount}"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
+msgstr "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
 
 #: src/components/NotificationsSection.tsx
 msgid "Receives a JSON POST for each event."
@@ -8135,6 +8258,27 @@ msgstr "Released"
 #: src/components/CatalogueFilters.tsx
 msgid "Releasing"
 msgstr "Releasing"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Relink"
+msgstr "Relink"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Relink and delete"
+msgstr "Relink and delete"
+
+#: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Relink files"
+msgstr "Relink files"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Relink files, volumes first"
+msgstr "Relink files, volumes first"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
+msgstr "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -9505,6 +9649,7 @@ msgid "Sittings per week"
 msgstr "Sittings per week"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -9855,6 +10000,10 @@ msgstr "Suggestive"
 msgid "Supernatural"
 msgstr "Supernatural"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Superseded"
+msgstr "Superseded"
+
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Switch reading direction"
 msgstr "Switch reading direction"
@@ -9966,6 +10115,10 @@ msgstr "Tags to exclude"
 msgid "Tags to include"
 msgstr "Tags to include"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Takes ch."
+msgstr "Takes ch."
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Tap zones"
 msgstr "Tap zones"
@@ -10016,8 +10169,12 @@ msgid "That chapter no longer exists"
 msgstr "That chapter no longer exists"
 
 #: src/components/SeriesFilesSection.tsx
-msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
-msgstr "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
+msgstr "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
+
+#: src/components/SeriesFilesSection.tsx
+#~ msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
+#~ msgstr "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
 
 #: src/pages/rewind/slides.tsx
 msgid "That was your {label}"
@@ -10058,6 +10215,10 @@ msgstr "The catalogue needs the local MangaBaka database (Settings, then Metadat
 #: src/pages/DiscoverPage.tsx
 msgid "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
 msgstr "The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB)."
+
+#: src/components/RelinkFilesModal.tsx
+msgid "The chapter numbers are in the archive's page file names. Certain."
+msgstr "The chapter numbers are in the archive's page file names. Certain."
 
 #: src/pages/SettingsPage.tsx
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
@@ -10126,6 +10287,10 @@ msgstr "The odd one out"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "The profile and its reader settings are removed. This can't be undone."
 msgstr "The profile and its reader settings are removed. This can't be undone."
+
+#: src/components/RelinkFilesModal.tsx
+msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
+msgstr "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
 
 #: src/components/settings/SecuritySection.tsx
 msgid "The provider's issuer, without /.well-known/openid-configuration. Maki appends that itself."

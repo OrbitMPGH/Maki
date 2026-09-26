@@ -1624,6 +1624,66 @@ export function useMoveSeries() {
   })
 }
 
+export interface RelinkPlanFile {
+  relativePath: string
+  fileName: string
+  size: number
+  label: string | null
+  isVolume: boolean
+  recognized: boolean
+  /** pageMarkers | volumeRange | fileName | estimated, or null when the file backs nothing. */
+  confidence: string | null
+  chapters: string[]
+  gains: string[]
+  loses: string[]
+  superseded: boolean
+}
+
+export interface RelinkPlan {
+  seriesId: number
+  files: RelinkPlanFile[]
+  moved: number
+  supersededCount: number
+  supersededBytes: number
+  unrecognized: number
+}
+
+export interface RelinkResult {
+  moved: number
+  superseded: number
+  deleted: number
+  failed: number
+  freedBytes: number
+}
+
+export function useRelinkPlan(seriesId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['relink-plan', seriesId],
+    queryFn: () => api<RelinkPlan>(`/series/${seriesId}/relink/plan`),
+    enabled,
+    // Every open should reflect the folder as it is now, not a plan from a previous visit.
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+export function useApplyRelink(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (deleteSuperseded: boolean) =>
+      api<RelinkResult>(`/series/${seriesId}/relink`, {
+        method: 'POST',
+        body: JSON.stringify({ deleteSuperseded }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.removeQueries({ queryKey: ['relink-plan', seriesId] })
+    },
+  })
+}
+
 export interface RescanResult {
   newFiles: number
   relinked: number
