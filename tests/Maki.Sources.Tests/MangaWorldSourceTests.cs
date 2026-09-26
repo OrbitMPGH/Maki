@@ -84,11 +84,30 @@ public class MangaWorldSourceTests
         Assert.Null(chapter.Number);
         Assert.Null(chapter.Volume);
         // Null-number chapters need a non-null title so ChapterIdentity can dedupe by it: the
-        // chapter anchor's own full text (span label plus date, run together with no separator
-        // in the markup), never an invented English literal.
-        Assert.Equal("Oneshot27 Giugno 2023", chapter.Title);
+        // span label the site itself shows for this chapter, never an invented English literal.
+        Assert.Equal("Oneshot", chapter.Title);
         Assert.Equal("649af99e8e54383f7f49f1ff", chapter.SourceChapterId);
         Assert.Equal(new DateTime(2023, 6, 27), chapter.ReleaseDate);
+    }
+
+    [Fact]
+    public async Task ListChapters_null_number_chapter_with_no_span_falls_back_to_anchor_text_without_the_date()
+    {
+        // Synthetic markup: no span.d-inline-block, so the fallback moves past it to the anchor's
+        // own text, with the i.chap-date descendant stripped out first.
+        const string html = """
+            <html><body><div class="chapters-wrapper">
+              <div class="chapter">
+                <a class="chap" href="https://www.mangaworld.mx/manga/1/foo/read/cccccccccccccccccccccccc">Extra<i class="text-right text-muted chap-date">01 Gennaio 2024</i></a>
+              </div>
+            </div></body></html>
+            """;
+        var source = new MangaWorldSource(new FakeHtmlFetcher(new() { ["/manga/1/foo"] = html }));
+
+        var chapter = Assert.Single(await source.ListChaptersAsync("1/foo"));
+
+        Assert.Null(chapter.Number);
+        Assert.Equal("Extra", chapter.Title);
     }
 
     [Fact]

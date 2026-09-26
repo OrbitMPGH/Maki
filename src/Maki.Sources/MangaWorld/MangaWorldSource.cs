@@ -149,10 +149,8 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
                 numberRaw,
                 parsed.Number,
                 parsed.Volume,
-                // Null-number chapters (oneshots, extras) need a non-null title: ChapterIdentity
-                // dedupes them by title rather than number. Never an invented English literal —
-                // Core writes this into ComicInfo.xml and the reader renders it unlocalised.
-                Title: parsed.Number is null ? FallbackTitle(link, volumeRaw, chapterId) : null,
+                // Null-number chapters need a non-null title so ChapterIdentity can dedupe by it.
+                Title: parsed.Number is null ? FallbackTitle(numberRaw, link, volumeRaw, chapterId) : null,
                 Language: "it",
                 releaseDate,
                 Url: href));
@@ -163,20 +161,41 @@ public partial class MangaWorldSource(IHtmlFetcher fetcher) : ISource
     }
 
     /// <summary>
-    /// Title for a null-number chapter, always the site's own text and never invented English.
-    /// The chapter anchor's full text (span label plus date, e.g. "Oneshot27 Giugno 2023") covers
-    /// every real case; the enclosing volume name and finally the chapter id are last resorts for a
-    /// chapter div so bare it carries no text of its own.
+    /// Title for a null-number chapter, always the site's own text: the span label ("Oneshot") when
+    /// there is one, else the chapter anchor's text with the date stripped out, else the enclosing
+    /// volume name, else the chapter id as a last resort for a chapter div bare of any text at all.
     /// </summary>
-    private static string FallbackTitle(IElement? link, string? volumeRaw, string chapterId)
+    private static string FallbackTitle(string? numberRaw, IElement? link, string? volumeRaw, string chapterId)
     {
-        var anchorText = link?.TextContent.Trim();
+        if (!string.IsNullOrEmpty(numberRaw))
+        {
+            return numberRaw;
+        }
+
+        var anchorText = AnchorTextWithoutDate(link);
         if (!string.IsNullOrEmpty(anchorText))
         {
             return anchorText;
         }
 
         return !string.IsNullOrEmpty(volumeRaw) ? volumeRaw : chapterId;
+    }
+
+    /// <summary>The chapter anchor's text with any "i.chap-date" descendant removed first.</summary>
+    private static string? AnchorTextWithoutDate(IElement? link)
+    {
+        if (link is null)
+        {
+            return null;
+        }
+
+        var clone = (IElement)link.Clone(deep: true);
+        foreach (var date in clone.QuerySelectorAll("i.chap-date").ToList())
+        {
+            date.Remove();
+        }
+
+        return clone.TextContent.Trim();
     }
 
     /// <summary>
