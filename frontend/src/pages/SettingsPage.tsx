@@ -134,7 +134,6 @@ import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { ImportListsSection } from '../components/ImportListsSection'
-import { ApiError } from '../api/client'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
@@ -1589,7 +1588,14 @@ function ScrobbleSection() {
 
   // Stored as a comma-separated id list. Ids Kavita no longer reports stay selectable, so a library
   // that is briefly missing isn't dropped from the filter by the next save.
-  const { data: kavitaLibraries, error: kavitaLibrariesError } = useKavitaLibraries(isAdmin)
+  const { data: kavitaConnection, isSuccess: kavitaConnectionLoaded } = useConnectionSettings<{
+    url: string | null
+    apiKey: string | null
+  }>('kavita')
+  const kavitaNotSetUp = kavitaConnectionLoaded && !(kavitaConnection?.url && kavitaConnection?.apiKey)
+  const { data: kavitaLibraries, error: kavitaLibrariesError } = useKavitaLibraries(
+    isAdmin && kavitaConnectionLoaded && !kavitaNotSetUp,
+  )
   const selectedLibraries = (form?.libraryIds ?? '').split(',').map((id) => id.trim()).filter(Boolean)
   const libraryOptions = [
     ...(kavitaLibraries ?? []).map((l) => ({ value: String(l.id), label: l.name ?? `#${l.id}` })),
@@ -1597,10 +1603,7 @@ function ScrobbleSection() {
       .filter((id) => !(kavitaLibraries ?? []).some((l) => String(l.id) === id))
       .map((id) => ({ value: id, label: `#${id}` })),
   ]
-  // A 400 here only ever means the Kavita connection isn't filled in yet, which is not an error.
-  const kavitaNotSetUp = kavitaLibrariesError instanceof ApiError && kavitaLibrariesError.status === 400
-  const kavitaLibrariesErrorMessage =
-    kavitaLibrariesError != null && !kavitaNotSetUp ? kavitaLibrariesError.message : null
+  const kavitaLibrariesErrorMessage = kavitaLibrariesError?.message ?? null
 
   const set = (patch: Partial<ScrobbleSettings>) =>
     setForm((f) => (f ? { ...f, ...patch } : f))
