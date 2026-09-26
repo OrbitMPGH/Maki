@@ -96,6 +96,49 @@ public class DynastySourceTests
     }
 
     [Fact]
+    public async Task ListChapters_gives_colon_less_specials_in_different_volumes_distinct_titles()
+    {
+        // ChapterIdentity.Matches identifies a null-number chapter by (IsOneShot, Language,
+        // Title) alone, ignoring Volume. A null Title here would alias "Vol. 1 Special" and
+        // "Vol. 2 Special" (and every other colon-less special) into the same chapter row on
+        // sync, well beyond the same-volume collapse Normalize is meant to do.
+        var chapters = await WithSeries().ListChaptersAsync("citrus");
+
+        var vol1Special = Assert.Single(chapters, c => c.Number is null && c.Volume == 1);
+        var vol2Special = Assert.Single(chapters, c => c.Number is null && c.Volume == 2);
+
+        Assert.Equal("Vol. 1 Special", vol1Special.Title);
+        Assert.Equal("Vol. 2 Special", vol2Special.Title);
+        Assert.NotEqual(vol1Special.Title, vol2Special.Title);
+        Assert.All(chapters.Where(c => c.Number is null), c => Assert.NotNull(c.Title));
+    }
+
+    [Fact]
+    public async Task ListChapters_still_leaves_a_colon_less_numbered_chapter_title_null()
+    {
+        // Numbered chapters are looked up by (Number, Volume, Language), never by Title, so the
+        // colon-less fallback that null-number chapters need must not apply to them.
+        var source = SourceFor(new()
+        {
+            ["series/no-colon.json"] = """
+                {
+                  "name": "No Colon", "type": "Series", "permalink": "no-colon", "tags": [],
+                  "taggings": [
+                    { "header": "Volume 1" },
+                    { "title": "Chapter 5", "permalink": "no_colon_ch05", "released_on": "2020-01-01", "tags": [] }
+                  ]
+                }
+                """
+        });
+
+        var chapters = await source.ListChaptersAsync("no-colon");
+
+        var chapter = Assert.Single(chapters);
+        Assert.Equal(5m, chapter.Number);
+        Assert.Null(chapter.Title);
+    }
+
+    [Fact]
     public async Task ListChapters_parses_a_dotted_chapter_number_from_a_long_series()
     {
         var chapters = await WithLongSeries().ListChaptersAsync("yuru_yuri");

@@ -137,8 +137,15 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
             var rawTitle = String(tagging, "title");
             var parsed = ChapterNumberParser.Parse(rawTitle, volume?.ToString(CultureInfo.InvariantCulture));
 
+            // ChapterIdentity.Matches identifies a null-number chapter by (IsOneShot, Language,
+            // Title) alone, ignoring Volume entirely. A null Title here would make every
+            // colon-less special ("Vol. 1 Special", "Vol. 7 Extra", ...) match on sync no matter
+            // which volume it came from, collapsing them all into one chapter row after the
+            // first. Numbered chapters aren't looked up by Title, so they keep the null fallback.
             var colonIndex = rawTitle?.IndexOf(": ", StringComparison.Ordinal) ?? -1;
-            var chapterTitle = colonIndex >= 0 ? rawTitle![(colonIndex + 2)..] : null;
+            var chapterTitle = colonIndex >= 0 ? rawTitle![(colonIndex + 2)..]
+                : parsed.Number is null ? rawTitle
+                : null;
 
             chapters.Add(new SourceChapter(
                 Name,
