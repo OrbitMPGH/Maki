@@ -19,6 +19,7 @@ using Maki.Sources.Shinigami;
 using Maki.Sources.Manhwa18Net;
 using Maki.Sources.CuuTruyen;
 using Maki.Sources.MangaWorld;
+using Maki.Sources.MangaTube;
 
 namespace Maki.Sources.Tests;
 
@@ -411,6 +412,19 @@ public class ResolveSeriesIdFromUrlTests
     public void Manhuagui(string url, string? expected)
     {
         ISource source = new Manhuagui.ManhuaguiSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://manga-tube.me/series/one_piece", "one_piece")]
+    [InlineData("https://manga-tube.me/series/one_piece/", "one_piece")]
+    // A chapter-reader link is rejected rather than resolved to its series, unlike most sources.
+    [InlineData("https://manga-tube.me/series/one_piece/read/19830/1", null)]
+    [InlineData("https://manga-tube.me/api/manga/one_piece", null)]
+    [InlineData("https://example.com/series/one_piece", null)]
+    public void MangaTube(string url, string? expected)
+    {
+        ISource source = new MangaTubeSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
