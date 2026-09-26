@@ -537,6 +537,10 @@ msgstr "{hours, plural, other {#時間}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, other {残り約#時間}}"
 
+#: src/pages/ImportPage.tsx
+msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
@@ -5818,6 +5822,7 @@ msgid "Importing"
 msgstr "インポート中"
 
 #: src/components/ui/DiscoverRail.tsx
+#: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "In library"
 msgstr "ライブラリ内"
@@ -11924,6 +11929,10 @@ msgstr "torrentがqBittorrentに表示されませんでした"
 #, fuzzy
 msgid "The whole catalogue"
 msgstr "カタログ全体"
+
+#: src/pages/ImportPage.tsx
+msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
