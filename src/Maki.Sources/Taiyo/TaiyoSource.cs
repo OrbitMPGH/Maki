@@ -34,6 +34,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "Taiyō";
     public string BaseUrl => "https://taiyo.moe";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> SupportedLanguages => ["pt-br"];
     public IReadOnlyList<string> CoverHosts => [];
 

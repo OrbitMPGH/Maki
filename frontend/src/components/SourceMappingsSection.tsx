@@ -58,6 +58,7 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
+import { SOURCE_ICONS } from '../sourceIcons'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -70,47 +71,6 @@ const ORIGIN_COLORS: Record<string, string> = {
   CrossId: 'var(--watched)',
   Manual: 'var(--ok)',
   Unknown: 'var(--neutral)'
-}
-
-const SOURCE_ICONS: Record<string, string> = {
-  asura: '/source-icons/asura.webp',
-  atsumaru: '/source-icons/atsumaru.ico',
-  flamecomics: '/source-icons/flamecomics.png',
-  mangadex: '/source-icons/mangadex.ico',
-  mangafire: '/source-icons/mangafire.svg',
-  mangakakalot: '/source-icons/mangakakalot.ico',
-  mangakatana: '/source-icons/mangakatana.png',
-  mangapill: '/source-icons/mangapill.png',
-  mangaplus: '/source-icons/mangaplus.ico',
-  tcbscans: '/source-icons/tcbscans.png',
-  topmanhua: '/source-icons/topmanhua.png',
-  webtoons: '/source-icons/webtoons.ico',
-  weebcentral: '/source-icons/weebcentral.ico',
-  shonenjumpplus: '/source-icons/shonenjumpplus.png',
-  comicdays: '/source-icons/comicdays.png',
-  sundaywebry: '/source-icons/sundaywebry.png',
-  magcomi: '/source-icons/magcomi.png',
-  tonarinoyj: '/source-icons/tonarinoyj.png',
-  comiczenon: '/source-icons/comiczenon.png',
-  kuragebunch: '/source-icons/kuragebunch.png',
-  toonily: '/source-icons/toonily.png',
-  mangalib: '/source-icons/mangalib.svg',
-  dynasty: '/source-icons/dynasty.png',
-  animesama: '/source-icons/animesama.png',
-  manhwaweb: '/source-icons/manhwaweb.png',
-  olympus: '/source-icons/olympus.webp',
-  shinigami: '/source-icons/shinigami.png',
-  manhwa18net: '/source-icons/manhwa18net.ico',
-  cuutruyen: '/source-icons/cuutruyen.ico',
-  mangaworld: '/source-icons/mangaworld.png',
-  naverwebtoon: '/source-icons/naverwebtoon.ico',
-  manhuagui: '/source-icons/manhuagui.ico',
-  mangatube: '/source-icons/mangatube.ico',
-  mangadenizi: '/source-icons/mangadenizi.ico',
-  taiyo: '/source-icons/taiyo.png',
-  comicwalker: '/source-icons/comicwalker.png',
-  rawkuma: '/source-icons/rawkuma.png',
-  teamx: '/source-icons/teamx.png',
 }
 
 export function SourceMappingsSection({

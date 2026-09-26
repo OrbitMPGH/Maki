@@ -458,6 +458,10 @@ msgstr "{editingTitle}, запрошено: {editingAskedFor}"
 msgid "{embedded, plural, one {# new} other {# new}}"
 msgstr "{embedded, plural, one {# новое} few {# новых} many {# новых} other {# нового}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{enabledCount, plural, one {# enabled} other {# enabled}}"
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "{eta} left"
@@ -604,6 +608,14 @@ msgstr "{label}: исключено"
 #, fuzzy
 msgid "{label}: required"
 msgstr "{label}: требуется"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{languageCount, plural, one {# language} other {# languages}}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
+msgstr ""
 
 #: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}"
@@ -1042,6 +1054,10 @@ msgstr "{total, plural, one {В списке # глава, ни одна не н
 msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folders}}"
 msgstr "{total, plural, one {Импортировано папок: {ok}/#} few {Импортировано папок: {ok}/#} many {Импортировано папок: {ok}/#} other {Импортировано папок: {ok}/#}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{total, plural, one {Search # source} other {Search # sources}}"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "{total, plural, one {Show all #} other {Show all #}}"
@@ -1066,6 +1082,14 @@ msgstr "{totalQueued, plural, one {# в очереди} few {# в очереди
 #, fuzzy
 msgid "{totalSeries, plural, one {# series} other {# series}}"
 msgstr "{totalSeries, plural, one {# серия} few {# серии} many {# серий} other {# серии}}"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{turnedOff, plural, one {# turned off} other {# turned off}}"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{turnedOn, plural, one {# turned on} other {# turned on}}"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -1258,6 +1282,10 @@ msgstr ""
 msgid "<0>{deleting}</0> is removed from disk. This can't be undone."
 msgstr "Объект <0>{deleting}</0> будет удалён с диска. Это действие нельзя отменить."
 
+#: src/pages/SettingsPage.tsx
+msgid "<0>{enabledCount}</0> of {total, plural, one {# source} other {# sources}} enabled"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{diskSize}</1> on disk."
 msgstr ""
@@ -1356,6 +1384,14 @@ msgstr "100 / страница"
 #, fuzzy
 msgid "12 months"
 msgstr "12 месяцев"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "18+"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "18+ only"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1808,6 +1844,10 @@ msgstr "Приключения"
 msgid "Affected chapters:"
 msgstr "Затронутые главы:"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Aggregator"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -1815,6 +1855,7 @@ msgstr "Затронутые главы:"
 #: src/pages/NotificationsPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "All"
 msgstr "Все"
@@ -1892,6 +1933,10 @@ msgstr "Все корневые папки"
 
 #: src/components/NotificationsSection.tsx
 msgid "All series"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "All sources"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -2674,6 +2719,7 @@ msgstr "Не удаётся прочитать эту загрузку"
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Cancel"
@@ -3197,6 +3243,10 @@ msgstr "Очистить поиск по главам"
 msgid "Clear default"
 msgstr "Очистить значение по умолчанию"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Clear filters"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Clear queue"
@@ -3291,6 +3341,7 @@ msgstr "Секрет клиента"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Close"
 msgstr "Закрыть"
@@ -3549,6 +3600,10 @@ msgstr "согласовано"
 #, fuzzy
 msgid "Contained in a volume/compilation file"
 msgstr "Содержится в файле тома или сборника"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Content"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -4125,6 +4180,7 @@ msgstr "отключено"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Disabled"
 msgstr "Отключено"
@@ -4230,6 +4286,7 @@ msgstr "Не загружать спецглавы"
 #: src/components/TagBrowserModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Done"
 msgstr "Готово"
@@ -4241,6 +4298,10 @@ msgstr "Двойная"
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Double page"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Doujinshi"
 msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
@@ -4309,9 +4370,13 @@ msgid "Download next chapters"
 msgstr "Загрузить следующие главы"
 
 #: src/pages/SettingsPage.tsx
+msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles. Drag to reorder."
-msgstr "Порядок загрузки, если серия найдена в нескольких источниках, от наиболее предпочтительного. Сначала учитывается указанный выше порядок языков. Применяется к новым автоматическим сопоставлениям и ручному запуску автосопоставления; у остальных серий порядок не меняется. Отключение источника приостанавливает загрузку для всех серий, не меняя их индивидуальные переключатели. Перетащите, чтобы изменить порядок."
+#~ msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles. Drag to reorder."
+#~ msgstr "Порядок загрузки, если серия найдена в нескольких источниках, от наиболее предпочтительного. Сначала учитывается указанный выше порядок языков. Применяется к новым автоматическим сопоставлениям и ручному запуску автосопоставления; у остальных серий порядок не меняется. Отключение источника приостанавливает загрузку для всех серий, не меняя их индивидуальные переключатели. Перетащите, чтобы изменить порядок."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -4532,6 +4597,10 @@ msgstr "Пусто"
 msgid "Empty."
 msgstr "Пусто."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Enable {label}"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -4540,8 +4609,8 @@ msgstr "Включить {name}"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Enable {sourceName}"
-msgstr "Включить {sourceName}"
+#~ msgid "Enable {sourceName}"
+#~ msgstr "Включить {sourceName}"
 
 #: src/pages/SettingsPage.tsx
 msgid "Enable import lists for everyone"
@@ -4564,6 +4633,7 @@ msgstr "Включить каталог OPDS"
 
 #: src/components/NotificationsSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Enabled"
 msgstr "Включено"
@@ -4937,6 +5007,7 @@ msgstr "Фильтровать каталог"
 #: src/components/CatalogueBrowser.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Filters"
 msgstr "Фильтры"
@@ -5069,6 +5140,7 @@ msgstr "Подогнать по ширине"
 msgid "Fix or remove the source mapping first, or a refresh will bring them right back."
 msgstr "Сначала исправьте или удалите сопоставление источника, иначе обновление вернёт его."
 
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "FlareSolverr"
@@ -6139,11 +6211,16 @@ msgstr "Корейский"
 
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Language"
 msgstr "Язык"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Language filter"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6719,6 +6796,8 @@ msgid "Manage signals"
 msgstr "Управление сигналами"
 
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Manage sources"
 msgstr "Управление источниками"
@@ -6737,6 +6816,7 @@ msgstr "манга"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Manga"
 msgstr "Манга"
@@ -6759,12 +6839,14 @@ msgstr "mangabaka, локальная база данных, дамп, сним�
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Manhua"
 msgstr "Манхуа"
 
 #: src/api/readingProfiles.ts
 #: src/components/CatalogueFilters.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Manhwa"
 msgstr "Манхва"
@@ -6877,6 +6959,10 @@ msgstr "Сопоставление выполняется в фоне, по од
 #, fuzzy
 msgid "Matching the remaining sources…"
 msgstr "Сопоставление оставшихся источников…"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Mature"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7149,6 +7235,14 @@ msgstr "Переместить"
 msgid "Move {label}"
 msgstr "Переместить {label}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Move {label} down"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Move {label} up"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Move {selectedCount} series"
@@ -7202,8 +7296,8 @@ msgstr "Переместить вверх в очереди"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Multi-language"
-msgstr "Многоязычный"
+#~ msgid "Multi-language"
+#~ msgstr "Многоязычный"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -7292,8 +7386,8 @@ msgstr "Для сравнения нужны как минимум два вкл
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Needs FlareSolverr"
-msgstr "Требуется FlareSolverr"
+#~ msgid "Needs FlareSolverr"
+#~ msgstr "Требуется FlareSolverr"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -7414,6 +7508,10 @@ msgstr "новая версия, проверить обновления, вып
 msgid "Newest"
 msgstr "Самые новые"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Newly enabled sources join at the bottom."
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -7457,6 +7555,10 @@ msgstr "Без изменений: вся франшиза уже была ск�
 #, fuzzy
 msgid "No change: this title was already in that state."
 msgstr "Без изменений: это название уже было в этом состоянии."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "No changes yet"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7686,6 +7788,10 @@ msgstr "Источники не связаны"
 #, fuzzy
 msgid "No sources linked. Chapters cannot be synced or downloaded."
 msgstr "Источники не связаны. Синхронизация и загрузка глав невозможны."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "No sources match. Clear a filter or try another name."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -7920,6 +8026,10 @@ msgstr "Пока ничего не загружено."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Nothing dropped. Keep it that way."
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Nothing enabled. Turn a source on to rank it."
 msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -8177,6 +8287,10 @@ msgstr "Выкл. скрывает раздел «Главная», вкладк
 msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
 msgstr "Если отключить, для файла сохранится исходное имя релиза, которое часто содержит больше информации, чем шаблон. Собственные загрузки Maki всегда соответствуют шаблону, а переименование серии на её странице переименует все её файлы."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Official"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -8411,6 +8525,10 @@ msgstr "Необязательно, настройте сами. Maki никог
 #, fuzzy
 msgid "or"
 msgstr "или"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Order changed"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8853,6 +8971,7 @@ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Priority"
 msgstr "Приоритет"
@@ -9047,6 +9166,7 @@ msgid "Rated {rating}/10"
 msgstr "Оценка: {rating}/10"
 
 #: src/components/settings/UsersSection.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Rating"
 msgstr "Рейтинг"
@@ -9817,6 +9937,10 @@ msgstr "Сбросить"
 msgid "Reset bookmarks and resume positions for affected chapters across all users. Completed status and reading history are preserved."
 msgstr "Сбросить закладки и позиции продолжения для затронутых глав у всех пользователей. Статус завершения и историю чтения сохранить."
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Reset to defaults"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Reset zoom"
 msgstr ""
@@ -10141,6 +10265,10 @@ msgstr "Сохранить как подборку…"
 msgid "Save as default"
 msgstr "Сохранить по умолчанию"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Save changes"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Save failed"
@@ -10190,6 +10318,7 @@ msgstr "Сохранить коды восстановления"
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/SetupWizard.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Saved"
@@ -10252,6 +10381,10 @@ msgstr "Просканируйте это приложением-аутенти�
 msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
 msgstr "сканирование, API-ключ, сопоставление путей, обложки, сервер библиотеки, привязка чтения, пользователь kavita, источник прогресса"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlator"
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -10313,14 +10446,19 @@ msgstr "Источники-скрейперы, поведение загрузо
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 #, fuzzy
 #~ msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder"
 #~ msgstr "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, порядок источников, отключить источник, автоматическое сопоставление, изменить порядок"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
-msgstr ""
+#~ msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+#~ msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -10459,6 +10597,10 @@ msgstr "Поиск релизов (Prowlarr)"
 #, fuzzy
 msgid "Search shows"
 msgstr "Поиск шоу"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Search sources"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -12338,6 +12480,10 @@ msgstr "Сверху"
 msgid "Top rated"
 msgstr "С самым высоким рейтингом"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Top source wins when several carry the same series."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 msgid "Topic"
 msgstr ""
@@ -12449,6 +12595,10 @@ msgstr "Турецкий"
 #, fuzzy
 msgid "Turn on anime signals on the Taste tab to use this."
 msgstr "Включите сигналы по аниме на вкладке «Вкусы», чтобы использовать это."
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Turn sources on or off on the left. Drag the rail on the right to set which one Maki tries first."
+msgstr ""
 
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
@@ -13086,6 +13236,10 @@ msgstr "Webhook"
 #, fuzzy
 msgid "Webhook URL"
 msgstr "URL webhook"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Webtoon"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Weekend share"

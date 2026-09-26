@@ -29,6 +29,7 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
     public string DisplayName => "KadoComi (Comic Walker)";
     public string BaseUrl => "https://comic-walker.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Official;
     public IReadOnlyList<string> SupportedLanguages => ["ja"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);

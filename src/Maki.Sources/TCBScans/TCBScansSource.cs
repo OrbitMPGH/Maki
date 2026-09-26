@@ -30,6 +30,7 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
     public string DisplayName => "TCB Scans";
     public string BaseUrl => "https://tcbonepiecechapters.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Scanlator;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 

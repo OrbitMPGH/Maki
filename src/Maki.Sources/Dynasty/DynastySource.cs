@@ -25,6 +25,8 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
     public string DisplayName => "Dynasty Scans";
     public string BaseUrl => "https://dynasty-scans.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Doujinshi;
+    public SourceRating Rating => SourceRating.Mature;
     public IReadOnlyList<string> CoverHosts => [];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);

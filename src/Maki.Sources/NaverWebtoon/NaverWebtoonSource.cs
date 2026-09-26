@@ -28,6 +28,8 @@ public class NaverWebtoonSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "Naver Webtoon";
     public string BaseUrl => "https://comic.naver.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Official;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Webtoon;
     public IReadOnlyList<string> SupportedLanguages => ["ko"];
 
     /// <summary>Covers and pages are served from image-comic.pstatic.net.</summary>

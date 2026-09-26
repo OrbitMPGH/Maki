@@ -44,6 +44,7 @@ public partial class ManhuaguiSource(IHttpClientFactory httpClientFactory) : ISo
         Environment.GetEnvironmentVariable("MAKI_SOURCE_MANHUAGUI_BASEURL")?.TrimEnd('/') ?? "https://www.manhuagui.com";
 
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manhua;
 
     // BaoziManhuaSource already publishes zh-Hans; keeping the same tag stops a series linked to
     // both sources from splitting into two languages.

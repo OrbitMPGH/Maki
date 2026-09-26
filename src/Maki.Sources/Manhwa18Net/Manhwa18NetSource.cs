@@ -36,6 +36,8 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
     public string DisplayName => "Manhwa18.net";
     public string BaseUrl => "https://manhwa18.net";
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceContent Content => SourceContent.Manhwa;
+    public SourceRating Rating => SourceRating.Adult;
 
     // "Chap 01" / "chap 113" fall outside ChapterNumberParser's ch/chapter word-boundary
     // pattern (it only matches "ch" or "chapter"), so the number is pre-extracted here and

@@ -34,6 +34,7 @@ public class ManhwaWebSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "ManhwaWeb";
     public string BaseUrl => "https://manhwaweb.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manhwa;
     public IReadOnlyList<string> SupportedLanguages => ["es"];
     public IReadOnlyList<string> CoverHosts => ["img1mw.xyz", "img2mw.xyz", "imageshack.com"];
 

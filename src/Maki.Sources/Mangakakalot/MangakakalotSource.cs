@@ -25,6 +25,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     public string DisplayName => "MangaKakalot";
     public string BaseUrl => "https://www.mangakakalot.gg";
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
 
     /// <summary>Both covers and page images are served from this CDN, and it 403s a missing Referer.</summary>
     public IReadOnlyList<string> CoverHosts => ["2xstorage.com"];

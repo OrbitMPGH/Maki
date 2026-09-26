@@ -17,6 +17,15 @@ public interface ISource
 
     SourceCapabilities Capabilities { get; }
 
+    /// <summary>Who runs this source: the rightsholder, a scanlation group, or an aggregator.</summary>
+    SourceKind Kind => SourceKind.Aggregator;
+
+    /// <summary>Formats this source publishes.</summary>
+    SourceContent Content => SourceContent.Manga;
+
+    /// <summary>Adult = site is primarily 18+ content. Mature = frequent mature content but not adult-focused.</summary>
+    SourceRating Rating => SourceRating.General;
+
     /// <summary>
     /// Language codes this source publishes content in, used to default a newly-registered
     /// source's global on/off switch (<c>SourceAvailability</c>) rather than to filter anything —
@@ -132,6 +141,34 @@ public static class SourceUrl
 
         return firstSegmentOnly ? tail.Split('/')[0] : tail;
     }
+}
+
+/// <summary>Who runs a source.</summary>
+public enum SourceKind
+{
+    Official,
+    Scanlator,
+    Aggregator
+}
+
+/// <summary>Content formats a source publishes. A source can carry several.</summary>
+[Flags]
+public enum SourceContent
+{
+    None = 0,
+    Manga = 1,
+    Manhwa = 2,
+    Manhua = 4,
+    Webtoon = 8,
+    Doujinshi = 16
+}
+
+/// <summary>How mature a source's content skews. Display only, does not gate anything.</summary>
+public enum SourceRating
+{
+    General,
+    Mature,
+    Adult
 }
 
 [Flags]

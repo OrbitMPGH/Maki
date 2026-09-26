@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Metadata;
 using Maki.Core.Security;
 using Maki.Core.Sources;
@@ -17,6 +18,7 @@ public class SearchController(
     SourceAvailability sourceAvailability,
     ICurrentUser currentUser,
     IHttpClientFactory httpClientFactory,
+    IAppSettings settings,
     ILogger<SearchController> logger) : ControllerBase
 {
     /// <summary>Search a specific site source, for manually linking a series.</summary>
@@ -165,6 +167,9 @@ public class SearchController(
         // Enabled is the global switch, not a per-series one: a disabled source can't be
         // linked and none of its existing mappings run, but those mappings keep their flags.
         var disabled = await sourceAvailability.DisabledAsync(ct);
+        var instanceLanguage = Core.Localization.SupportedLanguages.Resolve(
+            await settings.GetAsync(SettingKeys.UiDefaultLanguage, ct));
+
         return Ok(sourceRegistry.All.Select(s => new
         {
             s.Name,
@@ -177,9 +182,27 @@ public class SearchController(
             // nothing to filter, a second language is a second mapping.
             SupportsLanguageFilter = s.Capabilities.HasFlag(SourceCapabilities.SupportsLanguageFilter),
             s.SupportedLanguages,
-            Enabled = !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase)
+            Enabled = !disabled.Contains(s.Name, StringComparer.OrdinalIgnoreCase),
+            Kind = s.Kind.ToString().ToLowerInvariant(),
+            Content = ContentFlagNames(s.Content),
+            Rating = s.Rating.ToString().ToLowerInvariant(),
+            DefaultEnabled = SourceAvailability.DefaultsOn(s, instanceLanguage)
         }));
     }
+
+    /// <summary>Lowercase flag names set on <paramref name="content"/>, in declaration order.</summary>
+    private static string[] ContentFlagNames(SourceContent content) =>
+        new[]
+        {
+            (SourceContent.Manga, "manga"),
+            (SourceContent.Manhwa, "manhwa"),
+            (SourceContent.Manhua, "manhua"),
+            (SourceContent.Webtoon, "webtoon"),
+            (SourceContent.Doujinshi, "doujinshi")
+        }
+        .Where(pair => content.HasFlag(pair.Item1))
+        .Select(pair => pair.Item2)
+        .ToArray();
 
     [HttpGet("metadata")]
     public async Task<IActionResult> SearchMetadata([FromQuery] string query, CancellationToken ct)

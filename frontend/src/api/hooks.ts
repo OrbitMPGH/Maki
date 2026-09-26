@@ -2239,7 +2239,17 @@ export interface SourceInfo {
   supportedLanguages: string[]
   /** Global switch. False = can't be linked, and none of its existing mappings run. */
   enabled: boolean
+  /** Optional until every server sends them; render nothing for a missing value. */
+  kind?: SourceKind
+  content?: SourceContent[]
+  rating?: SourceRating
+  /** Whether a fresh install turns this source on. What "Reset to defaults" restores. */
+  defaultEnabled?: boolean
 }
+
+export type SourceKind = 'official' | 'scanlator' | 'aggregator'
+export type SourceContent = 'manga' | 'manhwa' | 'manhua' | 'webtoon' | 'doujinshi'
+export type SourceRating = 'general' | 'mature' | 'adult'
 
 export function useSources() {
   return useQuery({
@@ -2974,7 +2984,10 @@ export function useSaveSourcePriority() {
         method: 'PUT',
         body: JSON.stringify(value),
       }),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // Written straight in so a reopen right after saving seeds from the new order, not the old
+      // cache entry a refetch has yet to replace.
+      queryClient.setQueryData(['settings', 'sources', 'priority'], saved)
       void queryClient.invalidateQueries({ queryKey: ['settings', 'sources', 'priority'] })
       // /search/sources carries the enabled flag and is cached with staleTime: Infinity,
       // so every screen showing source state would go stale without this.

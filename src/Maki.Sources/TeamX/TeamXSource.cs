@@ -25,6 +25,8 @@ public partial class TeamXSource(IHtmlFetcher fetcher) : ISource
         Environment.GetEnvironmentVariable("MAKI_SOURCE_TEAMX_BASEURL")?.TrimEnd('/') ?? "https://olympustaff.com";
 
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceKind Kind => SourceKind.Scanlator;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Manga;
     public IReadOnlyList<string> SupportedLanguages => ["ar"];
 
     // Covers and page images are served from BaseUrl's own host.

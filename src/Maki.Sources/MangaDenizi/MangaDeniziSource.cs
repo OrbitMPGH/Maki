@@ -26,6 +26,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "MangaDenizi";
     public string BaseUrl => "https://mangadenizi.net";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> SupportedLanguages => ["tr"];
     public IReadOnlyList<string> CoverHosts => [];
 

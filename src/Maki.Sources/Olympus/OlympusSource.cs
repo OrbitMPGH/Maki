@@ -51,6 +51,8 @@ public class OlympusSource : ISource
         Environment.GetEnvironmentVariable("MAKI_SOURCE_OLYMPUS_BASEURL")?.TrimEnd('/') ?? "https://olympusxyz.com";
 
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceKind Kind => SourceKind.Scanlator;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua;
     public IReadOnlyList<string> SupportedLanguages => ["es"];
 
     /// <summary>Covers and pages are on media.imagesolymp.xyz, a suffix of this host.</summary>

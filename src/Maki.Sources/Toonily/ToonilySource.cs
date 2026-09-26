@@ -31,6 +31,8 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
     public string DisplayName => "Toonily";
     public string BaseUrl => "https://toonily.com";
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceContent Content => SourceContent.Manhwa;
+    public SourceRating Rating => SourceRating.Adult;
 
     /// <summary>Covers on static.tnlycdn.com, page images on data.tnlycdn.com.</summary>
     public IReadOnlyList<string> CoverHosts => ["tnlycdn.com"];

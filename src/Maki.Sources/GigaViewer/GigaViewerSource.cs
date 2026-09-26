@@ -30,6 +30,7 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
     public string DisplayName => site.DisplayName;
     public string BaseUrl => site.BaseUrl;
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Official;
     public IReadOnlyList<string> SupportedLanguages => ["ja"];
 
     /// <summary>Classic search thumbnails are on cdn-scissors.gigaviewer.com; og:image covers are

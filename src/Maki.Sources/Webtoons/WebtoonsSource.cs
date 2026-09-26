@@ -68,6 +68,8 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "WEBTOON";
     public string BaseUrl => "https://www.webtoons.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Official;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Webtoon;
 
     public IReadOnlyList<string> SupportedLanguages => ["en", "id", "th", "es", "fr", "zh-Hant", "de"];
 

@@ -23,6 +23,7 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
     public string DisplayName => "MangaLib";
     public string BaseUrl => "https://mangalib.me";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> SupportedLanguages => ["ru"];
     public IReadOnlyList<string> CoverHosts => ["cdnlibs.org"];
 

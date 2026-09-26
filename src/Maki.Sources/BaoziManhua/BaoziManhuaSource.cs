@@ -40,6 +40,7 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
     public string DisplayName => "Baozi Manhua";
     public string BaseUrl => "https://cn.baozimh.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manhua;
     public IReadOnlyList<string> SupportedLanguages => ["zh-Hans"];
 
     /// <summary>Covers and page images are served off sibling CDN hosts, not this one.</summary>

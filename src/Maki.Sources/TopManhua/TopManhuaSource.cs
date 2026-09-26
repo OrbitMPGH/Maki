@@ -15,6 +15,8 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
     // Page images (not search/chapter-list HTML) are fetched through TopManhuaImageBrowser, which
     // needs FlareSolverr to seed a real browser session against the Cloudflare-fronted image CDN.
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua;
+    public SourceRating Rating => SourceRating.Mature;
     public IReadOnlyList<string> CoverHosts => ["2xstorage.com", "zinmanga1.com"];
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
     

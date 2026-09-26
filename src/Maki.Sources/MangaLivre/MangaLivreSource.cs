@@ -30,6 +30,7 @@ public partial class MangaLivreSource(IHttpClientFactory httpClientFactory) : IS
     public string DisplayName => "Manga Livre";
     public string BaseUrl => "https://mangalivre.to";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> SupportedLanguages => ["pt-BR"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);

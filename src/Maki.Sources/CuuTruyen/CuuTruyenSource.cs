@@ -52,6 +52,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
         Environment.GetEnvironmentVariable("MAKI_SOURCE_CUUTRUYEN_BASEURL")?.TrimEnd('/') ?? "https://cuutruyen.net";
 
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> SupportedLanguages => ["vi"];
     public IReadOnlyList<string> CoverHosts => ["cuutruyen.net"];
 

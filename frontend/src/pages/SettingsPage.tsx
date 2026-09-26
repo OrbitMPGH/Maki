@@ -30,6 +30,7 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import {
+  IconAdjustments,
   IconAlertTriangle,
   IconCheck,
   IconCopy,
@@ -47,6 +48,8 @@ import { Panel } from '../components/ui/Panel'
 import { RecommendationModelSwitch } from '../components/RecommendationModelSwitch'
 import { NamingFormatInput } from '../components/NamingFormatInput'
 import { PriorityList } from '../components/PriorityList'
+import { SourceIcon, baseLanguage } from '../sourceIcons'
+import { ManageSourcesModal } from './settings/ManageSourcesModal'
 import { useAuth } from '../auth/AuthProvider'
 import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
@@ -99,7 +102,6 @@ import {
   type ImportListSettings,
   useKavitaLibraries,
   useSaveSourceLanguages,
-  useSaveSourcePriority,
   useSaveUiSettings,
   useUiSettings,
   type SeriesSections,
@@ -289,98 +291,63 @@ function SourceLanguageSection() {
 }
 
 function SourcePrioritySection() {
-  const { t } = useLingui()
   const { data: sources } = useSources()
   const { data: priority } = useSourcePriority()
-  const save = useSaveSourcePriority()
-  const [order, setOrder] = useState<string[] | null>(null)
-  const [disabled, setDisabled] = useState<string[] | null>(null)
+  const [managing, setManaging] = useState(false)
 
-  useEffect(() => {
-    if (priority) {
-      setOrder(priority.order)
-      setDisabled(priority.disabled)
-    }
-  }, [priority])
-
-  const displayName = (name: string) => sources?.find((s) => s.name === name)?.displayName ?? name
-  const key = (list: string[]) => [...list].sort().join(',')
-  const dirty =
-    order !== null &&
-    disabled !== null &&
-    priority !== undefined &&
-    (order.join(',') !== priority.order.join(',') || key(disabled) !== key(priority.disabled))
+  const byName = new Map((sources ?? []).map((s) => [s.name, s]))
+  const enabled = priority
+    ? priority.order.filter((name) => !priority.disabled.includes(name))
+    : (sources ?? []).filter((s) => s.enabled).map((s) => s.name)
+  const enabledCount = enabled.length
+  const total = sources?.length ?? priority?.order.length ?? 0
+  const languageCount = new Set(
+    enabled.flatMap((name) => (byName.get(name)?.supportedLanguages ?? []).map(baseLanguage)),
+  ).size
+  const more = enabledCount - 5
 
   return (
     <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Sources</Trans>
-      </Title>
-      <SettingsHelp mb="md">
-        <Trans>
-          Download order when a series matches several sources, highest first. Language ranking
-          above comes first. Applies to new auto-matches and manual Auto-match runs; other series
-          keep their order.
-          Switching a source off pauses it for every series without touching their own toggles.
-          Drag to reorder.
-        </Trans>
-      </SettingsHelp>
-      {order && disabled && (
-        <PriorityList
-          items={order}
-          disabled={disabled}
-          onChange={(nextOrder, nextDisabled) => {
-            setOrder(nextOrder)
-            setDisabled(nextDisabled)
-          }}
-          renderLabel={displayName}
-          toggleLabel={(name) => {
-            const sourceName = displayName(name)
-            return t`Enable ${sourceName}`
-          }}
-          renderExtra={(name) => {
-            const source = sources?.find((s) => s.name === name)
-            const langs = source?.supportedLanguages.filter((lang) => lang !== 'en') ?? []
-            return (
-              <>
-                <Text size="xs" c="var(--ink-3)">
-                  {source?.baseUrl}
-                </Text>
-                {source?.needsFlareSolverr && (
-                  <Badge size="sm" color="var(--warn)" variant="light">
-                    <Trans>Needs FlareSolverr</Trans>
-                  </Badge>
-                )}
-                {langs.length > 3 ? (
-                  <Badge size="sm" color="var(--info)" variant="light">
-                    <Trans>Multi-language</Trans>
-                  </Badge>
-                ) : (
-                  langs.map((lang) => (
-                    <Badge key={lang} size="sm" color="var(--info)" variant="light">
-                      {languageName(lang)}
-                    </Badge>
-                  ))
-                )}
-              </>
-            )
-          }}
-        />
-      )}
-      <Group justify="flex-end" mt="md">
-        <SaveButton
-          dirty={dirty}
-          loading={save.isPending}
-          onClick={() =>
-            order &&
-            disabled &&
-            save.mutate(
-              { order, disabled },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-            )
-          }
-        />
+      <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+        <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+          <Title order={4} mb="sm">
+            <Trans>Sources</Trans>
+          </Title>
+          <SettingsHelp>
+            <Trans>
+              Download order when a series matches several sources, highest first. Language ranking
+              above comes first. Applies to new auto-matches and manual Auto-match runs; other series
+              keep their order.
+              Switching a source off pauses it for every series without touching their own toggles.
+            </Trans>
+          </SettingsHelp>
+        </div>
+        <Button leftSection={<IconAdjustments size={16} />} onClick={() => setManaging(true)}>
+          <Trans>Manage sources</Trans>
+        </Button>
       </Group>
+      {(sources || priority) && (
+        <Group gap={14} mt="md" wrap="wrap">
+          {enabledCount > 0 && (
+            <div className="source-stack">
+              {enabled.slice(0, 5).map((name) => (
+                <SourceIcon key={name} name={name} label={byName.get(name)?.displayName} size={28} />
+              ))}
+              {more > 0 && <span className="source-stack-more">+{more}</span>}
+            </div>
+          )}
+          <Text size="sm" c="var(--ink-2)">
+            <Trans>
+              <b>{enabledCount}</b> of <Plural value={total} one="# source" other="# sources" /> enabled
+            </Trans>
+          </Text>
+          <span className="source-summary-sep" />
+          <Text size="sm" c="var(--ink-2)">
+            <Plural value={languageCount} one="Covers # language" other="Covers # languages" />
+          </Text>
+        </Group>
+      )}
+      <ManageSourcesModal opened={managing} onClose={() => setManaging(false)} />
     </Panel>
   )
 }

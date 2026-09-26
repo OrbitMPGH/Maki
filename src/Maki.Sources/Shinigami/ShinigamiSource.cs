@@ -24,6 +24,7 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
         Environment.GetEnvironmentVariable("MAKI_SOURCE_SHINIGAMI_BASEURL")?.TrimEnd('/') ?? "https://11.shinigami.asia";
 
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
     public IReadOnlyList<string> SupportedLanguages => ["id"];
     public IReadOnlyList<string> CoverHosts => ["shngm.id"];
 

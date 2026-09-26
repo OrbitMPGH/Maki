@@ -55,12 +55,7 @@ public class SourceAvailability(IAppSettings settings, SourceRegistry sourceRegi
                 continue; // Already has an explicit on/off choice — the setting above is authoritative.
             }
 
-            // English always defaults on (today's behaviour for the thirteen English-only
-            // sources); a non-English source also defaults on when it matches the instance's
-            // own language, off otherwise.
-            var defaultsOn = source.SupportedLanguages.Any(lang =>
-                LocalizedTitle.Matches(lang, "en") || LocalizedTitle.Matches(lang, instanceLanguage));
-            if (!defaultsOn)
+            if (!DefaultsOn(source, instanceLanguage))
             {
                 explicitlyDisabled.Add(source.Name);
             }
@@ -68,6 +63,17 @@ public class SourceAvailability(IAppSettings settings, SourceRegistry sourceRegi
 
         return explicitlyDisabled;
     }
+
+    /// <summary>
+    /// Whether <paramref name="source"/> would be enabled by Maki's default rule when it has no
+    /// explicit choice yet. See the class remarks. Shared by <see cref="DisabledAsync"/> and
+    /// <c>SearchController.ListSources</c>, which reports it per source without disabling anything.
+    /// </summary>
+    public static bool DefaultsOn(ISource source, string instanceLanguage) =>
+        // English always defaults on (today's behaviour for the thirteen English-only sources);
+        // a non-English source also defaults on when it matches the instance's own language.
+        source.SupportedLanguages.Any(lang =>
+            LocalizedTitle.Matches(lang, "en") || LocalizedTitle.Matches(lang, instanceLanguage));
 
     public async Task<bool> IsEnabledAsync(string sourceName, CancellationToken ct = default) =>
         !(await DisabledAsync(ct)).Contains(sourceName, StringComparer.OrdinalIgnoreCase);
