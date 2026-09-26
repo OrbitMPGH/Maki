@@ -106,6 +106,7 @@ const SOURCE_ICONS: Record<string, string> = {
   naverwebtoon: '/source-icons/naverwebtoon.ico',
   manhuagui: '/source-icons/manhuagui.ico',
   mangatube: '/source-icons/mangatube.ico',
+  mangadenizi: '/source-icons/mangadenizi.ico',
 }
 
 export function SourceMappingsSection({

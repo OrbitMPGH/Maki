@@ -427,4 +427,17 @@ public class ResolveSeriesIdFromUrlTests
         ISource source = new MangaTubeSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
+
+    [Theory]
+    [InlineData("https://mangadenizi.net/manga/solo-leveling", "solo-leveling")]
+    [InlineData("https://mangadenizi.net/manga/solo-leveling/", "solo-leveling")]
+    [InlineData("https://mangadenizi.net/read/solo-leveling/000", null)]
+    // The API path contains the same "/manga/" marker; only a URL that starts with it is a series page.
+    [InlineData("https://mangadenizi.net/api/v1/web/manga/solo-leveling", null)]
+    [InlineData("https://example.com/manga/solo-leveling", null)]
+    public void MangaDenizi(string url, string? expected)
+    {
+        ISource source = new Maki.Sources.MangaDenizi.MangaDeniziSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
 }

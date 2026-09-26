@@ -54,6 +54,7 @@ using Maki.Sources.AnimeSama;
 using Maki.Sources.CuuTruyen;
 using Maki.Sources.MangaWorld;
 using Maki.Sources.MangaTube;
+using Maki.Sources.MangaDenizi;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -354,7 +355,8 @@ try
                  // Dynasty Scans — plain nginx, no Cloudflare.
                  (DynastySource.HttpClientName, "https://dynasty-scans.com/"),
                  // ManhwaWeb: separate JSON API host, no Cloudflare in front of it.
-                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/")
+                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/"),
+                 (MangaDeniziSource.HttpClientName, "https://mangadenizi.net")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -695,6 +697,7 @@ try
     builder.Services.AddSingleton<ISource, NaverWebtoonSource>();
     builder.Services.AddSingleton<ISource, ManhuaguiSource>();
     builder.Services.AddSingleton<ISource, MangaTubeSource>();
+    builder.Services.AddSingleton<ISource, MangaDeniziSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
