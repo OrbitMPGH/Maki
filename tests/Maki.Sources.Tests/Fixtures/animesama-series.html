@@ -1,0 +1,1484 @@
+<!doctype html>
+<html lang="fr">
+
+	<head>
+		
+
+<!-- Meta Tags -->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="index, nofollow">
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QK64GJ58E9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-QK64GJ58E9');
+</script>
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="/img/icon.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/icone_AS.png?v=4">
+<link rel="icon" href="/img/favicon.ico?v=4">
+
+<!-- CSS -->
+<link rel="stylesheet" href="/css/tailwind.css?v=1783185405">
+<link rel="stylesheet" href="/css/defaut.css?v=1786138192">
+<!-- jQuery & JS -->
+<script src="/node_modules/jquery/dist/jquery.min.js"></script>
+<script defer src="/js/defaut/defaut.js?v=1785754575"></script>
+
+<!-- Adcash -->
+<script id="aclib" type="text/javascript" async src="//acscdn.com/script/aclib.js"></script>
+
+<!-- NAV BAR -->
+<nav class="asn-navbar">
+    <!-- Menu burger mobile -->
+    <button class="asn-burger">
+        <svg class="w-6 h-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"></path>
+        </svg>
+    </button>
+
+    <!-- Searchbar mobile -->
+    <div class="asn-mobile-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z" />
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd" />
+        </svg>
+        <input name="search_text" type="search" placeholder="Rechercher..." autocomplete="off" spellcheck="false"/>
+    </div>
+    <!-- Mobile Results (outside search box) -->
+    <div id="asn-result-mobile"></div>
+
+    <!-- Logo -->
+    <a href="/" class="asn-logo">
+        <img class="asn-logo-desktop" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo_banniere.png" alt="Logo" style="display: none;"/>
+        <img class="asn-logo-mobile" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo.png" alt="Logo"/>
+    </a>
+
+    <!-- Donate -->
+    <a href="https://www.paypal.com/donate/?hosted_button_id=3FBNLMGT3JAJ2" class="asn-donate-btn">
+        <img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/flag_pal.png" alt="PayPal"/>
+    </a>
+
+    <!-- Social Discord -->
+    <a href="https://discord.gg/mKbYYbmxY8" class="asn-social-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+            <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+        </svg>
+    </a>
+
+    <!-- Social X -->
+    <a href="https://x.com/anime_samafr" class="asn-social-link">
+        <svg viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="currentColor"/>
+        </svg>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <div class="asn-nav-desktop">
+        <!-- Search -->
+        <div class="asn-desktop-search">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z" />
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd" />
+            </svg>
+            <input name="search_text" type="search" placeholder="Rechercher..." autocomplete="off" spellcheck="false"/>
+            <div id="asn-result-desktop"></div>
+        </div>
+
+        <!-- Catalogue -->
+        <a href="/catalogue" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+            </svg>
+            <span>Catalogue</span>
+        </a>
+
+        <!-- Planning -->
+        <a href="/planning" class="asn-nav-link">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+				<path d="M12.75 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM8.25 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM9.75 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM10.5 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM14.25 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 13.5a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+				<path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd" />
+			</svg>
+            <span>Planning</span>
+        </a>
+
+        <!-- Aide -->
+        <a href="/aide" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 0 1-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 0 1-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584ZM12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+            </svg>
+            <span>Aide</span>
+        </a>
+
+        <!-- Profil -->
+        <a href="/profil" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+            </svg>
+            <span>Profil (Déconnecté)</span>        </a>
+    </div>
+</nav>
+
+<!-- MOBILE MENU DRAWER -->
+<div class="asn-mobile-menu">
+    <div class="asn-menu-backdrop"></div>
+    
+    <nav class="asn-menu-panel">
+        <div class="asn-menu-nav">
+            <a href="/catalogue">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                </svg>
+                <span>Catalogue</span>
+            </a>
+            <a href="/planning">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M12.75 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM8.25 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM9.75 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM10.5 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM14.25 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 13.5a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+					<path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd" />
+				</svg>
+                <span>Planning</span>
+            </a>
+            <a href="/aide">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 0 1-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 0 1-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584ZM12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                </svg>
+                <span>Aide</span>
+            </a>
+
+            <a href="https://discord.gg/mKbYYbmxY8">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+                    <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+                </svg>
+                <span>Discord</span>
+            </a>
+
+            <a href="https://x.com/anime_samafr">
+                <svg viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="currentColor"/>
+                </svg>
+                <span>X</span>
+            </a>
+
+            <a href="/profil">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                </svg>
+                <span>Profil (Déconnecté)</span>            </a>
+        </div>
+    </nav>
+</div>
+
+<!-- Scroll to Top Button -->
+<div style="z-index:300;" id="scrollProgressWrapper">
+    <svg id="scrollProgressSvg" width="60" height="60" viewBox="0 0 60 60" class="absolute top-0 left-0 z-10" style="opacity: 1; transition: opacity 0.3s ease; pointer-events: none;">
+        <circle cx="30" cy="30" r="26" stroke="#0c4a6e" stroke-width="4" fill="none" stroke-linecap="round" />
+    </svg>
+
+	<button onclick="topFunction()" id="topBtn" style="background: rgba(39, 56, 70, 0.3);" class="pointer-events-auto rounded-full p-2 w-12 h-12 flex items-center justify-center hover:opacity-80 transition-all duration-200 z-20 relative">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-black" viewBox="0 0 20 20" fill="currentColor">
+		<path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+		</svg>
+	</button>
+</div>
+		<meta name="keywords" content="One Piece, Wan Pisu, ONE PIECE FAN LETTER, One Piece Log: Fish-Man Island Saga, One Piece: Pirate King, anime-sama, anime, scan, anime sama, vostfr, vf, streaming, streaming vostfr, streaming vf, sans pubs, streaming sans pubs, streaming scan">
+		<meta name="description" content="Il fut un temps où Gold Roger était le plus grand de tous les pirates, le "Roi des Pirates" était son surnom. A sa mort, son trésor d'une valeur inestimable connu sous le nom de "One Piece" fut caché quelque part sur "Grand Line". De nombreux pirates sont partis à la recherche de ce trésor mais tous sont morts avant même de l'atteindre. Monkey D. Luffy rêve de retrouver ce trésor légendaire et de devenir le nouveau "Roi des Pirates". Après avoir mangé un fruit du démon, il possède un pouvoir lui permettant de réaliser son rêve. Il lui faut maintenant trouver un équipage pour partir à l'aventure !">
+		<meta property="og:image" content="https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/one-piece.jpg"/>
+		<meta property="og:image:width" content="800">
+		<meta property="og:image:height" content="450">
+		<meta property="og:image:type" content="image/jpeg"/>
+		<meta itemprop="image" content="https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/one-piece.jpg"/>
+		<title>One Piece | Anime-Sama - Streaming et catalogage d'animes et scans.</title>
+		<link rel="canonical" href="/catalogue/one-piece/" />
+		<script type="text/javascript" src='../../js/contenu/script_oeuvre.js?filever=12018'defer></script>
+
+	</head>
+
+	<body>
+
+		<div id="blocEntier" class="grid grid-cols-8 pb-16">
+
+	<div id="sousBlocLeft" style="margin-top: 600px; margin-left: 20px;" class="hidden lg:block">
+		<div id="bannLeft" class="ad-container">
+		<span class="ad-label">Publicité</span>
+			
+			<div class="ad-content"><script type="text/javascript">aclib.runBanner({zoneId: '8653010',});</script></div>
+			<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_skyscraper.jpg" alt="Eneba - Jeux moins chers" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+		
+		</div>
+	</div>
+
+	<div id="sousBlocMiddle" class="col-span-8 mx-3 lg:col-span-6 lg:mx-0 mt-6 z-20">
+			<div class="mx-3 md:mx-10">
+				
+				<!-- LIEN BANDE ANNONCE -->
+				<!--<script>$(document).ready(function(){$("#bandeannonce").attr("src", "https://www.youtube.com/embed/Wv3i6Z6vCzk");});</script>-->
+
+				<script>
+function panneauAnime(nom, url){
+    if (nom.length > 30) document.write('<a href="'+url+'" class="shrink-0 grid items-center bg-zinc-900 hover:opacity-70 border-double border-4 border-blue-500 rounded-lg w-32 h-20 m-3 transition-all duration-200"><img id="imgOeuvre" class="opacity-40 h-18 bg-cover" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/one-piece.webp" loading="lazy" decoding="async"><div class="text-white text-xs font-bold text-center absolute w-28 h-18">'+nom+'</div></a>');
+    else document.write('<a href="'+url+'" class="shrink-0 grid items-center bg-zinc-900 hover:opacity-70 border-double border-4 border-blue-500 rounded-lg w-32 h-20 m-3 transition-all duration-200"><img id="imgOeuvre" class="opacity-40 h-18 bg-cover" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/one-piece.webp" loading="lazy" decoding="async"><div class="text-white font-bold text-center absolute w-28 h-18">'+nom+'</div></a>');
+}
+function panneauScan(nom, url){
+    if (nom.length > 30) document.write('<a href="'+url+'" class="shrink-0 grid items-center bg-zinc-900 hover:opacity-70 border-double border-4 border-gray-400 rounded-lg w-32 h-20 m-3 transition-all duration-200"><img id="imgOeuvre" class="opacity-40 bg-cover h-18 grayscale" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/one-piece.webp" loading="lazy" decoding="async"><div class="text-white text-xs font-bold text-center absolute w-28 h-18">'+nom+'</div></a>');
+    else document.write('<a href="'+url+'" class="shrink-0 grid items-center bg-zinc-900 hover:opacity-70 border-double border-4 border-gray-400 rounded-lg w-32 h-20 m-3 transition-all duration-200"><img id="imgOeuvre" class="opacity-40 bg-cover h-18 grayscale" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/one-piece.webp" loading="lazy" decoding="async"><div class="text-white font-bold text-center absolute w-28 h-18">'+nom+'</div></a>');
+}
+</script>
+
+
+<!-- Card Styles pour oeuvres similaires -->
+<link rel="stylesheet" href="/css/cards.css">
+
+<style>
+@media (min-width: 1500px) {
+    .oeuvre-layout { display: flex; margin-bottom: 2rem; }
+    .oeuvre-left { flex-shrink: 0; width: 700px; margin-right: 2.5rem; }
+    .oeuvre-right { flex: 1; min-width: 300px; }
+}
+.media-container { position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+.media-container iframe, .media-container img { width: 100%; display: block; }
+@media (min-width: 768px) {
+    .media-container iframe { height: 400px; }
+    .media-container img { height: 400px; object-fit: cover; }
+}
+.action-btns { display: flex; flex-wrap: wrap; margin: 8px 0; }
+.action-btns > * { margin-right: 10px; margin-bottom: 6px; }
+.action-btn { display: inline-flex; align-items: center; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; border: none; cursor: pointer; transition: opacity 0.2s; }
+.action-btn:hover { opacity: 0.8; }
+.action-btn svg { width: 18px; height: 18px; margin-right: 5px; }
+.btn-watchlist { background: rgba(59,130,246,0.25); }
+.btn-favoris { background: rgba(234,179,8,0.25); }
+.btn-vu { background: rgba(34,197,94,0.25); }
+.actu-banner { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.12); border-radius: 8px; padding: 7px 12px; margin: 4px 0; }
+.actu-text { font-size: 13px; color: #94a3b8; }
+.actu-text svg { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; margin-right: 4px; opacity: 0.7; }
+.info-card { background: rgba(15,23,42,0.5); border: 1px solid rgba(71,85,105,0.15); border-radius: 10px; padding: 12px 16px; margin: 6px 0; }
+.info-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: baseline; }
+@media (min-width: 480px) {
+    .info-grid { grid-template-columns: auto 1fr auto 1fr; gap: 5px 14px; }
+}
+.info-lbl { color: #8994a5; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; font-size: 11px; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+.info-lbl svg { width: 13px; height: 13px; flex-shrink: 0; opacity: 0.7; }
+.info-val { color: #cbd5e1; font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.info-val--full { grid-column: 2 / -1; }
+.synopsis-text { font-size: 14px; color: #cbd5e1; line-height: 1.7; }
+.genre-pill { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; background: rgba(51,65,85,0.5); color: #94a3b8; border: 1px solid rgba(71,85,105,0.3); }
+.genres-wrap > * { display: inline-block; margin: 0 6px 6px 0; }
+.oeuvre-section { margin-top: 6px; }
+.clamp-alters { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.clamp-alters.expanded { -webkit-line-clamp: unset; }
+.clamp-synopsis { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.clamp-synopsis.expanded { -webkit-line-clamp: unset; }
+.voir-plus { display: inline-block; color: #60a5fa; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+.voir-plus:hover { color: #93bbfc; }
+.voir-plus-sm { color: #60a5fa; font-size: 10px; font-weight: 600; cursor: pointer; margin-left: 4px; white-space: nowrap; }
+.voir-plus-sm:hover { color: #93bbfc; }
+.clamp-studio { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clamp-studio.expanded { white-space: normal; }
+</style>
+
+<div class="oeuvre-layout">
+    
+    <!-- COLONNE GAUCHE -->
+    <div class="oeuvre-left">
+        <h2 class="text-white text-xl font-bold uppercase border-b-2 mb-4 border-slate-800">Aperçu</h2>
+        <div class="media-container">
+                            <iframe id="bandeannonce" class="h-64" scrolling="no" src="https://www.youtube.com/embed/5FOSlStFPE0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+    </div>
+    
+    <!-- COLONNE DROITE -->
+    <div class="oeuvre-right">
+        
+        <!-- Titre -->
+        <div class="my-2">
+            <h1 class="text-4xl lg:text-5xl uppercase text-white font-bold">One Piece</h1>
+            <h2 id="titreAlter" class="text-white text-sm lg:text-base italic uppercase opacity-80 clamp-alters">Wan Pisu, ONE PIECE FAN LETTER, One Piece Log: Fish-Man Island Saga, One Piece: Pirate King</h2>
+            <span class="voir-plus" id="vpAlters" onclick="toggleClamp('titreAlter','vpAlters')" style="display:none">Voir plus</span>
+        </div>
+
+        <!-- Boutons -->
+        <div class="action-btns">
+            <button id="addWatchlist" class="action-btn btn-watchlist">
+                <svg id="plusWatchlist" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                <svg id="checkedWatchlist" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                <span id="textWatchlist">Watchlist</span>
+            </button>
+            <button id="addFavoris" class="action-btn btn-favoris">
+                <svg id="plusFavoris" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                <svg id="checkedFavoris" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" /></svg>
+                <span id="textFavoris">Favoris</span>
+            </button>
+            <button id="addVu" class="action-btn btn-vu">
+                <svg id="plusVu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                <svg id="checkedVu" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z" /></svg>
+                <span id="textVu">Vu</span>
+            </button>
+        </div>
+
+        <!-- Actualité -->
+        
+        <!-- Infos (conditionnel selon le type) -->
+                        <div class="info-card">
+            <div class="info-grid">
+                                <span class="info-lbl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.348 14.652a3.75 3.75 0 0 1 0-5.304m5.304 0a3.75 3.75 0 0 1 0 5.304m-7.425 2.121a6.75 6.75 0 0 1 0-9.546m9.546 0a6.75 6.75 0 0 1 0 9.546M5.106 18.894c-3.808-3.807-3.808-9.98 0-13.788m13.788 0c3.808 3.807 3.808 9.98 0 13.788M12 12h.008v.008H12V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>État</span>
+                <span class="info-val">En cours</span>
+                
+                                <span class="info-lbl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>Année</span>
+                <span class="info-val">1999</span>
+                
+                                <span class="info-lbl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>Épisodes</span>
+                <span class="info-val">1181</span>
+                
+                                <span class="info-lbl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>Chapitres</span>
+                <span class="info-val">?</span>
+                
+                                <span class="info-lbl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>Créateur</span>
+                <span class="info-val">Eiichiro Oda</span>
+                
+                                <span class="info-lbl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" /></svg>Studio</span>
+                <div class="info-val" style="min-width:0"><span id="studioText" class="clamp-studio" style="display:block">Toei Animation, Fuji Television Network, Avex Trax, Shueisha, ADK</span><span class="voir-plus-sm" id="vpStudio" onclick="toggleClamp('studioText','vpStudio')" style="display:none">Voir plus</span></div>
+                
+                                <span class="info-lbl"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>Correspondance</span>
+                <span class="info-val info-val--full">Episode 1155 -> Chapitre 1125</span>
+                            </div>
+        </div>
+                
+        <!-- Synopsis -->
+        <div class="oeuvre-section">
+            <h2 class="text-white text-xl font-bold uppercase border-b-2 mb-3 border-slate-700">Synopsis</h2>
+            <p id="synopsisText" class="text-sm text-gray-300 clamp-synopsis" style="line-height:1.7">Il fut un temps où Gold Roger était le plus grand de tous les pirates, le "Roi des Pirates" était son surnom. A sa mort, son trésor d'une valeur inestimable connu sous le nom de "One Piece" fut caché quelque part sur "Grand Line". De nombreux pirates sont partis à la recherche de ce trésor mais tous sont morts avant même de l'atteindre. Monkey D. Luffy rêve de retrouver ce trésor légendaire et de devenir le nouveau "Roi des Pirates". Après avoir mangé un fruit du démon, il possède un pouvoir lui permettant de réaliser son rêve. Il lui faut maintenant trouver un équipage pour partir à l'aventure !</p>
+            <span class="voir-plus" id="vpSynopsis" onclick="toggleClamp('synopsisText','vpSynopsis')" style="display:none">Voir plus</span>
+        </div>
+        
+        <!-- Genres -->
+                <div class="oeuvre-section">
+            <h2 class="text-white text-xl font-bold uppercase border-b-2 mb-3 border-slate-700">Genres</h2>
+            <div class="genres-wrap">
+                                    <span class="genre-pill">Action</span>
+                                    <span class="genre-pill">Aventure</span>
+                                    <span class="genre-pill">Comédie</span>
+                                    <span class="genre-pill">Drame</span>
+                                    <span class="genre-pill">Fantastique</span>
+                                    <span class="genre-pill">Shônen</span>
+                                    <span class="genre-pill">Kaï</span>
+                            </div>
+        </div>
+                
+    </div>
+    
+</div>
+
+<script>
+function toggleClamp(textId, btnId) {
+    var el = document.getElementById(textId);
+    var btn = document.getElementById(btnId);
+    if (el.classList.contains('expanded')) {
+        el.classList.remove('expanded');
+        btn.textContent = 'Voir plus';
+    } else {
+        el.classList.add('expanded');
+        btn.textContent = 'Voir moins';
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var alters = document.getElementById('titreAlter');
+    var synopsis = document.getElementById('synopsisText');
+    if (alters && alters.scrollHeight > alters.clientHeight + 1) {
+        document.getElementById('vpAlters').style.display = '';
+    }
+    if (synopsis && synopsis.scrollHeight > synopsis.clientHeight + 1) {
+        document.getElementById('vpSynopsis').style.display = '';
+    }
+    var studio = document.getElementById('studioText');
+    if (studio && studio.scrollWidth > studio.clientWidth + 1) {
+        document.getElementById('vpStudio').style.display = '';
+    }
+});
+</script>
+				<!-- ANIME -->
+				<h2 class="text-white text-xl font-bold uppercase border-b-2 mt-5 border-slate-500">Anime</h2>
+				<div class="flex flex-wrap overflow-y-hidden text-sm justify-start bg-slate-900 bg-opacity-70 rounded mt-2 h-auto">
+					<script>
+					/*panneauAnime("nom", "url"); -> on en met autant qu'on veut à la ligne*/
+					panneauAnime("Saga 1 East Blue [Episode 1 à 61]", "saison1/vostfr");
+					panneauAnime("Saga 2 Alabasta [Episode 62 à 143]", "saison2/vostfr");
+					panneauAnime("Saga 3 Ile céleste [Episode 144 à 206]", "saison3/vostfr");
+					panneauAnime("Saga 4 Water Seven [Episode 207 à 336]", "saison4/vostfr");
+					panneauAnime("Saga 5 Thriller Bark [Episode 337 à 389]", "saison5/vostfr");
+					panneauAnime("Saga 6 Guerre au Sommet [Episode 390 à 516]", "saison6/vostfr");
+					panneauAnime("Saga 7 Ile des Hommes-Poissons [Episode 517 à 574]", "saison7/vostfr");
+					panneauAnime("Saga 8 Dressrosa [Episode 575 à 746]", "saison8/vostfr");
+					panneauAnime("Saga 9 Ile Tougato [Episode 747 à 877]", "saison9/vostfr");
+					panneauAnime("Saga 10 Pays des Wa [Episode 878 à 1088]", "saison10/vostfr");
+					panneauAnime("Saga 11 Egghead [Episode 1089 à 1155]", "saison11/vostfr");
+					panneauAnime("Saga 12 Elbaf [Episode 1156 à ...]", "saison12/vostfr");
+					panneauAnime("Films", "film/vostfr");
+					panneauAnime("Fan Letter", "oav/vostfr");
+					panneauAnime("One Piece Log: Fish-Man Island Saga", "saison1hs/vostfr");
+					panneauAnime("One Piece Heroines", "saison2hs/vostfr");
+					</script>
+				</div>
+
+				<!-- KAI -->
+				<h2 class="text-white text-xl font-bold uppercase border-b-2 mt-5 border-slate-500">Anime Version Kai</h2>
+				<p class="text-gray-300 text-xs md:text-sm"><i>Kai</i> : recoupage des épisodes sous forme de films d'1 à 2 heures pour être plus fidèle à l'histoire originale en virant les hors séries, les génériques et les temps de pauses.</p>
+				<div class="flex flex-wrap overflow-y-hidden text-sm justify-start bg-slate-900 bg-opacity-70 rounded mt-2 h-auto">
+					<script>
+					/*panneauAnime("nom", "url"); -> on en met autant qu'on veut à la ligne*/
+					panneauAnime("Kai - Saga 1 (East Blue)", "kai/vostfr");
+					panneauAnime("Kai - Saga 2 (Alabasta)", "kai2/vostfr");
+					panneauAnime("Kai - Saga 3 (Ile céleste)", "kai3/vostfr");
+					panneauAnime("Kai - Saga 4 (Water Seven)", "kai4/vostfr");
+					panneauAnime("Kai - Saga 5 (Thriller Bark)", "kai5/vostfr");
+					panneauAnime("Kai - Saga 6 (Guerre au Sommet)", "kai6/vostfr");
+					panneauAnime("Kai - Saga 7 (Ile des Hommes-Poissons)", "kai7/vostfr");
+					panneauAnime("Kai - Saga 8 (Dressrosa)", "kai8/vostfr");
+					panneauAnime("Kai - Saga 9 (Quatre Empereurs)", "kai9/vostfr");
+					panneauAnime("Kai - Saga 10 (Pays des Wa)", "kai10/vostfr");
+					panneauAnime("Kai - Saga 11 (Egghead)", "kai11/vostfr");
+					</script>
+				</div>
+
+				<!-- MANGA -->
+				<h2 class="text-white text-xl font-bold uppercase border-b-2 mt-5 border-slate-500">Manga</h2>
+				<div class="flex flex-wrap overflow-y-hidden justify-start bg-slate-900 bg-opacity-70 rounded mt-2 h-auto">
+					<script>
+					/*panneauScan("nom", "url"); -> on en met autant qu'on veut à la ligne*/
+					panneauScan("Scans (couleur)", "scan/vf");
+					panneauScan("Scans (noir et blanc)", "scan_noir-et-blanc/vf");
+					</script>
+				</div>
+
+				
+<div class="flex flex-nowrap w-full mt-6">
+    <h2 class="flex w-full text-white text-xl font-bold uppercase mt-6 mb-4 mr-2 border-b-4 border-slate-500">Oeuvres similaires</h2>
+
+    <button onclick="decalLeft('containerSimilaires');" class="hidden md:block bg-gray-600 opacity-60 hover:opacity-100 ml-auto mb-3 mt-4 mr-2 cursor-pointer rounded p-2 transition-all duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-black">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+    </button>
+    <button onclick="decalRight('containerSimilaires');" class="hidden md:block bg-gray-600 opacity-60 hover:opacity-100 ml-auto mb-3 mt-4 cursor-pointer rounded p-2 transition-all duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6 text-black">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+        </svg>
+    </button>
+</div>
+
+<div id="containerSimilaires" class="scrollBarStyled grabScroll flex flex-nowrap py-6 overflow-y-hidden mb-6 bg-slate-900 bg-opacity-50 rounded">
+            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/d-gray-man">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/d-gray-man.webp"
+                alt="D Gray Man"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">D Gray Man</h2>
+            <p class="alternate-titles">D.Gray-Man</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Fantasy</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Vers la fin d'un XIXème siècle imaginaire et particulièrement gothique, le jeune Allen Walker est un exorciste appartenant à un ordre spécial créé par le Vatican. Le but de cet ordre est d'affronter et d'éliminer des démons appelés Akuma, ainsi que celui qui les crée, le Comte Millénaire, dont le but est de détruire le monde. Pour mener à bien ce combats, les exorcistes disposent chacun d'une 'Innocence', sorte d'arme personnelle fantastique.</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/dragon-ball-z">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/dragon-ball-z.webp"
+                alt="Dragon Ball Z"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Dragon Ball Z</h2>
+            <p class="alternate-titles">DragonBall Z, DBZ, Doragon Boru Zetto</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Aliens</span>
+                                                    <span class="genre-tag">Extra</span>
+                                                    <span class="genre-tag">terrestres</span>
+                                                    <span class="genre-tag">Arts martiaux</span>
+                                                    <span class="genre-tag">Combats</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Dragon Ball Z reprend cinq ans après le mariage de Son Goku. Radditz, un mystérieux guerrier de l'espace, arrive sur Terre pour retrouver Goku, qui apprend alors qu'il vient d'une planète de guerriers dont il ne reste plus que quatre survivants. La trame de l'histoire repose sur une succession d'adversaires à combattre, de plus en plus forts, mais il y a aussi fréquemment un contexte de quête ou de voyage qui donne un intérêt autre que les simples duels.</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/fairy-tail/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/fairy-tail.webp"
+                alt="Fairy Tail"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Fairy Tail</h2>
+            <p class="alternate-titles">Feari Teiru, Fairy Tail Zero, Fairy Tail Final Series, Fairy Tail Final Season</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Fantasy</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Lucy est une jeune magicienne qui désire par dessus tout entrer dans une guilde magique.
+Elle décide de se rendre à Harujion afin d'obtenir des infos sur les guildes, particulièrement la guilde Fairy Tail.
+
+Lors de ses recherches, elle rencontre le mystérieux Salamander, membre de la célèbre guilde Fairy Tail.
+Malheureusement ce dernier n'est qu'un charlatan qui utilise des enchantements pour envoûter des femmes et ainsi les revendre au marché d'esclaves !
+
+Alors que Lucy se trouve sous l'envoûtement de Salamander, un garçon mystérieux du nom de Natsu accompagné d'un chat bleu pouvant parler appelé Happy, la percute et rompt le sortilège de Salamander. Pour remercier Natsu et Happy, elle décide de les inviter au restaurant. Plus tard, Salamander lui fait une proposition : si elle vient à la fête sur le bateau, qu'il organise, il la fera entrer chez Fairy Tail. Lucy accepte et s'y rend. A la fête, elle se rend compte que Salamander n'est qu'un escroc et qu'il ne fait même pas partie de Fairy Tail. Elle veut fuir mais, alors qu'elle est sur le point de se faire kidnapper, Natsu et Happy arrivent et la sauvent. C'est alors qu'elle découvre qu'ils sont des mages et qu'ils font partie de Fairy Tail.
+
+C'est le début des aventures de Natsu et Lucy au sein du monde magique de Fairy Tail !</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/hunter-x-hunter/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/hunter-x-hunter.webp"
+                alt="Hunter x Hunter"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Hunter x Hunter</h2>
+            <p class="alternate-titles">HUNTER×HUNTER, HxH, HxH 2011, Hunter × Hunter</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Fantasy</span>
+                                                    <span class="genre-tag">Shônen</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Le jeune Gon vit sur une petite île avec sa tante. Abandonné par son père qui est un Hunter, à la fois un aventurier et un chasseur de primes, Gon décide à l'âge de 12 ans de partir pour devenir un Hunter.
+Cela ne sera pas chose aisée, il devra passer une suite de tests et examens en compagnie de milliers d'autres prétendants au titre de Hunter.
+Il sera aidé par de nouvelles connaissances qui aspirent au même but que lui, telles que Kurapika, Leorio et Killua.</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/naruto/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/naruto.webp"
+                alt="Naruto  "
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Naruto  </h2>
+            <p class="alternate-titles">Naruto Origin</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Fantasy</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Dans le village de Konoha vit Naruto, un jeune garçon détesté et craint des villageois du fait qu'il détienne en lui Kyuubi (démon renard à neuf queues) d'une incroyable force, qui a tué un grand nombre de personnes. Le ninja le plus puissant de Konoha à l'époque, le quatrième Hokage, Minato Namikaze, réussit à sceller ce démon dans le corps de Naruto.
+Malheureusement il y laissa la vie.
+
+C'est ainsi que douze ans plus tard, Naruto rêve de devenir le plus grand Hokage de Konoha afin que tous le reconnaissent à sa juste valeur. Mais la route pour devenir Hokage est très longue et Naruto sera confronté à un bon nombre d'épreuves et devra affronter de nombreux ennemis pour atteindre son but !</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/yuyu-hakusho/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/yuyu-hakusho.webp"
+                alt="Yu Yu Hakusho "
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Yu Yu Hakusho </h2>
+            <p class="alternate-titles">Yu Yu Hakusho, Yuu Yuu Hakusho, Yu Yu Hakusho - Les aventuriers de l'au-delà, Yuyu Hakusho, Ghost Files, Yu Yu Hakusho - Two Shots and All or Nothing, Yu-Yu Hakusho, Yu Yu Hakusho: Ghost Files</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Horreur</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Yusuke Urameshi est un jeune vaurien de 14 ans. Il va pourtant sauver la vie d'un petit garçon et se faire écraser... Il y laisse sa vie.
+Pourtant, sa mort, imprévue, pose problème à Enma Jr, le fils du Juge des Enfers. Il décide alors de lui faire passer un test, pour juger de ses qualités. S'il réussit ce test, il pourra ressusciter et deviendra un détective du monde des esprits, afin de combattre avec son guide spirituel Botan, tous les démons trouvés sur Terre pour y faire du mal.
+
+Des missions spectaculaires attendent Yusuke, qui découvre de puissants pouvoirs cachés en lui.Il se fera également de nombreux alliés tout au long de son périple, tels Kurama, Kuwabara et Hiei.</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/black-clover/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/black-clover.webp"
+                alt="Black Clover"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Black Clover</h2>
+            <p class="alternate-titles">Burakku Kuroba</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Fantasy</span>
+                                                    <span class="genre-tag">Shônen</span>
+                                                    <span class="genre-tag">Kaï</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Asta et Yuno sont deux adolescents de 15 ans qui ont grandi ensemble dans un petit village du royaume de Clover. Leur but ultime à tous les deux est de devenir le prochain empereur-mage !
+Étrangement, dans ce royaume, Asta est le seul qui soit incapable de produire la moindre étincelle magique. Loin d'être découragé, il participe tout de même avec son ami (et rival) Yuno à la cérémonie annuelle de remise des grimoires qui rassemble les jeunes de 15 ans dans tout le royaume de Clover. Lors de cette cérémonie, Yuno recevra un grimoire légendaire. Ce qui n'est pas le cas d'Asta car malheureusement pour lui, aucun grimoire ne lui sera attribué ce jour là. Mais Asta ne se laissera pas abattre, peut importe les efforts qu'il aura à fournir, il compte bien rivaliser avec Yuno pour aller au bout de son rêve....</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/bleach/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/bleach.webp"
+                alt="Bleach "
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Bleach </h2>
+            <p class="alternate-titles">Bleach : Thousand-Year Blood War, Bleach Sennen Kessen Hen, Burichi: Sennen Kessen-hen, Bleach - Sennen Kessen-hen, Bleach Sennen Kessen-hen, Bleach - Sennen Kessen hen, Bleach: Thousand-Year Blood War, Bleach: Thousand-Year Blood War - The Conflict, Bleach: Thousand-Year Blood War - The Separation, Bleach: TYBW, Bleach: Thousand-Year Blood War - The Calamity</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Fantastique</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Kurosaki Ichigo, un étudiant de quinze ans aux cheveux orange qui aime la bagarre (comme son père) a la particularité de voir les fantômes ainsi que de pouvoir les toucher. Cela l'amène à rencontrer Kuchiki Rukia, un Shinigami (dieu de la mort) qui combats un Hollow. Le déroulement du combats amène Kuchiki à donner ses pouvoirs à Ichigo qui deviens alors lui même un Shinigami. C'est maintenant à son tour de protéger la ville des Hollows.</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/boruto/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/boruto.webp"
+                alt="Boruto"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Boruto</h2>
+            <p class="alternate-titles">Boruto : Naruto Next Generations, Boruto-Naruto Next Generations</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Shônen</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Depuis que son père occupe la plus haute fonction du village de Konoha, Boruto Uzumaki, le fils de Nanadaime Hokage et Hinata Hyuga, vit dans l'ombre de son père. Cherchant toujours à attirer l'attention de ce dernier, Boruto a pris la ferme résolution de surpasser son paternel. Mais la vie que mènent les ninjas de haute-volée est rythmée par les missions complexes et les entraînements rigoureux, notre jeune héros va d'ailleurs, apprendre à ses dépens que devenir le meilleur ninja, n'est point une tâche aisée. En compagnie de Sarada, l'enfant de Sasuke Uchiha et Sakura Haruno, Boruto va dès lors découvrir le monde des shinobis, ainsi que ses fondements...</div>
+            </div>
+        </div>
+    </a>
+</div>            <div class="shrink-0 catalog-card card-base">
+    <a href="/catalogue/dragon-ball">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/dragon-ball.webp"
+                alt="Dragon Ball"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">Dragon Ball</h2>
+            <p class="alternate-titles">Dragon Ball, DB, Doragon Boru</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Fantasy</span>
+                                                    <span class="genre-tag">Shônen</span>
+                                                    <span class="genre-tag">Surnaturel</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">L'histoire commence lorsque Goku rencontre Bulma, qui est à la recherche des sept boules de cristal. Ces boules de cristal ont un pouvoir qui exaucerait n'importe quel souhait une fois les 7 d'entre elles réunies.
+
+Au cours de ses aventures, Goku rencontrera beaucoup d'amis comme Krillin, Yamsha, Kame, mais aussi beaucoup d'ennemis comme le Red Ribon et Piccolo...</div>
+            </div>
+        </div>
+    </a>
+</div>    </div>
+
+			</div>
+
+			<div id="blocBottom" class="flex flex-col items-center justify-center gap-4 mt-10">
+			<p class="text-sm text-white text-center font-medium opacity-50 pb-2">Cliquer sur une pub est le meilleur moyen de nous soutenir.</p>
+			<div id="bannBot" class="ad-container">
+				<span class="ad-label">Publicité</span>
+				<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_leaderboard.jpg" alt="Eneba - Jeux moins chers" width="728" height="90" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+				
+				<span class="ad-label mt-2">Publicité</span>
+
+				<div class="ad-content flex items-center justify-center mt-2"><script type="text/javascript">aclib.runBanner({zoneId: '8653014',});</script></div>
+
+			</div>
+			<div id="squBot" style="margin-top:5px;" class="ad-container">
+				<span class="ad-label">Publicité</span>
+				<div class="ad-content sm:inline-flex items-center justify-center pt-1">
+
+					<script async data-cfasync="false" data-size="300x250" data-category="common" data-id="dl-banner-300x250" data-zone="7809940" src="//a-zzz.com/btag.min.js"></script>
+					<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_square.jpg" alt="Eneba - Jeux moins chers" loading="lazy" width="300" height="300" style="max-width:100%; height:auto; border-radius:6px;"></a>
+					<div><script type="text/javascript">aclib.runBanner({zoneId: '8653002',});</script></div>
+
+				</div>
+			</div>
+		</div>
+
+	</div>
+	
+	<div id="sousBlocRight" style="margin-top: 600px; margin-left: 30px;" class="hidden lg:block">
+		<div id="bannRight" class="ad-container">
+			<span class="ad-label">Publicité</span>
+
+			<div class="ad-content"><script type="text/javascript">aclib.runBanner({zoneId: '8653006',});</script></div>
+			<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_skyscraper.jpg" alt="Eneba - Jeux moins chers" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+			
+		</div>
+	</div>
+
+	<div id="bandeau-pubs-nuit" role="status" hidden>
+		<div class="bpn-contenu">
+			<span class="bpn-icone" aria-hidden="true">🌙</span>
+			<p>
+				<strong>Période creuse nocturne (3h–6h)</strong><br>
+				Nous affichons pendant ce créneau quelques publicités intrusives pour financer le site.
+				Vous pouvez utiliser un bloqueur de pubs pour les retirer.
+			</p>
+			<span class="bpn-compteur" aria-hidden="true"></span>
+			<button type="button" class="bpn-fermer" aria-label="Fermer">&times;</button>
+		</div>
+	</div>
+
+	<style>
+	#bandeau-pubs-nuit {
+		position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
+		background: #1c2333; color: #e8ecf4;
+		border-top: 2px solid #f0b429;
+		font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.5;
+		box-shadow: 0 -2px 12px rgba(0,0,0,.35);
+		transition: opacity .4s ease, transform .4s ease;
+	}
+	#bandeau-pubs-nuit[hidden] { display: none; }
+	#bandeau-pubs-nuit.bpn-sortie {
+		opacity: 0;
+		transform: translateY(100%);
+	}
+	#bandeau-pubs-nuit .bpn-contenu {
+		max-width: 900px; margin: 0 auto; padding: 14px 18px;
+		display: flex; align-items: center; gap: 14px;
+	}
+	#bandeau-pubs-nuit p { margin: 0; flex: 1; }
+	#bandeau-pubs-nuit strong { color: #f0b429; }
+	#bandeau-pubs-nuit .bpn-icone { font-size: 24px; }
+
+	/* Compteur discret */
+	#bandeau-pubs-nuit .bpn-compteur {
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		color: #5c6678;
+		min-width: 18px;
+		text-align: right;
+		user-select: none;
+	}
+
+	#bandeau-pubs-nuit .bpn-fermer {
+		background: none; border: 0; color: #8a94a6;
+		font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px;
+	}
+	#bandeau-pubs-nuit .bpn-fermer:hover { color: #e8ecf4; }
+	@media (max-width: 600px) {
+		#bandeau-pubs-nuit .bpn-contenu { padding: 12px 14px; gap: 10px; }
+		#bandeau-pubs-nuit { font-size: 13px; }
+		#bandeau-pubs-nuit .bpn-compteur { font-size: 11px; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		#bandeau-pubs-nuit { transition: none; }
+	}
+	</style>
+
+	<script>
+	(function () {
+		var HEURE_DEBUT = 3;
+		var HEURE_FIN   = 6;
+		var DUREE       = 10;   // secondes avant fermeture automatique
+
+		// Heure LOCALE du visiteur, selon les réglages de son appareil
+		var h = new Date().getHours();
+		if (h < HEURE_DEBUT || h >= HEURE_FIN) return;
+
+		// --- Bandeau ---
+		var b = document.getElementById('bandeau-pubs-nuit');
+		if (b && !sessionStorage.getItem('bpn-ferme')) {
+			b.hidden = false;
+
+			var compteur = b.querySelector('.bpn-compteur');
+			var restant  = DUREE;
+			var tic;
+
+			function fermer(memoriser) {
+				clearInterval(tic);
+				if (memoriser) sessionStorage.setItem('bpn-ferme', '1');
+				b.classList.add('bpn-sortie');
+				setTimeout(function () { b.remove(); }, 400);
+			}
+
+			function tick() {
+				restant--;
+				if (restant <= 0) { fermer(true); return; }
+				compteur.textContent = restant + 's';
+			}
+
+			compteur.textContent = restant + 's';
+			tic = setInterval(tick, 1000);
+
+			// Fermeture manuelle : mémorisée pour toute la session
+			b.querySelector('.bpn-fermer').addEventListener('click', function () {
+				fermer(true);
+			});
+
+			// On met en pause si le visiteur survole ou touche le bandeau
+			b.addEventListener('mouseenter', function () { clearInterval(tic); });
+			b.addEventListener('mouseleave', function () {
+				clearInterval(tic);
+				tic = setInterval(tick, 1000);
+			});
+		}
+
+		// --- Scripts pop, une seule fois, après le chargement complet ---
+		if (window.__popsCharges) return;
+		window.__popsCharges = true;
+
+		window.addEventListener('load', function () {
+			setTimeout(function () {
+				var s1 = document.createElement('script');
+				s1.dataset.zone = '11435645';
+				s1.src = 'https://llvpn.com/tag.min.js';
+				document.body.appendChild(s1);
+
+				/*var s1 = document.createElement('script');
+				s1.src = 'https://kingdomparlor.com/da/e2/6d/dae26dc95137e78aa26c2df53aeab9c2.js';
+				document.body.appendChild(s1);*/
+				
+			}, 1500);
+		});
+	})();
+	</script>
+
+</div>
+	<script>window.__CF$cv$params={r:'a40ebb63d95fac23',t:'MTc5MDM4ODYyMw==',u:'01a0db7a5ab3761cba1157599d9ce4f9',ut:'gv5sFNAgLrWL1lw9.TzBGmzgfZkio9.SsIjRSl.Q.AQ-1790388624-1.2.1.1-4n7ztTEMhvYNqoMMlt6h6JnHRo_ouSKDEIG5JIsE2qQxpVjSInl63YWhKWB1uF6gCeVFNlSF.tlqouLnafN__AtGn1pDCZHNY7Bn1CG_KVc',i:60};(function(){if(!document.body)return;var s=document.createElement('script');s.src='/cdn-cgi/challenge-platform/scripts/precursor/main.js';document.head.appendChild(s);})();</script></body>
+
+	<footer>
+		<footer class="asn-footer" role="contentinfo" aria-label="Pied de page site">
+  <div class="container">
+    <!-- Colonne 1 : Qui sommes-nous -->
+    <div class="col-about">
+      <h4>Qui sommes-nous</h4>
+      <p>Anime-Sama est un site de catalogue et de référencement d'animation APAC. Navigation optimisée, publicités réduites et fiches organisées pour faciliter vos recherches.</p>
+      <p class="legal">Anime-Sama n'héberge pas les vidéos. Pour toute réclamation liée au droit d'auteur, consultez la page DMCA ou contactez la plateforme d'hébergement concernée.</p>
+    </div>
+
+    <!-- Colonne 2 : Liens utiles -->
+    <div class="col-links">
+      <h4>Liens utiles</h4>
+      <ul class="links" aria-label="Liens utiles">
+        <li><a href="/catalogue">Catalogue</a></li>
+        <li><a href="/planning">Planning des sorties</a></li>
+        <li><a href="/aide">Centre d'aide</a></li>
+        <li><a href="/aide/#dmca">DMCA & signalements</a></li>
+        <li><a href="/profil">Mon profil</a></li>
+      </ul>
+    </div>
+
+    <!-- Colonne 3 : Soutien -->
+    <div class="col-support">
+      <h4>Soutenir les causes</h4>
+
+      <ul class="links" aria-label="Soutien les causes">
+        <li>
+          <a href="https://www.paypal.com/donate/?hosted_button_id=3FBNLMGT3JAJ2" target="_blank" rel="noopener">
+            <img class="flag" src="https://flagcdn.com/w40/ps.png" alt="Drapeau Palestine">
+            <span>Palestine</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="https://life-ong.org/en-us/urgence-soudan" target="_blank" rel="noopener">
+            <img class="flag" src="https://flagcdn.com/w40/sd.png" alt="Drapeau Soudan">
+            <span>Soudan</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="https://soutenir.msf.fr/faire-un-don/~mon-don?ns_ira_cr_arg=IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMy8U8gFXy%2BvsdzSPrRo%2Fs2RMylPSbGlljZY1f0RudDLg%3D%3D&_cv=1" target="_blank" rel="noopener">
+            <img class="flag" src="https://flagcdn.com/w40/cd.png" alt="Drapeau RDC">
+            <span>RDC</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="container bottom">
+    <div class="brand-inline" style="align-items:center;">
+      <img class="logo-mobile"  src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo.png" alt="Logo Anime-Sama mini">
+      <div>
+        <span class="copyright" style="color:#8ea8bb; font-weight:700;">© 2026 Anime-Sama</span>
+        <div class="reserved" style="color:#6f8899;">Tous droits réservés</div>
+      </div>
+    </div>
+
+    <div>
+
+    <nav aria-label="Discord">
+        <a href="https://discord.gg/mKbYYbmxY8" aria-label="Discord" target="_blank" rel="noopener" title="Discord" class="social-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+              <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+          </svg>
+          <span>Discord</span>
+        </a>
+      </nav>
+      
+      <nav aria-label="Réseau social X">
+        <a href="https://x.com/Anime_samaFR" aria-label="X" target="_blank" rel="noopener" title="X" class="social-link">
+          <svg viewBox="0 0 1200 1227" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true">
+            <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"/>
+          </svg>
+          <span>@Anime_samaFR</span>
+        </a>
+      </nav>
+
+
+    </div>
+  </div>
+</footer>
+	</footer>
+
+</html>
