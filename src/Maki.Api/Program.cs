@@ -476,7 +476,7 @@ try
     builder.Services.AddHttpClient(FlareSolverrClient.HttpClientName, client =>
         client.Timeout = TimeSpan.FromSeconds(90)); // FS solves can take a while
 
-    // CuuTruyen: the API side goes through IHtmlFetcher (NeedsFlareSolverr), but page bytes are
+    // CuuTruyen: the API side goes through IHtmlFetcher, but page bytes are
     // binary and need unscrambling before they reach the downloader, so this client fetches raw
     // images only. No BaseAddress: URLs already point at whichever storage-* host the page rewrite
     // picked. ~1 MB pages, so a longer timeout than the plain-HTML sources above.

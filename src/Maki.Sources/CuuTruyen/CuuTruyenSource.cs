@@ -13,9 +13,9 @@ using SixLabors.ImageSharp.Processing;
 namespace Maki.Sources.CuuTruyen;
 
 /// <summary>
-/// Cứu Truyện: Vietnamese scanlation aggregator, JSON API under /api/v2. Cloudflare-fronted, so the
-/// API side goes through <see cref="IHtmlFetcher"/> (direct with cached clearance first, FlareSolverr
-/// on a miss); page bytes need a binary response, which the fetcher can't give back, so those go
+/// Cứu Truyện: Vietnamese scanlation aggregator, JSON API under /api/v2. Cloudflare-fronted, but a
+/// plain client got 200 when checked, so it doesn't claim NeedsFlareSolverr. The API side still goes
+/// through <see cref="IHtmlFetcher"/> (direct first, FlareSolverr only on a challenge); page bytes need a binary response, which the fetcher can't give back, so those go
 /// through a named <see cref="IHttpClientFactory"/> client instead.
 /// <para>
 /// Covers and page images are served from <c>storage-ct.lrclib.net</c>/<c>storage-ct-riften.site</c>
@@ -51,7 +51,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
     public string BaseUrl =>
         Environment.GetEnvironmentVariable("MAKI_SOURCE_CUUTRUYEN_BASEURL")?.TrimEnd('/') ?? "https://cuutruyen.net";
 
-    public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceCapabilities Capabilities => SourceCapabilities.None;
     public IReadOnlyList<string> SupportedLanguages => ["vi"];
     public IReadOnlyList<string> CoverHosts => ["cuutruyen.net"];
 
