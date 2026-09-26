@@ -63,14 +63,19 @@ public class AnimeSamaSourceTests
         Assert.Null(oneShot.Number);
         Assert.Equal("One Shot", oneShot.NumberRaw);
         Assert.Equal("one-piece/scan_noir-et-blanc/vf|One Shot", oneShot.SourceChapterId);
+        // Null-number identity (ChapterIdentity.Matches) is IsOneShot + Language + Title, so the
+        // special needs its own Title or a differently-named special would collide with it.
+        Assert.Equal("One Shot", oneShot.Title);
 
         var last = chapters[^1];
         Assert.Equal(1193m, last.Number);
         Assert.Equal("1193", last.NumberRaw);
         Assert.Equal("one-piece/scan_noir-et-blanc/vf|1193", last.SourceChapterId);
+        Assert.Null(last.Title);
 
         var first = chapters[1];
         Assert.Equal(1m, first.Number);
+        Assert.Null(first.Title);
     }
 
     [Fact]
@@ -105,6 +110,62 @@ public class AnimeSamaSourceTests
         var page = pages.Pages[0];
         Assert.Equal("https://anime-sama.to/s2/scans/One%20Piece/1194/1.jpg", page.Url);
         Assert.Equal("https://anime-sama.to/", page.Headers!["Referer"]);
+    }
+
+    [Fact]
+    public async Task ListChapters_retries_the_count_endpoint_with_amp_escaped_ampersand()
+    {
+        // #titreOeuvre decodes to "Foo & Bar" (AngleSharp un-escapes the &amp; in the fixture), so the
+        // first attempt asks for that raw text and only the &amp;-escaped retry succeeds - mirroring
+        // the site's own script, which reads the name off innerHTML (re-escaped) rather than the
+        // decoded text.
+        const string rawAttemptError = """{"error":"Oeuvre 'Foo & Bar' not found"}""";
+        const string escapedAttemptCounts = """{"1":5,"2":6,"3":7}""";
+
+        var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
+        {
+            ["/catalogue/foo-bar/scan/vf/"] = FakeHttpClientFactory.Fixture("animesama-scan-ampersand.html"),
+            ["oeuvre=Foo%20%26%20Bar"] = rawAttemptError,
+            ["oeuvre=Foo%20%26amp%3B%20Bar"] = escapedAttemptCounts
+        }));
+
+        var chapters = await source.ListChaptersAsync("foo-bar/scan/vf");
+
+        Assert.Equal(3, chapters.Count);
+    }
+
+    [Fact]
+    public async Task ListChapters_throws_when_both_ampersand_forms_come_back_not_found()
+    {
+        const string notFoundEither = """{"error":"Oeuvre 'Foo & Bar' not found"}""";
+
+        var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
+        {
+            ["/catalogue/foo-bar/scan/vf/"] = FakeHttpClientFactory.Fixture("animesama-scan-ampersand.html"),
+            ["get_nb_chap_et_img.php"] = notFoundEither
+        }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => source.ListChaptersAsync("foo-bar/scan/vf"));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_ChapterLocked_when_position_has_zero_pages()
+    {
+        // The plain-panel fixture (no active list script) falls back to labels 1..total, so a
+        // one-entry counts JSON trivially satisfies BuildLabels' total check without needing a
+        // real 1194-position chapter list here.
+        var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
+        {
+            ["/catalogue/one-piece/scan/vf/"] = FakeHttpClientFactory.Fixture("animesama-scan-plain.html"),
+            ["get_nb_chap_et_img.php"] = """{"1":0}"""
+        }));
+
+        var chapter = new SourceChapter(
+            "animesama", "one-piece/scan/vf", "one-piece/scan/vf|1",
+            "1", 1, null, null, "fr", null);
+
+        await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(chapter));
     }
 
     [Fact]

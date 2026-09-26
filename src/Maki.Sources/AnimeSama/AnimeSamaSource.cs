@@ -129,7 +129,10 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
                 label,
                 parsed.Number,
                 Volume: null,
-                Title: null,
+                // Null-number identity (ChapterIdentity.Matches) is IsOneShot + Language + Title, so
+                // every special needs its own Title or "One Shot" and a differently-named special
+                // would collide into the same row. Numbered chapters keep Title null.
+                Title: parsed.Number is null ? label : null,
                 Language: "fr",
                 ReleaseDate: null,
                 Url: scanUrl));
@@ -159,6 +162,15 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
         if (!counts.TryGetValue(position, out var pageCount))
         {
             throw new InvalidOperationException($"animesama: no page count for position {position} of '{resolvedId}'");
+        }
+
+        if (pageCount == 0)
+        {
+            // The count endpoint says this position has no images yet - treat it the same as a
+            // paid/early-access lock elsewhere, so the queue retries later instead of writing an
+            // empty CBZ.
+            throw new ChapterLockedException(
+                $"animesama: chapter '{label}' of '{resolvedId}' has 0 pages (position {position})");
         }
 
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
@@ -204,13 +216,46 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
             throw new InvalidOperationException($"animesama: no #titreOeuvre on {scanUrl}");
         }
 
+        var counts = await FetchCountsAsync(oeuvre, ct);
+        var labels = BuildLabels(doc, counts.Count);
+        return (oeuvre, counts, labels, scanUrl);
+    }
+
+    /// <summary>
+    /// Fetches the page-count JSON for an oeuvre name, retrying once with its '&amp;'-escaped form
+    /// (the site's own script reads the name off innerHTML, which re-escapes an ampersand where our
+    /// decoded #titreOeuvre text does not) before giving up.
+    /// </summary>
+    private async Task<Dictionary<int, int>> FetchCountsAsync(string oeuvre, CancellationToken ct)
+    {
+        var counts = await TryFetchCountsAsync(oeuvre, ct);
+        if (counts is not null)
+        {
+            return counts;
+        }
+
+        if (oeuvre.Contains('&'))
+        {
+            counts = await TryFetchCountsAsync(oeuvre.Replace("&", "&amp;"), ct);
+            if (counts is not null)
+            {
+                return counts;
+            }
+        }
+
+        throw new InvalidOperationException($"animesama: oeuvre '{oeuvre}' not found");
+    }
+
+    /// <summary>Null means the count endpoint answered its "not found" JSON rather than counts.</summary>
+    private async Task<Dictionary<int, int>?> TryFetchCountsAsync(string oeuvre, CancellationToken ct)
+    {
         var countUrl = $"{BaseUrl}/s2/scans/get_nb_chap_et_img.php?oeuvre={Uri.EscapeDataString(oeuvre)}";
         var countBody = UnwrapJson(await fetcher.GetHtmlAsync(countUrl, ct));
 
         using var countsJson = System.Text.Json.JsonDocument.Parse(countBody);
         if (countsJson.RootElement.TryGetProperty("error", out _))
         {
-            throw new InvalidOperationException($"animesama: oeuvre '{oeuvre}' not found (404-equivalent from {countUrl})");
+            return null;
         }
 
         var counts = new Dictionary<int, int>();
@@ -222,8 +267,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
             }
         }
 
-        var labels = BuildLabels(doc, counts.Count);
-        return (oeuvre, counts, labels, scanUrl);
+        return counts;
     }
 
     /// <summary>
