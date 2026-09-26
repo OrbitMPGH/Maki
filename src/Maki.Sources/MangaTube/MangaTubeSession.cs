@@ -30,7 +30,8 @@ internal readonly record struct MangaTubeChallenge(string Arg1, string Arg2, str
 internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFactory, string httpClientName)
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private string? _cookie;
+    // Written under _gate, but read by every request without taking it.
+    private volatile string? _cookie;
 
     /// <summary>Epoch-ms expiry read off the current pass, for the live-harness report.</summary>
     public DateTimeOffset? PassExpiresAt { get; private set; }
@@ -83,8 +84,8 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
     }
 
     // Matches both marker spellings the site (and the Keiyoushi interceptor it was reverse
-    // engineered from) has shipped: "window.__challange = {...}" and "_challange = {...}" —
-    // the latter is a substring of the former, so one pattern covers both.
+    // engineered from) has shipped: "window.__challange = {...}" and "_challange = {...}".
+    // The latter is a substring of the former, so one pattern covers both.
     private static bool IsChallenge(MangaTubeResponse response) =>
         response.Body.Contains("_challange", StringComparison.Ordinal);
 
@@ -136,7 +137,7 @@ internal sealed partial class MangaTubeSession(IHttpClientFactory httpClientFact
         }
     }
 
-    /// <summary><c>__mtbpass={expiryEpochMs}:{hash}</c> — only the prefix is ours to read.</summary>
+    /// <summary><c>__mtbpass={expiryEpochMs}:{hash}</c>, and only the prefix is ours to read.</summary>
     private static DateTimeOffset? ParseExpiry(string cookie)
     {
         var eq = cookie.IndexOf('=');

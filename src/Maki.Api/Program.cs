@@ -462,7 +462,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    // Manga-Tube — plain JSON API, but every request (API included) is first answered with a
+    // Manga-Tube, plain JSON API, but every request (API included) is first answered with a
     // home-grown arithmetic challenge unless it carries a valid __mtbpass cookie, and that pass
     // is bound to the User-Agent that solved it. UseCookies is off so the manual Cookie header
     // MangaTubeSession attaches is the only one sent; the framework's own CookieContainer would

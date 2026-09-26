@@ -7,12 +7,12 @@ using Maki.Core.Sources;
 namespace Maki.Sources.MangaTube;
 
 /// <summary>
-/// Manga-Tube (manga-tube.me) — German scanlations, plain JSON API. Every request, API included,
+/// Manga-Tube (manga-tube.me), German scanlations, plain JSON API. Every request, API included,
 /// is first challenged by a home-grown arithmetic anti-bot check (see <see cref="MangaTubeSession"/>);
 /// once solved, the resulting <c>__mtbpass</c> cookie is reused for the life of the process.
 /// Series id is the slug ("one_piece"); chapter id is the numeric chapter id as a string.
 /// Licensed titles either shorten their public chapter list (<c>limitChapters</c>) or 401 the
-/// chapters call entirely (<c>{"error":["licence-check"]}</c>) — the latter is a stable site
+/// chapters call entirely (<c>{"error":["licence-check"]}</c>). The latter is a stable site
 /// state and reads as zero chapters, not a sync failure.
 /// </summary>
 public class MangaTubeSource(IHttpClientFactory httpClientFactory) : ISource
