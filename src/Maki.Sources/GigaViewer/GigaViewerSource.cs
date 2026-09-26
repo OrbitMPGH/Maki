@@ -48,6 +48,11 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            return [];
+        }
+
         var html = await Client.GetStringAsync($"search?q={Uri.EscapeDataString(title)}", ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
@@ -70,8 +75,8 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
             }
 
             var index = href.IndexOf("/episode/", StringComparison.OrdinalIgnoreCase);
-            var seriesId = href[(index + "/episode/".Length)..].TrimEnd('/');
-            if (seriesId.Length == 0 || !seen.Add(seriesId))
+            var seriesId = EpisodeIdFromTail(href[(index + "/episode/".Length)..]);
+            if (seriesId is null || !seen.Add(seriesId))
             {
                 continue;
             }
@@ -164,7 +169,10 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
         var raw = doc.QuerySelector("script#episode-json")?.GetAttribute("data-value");
         if (string.IsNullOrEmpty(raw))
         {
-            throw new ChapterLockedException($"{Name}: episode {chapter.SourceChapterId} has no episode-json");
+            // Missing entirely means the markup changed under us, not that the episode is
+            // locked (a locked episode still ships #episode-json, just with pageStructure null).
+            throw new InvalidOperationException(
+                $"{Name}: episode {chapter.SourceChapterId} has no episode-json");
         }
 
         using var json = JsonDocument.Parse(raw);
@@ -208,6 +216,17 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
         }
 
         return new ChapterPages(pages);
+    }
+
+    // A search result's href is raw scraped text, not a parsed Uri, so it can carry a trailing
+    // slash, query string or fragment that ResolveSeriesIdFromUrl never sees (Uri.AbsolutePath
+    // already strips those). Same digits-only rule either way: an id is the episode's numeric
+    // readable-product id, nothing else.
+    private static string? EpisodeIdFromTail(string tail)
+    {
+        var end = tail.IndexOfAny(['/', '?', '#']);
+        var id = end < 0 ? tail : tail[..end];
+        return id.Length > 0 && id.All(char.IsAsciiDigit) ? id : null;
     }
 
     // Title: .series-title (classic), then the Next.js title paragraph, then the <li>'s own

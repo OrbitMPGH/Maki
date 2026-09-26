@@ -6,23 +6,54 @@ namespace Maki.Sources.Tests;
 
 public class GigaViewerDescramblerTests
 {
+    private const int Width = 128;
+    private const int Height = 96;
+    private const int BlockWidth = 32; // 128/32*8
+    private const int BlockHeight = 24; // 96/32*8
+
     /// <summary>
-    /// The 4x4 block transpose is its own inverse, so scrambling and descrambling are the same
-    /// operation: running a known 16-colour grid through it twice must return the original grid.
-    /// A 64x64 image with 16px blocks divides evenly into the 4x4 grid (64/32*8 = 16), so there
-    /// is no margin to complicate the comparison.
+    /// A non-square image (so a width/height mixup in the block-size math would be visible)
+    /// with 16 distinctly-coloured blocks, built twice from scratch: once in the readable
+    /// ("original") arrangement, once independently in the scrambled arrangement the plan
+    /// describes (block i's colour at column i/4, row i%4). Descrambling the second must
+    /// produce exactly the first, block for block, not merely round-trip through itself.
     /// </summary>
     [Fact]
-    public void Descramble_RoundTripsA16BlockGrid()
+    public void Descramble_MapsTheScrambledGridBackToTheOriginalLayout()
     {
-        using var original = BuildBlockGrid(64, 64, blockSize: 16);
+        var colors = BuildDistinctColors();
+        using var original = BuildGrid(colors, blockAt: i => (i % 4, i / 4));
+        using var scrambled = BuildGrid(colors, blockAt: i => (i / 4, i % 4));
 
-        using var scrambled = GigaViewerDescrambler.Descramble(original);
-        using var restored = GigaViewerDescrambler.Descramble(scrambled);
+        using var result = GigaViewerDescrambler.Descramble(scrambled);
 
-        AssertPixelsEqual(original, restored);
-        // And the scramble pass actually moved something, or the test would pass vacuously.
+        AssertPixelsEqual(original, result);
+
+        // Explicit off-diagonal checks: block 1 (original col=1,row=0) and block 4 (original
+        // col=0,row=1) are not on the diagonal, so a transpose that only handled the diagonal
+        // blocks correctly (or swapped width/height) would still fail here.
+        AssertBlockColor(result, colors[1], col: 1, row: 0);
+        AssertBlockColor(result, colors[4], col: 0, row: 1);
+
+        // And the scrambled input really did differ from the original, or the assertions above
+        // would pass even for a no-op descramble.
         Assert.False(PixelsEqual(original, scrambled));
+    }
+
+    [Fact]
+    public void Descramble_ProducesDecodableJpegBytes()
+    {
+        var colors = BuildDistinctColors();
+        using var scrambled = BuildGrid(colors, blockAt: i => (i / 4, i % 4));
+        using var stream = new MemoryStream();
+        scrambled.SaveAsPng(stream);
+
+        var result = GigaViewerDescrambler.Descramble(stream.ToArray());
+
+        using var decoded = Image.Load(result);
+        Assert.Equal(Width, decoded.Width);
+        Assert.Equal(Height, decoded.Height);
+        Assert.Equal("JPEG", decoded.Metadata.DecodedImageFormat?.Name);
     }
 
     /// <summary>
@@ -76,24 +107,38 @@ public class GigaViewerDescramblerTests
         Assert.Equal(bytes, result);
     }
 
-    private static Image<Rgba32> BuildBlockGrid(int width, int height, int blockSize)
+    private static Rgba32[] BuildDistinctColors() =>
+        Enumerable.Range(0, 16)
+            .Select(i => new Rgba32((byte)(i * 16), (byte)(255 - i * 16), (byte)(i * 8 + 4), 255))
+            .ToArray();
+
+    private static Image<Rgba32> BuildGrid(Rgba32[] colors, Func<int, (int Col, int Row)> blockAt)
     {
-        var image = new Image<Rgba32>(width, height);
+        var image = new Image<Rgba32>(Width, Height);
         for (var i = 0; i < 16; i++)
         {
-            var blockX = i % 4 * blockSize;
-            var blockY = i / 4 * blockSize;
-            var color = new Rgba32((byte)(i * 16), (byte)(255 - i * 16), (byte)(i * 8 + 4), 255);
-            for (var y = 0; y < blockSize; y++)
+            var (col, row) = blockAt(i);
+            var blockX = col * BlockWidth;
+            var blockY = row * BlockHeight;
+            for (var y = 0; y < BlockHeight; y++)
             {
-                for (var x = 0; x < blockSize; x++)
+                for (var x = 0; x < BlockWidth; x++)
                 {
-                    image[blockX + x, blockY + y] = color;
+                    image[blockX + x, blockY + y] = colors[i];
                 }
             }
         }
 
         return image;
+    }
+
+    private static void AssertBlockColor(Image<Rgba32> image, Rgba32 expected, int col, int row)
+    {
+        // Sample the block's centre, not its corner, so an off-by-one in the block math
+        // still fails the assertion instead of accidentally landing on the right pixel.
+        var x = col * BlockWidth + BlockWidth / 2;
+        var y = row * BlockHeight + BlockHeight / 2;
+        Assert.Equal(expected, image[x, y]);
     }
 
     private static void AssertPixelsEqual(Image<Rgba32> a, Image<Rgba32> b)

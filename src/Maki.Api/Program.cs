@@ -329,15 +329,15 @@ try
                  (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
                  (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
-                 // GigaViewer sites — Hatena's white-label viewer, plain nginx/CloudFront, no
-                 // challenge. Page images go through their own client below.
-                 ("source-shonenjumpplus", "https://shonenjumpplus.com/"),
-                 ("source-comicdays", "https://comic-days.com/"),
-                 ("source-sundaywebry", "https://www.sunday-webry.com/"),
-                 ("source-magcomi", "https://magcomi.com/"),
-                 ("source-tonarinoyj", "https://tonarinoyj.jp/"),
-                 ("source-comiczenon", "https://comic-zenon.com/"),
-                 ("source-kuragebunch", "https://kuragebunch.com/")
+                 // GigaViewer sites (Hatena's white-label viewer, plain nginx/CloudFront, no
+                 // challenge). Page images go through their own client below.
+                 ($"source-{GigaViewerSites.ShonenJumpPlus.Name}", $"{GigaViewerSites.ShonenJumpPlus.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.ComicDays.Name}", $"{GigaViewerSites.ComicDays.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.SundayWebry.Name}", $"{GigaViewerSites.SundayWebry.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.Magcomi.Name}", $"{GigaViewerSites.Magcomi.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.TonarinoYj.Name}", $"{GigaViewerSites.TonarinoYj.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
