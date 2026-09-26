@@ -5,6 +5,7 @@ using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
+using Maki.Sources.MangaTube;
 using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
@@ -114,6 +115,19 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://manga-tube.me/series/one_piece", "one_piece")]
+    [InlineData("https://manga-tube.me/series/one_piece/", "one_piece")]
+    // A chapter-reader link is rejected rather than resolved to its series, unlike most sources.
+    [InlineData("https://manga-tube.me/series/one_piece/read/19830/1", null)]
+    [InlineData("https://manga-tube.me/api/manga/one_piece", null)]
+    [InlineData("https://example.com/series/one_piece", null)]
+    public void MangaTube(string url, string? expected)
+    {
+        ISource source = new MangaTubeSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

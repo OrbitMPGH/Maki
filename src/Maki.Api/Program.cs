@@ -40,6 +40,7 @@ using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using System.Net;
 using Maki.Sources.TopManhua;
+using Maki.Sources.MangaTube;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -461,6 +462,22 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Manga-Tube — plain JSON API, but every request (API included) is first answered with a
+    // home-grown arithmetic challenge unless it carries a valid __mtbpass cookie, and that pass
+    // is bound to the User-Agent that solved it. UseCookies is off so the manual Cookie header
+    // MangaTubeSession attaches is the only one sent; the framework's own CookieContainer would
+    // otherwise merge with it unpredictably across the handler rotations IHttpClientFactory does.
+    var mangaTubeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(MangaTubeSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://manga-tube.me/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
         {
@@ -533,7 +550,8 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
-    
+    builder.Services.AddSingleton<ISource, MangaTubeSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
