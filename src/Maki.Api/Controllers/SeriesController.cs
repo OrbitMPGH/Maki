@@ -251,7 +251,7 @@ public class SeriesController(
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var series = await db.Series.OrderBy(s => s.SortTitle).ToListAsync(ct);
+        var series = await db.Series.AsNoTracking().OrderBy(s => s.SortTitle).ToListAsync(ct);
         var chapterCounts = await ChapterTalliesAsync(db.Chapters, ct);
 
         // Active download work per series, so cards can show "queued"/"downloading" at a glance.
@@ -269,10 +269,10 @@ public class SeriesController(
 
         var readCounts = await ReadChapterCountsBySeriesAsync(ct);
 
-        // Flat join-table read rather than Include(s => s.UserTags): the series above are already
-        // materialized, and most libraries have far fewer tag links than series. Going through the
-        // skip navigation instead would need SQL APPLY, which SQLite doesn't support.
-        var tagIdsBySeries = (await db.SeriesTags.ToListAsync(ct))
+        // Flat join-table read scoped to these series in SQL, since SeriesTags has no visibility filter of its own.
+        var tagIdsBySeries = (await db.SeriesTags
+                .Where(x => db.Series.Any(s => s.Id == x.SeriesId))
+                .ToListAsync(ct))
             .GroupBy(x => x.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.TagId).ToList());
 
@@ -294,12 +294,11 @@ public class SeriesController(
             .GroupBy(m => m.SeriesId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // Distinct in SQL: a series with 400 downloaded chapters otherwise drags 400 rows across
-        // for what collapses to one or two names.
+        // Grouped in SQL to one row per (series, source) before crossing the wire, scoped to these series for the same reason as the tag read above.
         var fileSourcesBySeries = (await db.ChapterFiles
-                .Where(f => f.SourceName != "")
-                .Select(f => new { f.SeriesId, f.SourceName })
-                .Distinct()
+                .Where(f => f.SourceName != "" && db.Series.Any(s => s.Id == f.SeriesId))
+                .GroupBy(f => new { f.SeriesId, f.SourceName })
+                .Select(g => g.Key)
                 .ToListAsync(ct))
             .GroupBy(f => f.SeriesId)
             .ToDictionary(g => g.Key, g => g.Select(f => f.SourceName).Order().ToList());

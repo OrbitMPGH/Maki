@@ -251,13 +251,12 @@ public class ReaderController(
             return PhysicalFile(cached, CbzReader.ContentType(entry), lastModified: null, entityTag: etag, enableRangeProcessing: false);
         }
 
-        var stream = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
+        var stream = await reader.OpenPageAsync(slice, entry, ct);
         if (stream is null)
         {
             return NotFound();
         }
 
-        // Range processing stays off (the default): the zip entry stream is forward-only.
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }
 
@@ -332,30 +331,39 @@ public class ReaderController(
             {
                 // A PDF page is resized from its own cached full render rather than re-rendered,
                 // so opening a chapter's thumbnail strip does not re-run PDFium for every page it
-                // already rendered full-size.
-                Stream? source;
+                // already rendered full-size. That render is already gated by ImageWorkGate on its
+                // own (PdfReader.RenderPageAsync), so it stays outside the gate below - nesting
+                // would be a reentrant wait on a semaphore that is not reentrant.
+                string? fullCached = null;
                 if (ComicFile.IsPdf(slice.ArchivePath))
                 {
-                    var fullCached = await GetOrRenderFullPageAsync(slice, absoluteIndex, entry, ct);
-                    source = fullCached is null ? null : System.IO.File.OpenRead(fullCached);
-                }
-                else
-                {
-                    source = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
-                }
-
-                if (source is null)
-                {
-                    return NotFound();
+                    fullCached = await GetOrRenderFullPageAsync(slice, absoluteIndex, entry, ct);
+                    if (fullCached is null)
+                    {
+                        return NotFound();
+                    }
                 }
 
-                await using var _ = source;
+                var missing = false;
 
                 // Gated. A client prefetching a chapter's whole thumbnail strip arrives as dozens
                 // of concurrent requests, each decoding a full page to produce a 200px JPEG, and
-                // nothing else in this path bounds them.
+                // nothing else in this path bounds them. The source page is opened inside the gate
+                // too, so a request queued behind it holds no page buffer until its turn comes.
                 await ImageWorkGate.RunAsync(async () =>
                 {
+                    var source = fullCached is not null
+                        ? System.IO.File.OpenRead(fullCached)
+                        : await reader.OpenPageAsync(slice, entry, ct);
+
+                    if (source is null)
+                    {
+                        missing = true;
+                        return;
+                    }
+
+                    await using var _ = source;
+
                     using var image = await Image.LoadAsync(source, ct);
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
@@ -388,6 +396,11 @@ public class ReaderController(
                         throw;
                     }
                 }, ct);
+
+                if (missing)
+                {
+                    return NotFound();
+                }
             }
             catch (Exception e)
             {

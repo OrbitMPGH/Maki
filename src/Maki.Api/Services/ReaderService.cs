@@ -44,6 +44,7 @@ public class ReaderService(
     public async Task<ChapterSlice?> SliceAsync(int chapterId, CancellationToken ct)
     {
         var row = await db.Chapters
+            .AsNoTracking()
             .Where(c => c.Id == chapterId && c.ChapterFileId != null)
             .Select(c => new
             {
@@ -70,7 +71,7 @@ public class ReaderService(
             return null;
         }
 
-        var info = archives.Get(file.Id, file.Size, absolute);
+        var info = await archives.GetAsync(file.Id, file.Size, absolute, ct);
         if (info.Pages.Count == 0)
         {
             return null;
@@ -105,6 +106,7 @@ public class ReaderService(
         }
 
         var rows = await db.Chapters
+            .AsNoTracking()
             .Where(c => chapterIds.Contains(c.Id) && c.ChapterFileId != null)
             .Select(c => new
             {
@@ -130,7 +132,7 @@ public class ReaderService(
                 continue;
             }
 
-            var info = archives.Get(row.File.Id, row.File.Size, absolute);
+            var info = await archives.GetAsync(row.File.Id, row.File.Size, absolute, ct);
             if (info.Pages.Count == 0)
             {
                 continue;
@@ -143,6 +145,10 @@ public class ReaderService(
 
         return slices;
     }
+
+    /// <summary>One page of a resolved slice, or null when it cannot be read. See <see cref="ReaderArchiveCache.OpenPageAsync"/>.</summary>
+    public Task<Stream?> OpenPageAsync(ChapterSlice slice, string entryName, CancellationToken ct) =>
+        archives.OpenPageAsync(slice.ArchivePath, entryName, ct);
 
     /// <summary>
     /// The page range a chapter occupies. A volume/compilation CBZ backs several chapters, and
@@ -192,6 +198,7 @@ public class ReaderService(
     public async Task<(int? Previous, int? Next)> NeighboursAsync(Chapter chapter, CancellationToken ct)
     {
         var siblings = await db.Chapters
+            .AsNoTracking()
             .Where(c => c.SeriesId == chapter.SeriesId && c.Language == chapter.Language && c.ChapterFileId != null)
             .Select(c => new { c.Id, c.Number, c.Volume })
             .ToListAsync(ct);
@@ -220,7 +227,7 @@ public class ReaderService(
     private int UserId => db.Scope.UserId;
 
     public async Task<ChapterProgress?> ProgressAsync(int chapterId, CancellationToken ct) =>
-        await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapterId, ct);
+        await db.ChapterProgress.AsNoTracking().FirstOrDefaultAsync(p => p.ChapterId == chapterId, ct);
 
     /// <summary>
     /// A single report may not carry more reading time than this, however long the client says it

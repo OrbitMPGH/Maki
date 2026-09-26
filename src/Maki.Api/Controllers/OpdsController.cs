@@ -106,7 +106,16 @@ public class OpdsController(
         }
 
         var path = Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
-        return System.IO.File.Exists(path) ? PhysicalFile(path, "image/jpeg") : NotFound();
+        if (!System.IO.File.Exists(path))
+        {
+            return NotFound();
+        }
+
+        // No `?v=` cache-buster on this URL, so no `immutable`: a shorter max-age plus ETag/Last-Modified lets a revalidating client pick up a replaced cover, and private matches the token's per-user scope.
+        var info = new System.IO.FileInfo(path);
+        var etag = new EntityTagHeaderValue($"\"{seriesId}-{info.Length}-{info.LastWriteTimeUtc.Ticks}\"");
+        Response.Headers.CacheControl = "private, max-age=3600";
+        return PhysicalFile(path, "image/jpeg", lastModified: info.LastWriteTimeUtc, entityTag: etag);
     }
 
     /// <summary>The request path with the token segment removed, safe to log.</summary>
@@ -275,13 +284,12 @@ public class OpdsController(
         // resume position catches up as soon as the reader moves past what it cached.
         Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
-        var stream = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
+        var stream = await reader.OpenPageAsync(slice, entry, ct);
         if (stream is null)
         {
             return NotFound();
         }
 
-        // Range processing stays off: the zip entry stream is forward-only.
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }
 

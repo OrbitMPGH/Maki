@@ -38,6 +38,8 @@ public class MediaCoverController(AppPaths paths, MakiDbContext db) : Controller
             return NotFound();
         }
 
+        // Immutable and private: CoverUrlFor's ?v= cache-buster changes whenever the cover is rewritten, and private keeps a shared proxy cache from serving it to a user without access to this series.
+        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
         return PhysicalFile(path, "image/jpeg");
     }
 }
