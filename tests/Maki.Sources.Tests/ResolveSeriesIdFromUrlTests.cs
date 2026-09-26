@@ -6,6 +6,7 @@ using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.FlameComics;
+using Maki.Sources.Olympus;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 
@@ -115,5 +116,30 @@ public class ResolveSeriesIdFromUrlTests
     {
         ISource source = new MangakakalotSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    /// <summary>
+    /// Olympus's id-to-slug map only exists once the catalog has been fetched once (the id isn't
+    /// in the URL at all), so this resolves null cold and only starts resolving after a search.
+    /// </summary>
+    [Fact]
+    public async Task Olympus()
+    {
+        ISource source = new OlympusSource(new FakeHtmlFetcher(new()
+        {
+            ["api/series/list"] = FakeHttpClientFactory.Fixture("olympus-list.json")
+        }));
+
+        Assert.Null(source.ResolveSeriesIdFromUrl(
+            new Uri("https://olympusxyz.com/series/comic-10-05-2025-nivel-solo5324")));
+
+        await source.SearchAsync("Subo de nivel solo");
+
+        Assert.Equal("10", source.ResolveSeriesIdFromUrl(
+            new Uri("https://olympusxyz.com/series/comic-10-05-2025-nivel-solo5324")));
+        Assert.Null(source.ResolveSeriesIdFromUrl(
+            new Uri("https://olympusxyz.com/capitulo/114575/comic-10-05-2025-nivel-solo5324")));
+        Assert.Null(source.ResolveSeriesIdFromUrl(
+            new Uri("https://example.com/series/comic-10-05-2025-nivel-solo5324")));
     }
 }

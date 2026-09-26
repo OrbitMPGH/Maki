@@ -38,6 +38,7 @@ using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
+using Maki.Sources.Olympus;
 using System.Net;
 using Maki.Sources.TopManhua;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -533,7 +534,8 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
-    
+    builder.Services.AddSingleton<ISource, OlympusSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
