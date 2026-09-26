@@ -19,6 +19,7 @@ import { useLabel } from '../i18n-context'
 import { seriesStatusVisual } from './ui/status'
 import type { SettingsTabKey } from '../pages/settings/registry'
 import type { NavItem } from '../nav'
+import { OPEN_COMMAND_PALETTE_EVENT } from '../lib/commandPalette'
 
 interface Props {
   navItems: NavItem[]
@@ -47,6 +48,11 @@ export default function CommandPalette({ navItems }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
 
   useHotkeys([['mod+K', open]])
+
+  useEffect(() => {
+    window.addEventListener(OPEN_COMMAND_PALETTE_EVENT, open)
+    return () => window.removeEventListener(OPEN_COMMAND_PALETTE_EVENT, open)
+  }, [open])
 
   useEffect(() => {
     if (!opened) {

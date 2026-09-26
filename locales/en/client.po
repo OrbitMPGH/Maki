@@ -514,6 +514,10 @@ msgstr "{languageCount, plural, one {# language} other {# languages}}"
 msgid "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
 msgstr "{languageCount, plural, one {Covers # language} other {Covers # languages}}"
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "{latestVersion} available, skipped"
+msgstr "{latestVersion} available, skipped"
+
 #: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}"
 msgstr "{left, plural, one {# left} other {# left}}"
@@ -1278,6 +1282,10 @@ msgstr "A show you scored well nudges recommendations toward similar manga. A lo
 msgid "A small local model lets Discover recommend by feel and lets you search for a plot rather than a title. Its index downloads prebuilt, so your machine skips the heavy work."
 msgstr "A small local model lets Discover recommend by feel and lets you search for a plot rather than a title. Its index downloads prebuilt, so your machine skips the heavy work."
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "A star on GitHub helps others find it."
+msgstr "A star on GitHub helps others find it."
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
 msgstr "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
@@ -1893,6 +1901,10 @@ msgstr "Art"
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Ask for this"
 msgstr "Ask for this"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Ask or suggest"
+msgstr "Ask or suggest"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Assign"
@@ -2652,8 +2664,8 @@ msgid "Checking for a new metadata snapshot"
 msgstr "Checking for a new metadata snapshot"
 
 #: src/pages/SettingsPage.tsx
-msgid "Checks GitHub daily for a new release and shows a banner and a notification when there is one. Updating is manual: {howToUpdate}."
-msgstr "Checks GitHub daily for a new release and shows a banner and a notification when there is one. Updating is manual: {howToUpdate}."
+msgid "Checks GitHub daily for a new release and shows a card in the sidebar and a notification when there is one. Updating is manual: {howToUpdate}."
+msgstr "Checks GitHub daily for a new release and shows a card in the sidebar and a notification when there is one. Updating is manual: {howToUpdate}."
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -2846,6 +2858,10 @@ msgstr "Comma separated Apprise URLs, used when there is no config key."
 #: src/components/settings/SecuritySection.tsx
 msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
 msgstr "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Command palette"
+msgstr "Command palette"
 
 #: src/components/ui/viewPrefs.tsx
 msgid "Compact"
@@ -3517,7 +3533,7 @@ msgstr "Discover and offline search are available now."
 msgid "Disk used"
 msgstr "Disk used"
 
-#: src/components/UpdateBanner.tsx
+#: src/components/layout/SidebarFooter.tsx
 #: src/pages/NotificationsPage.tsx
 msgid "Dismiss"
 msgstr "Dismiss"
@@ -3546,6 +3562,10 @@ msgstr "Dismissed until {until}"
 #: src/components/settings/UsersSection.tsx
 msgid "Display name"
 msgstr "Display name"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Documentation"
+msgstr "Documentation"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Don't want"
@@ -3632,10 +3652,6 @@ msgstr "Download next chapters"
 #: src/pages/SettingsPage.tsx
 msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
 msgstr "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
-
-#: src/pages/SettingsPage.tsx
-#~ msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles. Drag to reorder."
-#~ msgstr "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles. Drag to reorder."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Download the next"
@@ -3825,10 +3841,6 @@ msgid "Enable {name}"
 msgstr "Enable {name}"
 
 #: src/pages/SettingsPage.tsx
-#~ msgid "Enable {sourceName}"
-#~ msgstr "Enable {sourceName}"
-
-#: src/pages/SettingsPage.tsx
 msgid "Enable import lists for everyone"
 msgstr "Enable import lists for everyone"
 
@@ -3865,6 +3877,10 @@ msgstr "English"
 #: src/pages/SettingsPage.tsx
 msgid "English (provider default)"
 msgstr "English (provider default)"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Enjoying Maki?"
+msgstr "Enjoying Maki?"
 
 #: src/pages/LoginPage.tsx
 msgid "Enter your authenticator code"
@@ -4425,6 +4441,10 @@ msgstr "Gets past Cloudflare for sources like MangaFire. Without it those source
 msgid "Girls Love"
 msgstr "Girls Love"
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "GitHub Discussions."
+msgstr "GitHub Discussions."
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Give it a name"
@@ -4569,6 +4589,10 @@ msgstr "Healthy"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Height"
 msgstr "Height"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Help & feedback"
+msgstr "Help & feedback"
 
 #: src/components/SetupWizard.tsx
 msgid "Helps Kavita and other readers group and name chapters. Off leaves torrent grabs and manual imports untouched. Maki's own downloads always get one."
@@ -5595,9 +5619,17 @@ msgstr "mainstream"
 msgid "Maki {checkedVersion} is available"
 msgstr "Maki {checkedVersion} is available"
 
-#: src/components/UpdateBanner.tsx
-msgid "Maki {latestVersion} is available, you're running {currentVersion}."
-msgstr "Maki {latestVersion} is available, you're running {currentVersion}."
+#: src/components/layout/SidebarFooter.tsx
+msgid "Maki {latestVersion} available"
+msgstr "Maki {latestVersion} available"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Maki {latestVersion} is out"
+msgstr "Maki {latestVersion} is out"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Maki {version}"
+msgstr "Maki {version}"
 
 #: src/components/SetupWizard.tsx
 msgid "Maki asks Kavita to scan a series after its files change and sends it posters, links and status. The API key is under User Settings, 3rd Party Clients. Fill the path mapping only if Kavita sees the library under another path."
@@ -6050,10 +6082,6 @@ msgstr "Move up"
 msgid "Move up in queue"
 msgstr "Move up in queue"
 
-#: src/pages/SettingsPage.tsx
-#~ msgid "Multi-language"
-#~ msgstr "Multi-language"
-
 #: src/components/ui/seriesNotifications.ts
 msgid "Muted"
 msgstr "Muted"
@@ -6125,10 +6153,6 @@ msgstr "Needed for Cloudflare-protected sources like MangaFire. Point this at a 
 #: src/components/SourceMappingsSection.tsx
 msgid "Needs at least two enabled sources to compare."
 msgstr "Needs at least two enabled sources to compare."
-
-#: src/pages/SettingsPage.tsx
-#~ msgid "Needs FlareSolverr"
-#~ msgstr "Needs FlareSolverr"
 
 #: src/pages/HomePage.tsx
 msgid "Needs read tracking: use the reader or connect Kavita."
@@ -7060,6 +7084,10 @@ msgstr "Open the search with these filters from now on"
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
 msgstr "Opens a deletion review. Nothing is removed until you confirm it there."
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "Opens a GitHub issue with the template."
+msgstr "Opens a GitHub issue with the template."
+
 #: src/pages/HealthPage.tsx
 msgid "Operation #{id}"
 msgstr "Operation #{id}"
@@ -7494,17 +7522,9 @@ msgstr "Publishers"
 msgid "pull the latest code and rebuild"
 msgstr "pull the latest code and rebuild"
 
-#: src/components/UpdateBanner.tsx
-msgid "Pull the latest code and rebuild to update."
-msgstr "Pull the latest code and rebuild to update."
-
 #: src/pages/SettingsPage.tsx
 msgid "pull the new image and recreate the container"
 msgstr "pull the new image and recreate the container"
-
-#: src/components/UpdateBanner.tsx
-msgid "Pull the new image and recreate the container to update."
-msgstr "Pull the new image and recreate the container to update."
 
 #: src/pages/SettingsPage.tsx
 msgid "Pulls your tracker lists on a schedule and adds matching series to the library, or files requests when you cannot add series yourself. Connect trackers under Scrobbling first."
@@ -7969,6 +7989,10 @@ msgstr "Related to your library"
 msgid "Related to your seeds"
 msgstr "Related to your seeds"
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "Release notes"
+msgstr "Release notes"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8153,6 +8177,10 @@ msgstr "Replacement #{opId}"
 #: src/components/ImportReviewModal.tsx
 msgid "replaces {replacedFileName}"
 msgstr "replaces {replacedFileName}"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Report a bug"
+msgstr "Report a bug"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Request chapters"
@@ -8662,16 +8690,6 @@ msgstr "Scraper sources, download behaviour and the torrent path."
 msgid "scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
 msgstr "scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
 
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder"
-#~ msgstr "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
-#~ msgstr "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
-
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Screen"
 msgstr "Screen"
@@ -9163,6 +9181,10 @@ msgstr "Shounen"
 msgid "Show a popup when a notification arrives"
 msgstr "Show a popup when a notification arrives"
 
+#: src/pages/SettingsPage.tsx
+msgid "Show again"
+msgstr "Show again"
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Show all"
 msgstr "Show all"
@@ -9350,6 +9372,10 @@ msgstr "Size"
 msgid "Size mismatch"
 msgstr "Size mismatch"
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "Skip {latestVersion}"
+msgstr "Skip {latestVersion}"
+
 #: src/components/CatalogueRules.tsx
 msgid "Skip series where it is only a passing element"
 msgstr "Skip series where it is only a passing element"
@@ -9361,6 +9387,10 @@ msgstr "Skip setup"
 #: src/components/SetupWizard.tsx
 msgid "Skip specials on new series"
 msgstr "Skip specials on new series"
+
+#: src/pages/SettingsPage.tsx
+msgid "Skipped {latestVersion}"
+msgstr "Skipped {latestVersion}"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Slice of Life"
@@ -9547,6 +9577,10 @@ msgstr "Stalled without finishing"
 #: src/pages/ImportPage.tsx
 msgid "Standardize ComicInfo.xml inside the imported files (recommended)"
 msgstr "Standardize ComicInfo.xml inside the imported files (recommended)"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "Star on GitHub"
+msgstr "Star on GitHub"
 
 #: src/components/home/ReadingRail.tsx
 msgid "Start"
@@ -10553,7 +10587,7 @@ msgstr "Unmatched"
 msgid "Unmonitored"
 msgstr "Unmonitored"
 
-#: src/App.tsx
+#: src/components/layout/SidebarFooter.tsx
 msgid "Unofficial build (not a tagged release)"
 msgstr "Unofficial build (not a tagged release)"
 
@@ -10854,13 +10888,13 @@ msgstr "View activity"
 msgid "View and add {title}"
 msgstr "View and add {title}"
 
-#: src/components/UpdateBanner.tsx
-msgid "View changelog"
-msgstr "View changelog"
-
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View in library"
 msgstr "View in library"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "View release"
+msgstr "View release"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Vol. {volume}"
@@ -11032,6 +11066,10 @@ msgstr "What you read, when you read it, and what the library holds."
 #: src/pages/discover/TasteTab.tsx
 msgid "What you've read"
 msgstr "What you've read"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "What's new in v{version}"
+msgstr "What's new in v{version}"
 
 #: src/pages/ScrobblePage.tsx
 msgid "When"
@@ -11278,6 +11316,10 @@ msgstr "You vs the crowd"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "You're caught up"
 msgstr "You're caught up"
+
+#: src/components/layout/SidebarFooter.tsx
+msgid "You're on {currentVersion}"
+msgstr "You're on {currentVersion}"
 
 #: src/components/SetupWizard.tsx
 msgid "You're set"

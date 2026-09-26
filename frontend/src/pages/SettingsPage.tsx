@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
 import { useLabel, useLanguageChoice } from '../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -2157,6 +2158,8 @@ function UpdatesSection() {
   const { data: status } = useUpdateStatus()
   const checkNow = useCheckForUpdatesNow()
   const latestVersion = status?.latestVersion
+  const skippedVersion = useSyncExternalStore(subscribeSkippedVersion, getSkippedVersion)
+  const isSkipped = !!status?.updateAvailable && !!latestVersion && skippedVersion === latestVersion
   const checkedAtLabel = status?.checkedAt ? formatDateTime(status.checkedAt) : undefined
   const howToUpdate = status?.isDocker
     ? t`pull the new image and recreate the container`
@@ -2169,8 +2172,8 @@ function UpdatesSection() {
       </Title>
       <SettingsHelp mb="md">
         <Trans>
-          Checks GitHub daily for a new release and shows a banner and a notification when there
-          is one. Updating is manual: {howToUpdate}.
+          Checks GitHub daily for a new release and shows a card in the sidebar and a notification
+          when there is one. Updating is manual: {howToUpdate}.
         </Trans>
       </SettingsHelp>
       <Stack gap="sm">
@@ -2213,6 +2216,21 @@ function UpdatesSection() {
             <Trans>Check now</Trans>
           </Button>
         </Group>
+        {isSkipped && (
+          <Group gap={6}>
+            <Text size="xs" c="dimmed">
+              <Trans>Skipped {latestVersion}</Trans>
+            </Text>
+            <UnstyledButton
+              fz="xs"
+              c="var(--brand-fg)"
+              td="underline"
+              onClick={() => setSkippedVersion(null)}
+            >
+              <Trans>Show again</Trans>
+            </UnstyledButton>
+          </Group>
+        )}
       </Stack>
     </Panel>
   )
