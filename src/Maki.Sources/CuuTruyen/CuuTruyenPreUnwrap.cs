@@ -12,7 +12,7 @@ internal static class CuuTruyenPreUnwrap
 {
     private static readonly HtmlParser Parser = new();
 
-    public static async Task<string> UnwrapAsync(string body, CancellationToken ct = default)
+    public static async Task<string> UnwrapAsync(string body, string? url = null, CancellationToken ct = default)
     {
         var trimmed = body.TrimStart();
         if (!trimmed.StartsWith('<'))
@@ -21,6 +21,16 @@ internal static class CuuTruyenPreUnwrap
         }
 
         var doc = await Parser.ParseDocumentAsync(body, ct);
-        return doc.QuerySelector("pre")?.TextContent ?? body;
+        var pre = doc.QuerySelector("pre")?.TextContent;
+        if (pre is not null)
+        {
+            return pre;
+        }
+
+        // An HTML body with no <pre> is neither a direct JSON response nor FlareSolverr's usual
+        // wrapper. Returning it as-is would fail later as a cryptic JsonException from the caller.
+        var snippet = trimmed.Length > 100 ? trimmed[..100] : trimmed;
+        throw new InvalidOperationException(
+            $"CuuTruyen response for {url ?? "(unknown URL)"} looks like HTML with no <pre> to unwrap: \"{snippet}\"");
     }
 }

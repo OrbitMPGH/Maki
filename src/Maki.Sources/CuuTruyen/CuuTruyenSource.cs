@@ -19,7 +19,7 @@ namespace Maki.Sources.CuuTruyen;
 /// through a named <see cref="IHttpClientFactory"/> client instead.
 /// <para>
 /// Covers and page images are served from <c>storage-ct.lrclib.net</c>/<c>storage-ct-riften.site</c>
-/// in the API's own JSON, but neither host answers a request — the site's own JavaScript swaps them
+/// in the API's own JSON, but neither host answers a request. The site's own JavaScript swaps them
 /// for <c>storage-bravo.cuutruyen.net</c>/<c>storage-charlie.cuutruyen.net</c> before use, so every
 /// URL from the API is rewritten the same way here.
 /// </para>
@@ -126,7 +126,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
     }
 
     /// <summary>
-    /// No dedicated status field — Keiyoushi's rule reads it off the tag names instead: a "hoàn
+    /// No dedicated status field. Keiyoushi's rule reads it off the tag names instead: a "hoàn
     /// thành" tag means Completed, "tạm ngưng" means Hiatus, and no such tag (most series, including
     /// One Piece) reads Ongoing.
     /// </summary>
@@ -352,7 +352,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
     private async Task<JsonDocument> FetchJsonAsync(string url, CancellationToken ct)
     {
         var body = await fetcher.GetHtmlAsync(url, ct);
-        var unwrapped = await CuuTruyenPreUnwrap.UnwrapAsync(body, ct);
+        var unwrapped = await CuuTruyenPreUnwrap.UnwrapAsync(body, url, ct);
         return JsonDocument.Parse(unwrapped);
     }
 
