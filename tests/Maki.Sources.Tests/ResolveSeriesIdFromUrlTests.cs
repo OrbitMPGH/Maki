@@ -6,6 +6,7 @@ using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
 using Maki.Sources.FlameComics;
+using Maki.Sources.Toonily;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 
@@ -114,6 +115,21 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://toonily.com/serie/secret-class-38c3e37a/", "secret-class-38c3e37a")]
+    [InlineData("https://toonily.com/serie/secret-class-38c3e37a", "secret-class-38c3e37a")]
+    // Legacy URL shape; still 301s on the live site but must resolve from a stored link either way.
+    [InlineData("https://toonily.com/webtoon/secret-class-38c3e37a/", "secret-class-38c3e37a")]
+    // More than one segment after the marker names a chapter, not the series.
+    [InlineData("https://toonily.com/serie/secret-class-38c3e37a/chapter-242/", null)]
+    [InlineData("https://toonily.com/search/secret-class", null)]
+    [InlineData("https://example.com/serie/secret-class-38c3e37a/", null)]
+    public void Toonily(string url, string? expected)
+    {
+        ISource source = new ToonilySource(null!, null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

@@ -83,6 +83,7 @@ const SOURCE_ICONS: Record<string, string> = {
   mangapill: '/source-icons/mangapill.png',
   mangaplus: '/source-icons/mangaplus.ico',
   tcbscans: '/source-icons/tcbscans.png',
+  toonily: '/source-icons/toonily.png',
   topmanhua: '/source-icons/topmanhua.png',
   webtoons: '/source-icons/webtoons.ico',
   weebcentral: '/source-icons/weebcentral.ico',
