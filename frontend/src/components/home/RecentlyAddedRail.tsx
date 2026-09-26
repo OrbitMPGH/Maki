@@ -41,37 +41,39 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
         )}
         <div className="cover-scrim" />
 
-        <div className="cover-corner cover-corner-left">
-          <span
-            className="cover-badge cover-badge-unread"
-            data-tip={plural(newChapterCount, {
-              one: '# recent chapter file',
-              other: '# recent chapter files',
-            })}
-          >
-            +{newChapterCount}
-          </span>
-        </div>
-
-        {item.readChapterId != null && (
-          <div className="cover-corner cover-corner-right">
-            {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
-                imperatively and stops the outer card's navigation. */}
+        <div className="cover-corners">
+          <div className="cover-corner cover-corner-left">
             <span
-              className="cover-badge home-read-badge"
-              role="button"
-              tabIndex={0}
-              data-tip={t`Read next chapter`}
-              onClick={openReader}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') openReader(e)
-              }}
+              className="cover-badge cover-badge-unread"
+              data-tip={plural(newChapterCount, {
+                one: '# recent chapter file',
+                other: '# recent chapter files',
+              })}
             >
-              <IconBook size={11} />
-              <Trans>Read</Trans>
+              +{newChapterCount}
             </span>
           </div>
-        )}
+
+          {item.readChapterId != null && (
+            <div className="cover-corner cover-corner-right">
+              {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
+                  imperatively and stops the outer card's navigation. */}
+              <span
+                className="cover-badge home-read-badge"
+                role="button"
+                tabIndex={0}
+                data-tip={t`Read next chapter`}
+                onClick={openReader}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') openReader(e)
+                }}
+              >
+                <IconBook size={11} />
+                <Trans>Read</Trans>
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="cover-meta">
           <span className="cover-title" title={item.seriesTitle}>

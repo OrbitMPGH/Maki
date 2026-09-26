@@ -924,9 +924,13 @@ body {
 /* `.discover-rating` is exempt: it is the only badge on a catalogue poster's top-left and has
    nothing to collide with, and collapsing it to the 20px dot dropped its star (the svg is the
    flex item that shrinks) and left a bare number. Rail cards are exactly 150px, so every rail
-   lost the star while the grid kept it. */
+   lost the star while the grid kept it. The home rails' Read pill and anime chapter badge are
+   exempt for the same reason: nothing beside them to collide with, and at 20px the text spills
+   out of the dot. */
 @container (max-width: 150px) {
-  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating) {
+  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating):not(
+      .home-read-badge
+    ):not(.home-chapter-badge) {
     width: 20px;
     padding: 0;
     justify-content: center;

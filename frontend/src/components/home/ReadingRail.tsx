@@ -52,13 +52,15 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
         </span>
 
         {unreadChapters > 0 && (
-          <div className="cover-corner cover-corner-left">
-            <span
-              className="cover-badge cover-badge-unread"
-              data-tip={plural(unreadChapters, { one: '# unread', other: '# unread' })}
-            >
-              {unreadChapters}
-            </span>
+          <div className="cover-corners">
+            <div className="cover-corner cover-corner-left">
+              <span
+                className="cover-badge cover-badge-unread"
+                data-tip={plural(unreadChapters, { one: '# unread', other: '# unread' })}
+              >
+                {unreadChapters}
+              </span>
+            </div>
           </div>
         )}
 

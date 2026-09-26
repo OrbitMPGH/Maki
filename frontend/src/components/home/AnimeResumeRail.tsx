@@ -33,10 +33,12 @@ function AnimeResumeCard({ item }: { item: HomeAnimeResumeItem }) {
         )}
         <div className="cover-scrim" />
 
-        <div className="cover-corner cover-corner-left">
-          <span className="cover-badge" data-tip={item.animeTitle}>
-            {item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}
-          </span>
+        <div className="cover-corners">
+          <div className="cover-corner cover-corner-left">
+            <span className="cover-badge home-chapter-badge" data-tip={item.animeTitle}>
+              {item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}
+            </span>
+          </div>
         </div>
 
         <div className="cover-meta">
