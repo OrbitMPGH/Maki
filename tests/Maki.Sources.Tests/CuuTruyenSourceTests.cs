@@ -90,10 +90,12 @@ public class CuuTruyenSourceTests
         Assert.NotEmpty(numbered);
         Assert.Equal(numbered.OrderBy(c => c.Number), numbered);
 
-        // "Movie"/"Crossover" rows parse to a null Number and must carry a non-null Title (the
-        // rule that stops ChapterIdentity's by-title dedupe from losing them to a blank key).
+        // "Movie"/"Crossover" rows parse to a null Number and must carry a non-null Title, since
+        // Normalize and ChapterIdentity both tell unnumbered chapters apart by title.
         var specials = chapters.Where(c => c.Number is null).ToList();
-        Assert.NotEmpty(specials);
+        Assert.Equal(
+            ["49547", "49728", "67033"],
+            specials.Select(c => c.SourceChapterId).Order(StringComparer.Ordinal));
         Assert.All(specials, c => Assert.False(string.IsNullOrEmpty(c.Title)));
     }
 
@@ -280,3 +282,4 @@ public class CuuTruyenSourceTests
         Assert.Contains("https://cuutruyen.net/api/v2/mangas/2637", ex.Message);
     }
 }
+
