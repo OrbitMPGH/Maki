@@ -12,18 +12,25 @@ public class FakeHtmlFetcher(Dictionary<string, string> responsesByUrlSubstring)
     /// <summary>Every URL asked for, in order, so a test can assert on the requests themselves.</summary>
     public List<string> Requested { get; } = [];
 
-    public Task<string> GetHtmlAsync(string url, CancellationToken ct = default)
+    /// <summary>Every request in full (cookies and form body included), in order.</summary>
+    public List<HtmlFetchRequest> Requests { get; } = [];
+
+    public Task<string> GetHtmlAsync(string url, CancellationToken ct = default) =>
+        FetchAsync(new HtmlFetchRequest(url), ct);
+
+    public Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default)
     {
-        Requested.Add(url);
+        Requested.Add(request.Url);
+        Requests.Add(request);
 
         foreach (var (substring, body) in responsesByUrlSubstring)
         {
-            if (url.Contains(substring, StringComparison.OrdinalIgnoreCase))
+            if (request.Url.Contains(substring, StringComparison.OrdinalIgnoreCase))
             {
                 return Task.FromResult(body);
             }
         }
 
-        throw new HttpRequestException($"No fixture for {url}");
+        throw new HttpRequestException($"No fixture for {request.Url}");
     }
 }
