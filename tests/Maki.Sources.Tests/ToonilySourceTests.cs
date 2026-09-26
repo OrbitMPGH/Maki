@@ -182,10 +182,10 @@ public class ToonilySourceTests
     }
 
     [Fact]
-    public async Task ListChapters_gives_unnumbered_entries_distinct_titles_before_the_alias_collapse()
+    public async Task ListChapters_keeps_unnumbered_entries_apart_by_title()
     {
         // Two unparseable chapter names with no volume, so ChapterNumberParser gives both a null
-        // Number: their only remaining identity before Normalize collapses them is Title.
+        // Number: Title is their only remaining identity.
         const string html = """
             <html><body>
             <ul class="main version-chap no-volumn">
@@ -204,11 +204,7 @@ public class ToonilySourceTests
 
         var chapters = await source.ListChaptersAsync("secret-class-38c3e37a");
 
-        // Normalize dedupes by (Number, Volume, Language) alone, so these two unnumbered entries
-        // collapse into one row today (a known Core limitation) — what this asserts is that
-        // whichever one survives carries a real Title rather than null.
-        var survivor = Assert.Single(chapters);
-        Assert.True(survivor.Title is "One-Shot Extra" or "Special Omake");
+        Assert.Equal(["One-Shot Extra", "Special Omake"], chapters.Select(c => c.Title));
     }
 
     /// <summary>Throws what HttpClient throws when its Timeout fires, for every POST.</summary>
