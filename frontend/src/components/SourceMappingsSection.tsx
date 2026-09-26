@@ -103,6 +103,7 @@ const SOURCE_ICONS: Record<string, string> = {
   manhwa18net: '/source-icons/manhwa18net.ico',
   cuutruyen: '/source-icons/cuutruyen.ico',
   mangaworld: '/source-icons/mangaworld.png',
+  naverwebtoon: '/source-icons/naverwebtoon.ico',
 }
 
 export function SourceMappingsSection({

@@ -30,6 +30,7 @@ using Maki.Sources.FlameComics;
 using Maki.Sources.MangaLivre;
 using Maki.Sources.ManhwaWeb;
 using Maki.Sources.Manhwa18Net;
+using Maki.Sources.NaverWebtoon;
 using Maki.Sources.SenManga;
 using Maki.Sources.Shinigami;
 using Maki.Sources.MangaDex;
@@ -482,6 +483,19 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLivreLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Naver Webtoon — official Korean platform, plain JSON API for search/detail/chapters,
+    // plain HTML for pages. The chapter list pages 20 at a time, so a long-running title costs
+    // dozens of requests; matches the Webtoons numbers.
+    var naverWebtoonLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(NaverWebtoonSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://comic.naver.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(naverWebtoonLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     // Atsumaru — JSON API behind the site's own origin (/api), no challenge to solve. Its
     // search index is Typesense and answers straight from this client too.
     var atsumaruLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
@@ -633,6 +647,7 @@ try
     builder.Services.AddSingleton<ISource, Manhwa18NetSource>();
     builder.Services.AddSingleton<ISource, CuuTruyenSource>();
     builder.Services.AddSingleton<ISource, MangaWorldSource>();
+    builder.Services.AddSingleton<ISource, NaverWebtoonSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
