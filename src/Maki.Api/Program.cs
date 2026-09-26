@@ -40,6 +40,7 @@ using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using System.Net;
 using Maki.Sources.TopManhua;
+using Maki.Sources.MangaWorld;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -533,7 +534,8 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
-    
+    builder.Services.AddSingleton<ISource, MangaWorldSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();

@@ -5,6 +5,7 @@ using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
+using Maki.Sources.MangaWorld;
 using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
@@ -114,6 +115,21 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://www.mangaworld.mx/manga/1708/one-piece", "1708/one-piece")]
+    [InlineData("https://www.mangaworld.mx/manga/1708/one-piece/", "1708/one-piece")]
+    [InlineData("https://mangaworld.mx/manga/1708/one-piece", "1708/one-piece")]
+    // The numeric id alone would need GetSeriesAsync to follow a redirect to learn the slug; not done.
+    [InlineData("https://www.mangaworld.mx/manga/1708", null)]
+    [InlineData("https://www.mangaworld.mx/manga/1708/one-piece/read/6ab6b1f9c1f8362c329080c7", null)]
+    [InlineData("https://www.mangaworld.mx/archive?keyword=one+piece", null)]
+    [InlineData("https://example.com/manga/1708/one-piece", null)]
+    public void MangaWorld(string url, string? expected)
+    {
+        ISource source = new MangaWorldSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
