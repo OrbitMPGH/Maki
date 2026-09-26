@@ -10314,8 +10314,13 @@ msgstr "Sources de scraping, comportement des téléchargements et chemin torren
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder"
-msgstr "scrapers, MangaDex, MangaFire, webtoons, Asura, TCB, Flame Comics, ordre des sources, désactiver une source, mise en correspondance automatique, réordonner"
+#~ msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder"
+#~ msgstr "scrapers, MangaDex, MangaFire, webtoons, Asura, TCB, Flame Comics, ordre des sources, désactiver une source, mise en correspondance automatique, réordonner"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
