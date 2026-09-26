@@ -8,6 +8,7 @@ using Maki.Sources.MangaPill;
 using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
+using Maki.Sources.CuuTruyen;
 
 namespace Maki.Sources.Tests;
 
@@ -114,6 +115,19 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://cuutruyen.net/mangas/2637", "2637")]
+    [InlineData("https://cuutruyen.net/mangas/2637/", "2637")]
+    [InlineData("https://cuutruyen.net/mangas/2637/chapters/87003", null)]
+    [InlineData("https://cuutruyen.net/mangas/not-a-number", null)]
+    [InlineData("https://cuutruyen.net/", null)]
+    [InlineData("https://example.com/mangas/2637", null)]
+    public void CuuTruyen(string url, string? expected)
+    {
+        ISource source = new CuuTruyenSource(null!, Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
