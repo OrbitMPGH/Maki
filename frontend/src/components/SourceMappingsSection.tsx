@@ -107,6 +107,7 @@ const SOURCE_ICONS: Record<string, string> = {
   manhuagui: '/source-icons/manhuagui.ico',
   mangatube: '/source-icons/mangatube.ico',
   mangadenizi: '/source-icons/mangadenizi.ico',
+  taiyo: '/source-icons/taiyo.png',
 }
 
 export function SourceMappingsSection({

@@ -46,6 +46,7 @@ using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using Maki.Sources.GigaViewer;
 using Maki.Sources.Olympus;
+using Maki.Sources.Taiyo;
 using System.Net;
 using Maki.Sources.TopManhua;
 using Maki.Sources.MangaLib;
@@ -619,6 +620,17 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Taiyo: no BaseAddress, since the source calls three hosts with absolute URLs
+    // (taiyo.moe for tRPC, meilisearch.taiyo.moe for search, cdn.taiyo.moe for images).
+    var taiyoLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(TaiyoSource.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     builder.Services.AddSingleton<SettingsService>();
     builder.Services.AddSingleton<IAppSettings>(sp => sp.GetRequiredService<SettingsService>());
 
@@ -698,6 +710,7 @@ try
     builder.Services.AddSingleton<ISource, ManhuaguiSource>();
     builder.Services.AddSingleton<ISource, MangaTubeSource>();
     builder.Services.AddSingleton<ISource, MangaDeniziSource>();
+    builder.Services.AddSingleton<ISource, TaiyoSource>();
 
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
