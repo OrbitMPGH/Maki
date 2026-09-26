@@ -29,7 +29,7 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
-    [GeneratedRegex(@"^Volume\s+(\d+)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^Volume\s+(\d+)(?!\d|\.\d)", RegexOptions.IgnoreCase)]
     private static partial Regex VolumeHeaderPattern();
 
     public string? ResolveSeriesIdFromUrl(Uri url)
@@ -121,8 +121,8 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
         {
             if (tagging.TryGetProperty("header", out var headerEl) && headerEl.ValueKind == JsonValueKind.String)
             {
-                // A header applies to every chapter after it until the next one; "Extra" (or
-                // any other non-"Volume N" header) resets the running volume to null.
+                // A header applies to every chapter after it until the next one; "Extra", "Volume 10.5"
+                // or any other header that isn't a whole "Volume N" resets the running volume to null.
                 var match = VolumeHeaderPattern().Match(headerEl.GetString() ?? string.Empty);
                 volume = match.Success ? int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) : null;
                 continue;

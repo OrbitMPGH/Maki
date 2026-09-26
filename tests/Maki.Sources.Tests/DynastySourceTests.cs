@@ -102,6 +102,21 @@ public class DynastySourceTests
     }
 
     [Fact]
+    public async Task ListChapters_does_not_read_a_decimal_volume_header_as_the_whole_volume()
+    {
+        var chapters = await WithLongSeries().ListChaptersAsync("yuru_yuri");
+
+        // Intermission.17 to .24 sit under a "Volume 10.5" header, right after volume 10's "Bonus Track 10".
+        var headers = Enumerable.Range(17, 8).Select(n => $"Intermission.{n}:").ToList();
+        var intermissions = chapters.Where(c => headers.Any(h => c.NumberRaw!.StartsWith(h, StringComparison.Ordinal))).ToList();
+        Assert.Equal(8, intermissions.Count);
+        Assert.All(intermissions, c => Assert.Null(c.Volume));
+        Assert.Equal(
+            "yuru_yuri_bonus_track_10_another_business_trip_to_comic_rex",
+            Assert.Single(chapters, c => c.Number is null && c.Volume == 10).SourceChapterId);
+    }
+
+    [Fact]
     public async Task ListChapters_gives_colon_less_specials_in_different_volumes_distinct_titles()
     {
         // ChapterIdentity.Matches identifies a null-number chapter by (IsOneShot, Language,
