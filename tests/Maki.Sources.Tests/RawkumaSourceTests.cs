@@ -159,6 +159,43 @@ public class RawkumaSourceTests
         });
     }
 
+    [Theory]
+    [InlineData(null, "https://rawkuma.net")]
+    [InlineData("https://mirror.example", "https://mirror.example")]
+    public async Task Search_rebases_canonical_urls_onto_the_configured_base_url(string? baseUrlOverride, string expectedHost)
+    {
+        var source = new RawkumaSource(new FakeHtmlFetcher(new()
+        {
+            ["/wp-json/wp/v2/manga?search="] = FakeHttpClientFactory.Fixture("rawkuma-search.json")
+        }), baseUrlOverride);
+
+        var results = await source.SearchAsync("One Piece");
+
+        var first = Assert.Single(results, r => r.SourceSeriesId == "one-piece");
+        Assert.StartsWith($"{expectedHost}/", first.Url);
+        Assert.StartsWith($"{expectedHost}/", first.CoverUrl);
+    }
+
+    [Fact]
+    public async Task ListChapters_rebases_the_chapter_url_but_GetPages_leaves_the_image_host_alone()
+    {
+        var source = new RawkumaSource(new FakeHtmlFetcher(new()
+        {
+            ["/wp-json/wp/v2/manga?slug="] = FakeHttpClientFactory.Fixture("rawkuma-manga.json"),
+            ["action=chapter_list"] = FakeHttpClientFactory.Fixture("rawkuma-chapters.html"),
+            ["/manga/one-piece/chapter-1193.407873/"] = FakeHttpClientFactory.Fixture("rawkuma-chapter.html")
+        }), "https://mirror.example");
+
+        var chapters = await source.ListChaptersAsync("one-piece");
+        var newest = chapters[^1];
+        Assert.StartsWith("https://mirror.example/", newest.Url);
+
+        var pages = await source.GetPagesAsync(newest);
+
+        Assert.Equal(17, pages.Pages.Count);
+        Assert.All(pages.Pages, p => Assert.StartsWith("https://kuma.kyut.dev/", p.Url));
+    }
+
     [Fact]
     public async Task GetPages_throws_locked_when_no_images_are_present()
     {

@@ -16,12 +16,20 @@ namespace Maki.Sources.Rawkuma;
 /// numeric post id the chapter-list endpoint needs, since the slug alone does not carry it.
 /// Domain-rotating: <see cref="BaseUrl"/> honours <c>MAKI_SOURCE_RAWKUMA_BASEURL</c>.
 /// </summary>
-public class RawkumaSource(IHtmlFetcher fetcher) : ISource
+public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null) : ISource
 {
+    private const string DefaultBaseUrl = "https://rawkuma.net";
+
     private static readonly HtmlParser Parser = new();
 
+    /// <summary>
+    /// <paramref name="baseUrlOverride"/> takes precedence over the env var; it exists so a unit test
+    /// can point at a mirror without touching process environment variables. DI never supplies it
+    /// (nothing registers a bare <c>string</c>), so the constructor falls back to its default.
+    /// </summary>
     private readonly string _baseUrl =
-        Environment.GetEnvironmentVariable("MAKI_SOURCE_RAWKUMA_BASEURL")?.TrimEnd('/') ?? "https://rawkuma.net";
+        (baseUrlOverride ?? Environment.GetEnvironmentVariable("MAKI_SOURCE_RAWKUMA_BASEURL"))?.TrimEnd('/')
+            ?? DefaultBaseUrl;
 
     public string Name => "rawkuma";
     public string DisplayName => "Rawkuma";
@@ -70,8 +78,8 @@ public class RawkumaSource(IHtmlFetcher fetcher) : ISource
             }
 
             var name = WebUtility.HtmlDecode(TitleRendered(item) ?? slug);
-            var link = GetString(item, "link") ?? $"{BaseUrl}/manga/{slug}/";
-            var cover = MetaValue(item, "thumbnail");
+            var link = Rebase(GetString(item, "link")) ?? $"{BaseUrl}/manga/{slug}/";
+            var cover = Rebase(MetaValue(item, "thumbnail"));
 
             results.Add(new SourceSeriesResult(slug, name, link, cover, ExternalIds: SearchExternalIds(item)));
         }
@@ -84,8 +92,8 @@ public class RawkumaSource(IHtmlFetcher fetcher) : ISource
         var item = await GetSeriesItemAsync(sourceSeriesId, ct);
 
         var name = WebUtility.HtmlDecode(TitleRendered(item) ?? sourceSeriesId);
-        var link = GetString(item, "link") ?? $"{BaseUrl}/manga/{sourceSeriesId}/";
-        var cover = MetaValue(item, "thumbnail");
+        var link = Rebase(GetString(item, "link")) ?? $"{BaseUrl}/manga/{sourceSeriesId}/";
+        var cover = Rebase(MetaValue(item, "thumbnail"));
         var description = item.TryGetProperty("content", out var content) &&
                            content.TryGetProperty("rendered", out var rendered) &&
                            rendered.ValueKind == JsonValueKind.String
@@ -108,7 +116,7 @@ public class RawkumaSource(IHtmlFetcher fetcher) : ISource
         var chapters = new List<SourceChapter>();
         foreach (var row in doc.QuerySelectorAll("div[data-chapter-number]"))
         {
-            var href = row.QuerySelector("a[href]")?.GetAttribute("href");
+            var href = Rebase(row.QuerySelector("a[href]")?.GetAttribute("href"));
             var chapterId = LastPathSegment(href);
             if (chapterId is null)
             {
@@ -140,10 +148,11 @@ public class RawkumaSource(IHtmlFetcher fetcher) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var url = chapter.Url ?? $"{BaseUrl}/manga/{chapter.SourceSeriesId}/{chapter.SourceChapterId}/";
+        var url = Rebase(chapter.Url) ?? $"{BaseUrl}/manga/{chapter.SourceSeriesId}/{chapter.SourceChapterId}/";
         var html = await fetcher.GetHtmlAsync(url, ct);
         var doc = await Parser.ParseDocumentAsync(html, ct);
 
+        // Page images live on kuma.kyut.dev, never on the rotating BaseUrl; leave their host alone.
         var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
         var pages = doc.QuerySelectorAll("section[data-image-data] > img[src]")
             .Select(img => img.GetAttribute("src"))
@@ -255,6 +264,33 @@ public class RawkumaSource(IHtmlFetcher fetcher) : ISource
 
         return null;
     }
+
+    /// <summary>
+    /// WordPress always serialises the site's canonical host in <c>link</c>, cover thumbnails and
+    /// chapter hrefs, even when the configured <see cref="BaseUrl"/> points at a mirror. Rewrite a
+    /// canonical-host URL onto the configured host so a mirror override actually takes effect; a URL
+    /// on any other host (page images on kuma.kyut.dev) passes through untouched.
+    /// </summary>
+    private string? Rebase(string? url)
+    {
+        if (string.IsNullOrEmpty(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return url;
+        }
+
+        if (!IsDefaultHost(uri.Host) ||
+            !Uri.TryCreate(BaseUrl, UriKind.Absolute, out var baseUri) ||
+            IsDefaultHost(baseUri.Host))
+        {
+            return url;
+        }
+
+        return $"{BaseUrl}{uri.PathAndQuery}{uri.Fragment}";
+    }
+
+    private static bool IsDefaultHost(string host) =>
+        host.Equals("rawkuma.net", StringComparison.OrdinalIgnoreCase) ||
+        host.Equals("www.rawkuma.net", StringComparison.OrdinalIgnoreCase);
 
     private static string? LastPathSegment(string? href)
     {
