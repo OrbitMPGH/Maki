@@ -93,7 +93,7 @@ public class GigaViewerSourceTests
     {
         // The two recorded pagination pages (offset 0 and 150) together carry 81 of
         // SPY×FAMILY's 181 episodes; only 14 are free, and 10 of those are unnumbered
-        // specials that Normalize collapses to one surviving row.
+        // specials that Normalize keeps apart by title.
         var factory = new FakeHttpClientFactory(new()
         {
             ["episode/10834108156648240735"] = FakeHttpClientFactory.Fixture("gigaviewer-episode.html"),
@@ -103,17 +103,19 @@ public class GigaViewerSourceTests
 
         var chapters = await new ShonenJumpPlusSource(factory).ListChaptersAsync("10834108156648240735");
 
-        Assert.Equal(5, chapters.Count);
+        Assert.Equal(14, chapters.Count);
         Assert.Contains(chapters, c => c.Number == 1m);
         Assert.Contains(chapters, c => c.Number == 2m);
         Assert.Contains(chapters, c => c.Number == 140m);
         Assert.Contains(chapters, c => c.Number == 139.3m);
-        Assert.Single(chapters, c => c.Number is null);
+        var specials = chapters.Where(c => c.Number is null).ToList();
+        Assert.Equal(10, specials.Count);
+        Assert.Equal(10, specials.Select(c => c.Title).Distinct().Count());
         Assert.All(chapters, c => Assert.Equal("ja", c.Language));
         Assert.All(chapters, c => Assert.Equal("shonenjumpplus", c.SourceName));
         // Ascending by number, nulls first.
         Assert.Null(chapters[0].Number);
-        Assert.Equal(1m, chapters[1].Number);
+        Assert.Equal(1m, chapters[10].Number);
     }
 
     [Fact]
