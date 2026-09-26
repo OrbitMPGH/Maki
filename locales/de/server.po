@@ -46,8 +46,9 @@ msgstr "Die Bewertung muss eine der folgenden sein: {ratings}"
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Too many incorrect password attempts. Try again later.
+#, fuzzy
 msgid "error.account.lockedOut"
-msgstr ""
+msgstr "Zu viele falsche Passwortversuche. Versuch es später erneut."
 
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Name is required
@@ -83,20 +84,23 @@ msgstr "Die Zwei-Faktor-Authentifizierung ist bereits aktiviert"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
+#, fuzzy
 msgid "error.animeResume.notEnabled"
-msgstr ""
+msgstr "Aktiviere die Anime-Geschmackssignale, um diese Funktion zu nutzen."
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Series not found
+#, fuzzy
 msgid "error.animeResume.seriesNotFound"
-msgstr ""
+msgstr "Serie nicht gefunden"
 
 #. The reader's anime list no longer says where this series' anime ends, usually because a sync
 #. changed it after the page loaded.
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Could not work out where the anime ends for this series
+#, fuzzy
 msgid "error.animeResume.unavailable"
-msgstr ""
+msgstr "Das Ende des Anime zu dieser Serie konnte nicht ermittelt werden"
 
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: Anime taste signals are switched off on this server
@@ -413,47 +417,55 @@ msgstr "Nicht unterstützter Feedback-Status"
 
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #. English: Unknown tracker
+#, fuzzy
 msgid "error.importLists.unknownService"
-msgstr ""
+msgstr "Unbekannter Tracker"
 
 #. The root folder picked for an import list is not one this user has been granted.
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #. English: That root folder is not available to you
+#, fuzzy
 msgid "error.importLists.rootFolderNotVisible"
-msgstr ""
+msgstr "Dieser Stammordner ist für dich nicht verfügbar"
 
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #. English: Pick at least one list status: Reading, Plan to read or Completed
+#, fuzzy
 msgid "error.importLists.statusesInvalid"
-msgstr ""
+msgstr "Wähle mindestens einen Listenstatus aus: Reading, Plan to read oder Completed"
 
 #. {max} is the upper limit, currently 100.
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #. English: Series per run must be between 1 and {max}
+#, fuzzy
 msgid "error.importLists.maxPerRunInvalid"
-msgstr ""
+msgstr "Serien pro Lauf müssen zwischen 1 und {max} liegen"
 
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #. English: Unknown monitoring mode
+#, fuzzy
 msgid "error.importLists.monitorModeInvalid"
-msgstr ""
+msgstr "Unbekannter Überwachungsmodus"
 
 #. An admin switched import lists off for the whole instance.
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #. English: Import lists are turned off on this server
+#, fuzzy
 msgid "error.importLists.disabled"
-msgstr ""
+msgstr "Listenimporte sind auf diesem Server deaktiviert"
 
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #. English: An import list run is already in progress
+#, fuzzy
 msgid "error.importLists.running"
-msgstr ""
+msgstr "Ein Listenimport läuft bereits"
 
 #. {allowed} is a comma-separated list of the accepted values, which are code and never translated.
 #: src/Maki.Api/Controllers/InboxController.cs
 #. English: seriesDefault must be one of: {allowed}
+#, fuzzy
 msgid "error.inbox.unknownSeriesDefault"
-msgstr ""
+msgstr "seriesDefault muss einem dieser Werte entsprechen: {allowed}"
 
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
@@ -500,7 +512,7 @@ msgstr "Du kannst höchstens {max} Rails speichern"
 #. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr ""
+msgstr "'{title}' ist bereits mit heruntergeladenen Dateien in der Bibliothek. Lösche sie zuerst, wenn du sie von Grund auf neu importieren möchtest."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -525,7 +537,7 @@ msgstr "Keine Elemente zum Importieren"
 #. English: Cannot rename: '{name}' already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr ""
+msgstr "Umbenennen nicht möglich: '{name}' ist im Stammordner bereits vorhanden"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -536,8 +548,9 @@ msgstr "Zu viele Elemente in einer Anfrage ({count}); importiere sie in Gruppen 
 
 #: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
 #. English: Set a config key or at least one notification URL.
+#, fuzzy
 msgid "error.notifications.appriseTarget"
-msgstr ""
+msgstr "Lege einen Konfigurationsschlüssel oder mindestens eine Benachrichtigungs-URL fest."
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Notification delivery failed (check URL and any token)
@@ -549,8 +562,9 @@ msgstr "Zustellung der Benachrichtigung fehlgeschlagen (URL und Token prüfen)"
 #. {hasDetail} is "yes" or "no"; {detail} is the service's own error text, untranslated.
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: {provider} returned {status}{hasDetail, select, yes {: {detail}} other {}}
+#, fuzzy
 msgid "error.notifications.deliveryRejected"
-msgstr ""
+msgstr "{provider} meldet den Status {status}{hasDetail, select, yes {: {detail}} other {}}"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Discord webhook URL is required
@@ -561,26 +575,30 @@ msgstr "Discord-Webhook-URL ist erforderlich"
 #. {field} is the config field's key, e.g. botToken.
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: {field} must be true or false
+#, fuzzy
 msgid "error.notifications.fieldMustBeBoolean"
-msgstr ""
+msgstr "{field} muss true oder false sein"
 
 #. {field} is the config field's key, e.g. priority.
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: {field} must be a whole number
+#, fuzzy
 msgid "error.notifications.fieldMustBeNumber"
-msgstr ""
+msgstr "{field} muss eine ganze Zahl sein"
 
 #. {field} is the config field's key, e.g. priority.
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: {field} must be between {min} and {max}
+#, fuzzy
 msgid "error.notifications.fieldOutOfRange"
-msgstr ""
+msgstr "{field} muss zwischen {min} und {max} liegen"
 
 #. {field} is the config field's key, e.g. botToken.
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: {field} is required
+#, fuzzy
 msgid "error.notifications.fieldRequired"
-msgstr ""
+msgstr "{field} ist erforderlich"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Name is required
@@ -590,8 +608,9 @@ msgstr "Name ist erforderlich"
 
 #: src/Maki.Core/Notifications/NotifiarrNotificationProvider.cs
 #. English: Channel ID must be a number
+#, fuzzy
 msgid "error.notifications.notifiarrChannelId"
-msgstr ""
+msgstr "Die Kanal-ID muss eine Zahl sein"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Unknown notification type
@@ -601,8 +620,9 @@ msgstr "Unbekannter Benachrichtigungstyp"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: One of the selected tags no longer exists
+#, fuzzy
 msgid "error.notifications.unknownTag"
-msgstr ""
+msgstr "Eines der ausgewählten Tags ist nicht mehr vorhanden"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: URL must be a full http:// or https:// address
@@ -672,13 +692,15 @@ msgstr "Der Status muss read, watched oder unread sein"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: The Kavita import failed. An administrator can see the details.
+#, fuzzy
 msgid "error.reader.kavitaImportFailed"
-msgstr ""
+msgstr "Der Kavita-Import ist fehlgeschlagen. Ein Administrator kann die Details einsehen."
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Only the user bound to Kavita or an administrator can run the Kavita import
+#, fuzzy
 msgid "error.reader.kavitaImportForbidden"
-msgstr ""
+msgstr "Nur der mit Kavita verbundene Benutzer oder ein Administrator kann den Kavita-Import ausführen"
 
 #. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
 #: src/Maki.Api/Services/KavitaReadImportService.cs
@@ -1200,8 +1222,9 @@ msgstr "{service}-URL muss eine vollständige Adresse mit http:// oder https:// 
 #. {entry} is the value the admin typed into the trusted proxies list.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: "{entry}" is not an IP address or CIDR network
+#, fuzzy
 msgid "error.settings.trustedProxyInvalid"
-msgstr ""
+msgstr "„{entry}“ ist keine IP-Adresse und kein CIDR-Netzwerk"
 
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Series already has a mapping for this source
@@ -1309,8 +1332,9 @@ msgstr "„to“ darf nicht vor „from“ stehen"
 
 #: src/Maki.Api/Controllers/StatsController.cs
 #. English: Dates must be between 1900 and 9998
+#, fuzzy
 msgid "error.stats.dateOutOfRange"
-msgstr ""
+msgstr "Daten müssen zwischen 1900 und 9998 liegen"
 
 #: src/Maki.Api/Controllers/StatsController.cs
 #. English: utcOffsetMinutes out of range
@@ -1754,7 +1778,7 @@ msgstr "Sicherung enthält keine maki.db. Das ist keine Maki-Sicherung."
 #. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr ""
+msgstr "Das Backup stammt aus einer neueren Version (Migration '{migration}' ist diesem Build unbekannt). Aktualisiere Maki, bevor du es wiederherstellst."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
@@ -2027,15 +2051,17 @@ msgstr "{series}: Keine Quelle hat eine Übereinstimmung gefunden. Verknüpfe ei
 
 #: src/Maki.Api/Services/ImportListService.cs
 #. English: Import list finished
+#, fuzzy
 msgid "inbox.importList.finished.title"
-msgstr ""
+msgstr "Listenimport abgeschlossen"
 
 #. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
 #. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
 #: src/Maki.Api/Services/ImportListService.cs
 #. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
+#, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr ""
+msgstr "{tracker}: {added, plural, one {# hinzugefügt} other {# hinzugefügt}}{requested, plural, =0 {} one {, # angefragt} other {, # angefragt}}{skipped, plural, =0 {} one {, # übersprungen} other {, # übersprungen}}{errors, plural, =0 {} one {, # Fehler} other {, # Fehler}}"
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
@@ -2404,14 +2430,16 @@ msgstr "Der Torrent ist in qBittorrent nie erschienen"
 #. Label before a series title in an outbound notification, e.g. "Series: Naruto".
 #: src/Maki.Api/Services/NotificationService.cs
 #. English: Series
+#, fuzzy
 msgid "notify.label.series"
-msgstr ""
+msgstr "Serie"
 
 #. Label before a chapter number in an outbound notification, e.g. "Chapter: 12".
 #: src/Maki.Api/Services/NotificationService.cs
 #. English: Chapter
+#, fuzzy
 msgid "notify.label.chapter"
-msgstr ""
+msgstr "Kapitel"
 
 #. Sent outward to Discord or a webhook, whose recipient is a channel rather than a person, so it
 #. renders in the instance's own language rather than anyone's preference.
@@ -2532,66 +2560,77 @@ msgstr "{folder} in die Bibliothek importiert"
 
 #: src/Maki.Api/Services/SeriesCreationService.cs
 #. English: Series added
+#, fuzzy
 msgid "notify.series.added.title"
-msgstr ""
+msgstr "Serie hinzugefügt"
 
 #. {hasRequester} is "yes" when the add came from approving somebody's request, and {user} is their
 #. display name.
 #: src/Maki.Api/Services/SeriesCreationService.cs
 #. English: {series} was added to the library{hasRequester, select, yes {. Requested by {user}} other {}}
+#, fuzzy
 msgid "notify.series.added.body"
-msgstr ""
+msgstr "{series} wurde zur Bibliothek hinzugefügt{hasRequester, select, yes {. Angefragt von {user}} other {}}"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series removed
+#, fuzzy
 msgid "notify.series.removed.title"
-msgstr ""
+msgstr "Serie entfernt"
 
 #. {filesDeleted} is "yes" when the series folder was deleted from disk along with it.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: {series} was removed from the library{filesDeleted, select, yes {, files deleted} other {, files kept on disk}}
+#, fuzzy
 msgid "notify.series.removed.body"
-msgstr ""
+msgstr "{series} wurde aus der Bibliothek entfernt{filesDeleted, select, yes {, Dateien wurden gelöscht} other {, Dateien bleiben auf der Festplatte}}"
 
 #. Stored as the Note of a series request an import list files for a user who cannot add series.
 #. Rendered once in the instance default language, since admins read it on the Requests page.
 #. {tracker} is a site name and is not translated.
 #: src/Maki.Api/Services/ImportListService.cs
 #. English: Imported from {tracker} list
+#, fuzzy
 msgid "notify.importList.requestNote"
-msgstr ""
+msgstr "Aus der {tracker}-Liste importiert"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: New request
+#, fuzzy
 msgid "notify.request.submitted.title"
-msgstr ""
+msgstr "Neue Anfrage"
 
 #. {range} is "all", "from", "upTo" or "between"; {start} and {end} are chapter numbers.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {user} requested {series}{range, select, from {, chapter {start} onwards} upTo {, up to chapter {end}} between {, chapters {start} to {end}} other {}}
+#, fuzzy
 msgid "notify.request.submitted.body"
-msgstr ""
+msgstr "{user} hat {series} angefragt{range, select, from {, ab Kapitel {start}} upTo {, bis Kapitel {end}} between {, Kapitel {start} bis {end}} other {}}"
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: Request resolved
+#, fuzzy
 msgid "notify.request.resolved.title"
-msgstr ""
+msgstr "Anfrage erledigt"
 
 #. {outcome} is "approved" or "rejected". {user} is who made the request.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: {outcome, select, approved {Approved} other {Declined}}: {series}, requested by {user}
+#, fuzzy
 msgid "notify.request.resolved.body"
-msgstr ""
+msgstr "{outcome, select, approved {Genehmigt} other {Abgelehnt}}: {series}, angefragt von {user}"
 
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: No source matched
+#, fuzzy
 msgid "notify.sourceMatch.none.title"
-msgstr ""
+msgstr "Keine Quelle gefunden"
 
 #: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
 #. English: No source matched {series}. Link one by hand from the series page.
+#, fuzzy
 msgid "notify.sourceMatch.none.body"
-msgstr ""
+msgstr "Keine Quelle für {series} gefunden. Verknüpfe manuell eine auf der Serienseite."
 
 #. The one outbound message with a person behind it: an admin pressed Test and is watching for it,
 #. so it renders in their language rather than the instance's. {name} is what they called the

@@ -810,18 +810,6 @@ msgstr "{shownCount} of {totalSeriesShown} series shown."
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "{sourceDisplayName} enabled"
-#~ msgstr "{sourceDisplayName} enabled"
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "{sourceDisplayName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
-#~ msgstr "{sourceDisplayName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "{sourceDisplayName} publishes one language per series, so there is nothing to filter."
-#~ msgstr "{sourceDisplayName} publishes one language per series, so there is nothing to filter."
-
 #: src/pages/HealthPage.tsx
 msgid "{sourceName} · priority {priority}"
 msgstr "{sourceName} · priority {priority}"
@@ -4006,10 +3994,6 @@ msgstr "Every source that isn't linked yet is searched again for each series, wh
 msgid "Every wanted chapter is already on disk"
 msgstr "Every wanted chapter is already on disk"
 
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Every wanted chapter is already on disk or queued"
-#~ msgstr "Every wanted chapter is already on disk or queued"
-
 #: src/components/settings/ProgressSection.tsx
 msgid "Every week"
 msgstr "Every week"
@@ -5540,10 +5524,6 @@ msgstr "Linked"
 #: src/components/LinkChaptersModal.tsx
 msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "Linked {chapterPhrase} to {fileName}"
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "Linked {label}"
-#~ msgstr "Linked {label}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Linked {name}"
