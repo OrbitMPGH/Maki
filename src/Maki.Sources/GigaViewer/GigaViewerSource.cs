@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
+using Maki.Core.Images;
 using Maki.Core.Sources;
 
 namespace Maki.Sources.GigaViewer;
@@ -332,6 +333,6 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
         using var response = await ImageClient.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         var bytes = await response.Content.ReadAsByteArrayAsync(ct);
-        return GigaViewerDescrambler.Descramble(bytes);
+        return await ImageWorkGate.RunAsync(() => Task.FromResult(GigaViewerDescrambler.Descramble(bytes)), ct);
     }
 }
