@@ -73,15 +73,14 @@ public class DynastySourceTests
     }
 
     [Fact]
-    public async Task ListChapters_collapses_several_specials_in_one_volume_to_one_entry()
+    public async Task ListChapters_keeps_several_specials_in_one_volume()
     {
-        // Vol. 5 Special / Special 2 / Special 3 / Extra all parse to (Number: null, Volume: 5),
-        // so Normalize keeps only the first-listed one. Known v1 loss, not a bug.
         var chapters = await WithSeries().ListChaptersAsync("citrus");
 
-        var special = Assert.Single(chapters, c => c.Number is null && c.Volume == 5);
-        Assert.Equal("Vol. 5 Special: love triangle !?", special.NumberRaw);
-        Assert.Equal("love triangle !?", special.Title);
+        var specials = chapters.Where(c => c.Number is null && c.Volume == 5).ToList();
+        Assert.Equal(
+            new[] { "love triangle !?", "Vol. 5 Special 2", "Vol. 5 Special 3", "Vol. 5 Extra" },
+            specials.Select(c => c.Title));
     }
 
     [Fact]
@@ -89,10 +88,17 @@ public class DynastySourceTests
     {
         var chapters = await WithSeries().ListChaptersAsync("citrus");
 
-        var extra = Assert.Single(chapters, c => c.Number is null && c.Volume is null);
-        // "~ love panic ~ ..." is listed before "Harumin's Sleepover Party" under the "Extra"
-        // header; both key to (null, null, en), so Normalize keeps the first one.
-        Assert.Equal("~ love panic ~ (10th Anniversary of Yuri Hime)", extra.NumberRaw);
+        var extras = chapters.Where(c => c.Number is null && c.Volume is null).ToList();
+        Assert.Equal(
+            new[] { "~ love panic ~ (10th Anniversary of Yuri Hime)", "Harumin's Sleepover Party" },
+            extras.Select(c => c.NumberRaw));
+    }
+
+    [Fact]
+    public async Task ListChapters_keeps_every_permalinked_entry()
+    {
+        Assert.Equal(60, (await WithSeries().ListChaptersAsync("citrus")).Count);
+        Assert.Equal(250, (await WithLongSeries().ListChaptersAsync("yuru_yuri")).Count);
     }
 
     [Fact]
@@ -101,7 +107,7 @@ public class DynastySourceTests
         // ChapterIdentity.Matches identifies a null-number chapter by (IsOneShot, Language,
         // Title) alone, ignoring Volume. A null Title here would alias "Vol. 1 Special" and
         // "Vol. 2 Special" (and every other colon-less special) into the same chapter row on
-        // sync, well beyond the same-volume collapse Normalize is meant to do.
+        // sync.
         var chapters = await WithSeries().ListChaptersAsync("citrus");
 
         var vol1Special = Assert.Single(chapters, c => c.Number is null && c.Volume == 1);
