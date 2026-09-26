@@ -109,6 +109,7 @@ const SOURCE_ICONS: Record<string, string> = {
   mangadenizi: '/source-icons/mangadenizi.ico',
   taiyo: '/source-icons/taiyo.png',
   comicwalker: '/source-icons/comicwalker.png',
+  rawkuma: '/source-icons/rawkuma.png',
 }
 
 export function SourceMappingsSection({

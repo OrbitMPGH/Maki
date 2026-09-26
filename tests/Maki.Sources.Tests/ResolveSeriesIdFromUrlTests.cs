@@ -21,6 +21,7 @@ using Maki.Sources.CuuTruyen;
 using Maki.Sources.MangaWorld;
 using Maki.Sources.MangaTube;
 using Maki.Sources.ComicWalker;
+using Maki.Sources.Rawkuma;
 
 namespace Maki.Sources.Tests;
 
@@ -467,6 +468,21 @@ public class ResolveSeriesIdFromUrlTests
     public void ComicWalker(string url, string? expected)
     {
         ISource source = new ComicWalkerSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://rawkuma.net/manga/one-piece/", "one-piece")]
+    [InlineData("https://rawkuma.net/manga/one-piece", "one-piece")]
+    // A chapter URL names the series first, but two segments means it isn't a series page.
+    [InlineData("https://rawkuma.net/manga/one-piece/chapter-1193.407873/", null)]
+    [InlineData("https://rawkuma.net/library/", null)]
+    // rawkuma.com is a different, unrelated "Discover Raw Manga" site, not this reader.
+    [InlineData("https://rawkuma.com/manga/one-piece/", null)]
+    [InlineData("https://example.com/manga/one-piece/", null)]
+    public void Rawkuma(string url, string? expected)
+    {
+        ISource source = new RawkumaSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
