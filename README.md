@@ -50,7 +50,7 @@ built-in reader.
   - **MangaPlus** (official Shueisha)
   - **TCB Scans**
   - **Asura** (manhwa/manhua)
-  - **WEBTOON** (official webtoons.com, English, ORIGINALS and CANVAS)
+  - **WEBTOON** (official webtoons.com, en/id/th/es/fr/zh-Hant/de, ORIGINALS and CANVAS)
   - **Flame Comics** (manhwa/manhua)
   - **MangaKatana**
   - **MangaKakalot** (requires FlareSolverr)
