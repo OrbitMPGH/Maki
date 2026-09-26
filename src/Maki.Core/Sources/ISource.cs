@@ -56,6 +56,13 @@ public interface ISource
     string? ResolveSeriesIdFromUrl(Uri url) => null;
 
     /// <summary>
+    /// Async form of <see cref="ResolveSeriesIdFromUrl"/>, for a source whose URL does not carry
+    /// the id and has to be looked up (e.g. in a fetched catalog). Defaults to the sync method.
+    /// </summary>
+    ValueTask<string?> ResolveSeriesIdFromUrlAsync(Uri url, CancellationToken ct = default) =>
+        ValueTask.FromResult(ResolveSeriesIdFromUrl(url));
+
+    /// <summary>
     /// Extra hosts, beyond <see cref="BaseUrl"/>'s own domain, that this source serves cover images
     /// from. Matched as a domain suffix, so naming <c>pstatic.net</c> also permits
     /// <c>webtoon-phinf.pstatic.net</c>.

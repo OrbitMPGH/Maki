@@ -1,0 +1,130 @@
+{
+  "manga": {
+    "slug": "solo-leveling",
+    "title": "Solo Leveling"
+  },
+  "chapter": {
+    "id": 2361,
+    "slug": "000",
+    "number": 0
+  },
+  "pages": [
+    {
+      "id": 64443,
+      "page_number": 1,
+      "width": 1100,
+      "height": 1463,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/001-2ba4f9ed2e705c81f54313ee1497991558d0a611.webp",
+      "variant_hash": "2ba4f9ed2e705c81f54313ee1497991558d0a611",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 316064641
+      }
+    },
+    {
+      "id": 64444,
+      "page_number": 2,
+      "width": 720,
+      "height": 5000,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/002-8c97aa9dda8900fa868beda9c28de7cf0b3d0572.webp",
+      "variant_hash": "8c97aa9dda8900fa868beda9c28de7cf0b3d0572",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 888536135
+      }
+    },
+    {
+      "id": 64445,
+      "page_number": 3,
+      "width": 720,
+      "height": 4000,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/003-325e4ba536ada678d21f4f1f237b22deefe9d8f4.webp",
+      "variant_hash": "325e4ba536ada678d21f4f1f237b22deefe9d8f4",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 4141066591
+      }
+    },
+    {
+      "id": 64446,
+      "page_number": 4,
+      "width": 720,
+      "height": 6040,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/004-80f4318b8b8b0dcfb23307188c79fae51449426f.webp",
+      "variant_hash": "80f4318b8b8b0dcfb23307188c79fae51449426f",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 680857508
+      }
+    },
+    {
+      "id": 64447,
+      "page_number": 5,
+      "width": 720,
+      "height": 4412,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/005-8ddf2171789eb2fc3c7e09b74a58e1328e60b752.webp",
+      "variant_hash": "8ddf2171789eb2fc3c7e09b74a58e1328e60b752",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 1706408103
+      }
+    },
+    {
+      "id": 64448,
+      "page_number": 6,
+      "width": 720,
+      "height": 6652,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/006-f4f081658eb271a5bc9259d01c62f6e20ae83142.webp",
+      "variant_hash": "f4f081658eb271a5bc9259d01c62f6e20ae83142",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 4102378641
+      }
+    },
+    {
+      "id": 64449,
+      "page_number": 7,
+      "width": 720,
+      "height": 5000,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/007-6e64b86b92942e72b11f33acd844081c816267c2.webp",
+      "variant_hash": "6e64b86b92942e72b11f33acd844081c816267c2",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 179839094
+      }
+    },
+    {
+      "id": 64450,
+      "page_number": 8,
+      "width": 720,
+      "height": 7646,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/008-d0e97737ee87309452db8545f63a3114319e47bc.webp",
+      "variant_hash": "d0e97737ee87309452db8545f63a3114319e47bc",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 531694993
+      }
+    },
+    {
+      "id": 64451,
+      "page_number": 9,
+      "width": 720,
+      "height": 2419,
+      "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/009-c2c3156375add26f880b6fe37a74c9554047337d.webp",
+      "variant_hash": "c2c3156375add26f880b6fe37a74c9554047337d",
+      "scramble": {
+        "method": "tiled-v1",
+        "grid": 10,
+        "seed": 223643075
+      }
+    }
+  ]
+}

@@ -50,13 +50,29 @@ built-in reader.
   - **MangaPlus** (official Shueisha)
   - **TCB Scans**
   - **Asura** (manhwa/manhua)
-  - **WEBTOON** (official webtoons.com, English, ORIGINALS and CANVAS)
+  - **WEBTOON** (official webtoons.com, en/id/th/es/fr/zh-Hant/de, ORIGINALS and CANVAS)
   - **Flame Comics** (manhwa/manhua)
   - **MangaKatana**
   - **MangaKakalot** (requires FlareSolverr)
   - **TopManhua** (manhwa/manhua, requires FlareSolverr)
   - **Atsumaru** (atsu.moe)
   - **Mangakakalot**
+  - **GigaViewer sites** (ja): Shonen Jump+, Comic Days, Sunday Webry, MAGCOMI, Tonari no Young
+    Jump, Comic Zenon, Kurage Bunch (free official episodes only)
+  - **Toonily** (manhwa, adult, requires FlareSolverr)
+  - **MangaLib** (Russian)
+  - **Dynasty Scans** (English, yuri)
+  - **Anime-Sama** (French, requires FlareSolverr)
+  - **ManhwaWeb** (Spanish)
+  - **Olympus Scanlation** (es, requires FlareSolverr)
+  - **Shinigami** (Indonesian, manhwa/manhua/manga)
+  - **Manhwa18.net** (adult, requires FlareSolverr)
+  - **Cứu Truyện** (Vietnamese, requires FlareSolverr when challenged; MAKI_SOURCE_CUUTRUYEN_BASEURL)
+  - **MangaWorld** (Italian)
+  - **Naver Webtoon** (official comic.naver.com, Korean, WEBTOON tier only)
+  - **Manhuagui** (Simplified Chinese; mirror override via `MAKI_SOURCE_MANHUAGUI_BASEURL`)
+  - **Manga-Tube** (German)
+  - **MangaDenizi** (Turkish)
   - **Taiyō** (Brazilian Portuguese)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
   Sources are drag-ordered by preference and can be switched off globally. A disabled source is
