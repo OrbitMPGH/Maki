@@ -1,3 +1,5 @@
+using System.Net;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.Webtoons;
 
@@ -13,6 +15,47 @@ public class WebtoonsSourceTests
     {
         var factory = new FakeHttpClientFactory(responses);
         return (new WebtoonsSource(factory), factory);
+    }
+
+    /// <summary>
+    /// Routes through the same <see cref="RateLimitDetectingHandler"/> the real named
+    /// client uses, so a 429 for one locale surfaces as a genuine <see cref="RateLimitException"/>
+    /// rather than something invented for the test.
+    /// </summary>
+    private sealed class RateLimitedLocaleFactory(
+        string rateLimitedUrlSubstring, Dictionary<string, string> responses) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) =>
+            new(new RateLimitDetectingHandler { InnerHandler = new RoutingHandler(rateLimitedUrlSubstring, responses) })
+            {
+                BaseAddress = new Uri("https://fixture.test/")
+            };
+
+        private sealed class RoutingHandler(string rateLimitedUrlSubstring, Dictionary<string, string> responses)
+            : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            {
+                var url = request.RequestUri!.ToString();
+                if (url.Contains(rateLimitedUrlSubstring, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Task.FromResult(new HttpResponseMessage((HttpStatusCode)429));
+                }
+
+                foreach (var (substring, body) in responses)
+                {
+                    if (url.Contains(substring, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new StringContent(body)
+                        });
+                    }
+                }
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            }
+        }
     }
 
     [Fact]
@@ -63,6 +106,23 @@ public class WebtoonsSourceTests
         Assert.True(englishIndex >= 0);
         Assert.True(spanishIndex >= 0);
         Assert.True(englishIndex < spanishIndex);
+    }
+
+    [Fact]
+    public async Task Search_tolerates_a_locale_that_is_rate_limited()
+    {
+        // "id" answers 429, which RateLimitDetectingHandler turns into a RateLimitException,
+        // not an HttpRequestException; SearchLocaleAsync must drop that locale too instead of
+        // letting the exception fail the other six.
+        var factory = new RateLimitedLocaleFactory("id/search", new()
+        {
+            ["en/search"] = FakeHttpClientFactory.Fixture("webtoons-search.html")
+        });
+        var source = new WebtoonsSource(factory);
+
+        var results = await source.SearchAsync("tower of god");
+
+        Assert.Contains(results, r => r.SourceSeriesId == "fantasy/tower-of-god/95");
     }
 
     [Fact]

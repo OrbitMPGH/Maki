@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 
 namespace Maki.Sources.Webtoons;
@@ -14,9 +15,9 @@ namespace Maki.Sources.Webtoons;
 /// Plain server-rendered HTML, no Cloudflare. English series id is
 /// "{genre}/{slug}/{titleNo}" (unchanged, for back-compat with every id stored before
 /// locales existed); every other locale prefixes it, "{locale}/{genre}/{slug}/{titleNo}",
-/// because each locale runs its own service with its own <c>title_no</c> — the same
+/// because each locale runs its own service with its own <c>title_no</c>, the same
 /// situation as MANGA Plus, not a language filter on one series. Chapter id is
-/// "{episodeNo}|{episodeSlug}" — only the numeric ids actually select anything (a wrong
+/// "{episodeNo}|{episodeSlug}": only the numeric ids actually select anything (a wrong
 /// genre/slug redirects to the canonical URL), but carrying the path keeps the links we
 /// hand the UI real and saves a redirect hop per fetch. The one exception is CANVAS,
 /// whose titles 404 outside the literal <c>canvas</c> segment, which is why the path is
@@ -123,8 +124,9 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
     }
 
     /// <summary>
-    /// One locale's search page. Failures here (a locale that is briefly down, or one this
-    /// account's region can't reach) only drop that locale's hits, they don't fail the search.
+    /// One locale's search page. Failures here (a locale that is briefly down, one this
+    /// account's region can't reach, or one the shared limiter rate-limits) only drop that
+    /// locale's hits, they don't fail the whole seven-locale search.
     /// </summary>
     private async Task<IReadOnlyList<SourceSeriesResult>> SearchLocaleAsync(
         string locale, string title, CancellationToken ct)
@@ -134,7 +136,7 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
         {
             html = await Client.GetStringAsync($"{locale}/search?keyword={Uri.EscapeDataString(title)}", ct);
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (ex is HttpRequestException or RateLimitException)
         {
             return [];
         }
@@ -224,7 +226,10 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
         EpisodeListResponse? response = null;
 
         // m.webtoons.com throws intermittent SSL errors; one retry before giving up on the
-        // API entirely and falling back to the HTML walk.
+        // API entirely and falling back to the HTML walk. RateLimitException is deliberately
+        // not caught here: falling back would turn one rate-limited request into up to 73
+        // HTML requests against the same limiter, making the rate limit worse. Let it
+        // propagate so the sync fails outright and the shared queue cooldown applies.
         for (var attempt = 0; attempt < 2 && response is null; attempt++)
         {
             try
@@ -355,7 +360,7 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
     /// locales existed): "fantasy/tower-of-god/95" is 3 segments and resolves as "en".
     /// A non-English locale adds a fourth segment in front: "es/fantasy/tower-of-god/1718".
     /// A bare title number (never minted here, but possible from a hand-edited mapping)
-    /// resolves through a placeholder path as English, which works for ORIGINALS only —
+    /// resolves through a placeholder path as English, which works for ORIGINALS only:
     /// CANVAS titles are not served outside /en/canvas/.
     /// </summary>
     private static (string Locale, string Path, string TitleNo) SplitSeriesId(string sourceSeriesId)
