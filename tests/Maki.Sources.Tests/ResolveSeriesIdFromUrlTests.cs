@@ -5,6 +5,7 @@ using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.Mangakakalot;
 using Maki.Sources.MangaPill;
+using Maki.Sources.TeamX;
 using Maki.Sources.FlameComics;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
@@ -114,6 +115,23 @@ public class ResolveSeriesIdFromUrlTests
     public void Mangakakalot(string url, string? expected)
     {
         ISource source = new MangakakalotSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://olympustaff.com/series/SL", "SL")]
+    [InlineData("https://olympustaff.com/series/SL/", "SL")]
+    [InlineData("https://olympustaff.com/series/solo-leveling-ragnarok", "solo-leveling-ragnarok")]
+    // Slugs are case-sensitive; the tail must survive untouched.
+    [InlineData("https://olympustaff.com/series/sl", "sl")]
+    // A chapter URL names an extra path segment and must not resolve as a series.
+    [InlineData("https://olympustaff.com/series/SL/200", null)]
+    [InlineData("https://olympustaff.com/series?type=manhwa", null)]
+    [InlineData("https://olympustaff.com/search?keyword=solo", null)]
+    [InlineData("https://example.com/series/SL", null)]
+    public void TeamX(string url, string? expected)
+    {
+        ISource source = new TeamXSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
