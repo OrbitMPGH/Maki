@@ -21,6 +21,24 @@ public class Manhwa18NetSourceTests
         <html><body><div id="app" data-page='{"component":"Chapter","props":{"mangaSlug":"secret-class","chapterName":"Chapter 999","chapterId":1,"chapterImages":[],"chapterContent":""}}'></div></body></html>
         """;
 
+    private const string RawSuffixSearchHtml =
+        """
+        <html><body><div id="app" data-page='{"component":"Search","props":{"mangas":{"data":[{"name":"Quick Draw","slug":"quick-draw"},{"name":"The Last Straw","slug":"the-last-straw"},{"name":"Withdraw","slug":"withdraw"},{"name":"Some Title Raw","slug":"some-title"},{"name":"Other Title (RAW)","slug":"other-title"}]}}}'></div></body></html>
+        """;
+
+    [Fact]
+    public async Task Search_keeps_titles_that_merely_end_in_the_letters_raw()
+    {
+        var source = new Manhwa18NetSource(new FakeHtmlFetcher(new()
+        {
+            ["/tim-kiem"] = RawSuffixSearchHtml
+        }));
+
+        var results = await source.SearchAsync("raw");
+
+        Assert.Equal(["quick-draw", "the-last-straw", "withdraw"], results.Select(r => r.SourceSeriesId));
+    }
+
     [Fact]
     public async Task Search_drops_raw_series_and_parses_the_rest()
     {

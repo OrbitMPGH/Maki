@@ -43,6 +43,10 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
     [GeneratedRegex(@"^(?:chap(?:ter)?)\.?\s*(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterPrefixPattern();
 
+    // "Secret class raw" / "Foo (Raw)" but not "Quick Draw" or "The Last Straw".
+    [GeneratedRegex(@"\braw\b\W*$", RegexOptions.IgnoreCase)]
+    private static partial Regex RawNameSuffixPattern();
+
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
         // https://manhwa18.net/manga/{slug} — a chapter URL adds a second segment and must
@@ -73,7 +77,7 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
             // Search hits carry no genres to check, so the -raw slug/name suffix is the only
             // signal available here; the fuller genre check runs in ListChaptersAsync instead.
             if (slug.EndsWith("-raw", StringComparison.OrdinalIgnoreCase) ||
-                name.EndsWith("raw", StringComparison.OrdinalIgnoreCase))
+                RawNameSuffixPattern().IsMatch(name))
             {
                 continue;
             }
