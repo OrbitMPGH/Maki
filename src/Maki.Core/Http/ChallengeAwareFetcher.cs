@@ -21,13 +21,17 @@ public class ChallengeAwareFetcher(
 
     private readonly ConcurrentDictionary<string, HostSession> _sessions = new();
 
-    public async Task<string> GetHtmlAsync(string url, CancellationToken ct = default)
+    public Task<string> GetHtmlAsync(string url, CancellationToken ct = default) =>
+        FetchAsync(new HtmlFetchRequest(url), ct);
+
+    public async Task<string> FetchAsync(HtmlFetchRequest request, CancellationToken ct = default)
     {
+        var url = request.Url;
         var host = new Uri(url).Host;
 
         if (_sessions.TryGetValue(host, out var session))
         {
-            var direct = await TryDirectAsync(url, session, ct);
+            var direct = await TryDirectAsync(request, session, ct);
             if (direct != null)
             {
                 return direct;
@@ -37,7 +41,7 @@ public class ChallengeAwareFetcher(
         }
         else
         {
-            var direct = await TryDirectAsync(url, null, ct);
+            var direct = await TryDirectAsync(request, null, ct);
             if (direct != null)
             {
                 return direct;
@@ -52,7 +56,7 @@ public class ChallengeAwareFetcher(
         }
 
         logger.LogInformation("Solving challenge for {Host} via FlareSolverr", host);
-        var solution = await flareSolverr.GetAsync(flareUrl, url, ct);
+        var solution = await flareSolverr.SolveAsync(flareUrl, url, request.FormBody, request.Cookies, ct);
 
         if (solution.Cookies.Count > 0 && !string.IsNullOrEmpty(solution.UserAgent))
         {
@@ -128,15 +132,26 @@ public class ChallengeAwareFetcher(
         return headers;
     }
 
-    private async Task<string?> TryDirectAsync(string url, HostSession? session, CancellationToken ct)
+    private async Task<string?> TryDirectAsync(HtmlFetchRequest fetch, HostSession? session, CancellationToken ct)
     {
         try
         {
             var client = httpClientFactory.CreateClient(HttpClientName);
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var request = new HttpRequestMessage(
+                fetch.FormBody is null ? HttpMethod.Get : HttpMethod.Post, fetch.Url);
+            if (fetch.FormBody is not null)
+            {
+                request.Content = new StringContent(fetch.FormBody, System.Text.Encoding.UTF8, "application/x-www-form-urlencoded");
+            }
+
+            var cookieHeader = MergeCookies(session?.CookieHeader, fetch.Cookies);
+            if (cookieHeader is not null)
+            {
+                request.Headers.TryAddWithoutValidation("Cookie", cookieHeader);
+            }
+
             if (session != null)
             {
-                request.Headers.TryAddWithoutValidation("Cookie", session.CookieHeader);
                 request.Headers.TryAddWithoutValidation("User-Agent", session.UserAgent);
             }
 
@@ -154,6 +169,25 @@ public class ChallengeAwareFetcher(
         {
             return null;
         }
+    }
+
+    /// <summary>Solved clearance cookies first, the request's own on top; the request wins a name clash.</summary>
+    private static string? MergeCookies(string? sessionHeader, IReadOnlyDictionary<string, string>? extra)
+    {
+        if (extra is not { Count: > 0 })
+        {
+            return sessionHeader;
+        }
+
+        var merged = sessionHeader is null
+            ? new Dictionary<string, string>()
+            : new Dictionary<string, string>(ParseCookieHeader(sessionHeader));
+        foreach (var (name, value) in extra)
+        {
+            merged[name] = value;
+        }
+
+        return string.Join("; ", merged.Select(c => $"{c.Key}={c.Value}"));
     }
 
     private static bool LooksLikeChallenge(string html)
