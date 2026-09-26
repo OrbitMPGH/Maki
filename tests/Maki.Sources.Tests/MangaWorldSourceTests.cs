@@ -158,6 +158,34 @@ public class MangaWorldSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_keeps_two_distinct_unnumbered_chapters_in_one_volume()
+    {
+        const string html = """
+            <html><body><div class="chapters-wrapper">
+              <div class="volume-element">
+                <p class="volume-name">Volume 3</p>
+                <div class="volume-chapters">
+                  <div class="chapter">
+                    <a class="chap" href="https://www.mangaworld.mx/manga/1/foo/read/dddddddddddddddddddddddd"><span class="d-inline-block">Extra</span><i class="text-right text-muted chap-date">02 Gennaio 2024</i></a>
+                  </div>
+                  <div class="chapter">
+                    <a class="chap" href="https://www.mangaworld.mx/manga/1/foo/read/eeeeeeeeeeeeeeeeeeeeeeee"><span class="d-inline-block">Oneshot</span><i class="text-right text-muted chap-date">01 Gennaio 2024</i></a>
+                  </div>
+                </div>
+              </div>
+            </div></body></html>
+            """;
+        var source = new MangaWorldSource(new FakeHtmlFetcher(new() { ["/manga/1/foo"] = html }));
+
+        var chapters = await source.ListChaptersAsync("1/foo");
+
+        Assert.Equal(2, chapters.Count);
+        Assert.All(chapters, c => Assert.Null(c.Number));
+        Assert.All(chapters, c => Assert.Equal(3, c.Volume));
+        Assert.Equal(new[] { "Extra", "Oneshot" }, chapters.Select(c => c.Title));
+    }
+
+    [Fact]
     public async Task GetPages_returns_urls_with_referer()
     {
         var source = new MangaWorldSource(new FakeHtmlFetcher(new()
