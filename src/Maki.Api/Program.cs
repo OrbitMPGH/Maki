@@ -38,6 +38,7 @@ using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
+using Maki.Sources.GigaViewer;
 using System.Net;
 using Maki.Sources.TopManhua;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -327,7 +328,16 @@ try
                  // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
                  (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
-                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/")
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
+                 // GigaViewer sites — Hatena's white-label viewer, plain nginx/CloudFront, no
+                 // challenge. Page images go through their own client below.
+                 ("source-shonenjumpplus", "https://shonenjumpplus.com/"),
+                 ("source-comicdays", "https://comic-days.com/"),
+                 ("source-sundaywebry", "https://www.sunday-webry.com/"),
+                 ("source-magcomi", "https://magcomi.com/"),
+                 ("source-tonarinoyj", "https://tonarinoyj.jp/"),
+                 ("source-comiczenon", "https://comic-zenon.com/"),
+                 ("source-kuragebunch", "https://kuragebunch.com/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -340,6 +350,17 @@ try
             .AddHttpMessageHandler(() => new RateLimitingHandler(limiter))
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
+
+    // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
+    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
+    var gigaViewerImageLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(GigaViewerSource.ImageHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     var topManhuaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(TopManhuaSource.HttpClientName, client =>
@@ -533,6 +554,13 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
+    builder.Services.AddSingleton<ISource, ShonenJumpPlusSource>();
+    builder.Services.AddSingleton<ISource, ComicDaysSource>();
+    builder.Services.AddSingleton<ISource, SundayWebrySource>();
+    builder.Services.AddSingleton<ISource, MagcomiSource>();
+    builder.Services.AddSingleton<ISource, TonarinoYjSource>();
+    builder.Services.AddSingleton<ISource, ComicZenonSource>();
+    builder.Services.AddSingleton<ISource, KurageBunchSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
