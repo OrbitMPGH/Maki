@@ -33,8 +33,8 @@ export function SeriesTagsEditor({ seriesId, tagIds }: { seriesId: number; tagId
       }
       await setSeriesTags.mutateAsync({ seriesId, tagIds: [...new Set(ids)] })
     } catch (err) {
-      // Embeds the raw exception, so left untranslated (see report).
-      notifications.show({ color: 'var(--danger)', message: `Failed to update tags: ${String(err)}` })
+      const detail = err instanceof Error ? err.message : String(err)
+      notifications.show({ color: 'var(--danger)', message: t`Failed to update tags: ${detail}` })
     }
   }
 

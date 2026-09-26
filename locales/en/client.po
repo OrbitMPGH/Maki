@@ -449,6 +449,10 @@ msgstr "{hours, plural, one {# hr} other {# hr}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {about # hr left} other {about # hr left}}"
 
+#: src/sourceLabels.ts
+msgid "{indexer} · Torrent"
+msgstr "{indexer} · Torrent"
+
 #: src/pages/ImportPage.tsx
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 msgstr "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
@@ -617,6 +621,10 @@ msgstr "{name} {year}"
 #: src/pages/LibraryPage.tsx
 msgid "{name}: {ok}/{total} succeeded"
 msgstr "{name}: {ok}/{total} succeeded"
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
+msgstr "{name}: {ok}/{total} succeeded, first error: {firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
@@ -802,9 +810,25 @@ msgstr "{shownCount} of {totalSeriesShown} series shown."
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} enabled"
+#~ msgstr "{sourceDisplayName} enabled"
+
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+#~ msgstr "{sourceDisplayName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} publishes one language per series, so there is nothing to filter."
+#~ msgstr "{sourceDisplayName} publishes one language per series, so there is nothing to filter."
+
 #: src/pages/HealthPage.tsx
 msgid "{sourceName} · priority {priority}"
 msgstr "{sourceName} · priority {priority}"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "{sourceName} enabled"
+msgstr "{sourceName} enabled"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
@@ -3978,6 +4002,14 @@ msgstr "Every source failed for this chapter"
 msgid "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 msgstr "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Every wanted chapter is already on disk"
+msgstr "Every wanted chapter is already on disk"
+
+#: src/pages/SeriesDetailPage.tsx
+#~ msgid "Every wanted chapter is already on disk or queued"
+#~ msgstr "Every wanted chapter is already on disk or queued"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Every week"
 msgstr "Every week"
@@ -4080,13 +4112,30 @@ msgstr "Failed to initialize"
 msgid "Failed to load library"
 msgstr "Failed to load library"
 
-#: src/pages/LibraryPage.tsx
-#~ msgid "Failed to load library: {loadErrorMessage}"
-#~ msgstr "Failed to load library: {loadErrorMessage}"
-
 #: src/pages/CreatorPage.tsx
 msgid "Failed to load this creator"
 msgstr "Failed to load this creator"
+
+#: src/components/CatalogueBrowser.tsx
+#: src/pages/DiscoverPage.tsx
+msgid "Failed to save default: {detail}"
+msgstr "Failed to save default: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to save filter: {detail}"
+msgstr "Failed to save filter: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to tag: {detail}"
+msgstr "Failed to tag: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to update notifications: {detail}"
+msgstr "Failed to update notifications: {detail}"
+
+#: src/components/SeriesTagsEditor.tsx
+msgid "Failed to update tags: {detail}"
+msgstr "Failed to update tags: {detail}"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Falling means you moved."
@@ -4922,6 +4971,7 @@ msgstr "Import what you have"
 
 #: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/sourceLabels.ts
 msgid "Imported"
 msgstr "Imported"
 
@@ -5258,10 +5308,6 @@ msgstr "Last page"
 msgid "Last partial scan: {partialScanError}"
 msgstr "Last partial scan: {partialScanError}"
 
-#: src/components/SourceMappingsSection.tsx
-msgid "Last refresh"
-msgstr "Last refresh"
-
 #: src/pages/SettingsPage.tsx
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
 msgstr "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
@@ -5496,6 +5542,10 @@ msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "Linked {chapterPhrase} to {fileName}"
 
 #: src/components/SourceMappingsSection.tsx
+#~ msgid "Linked {label}"
+#~ msgstr "Linked {label}"
+
+#: src/components/SourceMappingsSection.tsx
 msgid "Linked {name}"
 msgstr "Linked {name}"
 
@@ -5535,6 +5585,7 @@ msgstr "Live download queue: pages are fetched, validated and packaged into CBZ 
 msgid "Load more"
 msgstr "Load more"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 msgid "Loading…"
 msgstr "Loading…"
@@ -5728,6 +5779,7 @@ msgid "Manhwa"
 msgstr "Manhwa"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/sourceLabels.ts
 msgid "Manual"
 msgstr "Manual"
 
@@ -7951,6 +8003,10 @@ msgstr "Refresh started, downloading in the background if a new snapshot is avai
 msgid "Refresh the catalogue"
 msgstr "Refresh the catalogue"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Refreshed"
+msgstr "Refreshed"
+
 #: src/pages/HealthPage.tsx
 msgid "Refreshing"
 msgstr "Refreshing"
@@ -8261,6 +8317,7 @@ msgid "Require single sign-on"
 msgstr "Require single sign-on"
 
 #: src/pages/HealthPage.tsx
+#: src/sourceLabels.ts
 msgid "Rescan"
 msgstr "Rescan"
 
@@ -9436,6 +9493,10 @@ msgstr "smart"
 msgid "Smart"
 msgstr "Smart"
 
+#: src/pages/SettingsPage.tsx
+msgid "Smart Download"
+msgstr "Smart Download"
+
 #: src/api/inbox.ts
 msgid "Smart Download queued chapters"
 msgstr "Smart Download queued chapters"
@@ -10404,6 +10465,7 @@ msgstr "Topic ID"
 
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/labels.ts
+#: src/sourceLabels.ts
 msgid "Torrent"
 msgstr "Torrent"
 
@@ -10645,6 +10707,10 @@ msgstr "unrecognized name"
 #: src/pages/HealthPage.tsx
 msgid "Unrecognized name"
 msgstr "Unrecognized name"
+
+#: src/sourceLabels.ts
+msgid "Unresolved"
+msgstr "Unresolved"
 
 #: src/components/settings/SaveButton.tsx
 msgid "Unsaved changes"

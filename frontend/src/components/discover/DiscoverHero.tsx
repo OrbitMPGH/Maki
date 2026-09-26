@@ -157,7 +157,7 @@ export function DiscoverHero({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            <Group align="flex-start" gap={26} wrap="nowrap">
+            <Group align="flex-start" gap={26} wrap="nowrap" className="discover-hero-feature-row">
             {cover && (
               <button
                 type="button"

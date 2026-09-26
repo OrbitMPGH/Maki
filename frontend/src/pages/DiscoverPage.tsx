@@ -113,6 +113,7 @@ import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '..
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
+import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
@@ -183,21 +184,6 @@ function DiscoverHeroSkeleton() {
               <Skeleton h={8} w="44%" />
             </Stack>
           </Group>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function DiscoverRailSkeleton({ engine = false }: { engine?: boolean }) {
-  return (
-    <div aria-hidden>
-      <Skeleton h={18} w={190} mt="xl" mb="sm" />
-      <div className="discover-rail" data-engine={engine || undefined}>
-        {Array.from({ length: 12 }, (_, i) => (
-          <div key={i} className="discover-rail-item">
-            <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
-          </div>
         ))}
       </div>
     </div>
@@ -477,8 +463,10 @@ function RecommendedTab() {
           color: 'var(--ok)',
           message: isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
-      onError: (err) =>
-        notifications.show({ color: 'var(--danger)', message: `Failed to save default: ${String(err)}` }),
+      onError: (err) => {
+        const detail = err instanceof Error ? err.message : String(err)
+        notifications.show({ color: 'var(--danger)', message: now`Failed to save default: ${detail}` })
+      },
     })
   }
 
@@ -1311,7 +1299,7 @@ function DiscoverBrowseTab({
         <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
       </div>
     ) : recentFetching ? (
-      <DiscoverRailSkeleton engine />
+      <RailSkeleton engine title />
     ) : null,
 
     sideinterests: (
@@ -1341,7 +1329,7 @@ function DiscoverBrowseTab({
             <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
           </div>
         ))}
-        {!sideInterests && sideInterestsFetching ? <DiscoverRailSkeleton engine /> : null}
+        {!sideInterests && sideInterestsFetching ? <RailSkeleton engine title /> : null}
       </>
     ),
 
@@ -1373,7 +1361,7 @@ function DiscoverBrowseTab({
         <DiscoverRailRow items={cohortRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
       </div>
     ) : cohortFetching ? (
-      <DiscoverRailSkeleton />
+      <RailSkeleton title />
     ) : null,
 
     trending: (
@@ -1403,7 +1391,7 @@ function DiscoverBrowseTab({
             </div>
           </div>
         ) : isFetching && !rails ? (
-          <DiscoverRailSkeleton />
+          <RailSkeleton title />
         ) : null}
       </>
     ),
@@ -1559,7 +1547,7 @@ export default function DiscoverPage() {
         description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
         actions={
           active === 'browse' && !editing ? (
-            <Group gap="xs" wrap="nowrap">
+            <Group gap="xs" wrap="wrap">
               <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
                 <Trans>Edit layout</Trans>
               </Button>

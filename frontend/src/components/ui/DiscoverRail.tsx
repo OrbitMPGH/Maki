@@ -163,7 +163,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             {item.year && <span className="tnum">{item.year}</span>}
             <span className="discover-sub-status">· {item.status}</span>
             {totalChapters && (
-              <span>
+              <span className="discover-sub-chapters">
                 · <Trans>{totalChapters} ch</Trans>
               </span>
             )}
@@ -359,7 +359,7 @@ export const EngineCard = memo(function EngineCard({
             {item.year && <span className="tnum">{item.year}</span>}
             <span className="discover-sub-status">· {item.status}</span>
             {totalChapters && (
-              <span>
+              <span className="discover-sub-chapters">
                 · <Trans>{totalChapters} ch</Trans>
               </span>
             )}

@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Box, Button, Group, Paper, Skeleton } from '@mantine/core'
+import { Box, Button, Group, Paper } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import {
@@ -57,6 +57,7 @@ import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
@@ -117,10 +118,10 @@ export default function HomePage() {
   const needsDiscover = discoverAvailable && hasLibrary
 
   const { data: reading, isLoading: readingLoading } = useHomeReading(12, needsReading)
-  const { data: recent } = useHomeRecentlyAdded(12, on('recent'))
-  const { data: fromAnime } = useHomeFromAnime(12, on('fromanime'))
+  const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(12, on('recent'))
+  const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(12, on('fromanime'))
   const { data: queue } = useQueue()
-  const { data: rails } = useDiscover(0, needsDiscover && on('popular'))
+  const { data: rails, isLoading: railsLoading } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
@@ -278,11 +279,15 @@ export default function HomePage() {
       </>
     ),
 
-    recent: recent && recent.length > 0 && (
-      <>
-        <SectionHeader icon={IconBookmarks} title={t`Recently added`} count={recent.length} />
-        <RecentlyAddedRail items={recent} />
-      </>
+    recent: recentLoading ? (
+      <RailSkeleton />
+    ) : (
+      recent && recent.length > 0 && (
+        <>
+          <SectionHeader icon={IconBookmarks} title={t`Recently added`} count={recent.length} />
+          <RecentlyAddedRail items={recent} />
+        </>
+      )
     ),
 
     jumpback: jumpBackIn.length > 0 && (
@@ -292,29 +297,41 @@ export default function HomePage() {
       </>
     ),
 
-    fromanime: fromAnime && fromAnime.length > 0 && (
-      <>
-        <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
-        <AnimeResumeRail items={fromAnime} />
-      </>
+    fromanime: fromAnimeLoading ? (
+      <RailSkeleton />
+    ) : (
+      fromAnime && fromAnime.length > 0 && (
+        <>
+          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
+          <AnimeResumeRail items={fromAnime} />
+        </>
+      )
     ),
 
-    recommended: youMightLike.length > 0 && (
-      <>
-        <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} />
-        <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
-      </>
+    recommended: recommendations.isLoading ? (
+      <RailSkeleton />
+    ) : (
+      youMightLike.length > 0 && (
+        <>
+          <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} />
+          <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        </>
+      )
     ),
 
-    popular: popular.length > 0 && (
-      <>
-        <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} />
-        <DiscoverRailRow
-          items={popular.slice(0, RAIL_SIZE)}
-          seriesIdFor={seriesIdFor}
-          onOpen={setDetailItem}
-        />
-      </>
+    popular: railsLoading ? (
+      <RailSkeleton />
+    ) : (
+      popular.length > 0 && (
+        <>
+          <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} />
+          <DiscoverRailRow
+            items={popular.slice(0, RAIL_SIZE)}
+            seriesIdFor={seriesIdFor}
+            onOpen={setDetailItem}
+          />
+        </>
+      )
     ),
 
     glance: glanceShown.length > 0 && (
@@ -379,12 +396,12 @@ function ReadingSection({
   hero: boolean
 }) {
   if (!hero) return <ContinueRail items={items} rail={rail} />
+  // Exactly one item spilling past the lead tiles would sit alone on its own row, so two lead tiles take that case instead of three.
+  const leadCount = items.length === CONTINUE_LEAD_MAX + 1 ? 2 : CONTINUE_LEAD_MAX
   return (
     <>
-      <ContinueLead items={items.slice(0, CONTINUE_LEAD_MAX)} rail={rail} />
-      {items.length > CONTINUE_LEAD_MAX && (
-        <ContinueRail items={items.slice(CONTINUE_LEAD_MAX)} rail={rail} />
-      )}
+      <ContinueLead items={items.slice(0, leadCount)} rail={rail} />
+      {items.length > leadCount && <ContinueRail items={items.slice(leadCount)} rail={rail} />}
     </>
   )
 }
@@ -419,18 +436,6 @@ function LibraryFigure({
         {formatNumber(value)}
       </span>
       <span className="hero-stat-l">{label}</span>
-    </div>
-  )
-}
-
-function RailSkeleton() {
-  return (
-    <div className="discover-rail" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
-      {Array.from({ length: 12 }, (_, i) => (
-        <div key={i} className="discover-rail-item">
-          <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
-        </div>
-      ))}
     </div>
   )
 }

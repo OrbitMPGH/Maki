@@ -23,6 +23,7 @@ import {
   TextInput,
   Title,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconCheck,
@@ -30,6 +31,7 @@ import {
   IconExternalLink,
   IconLink,
   IconPlugConnected,
+  IconPower,
   IconRefresh,
   IconTrash,
   IconWand,
@@ -59,6 +61,7 @@ import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
 import { SOURCE_ICONS } from '../sourceIcons'
+import { useSourceLabel } from '../sourceLabels'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -100,12 +103,13 @@ export function SourceMappingsSection({
 
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const sourceLabel = useSourceLabel()
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
   const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
-  const removingSourceName = removing?.sourceName
+  const removingSourceName = removing ? sourceLabel(removing.sourceName) : undefined
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [fallbackOpen, setFallbackOpen] = useState(false)
   const [debounced] = useDebouncedValue(query, 400)
@@ -166,13 +170,14 @@ export function SourceMappingsSection({
         !sourceDisabled(m.sourceName) &&
         !m.chapterSnapshotAt,
     ) ?? []
-  const missingSnapshotNames = missingSnapshots.map((m) => m.sourceName).join(', ')
+  const missingSnapshotNames = missingSnapshots.map((m) => sourceLabel(m.sourceName)).join(', ')
 
-  const link = (name: string, sourceSeriesId: string, url: string) =>
+  const link = (mappingName: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
-      { seriesId, sourceName: name, sourceSeriesId, url },
+      { seriesId, sourceName: mappingName, sourceSeriesId, url },
       {
         onSuccess: () => {
+          const name = sourceLabel(mappingName)
           notifications.show({ message: now`Linked ${name}`, color: 'var(--ok)' })
           setModalOpen(false)
         },
@@ -289,22 +294,31 @@ export function SourceMappingsSection({
           </Text>
         )
       ) : (
-        <Table.ScrollContainer minWidth={720}>
+        // A persistent scrollbar, since a hover-to-reveal one gave no hint that Enabled/Refreshed were off the visible edge.
+        <Table.ScrollContainer
+          minWidth={720}
+          scrollAreaProps={{ type: 'always', scrollbars: 'x', offsetScrollbars: 'present' }}
+        >
           <Table className="ops-table">
             <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Source</Trans></Table.Th>
               <Table.Th><Trans>Series</Trans></Table.Th>
               <Table.Th><Trans>Languages</Trans></Table.Th>
-              <Table.Th><Trans>Priority</Trans></Table.Th>
-              <Table.Th><Trans>Enabled</Trans></Table.Th>
-              <Table.Th><Trans>Last refresh</Trans></Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Priority</Trans></Table.Th>
+              {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
+              <Table.Th w={44}>
+                <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
+                <IconPower size={14} style={{ opacity: 0.7 }} aria-hidden />
+              </Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Refreshed</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {(mappings ?? []).map((m) => {
-              const { sourceName } = m
+              const { sourceName: sourceKey } = m
+              const sourceName = sourceLabel(sourceKey)
               return (
               <Table.Tr key={m.id}>
                 <Table.Td>
@@ -323,7 +337,7 @@ export function SourceMappingsSection({
                         />
                     )}
                     <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}>
-                      {m.sourceName}
+                      {sourceName}
                     </Text>
                     {sourceDisabled(m.sourceName) && (
                       <Badge size="xs" color="var(--neutral)" variant="light">
@@ -381,6 +395,7 @@ export function SourceMappingsSection({
                     <Box component="span" display="inline-flex">
                       <Switch
                         size="xs"
+                        aria-label={t`${sourceName} enabled`}
                         checked={m.enabled}
                         disabled={sourceDisabled(m.sourceName)}
                         onChange={(e) =>
@@ -455,7 +470,7 @@ export function SourceMappingsSection({
                         />
                       )}
                       <Text fw={600} size="sm">
-                        {name}
+                        {sourceLabel(name)}
                       </Text>
                       {state === 'Matched' ? (
                         <Badge
@@ -789,7 +804,9 @@ function MappingLanguages({
 }) {
   const { t } = useLingui()
   const languageOptions = useLanguageOptions()
-  const { sourceName } = mapping
+  const sourceLabel = useSourceLabel()
+  const { sourceName: sourceKey } = mapping
+  const sourceName = sourceLabel(sourceKey)
   // Null means the source default, which is English — not "every language". An untouched mapping
   // has to keep listing what it listed before.
   const selected = (mapping.languageFilter ?? 'en')
@@ -815,7 +832,7 @@ function MappingLanguages({
   return (
     <MultiSelect
       size="xs"
-      w={170}
+      w={150}
       data={languageOptions}
       value={selected}
       searchable

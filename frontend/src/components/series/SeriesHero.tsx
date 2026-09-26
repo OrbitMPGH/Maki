@@ -333,10 +333,8 @@ export function SeriesHero({
                             <Progress
                                 mt={12}
                                 value={progress.pct}
-                                // Never green while the sources are short of the full run: "all downloaded" and
-                                // "you have the whole series" are different claims, and the green tick is exactly
-                                // what makes someone unmonitor a series that's still missing its tail.
-                                color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--info)'}
+                                // Warn wins while a source gap exists, a separate claim the alert below already spells out.
+                                color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--brand)'}
                                 radius="xl"
                             />
                             <Group justify="space-between" mt={9}>

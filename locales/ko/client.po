@@ -541,6 +541,10 @@ msgstr "{hours, plural, other {#시간}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, other {약 #시간 남음}}"
 
+#: src/sourceLabels.ts
+msgid "{indexer} · Torrent"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 msgstr ""
@@ -740,6 +744,10 @@ msgstr "{name} {year}"
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded"
 msgstr "{name}: {ok}/{total} 성공"
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
+msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
@@ -960,20 +968,34 @@ msgstr "{shownCount} / {totalSeriesShown}개 시리즈 표시됨."
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, other {시리즈 #개, 이 보기의 {shareLabel}, {coherenceWord}}}"
 
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} enabled"
+#~ msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+#~ msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} publishes one language per series, so there is nothing to filter."
+#~ msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{sourceName} · priority {priority}"
 msgstr "{sourceName} · 우선순위 {priority}"
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
-msgstr "{sourceName}은(는) 설정 → 소스에서 꺼져 있습니다. 이 시리즈의 설정은 유지되며 소스를 다시 켜면 적용됩니다."
+msgid "{sourceName} enabled"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
+msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
 msgid "{sourceName} publishes one language per series, so there is nothing to filter."
-msgstr "{sourceName}은(는) 시리즈당 한 언어만 게시하므로 필터링할 항목이 없습니다."
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -4784,6 +4806,14 @@ msgstr "이 챕터의 모든 소스에서 실패했습니다."
 msgid "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 msgstr "아직 연결되지 않은 모든 소스는 각 시리즈마다 다시 검색됩니다. 시리즈를 추가한 뒤 소스가 해당 제목을 가져온 경우 이 작업을 수행할 가치가 있습니다."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Every wanted chapter is already on disk"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+#~ msgid "Every wanted chapter is already on disk or queued"
+#~ msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Every week"
@@ -4906,13 +4936,29 @@ msgstr "초기화하지 못했습니다"
 msgid "Failed to load library"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-#~ msgid "Failed to load library: {loadErrorMessage}"
-#~ msgstr "라이브러리를 불러오지 못했습니다: {loadErrorMessage}"
-
 #: src/pages/CreatorPage.tsx
 msgid "Failed to load this creator"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+#: src/pages/DiscoverPage.tsx
+msgid "Failed to save default: {detail}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to save filter: {detail}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to tag: {detail}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to update notifications: {detail}"
+msgstr ""
+
+#: src/components/SeriesTagsEditor.tsx
+msgid "Failed to update tags: {detail}"
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -5921,6 +5967,7 @@ msgstr "보유 항목 가져오기"
 
 #: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Imported"
 msgstr "가져옴"
@@ -6329,11 +6376,6 @@ msgstr ""
 msgid "Last partial scan: {partialScanError}"
 msgstr "마지막 부분 스캔: {partialScanError}"
 
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "Last refresh"
-msgstr "마지막 새로 고침"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
@@ -6615,9 +6657,12 @@ msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "{chapterPhrase}을(를) {fileName}에 연결함"
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
+#~ msgid "Linked {label}"
+#~ msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
 msgid "Linked {name}"
-msgstr "{name} 연결됨"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6663,6 +6708,7 @@ msgstr "실시간 다운로드 대기열: 페이지를 가져오고 검증한 �
 msgid "Load more"
 msgstr "더 불러오기"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
 msgid "Loading…"
@@ -6896,6 +6942,7 @@ msgid "Manhwa"
 msgstr "Manhwa"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Manual"
 msgstr "수동"
@@ -9569,6 +9616,10 @@ msgstr "새로 고침이 시작되었으며 새 스냅샷이 있으면 백그라
 msgid "Refresh the catalogue"
 msgstr "카탈로그 새로 고침"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Refreshed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Refreshing"
@@ -9948,6 +9999,7 @@ msgid "Require single sign-on"
 msgstr "싱글 사인온 필수"
 
 #: src/pages/HealthPage.tsx
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Rescan"
 msgstr "다시 스캔"
@@ -11371,6 +11423,10 @@ msgstr "스마트"
 msgid "Smart"
 msgstr "Smart"
 
+#: src/pages/SettingsPage.tsx
+msgid "Smart Download"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Smart Download queued chapters"
@@ -12541,6 +12597,7 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/labels.ts
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Torrent"
 msgstr "토렌트"
@@ -12832,6 +12889,10 @@ msgstr "인식할 수 없는 이름"
 #, fuzzy
 msgid "Unrecognized name"
 msgstr "인식할 수 없는 이름"
+
+#: src/sourceLabels.ts
+msgid "Unresolved"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy

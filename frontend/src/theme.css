@@ -278,6 +278,11 @@ body {
   ) {
   background-color: var(--surface);
 }
+/* Unchecked Switch track: box-shadow instead of border so the thumb doesn't shift on toggle, and it still applies to an uncontrolled switch with no `data-checked`. */
+[data-mantine-color-scheme='dark'] .mantine-Switch-input:not(:checked) + .mantine-Switch-track {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
 /* Overlays sit on the raised layer in both themes. Previously these were dark-only,
    so light overlays fell through to the blanket rule and rendered at the same
    colour as the cards behind them. */
@@ -1408,7 +1413,7 @@ body {
   bottom: 9px;
   z-index: 1;
 }
-/* Year · status · chapter count under the title. */
+/* Year · status · chapter count under the title; the chapter count is the one that ellipsizes on a narrow card. */
 .discover-sub {
   display: flex;
   align-items: center;
@@ -1416,13 +1421,21 @@ body {
   margin-top: 5px;
   flex-wrap: nowrap;
   white-space: nowrap;
+  overflow: hidden;
   font-size: var(--type-micro);
   color: color-mix(in srgb, white 82%, transparent);
 }
+.discover-sub > .tnum,
+.discover-sub-status {
+  flex-shrink: 0;
+}
 .discover-sub-status {
   text-transform: capitalize;
+}
+.discover-sub-chapters {
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 /* --- Engine rails: the rows the recommender produced ---------------------- */
 /* Wider items than a catalogue rail, and a footer under the poster instead of the scrim's single
@@ -1575,6 +1588,17 @@ body {
 }
 .discover-hero-feature {
   min-width: 0;
+}
+/* Below `sm` the poster moves above the text; `!important` beats the inline `--group-gap`/`--group-align` Mantine's Group sets here. */
+@media (max-width: 47.9375em) {
+  .discover-hero-feature-row {
+    --group-gap: 16px !important;
+    --group-align: stretch !important;
+    flex-direction: column;
+  }
+  .discover-hero-feature-row .discover-hero-poster {
+    align-self: flex-start;
+  }
 }
 .discover-hero-eyebrow {
   font-size: var(--type-label);
@@ -2809,6 +2833,10 @@ body {
 .app-main-hero {
   padding-top: var(--app-shell-header-offset, 0rem);
 }
+/* Discover's browse tab puts an ordinary `PageHeader` here instead of a hero band, so it needs its page padding back. */
+.app-main-hero .page-header {
+  margin-top: var(--mantine-spacing-lg);
+}
 
 /* --- Series hero ---------------------------------------------------------- */
 /* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
@@ -3495,6 +3523,20 @@ body {
   flex-shrink: 0;
 }
 
+/* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
+@media (max-width: 36em) {
+  .section-header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .section-header-rule {
+    display: none;
+  }
+  .section-header-action {
+    margin-left: auto;
+  }
+}
+
 /* --- Empty states ---------------------------------------------------------- */
 .empty-state-title {
   color: var(--ink-hi);
@@ -4082,9 +4124,10 @@ body {
   margin-top: 0;
 }
 
-/* The window picker scrolls sideways on a phone rather than pushing the page wider. */
+/* Scrolls sideways on a phone rather than pushing the page wider; `min-width: 0` overrides a flex item's content-sized default minimum. */
 .stats-range {
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -4131,10 +4174,14 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--mantine-spacing-xs);
+  min-width: 0;
+  max-width: 100%;
 }
 @media (max-width: 61.9375em) {
   .stats-rail-end {
+    /* `max-width` clamps it; `flex-basis: 100%` alone can leave it at content width once shrink is 0. */
     flex-basis: 100%;
+    max-width: 100%;
     padding-block: 4px 8px;
   }
   .stats-section {

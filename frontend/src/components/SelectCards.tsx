@@ -15,14 +15,15 @@ export function SelectCards<T extends string>({
   value,
   onChange,
   disabled,
-  cols = options.length,
+  // Two-up below `xs`, otherwise a phone-width column squeezes every tile below its min-content width.
+  cols = { base: 2, xs: options.length },
   fillLeft = false,
 }: {
   options: SelectCardOption<T>[]
   value: T
   onChange: (value: T) => void
   disabled?: boolean
-  cols?: number
+  cols?: number | Partial<Record<'base' | 'xs' | 'sm' | 'md' | 'lg' | 'xl', number>>
   fillLeft: boolean
 })
 {

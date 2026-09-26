@@ -243,8 +243,10 @@ export function CatalogueBrowser({
           color: 'var(--ok)',
           message: catalogue.isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
-      onError: (err) =>
-        notifications.show({ color: 'var(--danger)', message: `Failed to save default: ${String(err)}` }),
+      onError: (err) => {
+        const detail = err instanceof Error ? err.message : String(err)
+        notifications.show({ color: 'var(--danger)', message: now`Failed to save default: ${detail}` })
+      },
     })
   }
 

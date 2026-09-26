@@ -1323,13 +1323,21 @@ export default function SeriesDetailPage() {
                     which is what made the wanted switch double as a deferral tool and wrecked every
                     chapter count. This is the replacement: "all wanted" is the old Search missing,
                     "next N" queues in chapter-number order using the same selector Smart top-ups use. */}
-                      <Button.Group>
+                      <Tooltip
+                          label={t`Every wanted chapter is already on disk`}
+                          withArrow
+                          disabled={!(chapters !== undefined && missingWanted === 0)}
+                      >
+                        {/* A disabled button fires no pointer events, so the tooltip hangs off a wrapper instead. */}
+                        <Box component="span" display="inline-flex">
+                        <Button.Group>
                         <Button
                             variant="default"
                             size="md"
                             radius="md"
                             leftSection={<IconDownload size={17} />}
                             loading={searchMissing.isPending || downloadNext.isPending}
+                            disabled={chapters !== undefined && missingWanted === 0}
                             onClick={requestQueueAllWanted}
                         >
                           {/* The count is the point of the label: it says what the click will actually
@@ -1348,7 +1356,7 @@ export default function SeriesDetailPage() {
                                 radius="md"
                                 px={10}
                                 aria-label={t`More download options`}
-                                disabled={searchMissing.isPending || downloadNext.isPending}
+                                disabled={missingWanted === 0 || searchMissing.isPending || downloadNext.isPending}
                             >
                               <IconChevronDown size={16} />
                             </Button>
@@ -1363,7 +1371,9 @@ export default function SeriesDetailPage() {
                             <Menu.Item onClick={() => setNextCountOpen(true)}><Trans>Next...</Trans></Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
-                      </Button.Group>
+                        </Button.Group>
+                        </Box>
+                      </Tooltip>
                       <Button
                           variant="default"
                           size="md"

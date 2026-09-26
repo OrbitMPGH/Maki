@@ -53,6 +53,11 @@ function dedupeKeys(keys: string[]): string[] {
   })
 }
 
+/** A tracker's display name from its connection card, falling back to the raw service key. */
+function serviceLabel(connections: ScrobbleConnection[] | undefined, service: string): string {
+  return connections?.find((c) => c.service === service)?.label ?? service
+}
+
 function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
   const authStart = useScrobbleAuthStart()
   const disconnect = useScrobbleDisconnect()
@@ -117,6 +122,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
   const { t } = useLingui()
   const match = useScrobbleMatch()
   const ignore = useScrobbleIgnore()
+  const { data } = useScrobbleStatus()
   const [input, setInput] = useState('')
 
   const assign = (remoteId: string) => {
@@ -137,7 +143,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
     <Panel edge="warn" p="md">
       <Group gap="xs">
         <Text fw={700}>{item.title}</Text>
-        <TagChip size="sm">{item.service}</TagChip>
+        <TagChip size="sm">{serviceLabel(data?.connections, item.service)}</TagChip>
       </Group>
       <Text size="sm" c="var(--ink-3)">
         {item.reason}
@@ -322,7 +328,7 @@ export default function ScrobblePage() {
                   return (
                     <Table.Tr key={key}>
                       <Table.Td>{title || '#'}</Table.Td>
-                      <Table.Td data-priority="low">{service}</Table.Td>
+                      <Table.Td data-priority="low">{serviceLabel(data.connections, service)}</Table.Td>
                       <Table.Td>
                         {error ? (
                           <Tooltip label={error} multiline maw={400}>
@@ -394,7 +400,7 @@ export default function ScrobblePage() {
                     </Text>{' '}
                     {l.service && (
                       <Badge size="xs" variant="light" mr={4}>
-                        {l.service}
+                        {serviceLabel(data.connections, l.service)}
                       </Badge>
                     )}
                     {l.title && <Text span fw={600}>{l.title} </Text>}

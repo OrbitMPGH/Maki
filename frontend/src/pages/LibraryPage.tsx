@@ -65,12 +65,12 @@ import {
   useSavedFilters,
   useSaveFilter,
   useSeries,
-  useSources,
   useTags,
 } from '../api/hooks'
 import { useReadTracking } from '../api/reader'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
+import { useSourceLabel } from '../sourceLabels'
 import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
@@ -268,7 +268,7 @@ export default function LibraryPage() {
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
   const { data: savedFilters } = useSavedFilters()
-  const { data: sourceInfos } = useSources()
+  const sourceLabel = useSourceLabel()
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
@@ -434,12 +434,6 @@ export default function LibraryPage() {
   const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
   const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
 
-  // Faceted off the library rather than the source registry, so a source that was dropped from the
-  // build still appears while series and files are pointing at it — falling back to the raw key.
-  const sourceLabel = useCallback(
-    (name: string) => (sourceInfos ?? []).find((s) => s.name === name)?.displayName ?? name,
-    [sourceInfos],
-  )
   const sourceOptions = useMemo(
     () => facetOptions(series, (s) => s.sources, sourceLabel),
     [series, sourceLabel],
@@ -600,14 +594,14 @@ export default function LibraryPage() {
         withCloseButton: false,
       })
     }
+    const firstError = errors[0]
     notifications.update({
       id: 'bulk-action',
       loading: false,
       color: errors.length ? 'var(--warn)' : 'var(--ok)',
-      // Only the failure-free case goes through the catalogue: the "first error" text carries a raw
-      // exception that translation must not obscure.
+      // The fixed wording is translated; `firstError` carries a raw exception message untouched.
       message: errors.length
-        ? `${name}: ${ok}/${total} succeeded - first error: ${errors[0]}`
+        ? now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
         : now`${name}: ${ok}/${total} succeeded`,
       autoClose: 8000,
       withCloseButton: true,
@@ -1222,8 +1216,10 @@ export default function LibraryPage() {
                       setActiveFilterId(saved.id)
                       setSaveFilterOpen(false)
                     },
-                    onError: (err) =>
-                      notifications.show({ color: 'var(--danger)', message: `Failed to save filter: ${String(err)}` }),
+                    onError: (err) => {
+                      const detail = err instanceof Error ? err.message : String(err)
+                      notifications.show({ color: 'var(--danger)', message: now`Failed to save filter: ${detail}` })
+                    },
                   },
                 )
               }}
@@ -1284,8 +1280,10 @@ export default function LibraryPage() {
                         message: plural(updated, { one: 'Tagged # series', other: 'Tagged # series' }),
                       })
                     },
-                    onError: (err) =>
-                      notifications.show({ color: 'var(--danger)', message: `Failed to tag: ${String(err)}` }),
+                    onError: (err) => {
+                      const detail = err instanceof Error ? err.message : String(err)
+                      notifications.show({ color: 'var(--danger)', message: now`Failed to tag: ${detail}` })
+                    },
                   },
                 )
               }
@@ -1462,11 +1460,13 @@ export default function LibraryPage() {
                       }),
                     })
                   },
-                  onError: (err) =>
+                  onError: (err) => {
+                    const detail = err instanceof Error ? err.message : String(err)
                     notifications.show({
                       color: 'var(--danger)',
-                      message: `Failed to update notifications: ${String(err)}`,
-                    }),
+                      message: now`Failed to update notifications: ${detail}`,
+                    })
+                  },
                 },
               )
             }

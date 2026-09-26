@@ -43,6 +43,7 @@ import { StatusDot } from '../components/ui/StatusDot'
 import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
 import { queueErrorMessage, queueItemLabel } from '../api/queue'
 import { useLabel } from '../i18n-context'
+import { useSourceLabel } from '../sourceLabels'
 import { formatDateTime, formatTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
@@ -51,6 +52,7 @@ const HISTORY_PAGE_SIZE = 25
 export default function ActivityPage() {
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const sourceLabel = useSourceLabel()
   const { data: queue } = useQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
@@ -201,7 +203,7 @@ export default function ActivityPage() {
                           </Group>
                         ) : (
                           <Text size="sm" c="var(--ink-3)">
-                            {q.sourceName}
+                            {sourceLabel(q.sourceName)}
                           </Text>
                         )}
                       </Table.Td>
@@ -417,7 +419,7 @@ export default function ActivityPage() {
                           </Table.Td>
                           <Table.Td data-priority="low">
                             <Text size="sm" c="var(--ink-3)">
-                              {q.sourceName}
+                              {sourceLabel(q.sourceName)}
                             </Text>
                           </Table.Td>
                           <Table.Td>

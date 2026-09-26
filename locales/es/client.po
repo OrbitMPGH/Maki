@@ -541,6 +541,10 @@ msgstr "{hours, plural, one {# h} many {# h} other {# h}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {queda aproximadamente # h} many {quedan aproximadamente # h} other {quedan aproximadamente # h}}"
 
+#: src/sourceLabels.ts
+msgid "{indexer} · Torrent"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 msgid "{inLibraryCount, plural, one {Show # series already in the library} other {Show # series already in the library}}"
 msgstr ""
@@ -740,6 +744,10 @@ msgstr "{name} {year}"
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded"
 msgstr "{name}: {ok}/{total} correctos"
+
+#: src/pages/LibraryPage.tsx
+msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
+msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
@@ -960,20 +968,34 @@ msgstr "{shownCount} de {totalSeriesShown} series mostradas."
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, one {# serie, {shareLabel} de esta vista, {coherenceWord}} many {# series, {shareLabel} de esta vista, {coherenceWord}} other {# series, {shareLabel} de esta vista, {coherenceWord}}}"
 
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} enabled"
+#~ msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+#~ msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+#~ msgid "{sourceDisplayName} publishes one language per series, so there is nothing to filter."
+#~ msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{sourceName} · priority {priority}"
 msgstr "{sourceName} · prioridad {priority}"
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
-msgstr "{sourceName} está desactivada en Ajustes → Fuentes. Se conserva la configuración de esta serie y volverá a aplicarse cuando se active."
+msgid "{sourceName} enabled"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
+msgid "{sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on."
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
 msgid "{sourceName} publishes one language per series, so there is nothing to filter."
-msgstr "{sourceName} publica un idioma por serie, así que no hay nada que filtrar."
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -4784,6 +4806,14 @@ msgstr "Todas las fuentes fallaron para este capítulo"
 msgid "Every source that isn't linked yet is searched again for each series, which is worth doing when a source has picked a title up since you added it."
 msgstr "Se vuelve a buscar en cada serie todas las fuentes que aún no están vinculadas, lo que resulta útil cuando una fuente ha añadido un título desde que lo incorporaste."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Every wanted chapter is already on disk"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+#~ msgid "Every wanted chapter is already on disk or queued"
+#~ msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Every week"
@@ -4906,13 +4936,29 @@ msgstr "No se pudo inicializar"
 msgid "Failed to load library"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-#~ msgid "Failed to load library: {loadErrorMessage}"
-#~ msgstr "No se pudo cargar la biblioteca: {loadErrorMessage}"
-
 #: src/pages/CreatorPage.tsx
 msgid "Failed to load this creator"
+msgstr ""
+
+#: src/components/CatalogueBrowser.tsx
+#: src/pages/DiscoverPage.tsx
+msgid "Failed to save default: {detail}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to save filter: {detail}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to tag: {detail}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to update notifications: {detail}"
+msgstr ""
+
+#: src/components/SeriesTagsEditor.tsx
+msgid "Failed to update tags: {detail}"
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -5921,6 +5967,7 @@ msgstr "Importar lo que ya tienes"
 
 #: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Imported"
 msgstr "Importado"
@@ -6329,11 +6376,6 @@ msgstr ""
 msgid "Last partial scan: {partialScanError}"
 msgstr "Último análisis parcial: {partialScanError}"
 
-#: src/components/SourceMappingsSection.tsx
-#, fuzzy
-msgid "Last refresh"
-msgstr "Última actualización"
-
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
@@ -6615,9 +6657,12 @@ msgid "Linked {chapterPhrase} to {fileName}"
 msgstr "Se vinculó {chapterPhrase} a {fileName}"
 
 #: src/components/SourceMappingsSection.tsx
-#, fuzzy
+#~ msgid "Linked {label}"
+#~ msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
 msgid "Linked {name}"
-msgstr "Vinculado {name}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6663,6 +6708,7 @@ msgstr "Cola de descargas en directo: las páginas se obtienen, validan y empaqu
 msgid "Load more"
 msgstr "Cargar más"
 
+#: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
 #, fuzzy
 msgid "Loading…"
@@ -6896,6 +6942,7 @@ msgid "Manhwa"
 msgstr "Manhwa"
 
 #: src/components/SourceMappingsSection.tsx
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Manual"
 msgstr "Manual"
@@ -9569,6 +9616,10 @@ msgstr "Actualización iniciada, descargando en segundo plano si hay una instant
 msgid "Refresh the catalogue"
 msgstr "Actualizar el catálogo"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Refreshed"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Refreshing"
@@ -9948,6 +9999,7 @@ msgid "Require single sign-on"
 msgstr "Exigir inicio de sesión único"
 
 #: src/pages/HealthPage.tsx
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Rescan"
 msgstr "Volver a analizar"
@@ -11371,6 +11423,10 @@ msgstr "inteligente"
 msgid "Smart"
 msgstr "Smart"
 
+#: src/pages/SettingsPage.tsx
+msgid "Smart Download"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Smart Download queued chapters"
@@ -12541,6 +12597,7 @@ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/labels.ts
+#: src/sourceLabels.ts
 #, fuzzy
 msgid "Torrent"
 msgstr "Torrent"
@@ -12832,6 +12889,10 @@ msgstr "nombre no reconocido"
 #, fuzzy
 msgid "Unrecognized name"
 msgstr "Nombre no reconocido"
+
+#: src/sourceLabels.ts
+msgid "Unresolved"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy

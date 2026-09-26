@@ -1139,7 +1139,7 @@ function DownloadSection() {
         mb="md"
       />
       <Text fw={500} size="sm" mb={4}>
-        Smart Download
+        <Trans>Smart Download</Trans>
       </Text>
       <SettingsHelp mb="xs">
         <Trans>
@@ -1320,61 +1320,63 @@ function BackupSection() {
 
       <Stack>
         {backups && backups.length > 0 && (
-          <Table className="panel-table ops-table">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th><Trans>Created</Trans></Table.Th>
-                <Table.Th><Trans>Kind</Trans></Table.Th>
-                <Table.Th><Trans>Version</Trans></Table.Th>
-                <Table.Th><Trans>Size</Trans></Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {backups.map((b) => (
-                <Table.Tr key={b.name}>
-                  <Table.Td>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
-                  <Table.Td>
-                    <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'var(--neutral)' : 'var(--info)'}>
-                      {b.manifest.kind}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="xs" c="var(--ink-3)">
-                      {b.manifest.appVersion}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>{formatBytes(b.sizeBytes)}</Table.Td>
-                  <Table.Td>
-                    <Group gap="xs" justify="flex-end" wrap="nowrap">
-                      <Button
-                        size="xs"
-                        variant="light"
-                        onClick={() => setTarget({ kind: 'existing', name: b.name })}
-                      >
-                        <Trans>Restore</Trans>
-                      </Button>
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => void downloadBackup(b.name)}
-                        aria-label={t`Download backup`}
-                      >
-                        <IconDownload size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="var(--danger)"
-                        onClick={() => setDeleting(b.name)}
-                        aria-label={t`Delete backup`}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
+          <Table.ScrollContainer minWidth={520}>
+            <Table className="panel-table ops-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th><Trans>Created</Trans></Table.Th>
+                  <Table.Th><Trans>Kind</Trans></Table.Th>
+                  <Table.Th><Trans>Version</Trans></Table.Th>
+                  <Table.Th><Trans>Size</Trans></Table.Th>
+                  <Table.Th />
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {backups.map((b) => (
+                  <Table.Tr key={b.name}>
+                    <Table.Td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
+                    <Table.Td>
+                      <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'var(--neutral)' : 'var(--info)'}>
+                        {b.manifest.kind}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs" c="var(--ink-3)">
+                        {b.manifest.appVersion}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>{formatBytes(b.sizeBytes)}</Table.Td>
+                    <Table.Td>
+                      <Group gap="xs" justify="flex-end" wrap="nowrap">
+                        <Button
+                          size="xs"
+                          variant="light"
+                          onClick={() => setTarget({ kind: 'existing', name: b.name })}
+                        >
+                          <Trans>Restore</Trans>
+                        </Button>
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => void downloadBackup(b.name)}
+                          aria-label={t`Download backup`}
+                        >
+                          <IconDownload size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="var(--danger)"
+                          onClick={() => setDeleting(b.name)}
+                          aria-label={t`Delete backup`}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         )}
 
         <Group>
@@ -1632,7 +1634,7 @@ function ScrobbleSection() {
             <Text size="xs" c="var(--ink-3)">
               <Trans>
                 Create an API client at anilist.co/settings/developer with redirect URL{' '}
-                <Code>{origin}/api/v1/scrobble/oauth/anilist</Code>
+                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/anilist</Code>
               </Trans>
             </Text>
             <Group grow>
@@ -1660,9 +1662,9 @@ function ScrobbleSection() {
             <SettingsHelp>
               <Trans>
                 Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-                <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. If connecting ends in{' '}
-                <Code>invalid_client</Code>, re-copy the Client ID (not the secret) and check the
-                App Type is set.
+                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/mal</Code>. If
+                connecting ends in <Code>invalid_client</Code>, re-copy the Client ID (not the secret) and
+                check the App Type is set.
               </Trans>
             </SettingsHelp>
             <Group grow>
