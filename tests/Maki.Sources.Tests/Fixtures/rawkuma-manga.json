@@ -1,0 +1,70 @@
+[
+  {
+    "id": 7,
+    "slug": "one-piece",
+    "title": {
+      "rendered": "One Piece"
+    },
+    "link": "https://rawkuma.net/manga/one-piece/",
+    "content": {
+      "rendered": "<p>From Viz:<br />\nAs a child, Monkey D. Luffy was inspired to become a pirate by listening to the tales of &#8220;Red-Haired&#8221; Shanks. But his life changed when Luffy accidentally ate the Gum-Gum Devil Fruit and gained the power to stretch like rubber at the cost of never being able to swim again. Years later, still vowing to become the king of the pirates, Luffy sets out on his adventure one guy alone in a rowboat, in search of the legendary &#8220;One Piece,&#8221; said to be the greatest treasure in the world.</p>\n<p>[Read for FREE on Manga Plus](https://mangaplus.shueisha.co.jp/titles/100020)</p>\n<p>The best-selling series in manga history and the 2nd bestselling comic of all time after Superman.</p>\n<p>Note: Was a finalist for the Tezuka Osamu Cultural Prize from 2000 to 2002. The German translation won the Sondermann audience award at the Frankfurt Book Fair Comics Centre in 2005, 2008 and 2009. Won the 41st Japan Cartoonists Association Award Grand Prize alongside [Neko Darake](https://www.mangaupdates.com/series.html?id=48911469395) in 2012. Received the Kumamoto Prefecture Honorary Prize in 2018.</p>\n",
+      "protected": false
+    },
+    "meta": {
+      "meta": {
+        "thumbnail": "https://rawkuma.net/wp-content/uploads/2025/09/i491609.jpg",
+        "mangaupdates_id": "55099564912"
+      },
+      "tax": [
+        {
+          "term_id": 8,
+          "name": "Manga",
+          "slug": "manga",
+          "term_group": 0,
+          "term_taxonomy_id": 8,
+          "taxonomy": "type",
+          "description": "",
+          "parent": 0,
+          "count": 9531,
+          "filter": "raw"
+        },
+        {
+          "term_id": 9,
+          "name": "Ongoing",
+          "slug": "ongoing",
+          "term_group": 0,
+          "term_taxonomy_id": 9,
+          "taxonomy": "status",
+          "description": "",
+          "parent": 0,
+          "count": 6030,
+          "filter": "raw"
+        },
+        {
+          "term_id": 2,
+          "name": "Action",
+          "slug": "action",
+          "term_group": 0,
+          "term_taxonomy_id": 2,
+          "taxonomy": "genre",
+          "description": "",
+          "parent": 0,
+          "count": 2955,
+          "filter": "raw"
+        },
+        {
+          "term_id": 3,
+          "name": "Adventure",
+          "slug": "adventure",
+          "term_group": 0,
+          "term_taxonomy_id": 3,
+          "taxonomy": "genre",
+          "description": "",
+          "parent": 0,
+          "count": 2205,
+          "filter": "raw"
+        }
+      ]
+    }
+  }
+]
