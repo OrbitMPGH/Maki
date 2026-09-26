@@ -53,7 +53,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
 
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
     public IReadOnlyList<string> SupportedLanguages => ["vi"];
-    public IReadOnlyList<string> CoverHosts => [];
+    public IReadOnlyList<string> CoverHosts => ["cuutruyen.net"];
 
     public string? ResolveSeriesIdFromUrl(Uri url)
     {

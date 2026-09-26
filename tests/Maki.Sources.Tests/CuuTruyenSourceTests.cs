@@ -283,3 +283,20 @@ public class CuuTruyenSourceTests
     }
 }
 
+[Collection(BaseUrlOverrideCollection.Name)]
+public class CuuTruyenBaseUrlOverrideTests
+{
+    [Fact]
+    public async Task RewrittenCoverPassesCoverHostPolicyWithBaseUrlOverride()
+    {
+        using var _ = new BaseUrlOverride("MAKI_SOURCE_CUUTRUYEN_BASEURL", "https://cuutruyen.example");
+        var source = new CuuTruyenSource(
+            new FakeHtmlFetcher(new() { ["/mangas/search"] = FakeHttpClientFactory.Fixture("cuutruyen-search.json") }),
+            new FakeHttpClientFactory([]));
+
+        var first = (await source.SearchAsync("one piece"))[0];
+
+        Assert.Equal("https://cuutruyen.example/mangas/2637", first.Url);
+        Assert.True(CoverHostPolicy.Allows(source, new Uri(first.CoverUrl!)));
+    }
+}
