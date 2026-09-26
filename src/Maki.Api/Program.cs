@@ -462,7 +462,7 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
-    // MangaLib (LibGroup) — JSON API behind DDoS-Guard, not Cloudflare; answers a plain client
+    // MangaLib (LibGroup): JSON API behind DDoS-Guard, not Cloudflare; answers a plain client
     // 200 as long as every request carries a mangalib Referer (403 without it). The API host
     // rotates (Keiyoushi exposes a picker), so MAKI_SOURCE_MANGALIB_APIURL overrides the default.
     var mangaLibApiUrl = (Environment.GetEnvironmentVariable("MAKI_SOURCE_MANGALIB_APIURL") ?? "https://api.cdnlibs.org").TrimEnd('/');

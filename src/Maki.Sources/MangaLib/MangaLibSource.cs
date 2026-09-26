@@ -95,10 +95,6 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
         foreach (var row in rows.EnumerateArray())
         {
             var number = row.TryGetProperty("number", out var numEl) ? numEl.GetString() : null;
-            if (string.IsNullOrEmpty(number))
-            {
-                continue;
-            }
 
             if (!row.TryGetProperty("branches", out var branches) || branches.ValueKind != JsonValueKind.Array)
             {
@@ -142,6 +138,14 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
                 ? created
                 : (DateTime?)null;
 
+            var title = string.IsNullOrWhiteSpace(name) ? null : name;
+            if (parsed.Number is null && title is null)
+            {
+                // A one-shot/extra's identity is IsOneShot + Language + Title, Volume ignored, so
+                // a blank title here would alias every untitled extra on this series into one row.
+                title = string.IsNullOrEmpty(volume) ? "Extra" : $"Vol. {volume} extra";
+            }
+
             chapters.Add(new SourceChapter(
                 Name,
                 sourceSeriesId,
@@ -149,7 +153,7 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
                 number,
                 parsed.Number,
                 parsed.Volume,
-                Title: string.IsNullOrWhiteSpace(name) ? null : name,
+                Title: title,
                 Language: "ru",
                 ReleaseDate: createdAt,
                 Url: $"{BaseUrl}/ru/{sourceSeriesId}/read/v{volume}/c{number}"));
