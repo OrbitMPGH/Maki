@@ -201,6 +201,12 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
             }
         }
 
+        if (pages.Count == 0)
+        {
+            throw new ChapterLockedException(
+                $"Manhwa18.net chapter {chapter.SourceChapterId} has no pages (locked or not yet public).");
+        }
+
         return new ChapterPages(pages);
     }
 

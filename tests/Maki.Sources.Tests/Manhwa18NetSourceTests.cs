@@ -15,6 +15,12 @@ public class Manhwa18NetSourceTests
         <html><body><div id="app" data-page='{"component":"Manga","props":{"manga":{"id":1,"name":"Test Series","slug":"test-series","genres":[]},"chapters":[{"id":1,"name":"Extra","slug":"extra","order":1,"created_at":"2024-01-01T00:00:00.000000Z"}]}}'></div></body></html>
         """;
 
+    /// <summary>A chapter page whose Inertia props carry no images at all (locked or not yet public).</summary>
+    private const string NoPagesChapterHtml =
+        """
+        <html><body><div id="app" data-page='{"component":"Chapter","props":{"mangaSlug":"secret-class","chapterName":"Chapter 999","chapterId":1,"chapterImages":[],"chapterContent":""}}'></div></body></html>
+        """;
+
     [Fact]
     public async Task Search_drops_raw_series_and_parses_the_rest()
     {
@@ -148,5 +154,17 @@ public class Manhwa18NetSourceTests
 
         Assert.Equal(16, pages.Pages.Count);
         Assert.All(pages.Pages, p => Assert.StartsWith("https://cdn.pornwa.us/", p.Url));
+    }
+
+    [Fact]
+    public async Task GetPages_throws_chapter_locked_when_no_pages_are_found()
+    {
+        var source = new Manhwa18NetSource(new FakeHtmlFetcher(new()
+        {
+            ["chapter-999"] = NoPagesChapterHtml
+        }));
+
+        await Assert.ThrowsAsync<ChapterLockedException>(() => source.GetPagesAsync(new SourceChapter(
+            "manhwa18net", "secret-class", "chapter-999", "Chapter 999", 999, null, null, "en", null)));
     }
 }
