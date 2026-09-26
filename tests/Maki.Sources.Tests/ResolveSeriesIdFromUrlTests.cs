@@ -10,6 +10,7 @@ using Maki.Sources.GigaViewer;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using Maki.Sources.Toonily;
+using Maki.Sources.MangaLib;
 
 namespace Maki.Sources.Tests;
 
@@ -160,6 +161,23 @@ public class ResolveSeriesIdFromUrlTests
     public void Toonily(string url, string? expected)
     {
         ISource source = new ToonilySource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://mangalib.me/ru/manga/206--one-piece", "206--one-piece")]
+    [InlineData("https://mangalib.me/ru/manga/206--one-piece/", "206--one-piece")]
+    [InlineData("https://www.mangalib.me/ru/manga/206--one-piece", "206--one-piece")]
+    // A slug with no leading "{id}--" isn't a real series id on this site.
+    [InlineData("https://mangalib.me/ru/manga/one-piece", null)]
+    // Chapter reader link: names the series but not through "/manga/", so it doesn't resolve here.
+    [InlineData("https://mangalib.me/ru/206--one-piece/read/v108/c1194", null)]
+    // Legacy host-root link, no "/manga/" segment.
+    [InlineData("https://mangalib.me/206--one-piece", null)]
+    [InlineData("https://hentailib.me/ru/manga/206--one-piece", null)]
+    public void MangaLib(string url, string? expected)
+    {
+        ISource source = new MangaLibSource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

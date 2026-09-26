@@ -60,6 +60,7 @@ built-in reader.
   - **GigaViewer sites** (ja): Shonen Jump+, Comic Days, Sunday Webry, MAGCOMI, Tonari no Young
     Jump, Comic Zenon, Kurage Bunch (free official episodes only)
   - **Toonily** (manhwa, adult, requires FlareSolverr)
+  - **MangaLib** (Russian)
 - **Automatic source matching** when you add a series, with manual linking for anything fuzzy.
   Sources are drag-ordered by preference and can be switched off globally. A disabled source is
   skipped by auto-matching and stops every series from using it, while each series' own per-source

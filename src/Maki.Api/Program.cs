@@ -42,6 +42,7 @@ using Maki.Sources.Webtoons;
 using Maki.Sources.GigaViewer;
 using System.Net;
 using Maki.Sources.TopManhua;
+using Maki.Sources.MangaLib;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -483,6 +484,23 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // MangaLib (LibGroup): JSON API behind DDoS-Guard, not Cloudflare; answers a plain client
+    // 200 as long as every request carries a mangalib Referer (403 without it). The API host
+    // rotates (Keiyoushi exposes a picker), so MAKI_SOURCE_MANGALIB_APIURL overrides the default.
+    var mangaLibApiUrl = (Environment.GetEnvironmentVariable("MAKI_SOURCE_MANGALIB_APIURL") ?? "https://api.cdnlibs.org").TrimEnd('/');
+    var mangaLibLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(MangaLibSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri($"{mangaLibApiUrl}/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://mangalib.me/");
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Site-Id", "1");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLibLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
         {
@@ -563,6 +581,7 @@ try
     builder.Services.AddSingleton<ISource, ComicZenonSource>();
     builder.Services.AddSingleton<ISource, KurageBunchSource>();
     builder.Services.AddSingleton<ISource, ToonilySource>();
+    builder.Services.AddSingleton<ISource, MangaLibSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
