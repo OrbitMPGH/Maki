@@ -11,6 +11,7 @@ using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using Maki.Sources.Toonily;
 using Maki.Sources.MangaLib;
+using Maki.Sources.Dynasty;
 
 namespace Maki.Sources.Tests;
 
@@ -178,6 +179,21 @@ public class ResolveSeriesIdFromUrlTests
     public void MangaLib(string url, string? expected)
     {
         ISource source = new MangaLibSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://dynasty-scans.com/series/citrus", "citrus")]
+    [InlineData("https://dynasty-scans.com/series/citrus.json", "citrus")]
+    [InlineData("https://dynasty-scans.com/series/citrus_1", "citrus_1")]
+    [InlineData("https://dynasty-scans.com/chapters/citrus_ch01", null)]
+    [InlineData("https://dynasty-scans.com/doujins/some-doujin", null)]
+    [InlineData("https://dynasty-scans.com/anthologies/some-anthology", null)]
+    [InlineData("https://dynasty-scans.com/authors/saburouta", null)]
+    [InlineData("https://example.com/series/citrus", null)]
+    public void DynastyScans(string url, string? expected)
+    {
+        ISource source = new DynastySource(Factory);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

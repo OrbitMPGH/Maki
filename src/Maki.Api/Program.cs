@@ -43,6 +43,7 @@ using Maki.Sources.GigaViewer;
 using System.Net;
 using Maki.Sources.TopManhua;
 using Maki.Sources.MangaLib;
+using Maki.Sources.Dynasty;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -339,7 +340,9 @@ try
                  ($"source-{GigaViewerSites.Magcomi.Name}", $"{GigaViewerSites.Magcomi.BaseUrl}/"),
                  ($"source-{GigaViewerSites.TonarinoYj.Name}", $"{GigaViewerSites.TonarinoYj.BaseUrl}/"),
                  ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/"),
-                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/")
+                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/"),
+                 // Dynasty Scans — plain nginx, no Cloudflare.
+                 (DynastySource.HttpClientName, "https://dynasty-scans.com/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -582,6 +585,7 @@ try
     builder.Services.AddSingleton<ISource, KurageBunchSource>();
     builder.Services.AddSingleton<ISource, ToonilySource>();
     builder.Services.AddSingleton<ISource, MangaLibSource>();
+    builder.Services.AddSingleton<ISource, DynastySource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();

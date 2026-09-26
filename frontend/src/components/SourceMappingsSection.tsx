@@ -95,6 +95,7 @@ const SOURCE_ICONS: Record<string, string> = {
   kuragebunch: '/source-icons/kuragebunch.png',
   toonily: '/source-icons/toonily.png',
   mangalib: '/source-icons/mangalib.svg',
+  dynasty: '/source-icons/dynasty.png',
 }
 
 export function SourceMappingsSection({
