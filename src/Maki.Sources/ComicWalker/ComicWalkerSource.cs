@@ -66,7 +66,7 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
-        var root = await GetWorkAsync(sourceSeriesId, ct);
+        var (_, _, root) = await GetWorkAsync(sourceSeriesId, ct);
         var work = root.GetProperty("work");
 
         var title = work.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
@@ -90,16 +90,20 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
-        var root = await GetWorkAsync(sourceSeriesId, ct);
+        var (url, body, root) = await GetWorkAsync(sourceSeriesId, ct);
         var work = root.GetProperty("work");
         var language = work.TryGetProperty("language", out var languageEl) ? languageEl.GetString() : null;
         language = string.IsNullOrEmpty(language) ? "ja" : language;
 
+        // A present but empty "result" is a real zero-chapter answer and must still return [].
+        // Anything else (no latestEpisodes, or result missing/not an array) is an unexpected
+        // shape: returning [] here would read to ChapterSyncService as a successful sync and
+        // silently clear the mapping's chapter snapshot.
         if (!root.TryGetProperty("latestEpisodes", out var latestEpisodes) ||
             !latestEpisodes.TryGetProperty("result", out var episodes) ||
             episodes.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw Unexpected(url, body);
         }
 
         var chapters = new List<SourceChapter>();
@@ -199,7 +203,7 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
         return item.TryGetProperty("originalThumbnail", out var originalThumbnail) ? originalThumbnail.GetString() : null;
     }
 
-    private async Task<JsonElement> GetWorkAsync(string workCode, CancellationToken ct)
+    private async Task<(string Url, string Body, JsonElement Root)> GetWorkAsync(string workCode, CancellationToken ct)
     {
         var url = $"api/contents/details/work?workCode={Uri.EscapeDataString(workCode)}";
         var (body, root) = await GetJsonAsync(url, ct);
@@ -208,7 +212,7 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
             throw Unexpected(url, body);
         }
 
-        return root;
+        return (url, body, root);
     }
 
     private async Task<(string Body, JsonElement Root)> GetJsonAsync(string url, CancellationToken ct)

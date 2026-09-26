@@ -75,6 +75,46 @@ public class ComicWalkerSourceTests
         Assert.Equal(numbers.Distinct().Count(), numbers.Count);
     }
 
+    [Fact]
+    public async Task ListChapters_throws_when_latestEpisodes_is_missing()
+    {
+        // A missing latestEpisodes must not read as "zero chapters": ChapterSyncService would
+        // take an empty list as a successful sync and clear the mapping's chapter snapshot.
+        var source = SourceFor(new()
+        {
+            ["details/work"] = "{\"work\":{\"code\":\"KC_002386_S\",\"title\":\"t\",\"language\":\"ja\"}}"
+        });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("KC_002386_S"));
+        Assert.Contains("details/work", ex.Message);
+    }
+
+    [Fact]
+    public async Task ListChapters_throws_when_result_is_not_an_array()
+    {
+        var source = SourceFor(new()
+        {
+            ["details/work"] =
+                "{\"work\":{\"code\":\"KC_002386_S\",\"title\":\"t\",\"language\":\"ja\"},\"latestEpisodes\":{\"result\":{}}}"
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("KC_002386_S"));
+    }
+
+    [Fact]
+    public async Task ListChapters_returns_empty_for_a_genuinely_empty_result()
+    {
+        var source = SourceFor(new()
+        {
+            ["details/work"] =
+                "{\"work\":{\"code\":\"KC_002386_S\",\"title\":\"t\",\"language\":\"ja\"},\"latestEpisodes\":{\"total\":0,\"result\":[]}}"
+        });
+
+        var chapters = await source.ListChaptersAsync("KC_002386_S");
+
+        Assert.Empty(chapters);
+    }
+
     [Theory]
     [InlineData("第73話②　あなたのその勇気", 73.2)]
     [InlineData("第73話①　あなたのその勇気", 73.1)]
