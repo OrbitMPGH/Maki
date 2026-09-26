@@ -85,8 +85,20 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://www.webtoons.com/en/fantasy/tower-of-god/season-1-ep-0/viewer?title_no=95&episode_no=1",
         "fantasy/tower-of-god/95")]
     [InlineData("https://www.webtoons.com/en/genres", null)]
-    [InlineData("https://www.webtoons.com/es/fantasia/torre-de-dios/list?title_no=1461", null)]
+    // Non-English locales carry their own title_no and get a 4-segment id, not a match failure.
+    [InlineData("https://www.webtoons.com/es/fantasia/torre-de-dios/list?title_no=1461", "es/fantasia/torre-de-dios/1461")]
+    [InlineData("https://www.webtoons.com/es/fantasy/tower-of-god/list?title_no=1718", "es/fantasy/tower-of-god/1718")]
+    // A locale's viewer URL names the same four parts, so a link copied mid-read still resolves.
+    [InlineData("https://www.webtoons.com/es/fantasy/tower-of-god/t-1-ep-000/viewer?title_no=1718&episode_no=1",
+        "es/fantasy/tower-of-god/1718")]
+    [InlineData("https://www.webtoons.com/zh-hant/fantasy/tower-of-god/list?title_no=160", "zh-hant/fantasy/tower-of-god/160")]
+    [InlineData("https://www.webtoons.com/th/canvas/sky-tower-moon-tower-the-aureum-path/list?title_no=155834",
+        "th/canvas/sky-tower-moon-tower-the-aureum-path/155834")]
+    // ja/ko are not served locales of this site (unlike the seven in LocaleLanguages).
+    [InlineData("https://www.webtoons.com/ja/fantasy/tower-of-god/list?title_no=95", null)]
+    [InlineData("https://www.webtoons.com/ko/fantasy/tower-of-god/list?title_no=95", null)]
     [InlineData("https://example.com/en/fantasy/tower-of-god/list?title_no=95", null)]
+    [InlineData("https://example.com/es/fantasy/tower-of-god/list?title_no=1718", null)]
     public void Webtoons(string url, string? expected)
     {
         ISource source = new WebtoonsSource(Factory);
