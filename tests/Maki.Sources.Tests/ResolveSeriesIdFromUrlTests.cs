@@ -116,4 +116,18 @@ public class ResolveSeriesIdFromUrlTests
         ISource source = new MangakakalotSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
+
+    [Theory]
+    [InlineData("https://taiyo.moe/media/3cec0768-c247-468c-97fe-76e9a556d6ee", "3cec0768-c247-468c-97fe-76e9a556d6ee")]
+    [InlineData("https://taiyo.moe/media/3cec0768-c247-468c-97fe-76e9a556d6ee/", "3cec0768-c247-468c-97fe-76e9a556d6ee")]
+    // The id must parse as a GUID; a non-UUID path tail is rejected rather than treated as an id.
+    [InlineData("https://taiyo.moe/media/one-piece", null)]
+    [InlineData("https://taiyo.moe/chapter/a28e4286-b9b8-42b1-8264-76506e0c4349/1", null)]
+    [InlineData("https://cdn.taiyo.moe/medias/3cec0768-c247-468c-97fe-76e9a556d6ee", null)]
+    [InlineData("https://example.com/media/3cec0768-c247-468c-97fe-76e9a556d6ee", null)]
+    public void Taiyo(string url, string? expected)
+    {
+        ISource source = new Maki.Sources.Taiyo.TaiyoSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
 }

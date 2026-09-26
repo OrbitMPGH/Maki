@@ -38,6 +38,7 @@ using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
+using Maki.Sources.Taiyo;
 using System.Net;
 using Maki.Sources.TopManhua;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -475,6 +476,17 @@ try
     builder.Services.AddHttpClient(FlareSolverrClient.HttpClientName, client =>
         client.Timeout = TimeSpan.FromSeconds(90)); // FS solves can take a while
 
+    // Taiyo: no BaseAddress, since the source calls three hosts with absolute URLs
+    // (taiyo.moe for tRPC, meilisearch.taiyo.moe for search, cdn.taiyo.moe for images).
+    var taiyoLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(TaiyoSource.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     builder.Services.AddSingleton<SettingsService>();
     builder.Services.AddSingleton<IAppSettings>(sp => sp.GetRequiredService<SettingsService>());
 
@@ -533,7 +545,8 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
-    
+    builder.Services.AddSingleton<ISource, TaiyoSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();
