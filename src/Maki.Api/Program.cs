@@ -44,6 +44,7 @@ using System.Net;
 using Maki.Sources.TopManhua;
 using Maki.Sources.MangaLib;
 using Maki.Sources.Dynasty;
+using Maki.Sources.AnimeSama;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -586,7 +587,8 @@ try
     builder.Services.AddSingleton<ISource, ToonilySource>();
     builder.Services.AddSingleton<ISource, MangaLibSource>();
     builder.Services.AddSingleton<ISource, DynastySource>();
-    
+    builder.Services.AddSingleton<ISource, AnimeSamaSource>();
+
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
     builder.Services.AddSingleton<PageDownloader>();

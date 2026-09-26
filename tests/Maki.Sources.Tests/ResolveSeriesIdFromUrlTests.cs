@@ -12,6 +12,7 @@ using Maki.Sources.Webtoons;
 using Maki.Sources.Toonily;
 using Maki.Sources.MangaLib;
 using Maki.Sources.Dynasty;
+using Maki.Sources.AnimeSama;
 
 namespace Maki.Sources.Tests;
 
@@ -194,6 +195,22 @@ public class ResolveSeriesIdFromUrlTests
     public void DynastyScans(string url, string? expected)
     {
         ISource source = new DynastySource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://anime-sama.to/catalogue/one-piece/", "one-piece")]
+    [InlineData("https://anime-sama.to/catalogue/one-piece", "one-piece")]
+    [InlineData("https://anime-sama.to/catalogue/one-piece/scan_noir-et-blanc/vf/", "one-piece/scan_noir-et-blanc/vf")]
+    [InlineData("https://www.anime-sama.to/catalogue/one-piece/scan/vf/", "one-piece/scan/vf")]
+    // Anime paths (not "scan...") on the same three-segment shape must not resolve.
+    [InlineData("https://anime-sama.to/catalogue/one-piece/saison1/vostfr/", null)]
+    [InlineData("https://anime-sama.to/catalogue/", null)]
+    [InlineData("https://anime-sama.to/s2/scans/One%20Piece/1194/1.jpg", null)]
+    [InlineData("https://example.com/catalogue/one-piece/", null)]
+    public void AnimeSama(string url, string? expected)
+    {
+        ISource source = new AnimeSamaSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }
