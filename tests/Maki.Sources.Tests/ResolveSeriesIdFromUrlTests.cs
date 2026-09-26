@@ -116,4 +116,19 @@ public class ResolveSeriesIdFromUrlTests
         ISource source = new MangakakalotSource(null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
+
+    [Theory]
+    [InlineData("https://www.manhuagui.com/comic/1128/", "1128")]
+    [InlineData("https://www.manhuagui.com/comic/1128", "1128")]
+    [InlineData("https://tw.manhuagui.com/comic/1128", "1128")]
+    [InlineData("https://mhgui.com/comic/1128/", "1128")]
+    // A chapter URL is not a series page.
+    [InlineData("https://www.manhuagui.com/comic/1128/909042.html", null)]
+    [InlineData("https://www.manhuagui.com/s/%E6%B5%B7%E8%B4%BC%E7%8E%8B_p1.html", null)]
+    [InlineData("https://example.com/comic/1128/", null)]
+    public void Manhuagui(string url, string? expected)
+    {
+        ISource source = new Manhuagui.ManhuaguiSource(Factory);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
 }

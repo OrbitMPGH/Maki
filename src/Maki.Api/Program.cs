@@ -33,6 +33,7 @@ using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
 using Maki.Sources.Mangakakalot;
+using Maki.Sources.Manhuagui;
 using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
@@ -461,6 +462,34 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Manhuagui — Simplified Chinese manhua/manga aggregator, plain HTTP, no Cloudflare. Bans IPs
+    // on bulk reads, hence a standalone, stricter-than-usual limiter (1 req/2s) rather than a slot
+    // in the standard batch. Every response is gzip-compressed regardless of what Accept-Encoding
+    // asked for, hence AutomaticDecompression here (most named clients don't need it because they
+    // never request compression in the first place). isAdult=1 is the cookie Keiyoushi sends for
+    // audited/R18 titles; harmless on everything else, unverified whether it's load-bearing here.
+    var manhuaguiBaseUrl = (Environment.GetEnvironmentVariable("MAKI_SOURCE_MANHUAGUI_BASEURL")?.TrimEnd('/')
+        ?? "https://www.manhuagui.com") + "/";
+    var manhuaguiLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 1);
+    builder.Services.AddHttpClient(ManhuaguiSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri(manhuaguiBaseUrl);
+            // The plan pins this exact UA string (tested live); the shared browserUa const is a
+            // slightly older Chrome build number.
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36");
+            client.DefaultRequestHeaders.Referrer = new Uri("https://www.manhuagui.com/");
+            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("zh-CN,zh;q=0.9");
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(manhuaguiLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
         {
@@ -533,6 +562,7 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
+    builder.Services.AddSingleton<ISource, ManhuaguiSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
