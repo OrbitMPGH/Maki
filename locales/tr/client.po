@@ -11861,6 +11861,10 @@ msgid "Sign out everywhere else"
 msgstr "Her yerde oturumu kapat"
 
 #: src/components/settings/AccountSection.tsx
+msgid "Sign-in relies on your identity provider. A code, once set up, protects password sign-in only."
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Signed in as"
 msgstr "Şu şekilde oturum açıldı:"

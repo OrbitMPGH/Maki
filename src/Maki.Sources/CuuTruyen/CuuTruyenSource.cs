@@ -282,6 +282,7 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
     private async Task<byte[]> FetchBytesAsync(
         string url, IReadOnlyDictionary<string, string> headers, CancellationToken ct)
     {
+        PublicAddressGuard.EnsureAllowed(url);
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         foreach (var (key, value) in headers)
         {

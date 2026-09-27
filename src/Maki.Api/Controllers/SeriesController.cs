@@ -622,10 +622,10 @@ public class SeriesController(
         {
             // Resolve, never a bare Combine: RelativePath is stored data, and a row that escapes the
             // root would have this delete an arbitrary file for whoever holds DeleteSeries.
-            var absPath = LibraryPaths.Resolve(series.RootFolder.Path, file.RelativePath);
+            var absPath = LibraryPaths.ResolveForDelete(series.RootFolder.Path, file.RelativePath);
             if (absPath is null)
             {
-                logger.LogWarning("Refusing to delete {File}: resolves outside {Root}",
+                logger.LogWarning("Refusing to delete {File}: resolves outside {Root} or through a linked folder",
                     file.RelativePath, series.RootFolder.Path);
                 failed++;
                 continue;
@@ -970,8 +970,14 @@ public class SeriesController(
 
         if (series.RootFolder != null)
         {
-            var folder = Path.Combine(series.RootFolder.Path, series.FolderName);
-            if (Directory.Exists(folder))
+            var folder = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, series.FolderName);
+            if (folder is null && LibraryPaths.Resolve(series.RootFolder.Path, series.FolderName) is { } linked
+                && Directory.Exists(linked))
+            {
+                logger.LogWarning("Leaving {Folder} on disk: it is or sits under a symbolic link or junction", linked);
+            }
+
+            if (folder is not null && Directory.Exists(folder))
             {
                 if (deleteFiles)
                 {
@@ -995,7 +1001,7 @@ public class SeriesController(
                     foreach (var path in paths)
                     {
                         if (LibraryPaths.TopFolder(path) is { } top && extraFolders.Contains(top, LibraryPaths.FolderComparer)
-                            && LibraryPaths.Resolve(series.RootFolder.Path, LibraryPaths.ComparisonKey(path)) is { } absolute
+                            && LibraryPaths.ResolveForDelete(series.RootFolder.Path, LibraryPaths.ComparisonKey(path)) is { } absolute
                             && System.IO.File.Exists(absolute))
                         {
                             System.IO.File.Delete(absolute);
@@ -1005,8 +1011,8 @@ public class SeriesController(
 
                 foreach (var extra in extraFolders)
                 {
-                    var extraPath = Path.Combine(series.RootFolder.Path, extra);
-                    if (Directory.Exists(extraPath) && !Directory.EnumerateFileSystemEntries(extraPath).Any())
+                    var extraPath = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, extra);
+                    if (extraPath is not null && Directory.Exists(extraPath) && !Directory.EnumerateFileSystemEntries(extraPath).Any())
                     {
                         Directory.Delete(extraPath, recursive: false);
                     }
@@ -1120,6 +1126,11 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.rootFolderNotFound");
         }
 
+        if (!currentUser.AllRootFolders && !currentUser.RootFolderIds.Contains(request.RootFolderId))
+        {
+            return this.Fail(localizer, "error.series.rootFolderNotFound");
+        }
+
         // Every folder the series has files in moves with it, or the stored paths of a
         // keep-new-standard import's original folder would point into the old root.
         var folders = await SeriesFolders.ForAsync(db, series, ct);
@@ -1132,12 +1143,30 @@ public class SeriesController(
                 return this.Conflict(localizer, "error.series.activeDownloadMove");
             }
 
-            foreach (var folder in folders)
+            var trackedPaths = await db.ChapterFiles.Where(f => f.SeriesId == id)
+                .Select(f => f.RelativePath).ToListAsync(ct);
+            var sourceRoot = series.RootFolder.Path;
+            bool TrackedPathTraversesLink(string folder) => trackedPaths
+                .Where(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), folder))
+                .Any(p => LibraryPaths.Resolve(sourceRoot, LibraryPaths.ComparisonKey(p)) is { } path
+                    && LibraryPaths.TraversesLink(sourceRoot, path));
+
+            foreach (var (folder, index) in folders.Select((f, i) => (f, i)))
             {
                 var target = Path.Combine(destination.Path, folder);
                 if (Directory.Exists(target))
                 {
                     return this.Conflict(localizer, "error.series.destinationExists", new { folder = target });
+                }
+
+                // The cross-volume fallback copies and then deletes the source, so a link anywhere in
+                // the tree would either pull outside files into the library or be dropped along with
+                // whatever rows reach through it.
+                if (Directory.Exists(Path.Combine(series.RootFolder.Path, folder))
+                    && (LibraryPaths.ResolveNoLinks(series.RootFolder.Path, folder) is not { } sourceFolder
+                        || (index == 0 ? LibraryPaths.ContainsLink(sourceFolder) : TrackedPathTraversesLink(folder))))
+                {
+                    return this.Fail(localizer, "error.series.folderContainsLinks", new { folder });
                 }
             }
 
@@ -1145,8 +1174,6 @@ public class SeriesController(
             // not updated and would otherwise resolve it under the old root. The series' own folder
             // moves whole; a folder it only has some files in gives up just those files, the same
             // line Delete draws, so anything else living there stays put.
-            var trackedPaths = await db.ChapterFiles.Where(f => f.SeriesId == id)
-                .Select(f => f.RelativePath).ToListAsync(ct);
             var undo = new List<(string From, string To, bool IsDirectory)>();
             var emptiedFolders = new List<string>();
             foreach (var (folder, index) in folders.Select((f, i) => (f, i)))
@@ -1170,8 +1197,8 @@ public class SeriesController(
                     foreach (var path in trackedPaths.Where(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), folder)))
                     {
                         var key = LibraryPaths.ComparisonKey(path);
-                        if (LibraryPaths.Resolve(series.RootFolder.Path, key) is not { } from
-                            || LibraryPaths.Resolve(destination.Path, key) is not { } to
+                        if (LibraryPaths.ResolveNoLinks(series.RootFolder.Path, key) is not { } from
+                            || LibraryPaths.ResolveNoLinks(destination.Path, key) is not { } to
                             || !System.IO.File.Exists(from))
                         {
                             continue;
@@ -1376,16 +1403,26 @@ public class SeriesController(
         }
     }
 
+    private static void RefuseLink(string path)
+    {
+        if (LibraryPaths.IsLink(path))
+        {
+            throw new IOException($"Refusing to copy the symbolic link or junction {path}");
+        }
+    }
+
     private static void CopyDirectory(string source, string destination)
     {
         Directory.CreateDirectory(destination);
         foreach (var file in Directory.GetFiles(source))
         {
+            RefuseLink(file);
             System.IO.File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
         }
 
         foreach (var dir in Directory.GetDirectories(source))
         {
+            RefuseLink(dir);
             CopyDirectory(dir, Path.Combine(destination, Path.GetFileName(dir)));
         }
     }

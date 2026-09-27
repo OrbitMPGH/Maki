@@ -264,7 +264,7 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
-  const { me } = useAuth()
+  const { me, can } = useAuth()
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
   const { data: savedFilters } = useSavedFilters()
@@ -843,7 +843,7 @@ export default function LibraryPage() {
                 {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
                   setNotifyModalOpen(true),
                 )}
-                {bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
+                {can('Admin') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
                   setMoveModalOpen(true)

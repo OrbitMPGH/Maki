@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Maki.Core.Paths;
 using Maki.Core.Reading;
 using SharpCompress.Archives;
 
@@ -62,8 +63,7 @@ public static class ComicSourceScanner
         }
         else if (Directory.Exists(contentPath))
         {
-            foreach (var file in Directory
-                         .GetFiles(contentPath, "*", SearchOption.AllDirectories)
+            foreach (var file in LibraryPaths.EnumerateFilesNoLinks(contentPath)
                          .Where(IsArchiveOrPdf)
                          .OrderBy(f => f, StringComparer.Ordinal))
             {
@@ -91,7 +91,7 @@ public static class ComicSourceScanner
     public static string Describe(string contentPath)
     {
         string[] files = File.Exists(contentPath) ? [contentPath]
-            : Directory.Exists(contentPath) ? Directory.GetFiles(contentPath, "*", SearchOption.AllDirectories)
+            : Directory.Exists(contentPath) ? LibraryPaths.EnumerateFilesNoLinks(contentPath).ToArray()
             : [];
 
         var census = files
@@ -155,14 +155,13 @@ public static class ComicSourceScanner
     }
 
     private static IEnumerable<ComicSource> LooseImageFolders(string root) =>
-        Directory
-            .GetDirectories(root, "*", SearchOption.AllDirectories)
+        LibraryPaths.EnumerateDirectoriesNoLinks(root)
             .Append(root)
             .OrderBy(d => d, StringComparer.Ordinal)
             .Select(directory => new
             {
                 Directory = directory,
-                Files = Directory.GetFiles(directory).OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList()
+                Files = Directory.GetFiles(directory).Where(f => !LibraryPaths.IsLink(f)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList()
             })
             // A folder holding an archive or a PDF is that comic's, not a loose set: the images
             // beside it are as likely to be a cover or a sample as they are to be a chapter nobody

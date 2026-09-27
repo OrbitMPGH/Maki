@@ -8,6 +8,7 @@ using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -81,10 +82,16 @@ public class LibraryImportService(
     StatsEventService stats,
     SeriesIdentityService identity,
     ILocalizer localizer,
+    ICurrentUser currentUser,
     ILogger<LibraryImportService> logger)
 {
     public async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId, CancellationToken ct = default)
     {
+        if (!currentUser.AllRootFolders && !currentUser.RootFolderIds.Contains(rootFolderId))
+        {
+            throw new InvalidOperationException("Root folder not found");
+        }
+
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct)
             ?? throw new InvalidOperationException("Root folder not found");
 
@@ -119,7 +126,7 @@ public class LibraryImportService(
         foreach (var dir in Directory.GetDirectories(rootFolder.Path).OrderBy(d => d))
         {
             var folderName = Path.GetFileName(dir);
-            if (folderName.StartsWith('.') || claimed.Contains(folderName))
+            if (folderName.StartsWith('.') || claimed.Contains(folderName) || LibraryPaths.IsLink(dir))
             {
                 continue;
             }
@@ -174,10 +181,33 @@ public class LibraryImportService(
     public async Task<ImportResult> ImportAsync(
         int rootFolderId, ImportRequestItem item, bool updateComicInfo = true, CancellationToken ct = default)
     {
-        var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct)
-            ?? throw new InvalidOperationException("Root folder not found");
+        var rootFolder = currentUser.AllRootFolders || currentUser.RootFolderIds.Contains(rootFolderId)
+            ? await db.RootFolders.FindAsync([rootFolderId], ct)
+            : null;
+        if (rootFolder is null)
+        {
+            return new ImportResult(item.FolderName, false, localizer.Get("error.series.rootFolderNotFound"));
+        }
 
-        var sourceDir = Path.Combine(rootFolder.Path, item.FolderName);
+        // FolderName comes straight off the request. It must name exactly one entry directly
+        // inside the root, never an absolute path (Path.Combine would discard the root entirely)
+        // or a ".."-laden one that walks out of it, or import could move/rewrite files anywhere
+        // on disk the process can reach.
+        if (string.IsNullOrEmpty(item.FolderName) ||
+            Path.GetFileName(item.FolderName) != item.FolderName ||
+            item.FolderName.Trim('.', ' ').Length == 0)
+        {
+            return new ImportResult(item.FolderName, false,
+                localizer.Get("error.libraryImport.invalidFolderName"));
+        }
+
+        var sourceDir = LibraryPaths.ResolveNoLinks(rootFolder.Path, item.FolderName);
+        if (sourceDir is null)
+        {
+            return new ImportResult(item.FolderName, false,
+                localizer.Get("error.libraryImport.invalidFolderName"));
+        }
+
         if (!Directory.Exists(sourceDir))
         {
             return new ImportResult(item.FolderName, false, localizer.Get("error.libraryImport.folderGone"));
@@ -423,7 +453,7 @@ public class LibraryImportService(
     /// (preserving sub-paths, skipping name collisions), then removes the now-empty source.</summary>
     private static void MergeDirectory(string sourceDir, string targetDir)
     {
-        foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        foreach (var file in LibraryPaths.EnumerateFilesNoLinks(sourceDir).ToList())
         {
             var rel = Path.GetRelativePath(sourceDir, file);
             var dest = Path.Combine(targetDir, rel);
@@ -432,6 +462,12 @@ public class LibraryImportService(
             {
                 File.Move(file, dest);
             }
+        }
+
+        // A recursive delete would drop any link left behind along with it.
+        if (LibraryPaths.ContainsLink(sourceDir))
+        {
+            return;
         }
 
         try

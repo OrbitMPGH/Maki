@@ -85,4 +85,112 @@ public class LibraryPathsTests
     {
         Assert.Null(LibraryPaths.TopFolder(Path.Combine(segment, "ch1.cbz")));
     }
+
+    [Fact]
+    public void ResolveNoLinks_refuses_a_path_through_a_linked_directory_inside_the_root()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-nolinks-root-").FullName;
+        var outside = Directory.CreateTempSubdirectory("maki-nolinks-outside-").FullName;
+        var link = Path.Combine(root, "Series", "linked");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "Series"));
+            File.WriteAllText(Path.Combine(outside, "ch1.cbz"), "external");
+            File.WriteAllText(Path.Combine(root, "Series", "ch2.cbz"), "inside");
+            if (!TestLinks.TryLinkDirectory(link, outside))
+            {
+                return;
+            }
+
+            var through = Path.Combine("Series", "linked", "ch1.cbz");
+            Assert.NotNull(LibraryPaths.Resolve(root, through));
+            Assert.Null(LibraryPaths.ResolveNoLinks(root, through));
+            Assert.Null(LibraryPaths.ResolveNoLinks(root, Path.Combine("Series", "linked")));
+            Assert.Equal(Path.Combine(root, "Series", "ch2.cbz"),
+                LibraryPaths.ResolveNoLinks(root, Path.Combine("Series", "ch2.cbz")));
+            Assert.Equal(new[] { Path.Combine(root, "Series", "ch2.cbz") },
+                LibraryPaths.EnumerateFilesNoLinks(Path.Combine(root, "Series")).ToList());
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(link);
+            Directory.Delete(root, recursive: true);
+            Directory.Delete(outside, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void A_root_folder_reached_through_a_link_is_only_refused_when_asked()
+    {
+        var parent = Directory.CreateTempSubdirectory("maki-nolinks-parent-").FullName;
+        var real = Directory.CreateTempSubdirectory("maki-nolinks-real-").FullName;
+        var root = Path.Combine(parent, "library");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(real, "Series"));
+            if (!TestLinks.TryLinkDirectory(root, real))
+            {
+                return;
+            }
+
+            var path = LibraryPaths.ResolveNoLinks(root, "Series");
+            Assert.NotNull(path);
+            Assert.True(LibraryPaths.TraversesLink(root, path, includeRoot: true));
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(root);
+            Directory.Delete(parent, recursive: true);
+            Directory.Delete(real, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("...")]
+    [InlineData("....")]
+    [InlineData(". .")]
+    [InlineData("... ")]
+    [InlineData(".")]
+    public void Resolve_never_returns_the_root_itself(string relative)
+    {
+        // Only Windows trims trailing dots and spaces; elsewhere "..." is an ordinary name.
+        if (!OperatingSystem.IsWindows() && relative != ".")
+        {
+            return;
+        }
+
+        var root = Path.Combine(Path.GetTempPath(), "maki-root");
+        Assert.Null(LibraryPaths.Resolve(root, relative));
+        Assert.Null(LibraryPaths.Resolve(root + Path.DirectorySeparatorChar, relative));
+    }
+
+    [Fact]
+    public void ContainsLink_finds_a_nested_link_and_ResolveForDelete_allows_only_a_linked_leaf()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-contains-root-").FullName;
+        var outside = Directory.CreateTempSubdirectory("maki-contains-outside-").FullName;
+        var link = Path.Combine(root, "Series", "Volume 1", "linked");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "Series", "Volume 1"));
+            File.WriteAllText(Path.Combine(outside, "ch1.cbz"), "external");
+            Assert.False(LibraryPaths.ContainsLink(Path.Combine(root, "Series")));
+            if (!TestLinks.TryLinkDirectory(link, outside))
+            {
+                return;
+            }
+
+            Assert.True(LibraryPaths.ContainsLink(Path.Combine(root, "Series")));
+            Assert.Null(LibraryPaths.ResolveForDelete(root, Path.Combine("Series", "Volume 1", "linked", "ch1.cbz")));
+            Assert.Equal(link, LibraryPaths.ResolveForDelete(root, Path.Combine("Series", "Volume 1", "linked")));
+            Assert.Empty(LibraryPaths.EnumerateDirectoriesNoLinks(Path.Combine(root, "Series"))
+                .Where(d => d.StartsWith(link, StringComparison.OrdinalIgnoreCase)));
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(link);
+            Directory.Delete(root, recursive: true);
+            Directory.Delete(outside, recursive: true);
+        }
+    }
 }

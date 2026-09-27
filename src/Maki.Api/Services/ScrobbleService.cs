@@ -309,7 +309,7 @@ public class ScrobbleService(
     /// Kavita only: series with pages read but no chapter finished, which is not an error and not a
     /// skip. Zero for the reader pass, where it cannot happen.
     /// </param>
-    private readonly record struct PassCounts(int Updated, int Skipped, int Errors, int NoProgress = 0)
+    internal readonly record struct PassCounts(int Updated, int Skipped, int Errors, int NoProgress = 0)
     {
         /// <summary>For the developer log line only. No user reads this.</summary>
         public override string ToString() =>
@@ -375,9 +375,10 @@ public class ScrobbleService(
             return new PassCounts(0, 0, 1);
         }
 
+        var allRootFolders = await AllRootFoldersAsync(userId, ct);
         var libraryFilter = ParseLibraryIds(await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct));
         var planToRead = await userSettings.GetAsync(userId, SettingKeys.ScrobblePlanToRead, ct) == "true";
-        var libraryIndex = await BuildLibraryIndexAsync(ct);
+        var libraryIndex = await BuildLibraryIndexAsync(userId, allRootFolders, ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
 
@@ -429,7 +430,7 @@ public class ScrobbleService(
 
             if (localSeries is not null)
             {
-                var boundaries = await VolumeBoundariesAsync(localSeries.Id, ct);
+                var boundaries = await VolumeBoundariesAsync(userId, allRootFolders, localSeries.Id, ct);
                 if (boundaries.Count > 0)
                 {
                     maxChapter = VolumeChapterProgress.Refine(volumesRaw, boundaries, maxChapter);
@@ -626,8 +627,12 @@ public class ScrobbleService(
     /// pushed, and the user fixes that through the existing metadata match UI, which is where
     /// those ids come from in the first place.
     /// </para>
+    /// <para>
+    /// Internal rather than private so <c>ScrobbleServiceTests</c> can exercise the cross-user
+    /// <c>DataScope</c> narrowing directly, without wiring up every remote tracker.
+    /// </para>
     /// </summary>
-    private async Task<PassCounts> NativePassAsync(
+    internal async Task<PassCounts> NativePassAsync(
         int userId, List<IScrobbleTracker> trackers, bool ownsKavita, CancellationToken ct)
     {
         List<NativeProgress> rows;
@@ -635,8 +640,10 @@ public class ScrobbleService(
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            db.Scope.SetUser(userId, await AllRootFoldersAsync(userId, ct));
             rows = await db.ReadingStates
-                .Where(r => r.SeriesId != null && r.MaxChapter > 0 && (!ownsKavita || r.KavitaSeriesId == null))
+                .Where(r => r.UserId == userId && r.SeriesId != null && r.MaxChapter > 0 &&
+                    (!ownsKavita || r.KavitaSeriesId == null))
                 .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new { r, s })
                 .Where(x => x.s.Incognito == IncognitoMode.Off)
                 .Select(x => new NativeProgress(
@@ -652,7 +659,7 @@ public class ScrobbleService(
             var trackedSeriesIds = rows.Select(r => r.SeriesId).ToHashSet();
             var kavitaTrackedSeriesIds = ownsKavita
                 ? await db.ReadingStates
-                    .Where(r => r.SeriesId != null && r.KavitaSeriesId != null)
+                    .Where(r => r.UserId == userId && r.SeriesId != null && r.KavitaSeriesId != null)
                     .Select(r => r.SeriesId!.Value)
                     .ToListAsync(ct)
                 : [];
@@ -1052,10 +1059,24 @@ public class ScrobbleService(
     private sealed record LibraryIds(
         int Id, int? MangaBakaId, int? AniListId, int? MalId, int? KitsuId, IncognitoMode Incognito);
 
-    private async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(CancellationToken ct)
+    /// <summary>Looks up a user's root-folder grant, for callers that need <see cref="DataScope.SetUser"/>
+    /// outside a request (background tick, no <see cref="Maki.Core.Security.ICurrentUser"/> to read).</summary>
+    private async Task<bool> AllRootFoldersAsync(int userId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        return await db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.AllRootFolders)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    private async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(
+        int userId, bool allRootFolders, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
         var rows = await db.Series.AsNoTracking()
             .Select(s => new
             {
@@ -1090,10 +1111,11 @@ public class ScrobbleService(
     /// ChapterFileId and re-scanned only when the file's size changes.
     /// </summary>
     private async Task<Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>> VolumeBoundariesAsync(
-        int seriesId, CancellationToken ct)
+        int userId, bool allRootFolders, int seriesId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
         var chapters = await db.Chapters.AsNoTracking()
             .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
             .ToListAsync(ct);

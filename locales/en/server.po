@@ -60,6 +60,12 @@ msgstr "Current and new password are required"
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "Two-factor authentication is already enabled"
 
+#. Owner decision on #16: SSO delegates the second factor to the identity provider, so an
+#. OIDC-linked account cannot also enrol a local authenticator.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.twoFactorDelegatedToSso"
+msgstr "This account signs in through single sign-on, which handles two-factor itself"
+
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 msgid "error.animeResume.notEnabled"
 msgstr "Turn on anime taste signals to use this"
@@ -365,6 +371,10 @@ msgstr "\"{title}\" is already in the library with downloaded files. Delete it f
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.folderGone"
 msgstr "Folder no longer exists"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.invalidFolderName"
+msgstr "Invalid folder name"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.metadataLookupFailed"
@@ -727,6 +737,11 @@ msgstr "Destination folder already exists: {folder}"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.filesNotMoved"
 msgstr "Files not moved: {folder} doesn't exist. Move the files there first, or let Maki move them."
+
+#. {folder} is a folder name inside the root folder and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.folderContainsLinks"
+msgstr "Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself."
 
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1235,10 +1250,18 @@ msgstr "Release year; blank when unknown"
 msgid "error.system.backupMissingDb"
 msgstr "Backup is missing maki.db. This is not a Maki backup."
 
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupInvalidDb"
+msgstr "The database in this backup is damaged or is not a Maki database. Nothing was changed."
+
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupTooNew"
 msgstr "Backup is from a newer version (migration \"{migration}\" unknown to this build). Upgrade Maki before restoring it."
+
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupUnreadable"
+msgstr "This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.noFileUploaded"

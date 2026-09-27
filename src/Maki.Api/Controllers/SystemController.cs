@@ -174,6 +174,10 @@ public class SystemController(
         {
             await backups.StagePendingRestoreFromFileAsync(name, ct);
         }
+        catch (BackupRestoreException ex)
+        {
+            return this.Fail(localizer, ex.Key, ex.Args);
+        }
         catch (Exception ex) when (ex is ArgumentException or FileNotFoundException or InvalidOperationException)
         {
             return BadRequest(new { message = ex.Message });
@@ -195,6 +199,10 @@ public class SystemController(
         {
             await using var stream = file.OpenReadStream();
             await backups.StagePendingRestoreFromUploadAsync(stream, ct);
+        }
+        catch (BackupRestoreException ex)
+        {
+            return this.Fail(localizer, ex.Key, ex.Args);
         }
         catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
         {

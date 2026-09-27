@@ -18,6 +18,7 @@
   <ItemGroup>
     <!-- One fake dump schema, not two. See the type's own remarks. -->
     <Compile Include="..\Maki.Metadata.Tests\DumpDbBuilder.cs" Link="DumpDbBuilder.cs" />
+    <Compile Include="..\Maki.Core.Tests\TestLinks.cs" Link="TestLinks.cs" />
   </ItemGroup>
 
   <ItemGroup>

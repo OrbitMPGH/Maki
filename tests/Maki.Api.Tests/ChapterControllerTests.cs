@@ -1,5 +1,6 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
+using Maki.Core.Tests;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Maki.Core.Security;
@@ -236,6 +237,113 @@ public class ChapterControllerTests : IDisposable
         finally
         {
             File.Delete(outside);
+        }
+    }
+
+    [Fact]
+    public async Task Link_and_Delete_do_not_follow_a_directory_symlink_out_of_the_root()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var outside = Path.Combine(Path.GetTempPath(), $"maki-outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outside);
+        var external = Path.Combine(outside, "ch1.cbz");
+        await File.WriteAllTextAsync(external, "not really a cbz");
+        var link = Path.Combine(_root, "Series", "linked");
+        var throughLink = Path.Combine("Series", "linked", "ch1.cbz");
+
+        try
+        {
+            if (!TestLinks.TryLinkDirectory(link, outside))
+            {
+                return;
+            }
+
+            using (var db = _db.NewContext())
+            {
+                var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], throughLink), default);
+
+                Assert.IsType<BadRequestObjectResult>(result);
+                Assert.Empty(db.ChapterFiles);
+            }
+
+            using (var seed = _db.NewContext())
+            {
+                var file = new ChapterFile
+                {
+                    SeriesId = seriesId,
+                    RelativePath = throughLink,
+                    Size = 1,
+                    SourceName = "Manual",
+                    DateAdded = DateTime.UtcNow
+                };
+                seed.ChapterFiles.Add(file);
+                seed.SaveChanges();
+                (await seed.Chapters.FirstAsync(c => c.Id == chapterId)).ChapterFileId = file.Id;
+                seed.SaveChanges();
+            }
+
+            using (var db = _db.NewContext())
+            {
+                var result = await Controller(db).Delete([chapterId], default);
+
+                Assert.IsType<OkObjectResult>(result);
+                Assert.Empty(db.Chapters);
+            }
+
+            Assert.True(File.Exists(external));
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(link);
+            Directory.Delete(outside, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Delete_removes_a_chapter_file_symlink_and_its_row_but_not_the_target()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var outside = Path.Combine(Path.GetTempPath(), $"maki-outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outside);
+        var external = Path.Combine(outside, "ch1.cbz");
+        await File.WriteAllTextAsync(external, "not really a cbz");
+        var link = Path.Combine(_root, "Series", "ch1.cbz");
+
+        try
+        {
+            if (!TestLinks.TryLinkFile(link, external))
+            {
+                return;
+            }
+
+            using (var seed = _db.NewContext())
+            {
+                var file = new ChapterFile
+                {
+                    SeriesId = seriesId,
+                    RelativePath = Path.Combine("Series", "ch1.cbz"),
+                    Size = 1,
+                    SourceName = "Manual",
+                    DateAdded = DateTime.UtcNow
+                };
+                seed.ChapterFiles.Add(file);
+                seed.SaveChanges();
+                (await seed.Chapters.FirstAsync(c => c.Id == chapterId)).ChapterFileId = file.Id;
+                seed.SaveChanges();
+            }
+
+            using (var db = _db.NewContext())
+            {
+                Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], default));
+                Assert.Empty(db.ChapterFiles);
+            }
+
+            Assert.False(File.Exists(link));
+            Assert.True(File.Exists(external));
+        }
+        finally
+        {
+            Directory.Delete(outside, recursive: true);
         }
     }
 }

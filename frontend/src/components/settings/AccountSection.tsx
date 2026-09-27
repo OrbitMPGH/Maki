@@ -243,7 +243,12 @@ function TwoFactorCard() {
             <Trans>Two-factor authentication</Trans>
           </Text>
           <Text size="xs" c="var(--ink-3)">
-            {status && !status.available ? (
+            {status?.ssoDelegated && !status.enabled ? (
+              <Trans>
+                Sign-in relies on your identity provider. A code, once set up, protects password
+                sign-in only.
+              </Trans>
+            ) : status && !status.available ? (
               <Trans>This account has no password login for two-factor to protect.</Trans>
             ) : (
               <Trans>The single biggest improvement if Maki is reachable from the internet.</Trans>
@@ -255,7 +260,7 @@ function TwoFactorCard() {
             <Trans>On</Trans>
           </Badge>
         ) : (
-          status && status.available && (
+          status && status.available && !status.ssoDelegated && (
             <Button
               size="xs"
               variant="default"

@@ -77,7 +77,8 @@ public static class OidcClaimMapper
     /// <summary>
     /// The account name to create a provisioned user under: the configured username claim, then any
     /// email, then the subject. The subject is ugly but unique and always present, and a name is
-    /// cosmetic — the durable link is always the subject in <c>AspNetUserLogins</c>.
+    /// cosmetic: the durable link is the authority-scoped subject in <c>AspNetUserLogins</c>, see
+    /// <see cref="ScopedProviderKey"/>.
     /// </summary>
     public static string UserName(
         OidcRuntimeOptions options, IReadOnlyCollection<Claim> claims, string subject)
@@ -92,6 +93,30 @@ public static class OidcClaimMapper
         // fail CreateAsync with a message about characters the user never typed.
         var cleaned = new string(candidate.Where(c => char.IsLetterOrDigit(c) || "-._@+".Contains(c)).ToArray());
         return cleaned.Length > 0 ? cleaned : subject;
+    }
+
+    /// <summary>
+    /// The value stored in <c>AspNetUserLogins.ProviderKey</c> for an OIDC login: the subject scoped
+    /// by the normalized authority, so a subject reused by a different provider, or a cosmetic edit
+    /// to <c>auth.oidcauthority</c> (casing, http vs https), cannot resolve to the wrong account.
+    /// </summary>
+    public static string ScopedProviderKey(OidcRuntimeOptions options, string subject) =>
+        $"{NormalizeAuthority(options.Authority)}|{subject}";
+
+    /// <summary>
+    /// Lowercases the scheme and host of an authority URL and drops a trailing slash, so that
+    /// changing only the casing of <c>auth.oidcauthority</c>, or switching it between http and
+    /// https, does not change the key every existing login is stored under and unlink every user.
+    /// </summary>
+    public static string NormalizeAuthority(string authority)
+    {
+        if (!Uri.TryCreate(authority, UriKind.Absolute, out var uri))
+        {
+            return authority.TrimEnd('/');
+        }
+
+        var port = uri.IsDefaultPort ? string.Empty : $":{uri.Port}";
+        return $"{uri.Scheme.ToLowerInvariant()}://{uri.Host.ToLowerInvariant()}{port}{uri.AbsolutePath.TrimEnd('/')}";
     }
 
     public static string? Email(IReadOnlyCollection<Claim> claims) =>

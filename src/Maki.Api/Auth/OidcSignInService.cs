@@ -60,12 +60,14 @@ public class OidcSignInService(
             return OidcSignInResult.Fail("error.auth.ssoNoSubject");
         }
 
-        var user = await userManager.FindByLoginAsync(provider, subject);
+        // Scoped by the configured authority, not the bare subject: see OidcClaimMapper.ScopedProviderKey.
+        var providerKey = OidcClaimMapper.ScopedProviderKey(options, subject);
+        var user = await userManager.FindByLoginAsync(provider, providerKey);
         var linked = false;
 
         if (user is null)
         {
-            (user, linked) = await MatchByEmailAsync(provider, subject, claims, ct);
+            (user, linked) = await MatchByEmailAsync(provider, providerKey, subject, claims, ct);
         }
 
         if (user is null)
@@ -76,7 +78,7 @@ public class OidcSignInService(
                 return OidcSignInResult.Fail("error.auth.ssoNoAccountLinked");
             }
 
-            return await ProvisionAsync(provider, subject, claims, ct);
+            return await ProvisionAsync(provider, providerKey, subject, claims, ct);
         }
 
         if (user.Disabled)
@@ -93,7 +95,7 @@ public class OidcSignInService(
             return OidcSignInResult.Fail("error.auth.ssoAccountNotSetUp");
         }
 
-        await ApplyClaimsAsync(user, provider, subject, claims, ct);
+        await ApplyClaimsAsync(user, provider, providerKey, subject, claims, ct);
         return new OidcSignInResult(user, null, Linked: linked);
     }
 
@@ -107,7 +109,7 @@ public class OidcSignInService(
     /// </para>
     /// </summary>
     private async Task<(MakiUser? User, bool Linked)> MatchByEmailAsync(
-        string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
     {
         var email = OidcClaimMapper.Email(claims);
         if (email is null || !OidcClaimMapper.EmailVerified(claims))
@@ -133,7 +135,7 @@ public class OidcSignInService(
         }
 
         var displayName = OidcClaimMapper.UserName(options, claims, subject);
-        var result = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, displayName));
+        var result = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, displayName));
         if (!result.Succeeded)
         {
             logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",
@@ -147,7 +149,7 @@ public class OidcSignInService(
     }
 
     private async Task<OidcSignInResult> ProvisionAsync(
-        string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
     {
         var userName = OidcClaimMapper.UserName(options, claims, subject);
 
@@ -184,7 +186,7 @@ public class OidcSignInService(
             return OidcSignInResult.FailRaw(detail);
         }
 
-        var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, userName));
+        var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, userName));
         if (!linked.Succeeded)
         {
             // Without the link the account could never be signed into again and would block the name
@@ -206,7 +208,8 @@ public class OidcSignInService(
     /// said the provider is the authority. See <see cref="OidcRuntimeOptions.MapsPermissions"/>.
     /// </summary>
     private async Task ApplyClaimsAsync(
-        MakiUser user, string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        MakiUser user, string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims,
+        CancellationToken ct)
     {
         var changed = false;
         using var adminLock = options.MapsPermissions && user.Permissions.Grants(MakiPermission.Admin)
@@ -250,7 +253,7 @@ public class OidcSignInService(
             await db.SaveChangesAsync(ct);
         }
 
-        await RefreshLoginDisplayNameAsync(user, provider, subject, claims, ct);
+        await RefreshLoginDisplayNameAsync(user, provider, providerKey, subject, claims, ct);
     }
 
     /// <summary>
@@ -269,14 +272,15 @@ public class OidcSignInService(
     /// </para>
     /// </summary>
     private async Task RefreshLoginDisplayNameAsync(
-        MakiUser user, string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        MakiUser user, string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims,
+        CancellationToken ct)
     {
         var freshName = OidcClaimMapper.UserName(options, claims, subject);
 
         try
         {
             var login = await db.UserLogins.FirstOrDefaultAsync(
-                l => l.LoginProvider == provider && l.ProviderKey == subject && l.UserId == user.Id, ct);
+                l => l.LoginProvider == provider && l.ProviderKey == providerKey && l.UserId == user.Id, ct);
 
             if (login is null || string.Equals(login.ProviderDisplayName, freshName, StringComparison.Ordinal))
             {

@@ -9677,6 +9677,10 @@ msgid "Sign out everywhere else"
 msgstr "Sign out everywhere else"
 
 #: src/components/settings/AccountSection.tsx
+msgid "Sign-in relies on your identity provider. A code, once set up, protects password sign-in only."
+msgstr "Sign-in relies on your identity provider. A code, once set up, protects password sign-in only."
+
+#: src/components/settings/AccountSection.tsx
 msgid "Signed in as"
 msgstr "Signed in as"
 

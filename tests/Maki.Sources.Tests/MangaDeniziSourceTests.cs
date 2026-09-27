@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.MangaDenizi;
 using SixLabors.ImageSharp;
@@ -111,6 +112,28 @@ public class MangaDeniziSourceTests
             using var decoded = Image.Load(p.Data!);
             Assert.True(decoded.Width > 0 && decoded.Height > 0);
         });
+    }
+
+    [Theory]
+    [InlineData("http://192.168.1.10/reader-images/p.webp")]
+    [InlineData("http://127.0.0.1:8990/api/v1/series")]
+    [InlineData("http://169.254.169.254/latest/meta-data/")]
+    [InlineData("file:///etc/passwd")]
+    public async Task GetPages_refuses_an_image_url_on_a_non_public_address(string imageUrl)
+    {
+        var factory = new FakeHttpClientFactory(
+            new()
+            {
+                ["reader/solo-leveling/000"] = $"{{\"pages\":[{{\"image_url\":\"{imageUrl}\"}}]}}"
+            },
+            new() { ["reader-images/"] = FakeHttpClientFactory.BinaryFixture("mangadenizi-page1.bin") });
+        var source = new MangaDeniziSource(factory);
+
+        var chapter = new SourceChapter(
+            "mangadenizi", "solo-leveling", "solo-leveling/000", "0", 0m, null, null, "tr", null);
+
+        await Assert.ThrowsAsync<BlockedDestinationException>(() => source.GetPagesAsync(chapter));
+        Assert.DoesNotContain(factory.Requests, r => r.StartsWith(imageUrl, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

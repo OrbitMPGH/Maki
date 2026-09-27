@@ -441,7 +441,8 @@ public class AuthController(
             return Unauthorized();
         }
 
-        var existing = await userManager.FindByLoginAsync(AuthSchemes.Oidc, subject);
+        var providerKey = OidcClaimMapper.ScopedProviderKey(oidc, subject);
+        var existing = await userManager.FindByLoginAsync(AuthSchemes.Oidc, providerKey);
         if (existing is not null && existing.Id != user.Id)
         {
             // Refused rather than re-linked: moving it here would silently strip the login from
@@ -453,7 +454,7 @@ public class AuthController(
         {
             var displayName = OidcClaimMapper.UserName(oidc, external.Principal.Claims.ToList(), subject);
             var result = await userManager.AddLoginAsync(
-                user, new UserLoginInfo(AuthSchemes.Oidc, subject, displayName));
+                user, new UserLoginInfo(AuthSchemes.Oidc, providerKey, displayName));
             if (!result.Succeeded)
             {
                 logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",

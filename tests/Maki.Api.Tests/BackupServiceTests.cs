@@ -117,9 +117,9 @@ public class BackupServiceTests : IDisposable
     {
         var zip = BuildBackupZip(includeDb: false, manifest: new BackupManifest("1.0.0", DateTime.UtcNow, null, "manual"));
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<BackupRestoreException>(
             () => Build().StagePendingRestoreFromUploadAsync(new MemoryStream(zip), CancellationToken.None));
-        Assert.Equal("error.system.backupMissingDb", ex.Message);
+        Assert.Equal("error.system.backupMissingDb", ex.Key);
     }
 
     [Fact]
@@ -128,16 +128,17 @@ public class BackupServiceTests : IDisposable
         var manifest = new BackupManifest("9.9.9", DateTime.UtcNow, "99999999999999_FromTheFuture", "manual");
         var zip = BuildBackupZip(includeDb: true, manifest: manifest);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<BackupRestoreException>(
             () => Build().StagePendingRestoreFromUploadAsync(new MemoryStream(zip), CancellationToken.None));
-        Assert.Contains("error.system.backupTooNew", ex.Message);
+        Assert.Equal("error.system.backupTooNew", ex.Key);
     }
 
     [Fact]
     public async Task Restore_stages_a_valid_backup()
     {
         var manifest = new BackupManifest("1.0.0", DateTime.UtcNow, null, "manual");
-        var zip = BuildBackupZip(includeDb: true, includeConfig: true, manifest: manifest);
+        var zip = BuildBackupZip(includeDb: true, includeConfig: true, manifest: manifest,
+            dbBytes: BackupRestoreTests.ValidDatabase(_configDir, _db.Database.GetMigrations().Last()));
 
         await Build().StagePendingRestoreFromUploadAsync(new MemoryStream(zip), CancellationToken.None);
 
@@ -145,14 +146,23 @@ public class BackupServiceTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_paths.RestorePendingDir, "config.json")));
     }
 
-    private static byte[] BuildBackupZip(bool includeDb, BackupManifest manifest, bool includeConfig = false)
+    private static byte[] BuildBackupZip(
+        bool includeDb, BackupManifest manifest, bool includeConfig = false, byte[]? dbBytes = null)
     {
         using var ms = new MemoryStream();
         using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
         {
             if (includeDb)
             {
-                WriteEntry(zip, "maki.db", "SQLite format 3\0");
+                if (dbBytes is null)
+                {
+                    WriteEntry(zip, "maki.db", "SQLite format 3\0");
+                }
+                else
+                {
+                    using var entry = zip.CreateEntry("maki.db").Open();
+                    entry.Write(dbBytes);
+                }
             }
 
             if (includeConfig)

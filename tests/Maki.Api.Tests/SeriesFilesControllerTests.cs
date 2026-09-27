@@ -3,6 +3,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
 using Maki.Core.Security;
+using Maki.Core.Tests;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,36 +26,52 @@ public sealed class SeriesFilesControllerTests : IDisposable
         }
     }
 
-    private SeriesController Controller(MakiDbContext db, MakiPermission permissions = MakiPermission.Admin) => new(
-        localizer: new TestLocalizer(),
-        db: db,
-        coverService: null!,
-        chapterSyncService: null!,
-        cbzLinkService: null!,
-        relinkPlanner: null!,
-        seriesCreation: null!,
-        seriesRename: null!,
-        metadataRefresh: null!,
-        downloadQueue: null!,
-        downloadBatches: null!,
-        appSettings: null!,
-        kavitaScans: new KavitaScanService(
-            new KavitaClient(new StubHttpClientFactory("{}")), new FakeAppSettings(), _db.ScopeFactory(),
-            NullLogger<KavitaScanService>.Instance),
-        scrobbler: null!,
-        stats: null!,
-        mangaBakaStore: null!,
-        similarSeries: null!,
-        recommendationFeedback: null!,
-        archives: null!,
-        readingProfiles: null!,
-        readingTimeEstimates: null!,
-        sourceAvailability: null!,
-        currentUser: new TestCurrentUser(1, permissions: permissions),
-        userSettings: new UserSettingsService(db, new TestCurrentUser(1, permissions: permissions)),
-        notifications: null!,
-        locales: null!,
-        logger: NullLogger<SeriesController>.Instance);
+    private SeriesController Controller(MakiDbContext db, MakiPermission permissions = MakiPermission.Admin, ICurrentUser? currentUser = null)
+    {
+        var user = currentUser ?? new TestCurrentUser(1, permissions: permissions);
+        return new(
+            localizer: new TestLocalizer(),
+            db: db,
+            coverService: null!,
+            chapterSyncService: null!,
+            cbzLinkService: null!,
+            relinkPlanner: null!,
+            seriesCreation: null!,
+            seriesRename: null!,
+            metadataRefresh: null!,
+            downloadQueue: null!,
+            downloadBatches: null!,
+            appSettings: null!,
+            kavitaScans: new KavitaScanService(
+                new KavitaClient(new StubHttpClientFactory("{}")), new FakeAppSettings(), _db.ScopeFactory(),
+                NullLogger<KavitaScanService>.Instance),
+            scrobbler: null!,
+            stats: null!,
+            mangaBakaStore: null!,
+            similarSeries: null!,
+            recommendationFeedback: null!,
+            archives: null!,
+            readingProfiles: null!,
+            readingTimeEstimates: null!,
+            sourceAvailability: null!,
+            currentUser: user,
+            userSettings: new UserSettingsService(db, user),
+            notifications: null!,
+            locales: null!,
+            logger: NullLogger<SeriesController>.Instance);
+    }
+
+    /// <summary>An <see cref="ICurrentUser"/> granted only specific root folders, not all of them.</summary>
+    private sealed class GrantedRootUser(int userId, MakiPermission permissions, params int[] rootFolderIds) : ICurrentUser
+    {
+        public bool IsAuthenticated => true;
+        public int UserId => userId;
+        public string UserName => "u";
+        public MakiPermission Permissions => permissions;
+        public bool AllRootFolders => false;
+        public IReadOnlySet<int> RootFolderIds => rootFolderIds.ToHashSet();
+        public string MaxContentRating => "erotica";
+    }
 
     private (int SeriesId, int FromId, int ToId, string From, string To) SeedTwoFolderSeries(string toRoot)
     {
@@ -78,6 +95,12 @@ public sealed class SeriesFilesControllerTests : IDisposable
         db.SaveChanges();
         Write(Path.Combine(from, "Old Berserk", "not tracked.cbz"));
         return (series.Id, fromRoot.Id, destination.Id, from, toRoot);
+    }
+
+    private static string? Code(IActionResult result)
+    {
+        var body = Assert.IsType<BadRequestObjectResult>(result).Value;
+        return (string?)body!.GetType().GetProperty("code")!.GetValue(body);
     }
 
     private static void Write(string path)
@@ -140,6 +163,90 @@ public sealed class SeriesFilesControllerTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
         using var check = _db.NewContext();
         Assert.Equal(fromId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
+
+    [Fact]
+    public async Task Move_refuses_a_destination_root_the_caller_has_no_grant_for()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+
+        using var db = _db.NewContext(userId: 1);
+        var user = new GrantedRootUser(1, MakiPermission.EditMetadata, fromId);
+        var result = await Controller(db, currentUser: user).Move(
+            seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.True(File.Exists(Path.Combine(from, "Berserk", "Berserk Ch.1.cbz")));
+        Assert.False(File.Exists(Path.Combine(to, "Berserk", "Berserk Ch.1.cbz")));
+        using var check = _db.NewContext();
+        Assert.Equal(fromId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
+
+    /// <summary>
+    /// The cross-volume fallback copies and then deletes the source tree, which would drop a nested
+    /// link and strand the rows reached through it, so any link in the tree refuses the move.
+    /// </summary>
+    [Fact]
+    public async Task Move_refuses_a_series_folder_with_a_nested_link()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+        var outside = Path.Combine(_temp, "outside");
+        Write(Path.Combine(outside, "Berserk Ch.3.cbz"));
+        var link = Path.Combine(from, "Berserk", "Extras", "linked");
+        Directory.CreateDirectory(Path.GetDirectoryName(link)!);
+        if (!TestLinks.TryLinkDirectory(link, outside))
+        {
+            return;
+        }
+
+        try
+        {
+            using var db = _db.NewContext(userId: 1);
+            var result = await Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+            Assert.Equal("error.series.folderContainsLinks", Code(result));
+            Assert.True(File.Exists(Path.Combine(from, "Berserk", "Berserk Ch.1.cbz")));
+            Assert.True(File.Exists(Path.Combine(link, "Berserk Ch.3.cbz")));
+            Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
+            using var check = _db.NewContext();
+            Assert.Equal(fromId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(link);
+        }
+    }
+
+    [Fact]
+    public async Task Move_refuses_a_series_folder_that_is_itself_a_link()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+        var outside = Path.Combine(_temp, "outside");
+        var seriesFolder = Path.Combine(from, "Berserk");
+        Directory.Move(seriesFolder, outside);
+        if (!TestLinks.TryLinkDirectory(seriesFolder, outside))
+        {
+            return;
+        }
+
+        try
+        {
+            using var db = _db.NewContext(userId: 1);
+            var result = await Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+            Assert.Equal("error.series.folderContainsLinks", Code(result));
+            Assert.True(File.Exists(Path.Combine(outside, "Berserk Ch.1.cbz")));
+            Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
+            using var check = _db.NewContext();
+            Assert.Equal(fromId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(seriesFolder);
+        }
     }
 
     [Fact]

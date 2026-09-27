@@ -187,13 +187,14 @@ public class CbzLinkService(
         var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
         foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
         {
-            var seriesDir = Path.Combine(rootFolder.Path, folder);
-            if (!Directory.Exists(seriesDir))
+            // A symlink or junction anywhere below the root would have adoption read, and the
+            // ComicInfo rewrite modify, archives outside the library.
+            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir || !Directory.Exists(seriesDir))
             {
                 continue;
             }
 
-            onDisk.AddRange(Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories)
+            onDisk.AddRange(LibraryPaths.EnumerateFilesNoLinks(seriesDir)
                 .Where(ComicFile.IsComic)
                 .Select(f => (seriesDir, f, Path.Combine(folder, Path.GetRelativePath(seriesDir, f)))));
         }
@@ -241,7 +242,7 @@ public class CbzLinkService(
                 continue;
             }
 
-            var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
+            var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, dbFile.RelativePath);
             var matched = LinkChapters(chapters, parsed, dbFile.Id, absolutePath, volumeFileIds);
             if (matched.Count == 0 && parsed.IsVolume)
             {
@@ -265,7 +266,7 @@ public class CbzLinkService(
         var volumeFilesOnDisk = dbFiles
             .Select(f => (
                 f.Id,
-                AbsolutePath: LibraryPaths.Resolve(rootFolder.Path, f.RelativePath),
+                AbsolutePath: LibraryPaths.ResolveNoLinks(rootFolder.Path, f.RelativePath),
                 Parsed: ReleaseNameParser.ParseFileName(f.RelativePath)))
             .Where(f => f.AbsolutePath is not null)
             .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
@@ -317,8 +318,9 @@ public class CbzLinkService(
         {
             ct.ThrowIfCancellationRequested();
             // Resolve, not Combine: this opens and rewrites the archive in place, so a stored path
-            // escaping the root would turn an EditMetadata grant into arbitrary file modification.
-            var path = LibraryPaths.Resolve(rootFolder.Path, chapterFile.RelativePath);
+            // escaping the root, lexically or through a link, would turn an EditMetadata grant into
+            // arbitrary file modification.
+            var path = LibraryPaths.ResolveNoLinks(rootFolder.Path, chapterFile.RelativePath);
             if (path is null || !File.Exists(path))
             {
                 continue;

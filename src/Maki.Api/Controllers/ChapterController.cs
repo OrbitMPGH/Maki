@@ -252,8 +252,9 @@ public class ChapterController(
         // onto the root folder. A bare Path.Combine accepts "..\.." and discards the root outright
         // for an absolute argument, so an EditMetadata holder could point a row at maki.db and a
         // DeleteSeries holder could then delete it. Resolve is the containment check; reject rather
-        // than sanitize, so nothing escaping ever reaches the database.
-        var absPath = LibraryPaths.Resolve(series.RootFolder.Path, request.RelativePath);
+        // than sanitize, so nothing escaping ever reaches the database. ResolveNoLinks also refuses a
+        // symlink or junction inside the series folder, which would lead out lexically unseen.
+        var absPath = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, request.RelativePath);
         if (absPath is null)
         {
             return this.Fail(localizer, "error.chapter.pathOutsideRoot");
@@ -373,10 +374,10 @@ public class ChapterController(
             // future path that skips it, would delete whatever it points at outside the library.
             var absPath = series?.RootFolder is null
                 ? null
-                : LibraryPaths.Resolve(series.RootFolder.Path, file.RelativePath);
+                : LibraryPaths.ResolveForDelete(series.RootFolder.Path, file.RelativePath);
             if (series?.RootFolder is not null && absPath is null)
             {
-                logger.LogWarning("Refusing to delete {File}: resolves outside {Root}",
+                logger.LogWarning("Refusing to delete {File}: resolves outside {Root} or through a linked folder",
                     file.RelativePath, series.RootFolder.Path);
             }
 

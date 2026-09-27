@@ -82,6 +82,13 @@ msgstr "現在のパスワードと新しいパスワードが必要です"
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "二要素認証はすでに有効です"
 
+#. Owner decision on #16: SSO delegates the second factor to the identity provider, so an
+#. OIDC-linked account cannot also enrol a local authenticator.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: This account signs in through single sign-on, which handles two-factor itself
+msgid "error.account.twoFactorDelegatedToSso"
+msgstr ""
+
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
 #, fuzzy
@@ -519,6 +526,11 @@ msgstr "「{title}」はダウンロード済みファイルとともにすで�
 #, fuzzy
 msgid "error.libraryImport.folderGone"
 msgstr "フォルダーが見つかりません"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Invalid folder name
+msgid "error.libraryImport.invalidFolderName"
+msgstr ""
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -1046,6 +1058,12 @@ msgstr "保存先フォルダーはすでに存在します：{folder}"
 #, fuzzy
 msgid "error.series.filesNotMoved"
 msgstr "ファイルを移動していません：{folder}は存在しません。先にファイルを移動するか、Makiに移動させてください"
+
+#. {folder} is a folder name inside the root folder and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself.
+msgid "error.series.folderContainsLinks"
+msgstr ""
 
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1778,12 +1796,22 @@ msgstr "発売年。不明な場合は空欄"
 msgid "error.system.backupMissingDb"
 msgstr "バックアップにmaki.dbがありません。これはMakiのバックアップではありません。"
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database in this backup is damaged or is not a Maki database. Nothing was changed.
+msgid "error.system.backupInvalidDb"
+msgstr ""
+
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
 msgstr "このバックアップはより新しいバージョンで作成されています（マイグレーション「{migration}」はこのビルドでは未対応です）。復元する前に Maki を更新してください。"
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
+msgid "error.system.backupUnreadable"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

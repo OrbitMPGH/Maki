@@ -330,11 +330,14 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Page and image clients fetch URLs the scraped site chose, so they may only reach public
+    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, qBittorrent or Prowlarr.
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
-    {
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
-        client.Timeout = TimeSpan.FromMinutes(2);
-    });
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.Timeout = TimeSpan.FromMinutes(2);
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
@@ -375,6 +378,10 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
+    // MangaDenizi fetches its own page images through this client.
+    builder.Services.AddHttpClient(MangaDeniziSource.HttpClientName)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
+
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
     // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
     var gigaViewerImageLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
@@ -383,6 +390,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
         .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -621,6 +629,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(60);
         })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -1199,6 +1208,11 @@ try
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         scope.ServiceProvider.GetRequiredService<ImportPathRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Rewrites any pre-existing bare-sub AspNetUserLogins rows for the oidc provider to the
+        // issuer-scoped key format. See OidcLoginIssuerRepairService.
+        scope.ServiceProvider.GetRequiredService<OidcLoginIssuerRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // Folds ChapterFile rows that name one file twice (re-run torrent imports). Before Quartz

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using SixLabors.ImageSharp;
@@ -238,6 +239,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
 
     private async Task<byte[]> FetchImageBytesAsync(string url, CancellationToken ct)
     {
+        PublicAddressGuard.EnsureAllowed(url);
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Referrer = new Uri($"{BaseUrl}/");
         using var response = await Client.SendAsync(request, ct);
