@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
   Anchor,
@@ -158,14 +159,19 @@ function WelcomeStep() {
 function useLibraryPatch() {
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
+  const queryClient = useQueryClient()
   // writeCoverToFolder is left out unless it is the thing changing: an omitted field keeps the
   // stored value, and sending a default here once switched people's cover.jpg off.
-  const patch = (changes: Partial<LibrarySettings>) =>
+  // Merge over the freshest cache, not `settings`: that's a render snapshot, and two patches fired
+  // before the first refetch lands would otherwise have the second undo the first.
+  const patch = (changes: Partial<LibrarySettings>) => {
+    const current = queryClient.getQueryData<LibrarySettings>(['settings', 'library']) ?? settings
     save.mutate({
-      writeComicInfo: settings?.writeComicInfo ?? true,
-      folderNamingMode: settings?.folderNamingMode ?? 'rename',
+      writeComicInfo: current?.writeComicInfo ?? true,
+      folderNamingMode: current?.folderNamingMode ?? 'rename',
       ...changes,
     })
+  }
   return { settings, patch }
 }
 
@@ -885,20 +891,32 @@ export default function SetupWizard() {
     requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true }))
   }
 
-  const advance = () => {
-    if (unsavedCount > 0 && !confirmLeave) {
-      setConfirmLeave(true)
-      return
-    }
-    go(active + 1)
-  }
-
   const finish = (then?: string) =>
     complete.mutate(true, {
       onSuccess: () => {
         if (then) navigate(then)
       },
     })
+
+  // Shared gate for every way to leave a step: ask once when a connection form has unsaved
+  // credentials, then let the same action through on the next call rather than dropping them.
+  const requireConfirm = (action: () => void) => {
+    if (unsavedCount > 0 && !confirmLeave) {
+      setConfirmLeave(true)
+      return
+    }
+    action()
+  }
+
+  const advance = () => requireConfirm(() => go(active + 1))
+
+  const confirmedGo = (index: number) => {
+    const next = Math.max(0, Math.min(index, last))
+    if (next === active) return
+    requireConfirm(() => go(index))
+  }
+
+  const confirmedFinish = (then?: string) => requireConfirm(() => finish(then))
 
   if (!open) return null
 
@@ -925,8 +943,8 @@ export default function SetupWizard() {
             steps={steps}
             active={active}
             visited={visited}
-            onSelect={go}
-            onSkip={() => finish()}
+            onSelect={confirmedGo}
+            onSkip={() => confirmedFinish()}
             skipping={complete.isPending}
           />
 
@@ -937,7 +955,7 @@ export default function SetupWizard() {
                   Step {stepNumber} of {stepTotal}
                 </Trans>
               </Text>
-              <Button variant="subtle" color="var(--neutral)" size="compact-xs" onClick={() => finish()}>
+              <Button variant="subtle" color="var(--neutral)" size="compact-xs" onClick={() => confirmedFinish()}>
                 <Trans>Skip setup</Trans>
               </Button>
               <div className="setup-mobile-progress" aria-hidden>
@@ -965,7 +983,9 @@ export default function SetupWizard() {
                   {step.id === 'discovery' && <DiscoveryStep />}
                   {step.id === 'downloads' && <DownloadsStep />}
                   {step.id === 'connections' && <ConnectionsStep />}
-                  {step.id === 'finish' && <FinishStep goTo={(id) => go(STEP_IDS.indexOf(id))} finishTo={finish} />}
+                  {step.id === 'finish' && (
+                    <FinishStep goTo={(id) => confirmedGo(STEP_IDS.indexOf(id))} finishTo={confirmedFinish} />
+                  )}
                 </div>
               </div>
             </div>
@@ -975,7 +995,7 @@ export default function SetupWizard() {
                 <Button
                   variant="default"
                   leftSection={<IconArrowLeft size={16} />}
-                  onClick={() => go(active - 1)}
+                  onClick={() => confirmedGo(active - 1)}
                   style={{ visibility: active === 0 ? 'hidden' : undefined }}
                 >
                   <Trans>Back</Trans>
@@ -986,7 +1006,7 @@ export default function SetupWizard() {
                   </Text>
                 )}
                 {active === last ? (
-                  <Button onClick={() => finish()} loading={complete.isPending}>
+                  <Button onClick={() => confirmedFinish()} loading={complete.isPending}>
                     <Trans>Finish setup</Trans>
                   </Button>
                 ) : (

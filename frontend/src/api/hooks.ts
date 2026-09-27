@@ -1008,17 +1008,31 @@ export function useUiSettings() {
   })
 }
 
+/**
+ * Optimistic so consecutive patches compose: two saves fired before the first response lands must
+ * not have the second one revert the first. `settings` is merged over whatever is in the cache at
+ * mutate time (not a render-captured snapshot), and rolled back on error.
+ */
 export function useSaveUiSettings() {
   const queryClient = useQueryClient()
+  const key = ['settings', 'ui']
   return useMutation({
     mutationFn: (settings: UiSettings) =>
       api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(settings) }),
-    onMutate: () => queryClient.getQueryData<UiSettings>(['settings', 'ui'])?.titleLanguage,
-    onSuccess: (saved, _settings, previousTitleLanguage) => {
-      queryClient.setQueryData(['settings', 'ui'], saved)
+    onMutate: async (settings) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<UiSettings>(key)
+      queryClient.setQueryData<UiSettings>(key, (old) => (old ? { ...old, ...settings } : settings))
+      return { previous }
+    },
+    onError: (_err, _settings, context) => {
+      if (context) queryClient.setQueryData(key, context.previous)
+    },
+    onSuccess: (saved, _settings, context) => {
+      queryClient.setQueryData(key, saved)
       // Titles are resolved server-side, so a language change only shows up on the next fetch.
       // Only then: reloading the whole library on every layout save is a lot of work for nothing.
-      if (saved.titleLanguage !== previousTitleLanguage) {
+      if (saved.titleLanguage !== context?.previous?.titleLanguage) {
         void queryClient.invalidateQueries({ queryKey: ['series'] })
       }
     },
@@ -2900,16 +2914,31 @@ export function useLibrarySettings() {
   })
 }
 
+/**
+ * Optimistic for the same reason as useSaveUiSettings: several optional fields are left out of a
+ * write to keep their stored value, so the cache is merged rather than replaced, and consecutive
+ * patches see each other's changes without waiting for a round trip.
+ */
 export function useSaveLibrarySettings() {
   const queryClient = useQueryClient()
+  const key = ['settings', 'library']
   return useMutation({
     mutationFn: (settings: LibrarySettings) =>
       api<LibrarySettings>('/settings/library', {
         method: 'PUT',
         body: JSON.stringify(settings),
       }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })
+    onMutate: async (settings) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<LibrarySettings>(key)
+      queryClient.setQueryData<LibrarySettings>(key, (old) => (old ? { ...old, ...settings } : settings))
+      return { previous }
+    },
+    onError: (_err, _settings, context) => {
+      if (context) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key })
     },
   })
 }

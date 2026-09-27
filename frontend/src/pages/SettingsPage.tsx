@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
 import { useLabel, useLanguageChoice } from '../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
@@ -480,16 +481,21 @@ function RecommendationIndexSection() {
 function useLibraryPatch() {
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
-  const patch = (changes: Partial<LibrarySettings>) =>
+  const queryClient = useQueryClient()
+  const patch = (changes: Partial<LibrarySettings>) => {
+    // Merge over the freshest cache, not `settings`: that's a render snapshot, and two patches
+    // fired before the first refetch lands would otherwise have the second undo the first.
+    const current = queryClient.getQueryData<LibrarySettings>(['settings', 'library']) ?? settings
     save.mutate(
       {
-        writeComicInfo: settings?.writeComicInfo ?? true,
-        folderNamingMode: settings?.folderNamingMode ?? 'rename',
-        writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+        writeComicInfo: current?.writeComicInfo ?? true,
+        folderNamingMode: current?.folderNamingMode ?? 'rename',
+        writeCoverToFolder: current?.writeCoverToFolder ?? false,
         ...changes,
       },
       { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
     )
+  }
   return { settings, patch }
 }
 
@@ -1844,8 +1850,14 @@ function ImportListInstanceControls() {
 function useUiPatch(): ((patch: Partial<UiSettings>) => void) | null {
   const { data: ui } = useUiSettings()
   const save = useSaveUiSettings()
+  const queryClient = useQueryClient()
   if (!ui) return null
-  return (patch) => save.mutate({ ...ui, ...patch })
+  // Merge over the freshest cache, not `ui`: that's a render snapshot, and two patches fired
+  // before the first refetch lands would otherwise have the second undo the first.
+  return (patch) => {
+    const current = queryClient.getQueryData<UiSettings>(['settings', 'ui']) ?? ui
+    save.mutate({ ...current, ...patch })
+  }
 }
 
 /**
