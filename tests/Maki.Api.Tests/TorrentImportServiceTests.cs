@@ -289,6 +289,19 @@ public class TorrentImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Plan_for_a_partial_volume_lists_only_the_files_its_pages_replace()
+    {
+        var (series, item) = SeedLibrary();
+        SeedVolumeDownload(1, 2, 3);
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Assert.Equal(3, plan.ReplacedFileCount);
+        var file = Assert.Single(plan.Files);
+        Assert.DoesNotContain(file.Replaces, r => r.RelativePath.EndsWith("Berserk Vol.1 Ch.4.cbz"));
+    }
+
+    [Fact]
     public async Task SkipExisting_leaves_a_download_that_brings_nothing_new_in_the_download_folder()
     {
         var (series, item) = SeedLibrary();

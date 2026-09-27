@@ -56,7 +56,7 @@ public class CbzLinkService(
         var folderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(seriesDir));
         var ordered = files.OrderBy(f => f).ToList();
         var index = 0;
-        var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record)>();
+        var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record, string Path)>();
         var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
         foreach (var file in ordered)
         {
@@ -106,7 +106,7 @@ public class CbzLinkService(
             }
             else
             {
-                matched = LinkChapters(chapters, parsed, chapterFile.Id, volumeFileIds, replaceExisting);
+                matched = LinkChapters(chapters, parsed, chapterFile.Id, file, volumeFileIds, replaceExisting);
                 if (matched.Count == 0 && parsed.IsVolume)
                 {
                     // No volume metadata to range-match against — read the chapters the
@@ -125,7 +125,7 @@ public class CbzLinkService(
                 }
                 else if (parsed.IsVolume)
                 {
-                    unlinkedVolumeFiles.Add((parsed, chapterFile));
+                    unlinkedVolumeFiles.Add((parsed, chapterFile, file));
                 }
             }
 
@@ -141,7 +141,7 @@ public class CbzLinkService(
         if (unlinkedVolumeFiles.Count > 0 && await TryBackfillChapterVolumesAsync(series, chapters, ct))
         {
             linked += unlinkedVolumeFiles.Count(
-                x => LinkChapters(chapters, x.Parsed, x.Record.Id, volumeFileIds, replaceExisting).Count > 0);
+                x => LinkChapters(chapters, x.Parsed, x.Record.Id, x.Path, volumeFileIds, replaceExisting).Count > 0);
         }
 
         // A volume file that range-matched some chapters can still contain others the
@@ -241,10 +241,10 @@ public class CbzLinkService(
                 continue;
             }
 
-            var matched = LinkChapters(chapters, parsed, dbFile.Id, volumeFileIds);
+            var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
+            var matched = LinkChapters(chapters, parsed, dbFile.Id, absolutePath, volumeFileIds);
             if (matched.Count == 0 && parsed.IsVolume)
             {
-                var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
                 if (absolutePath is not null)
                 {
                     matched = LinkVolumeByContents(chapters, parsed, absolutePath, dbFile.Id, volumeFileIds);
@@ -599,13 +599,18 @@ public class CbzLinkService(
     }
 
     /// <summary>Points matching chapters at the file; returns the chapters that were linked.</summary>
+    /// <param name="volumePath">
+    /// The file on disk. A volume whose page names carry chapter markers takes a chapter off
+    /// another file only when the markers name it; the provider's range alone would hand a
+    /// partial volume every chapter of that volume and orphan files it does not replace.
+    /// </param>
     /// <param name="replaceExisting">
     /// False leaves a chapter that already has a file alone, so this file links only what nothing
     /// backs yet.
     /// </param>
     private static List<Chapter> LinkChapters(
-        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, HashSet<int> volumeFileIds,
-        bool replaceExisting = true)
+        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, string? volumePath,
+        HashSet<int> volumeFileIds, bool replaceExisting = true)
     {
         List<Chapter> targets = [];
         if (parsed.IsChapter)
@@ -624,9 +629,20 @@ public class CbzLinkService(
         else if (parsed.IsVolume)
         {
             var end = parsed.VolumeEnd ?? parsed.Volume;
+            HashSet<decimal>? markers = null;
             targets = chapters
                 .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
                             && VolumeMayTake(c, volumeFileIds, replaceExisting))
+                .Where(c =>
+                {
+                    if (c.ChapterFileId is null)
+                    {
+                        return true;
+                    }
+
+                    markers ??= volumePath is null ? [] : [.. VolumeChapterScanner.ScanCbz(volumePath)];
+                    return markers.Count == 0 || (c.Number is { } number && markers.Contains(number));
+                })
                 .ToList();
         }
 

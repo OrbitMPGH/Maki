@@ -454,7 +454,8 @@ public class TorrentImportService(
     /// <summary>
     /// The chapters a downloaded file would end up backing: its own number for a chapter file, and
     /// for a compilation both the volume range the provider assigns and the chapter markers in its
-    /// page names, which is the pair <c>CbzLinkService</c> links on.
+    /// page names, which is the pair <c>CbzLinkService</c> links on. When the page names carry
+    /// markers, the range only reaches chapters nothing backs yet, the same limit the linker has.
     /// </summary>
     private static List<Chapter> ChaptersCoveredBy(
         List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages)
@@ -472,8 +473,9 @@ public class TorrentImportService(
         var end = parsed.VolumeEnd ?? parsed.Volume;
         var contained = VolumeChapterScanner.ChaptersInNames(pages).ToHashSet();
         return chapters
-            .Where(c => (c.Volume >= parsed.Volume && c.Volume <= end) ||
-                        (c.Number is { } n && contained.Contains(n)))
+            .Where(c => (c.Number is { } n && contained.Contains(n)) ||
+                        (c.Volume >= parsed.Volume && c.Volume <= end
+                         && (contained.Count == 0 || c.ChapterFileId is null)))
             .ToList();
     }
 

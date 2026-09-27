@@ -94,6 +94,7 @@ public class FileRelinkPlanner(
         public bool Excluded { get; init; }
         /// <summary>Chapters this file contains and how sure we are, keyed by chapter id.</summary>
         public Dictionary<int, RelinkConfidence> Covers { get; } = [];
+        public bool HasMarkers { get; set; }
         public int Span => Parsed.IsVolume ? (Parsed.VolumeEnd ?? Parsed.Volume!.Value) - Parsed.Volume!.Value : 0;
     }
 
@@ -319,6 +320,9 @@ public class FileRelinkPlanner(
     {
         RelinkConfidence.PageMarkers => 0,
         RelinkConfidence.Existing when candidate.Parsed.IsVolume => 1,
+        // Page markers that leave a chapter out are evidence the volume lacks it, so the range
+        // then only claims a chapter no file names.
+        RelinkConfidence.VolumeRange when candidate.HasMarkers => 4,
         RelinkConfidence.VolumeRange => 2,
         // A single file named for its chapter is certain about that chapter; a proportional guess
         // for which volume holds it is not, so the guess only wins when nothing else has it.
@@ -347,6 +351,7 @@ public class FileRelinkPlanner(
         var start = parsed.Volume!.Value;
         var end = parsed.VolumeEnd ?? start;
         var markers = VolumeChapterScanner.ScanCbz(candidate.AbsolutePath).ToHashSet();
+        candidate.HasMarkers = markers.Count > 0;
         foreach (var chapter in chapters)
         {
             if (chapter.Number is { } number && markers.Contains(number))
