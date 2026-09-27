@@ -66,6 +66,14 @@ public class LibraryPathsTests
         Assert.Null(LibraryPaths.TopFolder("ch1.cbz"));
     }
 
+    [Theory]
+    [InlineData("My Series\\ch1.cbz")]
+    [InlineData("My Series/ch1.cbz")]
+    public void TopFolder_reads_either_separator(string relativePath)
+    {
+        Assert.Equal("My Series", LibraryPaths.TopFolder(relativePath));
+    }
+
     // Regression: a "." or ".." top segment is not a real folder name, but a caller treating it as
     // one (SeriesFolders.ForAsync feeding a rescan or a relink) would enumerate the whole root or its
     // parent. A bad ChapterFile.RelativePath used to produce exactly this from a raw request path

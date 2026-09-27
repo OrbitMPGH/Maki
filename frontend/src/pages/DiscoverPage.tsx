@@ -1114,8 +1114,8 @@ function DiscoverBrowseTab({
   onExitEditing: () => void
 }) {
   const { t } = useLingui()
-  const { data: ui } = useUiSettings()
-  const { data: customRails } = useCustomRails()
+  const { data: ui, isError: uiFailed } = useUiSettings()
+  const { data: customRails, isError: railsFailed } = useCustomRails()
   const discoverRails = useMemo(
     () => customRails?.filter((r) => r.placement === 'discover'),
     [customRails],
@@ -1229,7 +1229,7 @@ function DiscoverBrowseTab({
         onExit={onExitEditing}
       />
     ) : (
-      <PageLayoutEditorLoading />
+      <PageLayoutEditorLoading failed={uiFailed || railsFailed} onExit={onExitEditing} />
     )
   }
 

@@ -3074,6 +3074,14 @@ msgstr "Cap. {chapterLabel}"
 msgid "Ch. {chapters}"
 msgstr "Cap. {chapters}"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first}"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first} to {last}"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ch. {firstFrom}–{covered}"
@@ -3101,6 +3109,10 @@ msgstr "cap. {from}+"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Ch. {label}: {detail}"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {list}"
 msgstr ""
 
 #: src/components/home/AnimeResumeRail.tsx
@@ -3798,6 +3810,7 @@ msgstr "Conecte um rastreador do AniList ou MyAnimeList para usar isso. <0>Abrir
 #: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #: src/pages/stats/sections/RhythmSection.tsx
+#: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 msgstr "Conecte isso em Configurações e o Maki começará a registrar os capítulos que você lê. Downloads e alterações na biblioteca são registrados de qualquer forma."
@@ -5166,6 +5179,10 @@ msgstr "Excluído do gosto"
 #, fuzzy
 msgid "Existing folders on import"
 msgstr "Pastas existentes ao importar"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Exit editing"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -6746,6 +6763,10 @@ msgstr "Última execução {when}: {added} adicionadas, {requested} solicitadas,
 #, fuzzy
 msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
 msgstr "Última execução {when}: {added} adicionadas, {requested} solicitadas, {skipped} ignoradas, {errors} erros"
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8589,6 +8610,10 @@ msgstr "Nada aqui"
 msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Nada aqui é definitivo. Todas as opções também estão em Configurações."
 
+#: src/components/ImportListsSection.tsx
+msgid "Nothing imported: import lists need the local MangaBaka database."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr ""
@@ -9933,11 +9958,6 @@ msgstr "Progresso de leitura do Kavita…"
 #, fuzzy
 msgid "Reading stats need Kavita"
 msgstr "As estatísticas de leitura precisam do Kavita"
-
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "As estatísticas de leitura precisam do Kavita: conecte-o em Configurações e o Maki começará a acompanhar os capítulos que você lê. Downloads e alterações na biblioteca são acompanhados de qualquer forma."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -12661,6 +12681,10 @@ msgstr "os últimos 30 dias"
 #, fuzzy
 msgid "the last 90 days"
 msgstr "os últimos 90 dias"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "The layout could not be loaded."
+msgstr ""
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy

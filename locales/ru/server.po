@@ -1009,6 +1009,11 @@ msgstr "Неизвестный источник: {sourceName}"
 msgid "error.series.activeDownloadMove"
 msgstr "У серии выполняется загрузка. Дождитесь её завершения перед перемещением"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series has an active download. Wait for it to finish before relinking files.
+msgid "error.series.activeDownloadRelink"
+msgstr ""
+
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.

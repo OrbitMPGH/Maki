@@ -3074,6 +3074,14 @@ msgstr "챕터 {chapterLabel}"
 msgid "Ch. {chapters}"
 msgstr "챕터 {chapters}"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first}"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first} to {last}"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ch. {firstFrom}–{covered}"
@@ -3101,6 +3109,10 @@ msgstr "챕터 {from}+"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Ch. {label}: {detail}"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {list}"
 msgstr ""
 
 #: src/components/home/AnimeResumeRail.tsx
@@ -3798,6 +3810,7 @@ msgstr "사용하려면 AniList 또는 MyAnimeList 트래커를 연결하세요.
 #: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #: src/pages/stats/sections/RhythmSection.tsx
+#: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 msgstr "설정에서 연결하면 Maki가 읽은 챕터 추적을 시작합니다. 다운로드와 라이브러리 변경 사항도 계속 추적됩니다."
@@ -5166,6 +5179,10 @@ msgstr "취향에서 제외됨"
 #, fuzzy
 msgid "Existing folders on import"
 msgstr "가져올 때 기존 폴더 처리"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Exit editing"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -6746,6 +6763,10 @@ msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skip
 #, fuzzy
 msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
 msgstr "마지막 실행 {when}: {added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류 {errors}개"
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8589,6 +8610,10 @@ msgstr "여기에 아무것도 없습니다"
 msgid "Nothing here is final. Every option is also in Settings."
 msgstr "여기서 설정한 내용은 언제든 변경할 수 있습니다. 모든 옵션은 설정에도 있습니다."
 
+#: src/components/ImportListsSection.tsx
+msgid "Nothing imported: import lists need the local MangaBaka database."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr ""
@@ -9933,11 +9958,6 @@ msgstr "Kavita에서 읽기 진행 상황 가져오는 중…"
 #, fuzzy
 msgid "Reading stats need Kavita"
 msgstr "읽기 통계에는 Kavita가 필요합니다"
-
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "읽기 통계에는 Kavita가 필요합니다. 설정에서 연결하면 Maki가 읽은 챕터 추적을 시작합니다. 다운로드와 라이브러리 변경 사항은 어느 경우에도 추적됩니다."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -12661,6 +12681,10 @@ msgstr "최근 30일"
 #, fuzzy
 msgid "the last 90 days"
 msgstr "최근 90일"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "The layout could not be loaded."
+msgstr ""
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy

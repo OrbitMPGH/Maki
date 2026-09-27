@@ -30,9 +30,12 @@ export const YEAR_MIN = 1950
 // +1 so a series announced for next year isn't clamped out of the "no constraint" upper end.
 export const YEAR_MAX = new Date().getFullYear() + 1
 
-/** A stored upper bound near an older YEAR_MAX sentinel reads as a real constraint once the year ticks over; treat it as "no constraint" again. */
+/**
+ * Clamps a stored range into the slider. Only values past the ceiling are pulled in: `YEAR_MAX - 1`
+ * is the current year, a real bound someone picked, not a stale sentinel.
+ */
 export function normalizeStoredYears([min, max]: [number, number]): [number, number] {
-  return max >= YEAR_MAX - 1 ? [min, YEAR_MAX] : [min, max]
+  return max > YEAR_MAX ? [min, YEAR_MAX] : [min, max]
 }
 export const CHAPTER_MIN = 0
 export const CHAPTER_MAX = 500 // upper handle here means "500+" (no maximum)

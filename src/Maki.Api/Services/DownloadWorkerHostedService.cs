@@ -238,8 +238,16 @@ public class DownloadWorkerHostedService(
                 return; // clean exit: the channel completed
             }
 
-            if (!queue.Reader.TryRead(out _))
+            if (workerId >= _concurrency || !queue.Reader.TryRead(out var signal))
             {
+                continue;
+            }
+
+            // Parked between the wait and the read: hand the wake-up back for a live worker rather
+            // than leaving its item for the next periodic poll.
+            if (workerId >= _concurrency)
+            {
+                await queue.SignalAsync(signal, ct);
                 continue;
             }
 

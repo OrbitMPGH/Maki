@@ -113,8 +113,13 @@ public class FileRelinkPlanner(
         return ToPlan(built);
     }
 
+    /// <param name="confirmedSuperseded">
+    /// Superseded paths the caller previewed. The plan is recomputed from disk, so a file only goes
+    /// when it is superseded now and was also shown as superseded to whoever confirmed the delete.
+    /// </param>
     public async Task<RelinkResult> ApplyAsync(
-        Series series, RelinkOptions options, bool deleteSuperseded, CancellationToken ct = default)
+        Series series, RelinkOptions options, bool deleteSuperseded, IReadOnlyCollection<string> confirmedSuperseded,
+        CancellationToken ct = default)
     {
         var built = await BuildAsync(series, options, ct);
         var plan = ToPlan(built);
@@ -178,10 +183,17 @@ public class FileRelinkPlanner(
             moved++;
         }
 
+        // Links land before any file is deleted: a failure after this point leaves at worst an
+        // orphaned record for a file that backs nothing, never a chapter pointing at a deleted file.
+        await db.SaveChangesAsync(ct);
+
         var deleted = 0;
         var failed = 0;
         long freed = 0;
-        var supersededPaths = plan.Files.Where(f => f.Superseded).Select(f => f.RelativePath).ToHashSet(StringComparer.Ordinal);
+        var confirmed = confirmedSuperseded.Select(LibraryPaths.ComparisonKey).ToHashSet(StringComparer.Ordinal);
+        var supersededPaths = plan.Files
+            .Where(f => f.Superseded && confirmed.Contains(LibraryPaths.ComparisonKey(f.RelativePath)))
+            .Select(f => f.RelativePath).ToHashSet(StringComparer.Ordinal);
         if (deleteSuperseded)
         {
             foreach (var candidate in built.Candidates.Where(c => supersededPaths.Contains(c.RelativePath)))

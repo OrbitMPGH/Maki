@@ -701,6 +701,10 @@ msgstr "Unknown source: {sourceName}"
 msgid "error.series.activeDownloadMove"
 msgstr "Series has an active download - wait for it to finish before moving"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.activeDownloadRelink"
+msgstr "Series has an active download. Wait for it to finish before relinking files."
+
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.addResultGone"

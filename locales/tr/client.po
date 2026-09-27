@@ -3074,6 +3074,14 @@ msgstr "B. {chapterLabel}"
 msgid "Ch. {chapters}"
 msgstr "B. {chapters}"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first}"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first} to {last}"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ch. {firstFrom}–{covered}"
@@ -3101,6 +3109,10 @@ msgstr "b. {from}+"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Ch. {label}: {detail}"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {list}"
 msgstr ""
 
 #: src/components/home/AnimeResumeRail.tsx
@@ -3798,6 +3810,7 @@ msgstr "Bunu kullanmak için bir AniList veya MyAnimeList izleyicisi bağlayın.
 #: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #: src/pages/stats/sections/RhythmSection.tsx
+#: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 msgstr "Ayarlar'dan bağla, Maki okuduğun bölümleri takip etmeye başlasın. İndirmeler ve kitaplık değişiklikleri her durumda izlenir."
@@ -5166,6 +5179,10 @@ msgstr "Zevk profilinden çıkarıldı"
 #, fuzzy
 msgid "Existing folders on import"
 msgstr "İçe aktarırken var olan klasörler"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Exit editing"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -6746,6 +6763,10 @@ msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skippe
 #, fuzzy
 msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
 msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı, {errors} hata"
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8589,6 +8610,10 @@ msgstr "Burada bir şey yok"
 msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Buradaki hiçbir ayar kesin değil. Her seçenek Ayarlar'da da bulunur."
 
+#: src/components/ImportListsSection.tsx
+msgid "Nothing imported: import lists need the local MangaBaka database."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr ""
@@ -9933,11 +9958,6 @@ msgstr "Kavita'dan okuma ilerlemesi…"
 #, fuzzy
 msgid "Reading stats need Kavita"
 msgstr "Okuma istatistikleri için Kavita gerekir"
-
-#: src/pages/stats/sections/TasteSection.tsx
-#, fuzzy
-msgid "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "Okuma istatistikleri Kavita'ya ihtiyaç duyar: Ayarlar'dan bağlayın, Maki de okuduğunuz bölümleri takip etmeye başlasın. İndirmeler ve kitaplık değişiklikleri her durumda takip edilir."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -12661,6 +12681,10 @@ msgstr "son 30 gün"
 #, fuzzy
 msgid "the last 90 days"
 msgstr "son 90 gün"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "The layout could not be loaded."
+msgstr ""
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy

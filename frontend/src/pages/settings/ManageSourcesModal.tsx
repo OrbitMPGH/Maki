@@ -300,6 +300,14 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
   const orderChanged =
     initialRail.filter((name) => railSet.has(name)).join() !== rail.filter((name) => initialSet.has(name)).join()
   const dirty = turnedOn > 0 || turnedOff > 0 || orderChanged
+  const guardUnload = opened && dirty
+
+  useEffect(() => {
+    if (!guardUnload) return
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [guardUnload])
 
   function toggle(name: string, on: boolean) {
     setRail((current) => (on ? [...current.filter((n) => n !== name), name] : current.filter((n) => n !== name)))

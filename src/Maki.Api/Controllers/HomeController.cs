@@ -4,6 +4,7 @@ using Maki.Core.Reading;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
@@ -234,12 +235,29 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             return NotFound();
         }
 
+        try
+        {
+            await WriteHiddenFromHomeAsync(seriesId, at, ct);
+        }
+        catch (DbUpdateException e) when (e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 })
+        {
+            // A double click inserts twice for a series with no state row yet; the loser updates
+            // the row the winner created.
+            db.ChangeTracker.Clear();
+            await WriteHiddenFromHomeAsync(seriesId, at, ct);
+        }
+
+        return NoContent();
+    }
+
+    private async Task WriteHiddenFromHomeAsync(int seriesId, DateTime? at, CancellationToken ct)
+    {
         var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
         if (state is null)
         {
             if (at is null)
             {
-                return NoContent();
+                return;
             }
 
             state = new UserSeriesState { SeriesId = seriesId };
@@ -249,7 +267,6 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         state.HiddenFromHomeAt = at;
         state.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return NoContent();
     }
 
     /// <summary>

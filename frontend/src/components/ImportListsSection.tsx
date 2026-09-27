@@ -75,6 +75,13 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
             })
             return
           }
+          if (result.dumpUnavailable) {
+            notifications.show({
+              color: 'var(--warn)',
+              message: t`Nothing imported: import lists need the local MangaBaka database.`,
+            })
+            return
+          }
           const { added, requested, skipped, errors } = result
           notifications.show({
             message: t`${added} added, ${requested} requested, ${skipped} skipped, ${errors} errors`,
@@ -244,6 +251,9 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
 function LastRunLine({ lastRun }: { lastRun: NonNullable<ImportListTrackerDto['lastRun']> }) {
   const { added, requested, skipped, errors } = lastRun
   const when = relativeTime(lastRun.at)
+  if (lastRun.dumpUnavailable) {
+    return <Trans>Last run {when}: skipped, the local MangaBaka database is not downloaded yet</Trans>
+  }
   return errors > 0 ? (
     <Trans>
       Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors

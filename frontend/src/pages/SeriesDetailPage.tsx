@@ -1366,7 +1366,7 @@ export default function SeriesDetailPage() {
                                 radius="md"
                                 px={10}
                                 aria-label={t`More download options`}
-                                disabled={missingWanted === 0 || searchMissing.isPending || downloadNext.isPending}
+                                disabled={(chapters !== undefined && missingWanted === 0) || searchMissing.isPending || downloadNext.isPending}
                             >
                               <IconChevronDown size={16} />
                             </Button>

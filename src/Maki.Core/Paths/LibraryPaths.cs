@@ -57,10 +57,12 @@ public static class LibraryPaths
     /// The root-level folder a stored relative path sits in, or null for a file directly in the
     /// root (a manual link can point there) or for a "." or ".." segment, which is never a real
     /// folder name and, treated as one, would have a caller enumerate the whole root or its parent.
+    /// Both separators count on every host, like <see cref="ComparisonKey"/>, so a row written on
+    /// Windows still names its folder under Docker.
     /// </summary>
     public static string? TopFolder(string relativePath)
     {
-        var separator = relativePath.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
+        var separator = relativePath.IndexOfAny(['/', '\\']);
         if (separator <= 0)
         {
             return null;

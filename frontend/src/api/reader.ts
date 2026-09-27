@@ -42,6 +42,8 @@ export interface ReaderManifest {
   autoProfileId: number | null
   /** manga | manhwa | manhua | oel | other, or null when the series has no type yet. */
   seriesType: string | null
+  /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
+  pageVersion: string
 }
 
 /** Which layer answered "what does this series look like". Mirrors `ReaderPrefsSource`. */
@@ -84,10 +86,11 @@ export interface ChapterProgressDto {
  * This used to append the instance API key, which put it into browser history and into the access log
  * of every proxy the image request passed through.
  */
-export async function pageUrl(chapterId: number, page: number, thumb = false): Promise<string> {
+export async function pageUrl(chapterId: number, page: number, thumb = false, version?: string): Promise<string> {
   const init = await getInitialize()
   const kind = thumb ? 'thumb' : 'page'
-  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}`
+  const query = version ? `?v=${encodeURIComponent(version)}` : ''
+  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}${query}`
 }
 
 export function useReaderManifest(chapterId: number) {

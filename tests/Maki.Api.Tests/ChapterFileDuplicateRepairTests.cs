@@ -65,7 +65,7 @@ public sealed class ChapterFileDuplicateRepairTests : IDisposable
     {
         var series = SeedSeries("Berserk");
         var keep = AddFile(series, @"Berserk\Berserk v01 (2022) (Digital) (1r0n).cbz");
-        var extra = AddFile(series, "berserk/Berserk V01 (2022) (Digital) (1r0n).cbz");
+        var extra = AddFile(series, "Berserk/Berserk v01 (2022) (Digital) (1r0n).cbz");
         var unrelated = AddFile(series, "Berserk/Berserk v02 (2022) (Digital) (1r0n).cbz");
         var onKeep = AddChapter(series, 1, keep);
         var onExtra = AddChapter(series, 2, extra);
@@ -81,6 +81,20 @@ public sealed class ChapterFileDuplicateRepairTests : IDisposable
         Assert.Equal(keep, db.Chapters.Single(c => c.Id == onExtra).ChapterFileId);
         Assert.Equal(unrelated, db.Chapters.Single(c => c.Id == onOther).ChapterFileId);
         Assert.True(db.AppConfig.Any(c => c.Key == ChapterFileDuplicateRepairService.MarkerKey));
+    }
+
+    [Fact]
+    public async Task Paths_differing_only_in_case_are_two_files_on_a_case_sensitive_host()
+    {
+        var series = SeedSeries("Berserk");
+        var lower = AddFile(series, "Berserk/berserk v01.cbz");
+        var upper = AddFile(series, "Berserk/Berserk v01.cbz");
+
+        await Service().RunOnceAsync();
+
+        using var db = _db.NewContext();
+        var files = db.ChapterFiles.Where(f => f.SeriesId == series).Select(f => f.Id).OrderBy(id => id).ToList();
+        Assert.Equal(OperatingSystem.IsWindows() ? [lower] : [lower, upper], files);
     }
 
     [Fact]

@@ -19,9 +19,10 @@ namespace Maki.Api.Services;
 /// the same problem produced two different sentences and so read as two unrelated issues.
 /// </param>
 /// <param name="Covers">Mapping ids folded into this issue, whose own rows it replaces.</param>
+/// <param name="Source">The source a failing mapping belongs to.</param>
 public record HealthIssue(
     string Type, string Severity, string MessageKey, object? Params = null,
-    int? SeriesId = null, string? Key = null, IReadOnlyList<int>? Covers = null)
+    int? SeriesId = null, string? Key = null, IReadOnlyList<int>? Covers = null, string? Source = null)
 {
     /// <summary>What makes this issue the same issue across two checks.</summary>
     public string Identity => Key ?? $"{Type}:{SeriesId}:{MessageKey}";
@@ -71,7 +72,7 @@ public class HealthCheckService(
                 // {detail} is the source's own error text and is not translated.
                 issues.Add(new HealthIssue("sourceMapping", "warning", "health.issue.mappingFailing",
                     new { series = mapping.Series?.Title ?? "", source = mapping.SourceName, detail = mapping.LastError ?? "" },
-                    mapping.SeriesId, $"mapping:{mapping.Id}"));
+                    mapping.SeriesId, $"mapping:{mapping.Id}", Source: group.Key));
             }
         }
 

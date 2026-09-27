@@ -429,11 +429,80 @@ public class FileRelinkPlannerTests : IDisposable
         return await Planner(context).PlanAsync(loaded, RelinkOptions.None);
     }
 
-    private async Task ApplyAsync(int seriesId)
+    private async Task<RelinkResult> ApplyAsync(
+        int seriesId, bool deleteSuperseded = false, IReadOnlyCollection<string>? confirmedSuperseded = null)
     {
         using var context = _db.NewContext();
         var loaded = await context.Series.Include(s => s.RootFolder).SingleAsync(s => s.Id == seriesId);
-        await Planner(context).ApplyAsync(loaded, RelinkOptions.None, deleteSuperseded: false);
+        return await Planner(context).ApplyAsync(loaded, RelinkOptions.None, deleteSuperseded, confirmedSuperseded ?? []);
+    }
+
+    private (int SeriesId, int ChapterId, string SinglePath) SeedSupersededSingle()
+    {
+        var seriesId = SeedSeries();
+        int chapterId;
+        string singlePath;
+        using (var db = _db.NewContext())
+        {
+            var file = AddFile(db, seriesId, "Series Vol.1 Ch.1.cbz");
+            singlePath = file.RelativePath;
+            var chapter = new Chapter { SeriesId = seriesId, Number = 1, Volume = 1, Language = "en", ChapterFileId = file.Id };
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            chapterId = chapter.Id;
+        }
+
+        WriteSeriesFile("Series Vol.1 Ch.1.cbz", ["Series - c001 - p001.png"]);
+        WriteSeriesFile("Series v01 (Digital).cbz", ["Series - c001 - p001 [Grp].png"]);
+        return (seriesId, chapterId, singlePath);
+    }
+
+    [Fact]
+    public async Task Apply_deletes_a_superseded_file_the_caller_confirmed()
+    {
+        var (seriesId, chapterId, singlePath) = SeedSupersededSingle();
+        var plan = await PlanAsync(seriesId);
+        Assert.Equal([singlePath], plan.Files.Where(f => f.Superseded).Select(f => f.RelativePath));
+
+        var result = await ApplyAsync(seriesId, deleteSuperseded: true, confirmedSuperseded: [singlePath]);
+
+        Assert.Equal(1, result.Deleted);
+        Assert.False(File.Exists(Path.Combine(_root, singlePath)));
+        using var check = _db.NewContext();
+        var chapter = check.Chapters.Single(c => c.Id == chapterId);
+        Assert.EndsWith("Series v01 (Digital).cbz", check.ChapterFiles.Single(f => f.Id == chapter.ChapterFileId).RelativePath);
+        Assert.DoesNotContain(check.ChapterFiles, f => f.RelativePath == singlePath);
+    }
+
+    /// <summary>
+    /// The plan is recomputed on apply, so a file that became superseded after the preview was
+    /// never shown to the user as one and must survive a delete they confirmed for other files.
+    /// </summary>
+    [Fact]
+    public async Task Apply_keeps_a_superseded_file_the_caller_never_saw()
+    {
+        var (seriesId, chapterId, singlePath) = SeedSupersededSingle();
+
+        var result = await ApplyAsync(seriesId, deleteSuperseded: true, confirmedSuperseded: []);
+
+        Assert.Equal(0, result.Deleted);
+        Assert.Equal(1, result.Moved);
+        Assert.True(File.Exists(Path.Combine(_root, singlePath)));
+        using var check = _db.NewContext();
+        var chapter = check.Chapters.Single(c => c.Id == chapterId);
+        Assert.EndsWith("Series v01 (Digital).cbz", check.ChapterFiles.Single(f => f.Id == chapter.ChapterFileId).RelativePath);
+    }
+
+    [Fact]
+    public async Task Apply_without_delete_leaves_a_confirmed_superseded_file_on_disk()
+    {
+        var (seriesId, _, singlePath) = SeedSupersededSingle();
+
+        var result = await ApplyAsync(seriesId, deleteSuperseded: false, confirmedSuperseded: [singlePath]);
+
+        Assert.Equal(0, result.Deleted);
+        Assert.Equal(1, result.Superseded);
+        Assert.True(File.Exists(Path.Combine(_root, singlePath)));
     }
 
     private FileRelinkPlanner Planner(MakiDbContext context)

@@ -75,8 +75,8 @@ export default function ReaderPage() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   const pageCount = manifest?.pageCount ?? 0
-  const urls = usePageUrls(chapterId, pageCount)
-  const thumbs = usePageUrls(chapterId, stripOpen ? pageCount : 0, true)
+  const urls = usePageUrls(chapterId, pageCount, manifest?.pageVersion)
+  const thumbs = usePageUrls(chapterId, stripOpen ? pageCount : 0, manifest?.pageVersion, true)
   const { wide, measure } = usePageAspects(urls)
   const spreads = useSpreads(pageCount, wide, prefs.mode === 'double')
   const spreadIndex = useMemo(() => spreadIndexOf(spreads, page), [spreads, page])

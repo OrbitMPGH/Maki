@@ -273,8 +273,10 @@ public class SeriesController(
 
     /// <summary>
     /// Applies the volumes-first rebuild. The plan is recomputed here rather than taken from the
-    /// client, so what gets applied is what is on disk now. Deleting the superseded files needs
-    /// DeleteSeries on top of EditMetadata.
+    /// client, so what gets applied is what is on disk now, but a superseded file is only deleted
+    /// when the client also saw it as superseded. Deleting needs DeleteSeries on top of
+    /// EditMetadata. Refused while a download for the series is in flight, since it can land a
+    /// file mid-plan.
     /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/relink")]
@@ -296,15 +298,28 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        return Ok(await relinkPlanner.ApplyAsync(series, request.Options, request.DeleteSuperseded, ct));
+        if (await HasActiveDownloadAsync(id, ct))
+        {
+            return this.Conflict(localizer, "error.series.activeDownloadRelink");
+        }
+
+        return Ok(await relinkPlanner.ApplyAsync(
+            series, request.Options, request.DeleteSuperseded, request.ConfirmedSuperseded ?? [], ct));
     }
+
+    private Task<bool> HasActiveDownloadAsync(int seriesId, CancellationToken ct) =>
+        db.DownloadQueue.AnyAsync(q => q.SeriesId == seriesId &&
+            q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
+            q.Status != QueueStatus.Cancelled, ct);
 
     public record RelinkPlanRequest(string[]? ExcludedPaths, int[]? PinnedChapterIds)
     {
         public RelinkOptions Options => new(ExcludedPaths ?? [], PinnedChapterIds ?? []);
     }
 
-    public record RelinkRequest(string[]? ExcludedPaths, int[]? PinnedChapterIds, bool DeleteSuperseded)
+    /// <param name="ConfirmedSuperseded">The superseded paths from the plan the user confirmed.</param>
+    public record RelinkRequest(
+        string[]? ExcludedPaths, int[]? PinnedChapterIds, bool DeleteSuperseded, string[]? ConfirmedSuperseded = null)
         : RelinkPlanRequest(ExcludedPaths, PinnedChapterIds);
 
     [HttpGet]
@@ -980,7 +995,7 @@ public class SeriesController(
                     foreach (var path in paths)
                     {
                         if (LibraryPaths.TopFolder(path) is { } top && extraFolders.Contains(top, LibraryPaths.FolderComparer)
-                            && LibraryPaths.Resolve(series.RootFolder.Path, path) is { } absolute
+                            && LibraryPaths.Resolve(series.RootFolder.Path, LibraryPaths.ComparisonKey(path)) is { } absolute
                             && System.IO.File.Exists(absolute))
                         {
                             System.IO.File.Delete(absolute);
@@ -1112,10 +1127,7 @@ public class SeriesController(
 
         if (request.MoveFiles)
         {
-            var active = await db.DownloadQueue.AnyAsync(q => q.SeriesId == id &&
-                q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
-                q.Status != QueueStatus.Cancelled, ct);
-            if (active)
+            if (await HasActiveDownloadAsync(id, ct))
             {
                 return this.Conflict(localizer, "error.series.activeDownloadMove");
             }
@@ -1129,10 +1141,15 @@ public class SeriesController(
                 }
             }
 
-            // A failure part way through puts the folders already moved back, since RootFolderId
-            // is not updated and would otherwise resolve them under the old root.
-            var movedFolders = new List<string>();
-            foreach (var folder in folders)
+            // A failure part way through puts back whatever already moved, since RootFolderId is
+            // not updated and would otherwise resolve it under the old root. The series' own folder
+            // moves whole; a folder it only has some files in gives up just those files, the same
+            // line Delete draws, so anything else living there stays put.
+            var trackedPaths = await db.ChapterFiles.Where(f => f.SeriesId == id)
+                .Select(f => f.RelativePath).ToListAsync(ct);
+            var undo = new List<(string From, string To, bool IsDirectory)>();
+            var emptiedFolders = new List<string>();
+            foreach (var (folder, index) in folders.Select((f, i) => (f, i)))
             {
                 var source = Path.Combine(series.RootFolder.Path, folder);
                 if (!Directory.Exists(source))
@@ -1142,27 +1159,65 @@ public class SeriesController(
 
                 try
                 {
-                    MoveDirectory(source, Path.Combine(destination.Path, folder));
-                    movedFolders.Add(folder);
+                    if (index == 0)
+                    {
+                        var target = Path.Combine(destination.Path, folder);
+                        MoveDirectory(source, target);
+                        undo.Add((source, target, true));
+                        continue;
+                    }
+
+                    foreach (var path in trackedPaths.Where(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), folder)))
+                    {
+                        var key = LibraryPaths.ComparisonKey(path);
+                        if (LibraryPaths.Resolve(series.RootFolder.Path, key) is not { } from
+                            || LibraryPaths.Resolve(destination.Path, key) is not { } to
+                            || !System.IO.File.Exists(from))
+                        {
+                            continue;
+                        }
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+                        System.IO.File.Move(from, to);
+                        undo.Add((from, to, false));
+                    }
+
+                    emptiedFolders.Add(source);
                 }
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
-                    for (var i = movedFolders.Count - 1; i >= 0; i--)
+                    for (var i = undo.Count - 1; i >= 0; i--)
                     {
+                        var (from, to, isDirectory) = undo[i];
                         try
                         {
-                            MoveDirectory(Path.Combine(destination.Path, movedFolders[i]), Path.Combine(series.RootFolder.Path, movedFolders[i]));
+                            if (isDirectory)
+                            {
+                                MoveDirectory(to, from);
+                            }
+                            else
+                            {
+                                System.IO.File.Move(to, from);
+                            }
                         }
                         catch (Exception rollbackEx)
                         {
-                            logger.LogError(rollbackEx, "Could not move {Folder} back to {Root} after a failed series move",
-                                movedFolders[i], series.RootFolder.Path);
+                            logger.LogError(rollbackEx, "Could not move {Path} back to {Root} after a failed series move",
+                                from, series.RootFolder.Path);
                         }
                     }
 
                     return StatusCode(StatusCodes.Status500InternalServerError,
                         new { error = $"Could not move the series folder: {ex.Message}" });
+                }
+            }
+
+            foreach (var emptied in emptiedFolders)
+            {
+                if (!Directory.EnumerateFileSystemEntries(emptied).Any())
+                {
+                    Directory.Delete(emptied, recursive: false);
                 }
             }
         }
@@ -1268,7 +1323,37 @@ public class SeriesController(
             throw;
         }
 
-        Directory.Delete(source, recursive: true);
+        try
+        {
+            Directory.Delete(source, recursive: true);
+        }
+        catch
+        {
+            // Some of the source is already gone. The copy is complete, so restore what is missing
+            // from it and drop the copy, leaving the folder whole at its old path for the caller's
+            // rollback rather than split across two roots.
+            RestoreMissing(destination, source);
+            Directory.Delete(destination, recursive: true);
+            throw;
+        }
+    }
+
+    private static void RestoreMissing(string copy, string original)
+    {
+        Directory.CreateDirectory(original);
+        foreach (var file in Directory.GetFiles(copy))
+        {
+            var target = Path.Combine(original, Path.GetFileName(file));
+            if (!System.IO.File.Exists(target))
+            {
+                System.IO.File.Copy(file, target);
+            }
+        }
+
+        foreach (var dir in Directory.GetDirectories(copy))
+        {
+            RestoreMissing(dir, Path.Combine(original, Path.GetFileName(dir)));
+        }
     }
 
     private static void CopyDirectory(string source, string destination)

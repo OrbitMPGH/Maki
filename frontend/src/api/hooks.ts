@@ -1714,7 +1714,7 @@ export function useRelinkPlan(seriesId: number, options: RelinkOptions, enabled:
 export function useApplyRelink(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (request: RelinkOptions & { deleteSuperseded: boolean }) =>
+    mutationFn: (request: RelinkOptions & { deleteSuperseded: boolean; confirmedSuperseded: string[] }) =>
       api<RelinkResult>(`/series/${seriesId}/relink`, {
         method: 'POST',
         body: JSON.stringify(request),

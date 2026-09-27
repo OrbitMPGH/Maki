@@ -169,11 +169,16 @@ public class TorrentImportService(
             .Where(f => f.SeriesId == series.Id)
             .ToListAsync(ct);
 
+        var volumeFileIds = existingFiles
+            .Where(f => ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
+            .Select(f => f.Id)
+            .ToHashSet();
+
         var files = new List<ImportPlanFile>();
         foreach (var source in sources.OrderBy(s => s.Name, StringComparer.Ordinal))
         {
             var parsed = ReleaseNameParser.ParseFileName(source.Name);
-            var covered = ChaptersCoveredBy(chapters, parsed, source.Pages);
+            var covered = ChaptersCoveredBy(chapters, parsed, source.Pages, volumeFileIds);
 
             var replaces = covered
                 .Where(c => c.ChapterFileId != null)
@@ -456,10 +461,13 @@ public class TorrentImportService(
     /// for a compilation both the volume range the provider assigns and the chapter markers in its
     /// page names, which is the pair <c>CbzLinkService</c> links on. When the page names carry
     /// markers, the range only reaches chapters nothing backs yet, the same limit the linker has.
+    /// A chapter already on a volume file is never counted: the linker does not take chapters off
+    /// a volume, so the import would neither gain nor replace it.
     /// </summary>
     private static List<Chapter> ChaptersCoveredBy(
-        List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages)
+        List<Chapter> chapters, ParsedReleaseFile parsed, IReadOnlyList<string> pages, HashSet<int> volumeFileIds)
     {
+        chapters = chapters.Where(c => c.ChapterFileId is not { } fileId || !volumeFileIds.Contains(fileId)).ToList();
         if (parsed.IsChapter)
         {
             return chapters.Where(c => c.Number == parsed.Number).ToList();

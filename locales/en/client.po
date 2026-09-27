@@ -2514,6 +2514,14 @@ msgstr "Ch. {chapterLabel}"
 msgid "Ch. {chapters}"
 msgstr "Ch. {chapters}"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first}"
+msgstr "Ch. {first}"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {first} to {last}"
+msgstr "Ch. {first} to {last}"
+
 #: src/components/AnimeCoverageBar.tsx
 msgid "ch. {firstFrom}–{covered}"
 msgstr "ch. {firstFrom}–{covered}"
@@ -2537,6 +2545,10 @@ msgstr "ch. {from}+"
 #: src/components/RelinkFilesModal.tsx
 msgid "Ch. {label}: {detail}"
 msgstr "Ch. {label}: {detail}"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Ch. {list}"
+msgstr "Ch. {list}"
 
 #: src/components/home/AnimeResumeRail.tsx
 msgid "ch. {next}"
@@ -3106,6 +3118,7 @@ msgstr "Connect an AniList or MyAnimeList tracker to use this. <0>Open tracker s
 #: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #: src/pages/stats/sections/RhythmSection.tsx
+#: src/pages/stats/sections/TasteSection.tsx
 msgid "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 msgstr "Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 
@@ -4221,6 +4234,10 @@ msgstr "Excluded from taste"
 #: src/components/SetupWizard.tsx
 msgid "Existing folders on import"
 msgstr "Existing folders on import"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "Exit editing"
+msgstr "Exit editing"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Exit full screen"
@@ -5510,6 +5527,10 @@ msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped
 #: src/components/ImportListsSection.tsx
 msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
 msgstr "Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors"
+
+#: src/components/ImportListsSection.tsx
+msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
+msgstr "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 
 #: src/pages/SettingsPage.tsx
 msgid "Last run failed: {lastError}"
@@ -7015,6 +7036,10 @@ msgstr "Nothing here"
 msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Nothing here is final. Every option is also in Settings."
 
+#: src/components/ImportListsSection.tsx
+msgid "Nothing imported: import lists need the local MangaBaka database."
+msgstr "Nothing imported: import lists need the local MangaBaka database."
+
 #: src/components/RelinkFilesModal.tsx
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "Nothing in the file explains these chapters, so the link you have today is trusted."
@@ -8108,10 +8133,6 @@ msgstr "Reading progress from Kavita…"
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Reading stats need Kavita"
 msgstr "Reading stats need Kavita"
-
-#: src/pages/stats/sections/TasteSection.tsx
-msgid "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
-msgstr "Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -10325,6 +10346,10 @@ msgstr "the last 30 days"
 #: src/pages/stats/StatsRange.ts
 msgid "the last 90 days"
 msgstr "the last 90 days"
+
+#: src/components/layout/PageLayoutEditor.tsx
+msgid "The layout could not be loaded."
+msgstr "The layout could not be loaded."
 
 #: src/pages/stats/AchievementGrid.tsx
 msgid "The library"

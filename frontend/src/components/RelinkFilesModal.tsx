@@ -64,15 +64,17 @@ interface Row {
 }
 
 /** "0" → "Ch. 0"; a run of integers → "Ch. 0 to 8"; anything else lists them. */
-function rangeText(labels: string[]): string {
+function useRangeText(labels: string[]): string {
+  const { t } = useLingui()
   if (labels.length === 0) return ''
   const first = labels[0]
   const last = labels[labels.length - 1]
-  if (labels.length === 1) return `Ch. ${first}`
+  if (labels.length === 1) return t`Ch. ${first}`
   const nums = labels.map(Number)
   const run =
     nums.every((n, i) => Number.isInteger(n) && (i === 0 || n === nums[i - 1] + 1))
-  return run ? `Ch. ${first} to ${last}` : `Ch. ${labels.join(', ')}`
+  const list = labels.join(', ')
+  return run ? t`Ch. ${first} to ${last}` : t`Ch. ${list}`
 }
 
 /**
@@ -237,7 +239,11 @@ export function RelinkFilesModal({
 
   const confirm = () => {
     apply.mutate(
-      { ...options, deleteSuperseded: deleting },
+      {
+        ...options,
+        deleteSuperseded: deleting,
+        confirmedSuperseded: plan?.files.filter((f) => f.superseded).map((f) => f.relativePath) ?? [],
+      },
       {
         onSuccess: (r) => {
           const moved = plural(r.moved, { one: '# chapter relinked', other: '# chapters relinked' })
@@ -550,6 +556,7 @@ function PlanRow({
   renderLabel: (d: string | MessageDescriptor) => string
 }) {
   const { t } = useLingui()
+  const range = useRangeText(row.labels)
   const { fileCount } = row
   const name = row.fileName ?? plural(fileCount, { one: '# single file', other: '# single files' })
   const hint = row.basis ? BASIS_HINTS[row.basis] : undefined
@@ -566,7 +573,7 @@ function PlanRow({
       </Text>
       <Text size="sm">
         <Text span size="sm" fw={600} c="var(--ink-hi)" className="tnum">
-          {rangeText(row.labels)}
+          {range}
         </Text>{' '}
         <Text span size="sm" c="var(--ink-3)">
           {row.excluded ? (

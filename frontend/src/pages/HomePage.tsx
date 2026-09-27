@@ -85,7 +85,7 @@ export default function HomePage() {
   const { data: series, isLoading: seriesLoading } = useSeries()
   const { data: metadata } = useMetadataSettings()
   const { data: rootFolders } = useRootFolders()
-  const { data: ui } = useUiSettings()
+  const { data: ui, isError: uiFailed } = useUiSettings()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
@@ -96,7 +96,7 @@ export default function HomePage() {
   const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
   const hasLibrary = (series?.length ?? 0) > 0
 
-  const { data: homeRails } = useCustomRails('home')
+  const { data: homeRails, isError: railsFailed } = useCustomRails('home')
 
   // Default to the shipping order while the setting loads, so the page doesn't reflow once it
   // arrives. `on` is what every query below gates on: a section the user turned off must not
@@ -202,7 +202,7 @@ export default function HomePage() {
             onExit={exitEditing}
           />
         ) : (
-          <PageLayoutEditorLoading />
+          <PageLayoutEditorLoading failed={uiFailed || railsFailed} onExit={exitEditing} />
         )}
       </SurfaceFrame>
     )
