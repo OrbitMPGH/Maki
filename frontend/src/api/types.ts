@@ -1,4 +1,4 @@
-import type { UpgradeQueueInfoDto } from './upgrades'
+import type { QualityTierName, UpgradeQueueInfoDto } from './upgrades'
 
 /** A clickable external metadata link. `site` is a stable lowercase key (e.g. "mangabaka"). */
 export interface MetadataLink {
@@ -131,6 +131,8 @@ export interface SeriesDto {
   warnings?: string[] | null
   /** Upgrade profile pinned to this series, or null to fall back to the instance default. */
   upgradeProfileId: number | null
+  /** Null when this series has never been scanned for upgrades, by any of the three entry points. */
+  lastUpgradeScan: { at: string; probed: number; queued: number } | null
 }
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
@@ -436,6 +438,26 @@ export interface ComparePage {
   bytes: number
 }
 
+/**
+ * A column's quality read against the series' upgrade profile, filled by `SourceMappingController`
+ * from the same pages the compare job already sampled (no extra probe). Null on a panel where no
+ * page width could be measured at all.
+ */
+export interface ComparePanelQualityDto {
+  tier: QualityTierName
+  score: number
+  matchedFormats: string[]
+  isUpgrade: boolean
+  /** A reason code from `UPGRADE_REASON_LABELS`, set whenever `isUpgrade` is false. */
+  reason: string | null
+  medianWidth: number | null
+  pageCount: number | null
+  /** The file on disk's tier, score and width: the same on every panel for one chapter, null with no file. */
+  currentTier: QualityTierName | null
+  currentScore: number | null
+  currentWidth: number | null
+}
+
 export interface ComparePanel {
   mappingId: number
   sourceName: string
@@ -452,6 +474,7 @@ export interface ComparePanel {
   pages: (ComparePage | null)[]
   /** Pages in the whole chapter, not just the sampled rows. Null when the source didn't say. */
   pageCount: number | null
+  quality: ComparePanelQualityDto | null
 }
 
 /**

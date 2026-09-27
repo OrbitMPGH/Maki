@@ -6,6 +6,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Core.Security;
 using Maki.Data;
@@ -440,12 +441,14 @@ public class ChapterController(
     /// source's copy, e.g. from the compare view, rather than letting priority order decide.
     /// <see cref="DownloadQueueService.EnqueueChapterAsync"/> carries the pin through to resolution
     /// and, if the chapter is already queued but not yet actively fetching, overrides that row's
-    /// pin in place instead of being dropped like a duplicate plain enqueue.
+    /// pin in place instead of being dropped like a duplicate plain enqueue. A chapter that already has
+    /// a file is replaced through the upgrade gate, so the old copy lands in the trash.
     /// </summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/download-from")]
     public async Task<IActionResult> DownloadFrom(
-        int id, [FromBody] DownloadChapterFromRequest request, CancellationToken ct)
+        int id, [FromBody] DownloadChapterFromRequest request, [FromServices] UpgradeEvaluationService upgrades,
+        CancellationToken ct)
     {
         var chapter = await db.Chapters.FindAsync([id], ct);
         if (chapter is null)
@@ -471,8 +474,10 @@ public class ChapterController(
 
         try
         {
+            var replaceInfo = await ReplaceInfoAsync(id, mapping.SourceName,
+                await upgrades.ForSeriesAsync(chapter.SeriesId, ct), ct);
             var item = await queue.EnqueueChapterAsync(
-                id, ct, DownloadOrigin.Manual, currentUser.UserId, request.SourceMappingId);
+                id, ct, DownloadOrigin.Manual, currentUser.UserId, request.SourceMappingId, replaceInfo);
             if (item is null)
             {
                 return this.Conflict(localizer, "error.chapter.alreadyQueued");
@@ -506,10 +511,15 @@ public class ChapterController(
     /// avoid is queueing chapters the preferred source doesn't list at all, which would re-fetch them
     /// from the very source they already came from.
     /// </para>
+    /// <para>
+    /// Each chapter goes through the upgrade gate as a forced replacement, so its old copy lands in
+    /// the trash and can be reverted from Activity.
+    /// </para>
     /// </summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("redownload")]
-    public async Task<IActionResult> Redownload([FromBody] RedownloadRequest request, CancellationToken ct)
+    public async Task<IActionResult> Redownload(
+        [FromBody] RedownloadRequest request, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
         var mapping = await db.SourceMappings
             .FirstOrDefaultAsync(m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct);
@@ -540,6 +550,7 @@ public class ChapterController(
             .Select(c => c.Number!.Value)
             .ToHashSet();
 
+        var evaluator = await upgrades.ForSeriesAsync(request.SeriesId, ct);
         var queued = 0;
         var unavailable = 0;
         foreach (var chapter in candidates)
@@ -552,7 +563,9 @@ public class ChapterController(
 
             try
             {
-                if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId) is not null)
+                var replaceInfo = await ReplaceInfoAsync(chapter.Id, request.SourceName, evaluator, ct);
+                if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId,
+                        replaceInfo: replaceInfo) is not null)
                 {
                     queued++;
                 }
@@ -564,5 +577,41 @@ public class ChapterController(
         }
 
         return Ok(new { queued, unavailable });
+    }
+
+    /// <summary>
+    /// What a re-download needs to replace the chapter's file through the upgrade gate instead of
+    /// overwriting it. Null for a chapter without a file, and for one whose file also backs other
+    /// chapters (a volume): that one still downloads to its own path beside the volume.
+    /// </summary>
+    private async Task<UpgradeInfo?> ReplaceInfoAsync(
+        int chapterId, string sourceName, UpgradeEvaluator? evaluator, CancellationToken ct)
+    {
+        var row = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == chapterId && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                c.Language,
+                File = c.ChapterFile!,
+                Shared = db.Chapters.Count(o => o.ChapterFileId == c.ChapterFileId) > 1
+            })
+            .FirstOrDefaultAsync(ct);
+        if (row is null || row.Shared)
+        {
+            return null;
+        }
+
+        var tier = QualityTierResolver.Resolve(sourceRegistry.Find(sourceName)?.Kind, null,
+            Path.GetFileName(row.File.RelativePath), isVolume: false);
+        return new UpgradeInfo
+        {
+            ChapterFileId = row.File.Id,
+            Force = true,
+            IgnoreGuards = currentUser.Permissions.Grants(MakiPermission.ManageDownloadQueue),
+            ProfileId = evaluator?.Profile.Id ?? 0,
+            ProfileVersion = evaluator?.Profile.Version ?? 0,
+            Before = UpgradeEvaluator.Snapshot(row.File, evaluator?.Evaluate(row.File, row.Language)?.Score.Score ?? 0),
+            Predicted = new QualitySnapshot { Tier = QualitySnapshot.TierName(tier), SourceName = sourceName }
+        };
     }
 }

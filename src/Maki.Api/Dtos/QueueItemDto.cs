@@ -84,7 +84,7 @@ public record QueueItemDto(
             item.QueuedAt,
             item.CompletedAt,
             item.Origin.ToString().ToLowerInvariant(),
-            item.Origin == DownloadOrigin.Upgrade ? UpgradeQueueInfoDto.From(item.UpgradeInfoJson, upgradeHistory) : null);
+            UpgradeQueueInfoDto.From(item.UpgradeInfoJson, upgradeHistory));
     }
 
     /// <summary>

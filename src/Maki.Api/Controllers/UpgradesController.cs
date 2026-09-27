@@ -6,6 +6,7 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Quality;
 using Maki.Core.Paths;
+using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,17 +48,27 @@ public class UpgradesController(
     }
 
     /// <summary>
-    /// With a series: scans it now and answers with what happened. Without: queues the library-wide
-    /// scan and answers 202 straight away, since that one can take minutes.
+    /// With a chapter or a series: scans it now and answers with what happened. With neither: queues the
+    /// library-wide scan (admin only) and answers 202 straight away, since that one can take minutes.
     /// </summary>
-    [Authorize(Policy = Policies.Admin)]
+    [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("scan")]
     public async Task<IActionResult> Scan(
         [FromBody] UpgradeScanRequest? request, [FromServices] UpgradeScanService scans,
-        [FromServices] ISchedulerFactory schedulerFactory, CancellationToken ct)
+        [FromServices] ISchedulerFactory schedulerFactory, [FromServices] ICurrentUser user, CancellationToken ct)
     {
-        if (request?.SeriesId is not { } seriesId)
+        if (request is { SeriesId: not null, ChapterId: not null })
         {
+            return this.Fail(localizer, "error.upgrades.scanTargetAmbiguous");
+        }
+
+        if (request is null || (request.SeriesId is null && request.ChapterId is null))
+        {
+            if (!user.Permissions.Grants(MakiPermission.Admin))
+            {
+                return Forbid();
+            }
+
             if (UpgradeScanService.IsRunning)
             {
                 return this.Conflict(localizer, "error.upgrades.scanRunning");
@@ -67,16 +78,24 @@ public class UpgradesController(
             return Accepted(new { started = true });
         }
 
-        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        if (request.ChapterId is { } chapterId)
+        {
+            if (!await db.Chapters.AnyAsync(c => c.Id == chapterId && c.ChapterFileId != null, ct))
+            {
+                return this.NotFoundMessage(localizer, "error.upgrades.chapterHasNoFile");
+            }
+        }
+        else if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
         {
             return NotFound();
         }
 
         try
         {
-            var result = await scans.ScanSeriesAsync(seriesId, ct);
-            return Ok(new UpgradeScanResultDto(result.SeriesScanned, result.ChaptersChecked, result.CandidatesProbed,
-                result.Enqueued, result.Skipped));
+            var result = request.ChapterId is { } id
+                ? await scans.ScanChapterAsync(id, user.UserId, ct)
+                : await scans.ScanSeriesAsync(request.SeriesId!.Value, ct);
+            return Ok(UpgradeScanResultDto.From(result));
         }
         catch (UpgradeScanBusyException)
         {
@@ -110,7 +129,7 @@ public class UpgradesController(
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("history/{id:int}/revert")]
     public async Task<IActionResult> Revert(
-        int id, [FromServices] UpgradeRevertService reverts, [FromServices] Maki.Core.Security.ICurrentUser user,
+        int id, [FromServices] UpgradeRevertService reverts, [FromServices] ICurrentUser user,
         CancellationToken ct)
     {
         var (_, error) = await reverts.RevertAsync(id, user.UserId, ct);

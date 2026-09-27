@@ -276,6 +276,219 @@ public class ChapterDownloadProcessorUpgradeTests : IDisposable
         Assert.Contains(inbox.RaisedForSeries, r => r.SeriesId == 1 && r.Type == InboxEventType.DownloadFailed);
     }
 
+    private int QueueForced(bool ignoreGuards = false, int? mappingId = null, string sourceChapterId = "o1") =>
+        _world.QueueForced(_chapterId, _fileId, mappingId ?? _world.OfficialMappingId, sourceChapterId, ignoreGuards);
+
+    /// <summary>Pages that pass validation but carry no dimensions the measurer can read.</summary>
+    private static Func<Maki.Core.Sources.SourceChapter, Maki.Core.Sources.ChapterPages> AvifPages(int count)
+    {
+        var avif = new byte[256];
+        avif[3] = 0x1C;
+        "ftypavif"u8.CopyTo(avif.AsSpan(4));
+        return c => new Maki.Core.Sources.ChapterPages([.. Enumerable.Range(0, count)
+            .Select(i => new Maki.Core.Sources.PageRequest($"https://{c.SourceName}.test/{i}.avif", Data: avif))]);
+    }
+
+    private UpgradeInfo Info(int itemId)
+    {
+        using var db = _world.Db.NewContext();
+        return UpgradeInfo.Parse(db.DownloadQueue.Single(q => q.Id == itemId).UpgradeInfoJson)!;
+    }
+
+    private void AssertUntouched(int itemId)
+    {
+        Assert.Equal(_original, File.ReadAllBytes(_path));
+        Assert.False(File.Exists(TmpPath(itemId)));
+        Assert.False(Directory.Exists(TrashDir));
+        using var db = _world.Db.NewContext();
+        Assert.Empty(db.UpgradeHistory);
+        Assert.Empty(db.UpgradeAttempts);
+    }
+
+    [Fact]
+    public async Task A_forced_pick_that_scores_lower_still_replaces_the_file_without_a_memo_or_inbox_row()
+    {
+        // Same tier as the file and below the profile's width format, so the upgrader would never take it.
+        _world.AggPages = UpgradeWorld.InlinePages(4, 60);
+        var itemId = QueueForced(mappingId: _world.AggMappingId, sourceChapterId: "a1");
+
+        await RunAsync(itemId);
+
+        Assert.Equal(_original, File.ReadAllBytes(Path.Combine(TrashDir, $"{_fileId}-Series 001.cbz")));
+        Assert.Equal(60, ChapterFileMeasurer.MeasureArchive(_path, 0, CancellationToken.None).MedianWidth);
+        Assert.False(File.Exists(TmpPath(itemId)));
+        using var db = _world.Db.NewContext();
+        var history = db.UpgradeHistory.Single();
+        Assert.Equal(itemId, history.QueueItemId);
+        var info = Info(itemId);
+        Assert.Equal(UpgradeOutcomes.Applied, info.Outcome);
+        Assert.True(info.Force);
+        Assert.Equal(history.Id, info.HistoryId);
+        Assert.Equal(QueueStatus.Completed, db.DownloadQueue.Single(q => q.Id == itemId).Status);
+        Assert.NotNull(db.ChapterFiles.Single(f => f.Id == _fileId).ReplacedAtUtc);
+        Assert.Empty(db.UpgradeAttempts);
+        Assert.Empty(db.StatsEvents);
+        Assert.Empty(_world.Inbox.RaisedForSeries);
+        Assert.Empty(_world.Inbox.Raised);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_forced_pick_that_cannot_be_measured_is_rejected_unless_guards_are_ignored(bool ignoreGuards)
+    {
+        _world.OfficialPages = AvifPages(4);
+        var itemId = QueueForced(ignoreGuards);
+
+        await RunAsync(itemId);
+
+        var info = Info(itemId);
+        if (ignoreGuards)
+        {
+            Assert.Equal(UpgradeOutcomes.Applied, info.Outcome);
+            Assert.NotEqual(_original, File.ReadAllBytes(_path));
+            return;
+        }
+
+        Assert.Equal(UpgradeOutcomes.Rejected, info.Outcome);
+        Assert.Equal(UpgradeReasons.Unmeasurable, info.Reason);
+        AssertUntouched(itemId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_forced_pick_on_a_protected_file_is_rejected_unless_guards_are_ignored(bool ignoreGuards)
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            db.ChapterFiles.Single(f => f.Id == _fileId).Trusted = true;
+            db.SaveChanges();
+        }
+
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        var itemId = QueueForced(ignoreGuards);
+
+        await RunAsync(itemId);
+
+        var info = Info(itemId);
+        if (ignoreGuards)
+        {
+            Assert.Equal(UpgradeOutcomes.Applied, info.Outcome);
+            return;
+        }
+
+        Assert.Equal(UpgradeOutcomes.Rejected, info.Outcome);
+        Assert.Equal("trusted", info.Reason);
+        AssertUntouched(itemId);
+    }
+
+    [Fact]
+    public async Task A_forced_pick_with_too_few_pages_is_rejected()
+    {
+        _world.OfficialPages = UpgradeWorld.InlinePages(2, 160);
+        var itemId = QueueForced();
+
+        await RunAsync(itemId);
+
+        Assert.Equal(UpgradeReasons.FewerPages, Info(itemId).Reason);
+        AssertUntouched(itemId);
+    }
+
+    [Fact]
+    public async Task A_forced_pick_on_a_pdf_is_rejected_even_when_guards_are_ignored()
+    {
+        var (chapterId, fileId) = _world.Chapter(5, onDisk: true, pages: 4, width: 80, extension: "pdf");
+        var pdf = Path.Combine(_world.Library, "Series", "Series 005.pdf");
+        var bytes = File.ReadAllBytes(pdf);
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        var itemId = _world.QueueForced(chapterId, fileId!.Value, _world.OfficialMappingId, "o5", ignoreGuards: true);
+
+        await RunAsync(itemId);
+
+        Assert.Equal(bytes, File.ReadAllBytes(pdf));
+        var info = Info(itemId);
+        Assert.Equal(UpgradeOutcomes.Rejected, info.Outcome);
+        Assert.Equal(UpgradeReasons.UnsupportedFile, info.Reason);
+        AssertUntouched(itemId);
+    }
+
+    [Fact]
+    public async Task A_series_without_a_profile_can_still_be_force_replaced()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            db.Series.Single(s => s.Id == _world.SeriesId).UpgradeProfileId = null;
+            db.SaveChanges();
+        }
+
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        var itemId = QueueForced();
+
+        await RunAsync(itemId);
+
+        Assert.Equal(UpgradeOutcomes.Applied, Info(itemId).Outcome);
+        Assert.NotEqual(_original, File.ReadAllBytes(_path));
+        using var check = _world.Db.NewContext();
+        var history = check.UpgradeHistory.Single();
+        Assert.Equal(0, history.ProfileId);
+        Assert.Equal(QualityTier.Official, check.ChapterFiles.Single(f => f.Id == _fileId).Tier);
+    }
+
+    [Fact]
+    public async Task A_forced_pick_whose_target_is_gone_sends_nothing_outbound()
+    {
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        File.Delete(_path);
+        var itemId = QueueForced();
+
+        await RunAsync(itemId);
+
+        using var db = _world.Db.NewContext();
+        Assert.Equal("error.download.upgradeTargetGone", db.DownloadQueue.Single(q => q.Id == itemId).ErrorKey);
+        Assert.Empty(_world.Notifications.Sent);
+    }
+
+    [Fact]
+    public async Task A_forced_pick_on_a_file_shared_with_another_chapter_is_rejected_even_when_guards_are_ignored()
+    {
+        var (otherId, _) = _world.Chapter(2, withFile: false);
+        using (var db = _world.Db.NewContext())
+        {
+            db.Chapters.Single(c => c.Id == otherId).ChapterFileId = _fileId;
+            db.SaveChanges();
+        }
+
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        var itemId = QueueForced(ignoreGuards: true);
+
+        await RunAsync(itemId);
+
+        var info = Info(itemId);
+        Assert.Equal(UpgradeOutcomes.Rejected, info.Outcome);
+        Assert.Equal("shared_file", info.Reason);
+        AssertUntouched(itemId);
+    }
+
+    [Fact]
+    public async Task An_upgrade_a_user_asked_for_stays_out_of_the_inbox_and_keeps_their_id_on_the_history()
+    {
+        _world.OfficialPages = UpgradeWorld.InlinePages(4, 160);
+        var itemId = QueueUpgrade();
+        using (var db = _world.Db.NewContext())
+        {
+            db.DownloadQueue.Single(q => q.Id == itemId).QueuedByUserId = 5;
+            db.SaveChanges();
+        }
+
+        await RunAsync(itemId);
+
+        Assert.Equal(UpgradeOutcomes.Applied, Info(itemId).Outcome);
+        Assert.Empty(_world.Inbox.RaisedForSeries);
+        using var check = _world.Db.NewContext();
+        Assert.Equal(5, check.UpgradeHistory.Single().QueuedByUserId);
+    }
+
     [Fact]
     public async Task A_normal_download_records_the_source_chapter_id()
     {

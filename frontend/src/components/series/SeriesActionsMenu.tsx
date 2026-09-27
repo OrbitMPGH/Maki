@@ -1,4 +1,4 @@
-﻿import { ActionIcon, Menu, Text } from '@mantine/core'
+﻿import { ActionIcon, Loader, Menu, Text } from '@mantine/core'
 import { useState } from 'react'
 import {
     IconBell,
@@ -47,6 +47,8 @@ export function SeriesActionsMenu({
                                       notificationMode,
                                       upgradeProfileId,
                                       upgradeProfiles,
+                                      canScanUpgrades,
+                                      scanningUpgrades,
                                       busy,
                                       onRefreshChapters,
                                       onRefreshMetadata,
@@ -57,6 +59,7 @@ export function SeriesActionsMenu({
                                       onSetIncognito,
                                       onSetNotify,
                                       onSetUpgradeProfile,
+                                      onScanUpgrades,
                                       canRemove,
                                       onRemove,
                                   }: {
@@ -66,6 +69,9 @@ export function SeriesActionsMenu({
     /** Null means "instance default", i.e. no profile pinned to this series. */
     upgradeProfileId: number | null
     upgradeProfiles: UpgradeProfileDto[]
+    /** DownloadChapters: gates the "Scan for upgrades" item, same permission as "Upgrade now". */
+    canScanUpgrades: boolean
+    scanningUpgrades: boolean
     busy: boolean
     onRefreshChapters: () => void
     onRefreshMetadata: () => void
@@ -76,6 +82,7 @@ export function SeriesActionsMenu({
     onSetIncognito: (mode: string) => void
     onSetNotify: (mode: string) => void
     onSetUpgradeProfile: (upgradeProfileId: number | null) => void
+    onScanUpgrades: () => void
     canRemove: boolean
     onRemove: () => void
 }) {
@@ -254,6 +261,16 @@ export function SeriesActionsMenu({
                         </Menu.RadioGroup>
                     </Menu.Sub.Dropdown>
                 </Menu.Sub>
+
+                {canScanUpgrades && (
+                    <Menu.Item
+                        leftSection={scanningUpgrades ? <Loader size={14} /> : <IconRefresh size={16} />}
+                        disabled={scanningUpgrades}
+                        onClick={onScanUpgrades}
+                    >
+                        <Trans>Scan for upgrades</Trans>
+                    </Menu.Item>
+                )}
 
                 {canRemove && (
                     <>

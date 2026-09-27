@@ -218,7 +218,7 @@ public class ChapterDownloadProcessor(
 
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
-            if (item.Origin == DownloadOrigin.Upgrade)
+            if (item.UpgradeInfoJson is not null)
             {
                 return await ApplyUpgradeAsync(item, chapter, series, rootFolder, mapping, source, sourceChapterId,
                     tmpCbz, workingDir, ct);
@@ -411,11 +411,12 @@ public class ChapterDownloadProcessor(
     }
 
     /// <summary>
-    /// The replacement gate for <see cref="DownloadOrigin.Upgrade"/> items. The packaged archive is
+    /// The replacement gate for items carrying an <see cref="UpgradeInfo"/>. The packaged archive is
     /// measured in full and judged again against the file as it is now, under the series' profile as
-    /// it is now. A loss deletes the archive and leaves the library untouched. A win moves the old
-    /// file into <c>.maki-trash</c> and puts the new one at the same relative path, then updates the
-    /// same <see cref="ChapterFile"/> row. Nothing is overwritten in place and no StatsEvent is written.
+    /// it is now; a forced item (a user's pick) skips the profile and only faces the hard guards. A
+    /// loss deletes the archive and leaves the library untouched. A win moves the old file into
+    /// <c>.maki-trash</c> and puts the new one at the same relative path, then updates the same
+    /// <see cref="ChapterFile"/> row. Nothing is overwritten in place and no StatsEvent is written.
     /// </summary>
     private async Task<DownloadOutcome> ApplyUpgradeAsync(
         DownloadQueueItem item, Chapter chapter, Series series, RootFolder rootFolder, SourceMapping mapping,
@@ -453,7 +454,16 @@ public class ChapterDownloadProcessor(
         QualityScore? before = null;
         QualityScore? candidate = null;
         var reason = UpgradeReasons.UpgradeRejected;
-        if (evaluator?.Evaluate(current, chapter.Language) is { } evaluated)
+        if (info.Force)
+        {
+            before = evaluator?.Evaluate(current, chapter.Language)?.Score;
+            candidate = evaluator?.Score(evaluator.CandidateFor(mapping.SourceName, group, fileName,
+                measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language));
+            tier = candidate?.Tier ?? tier;
+            var shared = await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct) > 1;
+            reason = ForcedGuard(info, current, shared, measurement, evaluator?.Profile.PageTolerancePercent ?? 10);
+        }
+        else if (evaluator?.Evaluate(current, chapter.Language) is { } evaluated)
         {
             before = evaluated.Score;
             candidate = evaluator.Score(evaluator.CandidateFor(mapping.SourceName, group, fileName,
@@ -482,14 +492,14 @@ public class ChapterDownloadProcessor(
         var profileId = evaluator?.Profile.Id ?? info.ProfileId;
         var profileVersion = evaluator?.Profile.Version ?? info.ProfileVersion;
 
-        if (reason is not null || before is null)
+        if (reason is not null || (before is null && !info.Force))
         {
             return await RejectUpgradeAsync(item, chapter, series, mapping, sourceChapterId, tmpCbz, workingDir, info,
                 reason, after, profileId, profileVersion, measurement.PageCount, measurement.MedianWidth,
                 candidate?.Score, ct);
         }
 
-        var beforeSnapshot = UpgradeEvaluator.Snapshot(current, before.Score);
+        var beforeSnapshot = UpgradeEvaluator.Snapshot(current, before?.Score ?? 0);
         var trashRelative = UpgradeTrash.NewRelativePath(rootFolder.Path, series.Id, current.Id.ToString(CultureInfo.InvariantCulture), fileName);
         var trashPath = LibraryPaths.Resolve(rootFolder.Path, trashRelative)!;
         UpgradeTrash.EnsureFolder(rootFolder.Path, series.Id);
@@ -588,7 +598,8 @@ public class ChapterDownloadProcessor(
             new UpgradeHistoryState(Reverted: false, TrashAvailable: true)));
         await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
 
-        if (!await batches.CompletedAsync(series.Id, item.Id) && item.IsAutomatic)
+        // A user who clicked "Upgrade now" watched it happen; only the unattended scan pings the inbox.
+        if (!await batches.CompletedAsync(series.Id, item.Id) && item.IsAutomatic && item.QueuedByUserId is null)
         {
             var label = chapter.Number?.ToString("0.###", CultureInfo.InvariantCulture) ?? chapter.Title;
             inbox.RaiseForSeries(InboxEventType.ChapterUpgraded, new InboxMessage(
@@ -615,8 +626,24 @@ public class ChapterDownloadProcessor(
     }
 
     /// <summary>
+    /// Why a forced replacement may not go ahead, or null. A shared file would take other chapters'
+    /// pages with it, so that guard holds even when the caller may ignore the rest.
+    /// </summary>
+    private static string? ForcedGuard(UpgradeInfo info, ChapterFile current, bool shared,
+        ChapterFileMeasurement measurement, int pageTolerancePercent)
+    {
+        if (shared) return "shared_file";
+        if (info.IgnoreGuards) return null;
+        if (current.Trusted) return "trusted";
+        if (measurement.MedianWidth is null) return UpgradeReasons.Unmeasurable;
+        if (measurement.PageCount < current.PageCount * (1 - pageTolerancePercent / 100.0)) return UpgradeReasons.FewerPages;
+        return null;
+    }
+
+    /// <summary>
     /// Settles an upgrade that will not be applied: the packaged copy is deleted, the library is left
-    /// exactly as it was, the candidate is memoised and the row completes with its reason recorded.
+    /// exactly as it was, the candidate is memoised (unless a user forced it) and the row completes
+    /// with its reason recorded.
     /// </summary>
     private async Task<DownloadOutcome> RejectUpgradeAsync(
         DownloadQueueItem item, Chapter chapter, Series series, SourceMapping mapping, string sourceChapterId,
@@ -624,8 +651,12 @@ public class ChapterDownloadProcessor(
         int profileVersion, int? pageCount, int? width, int? score, CancellationToken ct)
     {
         TryDeleteFile(tmpCbz);
-        await UpgradeAttempts.UpsertAsync(db, chapter.Id, series.Id, mapping.Id, sourceChapterId, profileId, profileVersion,
-            UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);
+        if (!info.Force)
+        {
+            await UpgradeAttempts.UpsertAsync(db, chapter.Id, series.Id, mapping.Id, sourceChapterId, profileId,
+                profileVersion, UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);
+        }
+
         info.Outcome = UpgradeOutcomes.Rejected;
         info.Reason = reason ?? UpgradeReasons.UpgradeRejected;
         info.After = after;
@@ -759,7 +790,7 @@ public class ChapterDownloadProcessor(
         // Outbound chat and webhooks, not somebody's inbox. There is no reader whose preference
         // could be consulted, so this renders once in the instance's own language. Upgrades never go
         // there: the chapter is already in the library, so a failed replacement is not a lost download.
-        if (item.Origin != DownloadOrigin.Upgrade)
+        if (item.Origin != DownloadOrigin.Upgrade && item.UpgradeInfoJson is null)
         {
             var locale = await locales.DefaultAsync(ct);
             var series = item.Series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");

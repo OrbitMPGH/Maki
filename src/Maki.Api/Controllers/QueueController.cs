@@ -85,7 +85,7 @@ public class QueueController(
             .ToListAsync(ct);
 
         var historyIds = items
-            .Where(q => q.Origin == DownloadOrigin.Upgrade)
+            .Where(q => q.UpgradeInfoJson != null)
             .Select(q => UpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryId)
             .OfType<int>()
             .ToList();

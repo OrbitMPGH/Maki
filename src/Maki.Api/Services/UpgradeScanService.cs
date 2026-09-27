@@ -7,9 +7,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
+/// <summary>What happened to one candidate copy during a single-chapter scan.</summary>
+/// <param name="Reason">An <see cref="UpgradeReasons"/> code, or a skip code such as <c>probe_budget</c>.</param>
+public sealed record UpgradeCandidateOutcome(int MappingId, string SourceName, string SourceChapterId,
+    string Reason, bool Probed, int? PageCount, int? MedianWidth, int? Score);
+
 /// <param name="Skipped">How many chapters or candidates were passed over, keyed by reason code.</param>
+/// <param name="Candidates">One entry per candidate; filled for single-chapter scans only.</param>
+/// <param name="QueuedFromMappingId">The mapping a single-chapter scan queued its upgrade from.</param>
 public sealed record UpgradeScanResult(int SeriesScanned, int ChaptersChecked, int CandidatesProbed, int Enqueued,
-    IReadOnlyDictionary<string, int> Skipped);
+    IReadOnlyDictionary<string, int> Skipped, IReadOnlyList<UpgradeCandidateOutcome> Candidates,
+    int? QueuedFromMappingId);
 
 /// <summary>Another scan holds the single-flight gate.</summary>
 public sealed class UpgradeScanBusyException() : Exception("An upgrade scan is already running");
@@ -91,7 +99,23 @@ public class UpgradeScanService(
     /// <exception cref="UpgradeScanBusyException">Another scan is running.</exception>
     public Task<UpgradeScanResult> ScanSeriesAsync(int seriesId, CancellationToken ct) => RunAsync(seriesId, true, ct);
 
-    private async Task<UpgradeScanResult> RunAsync(int? onlySeries, bool ignoreGlobalSwitch, CancellationToken ct)
+    /// <summary>
+    /// One chapter, for "Upgrade now": ignores the global switch, the quiet period and the daily cap,
+    /// and reports what happened to every candidate. An empty result for a chapter without a file.
+    /// </summary>
+    /// <exception cref="UpgradeScanBusyException">Another scan is running.</exception>
+    /// <param name="userId">Who asked; recorded on the queued row so its completion stays out of the inbox.</param>
+    public async Task<UpgradeScanResult> ScanChapterAsync(int chapterId, int? userId, CancellationToken ct)
+    {
+        var seriesId = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == chapterId && c.ChapterFileId != null)
+            .Select(c => (int?)c.SeriesId)
+            .FirstOrDefaultAsync(ct);
+        return seriesId is { } id ? await RunAsync(id, true, ct, chapterId, userId) : new Run(0, chapterId).Result();
+    }
+
+    private async Task<UpgradeScanResult> RunAsync(int? onlySeries, bool ignoreGlobalSwitch, CancellationToken ct,
+        int? onlyChapter = null, int? userId = null)
     {
         if (!await Gate.WaitAsync(0, ct))
         {
@@ -101,7 +125,7 @@ public class UpgradeScanService(
         try
         {
             var options = await UpgradeOptions.LoadAsync(settings, ct);
-            var run = new Run(options.MaxProbesPerRun);
+            var run = new Run(options.MaxProbesPerRun, onlyChapter) { Targeted = onlySeries is not null, UserId = userId };
             if (!ignoreGlobalSwitch && !options.Enabled)
             {
                 return run.Result();
@@ -139,8 +163,17 @@ public class UpgradeScanService(
         }
     }
 
-    private sealed class Run(int probeBudget)
+    private sealed class Run(int probeBudget, int? onlyChapter)
     {
+        public int? OnlyChapter { get; } = onlyChapter;
+
+        /// <summary>A series or chapter someone asked for, so series-level skips are worth reporting.</summary>
+        public bool Targeted { get; init; }
+
+        public int? UserId { get; init; }
+
+        public List<UpgradeCandidateOutcome>? Outcomes { get; } = onlyChapter is null ? null : [];
+        public int? QueuedFromMappingId { get; set; }
         public int ProbesLeft { get; set; } = probeBudget;
         public int SeriesScanned { get; set; }
         public int ChaptersChecked { get; set; }
@@ -151,8 +184,14 @@ public class UpgradeScanService(
 
         public void Skip(string reason) => Skipped[reason] = Skipped.GetValueOrDefault(reason) + 1;
 
+        public void Outcome(SourceMapping mapping, string sourceChapterId, string reason, bool probed, int? pageCount,
+            int? width, int? score) =>
+            Outcomes?.Add(new UpgradeCandidateOutcome(mapping.Id, mapping.SourceName, sourceChapterId, reason, probed,
+                pageCount, width, score));
+
         public UpgradeScanResult Result() =>
-            new(SeriesScanned, ChaptersChecked, CandidatesProbed, Enqueued, new Dictionary<string, int>(Skipped));
+            new(SeriesScanned, ChaptersChecked, CandidatesProbed, Enqueued, new Dictionary<string, int>(Skipped),
+                Outcomes is null ? [] : [.. Outcomes], QueuedFromMappingId);
     }
 
     private sealed record Survivor(
@@ -174,26 +213,38 @@ public class UpgradeScanService(
         }
 
         var evaluator = await evaluation.ForSeriesAsync(seriesId, ct);
-        if (evaluator is null || !evaluator.Profile.UpgradesEnabled)
+        var skip = evaluator is null ? "no_profile"
+            : !evaluator.Profile.UpgradesEnabled ? "upgrades_disabled"
+            : series.Incognito != IncognitoMode.Off && !options.ScanIncognito ? "incognito"
+            : null;
+        if (skip is not null)
         {
-            return;
-        }
+            if (run.Targeted)
+            {
+                run.Skip(skip);
+            }
 
-        if (series.Incognito != IncognitoMode.Off && !options.ScanIncognito)
-        {
             return;
         }
 
         run.SeriesScanned++;
-        var profile = evaluator.Profile;
+        var probedBefore = run.CandidatesProbed;
+        var enqueuedBefore = run.Enqueued;
+        var profile = evaluator!.Profile;
         var now = time.GetUtcNow().UtcDateTime;
 
         var chapters = await db.Chapters.AsNoTracking()
-            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null &&
+                        (run.OnlyChapter == null || c.Id == run.OnlyChapter))
             .Include(c => c.ChapterFile)
             .Include(c => c.SourceLinks).ThenInclude(l => l.SourceMapping)
             .ToListAsync(ct);
-        var fileUse = chapters.GroupBy(c => c.ChapterFileId!.Value).ToDictionary(g => g.Key, g => g.Count());
+        var fileUse = (await db.Chapters.AsNoTracking()
+                .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+                .Select(c => c.ChapterFileId!.Value)
+                .ToListAsync(ct))
+            .GroupBy(id => id)
+            .ToDictionary(g => g.Key, g => g.Count());
         var active = (await db.DownloadQueue
                 .Where(q => q.SeriesId == seriesId && q.ChapterId != null &&
                             q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
@@ -253,7 +304,7 @@ public class UpgradeScanService(
             }
 
             var settled = file.ReplacedAtUtc is { } replaced && replaced > file.DateAdded ? replaced : file.DateAdded;
-            if (settled.AddDays(options.QuietPeriodDays) > now)
+            if (run.OnlyChapter is null && settled.AddDays(options.QuietPeriodDays) > now)
             {
                 run.Skip(UpgradeReasons.QuietPeriod);
                 continue;
@@ -289,6 +340,8 @@ public class UpgradeScanService(
                       lastUpgrade.GetValueOrDefault(chapter.Id) is null or QueueStatus.Failed or QueueStatus.Cancelled))
                 {
                     run.Skip("memoised");
+                    run.Outcome(mapping, link.SourceChapterId, seen.Reason, seen.Probed, seen.CandidatePageCount,
+                        seen.CandidateWidth, seen.CandidateScore);
                     continue;
                 }
 
@@ -315,6 +368,7 @@ public class UpgradeScanService(
         await db.SaveChangesAsync(ct);
 
         var winners = new Dictionary<int, Winner>();
+        var outranked = new List<Winner>();
         foreach (var s in survivors
                      .OrderByDescending(s => QualityScorer.Rank(profile, s.Optimistic.Tier))
                      .ThenByDescending(s => s.Optimistic.Score))
@@ -322,6 +376,7 @@ public class UpgradeScanService(
             if (run.ProbesLeft <= 0)
             {
                 run.Skip("probe_budget");
+                run.Outcome(s.Mapping, s.Link.SourceChapterId, "probe_budget", false, null, null, null);
                 continue;
             }
 
@@ -360,18 +415,35 @@ public class UpgradeScanService(
             }
 
             var winner = new Winner(s, score, probe, size);
-            if (!winners.TryGetValue(chapter.Id, out var best) || Beats(profile, winner, best))
+            if (!winners.TryGetValue(chapter.Id, out var best))
             {
                 winners[chapter.Id] = winner;
+            }
+            else if (Beats(profile, winner, best))
+            {
+                outranked.Add(best);
+                winners[chapter.Id] = winner;
+            }
+            else
+            {
+                outranked.Add(winner);
             }
         }
 
         await db.SaveChangesAsync(ct);
 
+        // Better than the file but beaten by another candidate for the same chapter. Not memoised, so a
+        // later pass can still take it if the winner falls through.
+        foreach (var w in outranked)
+        {
+            run.Outcome(w.Survivor.Mapping, w.Survivor.Link.SourceChapterId, UpgradeReasons.ScoreNotHigher, true,
+                w.Probe.PageCount, w.Probe.MedianWidth, w.Score.Score);
+        }
+
         var queued = new List<int>();
         foreach (var w in winners.Values)
         {
-            if (options.MaxPerDay > 0 && run.EnqueuedToday >= options.MaxPerDay)
+            if (run.OnlyChapter is null && options.MaxPerDay > 0 && run.EnqueuedToday >= options.MaxPerDay)
             {
                 run.Skip("daily_cap");
                 continue;
@@ -405,24 +477,41 @@ public class UpgradeScanService(
                 }
             };
 
-            var item = await queue.EnqueueUpgradeAsync(s.Chapter.Id, s.Mapping.Id, s.Link.SourceChapterId, info, null, ct);
+            var item = await queue.EnqueueUpgradeAsync(s.Chapter.Id, s.Mapping.Id, s.Link.SourceChapterId, info, run.UserId, ct);
             if (item is null)
             {
                 db.UpgradeAttempts.Remove(attempt);
                 await db.SaveChangesAsync(ct);
                 run.Skip("queued");
+                run.Outcome(s.Mapping, s.Link.SourceChapterId, "queued", true, w.Probe.PageCount, w.Probe.MedianWidth,
+                    w.Score.Score);
                 continue;
             }
 
             run.Enqueued++;
             run.EnqueuedToday++;
             queued.Add(item.Id);
+            run.Outcome(s.Mapping, s.Link.SourceChapterId, UpgradeReasons.Enqueued, true, w.Probe.PageCount,
+                w.Probe.MedianWidth, w.Score.Score);
+            if (run.OnlyChapter is not null)
+            {
+                run.QueuedFromMappingId = s.Mapping.Id;
+            }
         }
 
         if (queued.Count > 0)
         {
             await batches.QueuedAsync(series.Id, series.Title, queued, DownloadOrigin.Upgrade, announce: false);
         }
+
+        var probed = run.CandidatesProbed - probedBefore;
+        var enqueued = run.Enqueued - enqueuedBefore;
+        await db.Series.IgnoreQueryFilters()
+            .Where(x => x.Id == seriesId)
+            .ExecuteUpdateAsync(u => u
+                .SetProperty(x => x.LastUpgradeScanUtc, now)
+                .SetProperty(x => x.LastUpgradeScanProbed, probed)
+                .SetProperty(x => x.LastUpgradeScanQueued, enqueued), ct);
     }
 
     private static bool Beats(UpgradeProfile profile, Winner a, Winner b)
@@ -439,5 +528,6 @@ public class UpgradeScanService(
         await UpgradeAttempts.UpsertAsync(db, chapter.Id, chapter.SeriesId, mapping.Id, link.SourceChapterId, profile.Id,
             profile.Version, reason, probed, pageCount, width, score, ct);
         run.Skip(reason);
+        run.Outcome(mapping, link.SourceChapterId, reason, probed, pageCount, width, score);
     }
 }

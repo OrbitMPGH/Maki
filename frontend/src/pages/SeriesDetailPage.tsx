@@ -15,6 +15,7 @@ import {
   Checkbox,
   Divider,
   Group,
+  Loader,
   Menu,
   NumberInput,
   Modal,
@@ -56,6 +57,7 @@ import {
   IconEyeOff,
   IconLock,
   IconLockOpen,
+  IconSparkles,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -101,7 +103,16 @@ import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from
 import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
-import { useSetFileTrusted, useUpgradeProfiles } from '../api/upgrades'
+import {
+  isUpgradeScanStarted,
+  upgradeScanResultText,
+  useRunUpgradeScan,
+  useSetFileTrusted,
+  useUpgradeChapterNow,
+  useUpgradeProfiles,
+} from '../api/upgrades'
+import type { UpgradeScanResultDto } from '../api/upgrades'
+import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { queueErrorMessage } from '../api/queue'
 import { useLabel } from '../i18n-context'
@@ -119,6 +130,7 @@ import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
+import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
@@ -402,6 +414,10 @@ export default function SeriesDetailPage() {
   const setUpgradeProfile = useSetUpgradeProfile()
   const { data: upgradeProfiles } = useUpgradeProfiles()
   const setFileTrusted = useSetFileTrusted()
+  const upgradeChapterNow = useUpgradeChapterNow()
+  const runUpgradeScan = useRunUpgradeScan()
+  const [upgradeNowResult, setUpgradeNowResult] = useState<UpgradeScanResultDto | null>(null)
+  const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
   const setRating = useSetRating()
@@ -1185,7 +1201,22 @@ export default function SeriesDetailPage() {
   const notify = {
     ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
     info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
+    err: (message: string) => notifications.show({ message, color: 'var(--danger)' }),
   }
+
+  const scanSeriesForUpgrades = () =>
+    runUpgradeScan.mutate(seriesId, {
+      onSuccess: (result) => {
+        notify.ok(isUpgradeScanStarted(result) ? staticT`Scan started` : upgradeScanResultText(renderLabel, result))
+      },
+      onError: (error) => {
+        notify.err(
+            error instanceof ApiError && error.status === 409
+                ? staticT`A scan is already running`
+                : staticT`Couldn't start the scan`,
+        )
+      },
+    })
   const wantedFilterCount = chapters?.filter(chapterFilters.wanted).length ?? 0
   const missingFilterCount = chapters?.filter(chapterFilters.missing).length ?? 0
   const downloadedFilterCount = chapters?.filter(chapterFilters.downloaded).length ?? 0
@@ -1440,6 +1471,8 @@ export default function SeriesDetailPage() {
                     notificationMode={series.notificationMode}
                     upgradeProfileId={series.upgradeProfileId}
                     upgradeProfiles={upgradeProfiles ?? []}
+                    canScanUpgrades={canDownload}
+                    scanningUpgrades={runUpgradeScan.isPending}
                     busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}
                     onRefreshChapters={() =>
                         refresh.mutate(seriesId, {
@@ -1519,6 +1552,7 @@ export default function SeriesDetailPage() {
                             },
                         )
                     }
+                    onScanUpgrades={scanSeriesForUpgrades}
                     canRemove={can('DeleteSeries')}
                     onRemove={() => setDeleteSeriesModalOpen(true)}
                 />
@@ -1675,6 +1709,24 @@ export default function SeriesDetailPage() {
                       seriesTitle={series.title}
                       matching={series.sourceMatchPending}
                   />
+                  <Divider my="md" color="var(--hairline)" />
+                  <Text size="xs" c="var(--ink-3)">
+                    {series.lastUpgradeScan ? (
+                        (() => {
+                          const at = formatDate(series.lastUpgradeScan.at)
+                          const { probed, queued } = series.lastUpgradeScan
+                          return (
+                              <Trans>
+                                Last upgrade scan: {at}, <Plural value={probed} one="# probed" other="# probed" />
+                                ,{' '}
+                                <Plural value={queued} one="# queued" other="# queued" />
+                              </Trans>
+                          )
+                        })()
+                    ) : (
+                        <Trans>Never scanned for upgrades</Trans>
+                    )}
+                  </Text>
                 </Paper>
                 <Paper className="series-detail-metadata-panel" withBorder radius="lg" p="lg">
                   <Title order={3} fz={17} mb="sm">
@@ -2560,6 +2612,31 @@ export default function SeriesDetailPage() {
                                                       <Trans>Find better copy</Trans>
                                                     </Menu.Item>
                                                 )}
+                                                <Menu.Item
+                                                    leftSection={
+                                                      upgradeChapterNow.isPending && upgradeChapterNow.variables === c.id
+                                                          ? <Loader size={14} />
+                                                          : <IconSparkles size={14} />
+                                                    }
+                                                    disabled={upgradeChapterNow.isPending}
+                                                    onClick={() =>
+                                                        upgradeChapterNow.mutate(c.id, {
+                                                          onSuccess: (result) => {
+                                                            setUpgradeNowResult(result)
+                                                            setUpgradeNowModalOpen(true)
+                                                          },
+                                                          onError: (error) => {
+                                                            notify.err(
+                                                                error instanceof ApiError && error.status === 409
+                                                                    ? staticT`A scan is already running`
+                                                                    : staticT`Couldn't run the scan`,
+                                                            )
+                                                          },
+                                                        })
+                                                    }
+                                                >
+                                                  <Trans>Upgrade now</Trans>
+                                                </Menu.Item>
                                                 {c.fileQuality && (
                                                     <Menu.Item
                                                         leftSection={
@@ -2738,6 +2815,12 @@ export default function SeriesDetailPage() {
                 onClose={() => setPickChapter(null)}
             />
         )}
+
+        <UpgradeNowResultModal
+            opened={upgradeNowModalOpen}
+            result={upgradeNowResult}
+            onClose={() => setUpgradeNowModalOpen(false)}
+        />
       </Tabs>
       {luckyPill}
     </SurfaceFrame>

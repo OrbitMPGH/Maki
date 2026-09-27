@@ -61,6 +61,11 @@ public class Series
     public int? UpgradeProfileId { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
+    /// <summary>When the upgrade scanner last went over this series, from any entry point.</summary>
+    public DateTime? LastUpgradeScanUtc { get; set; }
+    public int? LastUpgradeScanProbed { get; set; }
+    public int? LastUpgradeScanQueued { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;

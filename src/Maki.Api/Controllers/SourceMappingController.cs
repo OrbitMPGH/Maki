@@ -215,14 +215,17 @@ public class SourceMappingController(
     }
 
     [HttpGet("compare")]
-    public async Task<IActionResult> Compare([FromQuery] int seriesId, CancellationToken ct)
+    public async Task<IActionResult> Compare(
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
         if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
             return NotFound();
         }
 
-        return comparePreviews.Snapshot(seriesId, localizer) is { } snapshot ? Ok(snapshot) : NotFound();
+        return comparePreviews.Snapshot(seriesId, localizer) is { } snapshot
+            ? Ok(await SourceCompareQuality.FillAsync(db, upgrades, sourceRegistry, snapshot, ct))
+            : NotFound();
     }
 
     /// <summary>

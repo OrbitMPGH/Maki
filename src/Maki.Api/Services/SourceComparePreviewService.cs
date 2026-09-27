@@ -43,7 +43,9 @@ public record ComparePanel(
     /// One entry per grid row, null where this source has no page for that row. Row N is the same
     /// drawing in every aligned column.
     /// </summary>
-    List<ComparePage?> Pages);
+    List<ComparePage?> Pages,
+    /// <summary>How the sampled pages score against the file on disk; filled by <see cref="SourceCompareQuality"/>.</summary>
+    ComparePanelQuality? Quality = null);
 
 public record CompareSnapshot(
     int SeriesId,

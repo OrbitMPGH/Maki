@@ -790,6 +790,7 @@ msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {su
 msgstr "{total}개 중 {matched}개 일치, 긍정 {positive}개, 회피 {avoided}개, 이미 보유 {superseded}개"
 
 #: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 msgid "{medianWidth}px"
 msgstr ""
 
@@ -890,6 +891,7 @@ msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, other {+#개 더}}"
 
 #: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/ChapterBanner.tsx
 #, fuzzy
@@ -999,6 +1001,10 @@ msgstr "{readValue, plural, other {챕터 읽음}}"
 #, fuzzy
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, other {볼륨 읽음}}"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "{reasonText} - {measurement}"
+msgstr ""
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
@@ -1196,6 +1202,10 @@ msgstr "{target, plural, other {완료한 시리즈 #개}}"
 
 #: src/components/series/FileQualityBadge.tsx
 msgid "{tierLabel} · {medianWidth}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "{tierLabel} · {width}px"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
@@ -1771,6 +1781,7 @@ msgid "A row of figures: what is in your library, your reading progress and what
 msgstr "라이브러리의 작품, 읽기 진행률, 읽을 작품을 숫자로 보여주는 행입니다."
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "A scan is already running"
 msgstr ""
@@ -4201,7 +4212,12 @@ msgstr "{surface} 피드백을 업데이트하지 못했습니다: {reason}"
 msgid "Couldn't be measured"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Couldn't run the scan"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Couldn't start the scan"
 msgstr ""
@@ -4322,6 +4338,22 @@ msgstr "현재 파일"
 
 #: src/pages/ActivityPage.tsx
 msgid "Current file"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px, score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}, score {score}"
 msgstr ""
 
 #: src/api/hooks.ts
@@ -5612,11 +5644,9 @@ msgstr "필터"
 msgid "Filters ({appliedCount})"
 msgstr "필터 ({appliedCount})"
 
-#. placeholder {0}: pick.label
 #: src/components/SourceCompareModal.tsx
-#, fuzzy
-msgid "Find a better copy of {0}"
-msgstr "{0}의 더 나은 파일 찾기"
+msgid "Find a better copy of {pickLabel}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6654,6 +6684,10 @@ msgstr "콘텐츠 등급별 Incognito"
 msgid "Incognito for {ratingLabel}"
 msgstr "{ratingLabel} 시크릿 모드"
 
+#: src/api/upgrades.ts
+msgid "Incognito series are excluded"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Incognito, this session isn't being recorded"
@@ -7046,6 +7080,10 @@ msgstr "마지막 로그인"
 #, fuzzy
 msgid "Last synced {synced}"
 msgstr "마지막 동기화 {synced}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -8261,6 +8299,10 @@ msgstr "절대 안 함"
 msgid "Never run."
 msgstr "실행된 적 없음."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Never scanned for upgrades"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -8386,6 +8428,10 @@ msgstr "{windowLabel}에 활동이 없습니다."
 #, fuzzy
 msgid "no baseline"
 msgstr "비교 기준 없음"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No better copy found"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -8583,6 +8629,10 @@ msgstr ""
 msgid "No quality formats yet."
 msgstr ""
 
+#: src/api/upgrades.ts
+msgid "No quality profile"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 msgid "No quality profile assigned yet"
 msgstr ""
@@ -8660,6 +8710,10 @@ msgstr "연결된 소스가 없습니다. 챕터를 동기화하거나 다운로
 #, fuzzy
 msgid "No sources match. Clear a filter or try another name."
 msgstr "일치하는 소스가 없습니다. 필터를 지우거나 다른 이름을 검색하세요."
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No sources to compare against."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -10123,6 +10177,10 @@ msgstr "대기열에 추가되었거나 다운로드 중인 챕터가 여기에 
 msgid "Queued for download"
 msgstr ""
 
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "Queued upgrade from {winnerSource}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Quiet period (days)"
 msgstr ""
@@ -10910,6 +10968,10 @@ msgstr "복구"
 msgid "Repairs"
 msgstr "수리"
 
+#: src/pages/ActivityPage.tsx
+msgid "Replace"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
 msgstr ""
@@ -11500,6 +11562,10 @@ msgstr ""
 msgid "Scan files"
 msgstr "파일 스캔"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scan for upgrades"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Scan incognito series"
 msgstr ""
@@ -11519,6 +11585,7 @@ msgid "Scan running…"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Scan started"
 msgstr ""
@@ -11594,6 +11661,14 @@ msgstr "범위"
 
 #: src/pages/ActivityPage.tsx
 msgid "Score"
+msgstr ""
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Score {score}"
 msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
@@ -13182,6 +13257,10 @@ msgstr ""
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "현재 피드 URL은 즉시 작동하지 않게 됩니다. 이를 사용하는 모든 앱에 새 URL을 설정해야 합니다."
 
+#: src/components/SourceCompareModal.tsx
+msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
@@ -14235,8 +14314,13 @@ msgstr "업데이트"
 msgid "Updating ComicInfo"
 msgstr "ComicInfo 업데이트 중"
 
+#: src/components/SourceCompareModal.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Upgrade"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Upgrade now"
 msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
@@ -14261,6 +14345,10 @@ msgstr ""
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Upgrades"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Upgrades are off for this profile"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx

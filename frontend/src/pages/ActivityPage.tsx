@@ -368,8 +368,8 @@ export default function ActivityPage() {
                   const failure = queueErrorMessage(q, renderLabel)
                   const tooltipLabel =
                     [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
-                  const isUpgradeRow = queueOriginOrUnknown(q.origin) === 'upgrade'
-                  const rejectionText = isUpgradeRow ? upgradeRejectionText(renderLabel, q.upgrade) : null
+                  const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
+                  const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
                   return (
                     <Table.Tr key={q.id}>
                       <Table.Td>
@@ -403,13 +403,13 @@ export default function ActivityPage() {
                               <Text size="sm" c="var(--ink-3)">
                                 {sourceLabel(q.sourceName)}
                               </Text>
-                              {isUpgradeRow && (
+                              {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
                                 <Badge size="xs" variant="light" color="var(--brand)">
-                                  <Trans>Upgrade</Trans>
+                                  {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                 </Badge>
                               )}
                             </Group>
-                            {isUpgradeRow && q.upgrade && (
+                            {q.upgrade && (
                               <Text size="xs" c="var(--ink-3)">
                                 {upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade)}
                               </Text>
@@ -609,10 +609,9 @@ export default function ActivityPage() {
                   <Table.Tbody>
                     {history.items.map((q) => {
                       const visual = queueStatusVisual(q.status)
-                      const isUpgradeRow = queueOriginOrUnknown(q.origin) === 'upgrade'
-                      const rejectionText = isUpgradeRow ? upgradeRejectionText(renderLabel, q.upgrade) : null
-                      const showRevert =
-                        isUpgradeRow && q.upgrade?.outcome === 'applied' && q.upgrade.historyId != null
+                      const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
+                      const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
+                      const showRevert = q.upgrade?.outcome === 'applied' && q.upgrade.historyId != null
                       return (
                         <Table.Tr key={q.id}>
                           <Table.Td>
@@ -633,16 +632,23 @@ export default function ActivityPage() {
                             </Text>
                           </Table.Td>
                           <Table.Td data-priority="low">
-                            <Group gap={4} wrap="nowrap">
-                              <Text size="sm" c="var(--ink-3)">
-                                {sourceLabel(q.sourceName)}
-                              </Text>
-                              {isUpgradeRow && (
-                                <Badge size="xs" variant="light" color="var(--brand)">
-                                  <Trans>Upgrade</Trans>
-                                </Badge>
+                            <Stack gap={2}>
+                              <Group gap={4} wrap="nowrap">
+                                <Text size="sm" c="var(--ink-3)">
+                                  {sourceLabel(q.sourceName)}
+                                </Text>
+                                {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
+                                  <Badge size="xs" variant="light" color="var(--brand)">
+                                    {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
+                                  </Badge>
+                                )}
+                              </Group>
+                              {q.upgrade && (
+                                <Text size="xs" c="var(--ink-3)">
+                                  {upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade)}
+                                </Text>
                               )}
-                            </Group>
+                            </Stack>
                           </Table.Td>
                           <Table.Td>
                             <StatusDot tone={rejectionText ? 'warn' : statusToken(visual.color)}>

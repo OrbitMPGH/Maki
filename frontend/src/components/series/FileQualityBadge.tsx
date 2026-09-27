@@ -4,15 +4,10 @@ import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { ChapterFileQualityDto } from '../../api/types'
+import { QUALITY_TIER_COLOR } from '../../api/upgrades'
 import { useLabel } from '../../i18n-context'
 
-const TIER_COLOR: Record<ChapterFileQualityDto['tier'], string> = {
-  unknown: 'gray',
-  aggregator: 'orange',
-  scanlator: 'blue',
-  official: 'teal',
-  volume: 'indigo',
-}
+const TIER_COLOR = QUALITY_TIER_COLOR
 
 const TIER_LABEL: Record<ChapterFileQualityDto['tier'], MessageDescriptor> = {
   unknown: msg`Unknown`,

@@ -392,4 +392,192 @@ public class UpgradeScanServiceTests : IDisposable
         Assert.Equal(0, (await ScanAsync()).SeriesScanned);
         Assert.Empty(Queue());
     }
+
+    private async Task<UpgradeScanResult> ScanChapterAsync(int chapterId, int? userId = null)
+    {
+        using var db = _world.Db.NewContext();
+        using var batches = _world.Batches();
+        return await _world.Scanner(db, batches).ScanChapterAsync(chapterId, userId, CancellationToken.None);
+    }
+
+    private Series SeriesRow()
+    {
+        using var db = _world.Db.NewContext();
+        return db.Series.AsNoTracking().Single(s => s.Id == _world.SeriesId);
+    }
+
+    [Fact]
+    public async Task A_chapter_scan_reports_every_candidate_and_ignores_the_quiet_period()
+    {
+        _world.Seed();
+        // A different chapter id on the file's own source makes "agg" a candidate too (a re-upload);
+        // its listing serves no pages, so its probe fails.
+        var (chapterId, _) = _world.Chapter(1, file: f =>
+        {
+            f.SourceChapterId = "old";
+            f.DateAdded = DateTime.UtcNow.AddDays(-1);
+        });
+        _world.Chapter(2);
+
+        var result = await ScanChapterAsync(chapterId);
+
+        Assert.Equal(1, result.Enqueued);
+        Assert.Equal(1, result.ChaptersChecked);
+        Assert.Equal(_world.OfficialMappingId, result.QueuedFromMappingId);
+        Assert.Equal(2, result.Candidates.Count);
+        var official = Assert.Single(result.Candidates, c => c.MappingId == _world.OfficialMappingId);
+        Assert.Equal(UpgradeReasons.Enqueued, official.Reason);
+        Assert.Equal(UpgradeWorld.Official, official.SourceName);
+        Assert.Equal("o1", official.SourceChapterId);
+        Assert.True(official.Probed);
+        Assert.Equal(1600, official.MedianWidth);
+        Assert.Equal(20, official.PageCount);
+        Assert.Equal(10, official.Score);
+        var agg = Assert.Single(result.Candidates, c => c.MappingId == _world.AggMappingId);
+        Assert.Equal(UpgradeReasons.ProbeFailed, agg.Reason);
+        Assert.Null(agg.MedianWidth);
+        Assert.Equal(chapterId, Assert.Single(Queue()).ChapterId);
+
+        var series = SeriesRow();
+        Assert.NotNull(series.LastUpgradeScanUtc);
+        Assert.Equal(2, series.LastUpgradeScanProbed);
+        Assert.Equal(1, series.LastUpgradeScanQueued);
+    }
+
+    [Fact]
+    public async Task A_chapter_scan_still_leaves_a_protected_file_alone()
+    {
+        _world.Seed();
+        var (chapterId, _) = _world.Chapter(1, file: f => f.Trusted = true);
+
+        var result = await ScanChapterAsync(chapterId);
+
+        Assert.Equal(1, result.Skipped["trusted"]);
+        Assert.Empty(result.Candidates);
+        Assert.Null(result.QueuedFromMappingId);
+        Assert.Empty(_world.Http.Requested);
+        Assert.Empty(Queue());
+    }
+
+    [Fact]
+    public async Task A_chapter_scan_reports_a_memoised_candidate_without_probing_it()
+    {
+        _world.Seed();
+        var (chapterId, _) = _world.Chapter(1);
+        using (var db = _world.Db.NewContext())
+        {
+            await UpgradeAttempts.UpsertAsync(db, chapterId, _world.SeriesId, _world.OfficialMappingId, "o1",
+                _world.ProfileId, 1, UpgradeReasons.FewerPages, true, 3, 1600, 10, CancellationToken.None);
+            db.SaveChanges();
+        }
+
+        var result = await ScanChapterAsync(chapterId);
+
+        var outcome = Assert.Single(result.Candidates);
+        Assert.Equal(UpgradeReasons.FewerPages, outcome.Reason);
+        Assert.True(outcome.Probed);
+        Assert.Equal(3, outcome.PageCount);
+        Assert.Equal(1, result.Skipped["memoised"]);
+        Assert.Empty(_world.Http.Requested);
+        Assert.Null(result.QueuedFromMappingId);
+        Assert.Equal(0, SeriesRow().LastUpgradeScanProbed);
+    }
+
+    [Fact]
+    public async Task A_chapter_scan_of_a_series_without_a_profile_says_so()
+    {
+        _world.Seed(series: s => s.UpgradeProfileId = null);
+        var (chapterId, _) = _world.Chapter(1);
+
+        var result = await ScanChapterAsync(chapterId);
+
+        Assert.Equal(1, result.Skipped["no_profile"]);
+        Assert.Empty(result.Candidates);
+        Assert.Null(SeriesRow().LastUpgradeScanUtc);
+    }
+
+    [Fact]
+    public async Task A_chapter_scan_records_who_asked_on_the_upgrade_row()
+    {
+        _world.Seed();
+        var (chapterId, _) = _world.Chapter(1);
+
+        await ScanChapterAsync(chapterId, userId: 5);
+
+        var item = Assert.Single(Queue());
+        Assert.Equal(DownloadOrigin.Upgrade, item.Origin);
+        Assert.Equal(5, item.QueuedByUserId);
+    }
+
+    [Fact]
+    public async Task A_chapter_scan_ignores_the_daily_cap()
+    {
+        _world.Seed();
+        var (chapterId, _) = _world.Chapter(1);
+        var (earlierId, _) = _world.Chapter(2);
+        _world.Settings.Set(SettingKeys.UpgradesMaxPerDay, "1");
+        using (var db = _world.Db.NewContext())
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = _world.SeriesId, ChapterId = earlierId, Status = QueueStatus.Completed,
+                QueuedAt = DateTime.UtcNow, Origin = DownloadOrigin.Upgrade
+            });
+            db.SaveChanges();
+        }
+
+        var result = await ScanChapterAsync(chapterId);
+
+        Assert.Equal(1, result.Enqueued);
+        Assert.False(result.Skipped.ContainsKey("daily_cap"));
+        Assert.Equal(_world.OfficialMappingId, result.QueuedFromMappingId);
+    }
+
+    public static TheoryData<string, string> SkippedSeries => new()
+    {
+        { "noProfile", "no_profile" },
+        { "upgradesOff", "upgrades_disabled" },
+        { "incognito", "incognito" },
+    };
+
+    [Theory]
+    [MemberData(nameof(SkippedSeries))]
+    public async Task A_skipped_series_keeps_its_last_scan_empty(string state, string reason)
+    {
+        _world.Seed(p => p.UpgradesEnabled = state != "upgradesOff", s =>
+        {
+            if (state == "noProfile") s.UpgradeProfileId = null;
+            if (state == "incognito") s.Incognito = IncognitoMode.Full;
+        });
+        _world.Chapter(1);
+        _world.Settings.Set(SettingKeys.UpgradesScanIncognito, "false");
+
+        var result = await ScanAsync();
+
+        Assert.Equal(0, result.SeriesScanned);
+        Assert.Equal(1, result.Skipped[reason]);
+        var series = SeriesRow();
+        Assert.Null(series.LastUpgradeScanUtc);
+        Assert.Null(series.LastUpgradeScanProbed);
+        Assert.Null(series.LastUpgradeScanQueued);
+    }
+
+    [Fact]
+    public async Task A_series_scan_records_its_last_scan_on_the_series()
+    {
+        _world.Seed();
+        _world.Chapter(1);
+        Assert.Null(SeriesRow().LastUpgradeScanUtc);
+
+        var result = await ScanAsync();
+
+        Assert.Empty(result.Candidates);
+        Assert.Null(result.QueuedFromMappingId);
+        var series = SeriesRow();
+        Assert.NotNull(series.LastUpgradeScanUtc);
+        Assert.Equal(1, series.LastUpgradeScanProbed);
+        Assert.Equal(1, series.LastUpgradeScanQueued);
+        var dto = Maki.Api.Dtos.SeriesDto.FromEntity(series).LastUpgradeScan!;
+        Assert.Equal((1, 1), (dto.Probed, dto.Queued));
+    }
 }

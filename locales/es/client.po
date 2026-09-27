@@ -790,6 +790,7 @@ msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {su
 msgstr "{matched} de {total} coincidentes, {positive} positivos, {avoided} evitados, {superseded} ya tuyos"
 
 #: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 msgid "{medianWidth}px"
 msgstr ""
 
@@ -890,6 +891,7 @@ msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# más} many {+# más} other {+# más}}"
 
 #: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/ChapterBanner.tsx
 #, fuzzy
@@ -999,6 +1001,10 @@ msgstr "{readValue, plural, one {capítulo leído} many {capítulos leídos} oth
 #, fuzzy
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, one {volumen leído} many {volúmenes leídos} other {volúmenes leídos}}"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "{reasonText} - {measurement}"
+msgstr ""
 
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
@@ -1196,6 +1202,10 @@ msgstr "{target, plural, one {# serie finalizada} many {# series finalizadas} ot
 
 #: src/components/series/FileQualityBadge.tsx
 msgid "{tierLabel} · {medianWidth}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "{tierLabel} · {width}px"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
@@ -1771,6 +1781,7 @@ msgid "A row of figures: what is in your library, your reading progress and what
 msgstr "Una fila de cifras: qué hay en tu biblioteca, tu progreso de lectura y lo que está pendiente de leer."
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "A scan is already running"
 msgstr ""
@@ -4201,7 +4212,12 @@ msgstr "No se pudo actualizar la valoración de {surface}: {reason}"
 msgid "Couldn't be measured"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Couldn't run the scan"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Couldn't start the scan"
 msgstr ""
@@ -4322,6 +4338,22 @@ msgstr "Copia actual"
 
 #: src/pages/ActivityPage.tsx
 msgid "Current file"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px, score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}, score {score}"
 msgstr ""
 
 #: src/api/hooks.ts
@@ -5612,11 +5644,9 @@ msgstr "Filtros"
 msgid "Filters ({appliedCount})"
 msgstr "Filtros ({appliedCount})"
 
-#. placeholder {0}: pick.label
 #: src/components/SourceCompareModal.tsx
-#, fuzzy
-msgid "Find a better copy of {0}"
-msgstr "Buscar una copia mejor de {0}"
+msgid "Find a better copy of {pickLabel}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6654,6 +6684,10 @@ msgstr "Incógnito por clasificación de contenido"
 msgid "Incognito for {ratingLabel}"
 msgstr "Modo incógnito para {ratingLabel}"
 
+#: src/api/upgrades.ts
+msgid "Incognito series are excluded"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Incognito, this session isn't being recorded"
@@ -7046,6 +7080,10 @@ msgstr "Último inicio de sesión"
 #, fuzzy
 msgid "Last synced {synced}"
 msgstr "Última sincronización: {synced}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -8261,6 +8299,10 @@ msgstr "nunca"
 msgid "Never run."
 msgstr "Nunca se ha ejecutado."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Never scanned for upgrades"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -8386,6 +8428,10 @@ msgstr "No hay actividad en {windowLabel}."
 #, fuzzy
 msgid "no baseline"
 msgstr "sin referencia"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No better copy found"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -8583,6 +8629,10 @@ msgstr ""
 msgid "No quality formats yet."
 msgstr ""
 
+#: src/api/upgrades.ts
+msgid "No quality profile"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 msgid "No quality profile assigned yet"
 msgstr ""
@@ -8660,6 +8710,10 @@ msgstr "No hay fuentes vinculadas. Los capítulos no se pueden sincronizar ni de
 #, fuzzy
 msgid "No sources match. Clear a filter or try another name."
 msgstr "No hay fuentes coincidentes. Borra un filtro o prueba con otro nombre."
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No sources to compare against."
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -10123,6 +10177,10 @@ msgstr "Los capítulos en cola y en descarga aparecen aquí. Activa una búsqued
 msgid "Queued for download"
 msgstr ""
 
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "Queued upgrade from {winnerSource}"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Quiet period (days)"
 msgstr ""
@@ -10910,6 +10968,10 @@ msgstr "Reparar"
 msgid "Repairs"
 msgstr "Reparaciones"
 
+#: src/pages/ActivityPage.tsx
+msgid "Replace"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
 msgstr ""
@@ -11500,6 +11562,10 @@ msgstr ""
 msgid "Scan files"
 msgstr "Analizar archivos"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scan for upgrades"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 msgid "Scan incognito series"
 msgstr ""
@@ -11519,6 +11585,7 @@ msgid "Scan running…"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Scan started"
 msgstr ""
@@ -11594,6 +11661,14 @@ msgstr "Ámbitos"
 
 #: src/pages/ActivityPage.tsx
 msgid "Score"
+msgstr ""
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Score {score}"
 msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
@@ -13182,6 +13257,10 @@ msgstr ""
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "La URL actual del feed dejará de funcionar de inmediato. Todas las apps que la usan necesitarán la nueva."
 
+#: src/components/SourceCompareModal.tsx
+msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
@@ -14235,8 +14314,13 @@ msgstr "Actualizaciones"
 msgid "Updating ComicInfo"
 msgstr "Actualizando ComicInfo"
 
+#: src/components/SourceCompareModal.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Upgrade"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Upgrade now"
 msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
@@ -14261,6 +14345,10 @@ msgstr ""
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 msgid "Upgrades"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Upgrades are off for this profile"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx

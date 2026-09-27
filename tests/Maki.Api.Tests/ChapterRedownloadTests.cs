@@ -17,6 +17,8 @@ public class ChapterRedownloadTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
+    private UpgradeEvaluationService Evaluation() => new(_db.NewContext(), TestQuality.Create());
+
     /// <summary>A source that lists exactly the chapter numbers given.</summary>
     private static FakeSource Source(string name, params decimal[] chapters) => new()
     {
@@ -98,7 +100,7 @@ public class ChapterRedownloadTests : IDisposable
         var controller = BuildController(Source("good", 1m, 2m, 3m), Source("bad", 1m, 2m, 3m));
 
         var (queued, unavailable) = Result(
-            await controller.Redownload(new(seriesId, "good"), default));
+            await controller.Redownload(new(seriesId, "good"), Evaluation(), default));
 
         // Chapter 1 already came from the winner and is left alone.
         Assert.Equal(2, queued);
@@ -117,7 +119,7 @@ public class ChapterRedownloadTests : IDisposable
         var seriesId = SeedDownloaded((1m, from), (2m, "bad"));
         var controller = BuildController(Source("good", 1m, 2m), Source("bad", 1m, 2m));
 
-        var (queued, unavailable) = Result(await controller.Redownload(new(seriesId, "good"), default));
+        var (queued, unavailable) = Result(await controller.Redownload(new(seriesId, "good"), Evaluation(), default));
 
         Assert.Equal(1, queued);
         Assert.Equal(0, unavailable);
@@ -131,7 +133,7 @@ public class ChapterRedownloadTests : IDisposable
         var seriesId = SeedDownloaded((1m, "bad"), (2m, "bad"), (50m, "bad"));
         var controller = BuildController(Source("good", 1m, 2m), Source("bad", 1m, 2m, 50m));
 
-        var (queued, unavailable) = Result(await controller.Redownload(new(seriesId, "good"), default));
+        var (queued, unavailable) = Result(await controller.Redownload(new(seriesId, "good"), Evaluation(), default));
 
         Assert.Equal(2, queued);
         Assert.Equal(1, unavailable);
@@ -143,7 +145,7 @@ public class ChapterRedownloadTests : IDisposable
         var seriesId = SeedDownloaded((1m, "bad"));
         var controller = BuildController(Source("good", 1m), Source("bad", 1m));
 
-        Assert.IsType<NotFoundResult>(await controller.Redownload(new(seriesId, "elsewhere"), default));
+        Assert.IsType<NotFoundResult>(await controller.Redownload(new(seriesId, "elsewhere"), Evaluation(), default));
     }
 
     [Fact]
@@ -153,7 +155,7 @@ public class ChapterRedownloadTests : IDisposable
         var good = Source("good", 1m, 2m);
         var controller = BuildController(good, Source("bad", 1m, 2m));
 
-        var (queued, unavailable) = Result(await controller.Redownload(new(seriesId, "good"), default));
+        var (queued, unavailable) = Result(await controller.Redownload(new(seriesId, "good"), Evaluation(), default));
 
         Assert.Equal(0, queued);
         Assert.Equal(0, unavailable);

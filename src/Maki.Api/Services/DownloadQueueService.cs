@@ -263,13 +263,19 @@ public class DownloadQueueService(
     /// returned unchanged instead.
     /// </para>
     /// </param>
+    /// <param name="replaceInfo">
+    /// The chapter's existing file is to be replaced through the upgrade gate rather than overwritten.
+    /// Stored on the new row, and on an existing row the pin is applied to.
+    /// </param>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(
         int chapterId,
         CancellationToken ct = default,
         DownloadOrigin origin = DownloadOrigin.Unknown,
         int? queuedByUserId = null,
-        int? preferMappingId = null)
+        int? preferMappingId = null,
+        Maki.Core.Quality.UpgradeInfo? replaceInfo = null)
     {
+        var replaceJson = replaceInfo?.Serialize();
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
@@ -294,7 +300,10 @@ public class DownloadQueueService(
             // Conditional, because a worker can claim the row between the read above and this write,
             // and a plain save would drag an active download back to Resolving. Already fetching or
             // downloading means the pin is not applied: the caller sees the row's own
-            // PreferredMappingId still differs from what it asked for.
+            // PreferredMappingId still differs from what it asked for. A replacement also makes the row the
+            // caller's own, so an automatic upgrade the user overrides stops being automatic.
+            var replacing = replaceJson is not null;
+            var replaced = replacing ? Maki.Core.Quality.UpgradeInfo.Parse(existing.UpgradeInfoJson) : null;
             var repinned = await db.DownloadQueue
                 .Where(q => q.Id == existing.Id &&
                             (q.Status == QueueStatus.Resolving || q.Status == QueueStatus.Queued ||
@@ -306,8 +315,18 @@ public class DownloadQueueService(
                     .SetProperty(q => q.Status, QueueStatus.Resolving)
                     .SetProperty(q => q.ErrorKey, (string?)null)
                     .SetProperty(q => q.ErrorParamsJson, (string?)null)
-                    .SetProperty(q => q.ErrorMessage, (string?)null), ct);
+                    .SetProperty(q => q.ErrorMessage, (string?)null)
+                    .SetProperty(q => q.UpgradeInfoJson, q => replaceJson ?? q.UpgradeInfoJson)
+                    .SetProperty(q => q.Origin, q => replacing ? origin : q.Origin)
+                    .SetProperty(q => q.QueuedByUserId, q => replacing ? queuedByUserId : q.QueuedByUserId), ct);
             await db.Entry(existing).ReloadAsync(ct);
+
+            // The scan's `enqueued` memo would otherwise keep that candidate closed after the user
+            // dropped it for another source.
+            if (repinned > 0 && replaced is { Force: false, AttemptId: > 0 } automatic)
+            {
+                await db.UpgradeAttempts.Where(a => a.Id == automatic.AttemptId).ExecuteDeleteAsync(ct);
+            }
 
             if (repinned > 0)
             {
@@ -334,7 +353,8 @@ public class DownloadQueueService(
             SortOrder = await NextSortOrderAsync(db, ct),
             Origin = origin,
             QueuedByUserId = queuedByUserId,
-            PreferredMappingId = preferMappingId
+            PreferredMappingId = preferMappingId,
+            UpgradeInfoJson = replaceJson
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);

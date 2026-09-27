@@ -16,6 +16,12 @@ public sealed class UpgradeInfo
     public string? Reason { get; set; }
     public int? HistoryId { get; set; }
 
+    /// <summary>A user picked this copy: it replaces the file whatever the profile thinks of it.</summary>
+    public bool Force { get; set; }
+
+    /// <summary>With <see cref="Force"/>, also skips the page count, width and protect checks.</summary>
+    public bool IgnoreGuards { get; set; }
+
     public string Serialize() => JsonSerializer.Serialize(this, QualitySnapshot.Json);
 
     /// <summary>Null for a missing or unreadable value.</summary>

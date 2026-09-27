@@ -240,7 +240,7 @@ public static class ChapterFileMeasurer
         return distinct.Count == 1 ? distinct[0] : "mixed";
     }
 
-    private static int? Median(List<int> values)
+    public static int? Median(List<int> values)
     {
         if (values.Count == 0) return null;
         var sorted = values.OrderBy(v => v).ToList();

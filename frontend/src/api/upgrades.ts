@@ -18,6 +18,15 @@ export const QUALITY_TIER_LABELS: Record<QualityTierName, MessageDescriptor> = {
   volume: msg`Volume`,
 }
 
+/** Shared with `FileQualityBadge` and `SourceCompareModal`'s per-column quality badge. */
+export const QUALITY_TIER_COLOR: Record<QualityTierName, string> = {
+  unknown: 'gray',
+  aggregator: 'orange',
+  scanlator: 'blue',
+  official: 'teal',
+  volume: 'indigo',
+}
+
 export interface ProfileTierDto {
   tier: QualityTierName
   allowed: boolean
@@ -192,6 +201,12 @@ export interface UpgradeQueueInfoDto {
   reverted: boolean
   /** Whether the trashed original this row would restore is still on disk. */
   trashAvailable: boolean
+  /**
+   * A manual re-download through the compare modal or Redownload rather than the automatic
+   * upgrader: the row's `origin` stays 'manual', so this is what tells the Queue/History badge
+   * and copy to say "Replace" instead of "Upgrade".
+   */
+  force: boolean
 }
 
 export interface UpgradeHistoryRowDto {
@@ -221,6 +236,20 @@ export interface UpgradeHistoryPageDto {
   pageSize: number
 }
 
+/** One row per source considered for a chapter scan; `UpgradeScanResultDto.candidates` is empty
+ * for series and library scans, where nobody is watching a single chapter's outcome. */
+export interface UpgradeCandidateOutcomeDto {
+  mappingId: number
+  sourceName: string
+  sourceChapterId: string
+  /** A reason code from `UPGRADE_REASON_LABELS`, including `enqueued` for the winner. */
+  reason: string
+  probed: boolean
+  pageCount: number | null
+  medianWidth: number | null
+  score: number | null
+}
+
 export interface UpgradeScanResultDto {
   seriesScanned: number
   chaptersChecked: number
@@ -231,6 +260,10 @@ export interface UpgradeScanResultDto {
    * (`UpgradeSkipReasonCode`) that never appear as an `UpgradeAttempt`/queue-row reason.
    */
   skipped: Record<string, number>
+  /** Filled for a chapter scan only; empty for series and library scans. */
+  candidates: UpgradeCandidateOutcomeDto[]
+  /** The mapping a chapter scan queued from, or null when nothing won. */
+  queuedFromMappingId: number | null
 }
 
 export type UpgradeReasonCode =
@@ -256,6 +289,10 @@ export type UpgradeSkipReasonCode =
   | 'probe_budget'
   | 'daily_cap'
   | 'unsupported_file'
+  /** `ComparePanelQualityDto.reason` on a series with no upgrade profile; never a scan bucket. */
+  | 'no_profile'
+  | 'upgrades_disabled'
+  | 'incognito'
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -282,6 +319,9 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
   probe_budget: msg`Ran out of probes for this run`,
   daily_cap: msg`Daily upgrade cap reached`,
   unsupported_file: msg`Unsupported file type`,
+  no_profile: msg`No quality profile`,
+  upgrades_disabled: msg`Upgrades are off for this profile`,
+  incognito: msg`Incognito series are excluded`,
 }
 
 /** `LABELS[x] ?? x`: a code this build has no case for renders as-is rather than disappearing. */
@@ -497,6 +537,12 @@ export function isUpgradeScanStarted(result: UpgradeScanResultDto | { started: t
   return 'started' in result
 }
 
+/**
+ * Runs a library-wide scan (no `seriesId`) or a single series' scan. Both write the series' last-scan
+ * columns, so `series` and `chapters` are invalidated alongside the usual upgrade views: the Details
+ * tab's "Last upgrade scan" line and the chapter list's quality badges can change from either kind of
+ * run, not just from a chapter-level upgrade.
+ */
 export function useRunUpgradeScan() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -509,6 +555,31 @@ export function useRunUpgradeScan() {
       void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
       void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    },
+  })
+}
+
+/**
+ * "Upgrade now" for one chapter: runs a scan scoped to it and reports every candidate considered,
+ * shown in `UpgradeNowResultModal`. Ignores the global switch and the quiet period like the series
+ * scan does, but still honours trusted, cutoff-met and the memo.
+ */
+export function useUpgradeChapterNow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chapterId: number) =>
+      api<UpgradeScanResultDto>('/upgrades/scan', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
 }

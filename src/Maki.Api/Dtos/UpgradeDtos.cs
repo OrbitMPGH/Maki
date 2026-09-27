@@ -119,6 +119,7 @@ public record UpgradeHistoryState(bool Reverted, bool TrashAvailable);
 /// <param name="Reason">A reason code when rejected, worded by the client.</param>
 /// <param name="Reverted">The applied upgrade has since been reverted.</param>
 /// <param name="TrashAvailable">The replaced copy is still in the trash, so a revert can happen.</param>
+/// <param name="Force">A user picked this copy to replace the file, rather than the upgrader.</param>
 public record UpgradeQueueInfoDto(
     string Outcome,
     string? Reason,
@@ -127,7 +128,8 @@ public record UpgradeQueueInfoDto(
     QualitySnapshotDto? After,
     int? HistoryId,
     bool Reverted,
-    bool TrashAvailable)
+    bool TrashAvailable,
+    bool Force)
 {
     public static UpgradeQueueInfoDto? From(string? json, UpgradeHistoryState? history = null) =>
         UpgradeInfo.Parse(json) is { } info
@@ -139,7 +141,8 @@ public record UpgradeQueueInfoDto(
                 info.After is null ? null : QualitySnapshotDto.From(info.After),
                 info.HistoryId,
                 history?.Reverted ?? false,
-                history?.TrashAvailable ?? false)
+                history?.TrashAvailable ?? false,
+                info.Force)
             : null;
 }
 
@@ -163,11 +166,26 @@ public record UpgradeHistoryRowDto(
 
 public record UpgradeHistoryPageDto(IReadOnlyList<UpgradeHistoryRowDto> Rows, int Total, int Page, int PageSize);
 
-/// <param name="Skipped">Chapters and candidates passed over, keyed by reason code.</param>
-public record UpgradeScanResultDto(
-    int SeriesScanned, int ChaptersChecked, int CandidatesProbed, int Enqueued, IReadOnlyDictionary<string, int> Skipped);
+public record UpgradeCandidateOutcomeDto(
+    int MappingId, string SourceName, string SourceChapterId, string Reason, bool Probed, int? PageCount,
+    int? MedianWidth, int? Score);
 
-public record UpgradeScanRequest(int? SeriesId);
+/// <param name="Skipped">Chapters and candidates passed over, keyed by reason code.</param>
+/// <param name="Candidates">Every candidate's outcome; empty for series and library scans.</param>
+public record UpgradeScanResultDto(
+    int SeriesScanned, int ChaptersChecked, int CandidatesProbed, int Enqueued, IReadOnlyDictionary<string, int> Skipped,
+    IReadOnlyList<UpgradeCandidateOutcomeDto> Candidates, int? QueuedFromMappingId)
+{
+    public static UpgradeScanResultDto From(Services.UpgradeScanResult r) => new(
+        r.SeriesScanned, r.ChaptersChecked, r.CandidatesProbed, r.Enqueued, r.Skipped,
+        [.. r.Candidates.Select(c => new UpgradeCandidateOutcomeDto(c.MappingId, c.SourceName, c.SourceChapterId,
+            c.Reason, c.Probed, c.PageCount, c.MedianWidth, c.Score))],
+        r.QueuedFromMappingId);
+}
+
+/// <param name="SeriesId">Scan one series. Leave both ids out to scan the library.</param>
+/// <param name="ChapterId">Scan one chapter and report every candidate.</param>
+public record UpgradeScanRequest(int? SeriesId, int? ChapterId = null);
 
 public record SetTrustedRequest(bool Trusted);
 

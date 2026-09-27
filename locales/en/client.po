@@ -663,6 +663,7 @@ msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {su
 msgstr "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 
 #: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 msgid "{medianWidth}px"
 msgstr "{medianWidth}px"
 
@@ -744,6 +745,7 @@ msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# more} other {+# more}}"
 
 #: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/ChapterBanner.tsx
 msgid "{pageCount, plural, one {# page} other {# pages}}"
@@ -833,6 +835,10 @@ msgstr "{readValue, plural, one {chapter read} other {chapters read}}"
 #: src/pages/rewind/slides.tsx
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, one {volume read} other {volumes read}}"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "{reasonText} - {measurement}"
+msgstr "{reasonText} - {measurement}"
 
 #: src/components/home/DownloadingStrip.tsx
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
@@ -995,6 +1001,10 @@ msgstr "{target, plural, one {# series finished} other {# series finished}}"
 #: src/components/series/FileQualityBadge.tsx
 msgid "{tierLabel} · {medianWidth}px"
 msgstr "{tierLabel} · {medianWidth}px"
+
+#: src/components/SourceCompareModal.tsx
+msgid "{tierLabel} · {width}px"
+msgstr "{tierLabel} · {width}px"
 
 #: src/pages/ActivityPage.tsx
 msgid "{tierLabel} ({score})"
@@ -1469,6 +1479,7 @@ msgid "A row of figures: what is in your library, your reading progress and what
 msgstr "A row of figures: what is in your library, your reading progress and what is waiting to be read."
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "A scan is already running"
 msgstr "A scan is already running"
@@ -3464,7 +3475,12 @@ msgstr "Could not update {surface} feedback: {reason}"
 msgid "Couldn't be measured"
 msgstr "Couldn't be measured"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Couldn't run the scan"
+msgstr "Couldn't run the scan"
+
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Couldn't start the scan"
 msgstr "Couldn't start the scan"
@@ -3564,6 +3580,22 @@ msgstr "Current copy"
 #: src/pages/ActivityPage.tsx
 msgid "Current file"
 msgstr "Current file"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}"
+msgstr "Current: {tierLabel}"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px"
+msgstr "Current: {tierLabel} {width}px"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px, score {score}"
+msgstr "Current: {tierLabel} {width}px, score {score}"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}, score {score}"
+msgstr "Current: {tierLabel}, score {score}"
 
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -4628,10 +4660,9 @@ msgstr "Filters"
 msgid "Filters ({appliedCount})"
 msgstr "Filters ({appliedCount})"
 
-#. placeholder {0}: pick.label
 #: src/components/SourceCompareModal.tsx
-msgid "Find a better copy of {0}"
-msgstr "Find a better copy of {0}"
+msgid "Find a better copy of {pickLabel}"
+msgstr "Find a better copy of {pickLabel}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Find better copy"
@@ -5483,6 +5514,10 @@ msgstr "Incognito by content rating"
 msgid "Incognito for {ratingLabel}"
 msgstr "Incognito for {ratingLabel}"
 
+#: src/api/upgrades.ts
+msgid "Incognito series are excluded"
+msgstr "Incognito series are excluded"
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Incognito, this session isn't being recorded"
 msgstr "Incognito, this session isn't being recorded"
@@ -5806,6 +5841,10 @@ msgstr "Last sign-in"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Last synced {synced}"
 msgstr "Last synced {synced}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Last used"
@@ -6811,6 +6850,10 @@ msgstr "never"
 msgid "Never run."
 msgstr "Never run."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Never scanned for upgrades"
+msgstr "Never scanned for upgrades"
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
 msgid "New"
@@ -6913,6 +6956,10 @@ msgstr "No activity in {windowLabel}."
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "no baseline"
 msgstr "no baseline"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No better copy found"
+msgstr "No better copy found"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "No change: the whole franchise was already hidden."
@@ -7074,6 +7121,10 @@ msgstr "No quality formats defined yet. Add one below to score files by it."
 msgid "No quality formats yet."
 msgstr "No quality formats yet."
 
+#: src/api/upgrades.ts
+msgid "No quality profile"
+msgstr "No quality profile"
+
 #: src/pages/ActivityPage.tsx
 msgid "No quality profile assigned yet"
 msgstr "No quality profile assigned yet"
@@ -7137,6 +7188,10 @@ msgstr "No sources linked. Chapters cannot be synced or downloaded."
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "No sources match. Clear a filter or try another name."
 msgstr "No sources match. Clear a filter or try another name."
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No sources to compare against."
+msgstr "No sources to compare against."
 
 #: src/pages/CreatorPage.tsx
 msgid "No such creator"
@@ -8343,6 +8398,10 @@ msgstr "Queued and downloading chapters show up here. Trigger a search from a se
 msgid "Queued for download"
 msgstr "Queued for download"
 
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "Queued upgrade from {winnerSource}"
+msgstr "Queued upgrade from {winnerSource}"
+
 #: src/pages/SettingsPage.tsx
 msgid "Quiet period (days)"
 msgstr "Quiet period (days)"
@@ -8991,6 +9050,10 @@ msgstr "Repair"
 msgid "Repairs"
 msgstr "Repairs"
 
+#: src/pages/ActivityPage.tsx
+msgid "Replace"
+msgstr "Replace"
+
 #: src/pages/SettingsPage.tsx
 msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
 msgstr "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
@@ -9477,6 +9540,10 @@ msgstr "Scan after hour"
 msgid "Scan files"
 msgstr "Scan files"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scan for upgrades"
+msgstr "Scan for upgrades"
+
 #: src/pages/SettingsPage.tsx
 msgid "Scan incognito series"
 msgstr "Scan incognito series"
@@ -9495,6 +9562,7 @@ msgid "Scan running…"
 msgstr "Scan running…"
 
 #: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Scan started"
 msgstr "Scan started"
@@ -9558,6 +9626,14 @@ msgstr "Scopes"
 #: src/pages/ActivityPage.tsx
 msgid "Score"
 msgstr "Score"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "score {score}"
+msgstr "score {score}"
+
+#: src/components/SourceCompareModal.tsx
+msgid "Score {score}"
+msgstr "Score {score}"
 
 #: src/components/series/FileQualityBadge.tsx
 msgid "Score: {score}"
@@ -10854,6 +10930,10 @@ msgstr "The chapter numbers are in the archive's page file names. Certain."
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "The current feed URL stops working immediately. Every app using it needs the new one."
 
+#: src/components/SourceCompareModal.tsx
+msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
+msgstr "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
+
 #: src/pages/HealthPage.tsx
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
 msgstr "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
@@ -11717,9 +11797,14 @@ msgstr "Updates"
 msgid "Updating ComicInfo"
 msgstr "Updating ComicInfo"
 
+#: src/components/SourceCompareModal.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Upgrade"
 msgstr "Upgrade"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Upgrade now"
+msgstr "Upgrade now"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -11744,6 +11829,10 @@ msgstr "upgrade, quality profile, default profile, automatic upgrades"
 #: src/pages/SettingsPage.tsx
 msgid "Upgrades"
 msgstr "Upgrades"
+
+#: src/api/upgrades.ts
+msgid "Upgrades are off for this profile"
+msgstr "Upgrades are off for this profile"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades enabled"

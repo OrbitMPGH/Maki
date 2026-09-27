@@ -83,7 +83,11 @@ internal sealed class UpgradeWorld : IDisposable
         Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", Path.Combine(Root, "config"));
         Registry = new SourceRegistry([
             new FakeSource { Name = Agg, Kind = SourceKind.Aggregator, OnGetPages = c => AggPages(c) },
-            new FakeSource { Name = Official, Kind = SourceKind.Official, OnGetPages = c => OfficialPages(c) }
+            new FakeSource
+            {
+                Name = Official, Kind = SourceKind.Official, OnGetPages = c => OfficialPages(c),
+                OnListChapters = id => OfficialListing(id)
+            }
         ]);
         Queue = new DownloadQueueService(Db.ScopeFactory(), TimeProvider.System,
             Sources.Resolver(Registry, Availability), NullLogger<DownloadQueueService>.Instance);
@@ -102,6 +106,7 @@ internal sealed class UpgradeWorld : IDisposable
 
     public Func<SourceChapter, ChapterPages> AggPages { get; set; } = _ => new ChapterPages([]);
     public Func<SourceChapter, ChapterPages> OfficialPages { get; set; } = UrlPages(20);
+    public Func<string, IReadOnlyList<SourceChapter>> OfficialListing { get; set; } = _ => [];
 
     public SourceAvailability Availability => new(Settings, Registry);
 
@@ -248,6 +253,28 @@ internal sealed class UpgradeWorld : IDisposable
             SeriesId = SeriesId, ChapterId = chapterId, SourceMappingId = OfficialMappingId,
             PreferredMappingId = OfficialMappingId, SourceChapterId = sourceChapterId, QueuedAt = DateTime.UtcNow,
             Origin = DownloadOrigin.Upgrade, UpgradeInfoJson = info.Serialize()
+        };
+        db.DownloadQueue.Add(item);
+        db.SaveChanges();
+        return item.Id;
+    }
+
+    /// <summary>A user's pick of <paramref name="mappingId"/> for a chapter that has a file, as DownloadFrom queues it.</summary>
+    public int QueueForced(int chapterId, int fileId, int mappingId, string sourceChapterId, bool ignoreGuards = false,
+        int profileId = 0)
+    {
+        using var db = Db.NewContext();
+        var file = db.ChapterFiles.AsNoTracking().Single(f => f.Id == fileId);
+        var info = new UpgradeInfo
+        {
+            ChapterFileId = fileId, ProfileId = profileId, Force = true, IgnoreGuards = ignoreGuards,
+            Before = UpgradeEvaluator.Snapshot(file, 0)
+        };
+        var item = new DownloadQueueItem
+        {
+            SeriesId = SeriesId, ChapterId = chapterId, SourceMappingId = mappingId, PreferredMappingId = mappingId,
+            SourceChapterId = sourceChapterId, QueuedAt = DateTime.UtcNow, Origin = DownloadOrigin.Manual,
+            UpgradeInfoJson = info.Serialize()
         };
         db.DownloadQueue.Add(item);
         db.SaveChanges();

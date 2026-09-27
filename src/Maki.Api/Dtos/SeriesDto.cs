@@ -181,6 +181,9 @@ public record SeriesDto(
     /// <summary>The series' own upgrade profile pin. Null means it follows the instance default.</summary>
     public int? UpgradeProfileId { get; init; }
 
+    /// <summary>The last upgrade scan pass over this series, or null when it has never been scanned.</summary>
+    public LastUpgradeScanDto? LastUpgradeScan { get; init; }
+
     /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
     /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.
@@ -264,7 +267,10 @@ public record SeriesDto(
         s.Incognito.ToString(),
         notificationMode.ToString())
     {
-        UpgradeProfileId = s.UpgradeProfileId
+        UpgradeProfileId = s.UpgradeProfileId,
+        LastUpgradeScan = s.LastUpgradeScanUtc is { } at
+            ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0)
+            : null
     };
 
     /// <summary>
@@ -292,6 +298,8 @@ public record SeriesDto(
 /// to be the fallback rather than a hardcoded Off.
 /// </param>
 public record SeriesOperationDto(Guid Id, string State, int SeriesId, long SignalRevision);
+
+public record LastUpgradeScanDto(DateTime At, int Probed, int Queued);
 
 public record AddSeriesRequest(
     string MetadataProviderId,
