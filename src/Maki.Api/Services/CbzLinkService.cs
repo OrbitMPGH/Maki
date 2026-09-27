@@ -599,27 +599,32 @@ public class CbzLinkService(
     }
 
     /// <summary>Points matching chapters at the file; returns the chapters that were linked.</summary>
-    /// <param name="volumePath">
-    /// The file on disk. A volume whose page names carry chapter markers takes a chapter off
-    /// another file only when the markers name it; the provider's range alone would hand a
-    /// partial volume every chapter of that volume and orphan files it does not replace.
+    /// <param name="filePath">
+    /// The file on disk; a single file's name also says its language. A volume whose page names
+    /// carry chapter markers takes a chapter off another file only when the markers name it; the
+    /// provider's range alone would hand a partial volume every chapter of that volume and orphan
+    /// files it does not replace.
     /// </param>
     /// <param name="replaceExisting">
     /// False leaves a chapter that already has a file alone, so this file links only what nothing
     /// backs yet.
     /// </param>
     private static List<Chapter> LinkChapters(
-        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, string? volumePath,
+        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, string? filePath,
         HashSet<int> volumeFileIds, bool replaceExisting = true)
     {
         List<Chapter> targets = [];
         if (parsed.IsChapter)
         {
             // A single file replaces another single file, never a volume.
-            var match = chapters.FirstOrDefault(c => c.Number == parsed.Number && c.ChapterFileId == null)
+            var languages = filePath is null
+                ? null
+                : ChapterFileLanguage.FromName(filePath, ChapterFileLanguage.SeriesLanguages(chapters));
+            bool Fits(Chapter c) => c.Number == parsed.Number
+                                    && (languages is null || languages.Contains(ChapterFileLanguage.Of(c)));
+            var match = chapters.FirstOrDefault(c => Fits(c) && c.ChapterFileId == null)
                         ?? (replaceExisting
-                            ? chapters.FirstOrDefault(c =>
-                                c.Number == parsed.Number && !volumeFileIds.Contains(c.ChapterFileId!.Value))
+                            ? chapters.FirstOrDefault(c => Fits(c) && !volumeFileIds.Contains(c.ChapterFileId!.Value))
                             : null);
             if (match != null)
             {
@@ -640,7 +645,7 @@ public class CbzLinkService(
                         return true;
                     }
 
-                    markers ??= volumePath is null ? [] : [.. VolumeChapterScanner.ScanCbz(volumePath)];
+                    markers ??= filePath is null ? [] : [.. VolumeChapterScanner.ScanCbz(filePath)];
                     return markers.Count == 0 || (c.Number is { } number && markers.Contains(number));
                 })
                 .ToList();

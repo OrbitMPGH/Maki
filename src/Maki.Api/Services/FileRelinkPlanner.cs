@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Maki.Core.Entities;
+using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
@@ -19,11 +21,7 @@ public enum RelinkConfidence
     FileName,
     /// <summary>Proportional guess for a finished series whose volume files cover every volume.</summary>
     Estimated,
-    /// <summary>
-    /// The chapter is on this file today and nothing in the file explains why. Somebody, or an
-    /// earlier linker with data the planner lacks, put it there, so the link counts as knowledge:
-    /// on a volume it outranks the provider's range, on a single file it ties with the name.
-    /// </summary>
+    /// <summary>The chapter is on this file today and nothing in the file explains why.</summary>
     Existing,
 }
 
@@ -95,6 +93,8 @@ public class FileRelinkPlanner(
         /// <summary>Chapters this file contains and how sure we are, keyed by chapter id.</summary>
         public Dictionary<int, RelinkConfidence> Covers { get; } = [];
         public bool HasMarkers { get; set; }
+        /// <summary>Languages a single-chapter file may back; null for any.</summary>
+        public HashSet<string>? Languages { get; set; }
         public int Span => Parsed.IsVolume ? (Parsed.VolumeEnd ?? Parsed.Volume!.Value) - Parsed.Volume!.Value : 0;
     }
 
@@ -147,6 +147,14 @@ public class FileRelinkPlanner(
         {
             if (!built.Assignment.TryGetValue(chapter.Id, out var target) || target?.Record is null)
             {
+                // Its file is on disk but does not hold it (another language's file, say).
+                if (target is null && chapter.ChapterFileId is { } stale && built.CandidateByRecordId.ContainsKey(stale))
+                {
+                    chapter.ChapterFileId = null;
+                    touched.Add(stale);
+                    moved++;
+                }
+
                 continue;
             }
 
@@ -267,9 +275,10 @@ public class FileRelinkPlanner(
         }
 
         var estimator = CompletedSeriesEstimator(series, candidates);
+        var seriesLanguages = ChapterFileLanguage.SeriesLanguages(chapters);
         foreach (var candidate in candidates)
         {
-            Cover(candidate, chapters, estimator);
+            Cover(candidate, chapters, estimator, seriesLanguages);
         }
 
         var candidateByRecordId = candidates
@@ -279,7 +288,8 @@ public class FileRelinkPlanner(
         // What a file backs today is evidence too, on top of what its name and pages say.
         foreach (var chapter in chapters)
         {
-            if (chapter.ChapterFileId is { } fileId && candidateByRecordId.TryGetValue(fileId, out var holder))
+            if (chapter.ChapterFileId is { } fileId && candidateByRecordId.TryGetValue(fileId, out var holder)
+                && (holder.Languages is null || holder.Languages.Contains(ChapterFileLanguage.Of(chapter))))
             {
                 holder.Covers.TryAdd(chapter.Id, RelinkConfidence.Existing);
             }
@@ -293,6 +303,7 @@ public class FileRelinkPlanner(
             {
                 if (current is not null)
                 {
+                    current.Covers.TryAdd(chapter.Id, RelinkConfidence.Existing);
                     assignment[chapter.Id] = current;
                 }
 
@@ -319,23 +330,48 @@ public class FileRelinkPlanner(
     private static int Rank(Candidate candidate, RelinkConfidence confidence) => confidence switch
     {
         RelinkConfidence.PageMarkers => 0,
-        RelinkConfidence.Existing when candidate.Parsed.IsVolume => 1,
+        RelinkConfidence.VolumeRange when !candidate.HasMarkers => 1,
+        RelinkConfidence.FileName => 2,
+        RelinkConfidence.Existing when !candidate.Parsed.IsVolume => 2,
+        // Neither the volume's pages nor its range name the chapter, so the link is most likely an
+        // old proportional estimate: kept when nothing better exists, never proof.
+        RelinkConfidence.Existing => 3,
         // Page markers that leave a chapter out are evidence the volume lacks it, so the range
         // then only claims a chapter no file names.
-        RelinkConfidence.VolumeRange when candidate.HasMarkers => 4,
-        RelinkConfidence.VolumeRange => 2,
-        // A single file named for its chapter is certain about that chapter; a proportional guess
-        // for which volume holds it is not, so the guess only wins when nothing else has it.
-        RelinkConfidence.FileName or RelinkConfidence.Existing => 3,
+        RelinkConfidence.VolumeRange => 4,
         _ => 4,
     };
 
-    private static void Cover(Candidate candidate, List<Chapter> chapters, Func<Chapter, int?>? estimator)
+    private const int WeakestEvidenceRank = 2;
+
+    private static bool IsEvidence(Candidate candidate, RelinkConfidence confidence) =>
+        Rank(candidate, confidence) <= WeakestEvidenceRank;
+
+    private static void Cover(
+        Candidate candidate, List<Chapter> chapters, Func<Chapter, int?>? estimator, IReadOnlySet<string> seriesLanguages)
     {
         var parsed = candidate.Parsed;
         if (parsed.IsChapter)
         {
-            foreach (var chapter in chapters.Where(c => c.Number == parsed.Number))
+            // A hand-made link says which row the file is for; the name only speaks for unlinked files.
+            HashSet<string>? languages = null;
+            if (candidate.Record is { SourceName: "Manual" } manual)
+            {
+                var linked = chapters.Where(c => c.ChapterFileId == manual.Id).Select(ChapterFileLanguage.Of)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (linked.Count > 0) languages = linked;
+            }
+
+            languages ??= ChapterFileLanguage.FromName(candidate.RelativePath, seriesLanguages);
+            if (languages is { Count: 0 } && candidate.Record is { } record)
+            {
+                languages = chapters.Where(c => c.ChapterFileId == record.Id).Select(ChapterFileLanguage.Of)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            }
+
+            candidate.Languages = languages;
+            foreach (var chapter in chapters.Where(c => c.Number == parsed.Number
+                         && (languages is null || languages.Contains(ChapterFileLanguage.Of(c)))))
             {
                 candidate.Covers[chapter.Id] = RelinkConfidence.FileName;
             }
@@ -401,7 +437,6 @@ public class FileRelinkPlanner(
     private static RelinkPlan ToPlan(Built built)
     {
         var chapterById = built.Chapters.ToDictionary(c => c.Id);
-        var assignedChapterIds = built.Assignment.Where(a => a.Value is not null).Select(a => a.Key).ToHashSet();
         var files = new List<RelinkPlanFile>();
         var moved = 0;
 
@@ -420,14 +455,10 @@ public class FileRelinkPlanner(
             var loses = before.Where(c => !afterIds.Contains(c.Id)).ToList();
             moved += gains.Count;
 
-            // Superseded means safe to drop: nothing left on it, and each chapter it could have
-            // held is on some other file. A file whose chapters are unknown to Maki (newer than
-            // the chapter list, say) covers nothing and is left alone for a manual link.
             var superseded = !candidate.Excluded
                 && candidate.Parsed.IsRecognized
                 && after.Count == 0
-                && candidate.Covers.Count > 0
-                && candidate.Covers.Keys.All(assignedChapterIds.Contains);
+                && IsSuperseded(candidate, built.Assignment);
 
             RelinkConfidence? confidence = after.Count == 0
                 ? null
@@ -466,7 +497,7 @@ public class FileRelinkPlanner(
                 {
                     state = target.Parsed.IsVolume ? "movesToVolume" : "becomesReadable";
                 }
-                else if (current is not null)
+                else if (target is not null)
                 {
                     state = "unchanged";
                 }
@@ -493,6 +524,21 @@ public class FileRelinkPlanner(
             supersededFiles.Count,
             supersededFiles.Sum(f => f.Size),
             files.Count(f => !f.Recognized));
+    }
+
+    /// <summary>Safe to drop: its known contents all end up on files that provably hold them.</summary>
+    private static bool IsSuperseded(Candidate candidate, Dictionary<int, Candidate?> assignment)
+    {
+        // Without page markers, a volume placed partly by a guess may hold chapters nobody knows about.
+        if (candidate.Parsed.IsVolume && !candidate.HasMarkers &&
+            candidate.Covers.Values.Any(c => c is RelinkConfidence.Estimated or RelinkConfidence.Existing))
+        {
+            return false;
+        }
+
+        var held = candidate.Covers.Where(c => IsEvidence(candidate, c.Value)).Select(c => c.Key).ToList();
+        return held.Count > 0 && held.All(id =>
+            assignment.GetValueOrDefault(id) is { } holder && IsEvidence(holder, holder.Covers[id]));
     }
 
     private static List<string> Labels(IEnumerable<Chapter> chapters) => chapters
@@ -524,4 +570,54 @@ public class FileRelinkPlanner(
             ? $"Vol.{parsed.Volume}-{end}"
             : $"Vol.{parsed.Volume}";
     }
+}
+
+/// <summary>Which language rows a single-chapter file may back, shared by the linker and the relink planner.</summary>
+public static partial class ChapterFileLanguage
+{
+    public static string Of(Chapter chapter) =>
+        string.IsNullOrWhiteSpace(chapter.Language) ? FileNameBuilder.DefaultLanguage : chapter.Language;
+
+    public static HashSet<string> SeriesLanguages(IEnumerable<Chapter> chapters) =>
+        chapters.Select(Of).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Follows <c>FileNameBuilder</c>: a <c>[es]</c> tag or a trailing <c>{Chapter Language}</c> code names
+    /// the language, and an untagged file is the default language. Null means any language (the series
+    /// has one), empty means the name says nothing usable.
+    /// </summary>
+    public static HashSet<string>? FromName(string path, IReadOnlySet<string> seriesLanguages)
+    {
+        if (seriesLanguages.Count <= 1)
+        {
+            return null;
+        }
+
+        var name = Path.GetFileNameWithoutExtension(path);
+        var tagged = BracketTag().Matches(name)
+            .Select(m => m.Groups[1].Value.Trim())
+            .Where(tag => seriesLanguages.Contains(tag) || LanguageCode().IsMatch(tag))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (tagged.Count > 0)
+        {
+            return tagged;
+        }
+
+        var last = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+        if (last is not null && seriesLanguages.Contains(last))
+        {
+            return new HashSet<string>([last], StringComparer.OrdinalIgnoreCase);
+        }
+
+        return seriesLanguages.Contains(FileNameBuilder.DefaultLanguage)
+            ? new HashSet<string>([FileNameBuilder.DefaultLanguage], StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    [GeneratedRegex(@"\[([^\[\]]+)\]")]
+    private static partial Regex BracketTag();
+
+    // Lowercase like every code Maki writes, so a scene group tag such as [Oak] is not read as one.
+    [GeneratedRegex(@"^[a-z]{2}(?:-[a-z0-9]{2,8})?$")]
+    private static partial Regex LanguageCode();
 }
