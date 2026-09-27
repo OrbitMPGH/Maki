@@ -259,19 +259,29 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.pathOutsideRoot");
         }
 
+        // "./X/a.cbz" and "../Root/X/a.cbz" resolve inside the root but store a "." or ".." top
+        // folder, which SeriesFolders would then hand to rescan and relink as this series' folder.
+        var relativePath = Path.GetRelativePath(series.RootFolder.Path, absPath);
+        if (Path.IsPathRooted(relativePath) || relativePath == ".." ||
+            relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            LibraryPaths.TopFolder(relativePath) is "" or "." or "..")
+        {
+            return this.Fail(localizer, "error.chapter.pathOutsideRoot");
+        }
+
         if (!System.IO.File.Exists(absPath))
         {
             return this.Fail(localizer, "error.chapter.fileNotFound");
         }
 
         var file = await db.ChapterFiles
-            .FirstOrDefaultAsync(f => f.SeriesId == seriesId && f.RelativePath == request.RelativePath, ct);
+            .FirstOrDefaultAsync(f => f.SeriesId == seriesId && f.RelativePath == relativePath, ct);
         if (file is null)
         {
             file = new ChapterFile
             {
                 SeriesId = seriesId,
-                RelativePath = request.RelativePath,
+                RelativePath = relativePath,
                 Size = new FileInfo(absPath).Length,
                 SourceName = "Manual",
                 DateAdded = DateTime.UtcNow

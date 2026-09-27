@@ -65,4 +65,16 @@ public class LibraryPathsTests
         Assert.Equal("My Series", LibraryPaths.TopFolder(Path.Combine("My Series", "ch1.cbz")));
         Assert.Null(LibraryPaths.TopFolder("ch1.cbz"));
     }
+
+    // Regression: a "." or ".." top segment is not a real folder name, but a caller treating it as
+    // one (SeriesFolders.ForAsync feeding a rescan or a relink) would enumerate the whole root or its
+    // parent. A bad ChapterFile.RelativePath used to produce exactly this from a raw request path
+    // that resolved inside the root while still starting with "./" or "../".
+    [Theory]
+    [InlineData(".")]
+    [InlineData("..")]
+    public void TopFolder_treats_a_dot_segment_as_no_folder(string segment)
+    {
+        Assert.Null(LibraryPaths.TopFolder(Path.Combine(segment, "ch1.cbz")));
+    }
 }

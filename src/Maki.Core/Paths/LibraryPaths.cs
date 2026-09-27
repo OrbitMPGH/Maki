@@ -55,11 +55,18 @@ public static class LibraryPaths
 
     /// <summary>
     /// The root-level folder a stored relative path sits in, or null for a file directly in the
-    /// root (a manual link can point there).
+    /// root (a manual link can point there) or for a "." or ".." segment, which is never a real
+    /// folder name and, treated as one, would have a caller enumerate the whole root or its parent.
     /// </summary>
     public static string? TopFolder(string relativePath)
     {
         var separator = relativePath.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
-        return separator > 0 ? relativePath[..separator] : null;
+        if (separator <= 0)
+        {
+            return null;
+        }
+
+        var segment = relativePath[..separator];
+        return segment is "." or ".." ? null : segment;
     }
 }

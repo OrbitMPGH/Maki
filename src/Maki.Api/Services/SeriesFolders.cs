@@ -33,7 +33,8 @@ public static class SeriesFolders
         var seen = new HashSet<string>(folders, LibraryPaths.FolderComparer);
         foreach (var path in paths)
         {
-            if (LibraryPaths.TopFolder(path) is { } folder && !others.Contains(folder) && seen.Add(folder))
+            if (LibraryPaths.TopFolder(path) is { } folder && folder is not ("" or "." or "..") &&
+                !others.Contains(folder) && seen.Add(folder))
             {
                 folders.Add(folder);
             }

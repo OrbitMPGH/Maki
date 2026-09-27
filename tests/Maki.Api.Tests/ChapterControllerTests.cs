@@ -125,6 +125,62 @@ public class ChapterControllerTests : IDisposable
         Assert.Equal(relativePath, file.RelativePath);
     }
 
+    // Regression: Resolve only proves the request text resolves *inside* the root; it says nothing
+    // about whether the text itself is a sane relative path to store. "./X/a.cbz" and "../<root
+    // name>/X/a.cbz" both resolve inside the root and used to be stored verbatim. LibraryPaths.TopFolder
+    // then read the raw first segment ("." or "..") as if it were a real folder name, and
+    // SeriesFolders.ForAsync handed that straight to rescan/relink, which enumerated the whole root
+    // (".") or its parent ("..") as this series' own folder.
+    [Fact]
+    public async Task Link_canonicalizes_a_path_with_a_leading_dot_segment()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var onDisk = Path.Combine("Series", "ch1.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, onDisk), "cbz");
+        var requestPath = "." + Path.DirectorySeparatorChar + onDisk;
+
+        using var db = _db.NewContext();
+        var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], requestPath), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        var file = Assert.Single(db.ChapterFiles);
+        Assert.Equal(seriesId, file.SeriesId);
+        Assert.Equal(onDisk, file.RelativePath);
+    }
+
+    [Fact]
+    public async Task Link_canonicalizes_a_path_that_leaves_and_reenters_the_root_by_name()
+    {
+        var (_, chapterId) = SeedSeriesWithChapter();
+        var onDisk = Path.Combine("Series", "ch1.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, onDisk), "cbz");
+        var requestPath = Path.Combine("..", Path.GetFileName(_root)!, onDisk);
+
+        using var db = _db.NewContext();
+        var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], requestPath), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        var file = Assert.Single(db.ChapterFiles);
+        Assert.Equal(onDisk, file.RelativePath);
+    }
+
+    [Fact]
+    public async Task Link_canonicalizes_a_path_with_an_internal_dot_dot_segment()
+    {
+        var (_, chapterId) = SeedSeriesWithChapter();
+        Directory.CreateDirectory(Path.Combine(_root, "Other"));
+        var onDisk = Path.Combine("Other", "ch2.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, onDisk), "cbz");
+        var requestPath = Path.Combine("Series", "..", "Other", "ch2.cbz");
+
+        using var db = _db.NewContext();
+        var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], requestPath), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        var file = Assert.Single(db.ChapterFiles);
+        Assert.Equal(onDisk, file.RelativePath);
+    }
+
     [Fact]
     public async Task Delete_refuses_a_batch_spanning_two_series()
     {
