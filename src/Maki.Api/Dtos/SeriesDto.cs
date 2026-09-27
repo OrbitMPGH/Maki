@@ -178,6 +178,9 @@ public record SeriesDto(
     /// </summary>
     public ReadingTimeEstimateDto? ReadTimeEstimate { get; init; }
 
+    /// <summary>The series' own upgrade profile pin. Null means it follows the instance default.</summary>
+    public int? UpgradeProfileId { get; init; }
+
     /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
     /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.
@@ -259,7 +262,10 @@ public record SeriesDto(
         readChapterCount,
         s.SourceMatchPending,
         s.Incognito.ToString(),
-        notificationMode.ToString());
+        notificationMode.ToString())
+    {
+        UpgradeProfileId = s.UpgradeProfileId
+    };
 
     /// <summary>
     /// The title to render for a caller preferring <paramref name="titleLanguage"/>. Considers the
@@ -294,4 +300,5 @@ public record AddSeriesRequest(
     string MonitorNewItems = "All",
     string? Incognito = null,
     string? AddedFrom = null,
-    Guid? ClientMutationId = null);
+    Guid? ClientMutationId = null,
+    int? UpgradeProfileId = null);

@@ -2025,6 +2025,28 @@ export function useSetMonitorMode() {
   })
 }
 
+export interface SetUpgradeProfileResult {
+  upgradeProfileId: number | null
+}
+
+/** Pins (or clears, with null) which upgrade profile a series resolves to instead of the instance default. */
+export function useSetUpgradeProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, upgradeProfileId }: { seriesId: number; upgradeProfileId: number | null }) =>
+      api<SetUpgradeProfileResult>(`/series/${seriesId}/upgradeprofile`, {
+        method: 'POST',
+        body: JSON.stringify({ upgradeProfileId }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+    },
+  })
+}
+
 export interface SetIncognitoResult {
   incognito: string
 }

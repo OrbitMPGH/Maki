@@ -126,6 +126,9 @@ public class SettingsController(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
         bool UseHardlinks = true);
+    /// <param name="Enabled">Stored for automatic upgrades; nothing acts on it yet.</param>
+    /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
+    public record UpgradeSettings(bool Enabled, int? DefaultProfileId);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -815,6 +818,34 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
+        return Ok(request);
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("upgrades")]
+    public async Task<IActionResult> GetUpgrades(CancellationToken ct)
+    {
+        var defaultId = UpgradeEvaluationService.ParseId(await settings.GetAsync(SettingKeys.UpgradesDefaultProfileId, ct));
+        if (defaultId is { } id && !await db.UpgradeProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            defaultId = null;
+        }
+
+        return Ok(new UpgradeSettings(await settings.GetAsync(SettingKeys.UpgradesEnabled, ct) == "true", defaultId));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("upgrades")]
+    public async Task<IActionResult> SetUpgrades([FromBody] UpgradeSettings request, CancellationToken ct)
+    {
+        if (request.DefaultProfileId is { } id && !await db.UpgradeProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
+        }
+
+        await settings.SetAsync(SettingKeys.UpgradesEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesDefaultProfileId,
+            request.DefaultProfileId?.ToString(CultureInfo.InvariantCulture), ct);
         return Ok(request);
     }
 

@@ -57,6 +57,10 @@ public class Series
     /// </summary>
     public NewChapterMonitorMode MonitorNewItems { get; set; } = NewChapterMonitorMode.All;
 
+    /// <summary>Null means the instance default from <c>SettingKeys.UpgradesDefaultProfileId</c>, which may itself be unset.</summary>
+    public int? UpgradeProfileId { get; set; }
+    public UpgradeProfile? UpgradeProfile { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;

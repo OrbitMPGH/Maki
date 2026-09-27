@@ -462,7 +462,7 @@ public class SeriesController(
     /// visible and volume compilations show the chapters they were mapped to.
     /// </summary>
     [HttpGet("{id:int}/files")]
-    public async Task<IActionResult> Files(int id, CancellationToken ct)
+    public async Task<IActionResult> Files(int id, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
@@ -478,8 +478,12 @@ public class SeriesController(
         var records = await db.ChapterFiles.Where(f => f.SeriesId == id).ToListAsync(ct);
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == id && c.ChapterFileId != null)
-            .Select(c => new { c.ChapterFileId, c.Number })
+            .Select(c => new { c.ChapterFileId, c.Number, c.Language })
             .ToListAsync(ct);
+        var evaluator = await upgrades.ForSeriesAsync(id, ct);
+        var languageByFile = chapters
+            .GroupBy(c => c.ChapterFileId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderBy(c => c.Number is null).ThenBy(c => c.Number).First().Language);
 
         // chapter numbers linked to each ChapterFile, ascending
         var chaptersByFile = chapters
@@ -540,7 +544,7 @@ public class SeriesController(
                 parsed.IsVolume,
                 mapped,
                 parsed.Number ?? (decimal?)parsed.Volume,
-                ChapterFileQualityDto.From(record)));
+                evaluator?.Quality(record, languageByFile.GetValueOrDefault(record.Id)) ?? ChapterFileQualityDto.From(record)));
         }
 
         // 2. Files on disk with no record yet (never imported — a rescan would adopt them).
@@ -904,6 +908,8 @@ public class SeriesController(
         // write in SeriesCreationService, so a retried request is a second series.
         if (request.ClientMutationId is not { } clientMutationId || clientMutationId == Guid.Empty)
             return this.Fail(localizer, "error.series.mutationIdRequired");
+        if (request.UpgradeProfileId is { } profileId && !await db.UpgradeProfiles.AnyAsync(p => p.Id == profileId, ct))
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
         // the Sources card shows a spinner until the background worker is done.
@@ -911,7 +917,7 @@ public class SeriesController(
             request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
             deferSourceMatching: true, incognito: request.Incognito,
             attributedUserId: currentUser.UserId, addedFrom: request.AddedFrom,
-            clientMutationId: clientMutationId);
+            clientMutationId: clientMutationId, upgradeProfileId: request.UpgradeProfileId);
 
         if (result.Series is null)
         {
@@ -1285,6 +1291,29 @@ public class SeriesController(
         series.MonitorNewItems = mode;
         await db.SaveChangesAsync(ct);
         return Ok(new { mode = mode.ToString() });
+    }
+
+    /// <param name="UpgradeProfileId">Null clears the pin so the series follows the instance default.</param>
+    public record UpgradeProfileRequest(int? UpgradeProfileId);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{id:int}/upgradeprofile")]
+    public async Task<IActionResult> SetUpgradeProfile(int id, [FromBody] UpgradeProfileRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.FindAsync([id], ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (request.UpgradeProfileId is { } profileId && !await db.UpgradeProfiles.AnyAsync(p => p.Id == profileId, ct))
+        {
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
+        }
+
+        series.UpgradeProfileId = request.UpgradeProfileId;
+        await db.SaveChangesAsync(ct);
+        return Ok(new { upgradeProfileId = series.UpgradeProfileId });
     }
 
     public record IncognitoRequest(string Mode);

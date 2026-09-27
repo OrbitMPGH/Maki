@@ -788,6 +788,8 @@ try
     builder.Services.AddScoped<FileRelinkPlanner>();
     builder.Services.AddSingleton<ChapterFileQualityService>();
     builder.Services.AddScoped<ChapterFileMeasureService>();
+    builder.Services.AddScoped<UpgradeEvaluationService>();
+    builder.Services.AddScoped<UpgradeProfileSeeder>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -1200,6 +1202,9 @@ try
         // Seed the activity log from pre-existing data (once, marker-gated). Runs
         // before Kestrel/Quartz so live event hooks can't overlap the backfill window.
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        scope.ServiceProvider.GetRequiredService<UpgradeProfileSeeder>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist

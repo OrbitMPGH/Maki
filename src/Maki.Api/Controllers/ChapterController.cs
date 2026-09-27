@@ -39,7 +39,8 @@ public class ChapterController(
     ILogger<ChapterController> logger) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] int seriesId, CancellationToken ct)
+    public async Task<IActionResult> List(
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
@@ -67,6 +68,10 @@ public class ChapterController(
                 // Only the quality columns; a new instance in a projection is never tracked.
                 File = c.ChapterFile == null ? null : new ChapterFile
                 {
+                    RelativePath = c.ChapterFile.RelativePath,
+                    Size = c.ChapterFile.Size,
+                    SourceName = c.ChapterFile.SourceName,
+                    ReleaseName = c.ChapterFile.ReleaseName,
                     Tier = c.ChapterFile.Tier,
                     Group = c.ChapterFile.Group,
                     PageCount = c.ChapterFile.PageCount,
@@ -77,6 +82,7 @@ public class ChapterController(
                 }
             })
             .ToListAsync(ct);
+        var evaluator = await upgrades.ForSeriesAsync(seriesId, ct);
 
         // When a chapter's backing file is a volume/compilation CBZ, surface that
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
@@ -99,7 +105,8 @@ public class ChapterController(
             c.FileSourceName,
             c.FileReleaseName,
             FileVolume = VolumeFileLabel(c.FilePath),
-            FileQuality = c.File is null ? null : ChapterFileQualityDto.From(c.File)
+            FileQuality = c.File is null ? null
+                : evaluator?.Quality(c.File, c.Language) ?? ChapterFileQualityDto.From(c.File)
         });
 
         return Ok(chapters);

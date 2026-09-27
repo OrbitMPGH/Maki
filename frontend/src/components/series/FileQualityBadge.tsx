@@ -48,11 +48,23 @@ export function FileQualityBadge({
   const { t } = useLingui()
   if (!quality || (quality.tier === 'unknown' && !quality.measured)) return null
 
-  const { tier, group, pageCount, medianWidth, imageFormat, measured } = quality
+  const { tier, group, pageCount, medianWidth, imageFormat, measured, score, cutoffMet } = quality
   const tierLabel = renderLabel(TIER_LABEL[tier])
   const tierUnknown = tier === 'unknown'
-  if (tierUnknown && medianWidth == null) return null
-  const label = tierUnknown ? t`${medianWidth}px` : medianWidth != null ? t`${tierLabel} · ${medianWidth}px` : tierLabel
+  // Subtle by design: this badge is a quiet quality signal already, so the cutoff-unmet marker is a
+  // small dot rather than a colour swap that would make it compete with the tier badge next to it.
+  const cutoffUnmet = cutoffMet === false
+  // Normally an unknown tier with no width renders nothing at all (see the doc comment above), but a
+  // cutoff-unmet file still has to show *something* — an Activity row naming a file that falls short
+  // of its profile can't have a blank "Current file" cell — so fall back to the bare tier label.
+  if (tierUnknown && medianWidth == null && !cutoffUnmet) return null
+  const label = tierUnknown
+    ? medianWidth != null
+      ? t`${medianWidth}px`
+      : tierLabel
+    : medianWidth != null
+      ? t`${tierLabel} · ${medianWidth}px`
+      : tierLabel
   const formatLabel = imageFormat ? renderLabel(FORMAT_LABEL[imageFormat] ?? imageFormat.toUpperCase()) : null
 
   return (
@@ -76,6 +88,16 @@ export function FileQualityBadge({
               <Trans>Format: {formatLabel}</Trans>
             </Text>
           )}
+          {score != null && (
+            <Text size="xs">
+              <Trans>Score: {score}</Trans>
+            </Text>
+          )}
+          {cutoffUnmet && (
+            <Text size="xs" c="var(--warn)">
+              <Trans>Below the series' upgrade cutoff</Trans>
+            </Text>
+          )}
           {!measured && (
             <Text size="xs" c="var(--ink-3)">
               <Trans>Not measured yet</Trans>
@@ -84,7 +106,25 @@ export function FileQualityBadge({
         </Stack>
       }
     >
-      <Badge size="sm" variant="light" color={TIER_COLOR[tier]}>
+      <Badge
+        size="sm"
+        variant="light"
+        color={TIER_COLOR[tier]}
+        rightSection={
+          cutoffUnmet ? (
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                background: 'var(--warn)',
+              }}
+            />
+          ) : undefined
+        }
+      >
         {label}
       </Badge>
     </Tooltip>

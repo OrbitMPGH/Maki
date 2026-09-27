@@ -78,6 +78,7 @@ import {
   useSetIncognito,
   useSetSeriesNotificationMode,
   useSetMonitorMode,
+  useSetUpgradeProfile,
   useSetRating,
   useToggleChapterWanted,
   useUnlinkChapters,
@@ -98,6 +99,7 @@ import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from
 import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
+import { useUpgradeProfiles } from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
 import { queueErrorMessage } from '../api/queue'
 import { useLabel } from '../i18n-context'
@@ -220,6 +222,7 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   specials: isSpecial,
   // A one-shot has no number and counts as main, matching NewChapterMonitorMode.MainOnly.
   main: (c) => !isSpecial(c),
+  cutoffUnmet: (c) => c.fileQuality?.cutoffMet === false,
 }
 
 interface ReadState {
@@ -393,6 +396,8 @@ export default function SeriesDetailPage() {
   const [nextCountOpen, setNextCountOpen] = useState(false)
   const [nextCount, setNextCount] = useState<number | string>(10)
   const setMonitorMode = useSetMonitorMode()
+  const setUpgradeProfile = useSetUpgradeProfile()
+  const { data: upgradeProfiles } = useUpgradeProfiles()
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
   const setRating = useSetRating()
@@ -401,6 +406,16 @@ export default function SeriesDetailPage() {
   const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [chapterFilter, setChapterFilter] = useState('all')
+  // A series with no upgrade profile (own or default) never gets a cutoffMet verdict at all, so the
+  // "Cutoff unmet" chip disappears rather than sitting at "(0)" forever. If a profile is unpinned or
+  // deleted while that filter is active, the chip vanishes out from under it; fall back to All rather
+  // than leaving the table stuck on a filter with no matching chip to show it's active.
+  const cutoffUnmetChipVisible =
+      (chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0) > 0 ||
+      (chapters?.some((c) => c.fileQuality?.cutoffMet != null) ?? false)
+  useEffect(() => {
+    if (chapterFilter === 'cutoffUnmet' && !cutoffUnmetChipVisible) setChapterFilter('all')
+  }, [chapterFilter, cutoffUnmetChipVisible])
   const [chapterSearch, setChapterSearch] = useState('')
   const [chapterPageSizePreference, setChapterPageSizePreference] = useState<ChapterPageSize>(() =>
       readStored(CHAPTER_PAGE_SIZE_STORAGE_KEY, CHAPTER_PAGE_SIZES, '50'),
@@ -1174,6 +1189,7 @@ export default function SeriesDetailPage() {
   const specialsFilterCount = chapters?.filter(chapterFilters.specials).length ?? 0
   const mainFilterCount = chapters?.filter(chapterFilters.main).length ?? 0
   const readFilterCount = chapters?.filter(filters.read).length ?? 0
+  const cutoffUnmetFilterCount = chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0
   const selectedCount = selected.size
   const visibleAllCount = visibleChapters.length
   const visibleMainCount = visibleMain.length
@@ -1191,6 +1207,9 @@ export default function SeriesDetailPage() {
         // Without a special to hide, "Main" is "All" under a second name.
         ...(specialsFilterCount > 0 ? [{ value: 'main', label: t`Main (${mainFilterCount})` }] : []),
         { value: 'specials', label: t`Specials (${specialsFilterCount})` },
+        ...(cutoffUnmetChipVisible
+            ? [{ value: 'cutoffUnmet', label: t`Cutoff unmet (${cutoffUnmetFilterCount})` }]
+            : []),
       ]
       : []
 
@@ -1415,6 +1434,8 @@ export default function SeriesDetailPage() {
                     monitorMode={series.monitorNewItems}
                     incognito={series.incognito}
                     notificationMode={series.notificationMode}
+                    upgradeProfileId={series.upgradeProfileId}
+                    upgradeProfiles={upgradeProfiles ?? []}
                     busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}
                     onRefreshChapters={() =>
                         refresh.mutate(seriesId, {
@@ -1453,6 +1474,21 @@ export default function SeriesDetailPage() {
                               onSuccess: (r) => {
                                 const modeLabel = renderLabel(MONITOR_MODE_LABELS[r.mode] ?? r.mode)
                                 notify.ok(staticT`Monitoring: ${modeLabel}`)
+                              },
+                            },
+                        )
+                    }
+                    onSetUpgradeProfile={(upgradeProfileId) =>
+                        setUpgradeProfile.mutate(
+                            { seriesId, upgradeProfileId },
+                            {
+                              onSuccess: () => {
+                                const profileName = upgradeProfiles?.find((p) => p.id === upgradeProfileId)?.name
+                                notify.ok(
+                                    profileName
+                                        ? staticT`Quality profile: ${profileName}`
+                                        : staticT`Quality profile: Instance default`,
+                                )
                               },
                             },
                         )

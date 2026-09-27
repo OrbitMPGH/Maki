@@ -436,6 +436,10 @@ msgstr "{total} dosyanın {completed} tanesi incelendi"
 msgid "{completeVolumes, plural, one {# volume already complete} other {# volumes already complete}}"
 msgstr ""
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "{conditionCount, plural, one {# condition} other {# conditions}}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "{connected} connected"
@@ -905,6 +909,10 @@ msgstr "{primeStart} ile {primeEnd} arası"
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, one {# dikkat gerektiriyor} other {# dikkat gerektiriyor}}"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "{profileCount, plural, one {Scored in # profile} other {Scored in # profiles}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{pushingDown} kept out of your taste"
@@ -1037,6 +1045,7 @@ msgstr "{selectedCount} seçildi"
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {seri eklendi} other {seri eklendi}}"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "{seriesCount, plural, one {# series} other {# series}}"
@@ -1603,6 +1612,10 @@ msgstr "90 gün"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "10/10 puanlı bir anime, {topSeed} başlangıç ağırlığına sahip olur; rafınızdaki derecelendirilmemiş bir kitap için bu değer 1,00'dır."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A candidate must beat the current file's score by at least this much."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A chapter download failed."
@@ -1638,6 +1651,10 @@ msgstr "En üstte son okuduklarınızdan veya şu anda popüler olanlardan birka
 msgid "A file move is blocked for any series with an active download."
 msgstr "Devam eden bir indirmesi olan herhangi bir seri için dosya taşıma engellenir."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "A large selection can take a while."
@@ -1662,6 +1679,10 @@ msgstr "Yeni bir sistem sağlığı sorunu tespit edildi."
 #, fuzzy
 msgid "A newer Maki release was published."
 msgstr "Daha yeni bir Maki sürümü yayımlandı."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A profile picks which release tier Maki prefers for a series, and how far it goes to replace what's already downloaded. Pin one to a series from its Quality profile menu, or set a default for every series below under Downloads."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
@@ -1897,6 +1918,10 @@ msgstr "Bir seri ekle"
 msgid "Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
 msgstr "Bir seri ekleyin, Maki de onun için bölümleri takip etmeye başlasın. Bu sayfa okudukça ve indirdikçe dolar."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Add condition"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Add connection"
@@ -2042,6 +2067,7 @@ msgstr "Macera"
 msgid "Affected chapters:"
 msgstr "Etkilenen bölümler:"
 
+#: src/api/upgrades.ts
 #: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -2169,6 +2195,14 @@ msgstr "tüm zamanlar"
 #, fuzzy
 msgid "All time"
 msgstr "Tüm zamanlar"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Allow replacing unknown-tier files"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Allowed"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -2773,6 +2807,10 @@ msgstr "Geride (eksik bölümler)"
 msgid "bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up"
 msgstr "zil, gelen kutusu, uyarılar, bildirim balonu, uygulama içi bildirimler, yeni bölümler, başarımlar, seviye atlama"
 
+#: src/components/series/FileQualityBadge.tsx
+msgid "Below the series' upgrade cutoff"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "best streak"
@@ -2944,6 +2982,7 @@ msgstr "Bu indirme okunamıyor"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3173,10 +3212,15 @@ msgstr ""
 msgid "Ch.{chapter}"
 msgstr "B.{chapter}"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Ch.{chapterNumber}"
 msgstr "B.{chapterNumber}"
+
+#: src/pages/ActivityPage.tsx
+msgid "Ch.{chapterNumber} - {chapterTitle}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3650,6 +3694,7 @@ msgid "Code from your app"
 msgstr "Uygulamanızdan gelen kod"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Collapse"
 msgstr "Daralt"
@@ -3764,6 +3809,10 @@ msgstr "Eş zamanlı bölüm indirmeleri"
 #, fuzzy
 msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
 msgstr "eş zamanlı, işçiler, yeniden dene, azami deneme, bekleme süresi, smart download, okunmamış tetikleyici"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Conditions"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4079,6 +4128,7 @@ msgstr "kapaklar, posterler, görsel, küçük resimler, görüntü önbelleğin
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Create"
@@ -4169,6 +4219,10 @@ msgstr "Mevcut"
 msgid "Current copy"
 msgstr "Mevcut kopya"
 
+#: src/pages/ActivityPage.tsx
+msgid "Current file"
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -4189,6 +4243,19 @@ msgstr "Özelleştir"
 #, fuzzy
 msgid "Customized"
 msgstr "Özelleştirildi"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Cutoff"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Cutoff unmet ({cutoffUnmetFilterCount})"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Cutoff: {cutoffLabel}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4254,6 +4321,10 @@ msgstr "Varsayılan Büyük/Küçük Harf"
 msgid "Default cleared"
 msgstr "Varsayılan temizlendi"
 
+#: src/pages/SettingsPage.tsx
+msgid "Default profile"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Default source order updated"
@@ -4291,6 +4362,7 @@ msgid "Delete {label}"
 msgstr "{label} etiketini sil"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Delete {name}?"
 msgstr "{name} silinsin mi?"
@@ -4320,6 +4392,10 @@ msgstr "Bağlantıyı sil"
 msgid "Delete files from disk?"
 msgstr "Dosyalar diskten silinsin mi?"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Delete format"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Delete from disk"
@@ -4331,6 +4407,7 @@ msgid "Delete permanently"
 msgstr "Kalıcı olarak sil"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Delete profile"
 msgstr "Profili sil"
@@ -4393,6 +4470,7 @@ msgid "Delete user"
 msgstr "Kullanıcıyı sil"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "\"{name}\" silindi"
@@ -4840,6 +4918,10 @@ msgstr "Bağlantıyı düzenle"
 msgid "Edit Discover layout"
 msgstr "Keşfet düzenini düzenle"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Edit format"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Edit Home layout"
@@ -4857,6 +4939,7 @@ msgid "Edit metadata"
 msgstr "Meta veriyi düzenler"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Edit profile"
 msgstr "Profili düzenle"
@@ -4941,6 +5024,7 @@ msgstr "OPDS kataloğunu etkinleştir"
 #: src/components/NotificationsSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enabled"
 msgstr "Etkin"
@@ -5043,6 +5127,10 @@ msgstr "Her gün"
 #, fuzzy
 msgid "Every enabled source is already linked."
 msgstr "Etkin her kaynak zaten bağlı."
+
+#: src/pages/ActivityPage.tsx
+msgid "Every file meets its cutoff"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5333,6 +5421,10 @@ msgstr "Sayfalar getiriliyor…"
 msgid "File"
 msgstr "Dosya"
 
+#: src/pages/ActivityPage.tsx
+msgid "File name"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "File naming on import"
@@ -5593,6 +5685,14 @@ msgstr "Klasördeki posteri kullanan Komga ve Kavita gibi okuyucular içindir. A
 msgid "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
 msgstr "Betikler ve üçüncü taraf istemciler içindir. Bir anahtar, <0>X-Api-Key</0> başlığıyla sizin adınıza işlem yapar. OPDS akışı URL'nizi OPDS kartından yönetebilirsiniz."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Format created"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Format scores"
+msgstr ""
+
 #: src/components/series/FileQualityBadge.tsx
 msgid "Format: {formatLabel}"
 msgstr ""
@@ -5830,6 +5930,10 @@ msgstr "{indexer}'dan alındı: {releaseName}"
 msgid "Grid view"
 msgstr "Izgara görünümü"
 
+#: src/api/upgrades.ts
+msgid "Group matches (regex)"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Groups overlap on purpose, so one series can belong to several of them."
@@ -6032,6 +6136,10 @@ msgstr "Sizin gibi okuyucular için daha yüksek"
 msgid "Higher numbers are more intrusive."
 msgstr "Sayı yükseldikçe bildirimler daha rahatsız edici olur."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Highest priority first. Switch a tier off to never prefer or accept it."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Historical"
@@ -6123,6 +6231,10 @@ msgstr "Maki'nin seri klasörlerine ve indirdiği bölüm dosyalarına nasıl ad
 msgid "How many"
 msgstr "Kaç tane"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "How much shorter a candidate's page count may be and still count as an upgrade."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "How much they count"
@@ -6199,6 +6311,14 @@ msgstr "Görüntü önbelleği"
 #, fuzzy
 msgid "Image cache and backups"
 msgstr "Görüntü önbelleği ve yedekler"
+
+#: src/api/upgrades.ts
+msgid "Image format is"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Image formats"
+msgstr ""
 
 #: src/nav.ts
 #: src/pages/ImportPage.tsx
@@ -6479,6 +6599,11 @@ msgstr "Endonezce"
 msgid "Installing metadata database"
 msgstr "Meta veri veritabanı yükleniyor"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Instance default"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Integrations"
@@ -6624,6 +6749,10 @@ msgstr "Adı koruyup yeni bir standart klasöre indirin"
 msgid "Keep the name, download into it too"
 msgstr "Adı koruyun ve onun içine de indirin"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely."
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
@@ -6653,6 +6782,10 @@ msgstr "Klavye kısayolları (?)"
 msgid "Kind"
 msgstr "Tür"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Kinds"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6668,10 +6801,18 @@ msgstr "Korece"
 msgid "Language"
 msgstr "Dil"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Language codes"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Language filter"
 msgstr "Dil filtresi"
+
+#: src/api/upgrades.ts
+msgid "Language is"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -7575,10 +7716,18 @@ msgstr "Ortalarında"
 msgid "Min"
 msgstr "Asgari"
 
+#: src/api/upgrades.ts
+msgid "Minimum bytes per page"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Minimum chapters"
 msgstr "Asgari bölüm"
+
+#: src/api/upgrades.ts
+msgid "Minimum pages"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7594,6 +7743,14 @@ msgstr "Asgari puan: ★ {minRatingDisplay}"
 #, fuzzy
 msgid "Minimum rating: any"
 msgstr "Asgari puan: herhangi"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Minimum score gain"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Minimum width (px)"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -7780,6 +7937,7 @@ msgstr "{label} etiketini yukarı taşı"
 msgid "Move {selectedCount} series"
 msgstr "{selectedCount} seriyi taşı"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -7816,6 +7974,7 @@ msgstr "En üste taşı"
 msgid "Move to top of queue"
 msgstr "Kuyruğun en üstüne taşı"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -7887,6 +8046,7 @@ msgstr "yok"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Name"
@@ -7936,6 +8096,10 @@ msgstr "İnceleme gerekli"
 #, fuzzy
 msgid "Needs the local MangaBaka database"
 msgstr "Yerel MangaBaka veritabanı gerekir"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Negate"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -7991,6 +8155,10 @@ msgstr "Son 30 günde otomatik alınan yeni bölümler."
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "Yeni bölümler, tamamlanan indirmeler ve kazanılan başarımlar buraya düşer."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "New format"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -8002,6 +8170,7 @@ msgid "New password"
 msgstr "Yeni parola"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "New profile"
 msgstr "Yeni profil"
@@ -8268,6 +8437,22 @@ msgstr "Sayfa yok"
 msgid "No pending requests"
 msgstr "Bekleyen istek yok"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality formats defined yet. Add one below to score files by it."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality formats yet."
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "No quality profile assigned yet"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality profiles yet. Series without one use whatever the instance default is set to."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No reading time recorded."
@@ -8402,6 +8587,7 @@ msgstr "yok"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "None"
 msgstr "Yok"
@@ -8579,6 +8765,10 @@ msgstr "Not (isteğe bağlı)"
 msgid "Nothing close enough. Try describing it differently, or use fewer words."
 msgstr "Yeterince yakın bir sonuç yok. Farklı şekilde tanımlamayı veya daha az kelime kullanmayı deneyin."
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing downloaded falls short of the quality profile assigned to it."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -8610,6 +8800,10 @@ msgstr "Bu seriden hiçbir şey gelmez. Yöneticiler yine de indirme hataların�
 #, fuzzy
 msgid "Nothing here"
 msgstr "Burada bir şey yok"
+
+#: src/pages/ActivityPage.tsx
+msgid "Nothing here has a quality profile of its own or an instance default to fall back to, so nothing can be judged against a cutoff. Set one up in <0>Settings - Quality profiles</0>."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8867,6 +9061,7 @@ msgstr "Kapalı; Ana Sayfa bölümünü, İstatistiklerdeki tüm zamanlar sekmes
 msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
 msgstr "Kapalıyken sürümün kendi dosya adı korunur; bu ad çoğu zaman biçim bilgisinden daha açıklayıcıdır. Maki'nin indirdikleri her zaman belirlenen biçimi kullanır. Seri sayfasından yeniden adlandırma yaptığınızda içindeki tüm dosyaların adı yine değişir."
 
+#: src/api/upgrades.ts
 #: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8927,6 +9122,10 @@ msgstr "Rafta"
 msgid "On your shelf, not used for ranking"
 msgstr "Rafınızda, sıralamada kullanılmıyor"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "One missed day a week is forgiven, and today never breaks a streak."
@@ -8944,6 +9143,7 @@ msgstr "Her tür için en popüler başlıkları açan bir kutucuk."
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
@@ -9229,6 +9429,10 @@ msgstr "Sayfa bulunamadı"
 msgid "Page thumbnails"
 msgstr "Sayfa küçük resimleri"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Page tolerance %"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -9468,6 +9672,10 @@ msgstr "Rewind'i Oynat"
 msgid "Play the {rewindYear} retrospective"
 msgstr "{rewindYear} retrospektifini oynat"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Polish"
@@ -9582,7 +9790,12 @@ msgstr "En çok okunan saatler"
 msgid "Priority"
 msgstr "Öncelik"
 
+#: src/pages/ActivityPage.tsx
+msgid "Profile"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Profile created"
 msgstr "Profil oluşturuldu"
@@ -9680,6 +9893,38 @@ msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
 msgid "Quality"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "quality format, condition, high resolution, format score, regex, group matches, release name matches, image format, minimum width"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Quality formats"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Quality profile"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Quality profile: {profileName}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Quality profile: Instance default"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Quality profiles"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Queue"
 msgstr ""
 
 #: src/components/settings/UsersSection.tsx
@@ -10187,6 +10432,10 @@ msgstr "Yeniden oluştur"
 msgid "Regenerate OPDS token"
 msgstr "OPDS belirtecini yeniden oluştur"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Regex"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Reject"
@@ -10228,6 +10477,10 @@ msgstr "Kitaplığınızla ilgili"
 #, fuzzy
 msgid "Related to your seeds"
 msgstr "Tohumlarınızla ilgili"
+
+#: src/api/upgrades.ts
+msgid "Release name matches (regex)"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -10287,6 +10540,10 @@ msgstr "Arşivi kaldır"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "Yer imini kaldır"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Remove condition"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -10382,6 +10639,10 @@ msgstr "Kaldırıldı"
 #, fuzzy
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "{seriesTitle} kaldırıldı. Yeniden okuduğunuzda tekrar görünür."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Removed from every profile that scores it. This can't be undone."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -10554,6 +10815,10 @@ msgstr "HTTPS zorunlu kıl"
 #, fuzzy
 msgid "Require single sign-on"
 msgstr "Tek oturum açmayı zorunlu kıl"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Required"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/sourceLabels.ts
@@ -10894,6 +11159,7 @@ msgstr "Örnek bölüm"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -10975,6 +11241,7 @@ msgstr "Kurtarma kodlarınızı kaydedin"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/SettingsPage.tsx
@@ -11040,6 +11307,7 @@ msgstr "Bunu kimlik doğrulayıcı uygulamanızla tarayın veya anahtarı elle g
 msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
 msgstr "tarama, api key, yol eşleme, kapaklar, kitaplık sunucusu, okuma durumunu ilişkilendir, kavita kullanıcısı, ilerleme sahibi"
 
+#: src/api/upgrades.ts
 #: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -11096,6 +11364,14 @@ msgstr "Kapsam"
 #, fuzzy
 msgid "Scopes"
 msgstr "Kapsamlar"
+
+#: src/pages/ActivityPage.tsx
+msgid "Score"
+msgstr ""
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "Score: {score}"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -11558,6 +11834,10 @@ msgstr "Seri bulunamadı"
 #, fuzzy
 msgid "Series page"
 msgstr "Seri sayfası"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Series pinned to this profile fall back to the instance default. This can't be undone."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -12074,6 +12354,14 @@ msgstr "Kaynak"
 msgid "Source {letter}"
 msgstr "Kaynak {letter}"
 
+#: src/api/upgrades.ts
+msgid "Source is"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Source kind is"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Source matching finished"
@@ -12099,6 +12387,7 @@ msgstr "Kaynak temizlik yapılmadan kaldırıldı"
 msgid "Source state"
 msgstr "Kaynak durumu"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
@@ -12337,6 +12626,14 @@ msgstr "Bitirmeden bırakıldı"
 #, fuzzy
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Maki kurulumunuz için depolama, meta veri, indirme istemcileri ve entegrasyonlar."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Stored for a later release: automatic upgrades don't run yet."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Stored for a later release: nothing downloads automatically yet."
+msgstr ""
 
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/CreatorPage.tsx
@@ -13076,6 +13373,10 @@ msgstr "Bir öneriyi beğenin, gizleyin veya kapatın, burada görünür."
 msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
 msgstr ""
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Tier order"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -13412,6 +13713,7 @@ msgstr "İki faktörlü doğrulama kodu"
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13475,6 +13777,7 @@ msgstr "Geri al"
 msgid "Undone"
 msgstr "Geri alındı"
 
+#: src/api/upgrades.ts
 #: src/components/series/FileQualityBadge.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -13653,6 +13956,38 @@ msgstr "Güncellemeler"
 msgid "Updating ComicInfo"
 msgstr "ComicInfo güncelleniyor"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrade until score"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade, quality profile, default profile, automatic upgrades"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "Upgrades"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades enabled"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades off"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades on"
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Upload failed: {status}"
@@ -13720,6 +14055,10 @@ msgstr "Bunu, yanlış bir kaynak eşleşmesiyle gelen bölümleri temizlemek i�
 #, fuzzy
 msgid "Use trackers"
 msgstr "Takip hizmetlerini kullanır"
+
+#: src/pages/SettingsPage.tsx
+msgid "Used by any series that hasn't been pinned to a profile of its own."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -13810,6 +14149,10 @@ msgstr "UTC"
 #, fuzzy
 msgid "Validating"
 msgstr "Doğrulanıyor"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Value"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -13924,6 +14267,7 @@ msgstr "C.{volNum} B.{chapterNumber}"
 msgid "Vol.{volume} Ch.{chapter}"
 msgstr "C.{volume} B.{chapter}"
 
+#: src/api/upgrades.ts
 #: src/components/series/FileQualityBadge.tsx
 msgid "Volume"
 msgstr ""
@@ -14184,6 +14528,10 @@ msgstr "Manganızın bulunduğu yer"
 #, fuzzy
 msgid "Where your taste has moved"
 msgstr "Zevkinizin nereye kaydığı"
+
+#: src/pages/SettingsPage.tsx
+msgid "Whether an existing file should be replaced once a better release shows up, judged against a series' quality profile. Automatic upgrades arrive in a later release; for now this only decides which profile a series without one of its own uses."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

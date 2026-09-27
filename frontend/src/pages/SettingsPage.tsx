@@ -60,6 +60,8 @@ import { OidcSection, SecuritySection } from '../components/settings/SecuritySec
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
+import { QualityFormatsSection, UpgradeProfilesSection } from '../components/settings/UpgradeProfilesSection'
+import { useUpgradeProfiles, useSaveUpgradeSettings, useUpgradeSettings } from '../api/upgrades'
 import { CONTENT_RATINGS, ContentRatingCards } from '../components/ContentRatingCards'
 import { useIncognitoOptions, type IncognitoMode } from '../components/ui/incognito'
 import { useApplyLanguage, useLanguageOptions } from '../components/ui/language'
@@ -1243,6 +1245,72 @@ function DownloadSection() {
                 onSuccess: () =>
                   notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
               },
+            )
+          }
+        />
+      </Group>
+    </Panel>
+  )
+}
+
+function UpgradesSettingsSection() {
+  const { t } = useLingui()
+  const { data: settings } = useUpgradeSettings()
+  const { data: profiles } = useUpgradeProfiles()
+  const save = useSaveUpgradeSettings()
+  const [enabled, setEnabled] = useState(false)
+  const [defaultProfileId, setDefaultProfileId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (settings) {
+      setEnabled(settings.enabled)
+      setDefaultProfileId(settings.defaultProfileId)
+    }
+  }, [settings])
+
+  const dirty =
+    settings !== undefined &&
+    (enabled !== settings.enabled || defaultProfileId !== settings.defaultProfileId)
+
+  return (
+    <Panel>
+      <Title order={4} mb="sm">
+        <Trans>Upgrades</Trans>
+      </Title>
+      <SettingsHelp mb="md">
+        <Trans>
+          Whether an existing file should be replaced once a better release shows up, judged against
+          a series' quality profile. Automatic upgrades arrive in a later release; for now this only
+          decides which profile a series without one of its own uses.
+        </Trans>
+      </SettingsHelp>
+      <Switch
+        label={t`Enabled`}
+        description={t`Stored for a later release: nothing downloads automatically yet.`}
+        checked={enabled}
+        onChange={(e) => setEnabled(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Select
+        label={t`Default profile`}
+        description={t`Used by any series that hasn't been pinned to a profile of its own.`}
+        value={defaultProfileId == null ? '' : String(defaultProfileId)}
+        onChange={(value) => setDefaultProfileId(value ? Number(value) : null)}
+        data={[
+          { value: '', label: t`None` },
+          ...(profiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+        ]}
+        w={260}
+        mb="md"
+      />
+      <Group justify="flex-end" mt="md">
+        <SaveButton
+          dirty={dirty}
+          loading={save.isPending}
+          onClick={() =>
+            save.mutate(
+              { enabled, defaultProfileId },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )
           }
         />
@@ -2492,8 +2560,11 @@ function useSectionNodes(): Record<string, ReactNode> {
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
       recommendations: <RecommendationIndexSection />,
+      profiles: <UpgradeProfilesSection />,
+      formats: <QualityFormatsSection />,
 
       downloads: <DownloadSection />,
+      upgrades: <UpgradesSettingsSection />,
       sources: (
         <Stack gap="md">
           <SourceLanguageSection />

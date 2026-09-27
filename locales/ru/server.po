@@ -1386,6 +1386,100 @@ msgstr "Загрузка больше не отображается в qBittorre
 msgid "error.torrentImport.pathNotAccessible"
 msgstr "Путь загрузки недоступен для Maki: {path}"
 
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: Every condition needs a value
+msgid "error.upgrades.conditionValueRequired"
+msgstr ""
+
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: A format needs at least one condition
+msgid "error.upgrades.conditionsRequired"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: The cutoff must be one of the allowed tiers
+msgid "error.upgrades.cutoffNotAllowed"
+msgstr ""
+
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: A quality format called "{name}" already exists
+msgid "error.upgrades.formatNameTaken"
+msgstr ""
+
+#. {formatId} is the numeric id of a quality format.
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Quality format {formatId} does not exist
+msgid "error.upgrades.formatNotFound"
+msgstr ""
+
+#. {value} is the text the user typed and is never translated.
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: "{value}" is not a whole number of zero or more
+msgid "error.upgrades.invalidNumber"
+msgstr ""
+
+#. {pattern} is the regular expression the user typed and is never translated.
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: "{pattern}" is not a valid regular expression
+msgid "error.upgrades.invalidRegex"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Minimum score gain cannot be negative
+msgid "error.upgrades.minScoreDeltaRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: Name is required
+msgid "error.upgrades.nameRequired"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: Name must be {maxLength} characters or fewer
+msgid "error.upgrades.nameTooLong"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Page tolerance must be between {min} and {max} percent
+msgid "error.upgrades.pageToleranceRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: "{name}" is still used by a series or is the default profile
+msgid "error.upgrades.profileInUse"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: A quality profile called "{name}" already exists
+msgid "error.upgrades.profileNameTaken"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: That quality profile does not exist
+msgid "error.upgrades.profileNotFound"
+msgstr ""
+
+#. {type} is the condition type the caller sent.
+#: src/Maki.Api/Controllers/QualityFormatsController.cs
+#. English: "{type}" is not a condition type
+msgid "error.upgrades.unknownConditionType"
+msgstr ""
+
+#. {tier} is the tier name the caller sent.
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: "{tier}" is not a quality tier
+msgid "error.upgrades.unknownTier"
+msgstr ""
+
+#. 0 means the score is ignored, so negative values have no meaning.
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Upgrade until score cannot be negative
+msgid "error.upgrades.upgradeUntilScoreRange"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy

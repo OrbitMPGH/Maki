@@ -127,6 +127,8 @@ export interface SeriesDto {
    * since the series was still created.
    */
   warnings?: string[] | null
+  /** Upgrade profile pinned to this series, or null to fall back to the instance default. */
+  upgradeProfileId: number | null
 }
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
@@ -222,6 +224,10 @@ export interface ChapterFileQualityDto {
   imageFormat: string | null
   /** False until the backfill has actually opened the archive; the fields above are guesses until then. */
   measured: boolean
+  /** Quality score against the series' upgrade profile. Null with no profile or an unmeasured file. */
+  score: number | null
+  /** Whether this file already meets its profile's cutoff. Null with no profile or an unmeasured file. */
+  cutoffMet: boolean | null
 }
 
 export interface ChapterDto {
@@ -451,6 +457,8 @@ export interface AddSeriesRequest {
   incognito?: string
   addedFrom?: string
   clientMutationId?: string
+  /** Upgrade profile to pin, or null/omitted for the instance default. */
+  upgradeProfileId?: number | null
 }
 
 export type NotificationType =

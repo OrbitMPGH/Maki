@@ -323,6 +323,15 @@ public static class SettingKeys
     /// </summary>
     public const string DownloadUseHardlinks = "download.usehardlinks";
 
+    /// <summary>"true" turns on automatic chapter upgrades. Stored only; nothing reads it yet.</summary>
+    public const string UpgradesEnabled = "upgrades.enabled";
+
+    /// <summary>
+    /// Id of the <see cref="Entities.UpgradeProfile"/> a series without its own pin resolves to.
+    /// Absent means no default, and such a series has no profile at all.
+    /// </summary>
+    public const string UpgradesDefaultProfileId = "upgrades.defaultProfileId";
+
     /// <summary>
     /// "false" → never download the prebuilt embedding index, always build it locally. Default on:
     /// the vectors are derived entirely from the public MangaBaka dump, so downloading them saves

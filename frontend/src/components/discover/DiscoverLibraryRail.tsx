@@ -10,6 +10,7 @@ import {
   type MangaBakaDetail,
   type RecommendationItem,
 } from '../../api/hooks'
+import { useUpgradeProfiles } from '../../api/upgrades'
 import { useCreateSeriesRequest } from '../../api/requests'
 import { useAuth } from '../../auth/AuthProvider'
 import type { RootFolder } from '../../api/types'
@@ -50,12 +51,14 @@ export function DiscoverLibraryRail({
   const addMutationId = useRef<string | null>(null)
   const createRequest = useCreateSeriesRequest()
   const { data: librarySettings } = useLibrarySettings()
+  const { data: upgradeProfiles } = useUpgradeProfiles()
 
   // Without AddSeries the same panel asks an admin for the title instead of adding it. The server
   // enforces both halves independently; this only decides which form to draw.
   const canAdd = can('AddSeries')
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
+  const [upgradeProfileId, setUpgradeProfileId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
   /**
    * Null until the content-rating rules have had their say. Choosing a value from the Select pins
@@ -114,6 +117,7 @@ export function DiscoverLibraryRail({
         incognito: incognito ?? 'Off',
         addedFrom: addedFrom ?? 'library',
         clientMutationId: addMutationId.current,
+        upgradeProfileId: upgradeProfileId ? Number(upgradeProfileId) : null,
       },
       {
         onSuccess: (series) => {
@@ -223,6 +227,16 @@ export function DiscoverLibraryRail({
             onChange={setRootFolderId}
             size="xs"
             comboboxProps={{ zIndex: 1001, width: 340, position: 'bottom-end' }}
+          />
+          <Select
+            aria-label={t`Quality profile`}
+            placeholder={t`Instance default`}
+            data={(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name }))}
+            value={upgradeProfileId}
+            onChange={setUpgradeProfileId}
+            clearable
+            size="xs"
+            comboboxProps={{ zIndex: 1001, position: 'bottom-end' }}
           />
           {/* Pre-filled from the content-rating rules, so an explicit pick here is the exception
               rather than something to remember on every add. */}

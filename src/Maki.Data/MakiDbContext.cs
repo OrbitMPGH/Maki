@@ -85,6 +85,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
     public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
+    public DbSet<UpgradeProfile> UpgradeProfiles => Set<UpgradeProfile>();
+    public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
 
     public override int SaveChanges()
     {
@@ -248,6 +250,21 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });
 
+        modelBuilder.Entity<UpgradeProfile>(e =>
+        {
+            e.Property(p => p.Name).UseCollation("NOCASE");
+            e.HasIndex(p => p.Name).IsUnique();
+            e.Property(p => p.Tiers).HasConversion(JsonListConverter<ProfileTier>.Instance, JsonListConverter<ProfileTier>.Comparer);
+            e.Property(p => p.FormatScores).HasConversion(JsonListConverter<FormatScore>.Instance, JsonListConverter<FormatScore>.Comparer);
+        });
+
+        modelBuilder.Entity<QualityFormat>(e =>
+        {
+            e.Property(f => f.Name).UseCollation("NOCASE");
+            e.HasIndex(f => f.Name).IsUnique();
+            e.Property(f => f.Conditions).HasConversion(JsonListConverter<FormatCondition>.Instance, JsonListConverter<FormatCondition>.Comparer);
+        });
+
         modelBuilder.Entity<ReadingProfile>(e =>
         {
             // NOCASE for the same reason Tag.Label is: the name is free text and the picker shows
@@ -311,6 +328,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.RootFolder).WithMany().HasForeignKey(s => s.RootFolderId).OnDelete(DeleteBehavior.Restrict);
+            // SetNull is only the safety net: the API refuses to delete a profile any series still uses.
+            e.HasOne(s => s.UpgradeProfile).WithMany().HasForeignKey(s => s.UpgradeProfileId).OnDelete(DeleteBehavior.SetNull);
             e.HasMany(s => s.UserTags).WithMany(t => t.Series).UsingEntity<SeriesTag>(
                 r => r.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId),
                 l => l.HasOne<Series>().WithMany().HasForeignKey(j => j.SeriesId),
