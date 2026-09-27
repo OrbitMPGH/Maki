@@ -72,7 +72,9 @@ export default function CreatorPage() {
   // React Router already decodes path params, so this is the name as typed. Decoding it again
   // throws URIError on a name carrying a literal '%' ("100% Orange"), which blanks the page, and
   // silently rewrites one where the '%' happens to be followed by two hex digits.
-  const decoded = name
+  // Trimmed once here: a whitespace-only name (`/creator/%20`) is not a real creator and every
+  // other use below (scope key, request, page title) reads this same trimmed value.
+  const decoded = name.trim()
 
   // Named for the back link on any series opened from this page.
   usePageLabel(decoded)
@@ -125,6 +127,20 @@ export default function CreatorPage() {
 
   const items = data?.items ?? []
   const canLoadMore = items.length >= PAGE_SIZE * pages && items.length < MAX_WORKS
+
+  if (decoded.length === 0) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        <PageHeader title={t`Creator`} />
+        <EmptyState
+          title={t`Not a valid creator name`}
+          description={t`This link is missing the creator's name.`}
+          actionLabel={t`Back to Discover`}
+          actionTo="/discover"
+        />
+      </SurfaceFrame>
+    )
+  }
 
   if (error) {
     const notFound = error instanceof ApiError && error.status === 404
@@ -256,7 +272,7 @@ export default function CreatorPage() {
         </>
       )}
 
-      {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && (
+      {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && !canLoadMore && (
         <Alert variant="light" color="var(--neutral)" mt="md">
           <Text size="sm">
             <Trans>

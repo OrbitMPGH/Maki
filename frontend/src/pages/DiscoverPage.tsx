@@ -1,6 +1,6 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
 import '@mantine/charts/styles.css'
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -1145,9 +1145,28 @@ function DiscoverBrowseTab({
     refreshNonce,
     on('sideinterests'),
   )
-  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres(0, on('genres'))
+  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres(
+    refreshNonce,
+    on('genres'),
+  )
   const cohortRequest = useMemo(() => ({}), [])
-  const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest, on('cohort'))
+  const { data: cohortRail, isFetching: cohortFetching, refetch: refetchCohort } = useDiscoverCohort(
+    cohortRequest,
+    on('cohort'),
+  )
+  // The cohort rail has no per-user server cache to bust, and its request body never changes
+  // shape, so its query key never changes and bumping refreshNonce wouldn't refetch it the way it
+  // does for the rails above. Refetch it directly instead; skip the initial nonce so this doesn't
+  // double-fetch on mount.
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      return
+    }
+    if (on('cohort')) void refetchCohort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshNonce])
 
   const { data: rootFolders } = useRootFolders()
   const navigate = useNavigate()

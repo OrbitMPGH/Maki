@@ -82,10 +82,10 @@ function FindMore() {
 
 export default function HomePage() {
   const { t } = useLingui()
-  const { data: series, isLoading: seriesLoading } = useSeries()
+  const { data: series, isLoading: seriesLoading, isError: seriesFailed, refetch: refetchSeries } = useSeries()
   const { data: metadata } = useMetadataSettings()
   const { data: rootFolders } = useRootFolders()
-  const { data: ui, isError: uiFailed } = useUiSettings()
+  const { data: ui, isLoading: uiLoading, isError: uiFailed } = useUiSettings()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
@@ -109,7 +109,10 @@ export default function HomePage() {
     [ui, homeRails],
   )
   const sectionOf = (key: HomeSectionKey) => layout.find((s) => s.key === key)
-  const on = (key: HomeSectionKey) => !editing && (sectionOf(key)?.enabled ?? false)
+  // Before `ui` has loaded, `layout` is the reconciled fallback, which enables every canonical
+  // section (see `reconcileLayout`). A disabled rail must not fetch just because the setting that
+  // disables it has not arrived yet.
+  const on = (key: HomeSectionKey) => !editing && Boolean(ui) && (sectionOf(key)?.enabled ?? false)
   const panelOn = (panel: HomeGlancePanel) =>
     on('glance') && (sectionOf('glance')?.panels?.find((p) => p.key === panel)?.enabled ?? false)
   const heroOn = (key: HomeSectionKey) => sectionOf(key)?.hero ?? HOME_HERO_DEFAULTS[key] ?? false
@@ -117,7 +120,12 @@ export default function HomePage() {
   const needsReading = on('continue') || on('jumpback')
   const needsDiscover = discoverAvailable && hasLibrary
 
-  const { data: reading, isLoading: readingLoading } = useHomeReading(12, needsReading)
+  const {
+    data: reading,
+    isLoading: readingLoading,
+    isError: readingFailed,
+    refetch: refetchReading,
+  } = useHomeReading(12, needsReading)
   const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(12, on('recent'))
   const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(12, on('fromanime'))
   const { data: queue } = useQueue()
@@ -208,6 +216,19 @@ export default function HomePage() {
     )
   }
 
+  if (!seriesLoading && seriesFailed) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {header}
+        <EmptyState
+          title={t`Couldn't load your library`}
+          actionLabel={t`Retry`}
+          onAction={() => void refetchSeries()}
+        />
+      </SurfaceFrame>
+    )
+  }
+
   if (!seriesLoading && !hasLibrary) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
@@ -218,6 +239,18 @@ export default function HomePage() {
           actionLabel={t`Add series`}
           actionTo="/add"
         />
+      </SurfaceFrame>
+    )
+  }
+
+  // Keep a skeleton up rather than let the per-section fallbacks (`StartReadingPrompt` and the
+  // like) flash empty while `ui` is still loading and every gated query above is held off by `on`.
+  if (uiLoading) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {header}
+        <RailSkeleton title />
+        <RailSkeleton title />
       </SurfaceFrame>
     )
   }
@@ -261,6 +294,8 @@ export default function HomePage() {
   const sections: Record<HomeSectionKey, React.ReactNode> = {
     continue: readingLoading ? (
       <RailSkeleton />
+    ) : readingFailed ? (
+      <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : continueReading.length > 0 ? (
       <>
         <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
@@ -290,11 +325,15 @@ export default function HomePage() {
       )
     ),
 
-    jumpback: jumpBackIn.length > 0 && (
-      <>
-        <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-        <ReadingSection items={jumpBackIn} rail="jumpback" hero={heroOn('jumpback')} />
-      </>
+    jumpback: readingLoading ? (
+      <RailSkeleton />
+    ) : (
+      jumpBackIn.length > 0 && (
+        <>
+          <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
+          <ReadingSection items={jumpBackIn} rail="jumpback" hero={heroOn('jumpback')} />
+        </>
+      )
     ),
 
     fromanime: fromAnimeLoading ? (
@@ -437,6 +476,16 @@ function LibraryFigure({
       </span>
       <span className="hero-stat-l">{label}</span>
     </div>
+  )
+}
+
+/** Shown in place of the reading rails when `/home/reading` itself failed, rather than the start-reading nudge. */
+function ReadingErrorPrompt({ onRetry }: { onRetry: () => void }) {
+  const { t } = useLingui()
+  return (
+    <Box mt="xl">
+      <EmptyState title={t`Couldn't load your reading progress`} actionLabel={t`Retry`} onAction={onRetry} />
+    </Box>
   )
 }
 

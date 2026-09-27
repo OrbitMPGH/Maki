@@ -3381,9 +3381,7 @@ export function useScrobblePreferences() {
         `/scrobble/preferences/${service}`,
         { method: 'PUT', body: JSON.stringify({ reading, ratings, anime }) },
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] }),
   })
 }
 
@@ -3494,7 +3492,10 @@ export function useSaveImportListSettings() {
   return useMutation({
     mutationFn: (value: ImportListSettings) =>
       api<ImportListSettings>('/settings/importlists', { method: 'PUT', body: JSON.stringify(value) }),
-    onSuccess: (saved) => queryClient.setQueryData(['settings', 'importlists'], saved),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['settings', 'importlists'], saved)
+      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
+    },
   })
 }
 
@@ -3843,7 +3844,11 @@ export interface ActivityStats {
 export function useActivityYears(userId?: number) {
   return useQuery({
     queryKey: ['stats', 'years', userId ?? 'me'],
-    queryFn: () => api<number[]>(`/stats/years${forUser(userId)}`),
+    queryFn: () =>
+      api<number[]>(
+        `/stats/years?utcOffsetMinutes=${new Date().getTimezoneOffset()}` +
+          (userId ? `&userId=${userId}` : ''),
+      ),
   })
 }
 
@@ -4122,6 +4127,9 @@ export function useCreateNotification() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
     },
+    // The modal's own onError already shows a toast; without this the global MutationCache
+    // handler shows a second one for the same failure.
+    meta: { silent: true },
   })
 }
 
@@ -4133,6 +4141,7 @@ export function useUpdateNotification() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
     },
+    meta: { silent: true },
   })
 }
 
@@ -4153,5 +4162,6 @@ export function useTestNotification() {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+    meta: { silent: true },
   })
 }

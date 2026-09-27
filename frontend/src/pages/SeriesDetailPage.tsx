@@ -519,8 +519,8 @@ export default function SeriesDetailPage() {
       [files],
   )
   const missingWanted = useMemo(
-      () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile).length,
-      [chapters],
+      () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !queueByChapterId.has(c.id)).length,
+      [chapters, queueByChapterId],
   )
 
   // Straight from the DTO rather than recomputed off the chapter list: this page and the library
@@ -1271,6 +1271,46 @@ export default function SeriesDetailPage() {
       notifications.show({ color: 'var(--danger)', message: String(error) })
       return
     }
+
+    // Kept open (not hidden) until the undo mutation actually resolves, so a failure has
+    // somewhere to show a retry rather than silently vanishing along with the toast.
+    const performUndo = async () => {
+      notifications.update({
+        id,
+        autoClose: false,
+        message: (
+          <Group gap="xs" wrap="nowrap" justify="space-between">
+            <Text size="sm">
+              <Trans>Won't suggest resuming from this anime again.</Trans>
+            </Text>
+            <Button size="xs" variant="subtle" loading disabled>
+              <Trans>Undo</Trans>
+            </Button>
+          </Group>
+        ),
+      })
+      try {
+        await dismissAnimeResumeMutation.mutateAsync({ undo: true })
+        notifications.hide(id)
+      } catch (error) {
+        notifications.update({
+          id,
+          color: 'var(--danger)',
+          autoClose: false,
+          message: (
+            <Group gap="xs" wrap="nowrap" justify="space-between">
+              <Text size="sm">
+                <Trans>Undo failed: {String(error)}</Trans>
+              </Text>
+              <Button size="xs" variant="subtle" onClick={performUndo}>
+                <Trans>Retry</Trans>
+              </Button>
+            </Group>
+          ),
+        })
+      }
+    }
+
     const id = notifications.show({
       autoClose: 8000,
       message: (
@@ -1278,14 +1318,7 @@ export default function SeriesDetailPage() {
           <Text size="sm">
             <Trans>Won't suggest resuming from this anime again.</Trans>
           </Text>
-          <Button
-              size="xs"
-              variant="subtle"
-              onClick={() => {
-                notifications.hide(id)
-                void dismissAnimeResumeMutation.mutateAsync({ undo: true })
-              }}
-          >
+          <Button size="xs" variant="subtle" onClick={performUndo}>
             <Trans>Undo</Trans>
           </Button>
         </Group>
@@ -2310,7 +2343,14 @@ export default function SeriesDetailPage() {
                                                                   setMarkerRef(`${span.key}:${marker.kind}`, el)
                                                               : undefined
                                                         }
-                                                        onClick={span ? () => toggleSpanFold(span.key) : undefined}
+                                                        onClick={
+                                          span
+                                              ? (e) => {
+                                                e.stopPropagation()
+                                                toggleSpanFold(span.key)
+                                              }
+                                              : (e) => e.stopPropagation()
+                                        }
                                                     >
                                                       {marker.label}
                                                     </Badge>

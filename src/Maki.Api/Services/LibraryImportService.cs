@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Core.Configuration;
@@ -179,7 +179,8 @@ public class LibraryImportService(
     }
 
     public async Task<ImportResult> ImportAsync(
-        int rootFolderId, ImportRequestItem item, bool updateComicInfo = true, CancellationToken ct = default)
+        int rootFolderId, ImportRequestItem item, bool updateComicInfo = true, string? operationId = null,
+        CancellationToken ct = default)
     {
         var rootFolder = currentUser.AllRootFolders || currentUser.RootFolderIds.Contains(rootFolderId)
             ? await db.RootFolders.FindAsync([rootFolderId], ct)
@@ -213,7 +214,7 @@ public class LibraryImportService(
             return new ImportResult(item.FolderName, false, localizer.Get("error.libraryImport.folderGone"));
         }
 
-        await events.ImportProgress(item.FolderName, ImportStage.FetchingMetadata);
+        await events.ImportProgress(item.FolderName, ImportStage.FetchingMetadata, operationId: operationId);
         var provider = metadataProviders.First();
         var metadata = await provider.GetAsync(item.MetadataProviderId, ct);
         if (metadata is null)
@@ -236,7 +237,7 @@ public class LibraryImportService(
                     localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
             }
 
-            return await ReimportIntoExistingAsync(existingSeries, rootFolder, item, sourceDir, updateComicInfo, ct);
+            return await ReimportIntoExistingAsync(existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, ct);
         }
 
         // Standardize the folder name to the configured series folder format, unless the folder
@@ -257,7 +258,7 @@ public class LibraryImportService(
                     localizer.Get("error.libraryImport.renameTargetExists", new { name = standardName }));
             }
 
-            await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder);
+            await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
             Directory.Move(sourceDir, targetDir);
             logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
             seriesFolderName = standardName;
@@ -284,7 +285,7 @@ public class LibraryImportService(
 
         if (metadata.CoverUrl != null)
         {
-            await events.ImportProgress(item.FolderName, ImportStage.DownloadingCover);
+            await events.ImportProgress(item.FolderName, ImportStage.DownloadingCover, operationId: operationId);
             var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
             if (coverPath != null)
             {
@@ -296,11 +297,11 @@ public class LibraryImportService(
         // Link scraper sources and pull the chapter list before matching files.
         try
         {
-            await events.ImportProgress(item.FolderName, ImportStage.FindingSources);
+            await events.ImportProgress(item.FolderName, ImportStage.FindingSources, operationId: operationId);
             var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
             if (mapped.Count > 0)
             {
-                await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters);
+                await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters, operationId: operationId);
                 await chapterSyncService.SyncSeriesAsync(series.Id, ct);
             }
         }
@@ -313,7 +314,7 @@ public class LibraryImportService(
         var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
-            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
+            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
             updateComicInfo, ct: ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
@@ -327,7 +328,7 @@ public class LibraryImportService(
     /// </summary>
     private async Task<ImportResult> ReimportIntoExistingAsync(
         Series series, RootFolder rootFolder, ImportRequestItem item, string sourceDir,
-        bool updateComicInfo, CancellationToken ct)
+        bool updateComicInfo, string? operationId, CancellationToken ct)
     {
         var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
@@ -341,13 +342,13 @@ public class LibraryImportService(
             {
                 // The series' standardized folder already exists (e.g. an empty folder created
                 // when it was added) — fold the scanned folder's files into it.
-                await events.ImportProgress(item.FolderName, ImportStage.MergingFolder);
+                await events.ImportProgress(item.FolderName, ImportStage.MergingFolder, operationId: operationId);
                 MergeDirectory(sourceDir, targetDir);
                 logger.LogInformation("Merged '{Old}' into existing '{New}'", item.FolderName, standardName);
             }
             else
             {
-                await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder);
+                await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
                 Directory.Move(sourceDir, targetDir);
                 logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
             }
@@ -374,11 +375,11 @@ public class LibraryImportService(
         {
             try
             {
-                await events.ImportProgress(item.FolderName, ImportStage.FindingSources);
+                await events.ImportProgress(item.FolderName, ImportStage.FindingSources, operationId: operationId);
                 var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
                 if (mapped.Count > 0)
                 {
-                    await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters);
+                    await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters, operationId: operationId);
                     await chapterSyncService.SyncSeriesAsync(series.Id, ct);
                 }
             }
@@ -392,7 +393,7 @@ public class LibraryImportService(
         var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
-            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
+            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
             updateComicInfo, ct: ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);

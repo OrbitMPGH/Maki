@@ -803,6 +803,10 @@ msgstr "{missingWanted, plural, other {# 个想要，未获取}}"
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "缺少 {missingWanted} 个想要的章节"
 
+#: src/pages/SettingsPage.tsx
+msgid "{moreCount, plural, one {+# more} other {+# more}}"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "{n, plural, one {# file} other {# files}}"
@@ -4039,6 +4043,19 @@ msgstr "无法加载你的进度。服务器日志会说明原因。"
 msgid "Could not load your signals: {loadError}"
 msgstr "无法加载你的信号：{loadError}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
+msgstr ""
+
+#. placeholder {0}: failedTitles.length > 0 ? `: ${failedTitles.join(', ')}` : ''
+#: src/pages/SettingsPage.tsx
+#~ msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
+#~ msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Could not read your profile"
@@ -4053,6 +4070,30 @@ msgstr "无法移除 {seriesTitle}：{reason}"
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "无法更新 {surface} 反馈：{reason}"
+
+#: src/components/NotificationsSection.tsx
+msgid "Couldn't load notification connections"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Couldn't load this rail"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your library"
+msgstr ""
+
+#: src/pages/NotificationsPage.tsx
+msgid "Couldn't load your notifications"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your reading progress"
+msgstr ""
+
+#: src/components/RatingImportModal.tsx
+msgid "Couldn't reach {label}."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4131,6 +4172,10 @@ msgstr "已创建"
 #, fuzzy
 msgid "Created under Apps in Gotify."
 msgstr "在 Gotify 的 Apps 下创建。"
+
+#: src/pages/CreatorPage.tsx
+msgid "Creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8434,6 +8479,10 @@ msgstr "暂无"
 msgid "not {names}"
 msgstr "不包含 {names}"
 
+#: src/pages/CreatorPage.tsx
+msgid "Not a valid creator name"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not analyzed"
@@ -10676,9 +10725,15 @@ msgstr "已重试 {retryCount} 次 - 下次尝试时间 {nextAttemptTime}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailSection.tsx
+#: src/components/RatingImportModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "重试"
@@ -12912,6 +12967,10 @@ msgstr "此文件已经不在磁盘上，因此不会删除任何内容。它会
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "这会为你在{label}列表中每个匹配的条目提交申请，最多达到每次运行上限。"
 
+#: src/pages/CreatorPage.tsx
+msgid "This link is missing the creator's name."
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "this month"
@@ -13464,6 +13523,11 @@ msgstr "下划线（_）"
 #, fuzzy
 msgid "Undo"
 msgstr "撤销"
+
+#. placeholder {0}: String(error)
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {0}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

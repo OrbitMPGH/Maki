@@ -108,7 +108,8 @@ export default function NotificationsPage() {
   const [category, setCategory] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
 
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInbox({ unreadOnly })
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInbox({ unreadOnly })
   const markRead = useMarkInboxRead()
   const markAll = useMarkAllInboxRead()
   const dismiss = useDismissInbox()
@@ -205,6 +206,12 @@ export default function NotificationsPage() {
 
       {isLoading ? (
         <FeedSkeleton />
+      ) : isError ? (
+        <EmptyState
+          title={t`Couldn't load your notifications`}
+          actionLabel={t`Retry`}
+          onAction={() => void refetch()}
+        />
       ) : items.length === 0 ? (
         <EmptyState
           title={unreadOnly || category ? t`Nothing matches` : t`No notifications yet`}

@@ -803,6 +803,10 @@ msgstr "{missingWanted, plural, one {# isteniyor, getirilmedi} other {# isteniyo
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "{missingWanted} istenen bölüm eksik"
 
+#: src/pages/SettingsPage.tsx
+msgid "{moreCount, plural, one {+# more} other {+# more}}"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "{n, plural, one {# file} other {# files}}"
@@ -4039,6 +4043,19 @@ msgstr "İlerlemeniz yüklenemedi. Sunucu günlükleri nedenini söyleyecektir."
 msgid "Could not load your signals: {loadError}"
 msgstr "Sinyalleriniz yüklenemedi: {loadError}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
+msgstr ""
+
+#. placeholder {0}: failedTitles.length > 0 ? `: ${failedTitles.join(', ')}` : ''
+#: src/pages/SettingsPage.tsx
+#~ msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
+#~ msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Could not read your profile"
@@ -4053,6 +4070,30 @@ msgstr "{seriesTitle} kaldırılamadı: {reason}"
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface} geri bildirimi güncellenemedi: {reason}"
+
+#: src/components/NotificationsSection.tsx
+msgid "Couldn't load notification connections"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Couldn't load this rail"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your library"
+msgstr ""
+
+#: src/pages/NotificationsPage.tsx
+msgid "Couldn't load your notifications"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your reading progress"
+msgstr ""
+
+#: src/components/RatingImportModal.tsx
+msgid "Couldn't reach {label}."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4131,6 +4172,10 @@ msgstr "Oluşturuldu"
 #, fuzzy
 msgid "Created under Apps in Gotify."
 msgstr "Gotify'deki Apps bölümünden oluşturulur."
+
+#: src/pages/CreatorPage.tsx
+msgid "Creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8434,6 +8479,10 @@ msgstr "henüz yok"
 msgid "not {names}"
 msgstr "{names} hariç"
 
+#: src/pages/CreatorPage.tsx
+msgid "Not a valid creator name"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not analyzed"
@@ -10676,9 +10725,15 @@ msgstr "{retryCount}x yeniden denendi, sonraki deneme {nextAttemptTime}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailSection.tsx
+#: src/components/RatingImportModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "Yeniden dene"
@@ -12912,6 +12967,10 @@ msgstr "Bu dosya zaten diskten kalkmış, bu yüzden hiçbir şey silinmiyor. Bu
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "Bu, {label} listendeki her eşleşen kayıt için çalıştırma başına sınıra kadar istek oluşturur."
 
+#: src/pages/CreatorPage.tsx
+msgid "This link is missing the creator's name."
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "this month"
@@ -13464,6 +13523,11 @@ msgstr "Alt çizgi (_)"
 #, fuzzy
 msgid "Undo"
 msgstr "Geri al"
+
+#. placeholder {0}: String(error)
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {0}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

@@ -1026,23 +1026,55 @@ function OpdsSection() {
 function KavitaImportResultSummary({
   result,
 }: {
-  result: { seriesMatched: number; chaptersMarked: number; seriesUnmatched: number }
+  result: {
+    seriesMatched: number
+    chaptersMarked: number
+    seriesUnmatched: number
+    seriesFailed: number
+    failedTitles: string[]
+  }
 }) {
-  const { chaptersMarked, seriesMatched, seriesUnmatched } = result
+  const { chaptersMarked, seriesMatched, seriesUnmatched, seriesFailed, failedTitles } = result
+
+  // Capped so one huge Kavita library can't turn this line into a wall of titles; the rest are
+  // named only by count, in a suffix that still needs its own plural forms.
+  const shownTitles = failedTitles.slice(0, 5)
+  const moreCount = failedTitles.length - shownTitles.length
+  const titles =
+    moreCount > 0
+      ? `${shownTitles.join(', ')} ${plural(moreCount, { one: '+# more', other: '+# more' })}`
+      : shownTitles.join(', ')
+
   return (
-    <Text size="xs" c="var(--ink-3)">
-      {seriesUnmatched > 0 ? (
-        <Trans>
-          <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-          {seriesMatched} series, {seriesUnmatched} Kavita series unmatched
-        </Trans>
-      ) : (
-        <Trans>
-          <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-          {seriesMatched} series
-        </Trans>
+    <Stack gap={2}>
+      <Text size="xs" c="var(--ink-3)">
+        {seriesUnmatched > 0 ? (
+          <Trans>
+            <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
+            {seriesMatched} series, {seriesUnmatched} Kavita series unmatched
+          </Trans>
+        ) : (
+          <Trans>
+            <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
+            {seriesMatched} series
+          </Trans>
+        )}
+      </Text>
+      {seriesFailed > 0 && (
+        <Text size="xs" c="var(--danger)">
+          {titles ? (
+            <Trans>
+              Could not read progress for{' '}
+              <Plural value={seriesFailed} one="# series" other="# series" />: {titles}
+            </Trans>
+          ) : (
+            <Trans>
+              Could not read progress for <Plural value={seriesFailed} one="# series" other="# series" />
+            </Trans>
+          )}
+        </Text>
       )}
-    </Text>
+    </Stack>
   )
 }
 
@@ -1801,13 +1833,18 @@ function ImportListInstanceControls() {
   const { data } = useImportListSettings()
   const save = useSaveImportListSettings()
   const [form, setForm] = useState<ImportListSettings | null>(null)
+  // Tracks whether the user has touched the form since the last seed/save, so a background
+  // refetch can rebase onto newer server values without clobbering an in-progress edit.
+  const editedRef = useRef(false)
 
   useEffect(() => {
-    if (data && form === null) setForm(data)
-  }, [data, form])
+    if (data && !editedRef.current) setForm(data)
+  }, [data])
 
-  const set = (patch: Partial<ImportListSettings>) =>
+  const set = (patch: Partial<ImportListSettings>) => {
+    editedRef.current = true
     setForm((f) => (f ? { ...f, ...patch } : f))
+  }
   const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
 
   return (
@@ -1815,6 +1852,7 @@ function ImportListInstanceControls() {
       <Switch
         label={t`Enable import lists for everyone`}
         checked={form?.enabled ?? true}
+        disabled={data === undefined}
         onChange={(e) => set({ enabled: e.currentTarget.checked })}
       />
       <NumberInput
@@ -1823,6 +1861,7 @@ function ImportListInstanceControls() {
         max={1440}
         clampBehavior="strict"
         value={form?.intervalMinutes ?? 15}
+        disabled={data === undefined}
         onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
       />
       <Group justify="flex-end">
@@ -1832,7 +1871,10 @@ function ImportListInstanceControls() {
           onClick={() =>
             form &&
             save.mutate(form, {
-              onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+              onSuccess: () => {
+                editedRef.current = false
+                notifications.show({ message: now`Saved`, color: 'var(--ok)' })
+              },
             })
           }
         />

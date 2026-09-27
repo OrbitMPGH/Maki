@@ -803,6 +803,10 @@ msgstr "{missingWanted, plural, other {#件希望、未取得}}"
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "希望した章{missingWanted}件がありません"
 
+#: src/pages/SettingsPage.tsx
+msgid "{moreCount, plural, one {+# more} other {+# more}}"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "{n, plural, one {# file} other {# files}}"
@@ -4039,6 +4043,19 @@ msgstr "進捗を読み込めませんでした。理由はサーバーログに
 msgid "Could not load your signals: {loadError}"
 msgstr "シグナルを読み込めませんでした: {loadError}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
+msgstr ""
+
+#. placeholder {0}: failedTitles.length > 0 ? `: ${failedTitles.join(', ')}` : ''
+#: src/pages/SettingsPage.tsx
+#~ msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
+#~ msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Could not read your profile"
@@ -4053,6 +4070,30 @@ msgstr "{seriesTitle}を削除できませんでした: {reason}"
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface}のフィードバックを更新できませんでした: {reason}"
+
+#: src/components/NotificationsSection.tsx
+msgid "Couldn't load notification connections"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Couldn't load this rail"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your library"
+msgstr ""
+
+#: src/pages/NotificationsPage.tsx
+msgid "Couldn't load your notifications"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your reading progress"
+msgstr ""
+
+#: src/components/RatingImportModal.tsx
+msgid "Couldn't reach {label}."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4131,6 +4172,10 @@ msgstr "作成済み"
 #, fuzzy
 msgid "Created under Apps in Gotify."
 msgstr "Gotify の Apps で作成します。"
+
+#: src/pages/CreatorPage.tsx
+msgid "Creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8434,6 +8479,10 @@ msgstr "まだありません"
 msgid "not {names}"
 msgstr "{names}を除く"
 
+#: src/pages/CreatorPage.tsx
+msgid "Not a valid creator name"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not analyzed"
@@ -10676,9 +10725,15 @@ msgstr "{retryCount}回再試行 - 次の試行{nextAttemptTime}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailSection.tsx
+#: src/components/RatingImportModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "再試行"
@@ -12912,6 +12967,10 @@ msgstr "このファイルはすでにディスクから消えているため、
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "この操作では、{label} リスト内の一致する項目について、1回あたりの上限までリクエストを登録します。"
 
+#: src/pages/CreatorPage.tsx
+msgid "This link is missing the creator's name."
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "this month"
@@ -13464,6 +13523,11 @@ msgstr "アンダースコア（_）"
 #, fuzzy
 msgid "Undo"
 msgstr "元に戻す"
+
+#. placeholder {0}: String(error)
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {0}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

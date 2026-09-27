@@ -669,6 +669,10 @@ msgstr "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "{missingWanted} wanted chapter(s) are missing"
 
+#: src/pages/SettingsPage.tsx
+msgid "{moreCount, plural, one {+# more} other {+# more}}"
+msgstr "{moreCount, plural, one {+# more} other {+# more}}"
+
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "{n, plural, one {# file} other {# files}}"
 msgstr "{n, plural, one {# file} other {# files}}"
@@ -3306,6 +3310,19 @@ msgstr "Could not load your progress. The server logs will say why."
 msgid "Could not load your signals: {loadError}"
 msgstr "Could not load your signals: {loadError}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
+msgstr "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
+msgstr "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
+
+#. placeholder {0}: failedTitles.length > 0 ? `: ${failedTitles.join(', ')}` : ''
+#: src/pages/SettingsPage.tsx
+#~ msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
+#~ msgstr "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Could not read your profile"
 msgstr "Could not read your profile"
@@ -3317,6 +3334,30 @@ msgstr "Could not remove {seriesTitle}: {reason}"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "Could not update {surface} feedback: {reason}"
+
+#: src/components/NotificationsSection.tsx
+msgid "Couldn't load notification connections"
+msgstr "Couldn't load notification connections"
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Couldn't load this rail"
+msgstr "Couldn't load this rail"
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your library"
+msgstr "Couldn't load your library"
+
+#: src/pages/NotificationsPage.tsx
+msgid "Couldn't load your notifications"
+msgstr "Couldn't load your notifications"
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your reading progress"
+msgstr "Couldn't load your reading progress"
+
+#: src/components/RatingImportModal.tsx
+msgid "Couldn't reach {label}."
+msgstr "Couldn't reach {label}."
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "counts a little more than the rest"
@@ -3380,6 +3421,10 @@ msgstr "Created"
 #: src/components/NotificationsSection.tsx
 msgid "Created under Apps in Gotify."
 msgstr "Created under Apps in Gotify."
+
+#: src/pages/CreatorPage.tsx
+msgid "Creator"
+msgstr "Creator"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Creators"
@@ -6893,6 +6938,10 @@ msgstr "none yet"
 msgid "not {names}"
 msgstr "not {names}"
 
+#: src/pages/CreatorPage.tsx
+msgid "Not a valid creator name"
+msgstr "Not a valid creator name"
+
 #: src/pages/HealthPage.tsx
 msgid "Not analyzed"
 msgstr "Not analyzed"
@@ -8717,9 +8766,15 @@ msgstr "Retried {retryCount}x - next attempt {nextAttemptTime}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailSection.tsx
+#: src/components/RatingImportModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Retry"
 msgstr "Retry"
 
@@ -10534,6 +10589,10 @@ msgstr "This file is already gone from disk, so nothing is deleted. It drops the
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "This files a request for every matching entry from your {label} list, up to the per-run limit."
 
+#: src/pages/CreatorPage.tsx
+msgid "This link is missing the creator's name."
+msgstr "This link is missing the creator's name."
+
 #: src/pages/stats/StatsRange.ts
 msgid "this month"
 msgstr "this month"
@@ -10983,6 +11042,11 @@ msgstr "Underscore (_)"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Undo"
 msgstr "Undo"
+
+#. placeholder {0}: String(error)
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {0}"
+msgstr "Undo failed: {0}"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Undone"

@@ -803,6 +803,10 @@ msgstr "{missingWanted, plural, other {#개 원함, 가져오지 않음}}"
 msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "원하는 챕터 {missingWanted}개가 누락됨"
 
+#: src/pages/SettingsPage.tsx
+msgid "{moreCount, plural, one {+# more} other {+# more}}"
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "{n, plural, one {# file} other {# files}}"
@@ -4039,6 +4043,19 @@ msgstr "진행 상황을 불러오지 못했습니다. 이유는 서버 로그�
 msgid "Could not load your signals: {loadError}"
 msgstr "신호를 불러오지 못했습니다: {loadError}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
+msgstr ""
+
+#. placeholder {0}: failedTitles.length > 0 ? `: ${failedTitles.join(', ')}` : ''
+#: src/pages/SettingsPage.tsx
+#~ msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
+#~ msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Could not read your profile"
@@ -4053,6 +4070,30 @@ msgstr "{seriesTitle}을(를) 삭제하지 못했습니다: {reason}"
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface} 피드백을 업데이트하지 못했습니다: {reason}"
+
+#: src/components/NotificationsSection.tsx
+msgid "Couldn't load notification connections"
+msgstr ""
+
+#: src/components/rails/CustomRailSection.tsx
+msgid "Couldn't load this rail"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your library"
+msgstr ""
+
+#: src/pages/NotificationsPage.tsx
+msgid "Couldn't load your notifications"
+msgstr ""
+
+#: src/pages/HomePage.tsx
+msgid "Couldn't load your reading progress"
+msgstr ""
+
+#: src/components/RatingImportModal.tsx
+msgid "Couldn't reach {label}."
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4131,6 +4172,10 @@ msgstr "생성됨"
 #, fuzzy
 msgid "Created under Apps in Gotify."
 msgstr "Gotify의 Apps에서 만듭니다."
+
+#: src/pages/CreatorPage.tsx
+msgid "Creator"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8434,6 +8479,10 @@ msgstr "아직 없음"
 msgid "not {names}"
 msgstr "{names} 제외"
 
+#: src/pages/CreatorPage.tsx
+msgid "Not a valid creator name"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not analyzed"
@@ -10676,9 +10725,15 @@ msgstr "{retryCount}회 재시도함 - 다음 시도 {nextAttemptTime}"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/NotificationsSection.tsx
+#: src/components/rails/CustomRailSection.tsx
+#: src/components/RatingImportModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
+#: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/NotificationsPage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Retry"
 msgstr "재시도"
@@ -12912,6 +12967,10 @@ msgstr "이 파일은 이미 디스크에서 없어졌으므로 삭제할 항목
 msgid "This files a request for every matching entry from your {label} list, up to the per-run limit."
 msgstr "{label} 목록에서 일치하는 항목마다 요청을 등록합니다. 실행당 제한까지 처리합니다."
 
+#: src/pages/CreatorPage.tsx
+msgid "This link is missing the creator's name."
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "this month"
@@ -13464,6 +13523,11 @@ msgstr "밑줄 (_)"
 #, fuzzy
 msgid "Undo"
 msgstr "실행 취소"
+
+#. placeholder {0}: String(error)
+#: src/pages/SeriesDetailPage.tsx
+msgid "Undo failed: {0}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Button,
@@ -15,6 +15,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   useApplyRatingImport,
   useRatingImport,
@@ -37,25 +38,38 @@ export function RatingImportModal({
   onClose: () => void
 }) {
   const { t, i18n } = useLingui()
+  const queryClient = useQueryClient()
   const start = useStartRatingImport()
-  const { data, isFetching } = useRatingImport(service, opened)
+  const { data, isFetching, isError: queryIsError, error: queryError } = useRatingImport(service, opened)
   const apply = useApplyRatingImport()
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const defaultedRef = useRef<string | null>(null)
 
-  // Kick off a fresh preview each time the modal opens.
+  const retry = useCallback(() => {
+    setSelected(new Set())
+    defaultedRef.current = null
+    queryClient.removeQueries({ queryKey: ['rating-import', service] })
+    start.mutate(service)
+    // start.mutate is stable; only re-run when the service changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [service, queryClient])
+
+  // Kick off a fresh preview each time the modal opens, dropping any previous run's cached
+  // items/selection so a reopen can't pre-select and enable Apply before the new preview lands.
   useEffect(() => {
     if (opened) {
       setSelected(new Set())
       defaultedRef.current = null
+      queryClient.removeQueries({ queryKey: ['rating-import', service] })
       start.mutate(service)
     }
     // start.mutate is stable; only re-run on open/service change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, service])
+  }, [opened, service, queryClient])
 
   const items = data?.items ?? []
-  const running = data?.running ?? true
+  const requestFailed = start.isError || queryIsError
+  const running = !requestFailed && (data?.running ?? true)
   const computedAt = data?.computedAt ?? null
 
   useEffect(() => {
@@ -91,6 +105,22 @@ export function RatingImportModal({
     )
 
   const body = useMemo(() => {
+    if (requestFailed) {
+      return (
+        <Alert color="var(--danger)" variant="light">
+          <Stack gap="xs">
+            <Text size="sm">
+              {start.error ? String(start.error) : queryError ? String(queryError) : <Trans>Couldn't reach {label}.</Trans>}
+            </Text>
+            <Group justify="flex-end">
+              <Button size="xs" variant="light" color="var(--danger)" onClick={retry}>
+                <Trans>Retry</Trans>
+              </Button>
+            </Group>
+          </Stack>
+        </Alert>
+      )
+    }
     if (running) {
       return (
         <Center py={40}>
@@ -106,7 +136,14 @@ export function RatingImportModal({
     if (data?.error) {
       return (
         <Alert color="var(--danger)" variant="light">
-          {data.error}
+          <Stack gap="xs">
+            <Text size="sm">{data.error}</Text>
+            <Group justify="flex-end">
+              <Button size="xs" variant="light" color="var(--danger)" onClick={retry}>
+                <Trans>Retry</Trans>
+              </Button>
+            </Group>
+          </Stack>
         </Alert>
       )
     }
@@ -159,7 +196,22 @@ export function RatingImportModal({
         </ScrollArea.Autosize>
       </Stack>
     )
-  }, [running, data?.error, items, selected, allChecked, label, selectedCount, totalCount, t, i18n.locale])
+  }, [
+    requestFailed,
+    start.error,
+    queryError,
+    retry,
+    running,
+    data?.error,
+    items,
+    selected,
+    allChecked,
+    label,
+    selectedCount,
+    totalCount,
+    t,
+    i18n.locale,
+  ])
 
   return (
     <Modal opened={opened} onClose={onClose} title={t`Import ratings from ${label}`} size="lg" centered>
@@ -170,7 +222,7 @@ export function RatingImportModal({
         </Button>
         <Button
           onClick={applyChosen}
-          disabled={running || selected.size === 0}
+          disabled={running || start.isPending || selected.size === 0}
           loading={apply.isPending || isFetching}
         >
           {selectedCount > 0 ? t`Apply ${selectedCount}` : t`Apply`}

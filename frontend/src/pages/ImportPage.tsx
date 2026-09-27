@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Badge,
   Button,
@@ -79,6 +79,8 @@ interface ImportProgressEvent {
   done: boolean
   success: boolean
   error: string | null
+  /** The client-generated id of the import run this event belongs to; absent from older payloads. */
+  operationId?: string | null
 }
 
 export default function ImportPage() {
@@ -88,22 +90,38 @@ export default function ImportPage() {
   const { data: librarySettings } = useLibrarySettings()
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<ScanCandidate[] | null>(null)
+  // The root folder `candidates` was scanned from, so switching the Select above can't send the
+  // new root paired with folder names that were only ever scanned from the old one.
+  const [scannedRootFolderId, setScannedRootFolderId] = useState<string | null>(null)
   const [selection, setSelection] = useState<Record<string, string>>({}) // folderName -> providerId ('' = skip)
   const [results, setResults] = useState<ImportResultDto[] | null>(null)
   const [progress, setProgress] = useState<Record<string, ImportProgressEvent>>({})
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [updateComicInfo, setUpdateComicInfo] = useState(true)
   const [showInLibrary, setShowInLibrary] = useState(false)
+  // Read (not rendered) inside the hub handler below to drop events from a run this tab isn't
+  // showing, e.g. another admin's import in progress at the same time.
+  const operationIdRef = useRef<string | null>(null)
 
   useHubEvent<ImportProgressEvent>('importProgress', (evt) => {
+    if (evt.operationId != null && evt.operationId !== operationIdRef.current) return
     setProgress((p) => ({ ...p, [evt.folderName]: evt }))
   })
+
+  const clearScan = () => {
+    setCandidates(null)
+    setScannedRootFolderId(null)
+    setResults(null)
+    setSelection({})
+    setProgress({})
+  }
 
   const scan = useMutation({
     mutationFn: (folderId: number) =>
       api<ScanCandidate[]>(`/libraryimport/scan?rootFolderId=${folderId}`),
-    onSuccess: (data) => {
+    onSuccess: (data, folderId) => {
       setCandidates(data)
+      setScannedRootFolderId(String(folderId))
       setResults(null)
       const initial: Record<string, string> = {}
       for (const c of data) {
@@ -120,10 +138,13 @@ export default function ImportPage() {
       rootFolderId: number
       items: { folderName: string; metadataProviderId: string }[]
       updateComicInfo: boolean
+      operationId: string
     }) => {
       // The server caps a batch at IMPORT_BATCH_SIZE so one request can't run long enough to hit
       // a proxy timeout. Send sequentially: imports touch the same root folder, and per-row
       // progress arrives over SignalR regardless of how the batches are split.
+      // Results are recorded as each batch lands, so a later batch failing outright (network
+      // drop, server error) never discards the successes already reported.
       const results: ImportResultDto[] = []
       for (let i = 0; i < payload.items.length; i += IMPORT_BATCH_SIZE) {
         const batch = await api<ImportResultDto[]>('/libraryimport/import', {
@@ -131,10 +152,13 @@ export default function ImportPage() {
           body: JSON.stringify({ ...payload, items: payload.items.slice(i, i + IMPORT_BATCH_SIZE) }),
         })
         results.push(...batch)
+        setResults([...results])
       }
       return results
     },
     onMutate: (payload) => {
+      operationIdRef.current = payload.operationId
+      setResults(null)
       // Every selected row starts out queued; SignalR events overwrite per row.
       const queued: Record<string, ImportProgressEvent> = {}
       for (const item of payload.items) {
@@ -151,7 +175,6 @@ export default function ImportPage() {
       setProgress(queued)
     },
     onSuccess: (data) => {
-      setResults(data)
       const ok = data.filter((r) => r.success).length
       const total = data.length
       notifications.show({
@@ -164,7 +187,8 @@ export default function ImportPage() {
       setProgress({})
       if (rootFolderId) scan.mutate(Number(rootFolderId))
     },
-    // Only the local cleanup; the error toast comes from the global handler in main.tsx.
+    // Only the local cleanup; results-so-far were already recorded batch by batch above, and the
+    // error toast comes from the global handler in main.tsx.
     onError: () => setProgress({}),
   })
 
@@ -216,7 +240,13 @@ export default function ImportPage() {
             label={t`Root folder`}
             data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
             value={rootFolderId}
-            onChange={setRootFolderId}
+            onChange={(v) => {
+              setRootFolderId(v)
+              // Candidates (and any selection/results/progress built on them) were scanned from
+              // scannedRootFolderId; switching roots must not let Import send this new root
+              // paired with folder names that only exist under the old one.
+              if (v !== scannedRootFolderId) clearScan()
+            }}
           />
           <Button
             leftSection={<IconFolderSearch size={16} />}
@@ -277,11 +307,14 @@ export default function ImportPage() {
             color="var(--ok)"
             onClick={() => {
               setConfirmOpen(false)
-              if (rootFolderId) {
+              // rootFolderId must still be the root candidates were scanned from; the Select's
+              // onChange already clears candidates on any other change, this is just the guard.
+              if (rootFolderId && rootFolderId === scannedRootFolderId) {
                 doImport.mutate({
                   rootFolderId: Number(rootFolderId),
                   items: selectedItems,
                   updateComicInfo,
+                  operationId: crypto.randomUUID(),
                 })
               }
             }}
