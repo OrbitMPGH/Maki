@@ -512,7 +512,7 @@ msgstr "「ホーム」と「見つける」で保存できるレールは最大
 #. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr "このシリーズはダウンロード済みファイルとともにすでにライブラリにあります。最初からインポートし直すには、先に削除してください。"
+msgstr "'{title}' はダウンロード済みファイルとともにすでにライブラリにあります。最初からインポートし直すには、先に削除してください。"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -537,7 +537,7 @@ msgstr "インポートする項目がありません"
 #. English: Cannot rename: '{name}' already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr "名前を変更できません: 移動先はすでにルートフォルダーに存在します"
+msgstr "名前を変更できません: '{name}' はすでにルートフォルダーに存在します"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1778,7 +1778,7 @@ msgstr "バックアップにmaki.dbがありません。これはMakiのバッ�
 #. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr "このバックアップはより新しいバージョンで作成されています。このビルドでは未対応のマイグレーションが含まれています。復元する前に Maki を更新してください。"
+msgstr "このバックアップはより新しいバージョンで作成されています（マイグレーション '{migration}' はこのビルドでは未対応です）。復元する前に Maki を更新してください。"
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

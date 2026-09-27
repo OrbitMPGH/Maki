@@ -174,13 +174,74 @@ public class LocalizationCatalogTests
     }
 
     /// <summary>
-    /// ICU placeholder names. Only the simple <c>{name}</c> form, which is what these messages use;
-    /// the opening name of a plural block reads the same way.
+    /// ICU argument names: <c>{name}</c>, <c>{name, number}</c>, and the selector of a plural or
+    /// select block, plus whatever the block's branches refer to. The branch text itself is literal
+    /// and is skipped, so <c>approved {Approved}</c> does not read as a placeholder named Approved
+    /// that every translation would then have to keep in English. Apostrophe quoting is deliberately
+    /// not honoured: <c>'{title}'</c> is a placeholder the author meant, whatever ICU makes of it.
     /// </summary>
-    private static HashSet<string> Placeholders(string message) =>
-        Regex.Matches(message, @"\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,}]")
-            .Select(m => m.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
+    private static HashSet<string> Placeholders(string message)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        ScanMessage(message, 0, names);
+        return names;
+    }
+
+    private static readonly Regex ArgumentStart =
+        new(@"\G\s*([A-Za-z_][A-Za-z0-9_]*)\s*([,}])", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Walks message text from <paramref name="i"/> and returns the index of the brace that closes
+    /// the enclosing block, or the end of the string at top level.
+    /// </summary>
+    private static int ScanMessage(string s, int i, HashSet<string> names)
+    {
+        while (i < s.Length)
+        {
+            if (s[i] == '}') return i;
+            i = s[i] == '{' ? ScanArgument(s, i, names) : i + 1;
+        }
+        return i;
+    }
+
+    /// <summary>
+    /// <paramref name="i"/> is at an opening brace. Returns the index just past the argument's
+    /// closing brace. A brace that does not open an ICU argument is skipped as literal text.
+    /// </summary>
+    private static int ScanArgument(string s, int i, HashSet<string> names)
+    {
+        var m = ArgumentStart.Match(s, i + 1);
+        if (!m.Success) return i + 1;
+
+        names.Add(m.Groups[1].Value);
+        i = m.Index + m.Length;
+        if (m.Groups[2].Value == "}") return i;
+
+        var typeEnd = s.IndexOfAny([',', '}'], i);
+        if (typeEnd < 0) return s.Length;
+        var type = s[i..typeEnd].Trim();
+        i = typeEnd;
+
+        if (type is "plural" or "select" or "selectordinal")
+        {
+            // Branches are `key {message}` pairs up to the block's own closing brace. Only the
+            // braced part is message text; the keys and any offset are not.
+            while (i < s.Length && s[i] != '}')
+            {
+                i = s[i] == '{' ? ScanMessage(s, i + 1, names) + 1 : i + 1;
+            }
+            return i + 1;
+        }
+
+        // A style such as `number, integer`: nothing in it names an argument.
+        var depth = 0;
+        for (; i < s.Length; i++)
+        {
+            if (s[i] == '{') depth++;
+            else if (s[i] == '}' && depth-- == 0) return i + 1;
+        }
+        return i;
+    }
 
     /// <summary>
     /// Every setting name, so the scan can tell <c>opds.enabled</c> from <c>opds.recent.title</c>.
