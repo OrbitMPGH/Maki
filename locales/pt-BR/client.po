@@ -58,16 +58,6 @@ msgstr "{0, plural, one {# adaptação} many {# adaptações}other {# adaptaçõ
 msgid "{0, plural, one {# becomes readable} other {# become readable}}"
 msgstr ""
 
-#. placeholder {0}: r.moved
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "{0, plural, one {# chapter link moved} other {# chapter links moved}}"
-#~ msgstr ""
-
-#. placeholder {0}: plan.moved
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "{0, plural, one {# chapter link moves} other {# chapter links move}}"
-#~ msgstr ""
-
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
 msgid "{0, plural, one {# chapter moves onto a volume} other {# chapters move onto volumes}}"
@@ -104,20 +94,10 @@ msgstr "{0, plural, one {# não pôde ser excluído (bloqueado ou permissão neg
 msgid "{0, plural, one {# file could not be deleted (locked or permission denied)} other {# files could not be deleted (locked or permission denied)}}"
 msgstr ""
 
-#. placeholder {0}: plan.unrecognized
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "{0, plural, one {# file could not be parsed and needs linking by hand.} other {# files could not be parsed and need linking by hand.}}"
-#~ msgstr ""
-
 #. placeholder {0}: r.deleted
 #: src/components/RelinkFilesModal.tsx
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr ""
-
-#. placeholder {0}: plan.supersededCount
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "{0, plural, one {# file superseded} other {# files superseded}}"
-#~ msgstr ""
 
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
@@ -175,21 +155,11 @@ msgstr "{0, plural, one {# selecionado} many {# selecionados}other {# selecionad
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, one {# título} many {# títulos}other {# títulos}}"
 
-#. placeholder {0}: plan.unrecognized
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "{0, plural, one {# unparsed file} other {# unparsed files}}"
-#~ msgstr ""
-
 #. placeholder {0}: selected.length
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 msgstr "{0, plural, one {#× linha de capítulo} many {#× linhas de capítulo}other {#× linhas de capítulo}}"
-
-#. placeholder {0}: plan.supersededCount
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "{0, plural, one {Also delete the # superseded file from disk} other {Also delete the # superseded files from disk}}"
-#~ msgstr ""
 
 #. placeholder {0}: result.queuedCount
 #: src/pages/RequestsPage.tsx
@@ -646,10 +616,6 @@ msgstr "{haveCount} / {totalCount, plural, one {# capítulo} many {# capítulos}
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# capítulo} many {# capítulos} other {# capítulos}} listados, nenhum desejado"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "{held, plural, one {# held back} other {# held back}}"
-#~ msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -1648,10 +1614,6 @@ msgstr "Um capítulo que nunca termina ocupa um processo e pode paralisar toda a
 msgid "A connection has unsaved changes."
 msgstr "Há alterações não salvas nesta conexão."
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "A dry run of rebuilding which file backs each chapter. A volume that contains a chapter wins over a single-chapter file, and links the planner can't explain are kept as they are. Untick a file to leave it untouched, click a chapter to pin it where it is. Nothing changes until you press Relink."
-#~ msgstr ""
-
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards."
@@ -1740,10 +1702,6 @@ msgstr "Um resumo dos temas mais presentes na sua biblioteca."
 #, fuzzy
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away. Finishing one can also suggest where to start reading its manga."
 msgstr "Um anime que você avaliou bem direciona as recomendações para mangás parecidos. Uma nota baixa ou abandonar a série afasta as recomendações. Terminar de assistir também pode sugerir onde começar a ler o mangá."
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "A single-chapter file named for its chapter."
-#~ msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -2074,10 +2032,6 @@ msgstr "Aventura"
 #, fuzzy
 msgid "Affected chapters:"
 msgstr "Capítulos afetados:"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "After:"
-#~ msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -2682,10 +2636,6 @@ msgstr "Segundo plano"
 msgid "Backlog"
 msgstr "Leitura pendente"
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Backs nothing after the move."
-#~ msgstr ""
-
 #: src/pages/settings/registry.ts
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -2767,10 +2717,6 @@ msgstr "Baseie as recomendações nestes títulos. A pesquisa adiciona qualquer 
 #, fuzzy
 msgid "Based on your recent activity"
 msgstr "Com base na sua atividade recente"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Basis"
-#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -3627,10 +3573,6 @@ msgstr "Clique em um token para inseri-lo."
 msgid "click one to keep it where it is"
 msgstr ""
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Click to keep ch. {label} where it is"
-#~ msgstr ""
-
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -3737,11 +3679,6 @@ msgstr "URLs do Apprise separadas por vírgula, usadas quando não há uma chave
 #, fuzzy
 msgid "Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly."
 msgstr "IPs separados por vírgula ou redes CIDR. Somente estes são confiáveis para definir X-Forwarded-For. Deixe vazio se o acesso ao Maki for direto."
-
-#: src/components/layout/SidebarFooter.tsx
-#, fuzzy
-msgid "Command palette"
-msgstr "Paleta de comandos"
 
 #: src/components/ui/viewPrefs.tsx
 #, fuzzy
@@ -4458,10 +4395,6 @@ msgstr "Excluindo"
 #: src/components/RelinkFilesModal.tsx
 msgid "Deleting files needs the Delete series permission"
 msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Deleting files needs the Delete series permission."
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5229,10 +5162,6 @@ msgstr "Excluído"
 msgid "Excluded from taste"
 msgstr "Excluído do gosto"
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Excluded, click to include"
-#~ msgstr ""
-
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Existing folders on import"
@@ -5677,10 +5606,6 @@ msgid "From"
 msgstr "De"
 
 #: src/components/RelinkFilesModal.tsx
-#~ msgid "From file name"
-#~ msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
 msgid "From its name"
 msgstr ""
 
@@ -5697,10 +5622,6 @@ msgstr ""
 msgid "From MyAnimeList"
 msgstr "Do MyAnimeList"
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "From page names"
-#~ msgstr ""
-
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "From the metadata provider, not your own tags"
@@ -5709,10 +5630,6 @@ msgstr "Do provedor de metadados, não das suas próprias tags"
 #: src/components/RelinkFilesModal.tsx
 msgid "From their names"
 msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "From volume metadata"
-#~ msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -5765,10 +5682,6 @@ msgstr "Tela cheia"
 #, fuzzy
 msgid "Fully read owned"
 msgstr "Lidas por completo"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Gains"
-#~ msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -5831,14 +5744,6 @@ msgstr "Crie contas próprias para outras pessoas, com acesso à biblioteca e hi
 #, fuzzy
 msgid "Give up on a chapter after (minutes)"
 msgstr "Desistir de um capítulo após (minutos)"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Gives up"
-#~ msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Gives up ch."
-#~ msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6443,10 +6348,6 @@ msgstr "Incidental"
 msgid "Include"
 msgstr "Incluir"
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Include {fileName} in the relink"
-#~ msgstr ""
-
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Include {label}"
@@ -6461,10 +6362,6 @@ msgstr "Incluir tags subordinadas"
 #, fuzzy
 msgid "Include subtags when adding"
 msgstr "Incluir subtags ao adicionar"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Included, click to leave this file untouched"
-#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -6707,10 +6604,6 @@ msgstr "Manter o nome e baixar em uma nova pasta padrão"
 #, fuzzy
 msgid "Keep the name, download into it too"
 msgstr "Manter o nome e baixar também nesta pasta"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Keeps exactly what it has today."
-#~ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -7117,10 +7010,6 @@ msgstr ""
 msgid "Link chapters to this file"
 msgstr ""
 
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Link files"
-#~ msgstr ""
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Link files and report results"
@@ -7254,10 +7143,6 @@ msgstr "Procurando capítulos…"
 #, fuzzy
 msgid "loose"
 msgstr "solto"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Loses"
-#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8983,10 +8868,6 @@ msgstr "Mais antigos"
 msgid "OLED black"
 msgstr "Preto OLED"
 
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Omnibus volumes and odd file names need linking by hand."
-#~ msgstr ""
-
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -9045,10 +8926,6 @@ msgstr "One-shot"
 #, fuzzy
 msgid "Ongoing"
 msgstr "Em andamento"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Only files whose every chapter now lives on a volume. This cannot be undone."
-#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -9536,14 +9413,6 @@ msgstr "Escolhas para você, classificadas como na aba Recomendado usando estas 
 #, fuzzy
 msgid "Picks from the recommender, based on your whole library."
 msgstr "Escolhas do sistema de recomendações, com base em toda a sua biblioteca."
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Pin chapter {label}"
-#~ msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Pinned. Click to let it move"
-#~ msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -10074,10 +9943,6 @@ msgstr "As estatísticas de leitura precisam do Kavita: conecte-o em Configuraç
 msgid "Reading the folder and every volume archive…"
 msgstr ""
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Reading volume archives…"
-#~ msgstr ""
-
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "Reading your ratings from {label}…"
@@ -10136,10 +10001,6 @@ msgstr "Recriando cache de imagens"
 #, fuzzy
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Recriando pôsteres, {processedCount} de {totalCount}"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
-#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -10354,22 +10215,10 @@ msgid "Releasing"
 msgstr "Em lançamento"
 
 #: src/components/RelinkFilesModal.tsx
-#~ msgid "Relink"
-#~ msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Relink and delete"
-#~ msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Relink files"
 msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Relink files, volumes first"
-#~ msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
@@ -12504,10 +12353,6 @@ msgstr "Sugestivo"
 msgid "Supernatural"
 msgstr "Sobrenatural"
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Superseded"
-#~ msgstr ""
-
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Switch reading direction"
@@ -12644,14 +12489,6 @@ msgstr "Tags a excluir"
 msgid "Tags to include"
 msgstr "Tags a incluir"
 
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Takes"
-#~ msgstr ""
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Takes ch."
-#~ msgstr ""
-
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Tap zones"
@@ -12716,10 +12553,6 @@ msgstr "Esse capítulo não existe mais"
 #: src/components/SeriesFilesSection.tsx
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr ""
-
-#: src/components/SeriesFilesSection.tsx
-#~ msgid "That happens with omnibus volumes and names the matcher can't parse. Use the link button on a row to pick the chapters it contains."
-#~ msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -13723,10 +13556,6 @@ msgstr "Até que ele seja criado, os selos comparam apenas com sua própria bibl
 #, fuzzy
 msgid "Until: {end}"
 msgstr "Até: {end}"
-
-#: src/components/RelinkFilesModal.tsx
-#~ msgid "Untouched"
-#~ msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
