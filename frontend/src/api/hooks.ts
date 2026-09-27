@@ -1624,6 +1624,18 @@ export function useMoveSeries() {
   })
 }
 
+export interface RelinkChapterRef {
+  id: number
+  label: string
+}
+
+export interface RelinkOptions {
+  /** Files left exactly as they are: they neither gain nor lose chapters. */
+  excludedPaths: string[]
+  /** Chapters that stay on whatever file backs them today. */
+  pinnedChapterIds: number[]
+}
+
 export interface RelinkPlanFile {
   relativePath: string
   fileName: string
@@ -1634,9 +1646,10 @@ export interface RelinkPlanFile {
   /** pageMarkers | volumeRange | fileName | estimated, or null when the file backs nothing. */
   confidence: string | null
   chapters: string[]
-  gains: string[]
-  loses: string[]
+  gains: RelinkChapterRef[]
+  loses: RelinkChapterRef[]
   superseded: boolean
+  excluded: boolean
 }
 
 export interface RelinkPlan {
@@ -1656,24 +1669,30 @@ export interface RelinkResult {
   freedBytes: number
 }
 
-export function useRelinkPlan(seriesId: number, enabled: boolean) {
+export function useRelinkPlan(seriesId: number, options: RelinkOptions, enabled: boolean) {
   return useQuery({
-    queryKey: ['relink-plan', seriesId],
-    queryFn: () => api<RelinkPlan>(`/series/${seriesId}/relink/plan`),
+    queryKey: ['relink-plan', seriesId, options],
+    queryFn: () =>
+      api<RelinkPlan>(`/series/${seriesId}/relink/plan`, {
+        method: 'POST',
+        body: JSON.stringify(options),
+      }),
     enabled,
-    // Every open should reflect the folder as it is now, not a plan from a previous visit.
+    // Every open should reflect the folder as it is now, not a plan from a previous visit. The
+    // previous plan stays on screen while an exclusion re-plans, so the table does not blank.
     staleTime: 0,
     gcTime: 0,
+    placeholderData: keepPreviousData,
   })
 }
 
 export function useApplyRelink(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (deleteSuperseded: boolean) =>
+    mutationFn: (request: RelinkOptions & { deleteSuperseded: boolean }) =>
       api<RelinkResult>(`/series/${seriesId}/relink`, {
         method: 'POST',
-        body: JSON.stringify({ deleteSuperseded }),
+        body: JSON.stringify(request),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })

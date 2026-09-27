@@ -491,6 +491,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "{held, plural, one {# held back} other {# held back}}"
+msgstr "{held, plural, one {# held back} other {# held back}}"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "{hours, plural, one {# hr} other {# hr}}"
 msgstr "{hours, plural, one {# hr} other {# hr}}"
@@ -1279,6 +1283,10 @@ msgstr "A chapter that never finishes holds a worker and can stall the whole que
 #: src/components/SetupWizard.tsx
 msgid "A connection has unsaved changes."
 msgstr "A connection has unsaved changes."
+
+#: src/components/RelinkFilesModal.tsx
+msgid "A dry run of rebuilding which file backs each chapter. A volume that contains a chapter wins over a single-chapter file, and links the planner can't explain are kept as they are. Untick a file to leave it untouched, click a chapter to pin it where it is. Nothing changes until you press Relink."
+msgstr "A dry run of rebuilding which file backs each chapter. A volume that contains a chapter wins over a single-chapter file, and links the planner can't explain are kept as they are. Untick a file to leave it untouched, click a chapter to pin it where it is. Nothing changes until you press Relink."
 
 #: src/components/SetupWizard.tsx
 msgid "A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards."
@@ -2875,6 +2883,10 @@ msgstr "Click a row to select, shift-click for a range"
 msgid "Click a token to insert it."
 msgstr "Click a token to insert it."
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Click to keep ch. {label} where it is"
+msgstr "Click to keep ch. {label} where it is"
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Client ID"
@@ -4164,6 +4176,10 @@ msgstr "Excluded"
 msgid "Excluded from taste"
 msgstr "Excluded from taste"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Excluded, click to include"
+msgstr "Excluded, click to include"
+
 #: src/components/SetupWizard.tsx
 msgid "Existing folders on import"
 msgstr "Existing folders on import"
@@ -4583,8 +4599,8 @@ msgid "Fully read owned"
 msgstr "Fully read owned"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Gains"
-msgstr "Gains"
+#~ msgid "Gains"
+#~ msgstr "Gains"
 
 #: src/components/discover/RecommenderDials.tsx
 msgid "gems"
@@ -4638,8 +4654,12 @@ msgid "Give up on a chapter after (minutes)"
 msgstr "Give up on a chapter after (minutes)"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Gives up ch."
-msgstr "Gives up ch."
+msgid "Gives up"
+msgstr "Gives up"
+
+#: src/components/RelinkFilesModal.tsx
+#~ msgid "Gives up ch."
+#~ msgstr "Gives up ch."
 
 #: src/pages/DiscoverPage.tsx
 msgid "Go to library"
@@ -5126,6 +5146,10 @@ msgstr "Incidental"
 msgid "Include"
 msgstr "Include"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Include {fileName} in the relink"
+msgstr "Include {fileName} in the relink"
+
 #: src/components/TagBrowserModal.tsx
 msgid "Include {label}"
 msgstr "Include {label}"
@@ -5137,6 +5161,10 @@ msgstr "Include subtags"
 #: src/components/TagBrowserModal.tsx
 msgid "Include subtags when adding"
 msgstr "Include subtags when adding"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Included, click to leave this file untouched"
+msgstr "Included, click to leave this file untouched"
 
 #: src/components/CatalogueRules.tsx
 msgid "Includes subtags"
@@ -5333,9 +5361,17 @@ msgstr "Keep the name, download into a new standard folder"
 msgid "Keep the name, download into it too"
 msgstr "Keep the name, download into it too"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Keeps exactly what it has today."
+msgstr "Keeps exactly what it has today."
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Kept as linked"
+msgstr "Kept as linked"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -5772,8 +5808,8 @@ msgid "loose"
 msgstr "loose"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Loses"
-msgstr "Loses"
+#~ msgid "Loses"
+#~ msgstr "Loses"
 
 #: src/pages/HealthPage.tsx
 msgid "Low disk error (%)"
@@ -6933,6 +6969,10 @@ msgstr "Nothing here"
 msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Nothing here is final. Every option is also in Settings."
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
+msgstr "Nothing in the file explains these chapters, so the link you have today is trusted."
+
 #: src/pages/ActivityPage.tsx
 msgid "Nothing in the queue"
 msgstr "Nothing in the queue"
@@ -7603,6 +7643,14 @@ msgstr "Picks for you, ranked the same way as the Recommended tab with these set
 msgid "Picks from the recommender, based on your whole library."
 msgstr "Picks from the recommender, based on your whole library."
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Pin chapter {label}"
+msgstr "Pin chapter {label}"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Pinned. Click to let it move"
+msgstr "Pinned. Click to let it move"
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Plain title search. Matches from just two characters."
 msgstr "Plain title search. Matches from just two characters."
@@ -8084,8 +8132,8 @@ msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Rebuilding posters, {processedCount} of {totalCount}"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
-msgstr "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
+#~ msgid "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
+#~ msgstr "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
 
 #: src/components/NotificationsSection.tsx
 msgid "Receives a JSON POST for each event."
@@ -10116,8 +10164,12 @@ msgid "Tags to include"
 msgstr "Tags to include"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Takes ch."
-msgstr "Takes ch."
+msgid "Takes"
+msgstr "Takes"
+
+#: src/components/RelinkFilesModal.tsx
+#~ msgid "Takes ch."
+#~ msgstr "Takes ch."
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Tap zones"
@@ -10977,6 +11029,10 @@ msgstr "Until it is built, the badges compare against your own library only."
 #: src/components/AnimeCoverageBar.tsx
 msgid "Until: {end}"
 msgstr "Until: {end}"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Untouched"
+msgstr "Untouched"
 
 #: src/components/layout/SectionProperties.tsx
 msgid "Up"

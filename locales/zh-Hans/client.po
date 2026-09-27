@@ -588,6 +588,10 @@ msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}"
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}已列出，但没有想要的"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "{held, plural, one {# held back} other {# held back}}"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "{hours, plural, one {# hr} other {# hr}}"
@@ -1568,6 +1572,10 @@ msgstr "未能完成的章节会占用工作线程，可能导致整个队列停
 #, fuzzy
 msgid "A connection has unsaved changes."
 msgstr "有未保存的连接更改。"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "A dry run of rebuilding which file backs each chapter. A volume that contains a chapter wins over a single-chapter file, and links the planner can't explain are kept as they are. Untick a file to leave it untouched, click a chapter to pin it where it is. Nothing changes until you press Relink."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -3527,6 +3535,10 @@ msgstr "点击一行进行选择，按住 Shift 点击可选择范围"
 msgid "Click a token to insert it."
 msgstr "点击令牌以插入。"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Click to keep ch. {label} where it is"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -5109,6 +5121,10 @@ msgstr "已排除"
 msgid "Excluded from taste"
 msgstr "已从品味中排除"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Excluded, click to include"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Existing folders on import"
@@ -5620,8 +5636,8 @@ msgid "Fully read owned"
 msgstr "已读完的收藏"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Gains"
-msgstr ""
+#~ msgid "Gains"
+#~ msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -5686,8 +5702,12 @@ msgid "Give up on a chapter after (minutes)"
 msgstr "在（分钟）后放弃章节"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Gives up ch."
+msgid "Gives up"
 msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+#~ msgid "Gives up ch."
+#~ msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6288,6 +6308,10 @@ msgstr "附带"
 msgid "Include"
 msgstr "包含"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Include {fileName} in the relink"
+msgstr ""
+
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
 msgid "Include {label}"
@@ -6302,6 +6326,10 @@ msgstr "包含子标签"
 #, fuzzy
 msgid "Include subtags when adding"
 msgstr "添加时包含子标签"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Included, click to leave this file untouched"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -6545,10 +6573,18 @@ msgstr "保留名称，下载到新的标准文件夹"
 msgid "Keep the name, download into it too"
 msgstr "保留名称，也下载到该文件夹"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Keeps exactly what it has today."
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 msgstr "让此系列不出现在跟踪器推送中，完整模式下还会将其完全排除在统计之外。"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Kept as linked"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -7077,8 +7113,8 @@ msgid "loose"
 msgstr "宽松"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Loses"
-msgstr ""
+#~ msgid "Loses"
+#~ msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8508,6 +8544,10 @@ msgstr "这里没有内容"
 msgid "Nothing here is final. Every option is also in Settings."
 msgstr "这里的设置都不是最终决定。之后也可以在“设置”中修改。"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Nothing in the queue"
@@ -9333,6 +9373,14 @@ msgstr "根据这些设置，按“推荐”标签页相同的方式为你排序
 msgid "Picks from the recommender, based on your whole library."
 msgstr "根据整个资料库，由推荐器挑选。"
 
+#: src/components/RelinkFilesModal.tsx
+msgid "Pin chapter {label}"
+msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Pinned. Click to let it move"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -9922,8 +9970,8 @@ msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "正在重建海报，{processedCount} / {totalCount}"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
-msgstr ""
+#~ msgid "Rebuilds which file backs each chapter from what is in the folder. A volume file that contains a chapter always wins over a single-chapter file. Single files left backing nothing are listed as superseded so you can reclaim the space."
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -12421,8 +12469,12 @@ msgid "Tags to include"
 msgstr "要包含的标签"
 
 #: src/components/RelinkFilesModal.tsx
-msgid "Takes ch."
+msgid "Takes"
 msgstr ""
+
+#: src/components/RelinkFilesModal.tsx
+#~ msgid "Takes ch."
+#~ msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -13483,6 +13535,10 @@ msgstr "在建立之前，徽章只会与你自己的资料库进行比较。"
 #, fuzzy
 msgid "Until: {end}"
 msgstr "结束：{end}"
+
+#: src/components/RelinkFilesModal.tsx
+msgid "Untouched"
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy

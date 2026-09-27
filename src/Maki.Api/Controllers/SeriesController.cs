@@ -254,8 +254,8 @@ public class SeriesController(
     /// which file, and which single-chapter files would be left backing nothing. Read-only.
     /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
-    [HttpGet("{id:int}/relink/plan")]
-    public async Task<IActionResult> RelinkPlan(int id, CancellationToken ct)
+    [HttpPost("{id:int}/relink/plan")]
+    public async Task<IActionResult> RelinkPlan(int id, [FromBody] RelinkPlanRequest request, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
@@ -268,7 +268,7 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        return Ok(await relinkPlanner.PlanAsync(series, ct));
+        return Ok(await relinkPlanner.PlanAsync(series, request.Options, ct));
     }
 
     /// <summary>
@@ -296,10 +296,16 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.noRootFolder");
         }
 
-        return Ok(await relinkPlanner.ApplyAsync(series, request.DeleteSuperseded, ct));
+        return Ok(await relinkPlanner.ApplyAsync(series, request.Options, request.DeleteSuperseded, ct));
     }
 
-    public record RelinkRequest(bool DeleteSuperseded);
+    public record RelinkPlanRequest(string[]? ExcludedPaths, int[]? PinnedChapterIds)
+    {
+        public RelinkOptions Options => new(ExcludedPaths ?? [], PinnedChapterIds ?? []);
+    }
+
+    public record RelinkRequest(string[]? ExcludedPaths, int[]? PinnedChapterIds, bool DeleteSuperseded)
+        : RelinkPlanRequest(ExcludedPaths, PinnedChapterIds);
 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)

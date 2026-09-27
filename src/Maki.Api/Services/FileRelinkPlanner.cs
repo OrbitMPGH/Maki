@@ -19,7 +19,22 @@ public enum RelinkConfidence
     FileName,
     /// <summary>Proportional guess for a finished series whose volume files cover every volume.</summary>
     Estimated,
+    /// <summary>
+    /// The chapter is on this file today and nothing in the file explains why. Somebody, or an
+    /// earlier linker with data the planner lacks, put it there, so the link counts as knowledge:
+    /// on a volume it outranks the provider's range, on a single file it ties with the name.
+    /// </summary>
+    Existing,
 }
+
+/// <param name="ExcludedPaths">Files left exactly as they are: they neither gain nor lose chapters.</param>
+/// <param name="PinnedChapterIds">Chapters that stay on whatever file backs them today.</param>
+public record RelinkOptions(IReadOnlyList<string> ExcludedPaths, IReadOnlyList<int> PinnedChapterIds)
+{
+    public static readonly RelinkOptions None = new([], []);
+}
+
+public record RelinkChapterRef(int Id, string Label);
 
 /// <param name="Confidence">Strongest confidence among the chapters the file ends up with, or null.</param>
 /// <param name="Chapters">Chapter labels the file backs after the plan.</param>
@@ -35,9 +50,10 @@ public record RelinkPlanFile(
     bool Recognized,
     string? Confidence,
     List<string> Chapters,
-    List<string> Gains,
-    List<string> Loses,
-    bool Superseded);
+    List<RelinkChapterRef> Gains,
+    List<RelinkChapterRef> Loses,
+    bool Superseded,
+    bool Excluded);
 
 public record RelinkPlan(
     int SeriesId,
@@ -67,6 +83,7 @@ public class FileRelinkPlanner(
         public required long Size { get; init; }
         public required ParsedReleaseFile Parsed { get; init; }
         public ChapterFile? Record { get; set; }
+        public bool Excluded { get; init; }
         /// <summary>Chapters this file contains and how sure we are, keyed by chapter id.</summary>
         public Dictionary<int, RelinkConfidence> Covers { get; } = [];
         public int Span => Parsed.IsVolume ? (Parsed.VolumeEnd ?? Parsed.Volume!.Value) - Parsed.Volume!.Value : 0;
@@ -80,15 +97,16 @@ public class FileRelinkPlanner(
         Dictionary<int, Candidate?> Assignment,
         Dictionary<int, Candidate> CandidateByRecordId);
 
-    public async Task<RelinkPlan> PlanAsync(Series series, CancellationToken ct = default)
+    public async Task<RelinkPlan> PlanAsync(Series series, RelinkOptions options, CancellationToken ct = default)
     {
-        var built = await BuildAsync(series, ct);
+        var built = await BuildAsync(series, options, ct);
         return ToPlan(built);
     }
 
-    public async Task<RelinkResult> ApplyAsync(Series series, bool deleteSuperseded, CancellationToken ct = default)
+    public async Task<RelinkResult> ApplyAsync(
+        Series series, RelinkOptions options, bool deleteSuperseded, CancellationToken ct = default)
     {
-        var built = await BuildAsync(series, ct);
+        var built = await BuildAsync(series, options, ct);
         var plan = ToPlan(built);
         var rootPath = series.RootFolder!.Path;
 
@@ -192,8 +210,10 @@ public class FileRelinkPlanner(
         return new RelinkResult(moved, plan.SupersededCount, deleted, failed, freed);
     }
 
-    private async Task<Built> BuildAsync(Series series, CancellationToken ct)
+    private async Task<Built> BuildAsync(Series series, RelinkOptions options, CancellationToken ct)
     {
+        var excluded = options.ExcludedPaths.Select(LibraryPaths.ComparisonKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var pinned = options.PinnedChapterIds.ToHashSet();
         var rootFolder = series.RootFolder ?? throw new InvalidOperationException("Series has no root folder loaded");
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var records = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
@@ -231,6 +251,7 @@ public class FileRelinkPlanner(
                     Size = new FileInfo(file).Length,
                     Parsed = ReleaseNameParser.ParseFileName(file),
                     Record = record,
+                    Excluded = excluded.Contains(key),
                 });
             }
         }
@@ -245,13 +266,32 @@ public class FileRelinkPlanner(
             .Where(c => c.Record is not null)
             .ToDictionary(c => c.Record!.Id);
 
+        // What a file backs today is evidence too, on top of what its name and pages say.
+        foreach (var chapter in chapters)
+        {
+            if (chapter.ChapterFileId is { } fileId && candidateByRecordId.TryGetValue(fileId, out var holder))
+            {
+                holder.Covers.TryAdd(chapter.Id, RelinkConfidence.Existing);
+            }
+        }
+
         var assignment = new Dictionary<int, Candidate?>();
         foreach (var chapter in chapters)
         {
             var current = chapter.ChapterFileId is { } id ? candidateByRecordId.GetValueOrDefault(id) : null;
+            if (pinned.Contains(chapter.Id) || current is { Excluded: true })
+            {
+                if (current is not null)
+                {
+                    assignment[chapter.Id] = current;
+                }
+
+                continue;
+            }
+
             var best = candidates
-                .Where(c => c.Covers.ContainsKey(chapter.Id))
-                .OrderBy(c => Rank(c.Covers[chapter.Id]))
+                .Where(c => !c.Excluded && c.Covers.ContainsKey(chapter.Id))
+                .OrderBy(c => Rank(c, c.Covers[chapter.Id]))
                 .ThenBy(c => c.Span)
                 // A tie keeps the file the chapter is on, so applying a plan twice changes nothing.
                 .ThenBy(c => ReferenceEquals(c, current) ? 0 : 1)
@@ -266,14 +306,15 @@ public class FileRelinkPlanner(
         return new Built(series, chapters, records, candidates, assignment, candidateByRecordId);
     }
 
-    private static int Rank(RelinkConfidence confidence) => confidence switch
+    private static int Rank(Candidate candidate, RelinkConfidence confidence) => confidence switch
     {
         RelinkConfidence.PageMarkers => 0,
-        RelinkConfidence.VolumeRange => 1,
+        RelinkConfidence.Existing when candidate.Parsed.IsVolume => 1,
+        RelinkConfidence.VolumeRange => 2,
         // A single file named for its chapter is certain about that chapter; a proportional guess
         // for which volume holds it is not, so the guess only wins when nothing else has it.
-        RelinkConfidence.FileName => 2,
-        _ => 3,
+        RelinkConfidence.FileName or RelinkConfidence.Existing => 3,
+        _ => 4,
     };
 
     private static void Cover(Candidate candidate, List<Chapter> chapters, Func<Chapter, int?>? estimator)
@@ -368,14 +409,15 @@ public class FileRelinkPlanner(
             // Superseded means safe to drop: nothing left on it, and each chapter it could have
             // held is on some other file. A file whose chapters are unknown to Maki (newer than
             // the chapter list, say) covers nothing and is left alone for a manual link.
-            var superseded = candidate.Parsed.IsRecognized
+            var superseded = !candidate.Excluded
+                && candidate.Parsed.IsRecognized
                 && after.Count == 0
                 && candidate.Covers.Count > 0
                 && candidate.Covers.Keys.All(assignedChapterIds.Contains);
 
             RelinkConfidence? confidence = after.Count == 0
                 ? null
-                : after.Select(c => candidate.Covers[c.Id]).MinBy(Rank);
+                : after.Select(c => candidate.Covers[c.Id]).MinBy(c => Rank(candidate, c));
 
             files.Add(new RelinkPlanFile(
                 candidate.RelativePath,
@@ -386,9 +428,10 @@ public class FileRelinkPlanner(
                 candidate.Parsed.IsRecognized,
                 confidence is { } c ? char.ToLowerInvariant(c.ToString()[0]) + c.ToString()[1..] : null,
                 Labels(after),
-                Labels(gains),
-                Labels(loses),
-                superseded));
+                Refs(gains),
+                Refs(loses),
+                superseded,
+                candidate.Excluded));
         }
 
         var supersededFiles = files.Where(f => f.Superseded).ToList();
@@ -407,8 +450,16 @@ public class FileRelinkPlanner(
 
     private static List<string> Labels(IEnumerable<Chapter> chapters) => chapters
         .OrderBy(c => c.Number ?? decimal.MaxValue)
-        .Select(c => c.Number?.ToString("0.###", CultureInfo.InvariantCulture) ?? c.Title ?? "?")
+        .Select(Label)
         .ToList();
+
+    private static List<RelinkChapterRef> Refs(IEnumerable<Chapter> chapters) => chapters
+        .OrderBy(c => c.Number ?? decimal.MaxValue)
+        .Select(c => new RelinkChapterRef(c.Id, Label(c)))
+        .ToList();
+
+    private static string Label(Chapter c) =>
+        c.Number?.ToString("0.###", CultureInfo.InvariantCulture) ?? c.Title ?? "?";
 
     private static string? ParsedLabel(ParsedReleaseFile parsed)
     {
