@@ -1108,7 +1108,6 @@ public class SeriesController(
         // Every folder the series has files in moves with it, or the stored paths of a
         // keep-new-standard import's original folder would point into the old root.
         var folders = await SeriesFolders.ForAsync(db, series, ct);
-        var oldFolder = Path.Combine(series.RootFolder.Path, series.FolderName);
         var newFolder = Path.Combine(destination.Path, series.FolderName);
 
         if (request.MoveFiles)
@@ -1130,6 +1129,9 @@ public class SeriesController(
                 }
             }
 
+            // A failure part way through puts the folders already moved back, since RootFolderId
+            // is not updated and would otherwise resolve them under the old root.
+            var movedFolders = new List<string>();
             foreach (var folder in folders)
             {
                 var source = Path.Combine(series.RootFolder.Path, folder);
@@ -1141,10 +1143,24 @@ public class SeriesController(
                 try
                 {
                     MoveDirectory(source, Path.Combine(destination.Path, folder));
+                    movedFolders.Add(folder);
                 }
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
+                    for (var i = movedFolders.Count - 1; i >= 0; i--)
+                    {
+                        try
+                        {
+                            MoveDirectory(Path.Combine(destination.Path, movedFolders[i]), Path.Combine(series.RootFolder.Path, movedFolders[i]));
+                        }
+                        catch (Exception rollbackEx)
+                        {
+                            logger.LogError(rollbackEx, "Could not move {Folder} back to {Root} after a failed series move",
+                                movedFolders[i], series.RootFolder.Path);
+                        }
+                    }
+
                     return StatusCode(StatusCodes.Status500InternalServerError,
                         new { error = $"Could not move the series folder: {ex.Message}" });
                 }
@@ -1159,8 +1175,11 @@ public class SeriesController(
         series.RootFolderId = destination.Id;
         await db.SaveChangesAsync(ct);
 
-        kavitaScans.QueueScan(oldFolder, series.Id);
-        kavitaScans.QueueScan(newFolder, series.Id);
+        foreach (var folder in folders)
+        {
+            kavitaScans.QueueScan(Path.Combine(oldRootFolderPath, folder), series.Id);
+            kavitaScans.QueueScan(Path.Combine(destination.Path, folder), series.Id);
+        }
 
         var moved = await UserStateForAsync(series.Id, ct);
         return Ok(SeriesDto.FromEntity(
@@ -1234,7 +1253,21 @@ public class SeriesController(
             // Likely cross-volume; fall through to copy+delete.
         }
 
-        CopyDirectory(source, destination);
+        try
+        {
+            CopyDirectory(source, destination);
+        }
+        catch
+        {
+            // The source is untouched until the copy completes, so a half-written copy can go.
+            if (Directory.Exists(destination))
+            {
+                Directory.Delete(destination, recursive: true);
+            }
+
+            throw;
+        }
+
         Directory.Delete(source, recursive: true);
     }
 
