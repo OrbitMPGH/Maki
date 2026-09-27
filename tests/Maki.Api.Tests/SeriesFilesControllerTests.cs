@@ -249,6 +249,78 @@ public sealed class SeriesFilesControllerTests : IDisposable
         }
     }
 
+    /// <summary>A <see cref="MakiDbContext"/> whose next save throws once, then behaves normally.</summary>
+    private sealed class ThrowOnceDbContext(DbContextOptions<MakiDbContext> options, DataScope? scope)
+        : MakiDbContext(options, scope)
+    {
+        private bool _armed = true;
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
+        {
+            if (_armed)
+            {
+                _armed = false;
+                throw new InvalidOperationException("simulated save failure");
+            }
+
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+        }
+    }
+
+    /// <summary>
+    /// The move loop finishes relocating every file, but the RootFolderId save that follows it fails
+    /// (standing in for a cancellation or a DB error observed only at that point). The undo list must
+    /// still run so the files land back in the source root and the series keeps its old RootFolderId.
+    /// </summary>
+    [Fact]
+    public async Task Move_undoes_the_file_moves_when_the_save_after_the_loop_fails()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+
+        var scope = new DataScope();
+        scope.SetUser(1, allRootFolders: true);
+        using var db = new ThrowOnceDbContext(_db.Options, scope);
+        var result = await Controller(db).Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+        Assert.Equal(500, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
+        Assert.True(File.Exists(Path.Combine(from, "Berserk", "Berserk Ch.1.cbz")));
+        Assert.True(File.Exists(Path.Combine(from, "Old Berserk", "Berserk Ch.2.cbz")));
+        Assert.False(Directory.Exists(Path.Combine(to, "Berserk")));
+        Assert.False(File.Exists(Path.Combine(to, "Old Berserk", "Berserk Ch.2.cbz")));
+        using var check = _db.NewContext();
+        Assert.Equal(fromId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
+
+    /// <summary>
+    /// The rollback after a failed save must not leave behind the destination directory it created
+    /// for the partial folder's files, or a retry's Directory.Exists(target) pre-check sees it and
+    /// fails with error.series.destinationExists even though nothing actually moved.
+    /// </summary>
+    [Fact]
+    public async Task Move_succeeds_on_retry_after_a_rolled_back_save_failure()
+    {
+        var (seriesId, fromId, toId, from, to) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        Directory.CreateDirectory(to);
+
+        var scope = new DataScope();
+        scope.SetUser(1, allRootFolders: true);
+        using var db = new ThrowOnceDbContext(_db.Options, scope);
+        var controller = Controller(db);
+
+        var failed = await controller.Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+        Assert.Equal(500, Assert.IsAssignableFrom<ObjectResult>(failed).StatusCode);
+        Assert.False(Directory.Exists(Path.Combine(to, "Old Berserk")));
+
+        var retried = await controller.Move(seriesId, new SeriesController.MoveSeriesRequest(toId), CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(retried);
+        Assert.True(File.Exists(Path.Combine(to, "Berserk", "Berserk Ch.1.cbz")));
+        Assert.True(File.Exists(Path.Combine(to, "Old Berserk", "Berserk Ch.2.cbz")));
+        using var check = _db.NewContext();
+        Assert.Equal(toId, check.Series.Single(s => s.Id == seriesId).RootFolderId);
+    }
+
     [Fact]
     public async Task Relink_refuses_deleting_superseded_files_without_delete_permission()
     {

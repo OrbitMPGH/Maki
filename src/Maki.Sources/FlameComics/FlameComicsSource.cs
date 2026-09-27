@@ -74,7 +74,8 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         var props = await GetPagePropsAsync($"series/{sourceSeriesId}", ct);
         if (!props.TryGetProperty("chapters", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"Flame Comics series/{sourceSeriesId} has a missing or non-array 'chapters'");
         }
 
         var chapters = new List<SourceChapter>();

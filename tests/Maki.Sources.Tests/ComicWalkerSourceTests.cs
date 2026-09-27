@@ -102,6 +102,66 @@ public class ComicWalkerSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_throws_when_an_eligible_episode_is_missing_id_or_code()
+    {
+        // The episode passed the type == "normal" && isActive gate, so it's eligible and should
+        // be downloadable; silently skipping it here (rather than throwing) would just shrink the
+        // chapter list without any error.
+        var source = SourceFor(new()
+        {
+            ["details/work"] = """
+                {"work":{"code":"KC_002386_S","title":"t","language":"ja"},
+                 "latestEpisodes":{"result":[
+                    {"type":"normal","isActive":true,"code":"C1","title":"第1話"}
+                 ]}}
+                """
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("KC_002386_S"));
+    }
+
+    [Fact]
+    public async Task ListChapters_falls_back_to_episodeNo_when_title_is_missing()
+    {
+        // A missing title is not a broken response like a missing id/code - the episode is still
+        // downloadable, so it must not stop the whole series sync.
+        var source = SourceFor(new()
+        {
+            ["details/work"] = """
+                {"work":{"code":"KC_002386_S","title":"t","language":"ja"},
+                 "latestEpisodes":{"result":[
+                    {"id":"e1","code":"C1","title":"","type":"normal","isActive":true,
+                     "internal":{"episodeNo":42}}
+                 ]}}
+                """
+        });
+
+        var chapters = await source.ListChaptersAsync("KC_002386_S");
+
+        var chapter = Assert.Single(chapters);
+        Assert.Equal("42", chapter.Title);
+    }
+
+    [Fact]
+    public async Task ListChapters_falls_back_to_code_when_title_and_episodeNo_are_missing()
+    {
+        var source = SourceFor(new()
+        {
+            ["details/work"] = """
+                {"work":{"code":"KC_002386_S","title":"t","language":"ja"},
+                 "latestEpisodes":{"result":[
+                    {"id":"e1","code":"C1","title":"","type":"normal","isActive":true}
+                 ]}}
+                """
+        });
+
+        var chapters = await source.ListChaptersAsync("KC_002386_S");
+
+        var chapter = Assert.Single(chapters);
+        Assert.Equal("C1", chapter.Title);
+    }
+
+    [Fact]
     public async Task ListChapters_returns_empty_for_a_genuinely_empty_result()
     {
         var source = SourceFor(new()

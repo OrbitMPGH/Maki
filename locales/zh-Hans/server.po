@@ -312,6 +312,11 @@ msgid "error.chapter.noRootFolder"
 msgstr "系列没有根文件夹"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Path belongs to another series' folder
+msgid "error.chapter.pathInOtherSeries"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
 #, fuzzy
 msgid "error.chapter.pathOutsideRoot"
@@ -1096,6 +1101,13 @@ msgstr "元数据提供方找不到该系列"
 msgid "error.series.metadataRefreshFailed"
 msgstr "元数据查询失败：系列没有提供方 ID，或提供方未返回任何内容"
 
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not save the series move: {message}
+msgid "error.series.moveSaveFailed"
+msgstr ""
+
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1200,6 +1212,12 @@ msgstr "当前章节格式会使两个章节生成相同的文件名"
 #, fuzzy
 msgid "error.seriesRename.notFound"
 msgstr "未找到作品"
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+msgid "error.seriesRename.planChanged"
+msgstr ""
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs

@@ -678,9 +678,26 @@ export default function LibraryPage() {
     </Button>
   )
 
+  // A series that drops out of `visible` (filter change, bulk tag removal, ...) must drop out of
+  // `selected` too, or a later bulk action (Delete, optionally with files) still hits it even
+  // though it's no longer shown as selected.
+  useEffect(() => {
+    const visibleIds = new Set(visible.map((s) => s.id))
+    setSelected((prev) => {
+      if (prev.size === 0) return prev
+      let changed = false
+      const next = new Set<number>()
+      for (const id of prev) {
+        if (visibleIds.has(id)) next.add(id)
+        else changed = true
+      }
+      return changed ? next : prev
+    })
+  }, [visible])
+
   // Against the *filtered* set, not the whole library: "select all" under an active filter that
   // silently grabbed hidden series would make every bulk action a foot-gun.
-  const allSelected = selected.size > 0 && selected.size === visible.length
+  const allSelected = visible.length > 0 && visible.every((s) => selected.has(s.id))
   const selectedCount = selected.size
 
   // One hook serves both views: only one of the two wrappers is mounted at a time, and the ref

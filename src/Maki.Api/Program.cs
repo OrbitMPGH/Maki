@@ -811,6 +811,7 @@ try
     builder.Services.AddScoped<SeriesIdentityRepairService>();
     builder.Services.AddScoped<ImportPathRepairService>();
     builder.Services.AddScoped<ChapterFileDuplicateRepairService>();
+    builder.Services.AddScoped<BaoziChapterRenumberRepairService>();
     builder.Services.AddScoped<ActivityStatsService>();
     builder.Services.AddScoped<UserViewResolver>();
     builder.Services.AddScoped<LibraryCompositionService>();
@@ -1218,6 +1219,11 @@ try
         // Folds ChapterFile rows that name one file twice (re-run torrent imports). Before Quartz
         // so the completed-download poll cannot be inserting while this reads.
         scope.ServiceProvider.GetRequiredService<ChapterFileDuplicateRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Renumbers Baozi Manhua chapters synced before chapter numbers came from the site's label
+        // instead of the zero-based chapter_slot. Same ordering reason as the duplicate repair above.
+        scope.ServiceProvider.GetRequiredService<BaoziChapterRenumberRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,

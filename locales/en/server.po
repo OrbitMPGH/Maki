@@ -223,6 +223,10 @@ msgid "error.chapter.noRootFolder"
 msgstr "Series has no root folder"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.pathInOtherSeries"
+msgstr "Path belongs to another series' folder"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 msgid "error.chapter.pathOutsideRoot"
 msgstr "Path is outside the series' root folder"
 
@@ -764,6 +768,12 @@ msgstr "Series not found on metadata provider"
 msgid "error.series.metadataRefreshFailed"
 msgstr "Metadata lookup failed - series has no provider id or the provider returned nothing"
 
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.moveSaveFailed"
+msgstr "Could not save the series move: {message}"
+
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -838,6 +848,11 @@ msgstr "The current chapter format gives two chapters the same file name"
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.notFound"
 msgstr "Series not found"
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.planChanged"
+msgstr "The rename plan changed since the preview was loaded. Review the new plan and try again."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs

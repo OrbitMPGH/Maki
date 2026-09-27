@@ -175,7 +175,9 @@ export default function HealthPage() {
   const [kind, setKind] = useState<string | null>(null)
   const [state, setState] = useState<string | null>('open')
   const [page, setPage] = useState(1)
-  const [selected, setSelected] = useState<Set<number>>(new Set())
+  // Value is the file's displayed version at the moment it was selected, so a bulk delete can
+  // tell the server what the reviewer actually saw rather than trusting whatever is current now.
+  const [selected, setSelected] = useState<Map<number, string>>(new Map())
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteReport, setDeleteReport] = useState<DeleteReport | null>(null)
   const [historyPage, setHistoryPage] = useState(1)
@@ -203,11 +205,11 @@ export default function HealthPage() {
   const refilter = (apply: () => void) => {
     apply()
     setPage(1)
-    setSelected(new Set())
+    setSelected(new Map())
   }
   const bulk = (path: string, body: object) =>
-    action.mutate({ path, body }, { onSuccess: () => setSelected(new Set()) })
-  const ids = [...selected]
+    action.mutate({ path, body }, { onSuccess: () => setSelected(new Map()) })
+  const ids = [...selected.keys()]
   const pageIds = files.data?.items.map((f) => f.id) ?? []
   const error = overview.error ?? files.error ?? operations.error ?? history.error ?? action.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
@@ -433,7 +435,7 @@ export default function HealthPage() {
                   >
                     <Trans>Delete</Trans>
                   </Button>
-                  <Button size="xs" variant="subtle" onClick={() => setSelected(new Set())}>
+                  <Button size="xs" variant="subtle" onClick={() => setSelected(new Map())}>
                     <Trans>Clear</Trans>
                   </Button>
                 </Group>
@@ -473,10 +475,10 @@ export default function HealthPage() {
                               }
                               onChange={(e) => {
                                 const checked = e.currentTarget.checked
-                                const next = new Set(selected)
-                                for (const i of pageIds) {
-                                  if (checked) next.add(i)
-                                  else next.delete(i)
+                                const next = new Map(selected)
+                                for (const file of files.data?.items ?? []) {
+                                  if (checked) next.set(file.id, file.version)
+                                  else next.delete(file.id)
                                 }
                                 setSelected(next)
                               }}
@@ -508,8 +510,8 @@ export default function HealthPage() {
                                 checked={selected.has(file.id)}
                                 onChange={(e) => {
                                   const checked = e.currentTarget.checked
-                                  const next = new Set(selected)
-                                  if (checked) next.add(file.id)
+                                  const next = new Map(selected)
+                                  if (checked) next.set(file.id, file.version)
                                   else next.delete(file.id)
                                   setSelected(next)
                                 }}
@@ -653,10 +655,16 @@ export default function HealthPage() {
         pending={action.isPending}
         onConfirm={() =>
           action.mutate(
-            { path: '/deletions/bulk', body: { fileIds: ids, confirmed: true } },
+            {
+              path: '/deletions/bulk',
+              body: {
+                files: [...selected].map(([fileId, version]) => ({ fileId, version })),
+                confirmed: true,
+              },
+            },
             {
               onSuccess: (result) => {
-                setSelected(new Set())
+                setSelected(new Map())
                 setDeleteOpen(false)
                 setDeleteReport(result as unknown as DeleteReport)
               },

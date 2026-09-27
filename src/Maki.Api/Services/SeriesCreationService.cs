@@ -42,9 +42,17 @@ public enum SeriesCreationError
 }
 
 public record SeriesCreationResult(Series? Series, SeriesCreationError? Error, List<string> Warnings,
-    bool Replayed = false)
+    bool Replayed = false, int? ExistingSeriesId = null, string? ExistingSeriesTitle = null)
 {
     public static SeriesCreationResult Failed(SeriesCreationError error) => new(null, error, []);
+
+    /// <summary>
+    /// The series already exists. Carries its id and title so a caller resolving a request against
+    /// it (see <c>SeriesRequestsController.Approve</c>) can still link the request to the series
+    /// instead of leaving it a dead end.
+    /// </summary>
+    public static SeriesCreationResult AlreadyInLibrary(int seriesId, string title) =>
+        new(null, SeriesCreationError.AlreadyInLibrary, [], ExistingSeriesId: seriesId, ExistingSeriesTitle: title);
 
     /// <summary>
     /// The mutation id an approved request's add operates under.
@@ -144,10 +152,16 @@ public class SeriesCreationService(
             return SeriesCreationResult.Failed(SeriesCreationError.MetadataNotFound);
         }
 
-        if (metadata.MangaBakaId is int existingId &&
-            await db.Series.AnyAsync(s => s.MangaBakaId == existingId, ct))
+        if (metadata.MangaBakaId is int existingId)
         {
-            return SeriesCreationResult.Failed(SeriesCreationError.AlreadyInLibrary);
+            var existing = await db.Series
+                .Where(s => s.MangaBakaId == existingId)
+                .Select(s => new { s.Id, s.Title })
+                .FirstOrDefaultAsync(ct);
+            if (existing is not null)
+            {
+                return SeriesCreationResult.AlreadyInLibrary(existing.Id, existing.Title);
+            }
         }
 
         var series = SeriesMetadataMapper.NewFromMetadata(metadata);

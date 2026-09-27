@@ -122,10 +122,25 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
 
             var id = episode.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
             var code = episode.TryGetProperty("code", out var codeEl) ? codeEl.GetString() : null;
-            var episodeTitle = episode.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
-            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(code) || string.IsNullOrEmpty(episodeTitle))
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(code))
             {
-                continue;
+                // Passed the type == "normal" && isActive gate, so this episode is eligible and
+                // should be downloadable. A missing id/code here is a broken response, not
+                // something to silently drop.
+                throw Unexpected(url, body);
+            }
+
+            var episodeTitle = episode.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
+            if (string.IsNullOrEmpty(episodeTitle))
+            {
+                // An empty title is a real (if rare) shape, unlike a missing id/code - fall back to
+                // something displayable instead of stopping the whole series sync over it.
+                var episodeNo = episode.TryGetProperty("internal", out var internalEl) &&
+                                 internalEl.TryGetProperty("episodeNo", out var noEl) &&
+                                 noEl.ValueKind == JsonValueKind.Number
+                    ? noEl.GetInt32().ToString(CultureInfo.InvariantCulture)
+                    : null;
+                episodeTitle = episodeNo ?? code;
             }
 
             var subTitle = episode.TryGetProperty("subTitle", out var subTitleEl) ? subTitleEl.GetString() : null;

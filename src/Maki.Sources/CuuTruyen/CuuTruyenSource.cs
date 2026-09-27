@@ -168,7 +168,8 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
 
         if (!json.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"Unexpected response from {BaseUrl}/api/v2/mangas/{sourceSeriesId}/chapters: missing or non-array 'data'");
         }
 
         var chapters = new List<SourceChapter>();

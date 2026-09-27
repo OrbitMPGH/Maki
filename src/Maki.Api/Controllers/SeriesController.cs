@@ -1136,6 +1136,75 @@ public class SeriesController(
         var folders = await SeriesFolders.ForAsync(db, series, ct);
         var newFolder = Path.Combine(destination.Path, series.FolderName);
 
+        // A failure part way through puts back whatever already moved, since RootFolderId is
+        // not updated and would otherwise resolve it under the old root. The series' own folder
+        // moves whole; a folder it only has some files in gives up just those files, the same
+        // line Delete draws, so anything else living there stays put.
+        var undo = new List<(string From, string To, bool IsDirectory)>();
+        var emptiedFolders = new List<string>();
+        // Directories the partial-folder branch below created for a single file's destination,
+        // deepest first. A failed later file rolls the moved files back but leaves these behind;
+        // left in place, the next attempt's Directory.Exists(target) pre-check sees a directory
+        // that already exists and fails with error.series.destinationExists.
+        var createdDirs = new List<string>();
+
+        void CreateDirectoryTracked(string path)
+        {
+            var dir = path;
+            while (!Directory.Exists(dir))
+            {
+                createdDirs.Add(dir);
+                var parent = Path.GetDirectoryName(dir);
+                if (string.IsNullOrEmpty(parent) || parent == dir)
+                {
+                    break;
+                }
+
+                dir = parent;
+            }
+
+            Directory.CreateDirectory(path);
+        }
+
+        void RollbackMoves()
+        {
+            for (var i = undo.Count - 1; i >= 0; i--)
+            {
+                var (from, to, isDirectory) = undo[i];
+                try
+                {
+                    if (isDirectory)
+                    {
+                        MoveDirectory(to, from);
+                    }
+                    else
+                    {
+                        System.IO.File.Move(to, from);
+                    }
+                }
+                catch (Exception rollbackEx)
+                {
+                    logger.LogError(rollbackEx, "Could not move {Path} back to {Root} after a failed series move",
+                        from, series.RootFolder.Path);
+                }
+            }
+
+            foreach (var dir in createdDirs)
+            {
+                try
+                {
+                    if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
+                    {
+                        Directory.Delete(dir, recursive: false);
+                    }
+                }
+                catch (Exception rollbackEx)
+                {
+                    logger.LogError(rollbackEx, "Could not remove {Path} after a failed series move", dir);
+                }
+            }
+        }
+
         if (request.MoveFiles)
         {
             if (await HasActiveDownloadAsync(id, ct))
@@ -1170,12 +1239,6 @@ public class SeriesController(
                 }
             }
 
-            // A failure part way through puts back whatever already moved, since RootFolderId is
-            // not updated and would otherwise resolve it under the old root. The series' own folder
-            // moves whole; a folder it only has some files in gives up just those files, the same
-            // line Delete draws, so anything else living there stays put.
-            var undo = new List<(string From, string To, bool IsDirectory)>();
-            var emptiedFolders = new List<string>();
             foreach (var (folder, index) in folders.Select((f, i) => (f, i)))
             {
                 var source = Path.Combine(series.RootFolder.Path, folder);
@@ -1204,7 +1267,7 @@ public class SeriesController(
                             continue;
                         }
 
-                        Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+                        CreateDirectoryTracked(Path.GetDirectoryName(to)!);
                         System.IO.File.Move(from, to);
                         undo.Add((from, to, false));
                     }
@@ -1214,37 +1277,10 @@ public class SeriesController(
                 catch (Exception ex)
                 {
                     logger.LogWarning(ex, "Could not move series folder for {Title} to {Destination}", series.Title, destination.Path);
-                    for (var i = undo.Count - 1; i >= 0; i--)
-                    {
-                        var (from, to, isDirectory) = undo[i];
-                        try
-                        {
-                            if (isDirectory)
-                            {
-                                MoveDirectory(to, from);
-                            }
-                            else
-                            {
-                                System.IO.File.Move(to, from);
-                            }
-                        }
-                        catch (Exception rollbackEx)
-                        {
-                            logger.LogError(rollbackEx, "Could not move {Path} back to {Root} after a failed series move",
-                                from, series.RootFolder.Path);
-                        }
-                    }
+                    RollbackMoves();
 
                     return StatusCode(StatusCodes.Status500InternalServerError,
                         new { error = $"Could not move the series folder: {ex.Message}" });
-                }
-            }
-
-            foreach (var emptied in emptiedFolders)
-            {
-                if (!Directory.EnumerateFileSystemEntries(emptied).Any())
-                {
-                    Directory.Delete(emptied, recursive: false);
                 }
             }
         }
@@ -1274,8 +1310,40 @@ public class SeriesController(
         }
 
         var oldRootFolderPath = series.RootFolder.Path;
+        var oldRootFolderId = series.RootFolderId;
         series.RootFolderId = destination.Id;
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            // Cancellation must not be observed here: every file has already moved, so a
+            // cancelled save would leave the DB pointing at the old root while the files sit
+            // in the new one. CancellationToken.None keeps this write unconditional.
+            await db.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            series.RootFolderId = oldRootFolderId;
+            logger.LogError(ex, "Could not save the series move for {Title} to {Destination}", series.Title, destination.Path);
+            RollbackMoves();
+
+            return this.ServerError(localizer, "error.series.moveSaveFailed", new { message = ex.Message });
+        }
+
+        // Best-effort only: the move and the DB save both already succeeded, so a stray empty
+        // source folder left behind is cosmetic and must not fail the request.
+        foreach (var emptied in emptiedFolders)
+        {
+            try
+            {
+                if (!Directory.EnumerateFileSystemEntries(emptied).Any())
+                {
+                    Directory.Delete(emptied, recursive: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not remove emptied folder {Folder} after moving series {Title}", emptied, series.Title);
+            }
+        }
 
         foreach (var folder in folders)
         {
@@ -1310,14 +1378,19 @@ public class SeriesController(
 
     /// <summary>
     /// Renames the series folder and every chapter file in it to match the current formats.
-    /// Refused while a download for this series is in flight — it writes into the old folder
-    /// halfway through — and when two chapters would end up sharing a file name.
+    /// Refused while a download for this series is in flight (it writes into the old folder
+    /// halfway through), and when two chapters would end up sharing a file name. A
+    /// <c>fingerprint</c> from the preview is refused when the plan has changed since.
     /// </summary>
     [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/rename")]
-    public async Task<IActionResult> Rename(int id, CancellationToken ct)
+    public async Task<IActionResult> Rename(
+        int id,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)]
+        RenameConfirmRequest? request,
+        CancellationToken ct)
     {
-        var result = await seriesRename.RenameAsync(id, ct);
+        var result = await seriesRename.RenameAsync(id, request?.Fingerprint, ct);
         if (result.Error is null)
         {
             return Ok(result);
@@ -1325,8 +1398,10 @@ public class SeriesController(
 
         return result.Plan is null
             ? NotFound(new { error = result.Error })
-            : Conflict(new { error = result.Error, warnings = result.Warnings });
+            : Conflict(new { code = result.ErrorCode, error = result.Error, warnings = result.Warnings });
     }
+
+    public record RenameConfirmRequest(string? Fingerprint);
 
     /// <summary>
     /// Same rename, over a list. Each series is independent: one refusing (an active download, a

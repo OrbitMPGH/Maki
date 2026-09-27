@@ -312,6 +312,11 @@ msgid "error.chapter.noRootFolder"
 msgstr "시리즈에 루트 폴더가 없습니다"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Path belongs to another series' folder
+msgid "error.chapter.pathInOtherSeries"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
 #, fuzzy
 msgid "error.chapter.pathOutsideRoot"
@@ -1096,6 +1101,13 @@ msgstr "메타데이터 제공자에서 시리즈를 찾을 수 없습니다"
 msgid "error.series.metadataRefreshFailed"
 msgstr "메타데이터 조회 실패: 시리즈에 제공자 ID가 없거나 제공자가 아무것도 반환하지 않았습니다"
 
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not save the series move: {message}
+msgid "error.series.moveSaveFailed"
+msgstr ""
+
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1200,6 +1212,12 @@ msgstr "현재 챕터 형식에서는 두 챕터의 파일 이름이 같아집�
 #, fuzzy
 msgid "error.seriesRename.notFound"
 msgstr "시리즈를 찾을 수 없습니다"
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+msgid "error.seriesRename.planChanged"
+msgstr ""
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs

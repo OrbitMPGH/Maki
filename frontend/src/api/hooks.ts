@@ -2997,6 +2997,8 @@ export interface SeriesRenamePlan {
   conflicts: string[]
   folderChanged: boolean
   hasChanges: boolean
+  /** Sent back with the confirm so the server can refuse a plan that changed since this preview. */
+  fingerprint: string
 }
 
 export interface SeriesRenameResult {
@@ -3018,8 +3020,11 @@ export function useSeriesRenamePreview(seriesId: number, enabled: boolean) {
 export function useRenameSeries(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () =>
-      api<SeriesRenameResult>(`/series/${seriesId}/rename`, { method: 'POST' }),
+    mutationFn: (fingerprint: string) =>
+      api<SeriesRenameResult>(`/series/${seriesId}/rename`, {
+        method: 'POST',
+        body: JSON.stringify({ fingerprint }),
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'rename-preview'] })

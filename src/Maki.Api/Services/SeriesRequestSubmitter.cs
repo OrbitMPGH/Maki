@@ -5,6 +5,7 @@ using Maki.Core.Inbox;
 using Maki.Core.Metadata;
 using Maki.Core.Notifications;
 using Maki.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -75,13 +76,26 @@ public class SeriesRequestSubmitter(
     /// Saves a filled request unless an identical one is already pending. "Already pending" is read
     /// through the context's query filter, as the controller always did: a requester's own rows, or
     /// every user's for an admin or a background scope.
+    /// <para>
+    /// The upfront check narrows the common case, but two submits landing at the same instant can
+    /// both pass it before either has saved. The partial unique index on the identity columns
+    /// (<c>SeriesRequestPendingUnique</c> migration) is what actually stops the second row, and a
+    /// violation here is read back as the same <see cref="SeriesRequestSubmitError.AlreadyPending"/>.
+    /// </para>
+    /// <para>
+    /// The index only covers <see cref="SeriesRequestStatus.Pending"/> rows, so this check also
+    /// treats a <see cref="SeriesRequestStatus.Processing"/> one as already pending: a request an
+    /// admin is mid-approval on is exactly as much "already asked for" as a plain pending one, and
+    /// the index has no way to stop a fresh submit while it's claimed.
+    /// </para>
     /// </summary>
     public async Task<SeriesRequestSubmitResult> SubmitAsync(
         SeriesRequest request, string userName, CancellationToken ct)
     {
-        // A second identical pending request is noise in the admin queue, not a stronger signal.
+        // A second identical pending (or in-flight) request is noise in the admin queue, not a
+        // stronger signal.
         var duplicate = await db.SeriesRequests.AnyAsync(r =>
-            r.Status == SeriesRequestStatus.Pending &&
+            (r.Status == SeriesRequestStatus.Pending || r.Status == SeriesRequestStatus.Processing) &&
             r.Kind == request.Kind &&
             r.MetadataProviderId == request.MetadataProviderId &&
             r.SeriesId == request.SeriesId &&
@@ -94,7 +108,15 @@ public class SeriesRequestSubmitter(
         }
 
         db.SeriesRequests.Add(request);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            db.Entry(request).State = EntityState.Detached;
+            return new(null, SeriesRequestSubmitError.AlreadyPending);
+        }
 
         logger.LogInformation("{User} requested {Kind} '{Title}'", userName, request.Kind, request.Title);
 
@@ -135,4 +157,20 @@ public class SeriesRequestSubmitter(
 
     private static string ChapterLabel(decimal? number) =>
         number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+
+    /// <summary>
+    /// Shared with the controller, whose Edit and release paths hit the same index.
+    /// <para>
+    /// Takes the base <see cref="Exception"/> type because the two call shapes don't wrap the same
+    /// way: <c>SaveChangesAsync</c> goes through the change tracker and wraps the provider's
+    /// exception in a <see cref="DbUpdateException"/>, but <c>ExecuteUpdateAsync</c> executes the
+    /// statement directly and lets the provider's own exception through unwrapped.
+    /// </para>
+    /// </summary>
+    internal static bool IsUniqueViolation(Exception e) => e switch
+    {
+        DbUpdateException { InnerException: SqliteException { SqliteExtendedErrorCode: 2067 or 1555 } } => true,
+        SqliteException { SqliteExtendedErrorCode: 2067 or 1555 } => true,
+        _ => false,
+    };
 }

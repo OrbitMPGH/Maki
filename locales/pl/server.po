@@ -312,6 +312,11 @@ msgid "error.chapter.noRootFolder"
 msgstr "Seria nie ma folderu głównego"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Path belongs to another series' folder
+msgid "error.chapter.pathInOtherSeries"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
 #, fuzzy
 msgid "error.chapter.pathOutsideRoot"
@@ -1096,6 +1101,13 @@ msgstr "Nie znaleziono serii u dostawcy metadanych"
 msgid "error.series.metadataRefreshFailed"
 msgstr "Wyszukiwanie metadanych nie powiodło się - seria nie ma id dostawcy albo dostawca nic nie zwrócił"
 
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not save the series move: {message}
+msgid "error.series.moveSaveFailed"
+msgstr ""
+
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1200,6 +1212,12 @@ msgstr "Obecny format rozdziałów nadaje tę samą nazwę pliku dwóm rozdział
 #, fuzzy
 msgid "error.seriesRename.notFound"
 msgstr "Nie znaleziono serii."
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+msgid "error.seriesRename.planChanged"
+msgstr ""
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs

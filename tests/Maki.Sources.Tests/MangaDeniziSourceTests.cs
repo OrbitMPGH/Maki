@@ -167,6 +167,42 @@ public class MangaDeniziSourceTests
     }
 
     [Fact]
+    public async Task GetPages_throws_when_a_middle_page_has_no_image_url()
+    {
+        // Silently skipping the null page would package an incomplete chapter as successful.
+        var source = new MangaDeniziSource(new FakeHttpClientFactory(
+            new()
+            {
+                ["reader/solo-leveling/000"] = """
+                    { "pages": [
+                        { "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/001.webp" },
+                        { "image_url": null },
+                        { "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/003.webp" }
+                    ] }
+                    """
+            },
+            new() { ["reader-images/"] = FakeHttpClientFactory.BinaryFixture("mangadenizi-page1.bin") }));
+
+        var chapter = new SourceChapter(
+            "mangadenizi", "solo-leveling", "solo-leveling/000", "0", 0m, null, null, "tr", null);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(chapter));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task ProcessPage_throws_when_grid_is_not_positive(int grid)
+    {
+        using var doc = JsonDocument.Parse(
+            "{\"image_url\":\"https://img.mangadenizi.net/page.webp\",\"scramble\":{\"method\":\"tiled-v1\",\"grid\":" + grid + ",\"seed\":1}}");
+        var raw = new byte[] { 1, 2, 3 };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => MangaDeniziSource.ProcessPageAsync(
+            raw, doc.RootElement, "https://img.mangadenizi.net/page.webp", CancellationToken.None));
+    }
+
+    [Fact]
     public async Task GetPages_throws_InvalidOperation_on_an_unexpected_reader_shape()
     {
         var source = SourceFor(new()
@@ -334,6 +370,16 @@ public class MangaDeniziDescramblerTests
         using var descrambled = MangaDeniziDescrambler.Descramble(scrambled, grid, seed);
 
         AssertPixelsEqual(original, descrambled);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Descramble_throws_for_a_non_positive_grid(int grid)
+    {
+        using var image = CoordinateImage(10, 10);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => MangaDeniziDescrambler.Descramble(image, grid, 1u));
     }
 
     [Fact]

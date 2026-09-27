@@ -297,6 +297,111 @@ public class SeriesRenameServiceTests : IDisposable
             db.ChapterFiles.Single(f => f.SeriesId == id).RelativePath);
     }
 
+    /// <summary>
+    /// The folder moves first, so a file that is then skipped is under the new folder at its old
+    /// name. Its row has to say so, or it names a folder that no longer exists.
+    /// </summary>
+    [Fact]
+    public async Task Folder_rename_with_a_colliding_target_keeps_every_path_resolvable()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+        var imported = SeedChapterAt(id, 25m, 3, Path.Combine("Berserk", "Berserk.v03.c25.cbz"));
+        File.WriteAllText(Path.Combine(_root, "Berserk", "Berserk Vol.3 Ch.25.cbz"), "someone else");
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Contains(result.Warnings, w => w.Contains("error.seriesRename.fileSkippedExists"));
+
+        using var db = _db.NewContext();
+        Assert.All(db.ChapterFiles.Where(f => f.SeriesId == id).ToList(),
+            f => Assert.True(File.Exists(Path.Combine(_root, f.RelativePath)), f.RelativePath));
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk.v03.c25.cbz"),
+            db.ChapterFiles.Single(f => f.Id == imported).RelativePath);
+    }
+
+    [Fact]
+    public async Task Rename_can_swap_two_chapter_filenames()
+    {
+        _settings.Set(SettingKeys.LibraryChapterFormat, "{Series Title} - {Chapter Number:000}");
+        var id = SeedSeries("Berserk", "Berserk (1989)");
+        var ch24 = SeedChapterAt(id, 24m, 3, Path.Combine("Berserk (1989)", "Berserk - 025.cbz"));
+        var ch25 = SeedChapterAt(id, 25m, 3, Path.Combine("Berserk (1989)", "Berserk - 024.cbz"));
+        File.WriteAllText(Path.Combine(_root, "Berserk (1989)", "Berserk - 025.cbz"), "ch24");
+        File.WriteAllText(Path.Combine(_root, "Berserk (1989)", "Berserk - 024.cbz"), "ch25");
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.Empty(result.Warnings);
+        Assert.Equal("ch24", File.ReadAllText(Path.Combine(_root, "Berserk (1989)", "Berserk - 024.cbz")));
+        Assert.Equal("ch25", File.ReadAllText(Path.Combine(_root, "Berserk (1989)", "Berserk - 025.cbz")));
+        Assert.Equal(2, Directory.GetFiles(Path.Combine(_root, "Berserk (1989)")).Length);
+
+        using var db = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - 024.cbz"),
+            db.ChapterFiles.Single(f => f.Id == ch24).RelativePath);
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - 025.cbz"),
+            db.ChapterFiles.Single(f => f.Id == ch25).RelativePath);
+    }
+
+    /// <summary>
+    /// The staged name a swap steps a file aside to must keep the real extension at the end, or a
+    /// file that never makes it back to its own name (see StayPut) is invisible to Health and
+    /// rescan, which only recognize a comic archive by its trailing extension.
+    /// </summary>
+    [Fact]
+    public void Staged_name_keeps_the_extension_at_the_end()
+    {
+        var staged = SeriesRenameService.StagedName(Path.Combine(_root, "Berserk - 024.cbz"));
+
+        Assert.EndsWith(".cbz", staged);
+        Assert.Matches(@"^.*Berserk - 024\.maki-rename-[0-9a-f]{8}\.cbz$", staged);
+    }
+
+    [Fact]
+    public void Case_only_move_puts_the_file_back_when_the_second_step_fails()
+    {
+        var from = Path.Combine(_root, "Berserk.cbz");
+        File.WriteAllText(from, "cbz");
+        var calls = 0;
+
+        Assert.Throws<IOException>(() => SeriesRenameService.MovePath(
+            from, Path.Combine(_root, "berserk.cbz"), (s, d) =>
+            {
+                if (++calls == 2)
+                {
+                    throw new IOException("second step failed");
+                }
+
+                File.Move(s, d);
+            }));
+
+        Assert.Equal(["Berserk.cbz"], Directory.GetFiles(_root).Select(Path.GetFileName).ToArray());
+    }
+
+    [Fact]
+    public async Task Rename_is_refused_when_the_plan_changed_since_the_preview()
+    {
+        var id = SeedSeries("Berserk", "Berserk (1989)", chapters: (24m, 3, "en"));
+        _settings.Set(SettingKeys.LibraryChapterFormat, "{Series Title} - {Chapter Number:000}");
+        var previewed = await Service().PlanAsync(id, CancellationToken.None);
+
+        _settings.Set(SettingKeys.LibraryChapterFormat, "{Series Title} {Chapter Number:000}");
+        var stale = await Service().RenameAsync(id, previewed!.Fingerprint, CancellationToken.None);
+
+        Assert.False(stale.Applied);
+        Assert.Equal("error.seriesRename.planChanged", stale.Error);
+        Assert.Equal("error.seriesRename.planChanged", stale.ErrorCode);
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.3 Ch.24.cbz")));
+
+        var current = await Service().PlanAsync(id, CancellationToken.None);
+        var applied = await Service().RenameAsync(id, current!.Fingerprint, CancellationToken.None);
+
+        Assert.True(applied.Applied);
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk 024.cbz")));
+    }
+
     [Fact]
     public async Task Folder_only_rename_repoints_files_it_did_not_have_to_touch()
     {

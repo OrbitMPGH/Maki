@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
@@ -27,13 +29,32 @@ public record SeriesRenamePlan(
     public bool FolderChanged => !string.Equals(FolderFrom, FolderTo, StringComparison.Ordinal);
 
     public bool HasChanges => FolderChanged || Files.Count > 0;
+
+    /// <summary>
+    /// Identifies what this plan would do, so a confirm can be refused when the formats or the
+    /// metadata changed after the preview the user actually read.
+    /// </summary>
+    public string Fingerprint
+    {
+        get
+        {
+            var text = new StringBuilder(FolderTo);
+            foreach (var file in Files.OrderBy(f => f.ChapterFileId))
+            {
+                text.Append('\n').Append(file.ChapterFileId).Append('\t').Append(file.To);
+            }
+
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
+        }
+    }
 }
 
 public record SeriesRenameResult(
     SeriesRenamePlan? Plan,
     bool Applied,
     string? Error,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    string? ErrorCode = null);
 
 /// <summary>
 /// Applies the configured naming formats to a series that is already on disk. Nothing else does
@@ -57,6 +78,18 @@ public class SeriesRenameService(
 {
     /// <summary>Suffix for the two-step move a case-only rename needs on Windows.</summary>
     private const string TempSuffix = ".maki-rename";
+
+    /// <summary>
+    /// Name a file is staged under while it steps aside for a swap. Keeps the extension at the
+    /// end: a file that never makes it back to a real name (<see cref="StayPut"/>) stays under
+    /// this name, and Health/rescan only recognize a comic archive by its trailing extension.
+    /// </summary>
+    internal static string StagedName(string path)
+    {
+        var ext = Path.GetExtension(path);
+        var stem = path[..^ext.Length];
+        return stem + TempSuffix + "-" + Guid.NewGuid().ToString("N")[..8] + ext;
+    }
 
     /// <summary>Paths compare the way the host's filesystem does.</summary>
     private static readonly StringComparison PathComparison =
@@ -170,7 +203,15 @@ public class SeriesRenameService(
     }
 
     public Task<SeriesRenameResult> RenameAsync(int seriesId, CancellationToken ct) =>
-        RenameAsync(seriesId, RenameScope.Everything, ct);
+        RenameAsync(seriesId, RenameScope.Everything, null, ct);
+
+    /// <param name="expectedFingerprint">
+    /// The <see cref="SeriesRenamePlan.Fingerprint"/> of the preview being confirmed. A plan that no
+    /// longer matches it is refused rather than applied unseen.
+    /// </param>
+    public Task<SeriesRenameResult> RenameAsync(
+        int seriesId, string? expectedFingerprint, CancellationToken ct) =>
+        RenameAsync(seriesId, RenameScope.Everything, expectedFingerprint, ct);
 
     /// <summary>
     /// Applies the chapter format to a specific set of <see cref="ChapterFile"/> rows and nothing
@@ -186,10 +227,10 @@ public class SeriesRenameService(
         int seriesId, IReadOnlyCollection<int> chapterFileIds, CancellationToken ct) =>
         chapterFileIds.Count == 0
             ? Task.FromResult(new SeriesRenameResult(null, true, null, []))
-            : RenameAsync(seriesId, new RenameScope(false, chapterFileIds.ToHashSet()), ct);
+            : RenameAsync(seriesId, new RenameScope(false, chapterFileIds.ToHashSet()), null, ct);
 
     private async Task<SeriesRenameResult> RenameAsync(
-        int seriesId, RenameScope scope, CancellationToken ct)
+        int seriesId, RenameScope scope, string? expectedFingerprint, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder)
             .FirstOrDefaultAsync(s => s.Id == seriesId, ct);
@@ -204,6 +245,13 @@ public class SeriesRenameService(
         }
 
         var plan = await PlanAsync(series, scope, ct);
+
+        if (expectedFingerprint is not null &&
+            !string.Equals(expectedFingerprint, plan.Fingerprint, StringComparison.OrdinalIgnoreCase))
+        {
+            const string planChanged = "error.seriesRename.planChanged";
+            return new SeriesRenameResult(plan, false, localizer.Get(planChanged), [], planChanged);
+        }
 
         if (plan.Conflicts.Count > 0)
         {
@@ -230,6 +278,7 @@ public class SeriesRenameService(
         var newFolder = Path.Combine(root, plan.FolderTo);
         var warnings = new List<string>();
         var occupied = new OccupiedNames();
+        var moves = new List<Move>();
 
         if (plan.FolderChanged && Directory.Exists(oldFolder))
         {
@@ -242,6 +291,7 @@ public class SeriesRenameService(
             try
             {
                 MovePath(oldFolder, newFolder, Directory.Move);
+                moves.Add(new Move(oldFolder, newFolder, IsFolder: true));
             }
             catch (Exception ex)
             {
@@ -252,11 +302,41 @@ public class SeriesRenameService(
         }
 
         // The folder move above already carried the files, so each one is now under the new folder
-        // at its old name — that, not the stored RelativePath, is where it actually is.
+        // at its old name. That, not the stored RelativePath, is where it actually is.
+        var sources = plan.Files.ToDictionary(
+            f => f.ChapterFileId, f => SourceAfterFolderMove(root, plan, f.From));
+
+        // A file whose current name another planned file wants (a swap, or a chain) steps aside to a
+        // temporary name first, so in-plan sources are vacated before anything needs their names.
+        foreach (var file in plan.Files)
+        {
+            var from = sources[file.ChapterFileId];
+            var wanted = plan.Files.Any(other => other.ChapterFileId != file.ChapterFileId &&
+                string.Equals(Path.Combine(root, other.To), from, StringComparison.OrdinalIgnoreCase));
+            if (!wanted || !System.IO.File.Exists(from))
+            {
+                continue;
+            }
+
+            var staged = StagedName(from);
+            try
+            {
+                System.IO.File.Move(from, staged);
+                occupied.Moved(from, staged);
+                moves.Add(new Move(from, staged, IsFolder: false));
+                sources[file.ChapterFileId] = staged;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not stage {From} for {Title}", file.From, series.Title);
+            }
+        }
+
         var renamed = new List<SeriesRenameFile>();
         foreach (var file in plan.Files)
         {
-            var from = SourceAfterFolderMove(root, plan, file.From);
+            var from = sources[file.ChapterFileId];
+            var original = SourceAfterFolderMove(root, plan, file.From);
             var to = Path.Combine(root, file.To);
 
             if (string.Equals(from, to, StringComparison.Ordinal))
@@ -275,6 +355,7 @@ public class SeriesRenameService(
                 {
                     from = Path.GetFileName(file.From), to = Path.GetFileName(file.To)
                 }));
+                renamed.Add(file with { To = StayPut(root, from, original, occupied, moves) });
                 continue;
             }
 
@@ -291,30 +372,46 @@ public class SeriesRenameService(
             {
                 MovePath(from, to, (s, d) => System.IO.File.Move(s, d));
                 occupied.Moved(from, to);
+                moves.Add(new Move(from, to, IsFolder: false));
                 renamed.Add(file);
             }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Could not rename {From} for {Title}", file.From, series.Title);
                 warnings.Add($"Could not rename {Path.GetFileName(file.From)}: {ex.Message}");
+                renamed.Add(file with { To = StayPut(root, from, original, occupied, moves) });
             }
         }
 
-        // One save for the whole series: a half-written set of paths is far worse to recover from
-        // than a rename that failed outright.
+        // Once anything has moved, a cancelled request must not leave the rows describing the old
+        // layout. One save for the whole series: a half-written set of paths is far worse to
+        // recover from than a rename that failed outright.
+        var saveToken = moves.Count > 0 ? CancellationToken.None : ct;
         series.FolderName = plan.FolderTo;
-        if (renamed.Count > 0)
+        var byId = renamed
+            .Where(f => !string.Equals(f.From, f.To, StringComparison.Ordinal))
+            .ToDictionary(f => f.ChapterFileId, f => f.To);
+        if (byId.Count > 0)
         {
-            var byId = renamed.ToDictionary(f => f.ChapterFileId, f => f.To);
             var ids = byId.Keys.ToList();
-            var rows = await db.ChapterFiles.Where(f => ids.Contains(f.Id)).ToListAsync(ct);
+            var rows = await db.ChapterFiles.Where(f => ids.Contains(f.Id)).ToListAsync(saveToken);
             foreach (var row in rows)
             {
                 row.RelativePath = byId[row.Id];
             }
         }
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(saveToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Saving the rename of {Title} failed; reversing {Count} moves",
+                series.Title, moves.Count);
+            UndoMoves(moves, series.Title);
+            throw;
+        }
 
         // ReaderArchiveCache needs no invalidation: it is keyed by ChapterFile id and validated
         // against the file's size, and a rename changes neither.
@@ -375,7 +472,7 @@ public class SeriesRenameService(
     /// Renaming <c>Berserk</c> to <c>berserk</c> is a real change that Windows reports as "already
     /// exists" and refuses as a same-path move, so it goes via a temporary name.
     /// </summary>
-    private static void MovePath(string from, string to, Action<string, string> move)
+    internal static void MovePath(string from, string to, Action<string, string> move)
     {
         if (!SamePathIgnoringCase(from, to))
         {
@@ -385,7 +482,70 @@ public class SeriesRenameService(
 
         var staging = to + TempSuffix;
         move(from, staging);
-        move(staging, to);
+        try
+        {
+            move(staging, to);
+        }
+        catch
+        {
+            move(staging, from);
+            throw;
+        }
+    }
+
+    private sealed record Move(string From, string To, bool IsFolder);
+
+    /// <summary>
+    /// Where a file that did not reach its target ends up, relative to the root. A file staged
+    /// aside for a swap goes back to its own name when that is still free; otherwise it stays
+    /// where it is, and the row records that rather than a path nothing answers to.
+    /// </summary>
+    private string StayPut(
+        string root, string current, string original, OccupiedNames occupied, List<Move> moves)
+    {
+        if (!string.Equals(current, original, StringComparison.Ordinal) &&
+            System.IO.File.Exists(current) && !occupied.Taken(original))
+        {
+            try
+            {
+                System.IO.File.Move(current, original);
+                occupied.Moved(current, original);
+                moves.Add(new Move(current, original, IsFolder: false));
+                current = original;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Could not move staged {Staged} back to {Original}", current, original);
+            }
+        }
+
+        return Path.GetRelativePath(root, current);
+    }
+
+    private void UndoMoves(List<Move> moves, string title)
+    {
+        for (var i = moves.Count - 1; i >= 0; i--)
+        {
+            var move = moves[i];
+            try
+            {
+                if (move.IsFolder)
+                {
+                    MovePath(move.To, move.From, Directory.Move);
+                }
+                else
+                {
+                    MovePath(move.To, move.From, (s, d) => System.IO.File.Move(s, d));
+                }
+
+                logger.LogInformation("Reversed rename of {To} to {From} for {Title}", move.To, move.From, title);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Could not reverse rename of {To} to {From} for {Title}",
+                    move.To, move.From, title);
+            }
+        }
     }
 
     private static bool SamePathIgnoringCase(string a, string b) =>

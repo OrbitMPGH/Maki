@@ -43,6 +43,38 @@ public class ScrobbleMatchingTests
         Assert.Empty(ScrobbleMatching.ParseWebLinks(["https://mangadex.org/title/abc", "not a url"]));
     }
 
+    [Fact]
+    public void AcceptsASchemelessHostByRetryingWithHttps()
+    {
+        var ids = ScrobbleMatching.ParseWebLinks(["anilist.co/manga/123"]);
+
+        Assert.Equal("123", ids["anilist"]);
+    }
+
+    [Theory]
+    [InlineData("https://anilist.co.evil.example/manga/30013")]
+    [InlineData("https://evil.example/anilist.co/manga/30013")]
+    [InlineData("https://notmyanimelist.net/manga/13")]
+    [InlineData("https://mangabaka.org.evil.example/8215")]
+    public void RejectsForeignHostsWithAMatchingPath(string url)
+    {
+        Assert.Empty(ScrobbleMatching.ParseWebLinks([url]));
+    }
+
+    [Theory]
+    [InlineData("https://anilist.co/manga/30013", "anilist", "30013")]
+    [InlineData("https://www.anilist.co/manga/30013", "anilist", "30013")]
+    [InlineData("https://myanimelist.net/manga/13", "mal", "13")]
+    [InlineData("https://www.myanimelist.net/manga/13", "mal", "13")]
+    [InlineData("https://mangabaka.org/8215", "mangabaka", "8215")]
+    [InlineData("https://www.mangabaka.org/series/8215", "mangabaka", "8215")]
+    [InlineData("https://mangabaka.dev/8215", "mangabaka", "8215")]
+    public void AcceptsRealHosts(string url, string service, string expectedId)
+    {
+        var ids = ScrobbleMatching.ParseWebLinks([url]);
+        Assert.Equal(expectedId, ids[service]);
+    }
+
     [Theory]
     [InlineData("Hajime no Ippo: Fighting Spirit!", "hajime no ippo fighting spirit")]
     [InlineData("  Frieren – Beyond   Journey's End ", "frieren beyond journey s end")]

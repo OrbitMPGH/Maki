@@ -117,6 +117,30 @@ public class CuuTruyenSourceTests
     }
 
     [Fact]
+    public async Task ListChaptersAsync_MissingDataThrowsInsteadOfEmpty()
+    {
+        const string body = """{ "status": "error" }""";
+        var source = new CuuTruyenSource(
+            new FakeHtmlFetcher(new() { ["/chapters"] = body }),
+            new FakeHttpClientFactory([]));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("2637"));
+    }
+
+    [Fact]
+    public async Task ListChaptersAsync_ValidEmptyArrayReturnsEmpty()
+    {
+        const string body = """{ "data": [] }""";
+        var source = new CuuTruyenSource(
+            new FakeHtmlFetcher(new() { ["/chapters"] = body }),
+            new FakeHttpClientFactory([]));
+
+        var chapters = await source.ListChaptersAsync("2637");
+
+        Assert.Empty(chapters);
+    }
+
+    [Fact]
     public async Task GetPagesAsync_UnscramblesDrmPagesAndKeepsDimensions()
     {
         var cuuTruyenSource = new CuuTruyenSource(

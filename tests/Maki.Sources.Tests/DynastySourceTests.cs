@@ -170,6 +170,19 @@ public class DynastySourceTests
     }
 
     [Fact]
+    public async Task ListChapters_throws_when_taggings_is_missing_instead_of_reading_zero_chapters()
+    {
+        var source = SourceFor(new()
+        {
+            ["series/no-taggings.json"] = """
+                { "name": "No Taggings", "type": "Series", "permalink": "no-taggings", "tags": [] }
+                """
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("no-taggings"));
+    }
+
+    [Fact]
     public async Task GetPages_reads_the_page_list_with_referer_header()
     {
         var source = SourceFor(new()

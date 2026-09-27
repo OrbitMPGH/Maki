@@ -12,31 +12,45 @@ public static partial class ScrobbleMatching
     /// <summary>Minimum similarity (0-1) for a search result to be accepted without review.</summary>
     public const double MatchThreshold = 0.93;
 
-    [GeneratedRegex(@"anilist\.co/manga/(\d+)", RegexOptions.IgnoreCase)]
-    private static partial Regex AniListLink();
+    [GeneratedRegex(@"^/manga/(\d+)", RegexOptions.IgnoreCase)]
+    private static partial Regex AniListPath();
 
-    [GeneratedRegex(@"myanimelist\.net/manga/(\d+)", RegexOptions.IgnoreCase)]
-    private static partial Regex MalLink();
+    [GeneratedRegex(@"^/manga/(\d+)", RegexOptions.IgnoreCase)]
+    private static partial Regex MalPath();
 
-    [GeneratedRegex(@"mangabaka\.(?:org|dev)/(?:series/)?(\d+)", RegexOptions.IgnoreCase)]
-    private static partial Regex MangaBakaLink();
+    [GeneratedRegex(@"^/(?:series/)?(\d+)", RegexOptions.IgnoreCase)]
+    private static partial Regex MangaBakaPath();
 
-    private static readonly (string Service, Regex Pattern)[] LinkPatterns =
+    private static readonly (string Service, string[] Hosts, Regex PathPattern)[] LinkPatterns =
     [
-        ("anilist", AniListLink()),
-        ("mal", MalLink()),
-        ("mangabaka", MangaBakaLink()),
+        ("anilist", ["anilist.co", "www.anilist.co"], AniListPath()),
+        ("mal", ["myanimelist.net", "www.myanimelist.net"], MalPath()),
+        ("mangabaka", ["mangabaka.org", "www.mangabaka.org", "mangabaka.dev", "www.mangabaka.dev"], MangaBakaPath()),
     ];
 
-    /// <summary>Extracts {service: id} from a list of URLs (first mention per service wins).</summary>
+    /// <summary>
+    /// Extracts {service: id} from a list of URLs (first mention per service wins). These are Kavita
+    /// web links (admin-edited, or ComicInfo's <c>Web</c> field in an imported archive) rather than
+    /// remote input, but still not trustworthy enough to regex-match anywhere in the string: the host
+    /// is checked exactly (with/without "www.") and the id only extracted from the expected path shape,
+    /// so "anilist.co.evil.example/manga/1" or a mangadex link mentioning "mangabaka.org" in passing
+    /// never yields an id for the wrong service.
+    /// </summary>
     public static Dictionary<string, string> ParseWebLinks(IEnumerable<string> links)
     {
         var found = new Dictionary<string, string>();
         foreach (var url in links)
         {
-            foreach (var (service, pattern) in LinkPatterns)
+            if (!TryParseHttpUri(url, out var uri))
             {
-                if (!found.ContainsKey(service) && pattern.Match(url) is { Success: true } m)
+                continue;
+            }
+
+            foreach (var (service, hosts, pathPattern) in LinkPatterns)
+            {
+                if (!found.ContainsKey(service) &&
+                    hosts.Contains(uri.Host, StringComparer.OrdinalIgnoreCase) &&
+                    pathPattern.Match(uri.AbsolutePath) is { Success: true } m)
                 {
                     found[service] = m.Groups[1].Value;
                 }
@@ -44,6 +58,28 @@ public static partial class ScrobbleMatching
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// Absolute http(s) parse, retrying with "https://" prepended when the text has no scheme at
+    /// all - a user pasting "anilist.co/manga/123" into the match box is a bare host, not a
+    /// relative URI, and should not be refused just because Kavita weblinks are always absolute.
+    /// </summary>
+    private static bool TryParseHttpUri(string url, out Uri uri)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out uri!) && uri.Scheme is "http" or "https")
+        {
+            return true;
+        }
+
+        if (!url.Contains("://", StringComparison.Ordinal) &&
+            Uri.TryCreate("https://" + url, UriKind.Absolute, out uri!) && uri.Scheme is "http" or "https")
+        {
+            return true;
+        }
+
+        uri = null!;
+        return false;
     }
 
     [GeneratedRegex(@"[^\w\s]")]

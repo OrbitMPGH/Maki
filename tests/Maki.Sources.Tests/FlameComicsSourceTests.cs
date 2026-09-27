@@ -109,4 +109,18 @@ public class FlameComicsSourceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("2"));
     }
+
+    [Fact]
+    public async Task ListChapters_throws_when_next_data_has_no_chapters_array()
+    {
+        // A present __NEXT_DATA__ blob missing the "chapters" key must not read as zero chapters.
+        const string html = """
+            <html><body><script id="__NEXT_DATA__" type="application/json">
+            { "props": { "pageProps": { "series": { "title": "ORV" } } } }
+            </script></body></html>
+            """;
+        var source = SourceFor(new() { ["series/2"] = html });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("2"));
+    }
 }

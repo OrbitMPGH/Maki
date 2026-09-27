@@ -14,6 +14,7 @@ import { notifications } from '@mantine/notifications'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useRenameSeries, useSeriesRenamePreview } from '../api/hooks'
+import { ApiError } from '../api/client'
 
 /**
  * Applies the configured naming formats to a series already on disk. Changing a format never moves
@@ -30,7 +31,7 @@ export function RenameSeriesModal({
   onClose: () => void
 }) {
   const { t } = useLingui()
-  const { data: plan, isLoading } = useSeriesRenamePreview(seriesId, opened)
+  const { data: plan, isLoading, refetch } = useSeriesRenamePreview(seriesId, opened)
   const rename = useRenameSeries(seriesId)
 
   const conflicted = (plan?.conflicts.length ?? 0) > 0
@@ -115,7 +116,12 @@ export function RenameSeriesModal({
             loading={rename.isPending}
             disabled={!plan?.hasChanges || conflicted}
             onClick={() =>
-              rename.mutate(undefined, {
+              plan &&
+              rename.mutate(plan.fingerprint, {
+                onError: (error) => {
+                  // The plan moved on since this preview; show the current one before anything runs.
+                  if (error instanceof ApiError && error.status === 409) void refetch()
+                },
                 onSuccess: (result) => {
                   for (const warning of result.warnings) {
                     notifications.show({ message: warning, color: 'var(--warn)' })
