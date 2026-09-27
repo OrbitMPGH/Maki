@@ -10,6 +10,15 @@ namespace Maki.Core.Paths;
 public static class LibraryPaths
 {
     /// <summary>
+    /// The key two <c>ChapterFile.RelativePath</c> values are the same file under. Case and the
+    /// directory separator are both ignored: a path stored on Windows carries <c>\</c> and the same
+    /// file adopted again under Docker carries <c>/</c>, and the library is case-insensitive on the
+    /// filesystems it is usually kept on.
+    /// </summary>
+    public static string ComparisonKey(string relativePath) =>
+        relativePath.Replace('\\', '/').ToUpperInvariant();
+
+    /// <summary>
     /// Resolves and canonicalizes a library-relative path, returning null when it would escape
     /// the root folder. Callers taking a path from a request must use this rather than a bare
     /// <see cref="Path.Combine(string, string)"/>: <c>Combine</c> happily accepts <c>..\..</c>

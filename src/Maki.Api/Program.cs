@@ -603,6 +603,7 @@ try
     builder.Services.AddScoped<StatsBackfillService>();
     builder.Services.AddScoped<SeriesIdentityService>();
     builder.Services.AddScoped<SeriesIdentityRepairService>();
+    builder.Services.AddScoped<ChapterFileDuplicateRepairService>();
     builder.Services.AddScoped<ActivityStatsService>();
     builder.Services.AddScoped<UserViewResolver>();
     builder.Services.AddScoped<LibraryCompositionService>();
@@ -971,6 +972,11 @@ try
         // After the backfill, so rows it just seeded are already keyed and this pass has nothing
         // left to do for them.
         scope.ServiceProvider.GetRequiredService<SeriesIdentityRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Folds ChapterFile rows that name one file twice (re-run torrent imports). Before Quartz
+        // so the completed-download poll cannot be inserting while this reads.
+        scope.ServiceProvider.GetRequiredService<ChapterFileDuplicateRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,
