@@ -3318,11 +3318,6 @@ msgstr "Could not read progress for {seriesFailed, plural, one {# series} other 
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 
-#. placeholder {0}: failedTitles.length > 0 ? `: ${failedTitles.join(', ')}` : ''
-#: src/pages/SettingsPage.tsx
-#~ msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
-#~ msgstr "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
-
 #: src/pages/discover/TasteTab.tsx
 msgid "Could not read your profile"
 msgstr "Could not read your profile"

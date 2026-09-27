@@ -4051,11 +4051,6 @@ msgstr ""
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr ""
 
-#. placeholder {0}: failedTitles.length > 0 ? `: ${failedTitles.join(', ')}` : ''
-#: src/pages/SettingsPage.tsx
-#~ msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}{0}"
-#~ msgstr ""
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Could not read your profile"
