@@ -327,6 +327,8 @@ export default function HomePage() {
 
     jumpback: readingLoading ? (
       <RailSkeleton />
+    ) : readingFailed ? (
+      on('continue') ? null : <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : (
       jumpBackIn.length > 0 && (
         <>
