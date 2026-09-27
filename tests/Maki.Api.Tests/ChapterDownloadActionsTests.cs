@@ -89,6 +89,7 @@ public class ChapterDownloadActionsTests : IDisposable
         coverService: null!,
         chapterSyncService: null!,
         cbzLinkService: null!,
+        relinkPlanner: null!,
         seriesCreation: null!,
         seriesRename: null!,
         metadataRefresh: null!,

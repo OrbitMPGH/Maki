@@ -38,8 +38,18 @@ public class CbzLinkService(
         bool replaceExisting = true, CancellationToken ct = default)
     {
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
+        var volumeFileIds = await VolumeFileIdsAsync(series.Id, ct);
         var linked = 0;
         var unrecognized = 0;
+        var created = 0;
+
+        // Every row the series already has, keyed the way two paths count as one file. A torrent
+        // whose import is re-run (a poll cut off before the queue row was saved, a parked item the
+        // user settles after the job already placed its files) hands over paths that are already
+        // in the folder and already have a row; inserting again gave one file two rows.
+        var existing = (await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct))
+            .GroupBy(f => LibraryPaths.ComparisonKey(f.RelativePath), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.OrderBy(f => f.Id).First(), StringComparer.OrdinalIgnoreCase);
 
         // The folder the files are actually in. Not always Series.FolderName: a keep-new-standard
         // import links the original folder while FolderName already names the standard one.
@@ -56,19 +66,38 @@ public class CbzLinkService(
             }
 
             var parsed = ReleaseNameParser.ParseFileName(file);
-            var relativePath = Path.GetRelativePath(seriesDir, file);
+            var relativePath = Path.Combine(folderName, Path.GetRelativePath(seriesDir, file));
 
-            var chapterFile = new ChapterFile
+            var key = LibraryPaths.ComparisonKey(relativePath);
+            if (existing.TryGetValue(key, out var chapterFile))
             {
-                SeriesId = series.Id,
-                RelativePath = Path.Combine(folderName, relativePath),
-                Size = new FileInfo(file).Length,
-                SourceName = sourceName,
-                ReleaseName = releaseName,
-                DateAdded = DateTime.UtcNow
-            };
-            db.ChapterFiles.Add(chapterFile);
-            await db.SaveChangesAsync(ct); // need the file id for linking
+                // The spelling on disk wins: a row written under the other separator, or with
+                // different casing, is repaired here rather than duplicated.
+                chapterFile.RelativePath = relativePath;
+                chapterFile.Size = new FileInfo(file).Length;
+                chapterFile.ReleaseName ??= releaseName;
+            }
+            else
+            {
+                chapterFile = new ChapterFile
+                {
+                    SeriesId = series.Id,
+                    RelativePath = relativePath,
+                    Size = new FileInfo(file).Length,
+                    SourceName = sourceName,
+                    ReleaseName = releaseName,
+                    DateAdded = DateTime.UtcNow
+                };
+                db.ChapterFiles.Add(chapterFile);
+                await db.SaveChangesAsync(ct); // need the file id for linking
+                existing[key] = chapterFile;
+                created++;
+            }
+
+            if (parsed.IsVolume)
+            {
+                volumeFileIds.Add(chapterFile.Id);
+            }
 
             List<Chapter> matched = [];
             if (!parsed.IsRecognized)
@@ -77,12 +106,12 @@ public class CbzLinkService(
             }
             else
             {
-                matched = LinkChapters(chapters, parsed, chapterFile.Id, replaceExisting);
+                matched = LinkChapters(chapters, parsed, chapterFile.Id, volumeFileIds, replaceExisting);
                 if (matched.Count == 0 && parsed.IsVolume)
                 {
                     // No volume metadata to range-match against — read the chapters the
                     // compilation actually contains from its page file names.
-                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, replaceExisting);
+                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, volumeFileIds, replaceExisting);
                 }
 
                 if (parsed.IsVolume)
@@ -112,21 +141,21 @@ public class CbzLinkService(
         if (unlinkedVolumeFiles.Count > 0 && await TryBackfillChapterVolumesAsync(series, chapters, ct))
         {
             linked += unlinkedVolumeFiles.Count(
-                x => LinkChapters(chapters, x.Parsed, x.Record.Id, replaceExisting).Count > 0);
+                x => LinkChapters(chapters, x.Parsed, x.Record.Id, volumeFileIds, replaceExisting).Count > 0);
         }
 
         // A volume file that range-matched some chapters can still contain others the
         // provider assigned to a different volume (compilation vs provider boundaries
         // disagree). Link any still-missing chapter its page markers prove it contains.
-        linked += FillVolumeContents(chapters, volumeFiles);
+        linked += FillVolumeContents(chapters, volumeFiles, volumeFileIds, replaceExisting);
 
         linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
-        if (ordered.Count > 0)
+        if (created > 0)
         {
-            // One event per adoption batch; value = ChapterFile rows created. Rescan callers
-            // pass only files with no existing record, so re-linking never re-counts.
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title, ordered.Count);
+            // One event per adoption batch; value = ChapterFile rows created, so a file that
+            // already had a row is never counted as downloaded again.
+            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title, created);
         }
 
         await db.SaveChangesAsync(ct);
@@ -150,6 +179,10 @@ public class CbzLinkService(
             ?? throw new InvalidOperationException("Series has no root folder loaded");
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var dbFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
+        var volumeFileIds = dbFiles
+            .Where(f => ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
+            .Select(f => f.Id)
+            .ToHashSet();
 
         var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
         foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
@@ -208,13 +241,13 @@ public class CbzLinkService(
                 continue;
             }
 
-            var matched = LinkChapters(chapters, parsed, dbFile.Id);
+            var matched = LinkChapters(chapters, parsed, dbFile.Id, volumeFileIds);
             if (matched.Count == 0 && parsed.IsVolume)
             {
                 var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
                 if (absolutePath is not null)
                 {
-                    matched = LinkVolumeByContents(chapters, parsed, absolutePath, dbFile.Id);
+                    matched = LinkVolumeByContents(chapters, parsed, absolutePath, dbFile.Id, volumeFileIds);
                 }
             }
 
@@ -225,9 +258,10 @@ public class CbzLinkService(
         }
 
         // Re-link chapters a volume file on disk demonstrably contains (per its embedded
-        // page markers) but that stayed missing — chapters that appeared after the file
-        // was first linked, or that fell outside the provider's volume range for this file.
-        // Runs on already-linked volume files too, which the unlinked-file retry above skips.
+        // page markers) but that stayed missing or sit on a single-chapter file: chapters that
+        // appeared after the file was first linked, or that fell outside the provider's volume
+        // range for this file. Runs on already-linked volume files too, which the unlinked-file
+        // retry above skips.
         var volumeFilesOnDisk = dbFiles
             .Select(f => (
                 f.Id,
@@ -236,7 +270,7 @@ public class CbzLinkService(
             .Where(f => f.AbsolutePath is not null)
             .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
             .ToList();
-        relinked += FillVolumeContents(chapters, volumeFilesOnDisk);
+        relinked += FillVolumeContents(chapters, volumeFilesOnDisk, volumeFileIds, replaceExisting: true);
 
         await db.SaveChangesAsync(ct);
 
@@ -459,6 +493,21 @@ public class CbzLinkService(
     }
 
     /// <summary>
+    /// Ids of the series' volume/compilation files. Volumes outrank single-chapter files: a volume
+    /// may take a chapter off a single file, a single file never takes one off a volume. The set
+    /// is what lets the linkers tell the two apart from a bare <c>ChapterFileId</c>.
+    /// </summary>
+    private async Task<HashSet<int>> VolumeFileIdsAsync(int seriesId, CancellationToken ct) =>
+        (await db.ChapterFiles.Where(f => f.SeriesId == seriesId).Select(f => new { f.Id, f.RelativePath }).ToListAsync(ct))
+        .Where(f => ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
+        .Select(f => f.Id)
+        .ToHashSet();
+
+    /// <summary>Whether a volume file may take this chapter: it is free or sits on a single-chapter file.</summary>
+    private static bool VolumeMayTake(Chapter chapter, HashSet<int> volumeFileIds, bool replaceExisting) =>
+        chapter.ChapterFileId is null || (replaceExisting && !volumeFileIds.Contains(chapter.ChapterFileId.Value));
+
+    /// <summary>
     /// Links a volume/compilation CBZ to the chapters it actually contains by reading the
     /// chapter markers embedded in its page file names — the ground truth when the chapter
     /// rows carry no volume info to range-match against (scrape sources) or the compilation's
@@ -466,7 +515,7 @@ public class CbzLinkService(
     /// </summary>
     private List<Chapter> LinkVolumeByContents(
         List<Chapter> chapters, ParsedReleaseFile parsed, string cbzPath, int chapterFileId,
-        bool replaceExisting = true)
+        HashSet<int> volumeFileIds, bool replaceExisting = true)
     {
         var numbers = VolumeChapterScanner.ScanCbz(cbzPath);
         if (numbers.Count == 0)
@@ -478,7 +527,7 @@ public class CbzLinkService(
         foreach (var number in numbers)
         {
             var match = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
-                        ?? (replaceExisting ? chapters.FirstOrDefault(c => c.Number == number) : null);
+                        ?? chapters.FirstOrDefault(c => c.Number == number && VolumeMayTake(c, volumeFileIds, replaceExisting));
             if (match != null && !targets.Contains(match))
             {
                 targets.Add(match);
@@ -507,11 +556,13 @@ public class CbzLinkService(
     /// initial adopt path this runs even when the file already links other chapters, so a
     /// file whose provider volume-range covered only part of its contents still gets the
     /// rest — and a rescan picks up chapters that appeared after the file was first linked.
-    /// Only touches currently-unlinked chapters, so it never steals one from another file.
-    /// Returns the number of chapters newly linked.
+    /// Takes unlinked chapters and, when <paramref name="replaceExisting"/> allows, chapters on
+    /// single-chapter files; never one already on another volume. Returns the number of chapters
+    /// newly linked.
     /// </summary>
     private int FillVolumeContents(
-        List<Chapter> chapters, IEnumerable<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)> files)
+        List<Chapter> chapters, IEnumerable<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)> files,
+        HashSet<int> volumeFileIds, bool replaceExisting)
     {
         var linked = 0;
         foreach (var (fileId, path, parsed) in files)
@@ -524,7 +575,9 @@ public class CbzLinkService(
             var filled = 0;
             foreach (var number in VolumeChapterScanner.ScanCbz(path))
             {
-                var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null);
+                var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
+                              ?? chapters.FirstOrDefault(c =>
+                                  c.Number == number && c.ChapterFileId != fileId && VolumeMayTake(c, volumeFileIds, replaceExisting));
                 if (chapter != null)
                 {
                     chapter.ChapterFileId = fileId;
@@ -551,13 +604,18 @@ public class CbzLinkService(
     /// backs yet.
     /// </param>
     private static List<Chapter> LinkChapters(
-        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, bool replaceExisting = true)
+        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, HashSet<int> volumeFileIds,
+        bool replaceExisting = true)
     {
         List<Chapter> targets = [];
         if (parsed.IsChapter)
         {
+            // A single file replaces another single file, never a volume.
             var match = chapters.FirstOrDefault(c => c.Number == parsed.Number && c.ChapterFileId == null)
-                        ?? (replaceExisting ? chapters.FirstOrDefault(c => c.Number == parsed.Number) : null);
+                        ?? (replaceExisting
+                            ? chapters.FirstOrDefault(c =>
+                                c.Number == parsed.Number && !volumeFileIds.Contains(c.ChapterFileId!.Value))
+                            : null);
             if (match != null)
             {
                 targets.Add(match);
@@ -567,7 +625,8 @@ public class CbzLinkService(
         {
             var end = parsed.VolumeEnd ?? parsed.Volume;
             targets = chapters
-                .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId == null)
+                .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
+                            && VolumeMayTake(c, volumeFileIds, replaceExisting))
                 .ToList();
         }
 

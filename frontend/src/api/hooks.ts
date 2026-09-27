@@ -1624,6 +1624,96 @@ export function useMoveSeries() {
   })
 }
 
+export interface RelinkChapterRef {
+  id: number
+  label: string
+}
+
+export interface RelinkOptions {
+  /** Files left exactly as they are: they neither gain nor lose chapters. */
+  excludedPaths: string[]
+  /** Chapters that stay on whatever file backs them today. */
+  pinnedChapterIds: number[]
+}
+
+export interface RelinkPlanFile {
+  relativePath: string
+  fileName: string
+  size: number
+  label: string | null
+  isVolume: boolean
+  recognized: boolean
+  /** pageMarkers | volumeRange | fileName | estimated, or null when the file backs nothing. */
+  confidence: string | null
+  chapters: string[]
+  gains: RelinkChapterRef[]
+  loses: RelinkChapterRef[]
+  superseded: boolean
+  excluded: boolean
+}
+
+export interface RelinkPlanChapter {
+  id: number
+  label: string
+  number: number | null
+  /** movesToVolume | becomesReadable | unchanged | kept | availableNotLinked | missing */
+  state: string
+  /** Parsed label of the file it ends up on, when that changes. */
+  toLabel: string | null
+}
+
+export interface RelinkPlan {
+  seriesId: number
+  files: RelinkPlanFile[]
+  chapters: RelinkPlanChapter[]
+  moved: number
+  supersededCount: number
+  supersededBytes: number
+  unrecognized: number
+}
+
+export interface RelinkResult {
+  moved: number
+  superseded: number
+  deleted: number
+  failed: number
+  freedBytes: number
+}
+
+export function useRelinkPlan(seriesId: number, options: RelinkOptions, enabled: boolean) {
+  return useQuery({
+    queryKey: ['relink-plan', seriesId, options],
+    queryFn: () =>
+      api<RelinkPlan>(`/series/${seriesId}/relink/plan`, {
+        method: 'POST',
+        body: JSON.stringify(options),
+      }),
+    enabled,
+    // Every open should reflect the folder as it is now, not a plan from a previous visit. The
+    // previous plan stays on screen while an exclusion re-plans, so the table does not blank.
+    staleTime: 0,
+    gcTime: 0,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useApplyRelink(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (request: RelinkOptions & { deleteSuperseded: boolean }) =>
+      api<RelinkResult>(`/series/${seriesId}/relink`, {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.removeQueries({ queryKey: ['relink-plan', seriesId] })
+    },
+  })
+}
+
 export interface RescanResult {
   newFiles: number
   relinked: number

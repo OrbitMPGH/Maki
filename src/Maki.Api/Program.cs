@@ -785,6 +785,7 @@ try
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
+    builder.Services.AddScoped<FileRelinkPlanner>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -800,6 +801,7 @@ try
     builder.Services.AddScoped<SeriesIdentityService>();
     builder.Services.AddScoped<SeriesIdentityRepairService>();
     builder.Services.AddScoped<ImportPathRepairService>();
+    builder.Services.AddScoped<ChapterFileDuplicateRepairService>();
     builder.Services.AddScoped<ActivityStatsService>();
     builder.Services.AddScoped<UserViewResolver>();
     builder.Services.AddScoped<LibraryCompositionService>();
@@ -1197,6 +1199,11 @@ try
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         scope.ServiceProvider.GetRequiredService<ImportPathRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Folds ChapterFile rows that name one file twice (re-run torrent imports). Before Quartz
+        // so the completed-download poll cannot be inserting while this reads.
+        scope.ServiceProvider.GetRequiredService<ChapterFileDuplicateRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,

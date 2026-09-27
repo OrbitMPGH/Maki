@@ -5,6 +5,7 @@ import {
   IconFileZip,
   IconLink,
   IconRefresh,
+  IconWand,
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
@@ -20,6 +21,7 @@ import { fileStatusVisual, statusToken } from './ui/status'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
+import { RelinkFilesModal } from './RelinkFilesModal'
 
 /** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
 function mappedLabel(file: SeriesFileDto): string {
@@ -35,6 +37,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { can } = useAuth()
   const canLink = can('EditMetadata')
   const [linkFile, setLinkFile] = useState<SeriesFileDto | null>(null)
+  const [relinkOpen, setRelinkOpen] = useState(false)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -87,6 +90,18 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             >
               <Trans>Refresh</Trans>
             </Button>
+            {files && files.length > 0 && !selectMode && canLink && (
+              <Tooltip label={t`Rebuild chapter links from the folder, volumes first`} withArrow>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  leftSection={<IconWand size={14} />}
+                  onClick={() => setRelinkOpen(true)}
+                >
+                  <Trans>Relink files</Trans>
+                </Button>
+              </Tooltip>
+            )}
             {files && files.length > 0 && !selectMode && (
               <Button
                 size="xs"
@@ -123,8 +138,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     other="# files in this folder aren't linked to any chapter, so they can't be read yet."
                   />{' '}
                   <Trans>
-                    That happens with omnibus volumes and names the matcher can't parse. Use the link
-                    button on a row to pick the chapters it contains.
+                    That happens with omnibus volumes and names the matcher can't parse. Try Relink files
+                    first, which reads each volume to find the chapters inside it; use the link button on
+                    a row for anything it can't place.
                   </Trans>
                 </Text>
               </Group>
@@ -375,6 +391,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       ))}
 
       <LinkFileToChaptersModal seriesId={seriesId} file={linkFile} onClose={() => setLinkFile(null)} />
+      <RelinkFilesModal seriesId={seriesId} opened={relinkOpen} onClose={() => setRelinkOpen(false)} />
     </div>
   )
 }

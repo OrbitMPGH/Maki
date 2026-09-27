@@ -48,6 +48,7 @@ import {
   IconSearch,
   IconSend,
   IconTrash,
+  IconWand,
   IconX,
   IconDeviceTv,
   IconDotsVertical,
@@ -103,6 +104,7 @@ import { useLabel } from '../i18n-context'
 import { usePageLabel } from '../lib/navHistory'
 import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
+import { RelinkFilesModal } from '../components/RelinkFilesModal'
 import { MetadataLinks } from '../components/MetadataLinks'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { TagBuckets } from '../components/TagBuckets'
@@ -414,6 +416,7 @@ export default function SeriesDetailPage() {
   // Chapter ids the link dialog is working on; null keeps it closed. Set from the selection
   // bar or from a single missing row's link button.
   const [linkChapterIds, setLinkChapterIds] = useState<number[] | null>(null)
+  const [relinkOpen, setRelinkOpen] = useState(false)
   const [deleteChaptersModalOpen, setDeleteChaptersModalOpen] = useState(false)
   const [deleteSeriesModalOpen, setDeleteSeriesModalOpen] = useState(false)
   const [deleteSeriesFiles, setDeleteSeriesFiles] = useState(false)
@@ -1918,12 +1921,15 @@ export default function SeriesDetailPage() {
                             one="# file in the series folder isn't linked to any chapter."
                             other="# files in the series folder aren't linked to any chapter."
                         />{' '}
-                        <Trans>Omnibus volumes and odd file names need linking by hand.</Trans>
+                        <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
                       </Text>
                     </Group>
                     <Group gap="xs">
-                      <Button size="xs" variant="light" leftSection={<IconLink size={14} />} onClick={() => changeTab('files')}>
-                        <Trans>Link files</Trans>
+                      <Button size="xs" variant="light" leftSection={<IconWand size={14} />} onClick={() => setRelinkOpen(true)}>
+                        <Trans>Relink files</Trans>
+                      </Button>
+                      <Button size="xs" variant="subtle" leftSection={<IconLink size={14} />} onClick={() => changeTab('files')}>
+                        <Trans>Link by hand</Trans>
                       </Button>
                     </Group>
                   </Group>
@@ -2157,6 +2163,8 @@ export default function SeriesDetailPage() {
                 </Group>
               </Stack>
             </Modal>
+
+            <RelinkFilesModal seriesId={seriesId} opened={relinkOpen} onClose={() => setRelinkOpen(false)} />
 
             <LinkChaptersModal
                 seriesId={seriesId}

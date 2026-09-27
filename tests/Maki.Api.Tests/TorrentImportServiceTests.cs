@@ -171,6 +171,69 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Contains(file.Replaces, r => r.RelativePath.EndsWith("Berserk Vol.1 Ch.1.cbz"));
     }
 
+    /// <summary>
+    /// The link step can run twice for one placed file: the poll that imported it was cut off before
+    /// the queue row was saved, or a parked item is settled after the job already placed the files.
+    /// The second pass finds the file in the folder, skips placing it, and must find its row too.
+    /// </summary>
+    [Fact]
+    public async Task Importing_the_same_download_twice_keeps_one_row_per_file()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+
+        var first = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+        var second = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(first.Applied);
+        Assert.True(second.Applied);
+        Assert.Equal(1, second.Imported);
+
+        using var db = _db.NewContext();
+        var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Equal(file.Id, c.ChapterFileId));
+        Assert.Equal(1, db.StatsEvents.Count(e => e.SeriesId == series.Id && e.Type == StatsEventType.ChapterDownloaded));
+    }
+
+    /// <summary>
+    /// A row written on Windows carries a backslash; the same file adopted again under Docker is
+    /// spelled with a slash, and the two must still be one row.
+    /// </summary>
+    [Fact]
+    public async Task A_row_stored_with_the_other_separator_is_reused_rather_than_duplicated()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+        int existingId;
+        using (var db = _db.NewContext())
+        {
+            var existing = new ChapterFile
+            {
+                SeriesId = series.Id,
+                RelativePath = @"berserk\Berserk v01 (Digital) (1r0n).cbz",
+                SourceName = "rescan",
+                DateAdded = DateTime.UtcNow
+            };
+            db.ChapterFiles.Add(existing);
+            db.SaveChanges();
+            existingId = existing.Id;
+        }
+
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied);
+        using var check = _db.NewContext();
+        var file = Assert.Single(check.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.Equal(existingId, file.Id);
+        Assert.Equal(Path.Combine("Berserk", "Berserk v01 (Digital) (1r0n).cbz"), file.RelativePath);
+        Assert.All(check.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Equal(existingId, c.ChapterFileId));
+    }
+
     [Fact]
     public async Task Plan_has_no_conflict_when_the_library_has_no_files_for_those_chapters()
     {
