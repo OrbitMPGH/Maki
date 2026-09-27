@@ -25,6 +25,8 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
     private const string CdnUrl = "https://cdn.taiyo.moe";
     private const string DefaultMeilisearchUrl = "https://meilisearch.taiyo.moe";
 
+    private const int MaxChapterPages = 200;
+
     private static readonly HtmlParser Parser = new();
 
     private readonly SemaphoreSlim _meilisearchLock = new(1, 1);
@@ -87,8 +89,17 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
             $"{BaseUrl}/media/{sourceSeriesId}",
             cover,
             description,
-            status);
+            MapStatus(status));
     }
+
+    private static string? MapStatus(string? raw) => raw switch
+    {
+        "RELEASING" => "Ongoing",
+        "FINISHED" => "Completed",
+        "HIATUS" => "Hiatus",
+        "CANCELLED" => "Cancelled",
+        _ => raw
+    };
 
     /// <summary>
     /// Trackers come off the same medias.getById payload as GetSeriesAsync, not a separate
@@ -161,7 +172,7 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
             }
 
             page++;
-        } while (page <= totalPages);
+        } while (page <= totalPages && page <= MaxChapterPages);
 
         return SourceChapterList.Normalize(chapters);
     }

@@ -242,6 +242,10 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
             catch (HttpRequestException)
             {
             }
+            catch (JsonException)
+            {
+                break;
+            }
         }
 
         if (response is not { Success: true, Result.EpisodeList: { } episodes })

@@ -35,7 +35,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
     private static readonly Regex ActiveResetPattern = new(@"resetListe\s*\(\s*\)", RegexOptions.Compiled);
 
     private static readonly Regex CallPattern = new(
-        """(?<name>creerListe|newSPF|newSP|finirListe|resetListe)\s*\(\s*(?<args>[^)]*)\)""",
+        """(?<name>creerListe|newSPF|newSP|finirListe|resetListe)\s*\(\s*(?<args>(?:"[^"]*"|[^)"])*)\)""",
         RegexOptions.Compiled);
 
     public string Name => "animesama";

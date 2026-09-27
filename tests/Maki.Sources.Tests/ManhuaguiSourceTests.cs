@@ -99,6 +99,18 @@ public class ManhuaguiSourceTests
     }
 
     [Fact]
+    public void PackedScript_stops_at_the_first_packer_tail()
+    {
+        var html = FakeHttpClientFactory.Fixture("manhuagui-chapter.html") +
+                   "<script>eval(function(){}('x',10,1,'AAAA'['split']('|'),0,{}))</script>";
+
+        var data = PackedScript.Unpack(html);
+
+        Assert.Equal(909042, data.Cid);
+        Assert.Equal(16, data.Files.Count);
+    }
+
+    [Fact]
     public void PackedScript_unpacks_the_chapter_fixture()
     {
         var html = FakeHttpClientFactory.Fixture("manhuagui-chapter.html");

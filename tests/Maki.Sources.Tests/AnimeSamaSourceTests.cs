@@ -260,4 +260,21 @@ public class AnimeSamaSourceTests
         Assert.Equal("1", labels[1]);
         Assert.Equal("201", labels[^1]);
     }
+
+    [Fact]
+    public async Task BuildLabels_keeps_a_parenthesis_inside_a_quoted_label()
+    {
+        const string html = """
+            <html><body>
+            <script>
+                resetListe();creerListe(1, 2);newSP("Bonus (partie 1)");finirListe(3);
+            </script>
+            </body></html>
+            """;
+        var doc = await Parser.ParseDocumentAsync(html);
+
+        var labels = AnimeSamaSource.BuildLabels(doc, 4);
+
+        Assert.Equal(["1", "2", "Bonus (partie 1)", "3"], labels);
+    }
 }

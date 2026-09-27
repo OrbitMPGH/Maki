@@ -67,7 +67,7 @@ public class TaiyoSourceTests
         var detail = await source.GetSeriesAsync("3cec0768-c247-468c-97fe-76e9a556d6ee");
 
         Assert.Equal("One Piece", detail.Title);
-        Assert.Equal("RELEASING", detail.Status);
+        Assert.Equal("Ongoing", detail.Status);
         Assert.Equal(
             "https://cdn.taiyo.moe/medias/3cec0768-c247-468c-97fe-76e9a556d6ee/covers/ce486545-1165-4054-97b8-d004f7aea01b.jpg",
             detail.CoverUrl);
@@ -107,6 +107,20 @@ public class TaiyoSourceTests
         Assert.NotNull(ch1140);
         Assert.Equal("a28e4286-b9b8-42b1-8264-76506e0c4349", ch1140.SourceChapterId);
         Assert.Equal("scopper gaban", ch1140.Title);
+    }
+
+    [Fact]
+    public async Task ListChapters_caps_the_walk_when_totalPages_is_implausible()
+    {
+        var source = SourceFor(new()
+        {
+            ["chapters.getByMediaId?"] = FakeHttpClientFactory.Fixture("taiyo-chapters-1.json")
+                .Replace("\"totalPages\":24", "\"totalPages\":1000000"),
+        }, out var factory);
+
+        await source.ListChaptersAsync("3cec0768-c247-468c-97fe-76e9a556d6ee");
+
+        Assert.Equal(200, factory.Requests.Count(u => u.Contains("chapters.getByMediaId?")));
     }
 
     [Fact]

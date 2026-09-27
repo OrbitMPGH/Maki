@@ -265,6 +265,27 @@ public class OlympusSourceTests
     }
 
     [Fact]
+    public async Task Search_reflects_a_slug_rotated_by_a_forced_refresh()
+    {
+        var list = FakeHttpClientFactory.Fixture("olympus-list.json");
+        var fixtures = new Dictionary<string, string>
+        {
+            ["api/series/list"] = list,
+            [SeriesUrl] = FakeHttpClientFactory.Fixture("olympus-series-404.json"),
+            ["api/series/rotated-slug?type=comic"] = FakeHttpClientFactory.Fixture("olympus-series.json"),
+        };
+        var source = new OlympusSource(new FakeHtmlFetcher(fixtures));
+        await source.SearchAsync("Subo de nivel solo");
+
+        fixtures["api/series/list"] = list.Replace("\"10-05-2025-nivel-solo5324\"", "\"rotated-slug\"");
+        await source.GetSeriesAsync("10");
+
+        var results = await source.SearchAsync("Subo de nivel solo");
+
+        Assert.Equal("https://olympusxyz.com/series/comic-rotated-slug", results[0].Url);
+    }
+
+    [Fact]
     public async Task GetJson_unwraps_a_FlareSolverr_pre_tag()
     {
         // FlareSolverr returns JSON wrapped like a browser's raw-JSON viewer: <html><body><pre>...</pre></body></html>.

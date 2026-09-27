@@ -124,6 +124,22 @@ public class RawkumaSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_reads_a_chapter_number_padded_with_whitespace()
+    {
+        var source = new RawkumaSource(new FakeHtmlFetcher(new()
+        {
+            ["/wp-json/wp/v2/manga?slug="] = FakeHttpClientFactory.Fixture("rawkuma-manga.json"),
+            ["action=chapter_list"] =
+                """<div data-chapter-number=" 12.5 "><a href="https://rawkuma.net/manga/one-piece/chapter-12.5.1/"></a></div>"""
+        }));
+
+        var chapter = Assert.Single(await source.ListChaptersAsync("one-piece"));
+
+        Assert.Equal(12.5m, chapter.Number);
+        Assert.Equal("12.5", chapter.NumberRaw);
+    }
+
+    [Fact]
     public async Task ListChapters_requests_the_numeric_manga_id_from_the_series_lookup()
     {
         var fetcher = new FakeHtmlFetcher(new()

@@ -181,9 +181,9 @@ public class ShinigamiSource(IHttpClientFactory httpClientFactory) : ISource
 
         var chapterTitle = row.TryGetProperty("chapter_title", out var titleEl) ? titleEl.GetString() : null;
 
-        // A null Number is keyed only by (Volume, Language) in SourceChapterList.Normalize, so a
-        // blank title on more than one of them would collapse into a single row. A numbered chapter
-        // keeps a null Title; an unparseable one gets a synthetic label to stay distinct.
+        // SourceChapterList.Normalize and ChapterIdentity key an unnumbered chapter on its Title, so
+        // blank titles would all collapse into one row. A numbered chapter keeps a null Title; an
+        // unparseable one gets a synthetic label from its raw number to stay distinct.
         string? title;
         if (!string.IsNullOrWhiteSpace(chapterTitle))
         {
