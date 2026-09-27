@@ -41,6 +41,15 @@ public class CbzLinkService(
         var volumeFileIds = await VolumeFileIdsAsync(series.Id, ct);
         var linked = 0;
         var unrecognized = 0;
+        var created = 0;
+
+        // Every row the series already has, keyed the way two paths count as one file. A torrent
+        // whose import is re-run (a poll cut off before the queue row was saved, a parked item the
+        // user settles after the job already placed its files) hands over paths that are already
+        // in the folder and already have a row; inserting again gave one file two rows.
+        var existing = (await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct))
+            .GroupBy(f => LibraryPaths.ComparisonKey(f.RelativePath), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.OrderBy(f => f.Id).First(), StringComparer.OrdinalIgnoreCase);
 
         // The folder the files are actually in. Not always Series.FolderName: a keep-new-standard
         // import links the original folder while FolderName already names the standard one.
@@ -57,19 +66,34 @@ public class CbzLinkService(
             }
 
             var parsed = ReleaseNameParser.ParseFileName(file);
-            var relativePath = Path.GetRelativePath(seriesDir, file);
+            var relativePath = Path.Combine(folderName, Path.GetRelativePath(seriesDir, file));
 
-            var chapterFile = new ChapterFile
+            var key = LibraryPaths.ComparisonKey(relativePath);
+            if (existing.TryGetValue(key, out var chapterFile))
             {
-                SeriesId = series.Id,
-                RelativePath = Path.Combine(folderName, relativePath),
-                Size = new FileInfo(file).Length,
-                SourceName = sourceName,
-                ReleaseName = releaseName,
-                DateAdded = DateTime.UtcNow
-            };
-            db.ChapterFiles.Add(chapterFile);
-            await db.SaveChangesAsync(ct); // need the file id for linking
+                // The spelling on disk wins: a row written under the other separator, or with
+                // different casing, is repaired here rather than duplicated.
+                chapterFile.RelativePath = relativePath;
+                chapterFile.Size = new FileInfo(file).Length;
+                chapterFile.ReleaseName ??= releaseName;
+            }
+            else
+            {
+                chapterFile = new ChapterFile
+                {
+                    SeriesId = series.Id,
+                    RelativePath = relativePath,
+                    Size = new FileInfo(file).Length,
+                    SourceName = sourceName,
+                    ReleaseName = releaseName,
+                    DateAdded = DateTime.UtcNow
+                };
+                db.ChapterFiles.Add(chapterFile);
+                await db.SaveChangesAsync(ct); // need the file id for linking
+                existing[key] = chapterFile;
+                created++;
+            }
+
             if (parsed.IsVolume)
             {
                 volumeFileIds.Add(chapterFile.Id);
@@ -127,11 +151,11 @@ public class CbzLinkService(
 
         linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
-        if (ordered.Count > 0)
+        if (created > 0)
         {
-            // One event per adoption batch; value = ChapterFile rows created. Rescan callers
-            // pass only files with no existing record, so re-linking never re-counts.
-            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title, ordered.Count);
+            // One event per adoption batch; value = ChapterFile rows created, so a file that
+            // already had a row is never counted as downloaded again.
+            stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title, created);
         }
 
         await db.SaveChangesAsync(ct);
