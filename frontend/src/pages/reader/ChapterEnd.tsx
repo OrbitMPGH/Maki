@@ -21,24 +21,19 @@ function skipped(current: number | null, next: number | null): [number, number] 
  */
 export default function ChapterEnd({
   manifest,
-  incognito,
+  readingCounted,
   rtl,
   onNext,
   onStay,
 }: {
   manifest: ReaderManifest
-  incognito: boolean
+  readingCounted: boolean
   rtl: boolean
   onNext: () => void
   onStay: () => void
 }) {
   const { label: chapterLabel, seriesChapterCount, nextChapterLabel } = manifest
-  // Reaching this screen is reaching the last page, which the server counts as read, so the meter
-  // counts it too rather than waiting for the next manifest. Incognito writes nothing.
-  const readCount = Math.min(
-    seriesChapterCount,
-    manifest.seriesReadCount + (!incognito && !manifest.completed ? 1 : 0),
-  )
+  const readCount = Math.min(seriesChapterCount, manifest.seriesReadCount + (readingCounted ? 1 : 0))
   const percent = seriesChapterCount > 0 ? (readCount / seriesChapterCount) * 100 : 0
   const unread = Math.max(0, seriesChapterCount - readCount)
   const pending = Math.max(0, manifest.seriesWantedCount - seriesChapterCount)

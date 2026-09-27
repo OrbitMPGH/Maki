@@ -55,6 +55,7 @@ export default function ReaderToolbar({
   onToggleFullscreen,
   incognito,
   onIncognito,
+  readingCounted,
   bookmarked,
   onToggleBookmark,
   stripOpen,
@@ -79,6 +80,8 @@ export default function ReaderToolbar({
   onToggleFullscreen: () => void
   incognito: boolean
   onIncognito: (value: boolean) => void
+  /** Whether this chapter is being counted as read on screen; ReaderPage owns the rule. */
+  readingCounted: boolean
   bookmarked: boolean
   onToggleBookmark: () => void
   stripOpen: boolean
@@ -134,11 +137,7 @@ export default function ReaderToolbar({
   }, [settingsOpen])
 
   // How much of the series is left, on the same footing as the series page: downloaded chapters as
-  // the denominator, completed ones as the numerator. The manifest's counts are a snapshot from
-  // when the chapter opened, so finishing this one on screen is added here rather than waited for —
-  // the condition mirrors the server's ("the last page means read"), so the optimistic number is
-  // the one the next manifest fetch comes back with. Incognito writes nothing, so it adds nothing.
-  const readingCounted = !incognito && !manifest.completed && page >= manifest.pageCount - 1
+  // the denominator, completed ones as the numerator.
   const chaptersRead = Math.min(
     manifest.seriesChapterCount,
     manifest.seriesReadCount + (readingCounted ? 1 : 0),
