@@ -13,6 +13,14 @@ public record ParsedReleaseFile(decimal? Number, int? Volume, int? VolumeEnd)
     public bool IsChapter => Number is not null;
     public bool IsVolume => Number is null && Volume is not null;
     public bool IsRecognized => Number is not null || Volume is not null;
+
+    /// <summary>
+    /// Trimmed contents of every parenthesised or bracketed group in the file name, in order of
+    /// appearance: "(2024) (Digital) (1r0n)" becomes ["2024", "Digital", "1r0n"]. Read by
+    /// <c>ReleaseTags</c> to tell a release's year, group and digital flag apart. Defaults to
+    /// empty so the positional constructor keeps working for callers that don't care about tags.
+    /// </summary>
+    public IReadOnlyList<string> Tags { get; init; } = [];
 }
 
 /// <summary>
@@ -76,10 +84,23 @@ public static partial class ReleaseNameParser
         // unrecognized. The retry is deliberately the fallback rather than the first attempt: "(v2)"
         // marks a second scan of a chapter file, and a name that already parses must not pick up a
         // volume from one.
+        var tags = ExtractTags(name);
         var stripped = TagGroups().Replace(name, string.Empty).Trim();
         var parsed = ParseCleanedName(stripped);
-        return parsed.IsRecognized ? parsed : ParseCleanedName(name);
+        if (!parsed.IsRecognized)
+        {
+            parsed = ParseCleanedName(name);
+        }
+
+        return parsed with { Tags = tags };
     }
+
+    /// <summary>The trimmed inner text of every "(...)"/"[...]" group <see cref="TagGroups"/> matches, in order.</summary>
+    private static IReadOnlyList<string> ExtractTags(string name) =>
+        TagGroups().Matches(name)
+            .Select(m => m.Value.Trim())
+            .Select(v => v.Length >= 2 ? v[1..^1].Trim() : v)
+            .ToList();
 
     private static ParsedReleaseFile ParseCleanedName(string stripped)
     {

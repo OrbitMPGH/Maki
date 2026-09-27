@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
+using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
@@ -62,7 +63,18 @@ public class ChapterController(
                 // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
                 // Only the first kind is ever replaced by a source-switch re-download.
                 FileSourceName = c.ChapterFile != null ? c.ChapterFile.SourceName : null,
-                FileReleaseName = c.ChapterFile != null ? c.ChapterFile.ReleaseName : null
+                FileReleaseName = c.ChapterFile != null ? c.ChapterFile.ReleaseName : null,
+                // Only the quality columns; a new instance in a projection is never tracked.
+                File = c.ChapterFile == null ? null : new ChapterFile
+                {
+                    Tier = c.ChapterFile.Tier,
+                    Group = c.ChapterFile.Group,
+                    PageCount = c.ChapterFile.PageCount,
+                    MedianWidth = c.ChapterFile.MedianWidth,
+                    MedianHeight = c.ChapterFile.MedianHeight,
+                    ImageFormat = c.ChapterFile.ImageFormat,
+                    MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc
+                }
             })
             .ToListAsync(ct);
 
@@ -86,7 +98,8 @@ public class ChapterController(
             c.FilePath,
             c.FileSourceName,
             c.FileReleaseName,
-            FileVolume = VolumeFileLabel(c.FilePath)
+            FileVolume = VolumeFileLabel(c.FilePath),
+            FileQuality = c.File is null ? null : ChapterFileQualityDto.From(c.File)
         });
 
         return Ok(chapters);
@@ -276,6 +289,7 @@ public class ChapterController(
                 SourceName = "Manual",
                 DateAdded = DateTime.UtcNow
             };
+            ChapterFileQualityService.StampTierOnly(file, sourceRegistry.Find(file.SourceName)?.Kind, null);
             db.ChapterFiles.Add(file);
             stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             await db.SaveChangesAsync(ct);

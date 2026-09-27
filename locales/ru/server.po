@@ -2976,6 +2976,13 @@ msgstr "Нельзя проверить подготовку исправлен�
 msgid "health.check.failedDownloads"
 msgstr "{count, plural, =0 {Нет неудачных загрузок} one {# неудачная загрузка} few {# неудачные загрузки} many {# неудачных загрузок} other {# неудачная загрузка}}"
 
+#. Informational. The background measurement job reads page count, size and image format from
+#. these files on its own; nothing needs doing.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {count, plural, one {# chapter file waiting to be measured} other {# chapter files waiting to be measured}}
+msgid "health.check.unmeasuredFiles"
+msgstr ""
+
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {source} is cooling down

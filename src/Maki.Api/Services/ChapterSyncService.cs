@@ -126,7 +126,8 @@ public class ChapterSyncService(
                     snapshotLinks.TryAdd(match, sc);
                 }
 
-                ReplaceSnapshot(mapping, snapshotLinks);
+                var fileGroups = ReplaceSnapshot(mapping, snapshotLinks, ChapterFileQualityService.SiteGroup(source));
+                await BackfillFileGroupsAsync(mapping.SourceName, fileGroups, ct);
 
                 mapping.LastRefresh = DateTime.UtcNow;
                 mapping.ChapterSnapshotAt = mapping.LastRefresh;
@@ -182,10 +183,13 @@ public class ChapterSyncService(
         return newChapters.Select(c => c.Id).ToList();
     }
 
-    private void ReplaceSnapshot(
+    /// <returns>The group each linked chapter's file should carry, by ChapterFile id.</returns>
+    private Dictionary<int, string> ReplaceSnapshot(
         SourceMapping mapping,
-        IReadOnlyDictionary<Chapter, SourceChapter> snapshot)
+        IReadOnlyDictionary<Chapter, SourceChapter> snapshot,
+        string? groupFallback)
     {
+        var fileGroups = new Dictionary<int, string>();
         var current = mapping.ChapterLinks.ToDictionary(l => l.ChapterId);
         var retainedChapterIds = snapshot.Keys.Where(c => c.Id != 0).Select(c => c.Id).ToHashSet();
 
@@ -210,6 +214,35 @@ public class ChapterSyncService(
             link.Volume = sourceChapter.Volume;
             link.Title = sourceChapter.Title;
             link.ReleaseDate = sourceChapter.ReleaseDate;
+            link.Group = sourceChapter.Group ?? groupFallback;
+            if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
+            {
+                fileGroups.TryAdd(fileId, group);
+            }
+        }
+
+        return fileGroups;
+    }
+
+    /// <summary>
+    /// A file downloaded before its link recorded a group has none of its own. Fills it in from
+    /// the link, for files that came from this same source only.
+    /// </summary>
+    private async Task BackfillFileGroupsAsync(
+        string sourceName, Dictionary<int, string> fileGroups, CancellationToken ct)
+    {
+        if (fileGroups.Count == 0)
+        {
+            return;
+        }
+
+        var ids = fileGroups.Keys.ToList();
+        var files = await db.ChapterFiles
+            .Where(f => ids.Contains(f.Id) && f.SourceName == sourceName && f.Group == null)
+            .ToListAsync(ct);
+        foreach (var file in files.Where(f => f.Group is null))
+        {
+            file.Group = fileGroups[file.Id];
         }
     }
 
@@ -263,7 +296,8 @@ public class ChapterSyncService(
                             NumberRaw = link.NumberRaw,
                             Volume = link.Volume,
                             Title = link.Title,
-                            ReleaseDate = link.ReleaseDate
+                            ReleaseDate = link.ReleaseDate,
+                            Group = link.Group
                         };
                         db.ChapterSourceLinks.Add(replacement);
                     }

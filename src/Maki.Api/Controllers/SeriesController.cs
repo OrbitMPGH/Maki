@@ -539,7 +539,8 @@ public class SeriesController(
                 ParsedLabel(parsed),
                 parsed.IsVolume,
                 mapped,
-                parsed.Number ?? (decimal?)parsed.Volume));
+                parsed.Number ?? (decimal?)parsed.Volume,
+                ChapterFileQualityDto.From(record)));
         }
 
         // 2. Files on disk with no record yet (never imported — a rescan would adopt them).
@@ -561,7 +562,8 @@ public class SeriesController(
                 ParsedLabel(parsed),
                 parsed.IsVolume,
                 [],
-                parsed.Number ?? (decimal?)parsed.Volume));
+                parsed.Number ?? (decimal?)parsed.Volume,
+                null));
         }
 
         return Ok(files

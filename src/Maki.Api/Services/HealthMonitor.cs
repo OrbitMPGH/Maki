@@ -26,6 +26,7 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
     IUserLocaleResolver locales, ISchedulerFactory schedulerFactory)
 {
     private static readonly SemaphoreSlim Gate = new(1);
+    private const string UnmeasuredFilesId = "unmeasured-files";
     public async Task RefreshAsync(CancellationToken ct)
     {
         if (!await Gate.WaitAsync(0, ct)) return;
@@ -128,6 +129,16 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             }
             Add("downloads", "downloads", failed > 0 ? "warning" : "healthy",
                 "health.check.failedDownloads", new { count = failed }, "/activity");
+            try
+            {
+                // Pending rather than a warning: the measurement job works through these on its own
+                // and there is nothing for anyone to do about them.
+                var unmeasured = await ChapterFileMeasureService.CountPendingAsync(db, ct);
+                if (unmeasured > 0)
+                    Add(UnmeasuredFilesId, "library", "pending", "health.check.unmeasuredFiles", new { count = unmeasured });
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch { }
             var queue = services.GetRequiredService<DownloadQueueService>();
             foreach (var source in sources.All)
                 Add($"cooldown:{source.Name}", "downloads",
@@ -165,6 +176,8 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 if (HealthTransitions.Observe(row, check.Status, check.Connectivity, DateTime.UtcNow))
                     await NotifyAsync(row, !HealthTransitions.IsIssue(check.Status), ct);
             }
+            if (!checks.Any(c => c.Id == UnmeasuredFilesId) && old.FirstOrDefault(r => r.Id == UnmeasuredFilesId) is { } measuredRow)
+                db.HealthChecks.Remove(measuredRow);
             if (!checks.Any(c => c.Id == "library-check"))
                 foreach (var row in old.Where(r => r.Id.StartsWith("legacy:") && !checks.Any(c => c.Id == r.Id) && r.Status != "healthy"))
                 {

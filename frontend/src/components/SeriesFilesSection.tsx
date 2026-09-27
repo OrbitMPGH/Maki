@@ -13,6 +13,7 @@ import { notifications } from '@mantine/notifications'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
+import { FileQualityBadge } from './series/FileQualityBadge'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
@@ -198,6 +199,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     <Table.Th w={160}><Trans>Status</Trans></Table.Th>
                     <Table.Th><Trans>Mapped to</Trans></Table.Th>
                     <Table.Th w={90}><Trans>Size</Trans></Table.Th>
+                    <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
                     {!selectMode && <Table.Th w={canLink ? 76 : 40} />}
                   </Table.Tr>
                 </Table.Thead>
@@ -287,6 +289,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           <Text size="sm" c="var(--ink-3)" className="tnum">
                             {formatBytes(f.size)}
                           </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <FileQualityBadge quality={f.quality} />
                         </Table.Td>
                         {!selectMode && (
                           <Table.Td>

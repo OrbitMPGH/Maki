@@ -135,6 +135,7 @@ public class FileRelinkPlanner(
                 SourceName = "relink",
                 DateAdded = DateTime.UtcNow,
             };
+            ChapterFileQualityService.StampTierOnly(candidate.Record, null, null);
             db.ChapterFiles.Add(candidate.Record);
         }
 

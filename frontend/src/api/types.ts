@@ -211,6 +211,19 @@ export interface RootFolder {
   accessible: boolean
 }
 
+/** A file's release tier and archive stats, as the quality backfill measures it. */
+export interface ChapterFileQualityDto {
+  tier: 'unknown' | 'aggregator' | 'scanlator' | 'official' | 'volume'
+  group: string | null
+  pageCount: number | null
+  medianWidth: number | null
+  medianHeight: number | null
+  /** jpg | png | webp | avif | gif | pdf | mixed | unknown */
+  imageFormat: string | null
+  /** False until the backfill has actually opened the archive; the fields above are guesses until then. */
+  measured: boolean
+}
+
 export interface ChapterDto {
   id: number
   seriesId: number
@@ -235,6 +248,8 @@ export interface ChapterDto {
   fileReleaseName: string | null
   /** Volume label ("3", "1-2") when the backing file is a volume/compilation CBZ, else null. */
   fileVolume: string | null
+  /** Null when there is no file. */
+  fileQuality: ChapterFileQualityDto | null
 }
 
 export interface SeriesFileDto {
@@ -250,6 +265,8 @@ export interface SeriesFileDto {
   isVolume: boolean
   /** Chapter numbers this file is linked to (formatted, sorted). */
   mappedChapters: string[]
+  /** Null for a file with no ChapterFile record (unlinked, unrecognized). */
+  quality: ChapterFileQualityDto | null
 }
 
 export interface SeriesScrobbleServiceDto {

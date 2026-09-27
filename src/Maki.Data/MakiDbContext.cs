@@ -413,6 +413,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // is a full scan plus a sort of every file in the library on every landing-page load.
             e.HasIndex(f => f.DateAdded);
 
+            // Cheap lookup for the measurement backfill: only the unmeasured rows are ever queried
+            // through this index, so indexing the rest of the table would be pure overhead.
+            e.HasIndex(f => f.MeasuredAtUtc).HasFilter("MeasuredAtUtc IS NULL");
+
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 

@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Hubs;
+using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
 using Microsoft.AspNetCore.Mvc;
+using Quartz;
 
 namespace Maki.Api.Controllers;
 
@@ -20,7 +22,9 @@ public class LibraryImportController(
     EventBroadcaster events,
     NotificationService notifications,
     IUserLocaleResolver locales,
-    InboxService inbox) : ControllerBase
+    InboxService inbox,
+    ISchedulerFactory schedulerFactory,
+    ILogger<LibraryImportController> logger) : ControllerBase
 {
     public record ImportRequest(int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true);
 
@@ -102,6 +106,11 @@ public class LibraryImportController(
                     imported > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
                 Url: "/import"),
             InboxAudience.Admins);
+
+        if (imported > 0)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
+        }
 
         return Ok(results);
     }

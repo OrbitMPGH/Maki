@@ -21,7 +21,7 @@ public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecogn
 public class CbzLinkService(
     MakiDbContext db, SourceRegistry sources, KavitaScanService kavitaScans,
     StatsEventService stats, ReaderArchiveCache archives, SourceAvailability sourceAvailability,
-    ILogger<CbzLinkService> logger)
+    ChapterFileQualityService quality, ILogger<CbzLinkService> logger)
 {
     /// <param name="files">Absolute paths of CBZ files, already inside the series folder.</param>
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
@@ -74,7 +74,13 @@ public class CbzLinkService(
                 // The spelling on disk wins: a row written under the other separator, or with
                 // different casing, is repaired here rather than duplicated.
                 chapterFile.RelativePath = relativePath;
-                chapterFile.Size = new FileInfo(file).Length;
+                var size = new FileInfo(file).Length;
+                if (chapterFile.Size != size)
+                {
+                    chapterFile.MeasuredAtUtc = null;
+                }
+
+                chapterFile.Size = size;
                 chapterFile.ReleaseName ??= releaseName;
             }
             else
@@ -88,6 +94,8 @@ public class CbzLinkService(
                     ReleaseName = releaseName,
                     DateAdded = DateTime.UtcNow
                 };
+                var (kind, group) = quality.ResolveProvenance(chapterFile, null);
+                ChapterFileQualityService.StampTierOnly(chapterFile, kind, group);
                 db.ChapterFiles.Add(chapterFile);
                 await db.SaveChangesAsync(ct); // need the file id for linking
                 existing[key] = chapterFile;

@@ -786,6 +786,8 @@ try
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<FileRelinkPlanner>();
+    builder.Services.AddSingleton<ChapterFileQualityService>();
+    builder.Services.AddScoped<ChapterFileMeasureService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -1111,6 +1113,18 @@ try
         q.AddJob<Maki.Api.Jobs.ImageCacheRebuildJob>(j => j
             .WithIdentity(Maki.Api.Jobs.ImageCacheRebuildJob.Key)
             .StoreDurably());
+
+        // Measures chapter files nothing has opened yet. Also fired after library and torrent
+        // imports; the timer catches anything those triggers missed. First run at +15, clear of the
+        // artifact builds in the first minutes after startup.
+        q.AddJob<Maki.Api.Jobs.ChapterFileMeasureJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
+            .WithIdentity("chapter-file-measure-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
 
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j

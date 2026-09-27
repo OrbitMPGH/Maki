@@ -113,6 +113,7 @@ import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
+import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
@@ -2200,7 +2201,7 @@ export default function SeriesDetailPage() {
                               <Table.Th w={170}><Trans>Chapter</Trans></Table.Th>
                               <Table.Th><Trans>Title</Trans></Table.Th>
                               <Table.Th w={120}><Trans>Released</Trans></Table.Th>
-                              <Table.Th w={110}><Trans>Source</Trans></Table.Th>
+                              <Table.Th w={190}><Trans>Source</Trans></Table.Th>
                               <Table.Th w={240}><Trans>Status</Trans></Table.Th>
                               <Table.Th w={124} />
                             </Table.Tr>
@@ -2341,11 +2342,14 @@ export default function SeriesDetailPage() {
                                           (() => {
                                             const origin = fileOrigin(c.fileSourceName, c.fileReleaseName)
                                             return (
-                                                <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                                                  <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">
-                                                    {origin.label}
-                                                  </Badge>
-                                                </Tooltip>
+                                                <Stack gap={4} align="flex-start">
+                                                  <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
+                                                    <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">
+                                                      {origin.label}
+                                                    </Badge>
+                                                  </Tooltip>
+                                                  <FileQualityBadge quality={c.fileQuality} />
+                                                </Stack>
                                             )
                                           })()
                                       )}

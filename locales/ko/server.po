@@ -2976,6 +2976,13 @@ msgstr "루트 {root} 복구 준비 영역을 검사할 수 없음"
 msgid "health.check.failedDownloads"
 msgstr "{count, plural, =0 {실패한 다운로드 없음} other {실패한 다운로드 #개}}"
 
+#. Informational. The background measurement job reads page count, size and image format from
+#. these files on its own; nothing needs doing.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {count, plural, one {# chapter file waiting to be measured} other {# chapter files waiting to be measured}}
+msgid "health.check.unmeasuredFiles"
+msgstr ""
+
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {source} is cooling down

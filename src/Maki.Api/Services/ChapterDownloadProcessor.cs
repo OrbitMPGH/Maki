@@ -10,6 +10,7 @@ using Maki.Core.Http;
 using Maki.Core.Inbox;
 using Maki.Core.Naming;
 using Maki.Core.Notifications;
+using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,7 @@ public class ChapterDownloadProcessor(
     SourceAvailability sourceAvailability,
     ReaderArchiveCache archives,
     NamingService naming,
+    ChapterFileQualityService quality,
     ILocalizer localizer,
     IUserLocaleResolver locales,
     ILogger<ChapterDownloadProcessor> logger)
@@ -246,10 +248,25 @@ public class ChapterDownloadProcessor(
                 chapterFile.SourceName = mapping.SourceName;
                 chapterFile.DateAdded = DateTime.UtcNow;
 
+                // New bytes, so nothing about the old rip carries over: Stamp never downgrades a
+                // tier or group it finds already set, and a failed measure must leave this unmeasured.
+                chapterFile.Tier = QualityTier.Unknown;
+                chapterFile.Group = null;
+                chapterFile.MeasuredAtUtc = null;
+
                 // Same row id, different archive behind it. The reader caches its page list per
                 // ChapterFile, so without this the reader serves the old rip's page names.
                 archives.Invalidate(chapterFile.Id);
             }
+
+            var linkGroup = await db.ChapterSourceLinks
+                .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
+                .Select(l => l.Group)
+                .FirstOrDefaultAsync(ct);
+            // Not cancellable: the archive is already in the library, and stopping partway through
+            // measuring it only delays the row that records it.
+            quality.Stamp(chapterFile, finalPath, source.Kind, linkGroup ?? ChapterFileQualityService.SiteGroup(source),
+                sampleSize: 0, CancellationToken.None);
 
             // Only a chapter the library didn't already have counts. A re-download replaces bytes
             // at a path that was already there, so recording it again inflates the instance's

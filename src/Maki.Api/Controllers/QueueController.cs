@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 namespace Maki.Api.Controllers;
 
@@ -19,7 +21,9 @@ public class QueueController(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     TorrentImportService importer,
-    EventBroadcaster events)
+    EventBroadcaster events,
+    ISchedulerFactory schedulerFactory,
+    ILogger<QueueController> logger)
     : ControllerBase
 {
     /// <summary>
@@ -280,6 +284,10 @@ public class QueueController(
         await db.SaveChangesAsync(ct);
         await importer.ApplyNamingAsync(item.Series, outcome.ImportedPaths, ct);
         await Broadcast(item);
+        if (outcome.Imported > 0)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
+        }
 
         return Ok(new ImportDecisionResultDto(
             outcome.Imported, outcome.Linked, outcome.Skipped, outcome.Deleted));

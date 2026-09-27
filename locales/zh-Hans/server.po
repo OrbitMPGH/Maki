@@ -2976,6 +2976,13 @@ msgstr "无法检查根目录 {root} 的修复暂存区"
 msgid "health.check.failedDownloads"
 msgstr "{count, plural, =0 {没有失败的下载} other {失败下载：# 个}}"
 
+#. Informational. The background measurement job reads page count, size and image format from
+#. these files on its own; nothing needs doing.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: {count, plural, one {# chapter file waiting to be measured} other {# chapter files waiting to be measured}}
+msgid "health.check.unmeasuredFiles"
+msgstr ""
+
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {source} is cooling down

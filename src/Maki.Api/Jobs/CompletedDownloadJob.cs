@@ -31,6 +31,7 @@ public class CompletedDownloadJob(
     QBittorrentClient qbittorrent,
     TorrentImportService importer,
     EventBroadcaster events,
+    ISchedulerFactory schedulerFactory,
     ILogger<CompletedDownloadJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
@@ -251,6 +252,10 @@ public class CompletedDownloadJob(
         // than still in-flight and refuses to rename the series it just finished importing into.
         await db.SaveChangesAsync(ct);
         await importer.ApplyNamingAsync(series, outcome.ImportedPaths, ct);
+        if (outcome.Imported > 0)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
+        }
     }
 
     private static ReleaseInfo? ReleaseInfoOf(DownloadQueueItem item) =>
