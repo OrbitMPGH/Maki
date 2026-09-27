@@ -21,10 +21,13 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
     public IReadOnlyList<string> CoverHosts => ["2xstorage.com", "zinmanga1.com"];
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
     
-    public string? ResolveSeriesIdFromUrl(Uri url) =>
-    
-        // https://www.topmanhua.fan/manhua/{id}
-        SourceUrl.PathTail(url, BaseUrl, "/manhua/", firstSegmentOnly: true);
+    public string? ResolveSeriesIdFromUrl(Uri url)
+    {
+        // https://www.topmanhua.fan/manhua/{id}. A chapter URL adds a second segment
+        // (/manhua/{id}/{chapter}) and must not resolve as a series.
+        var tail = SourceUrl.PathTail(url, BaseUrl, "/manhua/", firstSegmentOnly: false);
+        return tail is not null && !tail.Contains('/') ? tail : null;
+    }
     
     
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)

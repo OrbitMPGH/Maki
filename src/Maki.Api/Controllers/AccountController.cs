@@ -252,6 +252,13 @@ public class AccountController(
             return this.Fail(localizer, "error.account.opdsKeyOnOpdsCard");
         }
 
+        // JsonStringEnumConverter deserializes an undefined numeric value (e.g. "7") into the enum
+        // without complaint, and Full is the only scope this endpoint hands out.
+        if (request.Scope != UserApiKeyScope.Full)
+        {
+            return this.Fail(localizer, "error.account.invalidScope");
+        }
+
         var secret = ApiKeyCrypto.Generate();
         var key = new UserApiKey
         {

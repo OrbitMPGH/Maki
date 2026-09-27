@@ -83,7 +83,9 @@ public class CustomRailService(
 
     /// <summary>
     /// How many rows the rail could show, for the editor's live count. Null when there is no way to
-    /// tell: the catalogue sources need the search index for that.
+    /// tell: the catalogue sources need the search index for that, and Recommendations has no
+    /// catalogue count at all - it draws from the ranked pool, not a filtered scan, so a count here
+    /// would answer a question the source doesn't.
     /// </summary>
     public async Task<int?> CountAsync(CustomRailSpec spec, CancellationToken ct = default)
     {
@@ -93,9 +95,13 @@ public class CustomRailService(
             return (await LibraryAsync(spec, ct)).Count;
         }
 
+        if (spec.Source == CustomRailSources.Recommendations)
+        {
+            return null;
+        }
+
         var scoped = await hidden.ScopeAsync(RecommendationFilters.FromSpec(spec.Filters), user.MaxContentRating, ct);
-        // The recommender never returns an owned title, so its count leaves them out too.
-        var exclude = await ExclusionsAsync(spec.ExcludeOwned || spec.Source == CustomRailSources.Recommendations, ct);
+        var exclude = await ExclusionsAsync(spec.ExcludeOwned, ct);
         return await discover.CountAsync(new DiscoverFeedRequest(nameof(BrowseFeed.Popular), Filters: scoped), ct, exclude);
     }
 

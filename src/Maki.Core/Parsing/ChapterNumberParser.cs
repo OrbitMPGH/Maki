@@ -44,9 +44,9 @@ public static partial class ChapterNumberParser
         if (volume is null)
         {
             var embedded = VolumePattern().Match(text);
-            if (embedded.Success)
+            if (embedded.Success && int.TryParse(embedded.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var embeddedVolume))
             {
-                volume = int.Parse(embedded.Groups[1].Value, CultureInfo.InvariantCulture);
+                volume = embeddedVolume;
             }
         }
 
@@ -92,6 +92,8 @@ public static partial class ChapterNumberParser
         }
 
         var match = VolumePattern().Match(text);
-        return match.Success ? int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) : null;
+        return match.Success && int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : null;
     }
 }

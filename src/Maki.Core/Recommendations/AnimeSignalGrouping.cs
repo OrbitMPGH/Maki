@@ -116,8 +116,19 @@ public static class AnimeSignalGrouping
         // order SQLite handed the rows back: an unordered pick would make the panel's text change
         // between two requests over identical data.
         var ordered = rows.OrderBy(r => r.Service, StringComparer.Ordinal).ThenBy(r => r.AnimeId).ToList();
-        var rank = ordered.Min(r => StatusRank(r.Status));
         var first = ordered.FirstOrDefault(r => r.Service == "anilist") ?? ordered[0];
+
+        // Planning rows leave before the averaging, same as MergeSeasons: a reader who watched and
+        // scored one tracker's entry while a stale Planning row for the same show sits on another
+        // must not have that row dilute the real opinion. Only when every row is Planning (an
+        // unwatched season somehow carrying a score) does the average fall back to all of them.
+        var evidence = ordered.Where(r => r.Status != AnimeWatchStatus.Planning).ToList();
+        if (evidence.Count == 0)
+        {
+            evidence = ordered;
+        }
+
+        var rank = evidence.Min(r => StatusRank(r.Status));
         return new Anime(
             rows.Key,
             first.AnimeId,
@@ -128,8 +139,8 @@ public static class AnimeSignalGrouping
             // Two trackers holding two scores for one show is a scrobbler that rounded differently,
             // or a rating the reader changed on one side and not the other. Either way it is one
             // opinion, so it averages rather than counting twice.
-            Average(ordered.Select(r => (double?)r.Score)),
-            ordered.First(r => StatusRank(r.Status) == rank).Status,
+            Average(evidence.Select(r => (double?)r.Score)),
+            evidence.First(r => StatusRank(r.Status) == rank).Status,
             ordered.Select(r => r.Format).FirstOrDefault(f => f is not null),
             ordered.Select(r => r.StartDate).FirstOrDefault(d => d is not null),
             ordered.Select(r => r.EndDate).FirstOrDefault(d => d is not null),

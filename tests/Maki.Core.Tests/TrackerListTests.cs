@@ -176,7 +176,7 @@ public class TrackerListTests
             .On((_, body) => body.Contains("Viewer"), """{"data":{"Viewer":{"id":77}}}""")
             .On((_, body) => body.Contains("mediaList"), page);
 
-        var list = await AniList(handler).ListAnimeAsync(UserId);
+        var list = (await AniList(handler).ListAnimeAsync(UserId)).Entries;
 
         Assert.Equal(2, list.Count);
         var aot = list[0];
@@ -252,7 +252,7 @@ public class TrackerListTests
         var handler = new Handler()
             .OnUrl("/users/@me/animelist?fields=list_status,media_type,num_episodes,start_date,end_date&nsfw=true", page);
 
-        var list = await Mal(handler).ListAnimeAsync(UserId);
+        var list = (await Mal(handler).ListAnimeAsync(UserId)).Entries;
 
         Assert.Equal(4, list.Count);
         var aot = list[0];

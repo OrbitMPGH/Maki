@@ -38,7 +38,7 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
     public string BaseUrl => "https://flamecomics.xyz";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
     public SourceKind Kind => SourceKind.Scanlator;
-    public SourceContent Content => SourceContent.Manhwa;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua | SourceContent.Manga;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 

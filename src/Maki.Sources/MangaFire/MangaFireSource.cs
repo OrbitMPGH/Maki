@@ -20,9 +20,13 @@ namespace Maki.Sources.MangaFire;
 /// </summary>
 public class MangaFireSource(MangaFireBrowser browser) : ISource
 {
-    public string Name => "mangafire";
+    private const string SourceName = "mangafire";
+
+    public string Name => SourceName;
     public string DisplayName => "MangaFire";
-    public string BaseUrl => "https://mangafire.to";
+    private const string BaseUrlConst = "https://mangafire.to";
+
+    public string BaseUrl => BaseUrlConst;
     public SourceCapabilities Capabilities =>
         SourceCapabilities.NeedsFlareSolverr | SourceCapabilities.SupportsLanguageFilter;
     public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua;
@@ -88,7 +92,36 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
         // where each item carries its own code — there is no way to ask the site for a subset.
         var requested = languages.Count == 1 ? languages[0] : MangaFireBrowser.AllLanguages;
 
-        var rawItems = await browser.ChaptersAsync(sourceSeriesId, requested, ct);
+        var (rawItems, languageMatched) = await browser.ChaptersAsync(sourceSeriesId, requested, ct);
+        EnsureLanguageMatched(languageMatched, requested);
+
+        return BuildChapters(sourceSeriesId, rawItems, languages);
+    }
+
+    /// <summary>
+    /// The switch failed, so the list is still whatever language was loaded before the attempt, not
+    /// the one requested. Filtering that against the requested language(s) legitimately yields []
+    /// most of the time, and ChapterSyncService treats [] as a clean empty snapshot: it would delete
+    /// every ChapterSourceLink for the series. Throwing instead of building keeps a bad switch from
+    /// reading as "no chapters". Split out from <see cref="ListChaptersAsync"/> so it's testable
+    /// without a real browser.
+    /// </summary>
+    internal static void EnsureLanguageMatched(bool languageMatched, string requested)
+    {
+        if (!languageMatched)
+        {
+            throw new InvalidOperationException($"mangafire: could not switch chapter list to '{requested}'");
+        }
+    }
+
+    /// <summary>
+    /// Filters and maps the browser's raw chapter-list items. Split out from <see
+    /// cref="ListChaptersAsync"/> so the language-attribution rules can be tested without a real
+    /// browser.
+    /// </summary>
+    internal static IReadOnlyList<SourceChapter> BuildChapters(
+        string sourceSeriesId, IReadOnlyList<string> rawItems, IReadOnlyList<string> languages)
+    {
         var chapters = new List<(SourceChapter Chapter, bool Official)>();
         foreach (var raw in rawItems)
         {
@@ -102,9 +135,9 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
             var itemLanguage = item.TryGetProperty("language", out var lang) ? lang.GetString() : null;
             if (itemLanguage is null)
             {
-                // No code at all. With one language asked for that is the language it must be in;
-                // with several there is nothing to attribute it to, so it is dropped rather than
-                // filed under a guess.
+                // No code at all. With one language asked for and the switch confirmed, that is the
+                // language it must be in. With several languages there is nothing to attribute it
+                // to, so it is dropped rather than filed under a guess.
                 if (languages.Count > 1)
                 {
                     continue;
@@ -124,7 +157,7 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
             var official = item.TryGetProperty("type", out var type) && type.GetString() == "official";
 
             chapters.Add((new SourceChapter(
-                Name,
+                SourceName,
                 sourceSeriesId,
                 item.GetProperty("id").GetInt64().ToString(),
                 number.GetRawText(),
@@ -133,7 +166,7 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
                 Title: string.IsNullOrWhiteSpace(name) ? null : name,
                 Language: itemLanguage ?? languages[0],
                 ReleaseDate: released,
-                Url: $"{BaseUrl}/title/{sourceSeriesId}"), official));
+                Url: $"{BaseUrlConst}/title/{sourceSeriesId}"), official));
         }
 
         // The site lists official and unofficial rips of the same chapter as separate entries;

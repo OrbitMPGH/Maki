@@ -97,7 +97,11 @@ export function useReaderProgress(
       // stretch since the previous one, and a hidden tab may never come back.
       if (!id || (!pending.current && clock.pending() === 0)) return
       pending.current = false
-      void flushProgress(id, at, done || undefined, clock.take()).catch(() => {})
+      void flushProgress(id, at, done || undefined, clock.take())
+        .then((unlocked) => {
+          if (unlocked.length > 0) unlockHandler.current?.(unlocked)
+        })
+        .catch(() => {})
     }
 
     const onVisibility = () => {

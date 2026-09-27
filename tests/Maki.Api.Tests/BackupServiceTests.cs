@@ -93,6 +93,18 @@ public class BackupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_twice_in_the_same_second_both_succeed()
+    {
+        var service = Build();
+        var first = await service.CreateAsync("manual", CancellationToken.None);
+        var second = await service.CreateAsync("manual", CancellationToken.None);
+
+        Assert.NotEqual(first.Name, second.Name);
+        Assert.True(File.Exists(Path.Combine(_paths.BackupDir, first.Name)));
+        Assert.True(File.Exists(Path.Combine(_paths.BackupDir, second.Name)));
+    }
+
+    [Fact]
     public async Task Prune_keeps_the_newest_per_kind()
     {
         _settings.Set(SettingKeys.BackupRetention, "2");

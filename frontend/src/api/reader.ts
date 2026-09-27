@@ -211,15 +211,18 @@ export async function flushProgress(
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
-) {
+): Promise<UnlockedAchievement[]> {
   const init = await getInitialize()
-  await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
+  const response = await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
     body: JSON.stringify({ pageIndex, completed, seconds, final: true }),
   })
+  if (!response.ok) return []
+  const result = (await response.json()) as SaveProgressResult
+  return result?.unlocked ?? []
 }
 
 export interface ReaderSettings {
@@ -254,7 +257,13 @@ export function useSaveReaderSettings() {
 export interface KavitaImportStatus {
   running: boolean
   finishedAt: string | null
-  result: { seriesMatched: number; chaptersMarked: number; seriesUnmatched: number } | null
+  result: {
+    seriesMatched: number
+    chaptersMarked: number
+    seriesUnmatched: number
+    seriesFailed: number
+    failedTitles: string[]
+  } | null
   error: string | null
 }
 

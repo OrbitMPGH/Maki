@@ -43,6 +43,15 @@ msgstr "此验证码无效"
 msgid "error.account.invalidContentRating"
 msgstr "评级必须是以下值之一：{ratings}"
 
+#. JsonStringEnumConverter accepts the underlying numeric value of an enum as well as its name, so
+#. an undefined integer (e.g. "7") deserializes without error into a UserApiKeyScope value nothing
+#. names. Caught with Enum.IsDefined rather than a bigger allowed-scope list, since Opds already has
+#. its own dedicated refusal above.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That key scope is not valid
+msgid "error.account.invalidScope"
+msgstr ""
+
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Too many incorrect password attempts. Try again later.
@@ -1837,6 +1846,16 @@ msgstr ""
 msgid "error.system.noFileUploaded"
 msgstr "未上传文件。"
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Another backup is being created right now. Try again in a moment.
+msgid "error.system.backupInProgress"
+msgstr ""
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Could not create the backup. Check the server logs for details.
+msgid "error.system.backupFailed"
+msgstr ""
+
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
 #. English: Unknown series
@@ -3185,6 +3204,16 @@ msgstr "已请求替换 {count, plural, other {# 个章节}}"
 #, fuzzy
 msgid "health.history.operationCompleted"
 msgstr "{kind} 已完成：{path}"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Permanently deleted {path}; chapter records and Wanted flags preserved
+msgid "health.history.deletedFile"
+msgstr ""
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Cleared the record for missing {path}; chapter records and Wanted flags preserved
+msgid "health.history.deletedMissing"
+msgstr ""
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

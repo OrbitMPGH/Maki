@@ -98,7 +98,7 @@ export default function ReaderPage() {
    * request and no hub subscription. Acknowledging them is what stops the same unlock announcing
    * itself on every page turn after the one that earned it.
    */
-  const markSeen = useMarkAchievementsSeen()
+  const { mutate: markSeenMutate } = useMarkAchievementsSeen()
   const onAchievementsUnlocked = useCallback(
     (unlocked: UnlockedAchievement[]) => {
       for (const achievement of unlocked) {
@@ -112,9 +112,9 @@ export default function ReaderPage() {
         })
       }
 
-      markSeen.mutate(unlocked.map((a) => a.id))
+      markSeenMutate(unlocked.map((a) => a.id))
     },
-    [markSeen],
+    [markSeenMutate],
   )
 
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
@@ -192,14 +192,15 @@ export default function ReaderPage() {
       if (manifest && tracking) {
         const done = complete || finished
         await settleProgress()
-        await flushProgress(
+        const unlocked = await flushProgress(
           manifest.chapterId,
           done ? pageCount - 1 : shownTo,
           done || undefined,
           // Banked time belongs to the chapter being left, and the next chapter's clock starts
           // from nothing, so it has to go out with this write or it is lost.
           clock.take(),
-        ).catch(() => {})
+        ).catch(() => [] as UnlockedAchievement[])
+        if (unlocked.length > 0) onAchievementsUnlocked(unlocked)
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', manifest.seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', manifest.seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series'] })
@@ -210,7 +211,18 @@ export default function ReaderPage() {
       queryClient.removeQueries({ queryKey: ['reader-manifest', target] })
       navigate(`/read/${target}`, { replace: true })
     },
-    [manifest, navigate, shownTo, pageCount, queryClient, tracking, clock, finished, settleProgress],
+    [
+      manifest,
+      navigate,
+      shownTo,
+      pageCount,
+      queryClient,
+      tracking,
+      clock,
+      finished,
+      settleProgress,
+      onAchievementsUnlocked,
+    ],
   )
 
   const reachEnd = useCallback(() => {

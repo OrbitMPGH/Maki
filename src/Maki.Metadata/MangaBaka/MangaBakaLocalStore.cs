@@ -798,7 +798,7 @@ public class MangaBakaLocalStore(
             }
         }
 
-        if (genreWeight.Count == 0 && tagWeight.Count == 0)
+        if (genreWeight.Count == 0 && tagWeight.Count == 0 && authors.Count == 0)
         {
             return [];
         }

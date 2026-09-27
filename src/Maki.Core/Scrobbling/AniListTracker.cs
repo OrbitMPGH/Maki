@@ -485,7 +485,7 @@ public class AniListTracker(
     /// and date fields are scalars on the media node and do not move that budget.
     /// </para>
     /// </summary>
-    public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+    public async Task<AnimeListResult> ListAnimeAsync(int userId, CancellationToken ct = default)
     {
         var viewer = await QueryAsync(userId, "query { Viewer { id } }", new { }, auth: true, ct);
         if (!viewer.TryGetProperty("Viewer", out var v) || GetInt(v, "id") is not { } viewerId)
@@ -549,7 +549,7 @@ public class AniListTracker(
                 userId, maxPages, entries.Count);
         }
 
-        return entries;
+        return new AnimeListResult(entries, truncated);
     }
 
     /// <summary>

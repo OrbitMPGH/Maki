@@ -97,6 +97,30 @@ public sealed class HealthDeleteBulkAndCancelTests : IDisposable
         Assert.False(File.Exists(Path.Combine(root, "one.cbz")));
         Assert.Empty(db.ChapterFiles);
         Assert.True(file.Removed);
+
+        // The audit trail row is keyed, not raw English, so it renders in the reader's own language.
+        var history = db.HealthHistory.Single(h => h.FileId == file.Id);
+        Assert.Equal("health.history.deletedFile", history.MessageKey);
+        Assert.Contains("one.cbz", history.ParamsJson);
+    }
+
+    [Fact]
+    public async Task Deleting_a_missing_files_record_is_keyed_differently_from_a_real_delete()
+    {
+        using var db = fixture.NewContext();
+        var file = await Seed(db);
+        File.Delete(Path.Combine(root, "one.cbz"));
+        file.Size = -1;
+        file.ModifiedAt = DateTime.MinValue;
+        await db.SaveChangesAsync();
+
+        var service = Operations(db);
+        var op = await service.PreviewDeleteAsync(file.Id, file.Version, 1, default);
+
+        await service.ApplyAsync(op.Id, file.Version, true, false, default);
+
+        var history = db.HealthHistory.Single(h => h.FileId == file.Id);
+        Assert.Equal("health.history.deletedMissing", history.MessageKey);
     }
 
     private async Task<HealthOperation> StageDownloading(MakiDbContext db, HealthFile file)

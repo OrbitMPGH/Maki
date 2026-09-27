@@ -206,6 +206,43 @@ public class DownloadQueueRecoveryTests : IDisposable
     }
 
     /// <summary>
+    /// A clear-queue request can land at any point after a worker starts claiming a row. The
+    /// cancellation source must already be registered by the time the status flip's UPDATE runs, so
+    /// a CancelWork racing right up against it is never silently lost. Regression for the bug where
+    /// <c>WorkCancellationToken</c> was only registered after <c>claimed == 1</c> came back.
+    /// </summary>
+    [Fact]
+    public async Task CancelWork_racing_the_claim_flip_is_not_lost()
+    {
+        var id = SeedItem(QueueStatus.Queued, withMapping: true);
+        DownloadQueueService? queue = null;
+        queue = new DownloadQueueService(
+            ScopeFactoryWith(new CancelDuringFlip(id, () => queue!)), new StoppedClock(T0),
+            Sources.SingleChapterResolver(null, "fake"), NullLogger<DownloadQueueService>.Instance);
+
+        var claimed = await queue.ClaimNextAsync();
+
+        Assert.Equal(id, claimed);
+        Assert.True(queue.WorkCancellationToken(id).IsCancellationRequested);
+    }
+
+    /// <summary>Plays a clear-queue's CancelWork landing just as the claim's status-flip UPDATE runs.</summary>
+    private sealed class CancelDuringFlip(int id, Func<DownloadQueueService> queue) : DbCommandInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.TrimStart().StartsWith("UPDATE \"DownloadQueue\""))
+            {
+                queue().CancelWork(id);
+            }
+
+            return ValueTask.FromResult(result);
+        }
+    }
+
+    /// <summary>
     /// The in-memory cooldown is gone after a restart. The persisted NextAttempt alone has to keep
     /// the row off the source until it passes.
     /// </summary>

@@ -219,4 +219,16 @@ public class ToonilySourceTests
                     new TimeoutException())
                 : inner.FetchAsync(request, ct);
     }
+
+    [Theory]
+    [InlineData("OnGoing", "Ongoing")]
+    [InlineData("Completed", "Completed")]
+    [InlineData("Ended", "Completed")]
+    [InlineData("Suspended", null)]
+    [InlineData("Incomplete", null)]
+    [InlineData("Canceled", null)]
+    public void MapStatus_matches_whole_labels_only(string raw, string? expected)
+    {
+        Assert.Equal(expected, ToonilySource.MapStatus(raw));
+    }
 }

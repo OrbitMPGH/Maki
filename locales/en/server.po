@@ -33,6 +33,14 @@ msgstr "That code is not valid"
 msgid "error.account.invalidContentRating"
 msgstr "Rating must be one of: {ratings}"
 
+#. JsonStringEnumConverter accepts the underlying numeric value of an enum as well as its name, so
+#. an undefined integer (e.g. "7") deserializes without error into a UserApiKeyScope value nothing
+#. names. Caught with Enum.IsDefined rather than a bigger allowed-scope list, since Opds already has
+#. its own dedicated refusal above.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.invalidScope"
+msgstr "That key scope is not valid"
+
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.lockedOut"
@@ -1282,6 +1290,14 @@ msgstr "This file is not a readable Maki backup. The zip or its manifest is dama
 msgid "error.system.noFileUploaded"
 msgstr "No file uploaded."
 
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupInProgress"
+msgstr "Another backup is being created right now. Try again in a moment."
+
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupFailed"
+msgstr "Could not create the backup. Check the server logs for details."
+
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
 msgid "inbox.unknownSeries"
@@ -2242,6 +2258,14 @@ msgstr "Replacement requested for {count, plural, one {# chapter} other {# chapt
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "health.history.operationCompleted"
 msgstr "{kind} completed: {path}"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.deletedFile"
+msgstr "Permanently deleted {path}; chapter records and Wanted flags preserved"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.deletedMissing"
+msgstr "Cleared the record for missing {path}; chapter records and Wanted flags preserved"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 msgid "health.history.scan"

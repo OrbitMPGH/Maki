@@ -1041,7 +1041,8 @@ public class SeriesController(
             genres = series.Genres,
             tags = series.Tags,
             providerId = series.MangaBakaId?.ToString(CultureInfo.InvariantCulture),
-            coverUrl
+            coverUrl,
+            rootFolderId = series.RootFolderId
         });
         var title = series.Title;
         var seriesKey = SeriesIdentity.For(series);

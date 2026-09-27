@@ -33,6 +33,20 @@ public class FuzzyTermIndexTests : IDisposable
         Assert.Contains(expansions, e => e.Term == "berserk" && e.Distance == 1);
     }
 
+    /// <summary>
+    /// The FTS5 vocabulary is case-folded, so an uppercase typo has to be lowercased before it is
+    /// compared against the dictionary or it never lands on the term it is one edit away from.
+    /// </summary>
+    [Fact]
+    public void Finds_a_substitution_typed_in_uppercase()
+    {
+        _db.AddSeries(1, "Berserk");
+
+        var expansions = Build().Expand("Berserck", FuzzyOptions.Default);
+
+        Assert.Contains(expansions, e => e.Term == "berserk" && e.Distance == 1);
+    }
+
     [Fact]
     public void Finds_a_transposition_as_one_edit()
     {

@@ -233,6 +233,59 @@ public class AnimeSignalSyncTests : IDisposable
         Assert.Empty(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync());
     }
 
+    /// <summary>
+    /// RunAsync reports a tracker it could not read in <c>summary.Error</c> rather than throwing, so
+    /// TickAsync must read that field rather than treating any non-throwing call as a completed sync
+    /// - otherwise a dead token advances the 24-hour gate on the strength of an outage.
+    /// </summary>
+    [Fact]
+    public async Task A_failing_source_does_not_advance_the_global_sync_gate()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+
+        var source = new FakeAnimeListSource([], failing: 0, throwOnList: true);
+        var appSettings = new FakeAppSettings();
+        var service = new AnimeSignalSyncService(
+            _fixture.ScopeFactory(),
+            new FakeAnimeSignalSources(source),
+            new MangaBakaLocalStore(
+                new MangaBakaDumpOptions("", Path.GetTempPath()), appSettings,
+                NullLogger<MangaBakaLocalStore>.Instance),
+            appSettings,
+            new FakeUserSettingsStore(_fixture),
+            NullLogger<AnimeSignalSyncService>.Instance);
+
+        await service.TickAsync(force: true, CancellationToken.None);
+
+        Assert.Null(await appSettings.GetAsync(SettingKeys.RecommendationsAnimeSignalsLastSyncAt));
+    }
+
+    /// <summary>
+    /// A source whose read stopped at its own page cap cannot tell "the reader removed this" from
+    /// "this sorts past where I stopped reading", so a row already stored for that source must
+    /// survive even though this page's fetch does not carry it.
+    /// </summary>
+    [Fact]
+    public async Task A_truncated_source_keeps_rows_that_were_not_in_the_fetched_page()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+        SeedRow(userId, 1, 8, AnimeWatchStatus.Completed);
+
+        var source = new FakeAnimeListSource(
+            [new AnimeListEntry(2, "Anime 2", 7, AnimeWatchStatus.Completed)],
+            failing: 0, truncated: true);
+
+        var summary = await Service(source).SyncUserAsync(userId, CancellationToken.None);
+
+        Assert.Equal(0, summary.Removed);
+        using var db = _fixture.NewContext();
+        var ids = await db.AnimeSignals.Where(x => x.UserId == userId).Select(x => x.AnimeId).OrderBy(x => x)
+            .ToListAsync();
+        Assert.Equal([1L, 2L], ids);
+    }
+
     /// <summary>A real cancellation must still propagate rather than being swallowed as a lookup failure.</summary>
     [Fact]
     public async Task A_real_cancellation_still_propagates()
@@ -268,17 +321,22 @@ public class AnimeSignalSyncTests : IDisposable
     /// </summary>
     private sealed class FakeAnimeListSource(
         IReadOnlyList<AnimeListEntry> entries, long failing, CancellationTokenSource? cancelWith = null,
-        Action? onListed = null)
+        Action? onListed = null, bool truncated = false, bool throwOnList = false)
         : IAnimeListSource, IScrobbleTracker
     {
         public string Name => "mal";
         public string Label => "MyAnimeList";
         public bool UsesOAuth => true;
 
-        public Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+        public Task<AnimeListResult> ListAnimeAsync(int userId, CancellationToken ct = default)
         {
             onListed?.Invoke();
-            return Task.FromResult(entries);
+            if (throwOnList)
+            {
+                throw new TrackerException("simulated list failure");
+            }
+
+            return Task.FromResult(new AnimeListResult(entries, truncated));
         }
 
         public Task<AnimeRelatedManga?> RelatedMangaAsync(int userId, long animeId, CancellationToken ct = default)

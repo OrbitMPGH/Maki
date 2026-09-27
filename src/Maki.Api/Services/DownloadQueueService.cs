@@ -694,8 +694,11 @@ public class DownloadQueueService(
 
             // Registered before the flip, not after: the sweep only has the status and these two
             // dictionaries to go on, so an id registered a moment late is one it can read as an
-            // orphan and re-queue out from under the worker about to run it.
+            // orphan and re-queue out from under the worker about to run it. The cancellation source
+            // is registered here too, for the same reason: a clear-queue request that lands between
+            // the flip and CancelWork's TryGetValue must always find a token to cancel, never a gap.
             _inFlight.AddOrUpdate(candidate.Id, 1, (_, owners) => owners + 1);
+            WorkCancellationToken(candidate.Id);
 
             int claimed;
             try
@@ -714,7 +717,6 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
-                WorkCancellationToken(candidate.Id);
                 return candidate.Id;
             }
 

@@ -30,6 +30,41 @@ public class ComicWalkerSourceTests
     }
 
     [Fact]
+    public async Task Search_pages_by_offset_until_pagination_total_is_reached()
+    {
+        var source = SourceFor(new()
+        {
+            ["offset=0"] = FakeHttpClientFactory.Fixture("comicwalker-search-page1.json"),
+            ["offset=30"] = FakeHttpClientFactory.Fixture("comicwalker-search-page2.json")
+        });
+
+        var results = await source.SearchAsync("リゼロ");
+
+        Assert.Equal(35, results.Count);
+        Assert.Equal("KC_000000_S", results[0].SourceSeriesId);
+        Assert.Equal("KC_000029_S", results[29].SourceSeriesId);
+        Assert.Equal("KC_000034_S", results[34].SourceSeriesId);
+    }
+
+    [Fact]
+    public async Task Search_stops_when_the_server_ignores_offset_and_repeats_the_first_page()
+    {
+        // Every request, whatever offset it carries, answers the same 30-item page: a server bug,
+        // not a 30-result catalogue. Without deduplication + a no-new-results break this would loop
+        // until MaxPages, appending the same 30 codes over and over.
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["api/search/keywords"] = FakeHttpClientFactory.Fixture("comicwalker-search-page1.json")
+        });
+        var source = new ComicWalkerSource(factory);
+
+        var results = await source.SearchAsync("リゼロ");
+
+        Assert.Equal(30, results.Count);
+        Assert.Equal(2, factory.Requests.Count);
+    }
+
+    [Fact]
     public async Task GetSeries_maps_title_status_and_cover()
     {
         var detail = await WithWork().GetSeriesAsync("KC_002386_S");

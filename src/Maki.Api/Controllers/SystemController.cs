@@ -134,8 +134,17 @@ public class SystemController(
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPost("backups")]
-    public async Task<IActionResult> CreateBackup(CancellationToken ct) =>
-        Ok(await backups.CreateAsync("manual", ct));
+    public async Task<IActionResult> CreateBackup(CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await backups.CreateAsync("manual", ct));
+        }
+        catch (BackupCreateException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
+    }
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("backups/{name}")]

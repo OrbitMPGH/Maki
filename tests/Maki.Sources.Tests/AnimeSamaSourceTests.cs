@@ -179,6 +179,22 @@ public class AnimeSamaSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_throws_when_page_count_keys_are_sparse()
+    {
+        // {"1":5,"3":7} has 2 entries but keys 1 and 3, not 1 and 2 - BuildLabels' total check
+        // (labels.Count == counts.Count) would pass even though position 2 has no count and could
+        // never download. Keys must be exactly 1..counts.Count.
+        var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
+        {
+            ["/catalogue/one-piece/scan/vf/"] = FakeHttpClientFactory.Fixture("animesama-scan-plain.html"),
+            ["get_nb_chap_et_img.php"] = """{"1":5,"3":7}"""
+        }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => source.ListChaptersAsync("one-piece/scan/vf"));
+    }
+
+    [Fact]
     public async Task GetPages_throws_ChapterLocked_when_position_has_zero_pages()
     {
         // The plain-panel fixture (no active list script) falls back to labels 1..total, so a

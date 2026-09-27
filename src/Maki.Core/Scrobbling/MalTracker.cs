@@ -214,7 +214,14 @@ public class MalTracker(
 
                 if ((int)response.StatusCode == 429)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                    var retryAfter = RetryAfterOf(response) ?? TimeSpan.FromSeconds(5);
+                    if (retryAfter > TimeSpan.FromSeconds(30))
+                    {
+                        throw new TrackerException(
+                            $"MAL API {method} {path} rate limited: Retry-After {retryAfter.TotalSeconds:F0}s exceeds the 30s cap");
+                    }
+
+                    await Task.Delay(retryAfter < TimeSpan.Zero ? TimeSpan.Zero : retryAfter, ct);
                     continue;
                 }
 
@@ -431,7 +438,7 @@ public class MalTracker(
     /// takes a path. Carries no relation data, so every entry comes back unresolved and the sync
     /// asks <see cref="RelatedMangaAsync"/> once per anime it has not asked about before.
     /// </summary>
-    public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+    public async Task<AnimeListResult> ListAnimeAsync(int userId, CancellationToken ct = default)
     {
         const int pageSize = 1000;
         var entries = new List<AnimeListEntry>();
@@ -490,7 +497,7 @@ public class MalTracker(
                 userId, maxOffset, entries.Count);
         }
 
-        return entries;
+        return new AnimeListResult(entries, truncated);
     }
 
     /// <summary>
@@ -604,4 +611,21 @@ public class MalTracker(
     }
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
+
+    /// <summary>The wait a 429's <c>Retry-After</c> asks for, as either a delta or an absolute date. Null when absent.</summary>
+    private static TimeSpan? RetryAfterOf(HttpResponseMessage response)
+    {
+        var header = response.Headers.RetryAfter;
+        if (header is null)
+        {
+            return null;
+        }
+
+        if (header.Delta is { } delta)
+        {
+            return delta;
+        }
+
+        return header.Date is { } date ? date - DateTimeOffset.UtcNow : null;
+    }
 }

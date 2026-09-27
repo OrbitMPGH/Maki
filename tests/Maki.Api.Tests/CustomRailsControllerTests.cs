@@ -155,6 +155,11 @@ public sealed class CustomRailsControllerTests : IDisposable
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
+    // The concurrent-creates race is covered in CustomRailsConcurrencyTests instead of here:
+    // this fixture's TestDb shares one SqliteConnection across every context, so two "concurrent"
+    // Create calls here never actually contend for the same write lock, they just take turns on
+    // one connection, which passes whether or not Create's own transaction does anything at all.
+
     [Fact]
     public async Task List_filters_by_placement()
     {

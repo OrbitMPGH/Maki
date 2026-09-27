@@ -390,7 +390,7 @@ public class AuthController(
     /// </summary>
     [HttpGet("oidc/link")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    public IActionResult OidcLink()
+    public async Task<IActionResult> OidcLink()
     {
         if (!oidc.Enabled)
         {
@@ -402,7 +402,20 @@ public class AuthController(
             RedirectUri = "/api/v1/auth/oidc/link-complete"
         };
 
-        return Challenge(properties, AuthSchemes.Oidc);
+        // Not `return Challenge(...)`: see OidcChallenge above for why a deferred ChallengeResult
+        // would turn a synchronous provider error into an unhandled 500 instead of a page the user
+        // (already signed in, on the settings page) can read.
+        try
+        {
+            await HttpContext.ChallengeAsync(AuthSchemes.Oidc, properties);
+        }
+        catch (OpenIdConnectProtocolException ex)
+        {
+            logger.LogError(ex, "OIDC link challenge failed");
+            return LinkFailure("error.auth.ssoChallengeRejected");
+        }
+
+        return new EmptyResult();
     }
 
     /// <summary>

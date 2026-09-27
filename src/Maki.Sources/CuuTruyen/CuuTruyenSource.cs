@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
@@ -56,10 +57,20 @@ public class CuuTruyenSource(IHtmlFetcher fetcher, IHttpClientFactory httpClient
     public IReadOnlyList<string> SupportedLanguages => ["vi"];
     public IReadOnlyList<string> CoverHosts => ["cuutruyen.net"];
 
+    private static readonly Regex SeriesUrlPattern = new(@"^/mangas/(\d+)/?$", RegexOptions.Compiled);
+
     public string? ResolveSeriesIdFromUrl(Uri url)
     {
-        var tail = SourceUrl.PathTail(url, BaseUrl, "/mangas/", firstSegmentOnly: false);
-        return tail is { Length: > 0 } && tail.All(char.IsAsciiDigit) ? tail : null;
+        var baseHost = new Uri(BaseUrl).Host;
+        if (!url.Host.Equals(baseHost, StringComparison.OrdinalIgnoreCase) &&
+            !url.Host.Equals($"www.{baseHost}", StringComparison.OrdinalIgnoreCase) &&
+            !baseHost.Equals($"www.{url.Host}", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var match = SeriesUrlPattern.Match(url.AbsolutePath);
+        return match.Success ? match.Groups[1].Value : null;
     }
 
     // ── Search ────────────────────────────────────────────────────────

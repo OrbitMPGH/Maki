@@ -231,7 +231,7 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
         var counts = await TryFetchCountsAsync(oeuvre, ct);
         if (counts is not null)
         {
-            return counts;
+            return ValidateCounts(oeuvre, counts);
         }
 
         if (oeuvre.Contains('&'))
@@ -239,11 +239,31 @@ public class AnimeSamaSource(IHtmlFetcher fetcher) : ISource
             counts = await TryFetchCountsAsync(oeuvre.Replace("&", "&amp;"), ct);
             if (counts is not null)
             {
-                return counts;
+                return ValidateCounts(oeuvre, counts);
             }
         }
 
         throw new InvalidOperationException($"animesama: oeuvre '{oeuvre}' not found");
+    }
+
+    /// <summary>
+    /// A sparse key set (e.g. {"1":5,"3":7}, skipping 2) would still pass BuildLabels' count check -
+    /// it labels 1..N positions same as the keys' cardinality - and publish a chapter at a position
+    /// with no matching count, which then throws (or worse, silently mislabels) at download time.
+    /// Keys must be exactly 1..counts.Count.
+    /// </summary>
+    private static Dictionary<int, int> ValidateCounts(string oeuvre, Dictionary<int, int> counts)
+    {
+        for (var position = 1; position <= counts.Count; position++)
+        {
+            if (!counts.ContainsKey(position))
+            {
+                throw new InvalidOperationException(
+                    $"animesama: page-count keys for '{oeuvre}' are not exactly 1..{counts.Count}");
+            }
+        }
+
+        return counts;
     }
 
     /// <summary>Null means the count endpoint answered its "not found" JSON rather than counts.</summary>

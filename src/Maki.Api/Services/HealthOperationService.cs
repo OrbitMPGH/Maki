@@ -355,9 +355,8 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         db.HealthHistory.Add(new()
         {
             Kind = "delete", FileId = file.Id, UserId = op.UserId,
-            Message = file.Size < 0
-                ? $"Cleared the record for missing {file.RelativePath}; chapter records and Wanted flags preserved"
-                : $"Permanently deleted {file.RelativePath}; chapter records and Wanted flags preserved"
+            MessageKey = file.Size < 0 ? "health.history.deletedMissing" : "health.history.deletedFile",
+            ParamsJson = JsonSerializer.Serialize(new { path = file.RelativePath }),
         });
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);

@@ -363,10 +363,21 @@ public class SettingsController(
     /// <summary>
     /// Revokes any live OPDS token for this user and issues one new one. Revoking rather than deleting
     /// keeps the rotation visible in the account UI and in the audit trail.
+    /// <para>
+    /// Revoke and insert run in one transaction: two rotations racing each other used to both read
+    /// "no live key yet" between the other's revoke and insert, and both would then insert a live row.
+    /// The <c>OpdsKeyOneLivePerScope</c> migration's filtered unique index is the backstop for
+    /// whatever this transaction doesn't already prevent on its own: if a second live row for this
+    /// user's OPDS scope reaches an insert, the index refuses it at the database rather than letting
+    /// it commit.
+    /// </para>
     /// </summary>
     private async Task<(string Prefix, string FeedUrl)> MintOpdsKeyAsync(CancellationToken ct)
     {
         var now = TimeProvider.System.GetUtcNow().UtcDateTime;
+        var secret = ApiKeyCrypto.Generate();
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         await db.UserApiKeys
             .Where(k => k.UserId == currentUser.UserId
@@ -374,7 +385,6 @@ public class SettingsController(
                         && k.RevokedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(k => k.RevokedAt, now), ct);
 
-        var secret = ApiKeyCrypto.Generate();
         db.UserApiKeys.Add(new UserApiKey
         {
             UserId = currentUser.UserId,
@@ -385,6 +395,7 @@ public class SettingsController(
             CreatedAt = now
         });
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
         // Root-relative on purpose. Building an absolute URL from Request.Scheme/Host hands out an
         // http:// link through any TLS-terminating proxy that doesn't rewrite it.

@@ -40,26 +40,53 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
         return tail is not null && !tail.Contains('/') && SeriesIdPattern().IsMatch(tail) ? tail : null;
     }
 
+    private const int SearchPageSize = 30;
+    private const int SearchResultCap = 500;
+    // The 500-result cap limits how far this walks (a query the server ignores offset for, or a
+    // wildly over-broad keyword, must not page forever), not how many results a single page holds.
+    private const int MaxPages = SearchResultCap / SearchPageSize;
+
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
-        var url = $"api/search/keywords?keywords={Uri.EscapeDataString(title)}&limit=30&offset=0";
-        var (body, root) = await GetJsonAsync(url, ct);
-        if (!root.TryGetProperty("result", out var result) || result.ValueKind != JsonValueKind.Array)
-        {
-            throw Unexpected(url, body);
-        }
-
         var results = new List<SourceSeriesResult>();
-        foreach (var item in result.EnumerateArray())
+        var seenCodes = new HashSet<string>();
+        var encodedTitle = Uri.EscapeDataString(title);
+        var offset = 0;
+
+        for (var page = 0; page < MaxPages; page++)
         {
-            var code = item.TryGetProperty("code", out var codeEl) ? codeEl.GetString() : null;
-            if (string.IsNullOrEmpty(code))
+            var url = $"api/search/keywords?keywords={encodedTitle}&limit={SearchPageSize}&offset={offset}";
+            var (body, root) = await GetJsonAsync(url, ct);
+            if (!root.TryGetProperty("result", out var result) || result.ValueKind != JsonValueKind.Array)
             {
-                continue;
+                throw Unexpected(url, body);
             }
 
-            var seriesTitle = item.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
-            results.Add(new SourceSeriesResult(code, seriesTitle ?? code, $"{BaseUrl}/detail/{code}", Cover(item)));
+            var pageCount = 0;
+            var added = 0;
+            foreach (var item in result.EnumerateArray())
+            {
+                pageCount++;
+                var code = item.TryGetProperty("code", out var codeEl) ? codeEl.GetString() : null;
+                if (string.IsNullOrEmpty(code) || !seenCodes.Add(code))
+                {
+                    continue;
+                }
+
+                added++;
+                var seriesTitle = item.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
+                results.Add(new SourceSeriesResult(code, seriesTitle ?? code, $"{BaseUrl}/detail/{code}", Cover(item)));
+            }
+
+            // A short page means the server has nothing left; a page that adds nothing new means
+            // the server is ignoring offset (or looping back around) and repeating itself, so
+            // walking further would only re-fetch what's already in results.
+            if (pageCount < SearchPageSize || added == 0)
+            {
+                break;
+            }
+
+            offset += pageCount;
         }
 
         return results;

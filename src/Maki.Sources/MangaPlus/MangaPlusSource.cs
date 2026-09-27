@@ -125,8 +125,13 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
         // Read off the title itself rather than the mapping's filter. The id already decides the
         // language, so a filter could only ever contradict it — and before this was read, every
         // chapter of the Spanish or Thai catalog was written into the CBZ as English.
-        var language = MangaPlusLanguages.Code(view.Message(DetailTitle)?.Number(TitleLanguage))
-            ?? SourceLanguages.Default;
+        var languageId = view.Message(DetailTitle)?.Number(TitleLanguage);
+        var language = MangaPlusLanguages.Code(languageId) ??
+            // A non-null id this build doesn't map is not English. The catalog path already
+            // skips it outright rather than guessing, and a title added by URL must not disagree
+            // by silently filing its chapters under "en".
+            throw new InvalidOperationException(
+                $"mangaplus: unknown language id {languageId} for title '{sourceSeriesId}'");
 
         var chapters = new List<SourceChapter>();
         foreach (var group in view.Messages(DetailChapterListGroups))

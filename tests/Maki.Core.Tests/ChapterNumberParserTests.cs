@@ -76,4 +76,20 @@ public class ChapterNumberParserTests
         Assert.True(result.IsOneShot);
         Assert.Null(result.Number);
     }
+
+    [Fact]
+    public void Overflowing_embedded_volume_is_treated_as_no_volume()
+    {
+        var result = ChapterNumberParser.Parse("Vol.99999999999999999999 Ch.24");
+        Assert.Equal(24m, result.Number);
+        Assert.Null(result.Volume);
+    }
+
+    [Fact]
+    public void Overflowing_separate_volume_string_is_treated_as_no_volume()
+    {
+        var result = ChapterNumberParser.Parse("24", "99999999999999999999");
+        Assert.Equal(24m, result.Number);
+        Assert.Null(result.Volume);
+    }
 }

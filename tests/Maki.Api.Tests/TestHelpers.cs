@@ -65,7 +65,9 @@ internal sealed class TestCurrentUser(
     int userId,
     string userName = "test",
     MakiPermission permissions = MakiPermission.Admin,
-    bool authenticated = true) : ICurrentUser
+    bool authenticated = true,
+    bool allRootFolders = true,
+    IReadOnlySet<int>? rootFolderIds = null) : ICurrentUser
 {
     // Defaults to true because almost every test wants a signed-in caller. Settable for the few
     // that care what happens to an anonymous request.
@@ -73,8 +75,8 @@ internal sealed class TestCurrentUser(
     public int UserId { get; } = userId;
     public string UserName { get; } = userName;
     public MakiPermission Permissions { get; } = permissions;
-    public bool AllRootFolders => true;
-    public IReadOnlySet<int> RootFolderIds => new HashSet<int>();
+    public bool AllRootFolders { get; } = allRootFolders;
+    public IReadOnlySet<int> RootFolderIds { get; } = rootFolderIds ?? new HashSet<int>();
     public string MaxContentRating => "erotica";
 }
 

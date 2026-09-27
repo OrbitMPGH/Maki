@@ -17,8 +17,25 @@ public sealed class ActivityStatsTests : IDisposable
 
     private readonly TestDb _db = new();
     private readonly ReadingProgressGate _gate = new();
+    private readonly TimeZoneStore _timeZones = new();
 
     public void Dispose() => _db.Dispose();
+
+    private sealed class TimeZoneStore : IUserSettingsStore
+    {
+        private readonly Dictionary<(int, string), string?> _values = [];
+
+        public void Set(int userId, string key, string value) => _values[(userId, key)] = value;
+
+        public Task<string?> GetAsync(int userId, string key, CancellationToken ct = default) =>
+            Task.FromResult(_values.GetValueOrDefault((userId, key)));
+
+        public Task SetAsync(int userId, string key, string? value, CancellationToken ct = default)
+        {
+            _values[(userId, key)] = value;
+            return Task.CompletedTask;
+        }
+    }
 
     /// <summary>A tracker over a fresh context, mirroring the per-scope usage in production.</summary>
     private ReadingProgressService Progress() =>
@@ -332,7 +349,7 @@ public sealed class ActivityStatsTests : IDisposable
             settings.Set(SettingKeys.KavitaUrl, "http://kavita").Set(SettingKeys.KavitaApiKey, "k");
         }
 
-        return new ActivityStatsService(_db.NewContext(), settings,
+        return new ActivityStatsService(_db.NewContext(), settings, _timeZones,
             new StoppedClock(now ?? new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)));
     }
 
@@ -374,6 +391,34 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.Equal(5, stats.Totals.ChaptersRead);
         Assert.Contains(stats.Timeline, p => p.Bucket == "2026-04" && p.ChaptersRead == 3);
         Assert.Contains(stats.Timeline, p => p.Bucket == "2026-01" && p.ChaptersRead == 2);
+    }
+
+    [Fact]
+    public async Task StoredZoneUsesWinterOffset()
+    {
+        _timeZones.Set(TestUser, SettingKeys.UserTimeZone, "Europe/Oslo");
+        // 23:30 UTC in January is already the next day in Oslo (CET, UTC+1).
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 1, 15, 23, 30, 0, DateTimeKind.Utc), 4);
+
+        // The offset argument is ignored once a zone is stored.
+        var stats = await Activity().StatsAsync(
+            TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), 0, CancellationToken.None);
+
+        Assert.Contains(stats.Timeline, p => p.Bucket == "2026-01-16" && p.ChaptersRead == 4);
+    }
+
+    [Fact]
+    public async Task StoredZoneUsesSummerOffsetNotTheWinterOne()
+    {
+        _timeZones.Set(TestUser, SettingKeys.UserTimeZone, "Europe/Oslo");
+        // 22:30 UTC in July is already the next day in Oslo (CEST, UTC+2), so a single offset frozen
+        // from winter (CET, UTC+1) would still leave this on the same UTC day.
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 7, 16, 22, 30, 0, DateTimeKind.Utc), 5);
+
+        var stats = await Activity().StatsAsync(
+            TestUser, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), 0, CancellationToken.None);
+
+        Assert.Contains(stats.Timeline, p => p.Bucket == "2026-07-17" && p.ChaptersRead == 5);
     }
 
     [Fact]
@@ -520,8 +565,40 @@ public sealed class ActivityStatsTests : IDisposable
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2019, 5, 1, 0, 0, 0, DateTimeKind.Utc),
             userId: otherUser);
 
-        Assert.Equal([2024], await Activity().YearsAsync(TestUser, CancellationToken.None));
-        Assert.Equal([2019], await Activity().YearsAsync(otherUser, CancellationToken.None));
+        Assert.Equal([2024], await Activity().YearsAsync(TestUser, 0, CancellationToken.None));
+        Assert.Equal([2019], await Activity().YearsAsync(otherUser, 0, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task YearsBucketByLocalTimeAcrossDst()
+    {
+        _timeZones.Set(TestUser, SettingKeys.UserTimeZone, "Europe/Oslo");
+        // 23:30 UTC on 31 Dec 2025 is already 1 Jan 2026 in Oslo (CET, UTC+1).
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2025, 12, 31, 23, 30, 0, DateTimeKind.Utc), userId: TestUser);
+
+        // The offset argument is ignored once a zone is stored.
+        Assert.Equal([2026], await Activity().YearsAsync(TestUser, 300, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task YearsWithoutAStoredZoneUseTheBrowserOffset()
+    {
+        // 23:30 UTC at UTC+2 (offset -120) is already the next day locally.
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2025, 12, 31, 23, 30, 0, DateTimeKind.Utc), userId: TestUser);
+
+        Assert.Equal([2026], await Activity().YearsAsync(TestUser, -120, CancellationToken.None));
+        Assert.Equal([2025], await Activity().YearsAsync(TestUser, 0, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task YearsBucketBackwardAcrossTheStartOfYearBoundary()
+    {
+        // The only event of the year: 06:00 UTC on 1 Jan 2026 at UTC-12 is still 31 Dec 2025 locally.
+        // This is the mirror of the forward DST case above, and the year it lands in must be the only
+        // one returned - not the UTC year the row is stored under.
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 1, 1, 6, 0, 0, DateTimeKind.Utc), userId: TestUser);
+
+        Assert.Equal([2025], await Activity().YearsAsync(TestUser, 720, CancellationToken.None));
     }
 
     [Fact]

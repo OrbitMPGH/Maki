@@ -164,20 +164,21 @@ public partial class ToonilySource(IHtmlFetcher fetcher) : ISource
     }
 
     /// <summary>"OnGoing" -> Ongoing, "Completed"/"Ended" -> Completed, anything else -> null.</summary>
-    private static string? MapStatus(string? raw)
+    internal static string? MapStatus(string? raw)
     {
-        if (string.IsNullOrWhiteSpace(raw))
+        var label = raw?.Trim();
+        if (string.IsNullOrEmpty(label))
         {
             return null;
         }
 
-        if (raw.Contains("ongoing", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(label, "ongoing", StringComparison.OrdinalIgnoreCase))
         {
             return "Ongoing";
         }
 
-        if (raw.Contains("complete", StringComparison.OrdinalIgnoreCase) ||
-            raw.Contains("end", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(label, "completed", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(label, "ended", StringComparison.OrdinalIgnoreCase))
         {
             return "Completed";
         }

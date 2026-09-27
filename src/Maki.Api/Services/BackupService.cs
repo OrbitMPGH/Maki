@@ -22,6 +22,16 @@ public sealed class BackupRestoreException(string key, object? args, string mess
 }
 
 /// <summary>
+/// A backup that failed to write. <see cref="Key"/> distinguishes a name collision with a backup
+/// already in flight (recoverable by retrying) from every other IO failure (disk full, permission
+/// denied), which is not.
+/// </summary>
+public sealed class BackupCreateException(string key) : InvalidOperationException(key)
+{
+    public string Key { get; } = key;
+}
+
+/// <summary>
 /// Backup/restore for <c>{ConfigDir}</c>. A backup is a zip holding a consistent snapshot of
 /// <c>maki.db</c> plus <c>config.json</c> (credential material) and a manifest. Big/regenerable
 /// state (mangabaka.db, embeddings.db, cache, logs, models, MediaCover) is deliberately excluded.
@@ -55,7 +65,7 @@ public class BackupService(
         var lastMigration = (await db.Database.GetAppliedMigrationsAsync(ct)).LastOrDefault();
         var manifest = new BackupManifest(VersionInfo.Version, createdUtc, lastMigration, kind);
 
-        var name = $"maki-{createdUtc:yyyyMMdd-HHmmss}-{kind}.zip";
+        var name = $"maki-{createdUtc:yyyyMMdd-HHmmss-fff}-{kind}.zip";
         var zipPath = Path.Combine(paths.BackupDir, name);
         var snapshotPath = Path.Combine(paths.BackupDir, $".{Guid.NewGuid():N}.db.tmp");
 
@@ -73,6 +83,17 @@ public class BackupService(
                 await using var writer = new StreamWriter(manifestEntry.Open());
                 await writer.WriteAsync(JsonSerializer.Serialize(manifest, JsonOptions));
             }
+        }
+        catch (IOException ex)
+        {
+            logger.LogError(ex, "Failed to create {Kind} backup at {Path}", kind, zipPath);
+
+            // ZipFile.Open(..., Create) opens the target with FileMode.CreateNew, so an IOException
+            // whose target already exists (or whose HResult says so - ERROR_FILE_EXISTS) means a
+            // backup for this exact name is already in flight. Anything else - disk full, permission
+            // denied, a locked volume - is a real failure and must not be reported as a race.
+            var inProgress = File.Exists(zipPath) || ex.HResult == unchecked((int)0x80070050);
+            throw new BackupCreateException(inProgress ? "error.system.backupInProgress" : "error.system.backupFailed");
         }
         finally
         {
