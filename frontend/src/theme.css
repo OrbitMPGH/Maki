@@ -6445,6 +6445,123 @@ body.reader-open {
 .series-detail-chapter-table {
   overflow: hidden;
 }
+
+/* --- relink files dialog: the chapter map --- */
+.relink-groups {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  overflow: hidden;
+  background: var(--surface);
+}
+.relink-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px 6px 14px;
+  background: color-mix(in srgb, var(--surface-2) 46%, transparent);
+  border-top: 1px solid var(--border);
+}
+.relink-section:first-child {
+  border-top: 0;
+}
+.relink-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--border);
+  transition: opacity 0.2s;
+}
+.relink-row.is-off {
+  opacity: 0.55;
+}
+.relink-map {
+  display: grid;
+  grid-template-columns: repeat(25, minmax(0, 1fr));
+  gap: 3px;
+}
+.relink-cell {
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--ink-4);
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.25s, border-color 0.25s, color 0.25s;
+}
+.relink-cell.is-move {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-on);
+}
+.relink-cell.is-fill {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--ok-on);
+}
+.relink-cell.is-avail {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.relink-cell.is-off {
+  background: transparent;
+  border-style: dashed;
+  color: var(--ink-4);
+  cursor: default;
+}
+.relink-cell.is-pin {
+  background: var(--surface);
+  border-color: var(--ink-4);
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+.relink-cell.is-static {
+  cursor: default;
+}
+.relink-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.relink-swatch.is-move {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.relink-swatch.is-fill {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.relink-swatch.is-avail {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--ok);
+}
+.relink-swatch.is-off {
+  background: transparent;
+  border-style: dashed;
+}
+.relink-swatch.is-pin {
+  background: var(--surface);
+  border-color: var(--ink-4);
+}
+.relink-outcome {
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--brand);
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
 .series-detail-chapter-table thead th {
   background: color-mix(in srgb, var(--surface-2) 46%, transparent);
 }

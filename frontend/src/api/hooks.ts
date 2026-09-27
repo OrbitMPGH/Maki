@@ -1652,9 +1652,20 @@ export interface RelinkPlanFile {
   excluded: boolean
 }
 
+export interface RelinkPlanChapter {
+  id: number
+  label: string
+  number: number | null
+  /** movesToVolume | becomesReadable | unchanged | kept | availableNotLinked | missing */
+  state: string
+  /** Parsed label of the file it ends up on, when that changes. */
+  toLabel: string | null
+}
+
 export interface RelinkPlan {
   seriesId: number
   files: RelinkPlanFile[]
+  chapters: RelinkPlanChapter[]
   moved: number
   supersededCount: number
   supersededBytes: number

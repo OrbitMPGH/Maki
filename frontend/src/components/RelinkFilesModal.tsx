@@ -1,19 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import {
-  Badge,
-  Button,
-  Checkbox,
-  Group,
-  Loader,
-  Modal,
-  ScrollArea,
-  Stack,
-  Table,
-  Text,
-  Tooltip,
-  UnstyledButton,
-} from '@mantine/core'
-import { IconArrowRight, IconFileZip, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Badge, Button, Checkbox, Group, Loader, Modal, Radio, ScrollArea, Stack, Text, Tooltip } from '@mantine/core'
+import { IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -21,55 +8,140 @@ import type { MessageDescriptor } from '@lingui/core'
 import {
   useApplyRelink,
   useRelinkPlan,
-  type RelinkChapterRef,
   type RelinkOptions,
+  type RelinkPlanChapter,
   type RelinkPlanFile,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
 import { formatBytes } from '../format'
 import { useLabel } from '../i18n-context'
 
-const CONFIDENCE_LABELS: Record<string, MessageDescriptor> = {
-  pageMarkers: msg`From page names`,
-  volumeRange: msg`From volume metadata`,
-  fileName: msg`From file name`,
+const BASIS_LABELS: Record<string, MessageDescriptor> = {
+  pageMarkers: msg`From its pages`,
+  volumeRange: msg`From metadata`,
+  fileName: msg`From its name`,
   estimated: msg`Estimated`,
   existing: msg`Kept as linked`,
 }
 
-const CONFIDENCE_HINTS: Record<string, MessageDescriptor> = {
+const BASIS_HINTS: Record<string, MessageDescriptor> = {
   pageMarkers: msg`The chapter numbers are in the archive's page file names. Certain.`,
   volumeRange: msg`The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ.`,
-  fileName: msg`A single-chapter file named for its chapter.`,
+  fileName: msg`The file is named for its chapter.`,
   estimated: msg`A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter.`,
   existing: msg`Nothing in the file explains these chapters, so the link you have today is trusted.`,
 }
 
-/** "1, 2, 3, 4, 5, 6" → "1-6"; keeps gaps: "1-3, 7, 9-10". */
-function compactRange(labels: string[]): string {
+const CELL_STATE_LABELS: Record<string, MessageDescriptor> = {
+  movesToVolume: msg`moves onto a volume`,
+  becomesReadable: msg`becomes readable`,
+  unchanged: msg`unchanged`,
+  kept: msg`kept where it is`,
+  availableNotLinked: msg`file on disk, not linked`,
+  missing: msg`missing`,
+}
+
+const CELL_CLASS: Record<string, string> = {
+  movesToVolume: 'is-move',
+  becomesReadable: 'is-fill',
+  unchanged: 'is-static',
+  kept: 'is-pin',
+  availableNotLinked: 'is-avail is-static',
+  missing: 'is-off',
+}
+
+interface Row {
+  key: string
+  kind: 'volume' | 'fill'
+  paths: string[]
+  /** File name for a lone file, else null and the row names its count. */
+  fileName: string | null
+  fileCount: number
+  /** Gained chapter labels, in chapter order. */
+  labels: string[]
+  basis: string | null
+  excluded: boolean
+}
+
+/** "0" → "Ch. 0"; a run of integers → "Ch. 0 to 8"; anything else lists them. */
+function rangeText(labels: string[]): string {
+  if (labels.length === 0) return ''
+  const first = labels[0]
+  const last = labels[labels.length - 1]
+  if (labels.length === 1) return `Ch. ${first}`
   const nums = labels.map(Number)
-  if (labels.length === 0 || nums.some((n) => Number.isNaN(n))) return labels.join(', ')
-  const parts: string[] = []
-  let start = nums[0]
-  let prev = nums[0]
-  for (let i = 1; i <= nums.length; i++) {
-    const n = nums[i]
-    const consecutive = i < nums.length && Number.isInteger(prev) && Number.isInteger(n) && n === prev + 1
-    if (!consecutive) {
-      parts.push(start === prev ? String(start) : `${start}-${prev}`)
-      start = n
-    }
-    prev = n
-  }
-  return parts.join(', ')
+  const run =
+    nums.every((n, i) => Number.isInteger(n) && (i === 0 || n === nums[i - 1] + 1))
+  return run ? `Ch. ${first} to ${last}` : `Ch. ${labels.join(', ')}`
 }
 
 /**
- * Preview and apply a volumes-first rebuild of which file backs each chapter. The plan is a
- * dry run: untick a file to leave it exactly as it is, click a chapter to pin it where it sits
- * today. Every change re-plans on the server, so knock-on effects (a volume you exclude means
- * its single files are no longer superseded) show before anything is applied. The server
- * recomputes the plan on apply with the same exclusions, so what you see is what happens.
+ * Turns the plan's files into the rows the dialog offers: volumes that take chapters, and
+ * single files that fill chapters marked missing, the latter collapsed into runs of consecutive
+ * chapters so twelve files are one line and one checkbox.
+ */
+function buildRows(files: RelinkPlanFile[], chapters: RelinkPlanChapter[]): Row[] {
+  const numberByLabel = new Map(chapters.map((c) => [c.label, c.number]))
+  const rows: Row[] = []
+  const gaining = files.filter((f) => f.gains.length > 0 && !f.excluded)
+
+  for (const f of gaining.filter((f) => f.isVolume)) {
+    rows.push({
+      key: f.relativePath,
+      kind: 'volume',
+      paths: [f.relativePath],
+      fileName: f.fileName,
+      fileCount: 1,
+      labels: f.gains.map((g) => g.label),
+      basis: f.confidence,
+      excluded: false,
+    })
+  }
+
+  const singles = gaining
+    .filter((f) => !f.isVolume && f.recognized)
+    .map((f) => ({ f, n: numberByLabel.get(f.gains[0].label) ?? null }))
+    .sort((a, b) => (a.n ?? Infinity) - (b.n ?? Infinity))
+  let run: { files: RelinkPlanFile[]; last: number | null; basis: string | null } | null = null
+  const flush = () => {
+    if (!run) return
+    rows.push({
+      key: run.files[0].relativePath,
+      kind: 'fill',
+      paths: run.files.map((x) => x.relativePath),
+      fileName: run.files.length === 1 ? run.files[0].fileName : null,
+      fileCount: run.files.length,
+      labels: run.files.flatMap((x) => x.gains.map((g) => g.label)),
+      basis: run.basis,
+      excluded: false,
+    })
+    run = null
+  }
+  for (const { f, n } of singles) {
+    const contiguous =
+      run !== null &&
+      n !== null &&
+      run.last !== null &&
+      Number.isInteger(n) &&
+      n === run.last + 1 &&
+      f.gains.length === 1 &&
+      run.basis === f.confidence
+    if (contiguous && run) {
+      run.files.push(f)
+      run.last = n
+    } else {
+      flush()
+      run = { files: [f], last: f.gains.length === 1 ? n : null, basis: f.confidence }
+    }
+  }
+  flush()
+  return rows
+}
+
+/**
+ * The relink dialog: pick which files to trust, watch the chapter map answer, then relink.
+ * Every toggle re-plans on the server with the same exclusions the apply call will carry, so
+ * the map is the plan, not a picture of it.
  */
 export function RelinkFilesModal({
   seriesId,
@@ -86,7 +158,10 @@ export function RelinkFilesModal({
   const canDelete = can('DeleteSeries')
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const [pinned, setPinned] = useState<Set<number>>(new Set())
-  const [deleteSuperseded, setDeleteSuperseded] = useState(false)
+  const [leftover, setLeftover] = useState<'keep' | 'delete'>('keep')
+  // An excluded file gains nothing in the next plan, so its row would vanish and could never
+  // be ticked back on. Remember each row as it was when it was last offered.
+  const rowMemory = useRef(new Map<string, Row>())
 
   const options = useMemo<RelinkOptions>(
     () => ({ excludedPaths: [...excluded].sort(), pinnedChapterIds: [...pinned].sort((a, b) => a - b) }),
@@ -99,15 +174,38 @@ export function RelinkFilesModal({
     if (opened) {
       setExcluded(new Set())
       setPinned(new Set())
-      setDeleteSuperseded(false)
+      setLeftover('keep')
+      rowMemory.current.clear()
     }
   }, [opened])
 
-  const toggleExcluded = (path: string) =>
+  const rows = useMemo(() => {
+    if (!plan) return []
+    const live = buildRows(plan.files ?? [], plan.chapters ?? [])
+    for (const row of live) rowMemory.current.set(row.key, row)
+    const excludedRows = [...rowMemory.current.values()]
+      .filter((row) => row.paths.every((p) => excluded.has(p)))
+      .map((row) => ({ ...row, excluded: true }))
+    const all = [...live, ...excludedRows]
+    const first = (row: Row) => {
+      const n = Number(row.labels[0])
+      return Number.isNaN(n) ? Infinity : n
+    }
+    return all.sort((a, b) => first(a) - first(b))
+  }, [plan, excluded])
+
+  const volumeRows = rows.filter((r) => r.kind === 'volume')
+  const fillRows = rows.filter((r) => r.kind === 'fill')
+
+  const setRows = (targets: Row[], off: boolean) =>
     setExcluded((prev) => {
       const next = new Set(prev)
-      if (next.has(path)) next.delete(path)
-      else next.add(path)
+      for (const row of targets) {
+        for (const p of row.paths) {
+          if (off) next.add(p)
+          else next.delete(p)
+        }
+      }
       return next
     })
   const togglePinned = (id: number) =>
@@ -118,19 +216,31 @@ export function RelinkFilesModal({
       return next
     })
 
-  // Excluded files stay listed even once they have nothing to change, or there would be no way
-  // to tick them back on.
-  const rows = plan?.files.filter((f) => f.gains.length > 0 || f.loses.length > 0 || f.superseded || f.excluded) ?? []
-  const nothingToDo = plan !== undefined && plan.moved === 0 && plan.supersededCount === 0
-  const supersededSize = formatBytes(plan?.supersededBytes ?? 0)
-  const held = excluded.size + pinned.size
+  const counts = useMemo(() => {
+    const c = { moves: 0, fills: 0, kept: 0 }
+    for (const ch of plan?.chapters ?? []) {
+      if (ch.state === 'movesToVolume') c.moves++
+      else if (ch.state === 'becomesReadable') c.fills++
+      else if (ch.state === 'kept') c.kept++
+    }
+    return c
+  }, [plan])
+  const total = counts.moves + counts.fills
+  const emptied = plan?.supersededCount ?? 0
+  const emptiedSize = formatBytes(plan?.supersededBytes ?? 0)
+  const completeVolumes =
+    plan?.files.filter((f) => f.isVolume && f.gains.length === 0 && f.loses.length === 0 && f.chapters.length > 0 && !f.excluded).length ?? 0
+  const unmatched = plan?.unrecognized ?? 0
+  const showNumbers = (plan?.chapters.length ?? 0) <= 40
+  const deleting = leftover === 'delete' && emptied > 0
+  const nothingToDo = plan !== undefined && rows.length === 0 && total === 0 && emptied === 0
 
   const confirm = () => {
     apply.mutate(
-      { ...options, deleteSuperseded },
+      { ...options, deleteSuperseded: deleting },
       {
         onSuccess: (r) => {
-          const moved = plural(r.moved, { one: '# chapter link moved', other: '# chapter links moved' })
+          const moved = plural(r.moved, { one: '# chapter relinked', other: '# chapters relinked' })
           const freed = formatBytes(r.freedBytes)
           const deleted = plural(r.deleted, { one: '# file deleted', other: '# files deleted' })
           notifications.show({
@@ -153,132 +263,249 @@ export function RelinkFilesModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Relink files, volumes first`} size="xl">
-      <Stack gap="sm">
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            A dry run of rebuilding which file backs each chapter. A volume that contains a chapter
-            wins over a single-chapter file, and links the planner can't explain are kept as they
-            are. Untick a file to leave it untouched, click a chapter to pin it where it is. Nothing
-            changes until you press Relink.
-          </Trans>
-        </Text>
-
+    <Modal opened={opened} onClose={onClose} title={t`Relink files`} size={720}>
+      <Stack gap="md">
         {isLoading ? (
           <Group py="md" gap="xs">
             <Loader size="sm" />
             <Text size="sm" c="var(--ink-3)">
-              <Trans>Reading volume archives…</Trans>
+              <Trans>Reading the folder and every volume archive…</Trans>
             </Text>
           </Group>
         ) : isError || !plan ? (
           <Text size="sm" c="var(--danger)" py="sm">
             <Trans>Could not build a plan for this series.</Trans>
           </Text>
-        ) : nothingToDo && rows.length === 0 ? (
+        ) : nothingToDo ? (
           <Text size="sm" c="var(--ink-3)" py="sm">
             <Trans>Every chapter is already on the best file available. Nothing to change.</Trans>
-            {plan.unrecognized > 0 && (
+            {unmatched > 0 && (
               <>
                 {' '}
                 <Plural
-                  value={plan.unrecognized}
-                  one="# file could not be parsed and needs linking by hand."
-                  other="# files could not be parsed and need linking by hand."
+                  value={unmatched}
+                  one="# file could not be matched to a chapter. Link it by hand on the Files tab."
+                  other="# files could not be matched to a chapter. Link them by hand on the Files tab."
                 />
               </>
             )}
           </Text>
         ) : (
           <>
-            <Group gap="xs" wrap="wrap" align="center">
-              <Badge size="lg" variant="light" className="tnum">
-                <Plural value={plan.moved} one="# chapter link moves" other="# chapter links move" />
-              </Badge>
-              {plan.supersededCount > 0 && (
-                <Badge size="lg" variant="light" color="var(--warn)" className="tnum">
-                  <Plural value={plan.supersededCount} one="# file superseded" other="# files superseded" />
-                  {` (${supersededSize})`}
-                </Badge>
-              )}
-              {plan.unrecognized > 0 && (
-                <Badge size="lg" variant="light" color="gray" className="tnum">
-                  <Plural value={plan.unrecognized} one="# unparsed file" other="# unparsed files" />
-                </Badge>
-              )}
-              {held > 0 && (
-                <Badge size="lg" variant="outline" color="gray" className="tnum" leftSection={<IconPin size={12} />}>
-                  <Plural value={held} one="# held back" other="# held back" />
-                </Badge>
-              )}
-              {isFetching && <Loader size="xs" />}
-            </Group>
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>
+                Maki checked the folder against the chapter list. Tick what to trust and watch the map.
+                Nothing changes until you press Relink.
+              </Trans>
+            </Text>
 
-            <ScrollArea.Autosize mah="min(460px, 50dvh)">
-              <Table className="panel-table" verticalSpacing="xs" style={{ opacity: isFetching ? 0.6 : 1 }}>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th w={36} />
-                    <Table.Th><Trans>File</Trans></Table.Th>
-                    <Table.Th w={140}><Trans>Basis</Trans></Table.Th>
-                    <Table.Th><Trans>Change</Trans></Table.Th>
-                    <Table.Th w={90}><Trans>Size</Trans></Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {rows.map((f) => (
-                    <PlanRow
-                      key={f.relativePath}
-                      file={f}
-                      pinned={pinned}
-                      onToggleExcluded={() => toggleExcluded(f.relativePath)}
-                      onTogglePinned={togglePinned}
-                      renderLabel={renderLabel}
-                    />
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </ScrollArea.Autosize>
-
-            {plan.supersededCount > 0 && (
-              <Checkbox
-                checked={deleteSuperseded}
-                disabled={!canDelete}
-                onChange={(e) => setDeleteSuperseded(e.currentTarget.checked)}
-                label={
+            <Stack gap={6}>
+              {rows.length > 0 && (
+              <div className="relink-groups">
+                {volumeRows.length > 0 && (
                   <>
-                    <Plural
-                      value={plan.supersededCount}
-                      one="Also delete the # superseded file from disk"
-                      other="Also delete the # superseded files from disk"
-                    />
-                    {` (${supersededSize})`}
+                    <div className="relink-section">
+                      <Text size="xs" fw={600} c="var(--ink-4)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                        <Trans>Volumes that hold chapters still read from single files</Trans>
+                      </Text>
+                      <AllNone onAll={() => setRows(volumeRows, false)} onNone={() => setRows(volumeRows, true)} />
+                    </div>
+                    {volumeRows.map((row) => (
+                      <PlanRow key={row.key} row={row} onToggle={() => setRows([row], !row.excluded)} renderLabel={renderLabel} />
+                    ))}
                   </>
-                }
-                description={
-                  canDelete ? (
-                    <Trans>Only files whose every chapter now lives on a volume. This cannot be undone.</Trans>
-                  ) : (
-                    <Trans>Deleting files needs the Delete series permission.</Trans>
-                  )
-                }
-              />
-            )}
+                )}
+                {fillRows.length > 0 && (
+                  <>
+                    <div className="relink-section">
+                      <Text size="xs" fw={600} c="var(--ink-4)" tt="uppercase" style={{ letterSpacing: '0.06em' }}>
+                        <Trans>Files that hold chapters marked missing</Trans>
+                      </Text>
+                      <AllNone onAll={() => setRows(fillRows, false)} onNone={() => setRows(fillRows, true)} />
+                    </div>
+                    {fillRows.map((row) => (
+                      <PlanRow key={row.key} row={row} onToggle={() => setRows([row], !row.excluded)} renderLabel={renderLabel} />
+                    ))}
+                  </>
+                )}
+              </div>
+              )}
+              {(completeVolumes > 0 || unmatched > 0) && (
+                <Text size="xs" c="var(--ink-4)">
+                  <Trans>Not listed:</Trans>{' '}
+                  {completeVolumes > 0 && (
+                    <Plural value={completeVolumes} one="# volume already complete" other="# volumes already complete" />
+                  )}
+                  {completeVolumes > 0 && unmatched > 0 && (
+                    <>
+                      {' '}
+                      <Trans>and</Trans>{' '}
+                    </>
+                  )}
+                  {unmatched > 0 && (
+                    <>
+                      <Plural
+                        value={unmatched}
+                        one="# file Maki could not match to a chapter"
+                        other="# files Maki could not match to a chapter"
+                      />
+                      {'. '}
+                      <Trans>Link those by hand on the Files tab.</Trans>
+                    </>
+                  )}
+                  {completeVolumes > 0 && unmatched === 0 && '.'}
+                </Text>
+              )}
+            </Stack>
+
+            <Stack gap={6}>
+              <Group justify="space-between" align="baseline" gap="sm" wrap="wrap">
+                <Text size="sm" fw={700} c="var(--ink-hi)">
+                  <Trans>Every chapter after</Trans>{' '}
+                  <Text span size="sm" fw={500} c="var(--ink-3)">
+                    <Trans>click one to keep it where it is</Trans>
+                  </Text>
+                </Text>
+                <Group gap={10} wrap="wrap">
+                  <Legend className="is-move" label={renderLabel(CELL_STATE_LABELS.movesToVolume)} />
+                  <Legend className="is-fill" label={renderLabel(CELL_STATE_LABELS.becomesReadable)} />
+                  <Legend className="" label={renderLabel(CELL_STATE_LABELS.unchanged)} />
+                  <Legend className="is-avail" label={renderLabel(CELL_STATE_LABELS.availableNotLinked)} />
+                  <Legend className="is-off" label={renderLabel(CELL_STATE_LABELS.missing)} />
+                  <Legend className="is-pin" label={renderLabel(CELL_STATE_LABELS.kept)} />
+                </Group>
+              </Group>
+              <div
+                style={{
+                  padding: '10px 10px 6px',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-surface)',
+                  background: 'color-mix(in srgb, var(--surface-2) 46%, transparent)',
+                  opacity: isFetching ? 0.7 : 1,
+                  transition: 'opacity 0.2s',
+                }}
+              >
+                <ScrollArea.Autosize mah={220}>
+                  <div className="relink-map">
+                    {plan.chapters.map((ch) => {
+                      const { label } = ch
+                      const stateText = renderLabel(CELL_STATE_LABELS[ch.state] ?? ch.state)
+                      const detail = ch.toLabel ? `${stateText} (${ch.toLabel})` : stateText
+                      const pinnable = ch.state === 'movesToVolume' || ch.state === 'becomesReadable' || ch.state === 'kept'
+                      return (
+                        <button
+                          key={ch.id}
+                          type="button"
+                          className={`relink-cell tnum ${CELL_CLASS[ch.state] ?? ''}`}
+                          title={t`Ch. ${label}: ${detail}`}
+                          aria-label={t`Ch. ${label}: ${detail}`}
+                          aria-pressed={ch.state === 'kept'}
+                          disabled={!pinnable}
+                          onClick={() => togglePinned(ch.id)}
+                        >
+                          {showNumbers || (ch.number !== null && Number.isInteger(ch.number) && ch.number % 5 === 0) ? label : ''}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </ScrollArea.Autosize>
+                <Group justify="space-between" mt={6} px={2}>
+                  <Text size="xs" c="var(--ink-3)">
+                    <Trans>Hover a cell for its number.</Trans>
+                  </Text>
+                  <Group gap={6}>
+                    <Text size="xs" c="var(--ink-2)" className="tnum">
+                      <Plural value={counts.kept} one="# kept" other="# kept" />
+                    </Text>
+                    <Button size="compact-xs" variant="subtle" disabled={pinned.size === 0} onClick={() => setPinned(new Set())}>
+                      <Trans>Clear</Trans>
+                    </Button>
+                  </Group>
+                </Group>
+              </div>
+            </Stack>
+
+            <Stack gap={8} className="relink-outcome" p="sm">
+              <Text size="sm">
+                {total > 0 || counts.kept > 0 ? (
+                  <>
+                    <Plural value={counts.moves} one="# chapter moves onto a volume" other="# chapters move onto volumes" />
+                    {', '}
+                    <Plural value={counts.fills} one="# becomes readable" other="# become readable" />
+                    {counts.kept > 0 && (
+                      <>
+                        {', '}
+                        <Plural value={counts.kept} one="# kept where it is" other="# kept where they are" />
+                      </>
+                    )}
+                    {'. '}
+                  </>
+                ) : (
+                  <>
+                    <Trans>Every chapter is already on the best file available.</Trans>{' '}
+                  </>
+                )}
+                {emptied > 0 && (
+                  <>
+                    <Plural value={emptied} one="# single file ends up holding nothing" other="# single files end up holding nothing" />
+                    {', '}
+                    <Text span size="sm" className="tnum">
+                      {emptiedSize}
+                    </Text>
+                    {'.'}
+                  </>
+                )}
+              </Text>
+              {emptied > 0 && (
+                <Radio.Group value={leftover} onChange={(v) => setLeftover(v === 'delete' ? 'delete' : 'keep')}>
+                  <Group gap="lg">
+                    <Radio
+                      value="keep"
+                      size="xs"
+                      label={<Plural value={emptied} one="Keep that file" other="Keep those # files" />}
+                    />
+                    <Tooltip label={t`Deleting files needs the Delete series permission`} disabled={canDelete} withArrow>
+                      <Radio
+                        value="delete"
+                        size="xs"
+                        disabled={!canDelete}
+                        label={
+                          <>
+                            <Trans>Delete them, free {emptiedSize}</Trans>{' '}
+                            <Text span size="xs" c="var(--ink-3)">
+                              <Trans>(cannot be undone)</Trans>
+                            </Text>
+                          </>
+                        }
+                      />
+                    </Tooltip>
+                  </Group>
+                </Radio.Group>
+              )}
+            </Stack>
           </>
         )}
 
-        <Group justify="flex-end" mt="xs">
+        <Group justify="flex-end">
           <Button variant="default" onClick={onClose} disabled={apply.isPending}>
             <Trans>Cancel</Trans>
           </Button>
           <Button
-            disabled={!plan || nothingToDo || isFetching}
+            disabled={!plan || (total === 0 && !deleting) || isFetching}
             loading={apply.isPending}
-            color={deleteSuperseded ? 'var(--danger-fill)' : undefined}
-            leftSection={deleteSuperseded ? <IconTrash size={16} /> : undefined}
+            color={deleting ? 'var(--danger-fill)' : undefined}
+            leftSection={deleting ? <IconTrash size={16} /> : undefined}
             onClick={confirm}
           >
-            {deleteSuperseded ? <Trans>Relink and delete</Trans> : <Trans>Relink</Trans>}
+            {total === 0 && deleting ? (
+              <Plural value={emptied} one="Delete # file" other="Delete # files" />
+            ) : total === 0 ? (
+              <Trans>Nothing to relink</Trans>
+            ) : deleting ? (
+              <Plural value={total} one="Relink # chapter and delete" other="Relink # chapters and delete" />
+            ) : (
+              <Plural value={total} one="Relink # chapter" other="Relink # chapters" />
+            )}
           </Button>
         </Group>
       </Stack>
@@ -286,171 +513,84 @@ export function RelinkFilesModal({
   )
 }
 
-function ChapterChips({
-  refs,
-  pinned,
-  color,
-  onToggle,
-}: {
-  refs: RelinkChapterRef[]
-  pinned: Set<number>
-  color: string
-  onToggle: (id: number) => void
-}) {
-  const { t } = useLingui()
+function AllNone({ onAll, onNone }: { onAll: () => void; onNone: () => void }) {
   return (
-    <Group gap={3} wrap="wrap" style={{ rowGap: 3 }}>
-      {refs.map((c) => {
-        const isPinned = pinned.has(c.id)
-        const { label } = c
-        return (
-          <Tooltip key={c.id} label={isPinned ? t`Pinned. Click to let it move` : t`Click to keep ch. ${label} where it is`} withArrow>
-            <UnstyledButton
-              onClick={() => onToggle(c.id)}
-              aria-pressed={isPinned}
-              aria-label={t`Pin chapter ${label}`}
-              className="tnum"
-              style={{
-                fontSize: 'var(--mantine-font-size-xs)',
-                lineHeight: 1.4,
-                padding: '0 6px',
-                borderRadius: 'var(--radius-thumb)',
-                border: `1px solid ${isPinned ? 'var(--border-strong)' : 'transparent'}`,
-                background: isPinned ? 'var(--surface-sunken)' : `color-mix(in srgb, ${color} 14%, transparent)`,
-                color: isPinned ? 'var(--ink-3)' : color,
-                textDecoration: isPinned ? 'line-through' : undefined,
-              }}
-            >
-              {c.label}
-            </UnstyledButton>
-          </Tooltip>
-        )
-      })}
+    <Group gap={2}>
+      <Button size="compact-xs" variant="subtle" onClick={onAll}>
+        <Trans>All</Trans>
+      </Button>
+      <Text size="xs" c="var(--ink-4)">
+        ·
+      </Text>
+      <Button size="compact-xs" variant="subtle" onClick={onNone}>
+        <Trans>None</Trans>
+      </Button>
+    </Group>
+  )
+}
+
+function Legend({ className, label }: { className: string; label: string }) {
+  return (
+    <Group gap={6} wrap="nowrap">
+      <span className={`relink-swatch ${className}`} aria-hidden />
+      <Text size="xs" c="var(--ink-3)">
+        {label}
+      </Text>
     </Group>
   )
 }
 
 function PlanRow({
-  file,
-  pinned,
-  onToggleExcluded,
-  onTogglePinned,
+  row,
+  onToggle,
   renderLabel,
 }: {
-  file: RelinkPlanFile
-  pinned: Set<number>
-  onToggleExcluded: () => void
-  onTogglePinned: (id: number) => void
+  row: Row
+  onToggle: () => void
   renderLabel: (d: string | MessageDescriptor) => string
 }) {
   const { t } = useLingui()
-  const { fileName } = file
-  const hint = file.confidence ? CONFIDENCE_HINTS[file.confidence] : undefined
-  const dimmed = file.excluded || file.superseded
+  const { fileCount } = row
+  const name = row.fileName ?? plural(fileCount, { one: '# single file', other: '# single files' })
+  const hint = row.basis ? BASIS_HINTS[row.basis] : undefined
+  const basisLabel = row.basis
+    ? row.basis === 'fileName' && fileCount > 1
+      ? t`From their names`
+      : renderLabel(BASIS_LABELS[row.basis] ?? row.basis)
+    : null
   return (
-    <Table.Tr opacity={dimmed ? 0.65 : 1}>
-      <Table.Td>
-        <Tooltip label={file.excluded ? t`Excluded, click to include` : t`Included, click to leave this file untouched`} withArrow>
-          <Checkbox
-            size="xs"
-            checked={!file.excluded}
-            onChange={onToggleExcluded}
-            aria-label={t`Include ${fileName} in the relink`}
-          />
-        </Tooltip>
-      </Table.Td>
-      <Table.Td>
-        <Group gap={6} wrap="nowrap">
-          <IconFileZip size={15} style={{ flexShrink: 0 }} />
-          <Stack gap={0} style={{ minWidth: 0 }}>
-            <Text size="sm" style={{ wordBreak: 'break-all' }}>
-              {file.fileName}
-            </Text>
-            {file.label && (
-              <Text size="xs" c="var(--ink-3)" className="tnum">
-                {file.label}
-              </Text>
-            )}
-          </Stack>
-        </Group>
-      </Table.Td>
-      <Table.Td>
-        {file.excluded ? (
-          <Badge size="sm" variant="outline" color="gray" leftSection={<IconPinnedOff size={11} />}>
-            <Trans>Untouched</Trans>
-          </Badge>
-        ) : file.superseded ? (
-          <Badge size="sm" variant="light" color="var(--warn)">
-            <Trans>Superseded</Trans>
-          </Badge>
-        ) : file.confidence ? (
-          <Tooltip label={hint ? renderLabel(hint) : undefined} withArrow disabled={!hint} multiline w={280}>
-            <Badge
-              size="sm"
-              variant="light"
-              color={file.confidence === 'estimated' ? 'gray' : file.confidence === 'existing' ? 'indigo' : 'teal'}
-            >
-              {renderLabel(CONFIDENCE_LABELS[file.confidence] ?? file.confidence)}
-            </Badge>
-          </Tooltip>
-        ) : (
-          <Text size="sm" c="var(--ink-3)">
-            -
-          </Text>
-        )}
-      </Table.Td>
-      <Table.Td>
-        <Stack gap={4}>
-          {file.excluded ? (
-            <Text size="xs" c="var(--ink-3)">
-              <Trans>Keeps exactly what it has today.</Trans>
-            </Text>
+    <div className={`relink-row ${row.excluded ? 'is-off' : ''}`}>
+      <Checkbox size="xs" checked={!row.excluded} onChange={onToggle} aria-label={t`Trust ${name}`} />
+      <Text size="sm" fw={600} c="var(--ink-hi)" truncate title={row.fileName ?? undefined}>
+        {name}
+      </Text>
+      <Text size="sm">
+        <Text span size="sm" fw={600} c="var(--ink-hi)" className="tnum">
+          {rangeText(row.labels)}
+        </Text>{' '}
+        <Text span size="sm" c="var(--ink-3)">
+          {row.excluded ? (
+            row.kind === 'volume' ? (
+              <Trans>stay where they are</Trans>
+            ) : (
+              <Trans>stay missing</Trans>
+            )
+          ) : row.kind === 'volume' ? (
+            <Plural value={row.labels.length} one="# chapter onto this volume" other="# chapters onto this volume" />
           ) : (
-            <>
-              {file.gains.length > 0 && (
-                <Group gap={4} wrap="nowrap" align="flex-start">
-                  <IconArrowRight size={13} style={{ flexShrink: 0, color: 'var(--ok)', marginTop: 2 }} />
-                  <Stack gap={2}>
-                    <Text size="xs" c="var(--ok)">
-                      <Trans>Takes</Trans>
-                    </Text>
-                    <ChapterChips refs={file.gains} pinned={pinned} color="var(--ok)" onToggle={onTogglePinned} />
-                  </Stack>
-                </Group>
-              )}
-              {file.loses.length > 0 && (
-                <Group gap={4} wrap="nowrap" align="flex-start">
-                  <IconArrowRight size={13} style={{ flexShrink: 0, color: 'var(--warn)', marginTop: 2 }} />
-                  <Stack gap={2}>
-                    <Text size="xs" c="var(--warn)">
-                      <Trans>Gives up</Trans>
-                    </Text>
-                    <ChapterChips refs={file.loses} pinned={pinned} color="var(--warn)" onToggle={onTogglePinned} />
-                  </Stack>
-                </Group>
-              )}
-              {file.chapters.length > 0 && (
-                <Text size="xs" c="var(--ink-3)">
-                  <Trans>After:</Trans>{' '}
-                  <Text span size="xs" className="tnum">
-                    {compactRange(file.chapters)}
-                  </Text>
-                </Text>
-              )}
-              {file.superseded && (
-                <Text size="xs" c="var(--ink-3)">
-                  <Trans>Backs nothing after the move.</Trans>
-                </Text>
-              )}
-            </>
+            <Plural value={row.labels.length} one="becomes readable" other="become readable" />
           )}
-        </Stack>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm" c="var(--ink-3)" className="tnum">
-          {formatBytes(file.size)}
         </Text>
-      </Table.Td>
-    </Table.Tr>
+      </Text>
+      {basisLabel ? (
+        <Tooltip label={hint ? renderLabel(hint) : undefined} withArrow disabled={!hint} multiline w={280}>
+          <Badge size="sm" variant="light" color={row.basis === 'estimated' ? 'gray' : row.basis === 'existing' ? 'indigo' : 'teal'}>
+            {basisLabel}
+          </Badge>
+        </Tooltip>
+      ) : (
+        <span />
+      )}
+    </div>
   )
 }

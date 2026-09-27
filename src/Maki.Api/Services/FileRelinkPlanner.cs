@@ -55,9 +55,17 @@ public record RelinkPlanFile(
     bool Superseded,
     bool Excluded);
 
+/// <param name="State">
+/// What happens to the chapter, for the map: movesToVolume, becomesReadable, unchanged, kept,
+/// availableNotLinked (a file on disk could back it but is held back), missing.
+/// </param>
+/// <param name="ToLabel">Parsed label of the file it ends up on, when that changes.</param>
+public record RelinkPlanChapter(int Id, string Label, decimal? Number, string State, string? ToLabel);
+
 public record RelinkPlan(
     int SeriesId,
     List<RelinkPlanFile> Files,
+    List<RelinkPlanChapter> Chapters,
     int Moved,
     int SupersededCount,
     long SupersededBytes,
@@ -95,7 +103,8 @@ public class FileRelinkPlanner(
         List<ChapterFile> Records,
         List<Candidate> Candidates,
         Dictionary<int, Candidate?> Assignment,
-        Dictionary<int, Candidate> CandidateByRecordId);
+        Dictionary<int, Candidate> CandidateByRecordId,
+        HashSet<int> Pinned);
 
     public async Task<RelinkPlan> PlanAsync(Series series, RelinkOptions options, CancellationToken ct = default)
     {
@@ -303,7 +312,7 @@ public class FileRelinkPlanner(
             }
         }
 
-        return new Built(series, chapters, records, candidates, assignment, candidateByRecordId);
+        return new Built(series, chapters, records, candidates, assignment, candidateByRecordId, pinned);
     }
 
     private static int Rank(Candidate candidate, RelinkConfidence confidence) => confidence switch
@@ -434,6 +443,38 @@ public class FileRelinkPlanner(
                 candidate.Excluded));
         }
 
+        var pinned = built.Pinned;
+        var chapterStates = built.Chapters
+            .OrderBy(c => c.Number ?? decimal.MaxValue)
+            .ThenBy(c => c.Id)
+            .Select(c =>
+            {
+                var current = c.ChapterFileId is { } id ? built.CandidateByRecordId.GetValueOrDefault(id) : null;
+                var target = built.Assignment.GetValueOrDefault(c.Id);
+                var anyFile = built.Candidates.Any(k => k.Covers.ContainsKey(c.Id));
+                string state;
+                if (pinned.Contains(c.Id))
+                {
+                    state = "kept";
+                }
+                else if (target is not null && !ReferenceEquals(target, current))
+                {
+                    state = target.Parsed.IsVolume ? "movesToVolume" : "becomesReadable";
+                }
+                else if (current is not null)
+                {
+                    state = "unchanged";
+                }
+                else
+                {
+                    state = anyFile ? "availableNotLinked" : "missing";
+                }
+
+                var toLabel = target is not null && !ReferenceEquals(target, current) ? ParsedLabel(target.Parsed) : null;
+                return new RelinkPlanChapter(c.Id, Label(c), c.Number, state, toLabel);
+            })
+            .ToList();
+
         var supersededFiles = files.Where(f => f.Superseded).ToList();
         return new RelinkPlan(
             built.Series.Id,
@@ -442,6 +483,7 @@ public class FileRelinkPlanner(
                 .ThenBy(f => f.IsVolume ? 0 : 1)
                 .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase)
                 .ToList(),
+            chapterStates,
             moved,
             supersededFiles.Count,
             supersededFiles.Sum(f => f.Size),
