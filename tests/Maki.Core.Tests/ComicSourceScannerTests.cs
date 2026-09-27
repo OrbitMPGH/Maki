@@ -207,6 +207,35 @@ public class ComicSourceScannerTests : IDisposable
         Assert.Equal(2, source.Pages.Count);
     }
 
+    // ".cbz" on a tar body: the extension says zip, the bytes say otherwise, and the bytes win.
+    [Fact]
+    public void An_archive_is_typed_by_its_bytes_not_its_extension()
+    {
+        WriteTar("Disguised v01.cbz", ("Disguised - c001 - p001.jpg", Page("first")));
+        WriteZip("Honest v02.rar", "001.jpg");
+
+        var sources = ComicSourceScanner.Scan(_root).OrderBy(s => s.Name, StringComparer.Ordinal).ToList();
+
+        Assert.Equal(["Disguised v01.cbz", "Honest v02.cbz"], sources.Select(s => s.Name));
+        Assert.Equal(ComicSourceKind.Repack, sources[0].Kind);
+        Assert.Equal(ComicSourceKind.Zip, sources[1].Kind);
+
+        var target = At("out", sources[0].Name);
+        ComicSourceConverter.Materialize(sources[0], target);
+        Assert.Equal(ArchiveSignature.Container.Zip, ArchiveSignature.Sniff(target));
+        Assert.Equal(["Disguised - c001 - p001.jpg"], CbzReader.PageNames(target));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00 }, ArchiveSignature.Container.Zip)]
+    [InlineData(new byte[] { 0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, 0x00, 0x04 }, ArchiveSignature.Container.Other)]
+    [InlineData(new byte[] { 0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00 }, ArchiveSignature.Container.Other)]
+    [InlineData(new byte[] { 0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x01, 0x00 }, ArchiveSignature.Container.Other)]
+    [InlineData(new byte[] { 0x25, 0x50, 0x44, 0x46 }, ArchiveSignature.Container.Unknown)]
+    [InlineData(new byte[0], ArchiveSignature.Container.Unknown)]
+    public void Signatures_are_read_off_the_leading_bytes(byte[] head, ArchiveSignature.Container expected) =>
+        Assert.Equal(expected, ArchiveSignature.Sniff(head));
+
     [Fact]
     public void An_archive_holding_nothing_readable_is_not_a_comic()
     {
