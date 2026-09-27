@@ -118,6 +118,13 @@ public class QueueController(
             return this.Conflict(localizer, "error.queue.onlyFailedCanRetry");
         }
 
+        // The chapter was queued again after this row failed, and only one row per chapter may be active.
+        if (item.ChapterId is { } retryChapterId &&
+            await db.DownloadQueue.AnyAsync(q => q.ActiveChapterId == retryChapterId, ct))
+        {
+            return this.Conflict(localizer, "error.chapter.alreadyQueued");
+        }
+
         // Scraper item that never had a mapping resolved (e.g. it failed before
         // ResolveAndActivateAsync could set one) — ClaimNextAsync requires every Queued/RateLimited
         // scraper item to have one, so send it back through resolution instead of straight to

@@ -124,7 +124,7 @@ public static class ArchiveHealthAnalyzer
                 // only the bytes can answer.
                 foreach (var entry in archive.Entries.Where(e => CbzReader.IsImage(e.Name)))
                     result.Pages.Add(new(entry.FullName, null, 0, 0));
-                result.Pages.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
+                result.Pages.Sort((a, b) => NaturalFileNameComparer.Instance.Compare(a.Name, b.Name));
                 return result;
             }
 
@@ -222,7 +222,7 @@ public static class ArchiveHealthAnalyzer
 
             result.Problems.AddRange(problems);
             result.Pages.AddRange(fingerprints);
-            result.Pages.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name));
+            result.Pages.Sort((a, b) => NaturalFileNameComparer.Instance.Compare(a.Name, b.Name));
             foreach (var key in incomplete.Distinct()) result = Partial(result, key);
             if (stopped != null) return Partial(result, stopped);
         }

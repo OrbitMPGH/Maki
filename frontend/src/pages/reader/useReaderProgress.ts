@@ -44,9 +44,18 @@ export function useReaderProgress(
 
   latest.current = { chapterId, page, complete }
 
+  // Chained onto the previous send rather than tracked standalone: heartbeat and debounce saves
+  // overlap, and tracking only the last one let an older, slower request land after a newer save
+  // or after the final flush and regress the persisted position. Chaining serializes them, so
+  // `settle()` draining `inflight.current` waits for every send still queued, in order.
   const send = useCallback(
     (id: number, at: number, done: boolean) => {
-      inflight.current = saveProgress(id, at, done || undefined, clock.take())
+      // Seconds are pulled from the clock now, at the moment this send is decided, not once its
+      // turn in the chain comes up: waiting would let time banked while queued behind an earlier
+      // request bleed into this send instead of a later one.
+      const seconds = clock.take()
+      inflight.current = inflight.current
+        .then(() => saveProgress(id, at, done || undefined, seconds))
         .then((unlocked) => {
           if (unlocked.length > 0) unlockHandler.current?.(unlocked)
         })

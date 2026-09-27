@@ -34,7 +34,7 @@ public static class CbzReader
         archive.Entries
             .Where(e => IsImage(e.Name))
             .Select(e => e.FullName)
-            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, NaturalFileNameComparer.Instance)
             .ToList();
 
     /// <summary>

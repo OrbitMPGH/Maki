@@ -448,6 +448,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Covers ClaimNextAsync's filter and sort (Protocol, Status, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
             e.HasIndex(q => new { q.Protocol, q.Status, q.SortOrder, q.QueuedAt });
 
+            // One active row per chapter. SQLite allows any number of NULLs in a unique index, so
+            // settled rows never collide.
+            e.Property(q => q.ActiveChapterId).HasComputedColumnSql(
+                $"CASE WHEN \"Status\" IN ({(int)QueueStatus.Completed}, {(int)QueueStatus.Failed}, {(int)QueueStatus.Cancelled}) THEN NULL ELSE \"ChapterId\" END",
+                stored: false);
+            e.HasIndex(q => q.ActiveChapterId).IsUnique();
+
             e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.SourceMapping).WithMany().HasForeignKey(q => q.SourceMappingId).OnDelete(DeleteBehavior.SetNull);

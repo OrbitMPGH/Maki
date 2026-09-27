@@ -1,6 +1,11 @@
+using System.Data.Common;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Data;
 
 namespace Maki.Api.Tests;
 
@@ -152,6 +157,112 @@ public class DownloadQueueRecoveryTests : IDisposable
         Assert.Equal(0, swept);
         using var db = _db.NewContext();
         Assert.Equal(QueueStatus.FetchingPages, db.DownloadQueue.Single(q => q.Id == claimed).Status);
+    }
+
+    /// <summary>
+    /// A worker can settle a row between the sweep's snapshot and its update. Updating by id alone
+    /// dragged the Completed row back to Queued and downloaded the chapter a second time.
+    /// </summary>
+    [Fact]
+    public async Task Sweep_leaves_a_row_completed_between_snapshot_and_update_completed()
+    {
+        var id = SeedItem(QueueStatus.Downloading, withMapping: true);
+        var queue = new DownloadQueueService(
+            ScopeFactoryWith(new CompleteBeforeUpdate(id)), new StoppedClock(T0),
+            Sources.SingleChapterResolver(null, "fake"), NullLogger<DownloadQueueService>.Instance);
+
+        var swept = await queue.SweepOrphanedAsync();
+
+        Assert.Equal(0, swept);
+        using var db = _db.NewContext();
+        Assert.Equal(QueueStatus.Completed, db.DownloadQueue.Single(q => q.Id == id).Status);
+    }
+
+    private IServiceScopeFactory ScopeFactoryWith(IInterceptor interceptor)
+    {
+        var options = new DbContextOptionsBuilder<MakiDbContext>(_db.Options).AddInterceptors(interceptor).Options;
+        var services = new ServiceCollection();
+        services.AddScoped(_ => new MakiDbContext(options));
+        return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+    }
+
+    /// <summary>Plays a worker finishing the row just before the sweep's update statement runs.</summary>
+    private sealed class CompleteBeforeUpdate(int id) : DbCommandInterceptor
+    {
+        public override async ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.TrimStart().StartsWith("UPDATE \"DownloadQueue\""))
+            {
+                await using var worker = command.Connection!.CreateCommand();
+                worker.Transaction = command.Transaction;
+                worker.CommandText = $"UPDATE \"DownloadQueue\" SET \"Status\" = {(int)QueueStatus.Completed} WHERE \"Id\" = {id}";
+                await worker.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// The in-memory cooldown is gone after a restart. The persisted NextAttempt alone has to keep
+    /// the row off the source until it passes.
+    /// </summary>
+    [Fact]
+    public async Task A_row_is_not_claimed_before_its_NextAttempt_even_with_no_cooldown_in_memory()
+    {
+        var clock = new StoppedClock(T0);
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), clock, Sources.SingleChapterResolver(null, "fake"),
+            NullLogger<DownloadQueueService>.Instance);
+        var id = SeedItem(QueueStatus.RateLimited, withMapping: true);
+        SetNextAttempt(id, T0.AddMinutes(10).UtcDateTime);
+
+        Assert.Null(await queue.ClaimNextAsync());
+
+        clock.Now = T0.AddMinutes(11);
+        Assert.Equal(id, await queue.ClaimNextAsync());
+    }
+
+    [Fact]
+    public async Task Startup_recovery_keeps_a_rate_limited_row_parked_until_its_NextAttempt()
+    {
+        var clock = new StoppedClock(T0);
+        var queue = new DownloadQueueService(
+            _db.ScopeFactory(), clock, Sources.SingleChapterResolver(null, "cooling"),
+            NullLogger<DownloadQueueService>.Instance);
+        var id = SeedItem(QueueStatus.RateLimited, withMapping: true, sourceName: "cooling");
+        var other = SeedItem(QueueStatus.Queued, withMapping: true, sourceName: "cooling", sortOrder: 1);
+        SetNextAttempt(id, T0.AddMinutes(10).UtcDateTime);
+
+        var worker = new DownloadWorkerHostedService(
+            queue,
+            new DownloadBatchNotifier(
+                new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(),
+                new TestUserLocaleResolver(), clock, NullLogger<DownloadBatchNotifier>.Instance),
+            _db.ScopeFactory(), NullLogger<DownloadWorkerHostedService>.Instance);
+        await worker.RecoverAsync(CancellationToken.None);
+
+        using (var db = _db.NewContext())
+        {
+            Assert.Equal(QueueStatus.RateLimited, db.DownloadQueue.Single(q => q.Id == id).Status);
+        }
+
+        // The source's cooldown is back in memory too, so its other rows wait as well.
+        Assert.NotNull(queue.CooldownUntil("cooling"));
+        Assert.Null(await queue.ClaimNextAsync());
+
+        clock.Now = T0.AddMinutes(11);
+        Assert.Equal(id, await queue.ClaimNextAsync());
+        Assert.Equal(other, await queue.ClaimNextAsync());
+    }
+
+    private void SetNextAttempt(int id, DateTime at)
+    {
+        using var db = _db.NewContext();
+        db.DownloadQueue.Single(q => q.Id == id).NextAttempt = at;
+        db.SaveChanges();
     }
 
     [Fact]

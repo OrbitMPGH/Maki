@@ -144,6 +144,37 @@ public class VolumeChapterScannerTests
         }
     }
 
+    // Regression: an unpadded compilation ("c1"/"c2"/"c10" page files) used to have page 10 sort
+    // lexically right after page 1, splitting chapter 10's pages away from the rest of chapter 10
+    // and misplacing the boundary VolumeChapterProgress reads chapter positions from.
+    [Fact]
+    public void ScanCbzBoundaries_orders_unpadded_marker_names_numerically()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"maki-bounds-unpadded-{Guid.NewGuid():N}.cbz");
+        try
+        {
+            using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+            {
+                // Written out of natural order, mirroring how an unpadded import lists its entries.
+                foreach (var page in new[]
+                {
+                    "x - c10 - p1.png", "x - c1 - p1.png", "x - c1 - p2.png", "x - c2 - p1.png",
+                })
+                {
+                    archive.CreateEntry(page, CompressionLevel.NoCompression);
+                }
+            }
+
+            var (totalPages, boundaries) = VolumeChapterScanner.ScanCbzBoundaries(path);
+            Assert.Equal(4, totalPages);
+            Assert.Equal([(1m, 0), (2m, 2), (10m, 3)], boundaries);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void ScanCbzBoundaries_unreadable_archive_yields_empty()
     {

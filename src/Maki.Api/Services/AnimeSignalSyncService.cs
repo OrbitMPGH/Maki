@@ -251,6 +251,26 @@ public class AnimeSignalSyncService(
 
             fetchedAny = true;
             fetched += entries.Count;
+
+            // The fetch above can take a while, and the reader can switch this tracker off while it
+            // is in flight. Re-checking here, right before anything is written, is what keeps a
+            // disabled tracker from being re-added for up to a day (ScrobbleController.SetPreferences
+            // deletes its rows the moment the reader flips the switch).
+            if (!await animeSources.EnabledForAsync(userId, service, ct))
+            {
+                var stale = await db.AnimeSignals
+                    .Where(x => x.UserId == userId && x.Service == service)
+                    .ToListAsync(ct);
+                if (stale.Count > 0)
+                {
+                    db.AnimeSignals.RemoveRange(stale);
+                    await db.SaveChangesAsync(ct);
+                    removed += stale.Count;
+                }
+
+                continue;
+            }
+
             var existing = await db.AnimeSignals
                 .Where(x => x.UserId == userId && x.Service == service)
                 .ToDictionaryAsync(x => x.AnimeId, ct);

@@ -204,6 +204,10 @@ export default function ReaderPage() {
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', manifest.seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series'] })
       }
+      // ReaderPage stays mounted across /read/:chapterId changes, so a manifest cached from an
+      // earlier visit to `target` would otherwise be served as-is (staleTime is Infinity) with its
+      // now-stale resumePage. Drop it so the coming mount always fetches fresh.
+      queryClient.removeQueries({ queryKey: ['reader-manifest', target] })
       navigate(`/read/${target}`, { replace: true })
     },
     [manifest, navigate, shownTo, pageCount, queryClient, tracking, clock, finished, settleProgress],

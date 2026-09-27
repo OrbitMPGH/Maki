@@ -197,6 +197,42 @@ public class AnimeSignalSyncTests : IDisposable
         seed.SaveChanges();
     }
 
+    /// <summary>
+    /// The reader can flip a tracker's opt-out (<c>ScrobbleController.SetPreferences</c>) while its
+    /// fetch is in flight. Re-checking right before the upsert must catch that instead of re-adding
+    /// rows the controller already deleted.
+    /// </summary>
+    [Fact]
+    public async Task A_source_disabled_mid_run_ends_with_no_rows_for_it()
+    {
+        var userId = _fixture.SeedUser();
+        OptIn(userId);
+        SeedRow(userId, 1, 8, AnimeWatchStatus.Completed);
+
+        FakeAnimeSignalSources? sources = null;
+        var source = new FakeAnimeListSource(
+            [new AnimeListEntry(1, "Anime 1", 8, AnimeWatchStatus.Completed)],
+            failing: 0,
+            onListed: () => sources!.Enabled = false);
+        sources = new FakeAnimeSignalSources(source);
+
+        var service = new AnimeSignalSyncService(
+            _fixture.ScopeFactory(),
+            sources,
+            new MangaBakaLocalStore(
+                new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(),
+                NullLogger<MangaBakaLocalStore>.Instance),
+            new FakeAppSettings(),
+            new FakeUserSettingsStore(_fixture),
+            NullLogger<AnimeSignalSyncService>.Instance);
+
+        var summary = await service.SyncUserAsync(userId, CancellationToken.None);
+
+        Assert.Equal(1, summary.Removed);
+        using var db = _fixture.NewContext();
+        Assert.Empty(await db.AnimeSignals.Where(x => x.UserId == userId).ToListAsync());
+    }
+
     /// <summary>A real cancellation must still propagate rather than being swallowed as a lookup failure.</summary>
     [Fact]
     public async Task A_real_cancellation_still_propagates()
@@ -215,9 +251,15 @@ public class AnimeSignalSyncTests : IDisposable
 
     private sealed class FakeAnimeSignalSources(FakeAnimeListSource source) : AnimeSignalSources(null!, null!)
     {
+        public bool Enabled = true;
+
         public override Task<IReadOnlyList<IAnimeListSource>> EnabledAsync(
             int userId, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<IAnimeListSource>>([source]);
+
+        public override Task<bool> EnabledForAsync(
+            int userId, string service, CancellationToken ct = default) =>
+            Task.FromResult(Enabled);
     }
 
     /// <summary>
@@ -225,15 +267,19 @@ public class AnimeSignalSyncTests : IDisposable
     /// to read <see cref="Name"/> - nothing else here exercises scrobbling.
     /// </summary>
     private sealed class FakeAnimeListSource(
-        IReadOnlyList<AnimeListEntry> entries, long failing, CancellationTokenSource? cancelWith = null)
+        IReadOnlyList<AnimeListEntry> entries, long failing, CancellationTokenSource? cancelWith = null,
+        Action? onListed = null)
         : IAnimeListSource, IScrobbleTracker
     {
         public string Name => "mal";
         public string Label => "MyAnimeList";
         public bool UsesOAuth => true;
 
-        public Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default) =>
-            Task.FromResult(entries);
+        public Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+        {
+            onListed?.Invoke();
+            return Task.FromResult(entries);
+        }
 
         public Task<AnimeRelatedManga?> RelatedMangaAsync(int userId, long animeId, CancellationToken ct = default)
         {

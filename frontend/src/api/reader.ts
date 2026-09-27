@@ -101,8 +101,11 @@ export function useReaderManifest(chapterId: number) {
     // The page list of a stored archive doesn't change while the reader is open, so nothing
     // refetches mid-chapter, but `resumePage` and `completed` do change, and a cached snapshot of
     // them is poison: reopening a chapter would resume off the position it had when first opened,
-    // then persist that stale page over the real one. Always refetch on mount, and see ReaderPage
-    // for why the resume waits for that fetch instead of applying the cached value first.
+    // then persist that stale page over the real one. `refetchOnMount: 'always'` only forces a
+    // refetch on a real mount, though: with ReaderPage staying mounted across /read/:chapterId
+    // changes, a chapter revisited without an unmount in between is served this cached manifest as-is.
+    // ReaderPage's `goToChapter` covers that by dropping the target's cache entry before navigating,
+    // and see ReaderPage for why the resume waits for a fetch instead of applying a cached value first.
     staleTime: Infinity,
     refetchOnMount: 'always',
   })

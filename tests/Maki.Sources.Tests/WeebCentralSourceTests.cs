@@ -49,6 +49,22 @@ public class WeebCentralSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_keeps_distinct_unnumbered_specials()
+    {
+        var source = SourceFor(new()
+        {
+            ["full-chapter-list"] = FakeHttpClientFactory.Fixture("weebcentral-chapters-unnumbered.html")
+        });
+
+        var chapters = await source.ListChaptersAsync("01J76XY7EF75DJNQCV04HTPDZK/Berserk");
+
+        Assert.Equal(2, chapters.Count);
+        Assert.Contains(chapters, c => c.Title == "Oneshot");
+        Assert.Contains(chapters, c => c.Title == "Extra");
+        Assert.All(chapters, c => Assert.Null(c.Number));
+    }
+
+    [Fact]
     public async Task GetPages_returns_urls_with_referer()
     {
         var source = SourceFor(new() { ["/images"] = FakeHttpClientFactory.Fixture("weebcentral-images.html") });
