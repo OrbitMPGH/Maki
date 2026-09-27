@@ -1005,6 +1005,21 @@ public class SeriesController(
                     }
                 }
             }
+
+            // Replaced copies from upgrades. Their history rows go with the series, so nothing could
+            // restore them afterwards.
+            var trash = UpgradeTrash.SeriesFolder(series.RootFolder.Path, series.Id);
+            if (Directory.Exists(trash))
+            {
+                try
+                {
+                    Directory.Delete(trash, recursive: true);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogWarning(ex, "Could not delete upgrade trash for removed series {SeriesId}", id);
+                }
+            }
         }
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed

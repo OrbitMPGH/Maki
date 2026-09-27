@@ -294,6 +294,74 @@ public class QualityScorerTests
             S(QualityTier.Scanlator, 15), 1400, 20));
     }
 
+    private static QualityCandidate Listing(QualityTier tier, string source = "site", string? group = null) =>
+        new(tier, source, null, group, "Series 012.cbz", null, null, null, null, "en");
+
+    [Fact]
+    public void CouldUpgrade_treats_an_unmeasured_width_as_matching_a_positive_format()
+    {
+        var hiRes = Format(1, Req(FormatConditionType.MinWidth, "1400"));
+        var profile = Profile(p => p.FormatScores = [new FormatScore(1, 10)]);
+
+        Assert.True(QualityScorer.CouldUpgrade(profile, [hiRes], S(QualityTier.Scanlator), 20, false,
+            Listing(QualityTier.Scanlator)));
+        Assert.Equal(10, QualityScorer.OptimisticScore(profile, [hiRes], Listing(QualityTier.Scanlator), new RegexCache()).Score);
+    }
+
+    [Fact]
+    public void CouldUpgrade_does_not_assume_a_negative_format_away()
+    {
+        var hiRes = Format(1, Req(FormatConditionType.MinWidth, "1400"));
+        var badGroup = Format(2, Req(FormatConditionType.GroupMatches, "^bad$"));
+        var profile = Profile(p => p.FormatScores = [new FormatScore(1, 10), new FormatScore(2, -50)]);
+
+        Assert.Equal(10, QualityScorer.OptimisticScore(profile, [hiRes, badGroup],
+            Listing(QualityTier.Scanlator), new RegexCache()).Score);
+        Assert.Equal(-40, QualityScorer.OptimisticScore(profile, [hiRes, badGroup],
+            Listing(QualityTier.Scanlator, group: "bad"), new RegexCache()).Score);
+        Assert.False(QualityScorer.CouldUpgrade(profile, [hiRes, badGroup], S(QualityTier.Scanlator), 20, false,
+            Listing(QualityTier.Scanlator, group: "bad")));
+    }
+
+    [Fact]
+    public void CouldUpgrade_still_fails_on_what_the_listing_already_knows()
+    {
+        var official = Format(1, Req(FormatConditionType.SourceIs, "mangaplus"), Req(FormatConditionType.MinWidth, "1400"));
+        var profile = Profile(p => p.FormatScores = [new FormatScore(1, 10)]);
+
+        Assert.False(QualityScorer.CouldUpgrade(profile, [official], S(QualityTier.Scanlator), 20, false,
+            Listing(QualityTier.Scanlator, source: "other")));
+        Assert.True(QualityScorer.CouldUpgrade(profile, [official], S(QualityTier.Scanlator), 20, false,
+            Listing(QualityTier.Scanlator, source: "mangaplus")));
+    }
+
+    [Fact]
+    public void CouldUpgrade_keeps_every_hard_guard()
+    {
+        var disallowed = Profile(p => p.Tiers = [.. p.Tiers.Select(t => t.Tier == QualityTier.Official ? t with { Allowed = false } : t)]);
+        disallowed.Cutoff = QualityTier.Volume;
+
+        Assert.True(QualityScorer.CouldUpgrade(Profile(), [], S(QualityTier.Aggregator), 20, false, Listing(QualityTier.Official)));
+        Assert.False(QualityScorer.CouldUpgrade(Profile(), [], S(QualityTier.Aggregator), 20, true, Listing(QualityTier.Official)));
+        Assert.False(QualityScorer.CouldUpgrade(Profile(p => p.UpgradesEnabled = false), [], S(QualityTier.Aggregator), 20,
+            false, Listing(QualityTier.Official)));
+        Assert.False(QualityScorer.CouldUpgrade(disallowed, [], S(QualityTier.Aggregator), 20, false, Listing(QualityTier.Official)));
+        Assert.False(QualityScorer.CouldUpgrade(Profile(), [], S(QualityTier.Official), 20, false, Listing(QualityTier.Volume)));
+        Assert.False(QualityScorer.CouldUpgrade(Profile(), [], S(QualityTier.Scanlator), 20, false, Listing(QualityTier.Scanlator)));
+    }
+
+    [Fact]
+    public void Explain_names_the_first_guard_a_loser_trips()
+    {
+        var profile = Profile(p => p.PageTolerancePercent = 10);
+
+        Assert.Equal(UpgradeReasons.Unmeasurable, UpgradeReasons.Explain(profile, 20, S(QualityTier.Official), null, 20));
+        Assert.Equal(UpgradeReasons.FewerPages, UpgradeReasons.Explain(profile, 20, S(QualityTier.Official), 1400, 10));
+        Assert.Equal(UpgradeReasons.ScoreNotHigher, UpgradeReasons.Explain(profile, 20, S(QualityTier.Aggregator), 1400, 20));
+        profile.Tiers = [.. profile.Tiers.Select(t => t.Tier == QualityTier.Official ? t with { Allowed = false } : t)];
+        Assert.Equal(UpgradeReasons.TierNotAllowed, UpgradeReasons.Explain(profile, 20, S(QualityTier.Official), 1400, 20));
+    }
+
     [Fact]
     public void Normalise_fills_missing_tiers_in_default_order_and_drops_duplicates()
     {

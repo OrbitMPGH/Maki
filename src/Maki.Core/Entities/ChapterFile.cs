@@ -36,4 +36,13 @@ public class ChapterFile
 
     /// <summary>When this file was last measured. Null means never measured.</summary>
     public DateTime? MeasuredAtUtc { get; set; }
+
+    /// <summary>The source's own chapter id this file was downloaded from. Null for imports and torrents.</summary>
+    public string? SourceChapterId { get; set; }
+
+    /// <summary>"Protect from upgrades". A trusted file is never replaced by the upgrader.</summary>
+    public bool Trusted { get; set; }
+
+    /// <summary>Last successful upgrade. <see cref="DateAdded"/> keeps meaning added to the library.</summary>
+    public DateTime? ReplacedAtUtc { get; set; }
 }

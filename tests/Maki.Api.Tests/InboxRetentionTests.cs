@@ -114,7 +114,9 @@ public class InboxRetentionTests : IDisposable
     private async Task RunHousekeeping()
     {
         using var db = _db.NewContext();
-        var job = new HousekeepingJob(db, _paths, NullLogger<HousekeepingJob>.Instance);
+        var job = new HousekeepingJob(db, _paths,
+            new Maki.Api.Services.UpgradeTrashService(db, new FakeAppSettings(), NullLogger<Maki.Api.Services.UpgradeTrashService>.Instance),
+            NullLogger<HousekeepingJob>.Instance);
         await job.Execute(new NoopJobContext());
     }
 

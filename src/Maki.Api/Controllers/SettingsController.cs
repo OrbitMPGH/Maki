@@ -126,9 +126,19 @@ public class SettingsController(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
         bool UseHardlinks = true);
-    /// <param name="Enabled">Stored for automatic upgrades; nothing acts on it yet.</param>
+    /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
-    public record UpgradeSettings(bool Enabled, int? DefaultProfileId);
+    /// <param name="MaxPerDay">0 means no cap.</param>
+    /// <param name="TrashRetentionDays">0 purges replaced files on the next housekeeping run.</param>
+    public record UpgradeSettings(
+        bool Enabled,
+        int? DefaultProfileId,
+        int ScanHour = 4,
+        int MaxPerDay = 25,
+        int MaxProbesPerRun = 50,
+        int QuietPeriodDays = 7,
+        int TrashRetentionDays = 14,
+        bool ScanIncognito = true);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -825,13 +835,15 @@ public class SettingsController(
     [HttpGet("upgrades")]
     public async Task<IActionResult> GetUpgrades(CancellationToken ct)
     {
-        var defaultId = UpgradeEvaluationService.ParseId(await settings.GetAsync(SettingKeys.UpgradesDefaultProfileId, ct));
+        var options = await UpgradeOptions.LoadAsync(settings, ct);
+        var defaultId = options.DefaultProfileId;
         if (defaultId is { } id && !await db.UpgradeProfiles.AnyAsync(p => p.Id == id, ct))
         {
             defaultId = null;
         }
 
-        return Ok(new UpgradeSettings(await settings.GetAsync(SettingKeys.UpgradesEnabled, ct) == "true", defaultId));
+        return Ok(new UpgradeSettings(options.Enabled, defaultId, options.ScanHour, options.MaxPerDay,
+            options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -843,9 +855,43 @@ public class SettingsController(
             return this.Fail(localizer, "error.upgrades.profileNotFound");
         }
 
+        if (request.ScanHour is < 0 or > 23)
+        {
+            return this.Fail(localizer, "error.settings.upgradesScanHourRange", new { min = 0, max = 23 });
+        }
+
+        if (request.MaxPerDay is < 0 or > 1000)
+        {
+            return this.Fail(localizer, "error.settings.upgradesMaxPerDayRange", new { min = 0, max = 1000 });
+        }
+
+        if (request.MaxProbesPerRun is < 1 or > 500)
+        {
+            return this.Fail(localizer, "error.settings.upgradesMaxProbesPerRunRange", new { min = 1, max = 500 });
+        }
+
+        if (request.QuietPeriodDays is < 0 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesQuietPeriodDaysRange", new { min = 0, max = 365 });
+        }
+
+        if (request.TrashRetentionDays is < 0 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTrashRetentionDaysRange", new { min = 0, max = 365 });
+        }
+
         await settings.SetAsync(SettingKeys.UpgradesEnabled, request.Enabled ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.UpgradesDefaultProfileId,
             request.DefaultProfileId?.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesScanHour, request.ScanHour.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMaxPerDay, request.MaxPerDay.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMaxProbesPerRun,
+            request.MaxProbesPerRun.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesQuietPeriodDays,
+            request.QuietPeriodDays.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesTrashRetentionDays,
+            request.TrashRetentionDays.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesScanIncognito, request.ScanIncognito ? "true" : "false", ct);
         return Ok(request);
     }
 

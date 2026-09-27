@@ -323,8 +323,29 @@ public static class SettingKeys
     /// </summary>
     public const string DownloadUseHardlinks = "download.usehardlinks";
 
-    /// <summary>"true" turns on automatic chapter upgrades. Stored only; nothing reads it yet.</summary>
+    /// <summary>"true" turns on the daily automatic upgrade scan. A per-series manual scan ignores it.</summary>
     public const string UpgradesEnabled = "upgrades.enabled";
+
+    /// <summary>Local hour (0..23) from which the daily upgrade scan may run. Default 4.</summary>
+    public const string UpgradesScanHour = "upgrades.scanHour";
+
+    /// <summary>Upgrades queued per UTC day across the library. Default 25; 0 means no cap.</summary>
+    public const string UpgradesMaxPerDay = "upgrades.maxPerDay";
+
+    /// <summary>Candidate probes one scan may spend. Default 50.</summary>
+    public const string UpgradesMaxProbesPerRun = "upgrades.maxProbesPerRun";
+
+    /// <summary>Days a file is left alone after it was added or last upgraded. Default 7.</summary>
+    public const string UpgradesQuietPeriodDays = "upgrades.quietPeriodDays";
+
+    /// <summary>Days a replaced file stays in <c>.maki-trash</c>. Default 14; 0 purges on the next housekeeping run.</summary>
+    public const string UpgradesTrashRetentionDays = "upgrades.trashRetentionDays";
+
+    /// <summary>"false" leaves incognito series out of the upgrade scan. Default on.</summary>
+    public const string UpgradesScanIncognito = "upgrades.scanIncognito";
+
+    /// <summary>Local date (yyyy-MM-dd) the daily upgrade scan last ran, written by <c>UpgradeScanJob</c>.</summary>
+    public const string UpgradesLastScanDate = "upgrades.lastScanDate";
 
     /// <summary>
     /// Id of the <see cref="Entities.UpgradeProfile"/> a series without its own pin resolves to.

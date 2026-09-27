@@ -14,6 +14,8 @@ paths:
   - "src/Maki.Core/Sources/*ChapterList*.cs"
   - "src/Maki.Core/Sources/*Language*.cs"
   - "src/Maki.Api/Jobs/**"
+  - "src/Maki.Api/Services/Upgrade*.cs"
+  - "src/Maki.Api/Services/SourceProbe*.cs"
 ---
 
 # Download queue and workers

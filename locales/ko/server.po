@@ -1480,6 +1480,38 @@ msgstr ""
 msgid "error.upgrades.upgradeUntilScoreRange"
 msgstr ""
 
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: An upgrade scan is already running
+msgid "error.upgrades.scanRunning"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: That upgrade does not exist
+msgid "error.upgrades.historyNotFound"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: This upgrade has already been reverted
+msgid "error.upgrades.alreadyReverted"
+msgstr ""
+
+#. The same file was upgraded again later; that newer upgrade has to be reverted first.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: A newer upgrade of this file has to be reverted first
+msgid "error.upgrades.notLatest"
+msgstr ""
+
+#. The replaced file was purged from the trash folder, or removed by hand, so there is nothing to put back.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: The previous file is no longer in the trash, so this upgrade cannot be reverted
+msgid "error.upgrades.trashGone"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: Could not swap the files back. Another program may have the chapter open
+msgid "error.upgrades.revertMoveFailed"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy
@@ -1561,6 +1593,32 @@ msgstr "재시도 횟수는 {min}에서 {max} 사이여야 합니다"
 #, fuzzy
 msgid "error.settings.downloadTimeoutRange"
 msgstr "다운로드 시간 제한은 0(제한 없음)이거나 {min}분에서 {max}분 사이여야 합니다"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The upgrade scan hour must be between {min} and {max}
+msgid "error.settings.upgradesScanHourRange"
+msgstr ""
+
+#. 0 means no daily cap and is inside the range.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Upgrades per day must be between {min} and {max}
+msgid "error.settings.upgradesMaxPerDayRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Probes per scan must be between {min} and {max}
+msgid "error.settings.upgradesMaxProbesPerRunRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The quiet period must be between {min} and {max} days
+msgid "error.settings.upgradesQuietPeriodDaysRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Trash retention must be between {min} and {max} days
+msgid "error.settings.upgradesTrashRetentionDaysRange"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
@@ -2103,6 +2161,40 @@ msgstr "새 챕터 다운로드됨"
 msgid "inbox.chapters.downloaded.body"
 msgstr "{series}: {count, plural, other {읽을 준비가 된 챕터 #개}}"
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Chapter upgraded
+msgid "inbox.upgrade.chapter.title"
+msgstr ""
+
+#. {fromSource} and {toSource} are site names, never translated. {hasFromWidth} is "yes" or "no":
+#. the old file's page width is not always known. Widths are pixels.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: {series}: chapter {chapter} replaced with a better copy, {fromSource}{hasFromWidth, select, yes { {fromWidth}px} other {}} to {toSource} {toWidth}px
+msgid "inbox.upgrade.chapter.body"
+msgstr ""
+
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Upgrade left a chapter without its file
+msgid "inbox.upgrade.restoreFailed.title"
+msgstr ""
+
+#. Admins only. {trashPath} is a path inside the root folder, shown as it is. The original file is
+#. still there and has to be moved back by hand.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: {series}: chapter {chapter} could not be replaced or put back. The original file is at {trashPath}
+msgid "inbox.upgrade.restoreFailed.body"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: Chapters upgraded
+msgid "inbox.upgrade.batch.title"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadBatchNotifier.cs
+#. English: {series}: {count, plural, one {# chapter replaced with a better copy} other {# chapters replaced with a better copy}}
+msgid "inbox.upgrade.batch.body"
+msgstr ""
+
 #: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: Downloads finished with errors
 #, fuzzy
@@ -2458,6 +2550,18 @@ msgstr "이 챕터의 모든 소스에서 실패했습니다"
 #, fuzzy
 msgid "error.download.pickedSourceUnavailable"
 msgstr "선택한 소스에서 이 챕터를 가져올 수 없습니다."
+
+#. An upgrade was downloaded, but the file it was meant to replace is no longer in the library.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The file this upgrade was meant to replace is gone
+msgid "error.download.upgradeTargetGone"
+msgstr ""
+
+#. The old file could not be moved aside, usually because another program has it open. Nothing changed on disk.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: Could not replace the existing file. Another program may have it open
+msgid "error.download.upgradeMoveFailed"
+msgstr ""
 
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.
@@ -3075,6 +3179,13 @@ msgstr "{count, plural, =0 {실패한 다운로드 없음} other {실패한 다�
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: {count, plural, one {# chapter file waiting to be measured} other {# chapter files waiting to be measured}}
 msgid "health.check.unmeasuredFiles"
+msgstr ""
+
+#. Files replaced by automatic upgrades, kept for {days} days so an upgrade can be reverted. A
+#. warning only when a library drive is already low on space.
+#: src/Maki.Api/Services/HealthMonitor.cs
+#. English: Upgrade trash: {files, plural, one {# replaced file} other {# replaced files}}, {gib} GiB, kept {days, plural, one {# day} other {# days}}
+msgid "health.check.upgradeTrash"
 msgstr ""
 
 #. {source} is a site name (MangaDex, Weeb Central) and is never translated.

@@ -4,6 +4,8 @@ import {
   IconFileTypePdf,
   IconFileZip,
   IconLink,
+  IconLock,
+  IconLockOpen,
   IconRefresh,
   IconWand,
   IconTrash,
@@ -11,6 +13,7 @@ import {
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
+import { useSetFileTrusted } from '../api/upgrades'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
 import { FileQualityBadge } from './series/FileQualityBadge'
@@ -37,6 +40,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const renderLabel = useLabel()
   const { can } = useAuth()
   const canLink = can('EditMetadata')
+  const canDownload = can('DownloadChapters')
   const [linkFile, setLinkFile] = useState<SeriesFileDto | null>(null)
   const [relinkOpen, setRelinkOpen] = useState(false)
   const [selectMode, setSelectMode] = useState(false)
@@ -44,6 +48,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const { data: files, isLoading, isFetching, refetch } = useSeriesFiles(seriesId)
   const deleteFiles = useDeleteSeriesFiles(seriesId)
+  const setFileTrusted = useSetFileTrusted()
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
   const unlinkedOnDisk = files?.filter((f) => f.onDisk && f.status !== 'linked').length ?? 0
@@ -200,7 +205,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     <Table.Th><Trans>Mapped to</Trans></Table.Th>
                     <Table.Th w={90}><Trans>Size</Trans></Table.Th>
                     <Table.Th w={180}><Trans>Quality</Trans></Table.Th>
-                    {!selectMode && <Table.Th w={canLink ? 76 : 40} />}
+                    {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)} />}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -309,6 +314,30 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                   aria-label={t`Link chapters to ${fileName}`}
                                 >
                                   <IconLink size={17} />
+                                </ActionIcon>
+                              </Tooltip>
+                            )}
+                            {canDownload && f.quality && (
+                              <Tooltip
+                                label={f.quality.trusted ? t`Allow upgrades` : t`Protect from upgrades`}
+                                withArrow
+                              >
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="gray"
+                                  onClick={() =>
+                                    setFileTrusted.mutate({
+                                      fileId: f.quality!.fileId,
+                                      trusted: !f.quality!.trusted,
+                                    })
+                                  }
+                                  aria-label={
+                                    f.quality.trusted
+                                      ? t`Allow upgrades to ${fileName}`
+                                      : t`Protect ${fileName} from upgrades`
+                                  }
+                                >
+                                  {f.quality.trusted ? <IconLockOpen size={17} /> : <IconLock size={17} />}
                                 </ActionIcon>
                               </Tooltip>
                             )}

@@ -34,6 +34,8 @@ public enum InboxEventType
     BackupFinished = 14,
     SourceMatchFinished = 15,
     ImportListFinished = 16,
+    ChapterUpgraded = 17,
+    UpgradeRestoreFailed = 18,
 }
 
 /// <summary>
@@ -51,7 +53,8 @@ public static class InboxEventTypes
         InboxEventType.UpdateAvailable or
         InboxEventType.ImportFinished or
         InboxEventType.BackupFinished or
-        InboxEventType.RequestSubmitted;
+        InboxEventType.RequestSubmitted or
+        InboxEventType.UpgradeRestoreFailed;
 
     /// <summary>
     /// Events that report the instance failing rather than the series being interesting. A reader's
@@ -63,7 +66,8 @@ public static class InboxEventTypes
     /// all. A failed download is a reader's business too — it is their chapter that did not arrive.
     /// </para>
     /// </summary>
-    public static bool IsOperational(InboxEventType type) => type is InboxEventType.DownloadFailed;
+    public static bool IsOperational(InboxEventType type) =>
+        type is InboxEventType.DownloadFailed or InboxEventType.UpgradeRestoreFailed;
 
     /// <summary>
     /// Events that are off unless the user turns them on. Only one so far: a finished source match

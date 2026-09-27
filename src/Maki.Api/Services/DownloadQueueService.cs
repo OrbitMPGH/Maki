@@ -347,6 +347,58 @@ public class DownloadQueueService(
     }
 
     /// <summary>
+    /// Queues a replacement for a chapter's existing file, pinned to the mapping and source chapter the
+    /// upgrade scan probed. Unlike <see cref="EnqueueChapterAsync"/> it never touches an existing row:
+    /// null when the chapter has any live queue row, no longer has the file the scan judged, or its
+    /// series is under a health review. Sorted after everything already queued, so an upgrade never
+    /// jumps ahead of a missing chapter.
+    /// </summary>
+    public async Task<DownloadQueueItem?> EnqueueUpgradeAsync(int chapterId, int mappingId, string sourceChapterId,
+        Maki.Core.Quality.UpgradeInfo info, int? queuedByUserId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var chapter = await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == chapterId, ct);
+        if (chapter?.ChapterFileId is not { } fileId || fileId != info.ChapterFileId)
+        {
+            return null;
+        }
+
+        if (await db.DownloadQueue.AnyAsync(q => q.ChapterId == chapterId &&
+                q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct))
+        {
+            return null;
+        }
+
+        if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
+            && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
+        {
+            return null;
+        }
+
+        var item = new DownloadQueueItem
+        {
+            SeriesId = chapter.SeriesId,
+            ChapterId = chapterId,
+            Protocol = AcquisitionProtocol.Scraper,
+            Status = QueueStatus.Queued,
+            QueuedAt = time.GetUtcNow().UtcDateTime,
+            SortOrder = await NextSortOrderAsync(db, ct),
+            Origin = DownloadOrigin.Upgrade,
+            QueuedByUserId = queuedByUserId,
+            SourceMappingId = mappingId,
+            PreferredMappingId = mappingId,
+            SourceChapterId = sourceChapterId,
+            UpgradeInfoJson = info.Serialize()
+        };
+        db.DownloadQueue.Add(item);
+        await db.SaveChangesAsync(ct);
+        await SignalAsync(item.Id, ct);
+        return item;
+    }
+
+    /// <summary>
     /// Finds which enabled mapping actually has this chapter and flips the item from Resolving into
     /// Queued, or straight into RateLimited if that source is already cooling down. Runs detached
     /// from any particular caller — also used by <c>DownloadWorkerHostedService</c> to resume items
@@ -831,6 +883,9 @@ public class DownloadQueueService(
         return time.GetUtcNow().UtcDateTime.AddSeconds(seconds);
     }
 
+    /// <summary>Failures no retry can change, which <see cref="RequeueEligibleFailuresAsync"/> never picks up.</summary>
+    public static readonly string[] PermanentErrorKeys = ["error.download.upgradeTargetGone"];
+
     /// <summary>
     /// Re-queues Failed scraper items whose backoff has elapsed and whose attempt count is still
     /// under <paramref name="maxAttempts"/>. Torrent items are excluded — they're tracked
@@ -852,6 +907,7 @@ public class DownloadQueueService(
                         q.Status == QueueStatus.Failed &&
                         q.HealthOperationId == null &&
                         q.RetryCount < maxAttempts &&
+                        (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
                         (q.NextAttempt == null || q.NextAttempt <= now))
             .ToListAsync(ct);
 

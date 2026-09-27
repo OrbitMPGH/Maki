@@ -54,6 +54,8 @@ import {
   IconDotsVertical,
   IconPhotoSearch,
   IconEyeOff,
+  IconLock,
+  IconLockOpen,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -99,7 +101,7 @@ import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from
 import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
-import { useUpgradeProfiles } from '../api/upgrades'
+import { useSetFileTrusted, useUpgradeProfiles } from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
 import { queueErrorMessage } from '../api/queue'
 import { useLabel } from '../i18n-context'
@@ -222,7 +224,8 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   specials: isSpecial,
   // A one-shot has no number and counts as main, matching NewChapterMonitorMode.MainOnly.
   main: (c) => !isSpecial(c),
-  cutoffUnmet: (c) => c.fileQuality?.cutoffMet === false,
+  // Matches `/upgrades/cutoff-unmet`, which excludes trusted files even when their cutoff isn't met.
+  cutoffUnmet: (c) => c.fileQuality?.cutoffMet === false && !c.fileQuality?.trusted,
 }
 
 interface ReadState {
@@ -398,6 +401,7 @@ export default function SeriesDetailPage() {
   const setMonitorMode = useSetMonitorMode()
   const setUpgradeProfile = useSetUpgradeProfile()
   const { data: upgradeProfiles } = useUpgradeProfiles()
+  const setFileTrusted = useSetFileTrusted()
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
   const setRating = useSetRating()
@@ -2529,7 +2533,7 @@ export default function SeriesDetailPage() {
                                               </ActionIcon>
                                             </Tooltip>
                                         )}
-                                        {canDownload && c.hasFile && c.number !== null && enabledMappings > 1 && (
+                                        {canDownload && c.hasFile && (
                                             <Menu shadow="md" position="bottom-end" withinPortal>
                                               <Menu.Target>
                                                 <ActionIcon
@@ -2541,19 +2545,40 @@ export default function SeriesDetailPage() {
                                                 </ActionIcon>
                                               </Menu.Target>
                                               <Menu.Dropdown>
-                                                <Menu.Item
-                                                    leftSection={<IconPhotoSearch size={14} />}
-                                                    onClick={() =>
-                                                        setPickChapter({
-                                                          id: c.id,
-                                                          number: c.number!,
-                                                          label: chapterLbl,
-                                                          currentSourceName: c.fileSourceName,
-                                                        })
-                                                    }
-                                                >
-                                                  <Trans>Find better copy</Trans>
-                                                </Menu.Item>
+                                                {c.number !== null && enabledMappings > 1 && (
+                                                    <Menu.Item
+                                                        leftSection={<IconPhotoSearch size={14} />}
+                                                        onClick={() =>
+                                                            setPickChapter({
+                                                              id: c.id,
+                                                              number: c.number!,
+                                                              label: chapterLbl,
+                                                              currentSourceName: c.fileSourceName,
+                                                            })
+                                                        }
+                                                    >
+                                                      <Trans>Find better copy</Trans>
+                                                    </Menu.Item>
+                                                )}
+                                                {c.fileQuality && (
+                                                    <Menu.Item
+                                                        leftSection={
+                                                          c.fileQuality.trusted
+                                                              ? <IconLockOpen size={14} />
+                                                              : <IconLock size={14} />
+                                                        }
+                                                        onClick={() =>
+                                                            setFileTrusted.mutate({
+                                                              fileId: c.fileQuality!.fileId,
+                                                              trusted: !c.fileQuality!.trusted,
+                                                            })
+                                                        }
+                                                    >
+                                                      {c.fileQuality.trusted
+                                                          ? <Trans>Allow upgrades</Trans>
+                                                          : <Trans>Protect from upgrades</Trans>}
+                                                    </Menu.Item>
+                                                )}
                                               </Menu.Dropdown>
                                             </Menu>
                                         )}

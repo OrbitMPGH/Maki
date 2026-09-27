@@ -1,4 +1,5 @@
 import { Badge, Stack, Text, Tooltip } from '@mantine/core'
+import { IconLock } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -48,16 +49,17 @@ export function FileQualityBadge({
   const { t } = useLingui()
   if (!quality || (quality.tier === 'unknown' && !quality.measured)) return null
 
-  const { tier, group, pageCount, medianWidth, imageFormat, measured, score, cutoffMet } = quality
+  const { tier, group, pageCount, medianWidth, imageFormat, measured, score, cutoffMet, trusted } = quality
   const tierLabel = renderLabel(TIER_LABEL[tier])
   const tierUnknown = tier === 'unknown'
   // Subtle by design: this badge is a quiet quality signal already, so the cutoff-unmet marker is a
   // small dot rather than a colour swap that would make it compete with the tier badge next to it.
   const cutoffUnmet = cutoffMet === false
   // Normally an unknown tier with no width renders nothing at all (see the doc comment above), but a
-  // cutoff-unmet file still has to show *something* — an Activity row naming a file that falls short
-  // of its profile can't have a blank "Current file" cell — so fall back to the bare tier label.
-  if (tierUnknown && medianWidth == null && !cutoffUnmet) return null
+  // cutoff-unmet or trusted file still has to show *something*: an Activity row naming a file that
+  // falls short of its profile, or a protected file with an unknown tier, can't have a blank cell,
+  // so fall back to the bare tier label.
+  if (tierUnknown && medianWidth == null && !cutoffUnmet && !trusted) return null
   const label = tierUnknown
     ? medianWidth != null
       ? t`${medianWidth}px`
@@ -93,6 +95,11 @@ export function FileQualityBadge({
               <Trans>Score: {score}</Trans>
             </Text>
           )}
+          {trusted && (
+            <Text size="xs">
+              <Trans>Protected from upgrades</Trans>
+            </Text>
+          )}
           {cutoffUnmet && (
             <Text size="xs" c="var(--warn)">
               <Trans>Below the series' upgrade cutoff</Trans>
@@ -111,7 +118,9 @@ export function FileQualityBadge({
         variant="light"
         color={TIER_COLOR[tier]}
         rightSection={
-          cutoffUnmet ? (
+          trusted ? (
+            <IconLock size={9} aria-hidden />
+          ) : cutoffUnmet ? (
             <span
               aria-hidden
               style={{

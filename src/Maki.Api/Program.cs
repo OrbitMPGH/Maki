@@ -790,6 +790,10 @@ try
     builder.Services.AddScoped<ChapterFileMeasureService>();
     builder.Services.AddScoped<UpgradeEvaluationService>();
     builder.Services.AddScoped<UpgradeProfileSeeder>();
+    builder.Services.AddSingleton<SourceProbeService>();
+    builder.Services.AddScoped<UpgradeScanService>();
+    builder.Services.AddScoped<UpgradeRevertService>();
+    builder.Services.AddScoped<UpgradeTrashService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -1127,6 +1131,19 @@ try
             .WithIdentity("chapter-file-measure-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+
+        // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
+        // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First
+        // poll at +25: a scan probes sources, some of which launch a browser, so it stays clear of
+        // the artifact builds and the +20 monitored sync.
+        q.AddJob<Maki.Api.Jobs.UpgradeScanJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.UpgradeScanJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.UpgradeScanJob.Key)
+            .WithIdentity("upgrade-scan-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
 
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
+import { ApiError } from '../api/client'
 import { useLabel, useLanguageChoice } from '../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -61,7 +62,14 @@ import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
 import { QualityFormatsSection, UpgradeProfilesSection } from '../components/settings/UpgradeProfilesSection'
-import { useUpgradeProfiles, useSaveUpgradeSettings, useUpgradeSettings } from '../api/upgrades'
+import {
+  isUpgradeScanStarted,
+  upgradeScanResultText,
+  useUpgradeProfiles,
+  useRunUpgradeScan,
+  useSaveUpgradeSettings,
+  useUpgradeSettings,
+} from '../api/upgrades'
 import { CONTENT_RATINGS, ContentRatingCards } from '../components/ContentRatingCards'
 import { useIncognitoOptions, type IncognitoMode } from '../components/ui/incognito'
 import { useApplyLanguage, useLanguageOptions } from '../components/ui/language'
@@ -1255,22 +1263,43 @@ function DownloadSection() {
 
 function UpgradesSettingsSection() {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data: settings } = useUpgradeSettings()
   const { data: profiles } = useUpgradeProfiles()
   const save = useSaveUpgradeSettings()
+  const scan = useRunUpgradeScan()
   const [enabled, setEnabled] = useState(false)
   const [defaultProfileId, setDefaultProfileId] = useState<number | null>(null)
+  const [scanHour, setScanHour] = useState<number | string>(4)
+  const [maxPerDay, setMaxPerDay] = useState<number | string>(25)
+  const [maxProbesPerRun, setMaxProbesPerRun] = useState<number | string>(50)
+  const [quietPeriodDays, setQuietPeriodDays] = useState<number | string>(7)
+  const [trashRetentionDays, setTrashRetentionDays] = useState<number | string>(14)
+  const [scanIncognito, setScanIncognito] = useState(true)
 
   useEffect(() => {
     if (settings) {
       setEnabled(settings.enabled)
       setDefaultProfileId(settings.defaultProfileId)
+      setScanHour(settings.scanHour)
+      setMaxPerDay(settings.maxPerDay)
+      setMaxProbesPerRun(settings.maxProbesPerRun)
+      setQuietPeriodDays(settings.quietPeriodDays)
+      setTrashRetentionDays(settings.trashRetentionDays)
+      setScanIncognito(settings.scanIncognito)
     }
   }, [settings])
 
   const dirty =
     settings !== undefined &&
-    (enabled !== settings.enabled || defaultProfileId !== settings.defaultProfileId)
+    (enabled !== settings.enabled ||
+      defaultProfileId !== settings.defaultProfileId ||
+      Number(scanHour) !== settings.scanHour ||
+      Number(maxPerDay) !== settings.maxPerDay ||
+      Number(maxProbesPerRun) !== settings.maxProbesPerRun ||
+      Number(quietPeriodDays) !== settings.quietPeriodDays ||
+      Number(trashRetentionDays) !== settings.trashRetentionDays ||
+      scanIncognito !== settings.scanIncognito)
 
   return (
     <Panel>
@@ -1280,13 +1309,13 @@ function UpgradesSettingsSection() {
       <SettingsHelp mb="md">
         <Trans>
           Whether an existing file should be replaced once a better release shows up, judged against
-          a series' quality profile. Automatic upgrades arrive in a later release; for now this only
-          decides which profile a series without one of its own uses.
+          a series' quality profile. The daily scan runs after the chosen hour and only replaces
+          files a profile actually marks as upgradable.
         </Trans>
       </SettingsHelp>
       <Switch
         label={t`Enabled`}
-        description={t`Stored for a later release: nothing downloads automatically yet.`}
+        description={t`Runs the daily scan and lets a series-level scan enqueue upgrades too.`}
         checked={enabled}
         onChange={(e) => setEnabled(e.currentTarget.checked)}
         mb="md"
@@ -1303,13 +1332,106 @@ function UpgradesSettingsSection() {
         w={260}
         mb="md"
       />
-      <Group justify="flex-end" mt="md">
+      <Group grow mb="md">
+        <NumberInput
+          label={t`Scan after hour`}
+          description={t`Local time, 0-23.`}
+          min={0}
+          max={23}
+          clampBehavior="strict"
+          value={scanHour}
+          onChange={setScanHour}
+        />
+        <NumberInput
+          label={t`Max upgrades per day`}
+          description={t`0 means no cap.`}
+          min={0}
+          max={1000}
+          clampBehavior="strict"
+          value={maxPerDay}
+          onChange={setMaxPerDay}
+        />
+      </Group>
+      <Group grow mb="md">
+        <NumberInput
+          label={t`Max probes per scan`}
+          min={1}
+          max={500}
+          clampBehavior="strict"
+          value={maxProbesPerRun}
+          onChange={setMaxProbesPerRun}
+        />
+        <NumberInput
+          label={t`Quiet period (days)`}
+          description={t`Skip a chapter this long after it was added or last upgraded.`}
+          min={0}
+          max={365}
+          clampBehavior="strict"
+          value={quietPeriodDays}
+          onChange={setQuietPeriodDays}
+        />
+      </Group>
+      <NumberInput
+        label={t`Trash retention (days)`}
+        description={t`Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass.`}
+        min={0}
+        max={365}
+        clampBehavior="strict"
+        value={trashRetentionDays}
+        onChange={setTrashRetentionDays}
+        w={260}
+        mb="md"
+      />
+      <Switch
+        label={t`Scan incognito series`}
+        description={t`Off skips any series set to Scrobble-only or Full incognito; on scans them too.`}
+        checked={scanIncognito}
+        onChange={(e) => setScanIncognito(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Group justify="space-between" mt="md">
+        <Button
+          variant="default"
+          loading={scan.isPending}
+          onClick={() =>
+            scan.mutate(undefined, {
+              onSuccess: (result) => {
+                notifications.show({
+                  message: isUpgradeScanStarted(result)
+                    ? now`Scan started`
+                    : upgradeScanResultText(renderLabel, result),
+                  color: 'var(--ok)',
+                })
+              },
+              onError: (error) => {
+                notifications.show({
+                  message:
+                    error instanceof ApiError && error.status === 409
+                      ? now`A scan is already running`
+                      : now`Couldn't start the scan`,
+                  color: 'var(--danger)',
+                })
+              },
+            })
+          }
+        >
+          <Trans>Scan now</Trans>
+        </Button>
         <SaveButton
           dirty={dirty}
           loading={save.isPending}
           onClick={() =>
             save.mutate(
-              { enabled, defaultProfileId },
+              {
+                enabled,
+                defaultProfileId,
+                scanHour: Number(scanHour),
+                maxPerDay: Number(maxPerDay),
+                maxProbesPerRun: Number(maxProbesPerRun),
+                quietPeriodDays: Number(quietPeriodDays),
+                trashRetentionDays: Number(trashRetentionDays),
+                scanIncognito,
+              },
               { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )
           }

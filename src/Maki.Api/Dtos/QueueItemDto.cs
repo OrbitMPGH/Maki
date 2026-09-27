@@ -48,9 +48,13 @@ public record QueueItemDto(
     IReadOnlyDictionary<string, JsonElement>? ErrorParams,
     string? ErrorMessage,
     DateTime QueuedAt,
-    DateTime? CompletedAt)
+    DateTime? CompletedAt,
+    string Origin,
+    UpgradeQueueInfoDto? Upgrade)
 {
-    public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName)
+    /// <param name="upgradeHistory">The applied upgrade's history state, when the caller looked it up.</param>
+    public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName,
+        UpgradeHistoryState? upgradeHistory = null)
     {
         // Invariant, as everywhere this app formats a chapter number: it is an identifier being put
         // on the wire, not a number being shown to anyone. A culture that writes "12,5" here would
@@ -78,7 +82,9 @@ public record QueueItemDto(
             ParseParams(item.ErrorParamsJson),
             item.ErrorMessage,
             item.QueuedAt,
-            item.CompletedAt);
+            item.CompletedAt,
+            item.Origin.ToString().ToLowerInvariant(),
+            item.Origin == DownloadOrigin.Upgrade ? UpgradeQueueInfoDto.From(item.UpgradeInfoJson, upgradeHistory) : null);
     }
 
     /// <summary>

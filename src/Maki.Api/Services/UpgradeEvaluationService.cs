@@ -47,6 +47,47 @@ public sealed class UpgradeEvaluator
             ? ChapterFileQualityDto.From(file, result.Score.Score, result.CutoffMet)
             : ChapterFileQualityDto.From(file);
 
+    public QualityScore Score(QualityCandidate candidate) =>
+        QualityScorer.Score(Profile, _formats, candidate, _regexes);
+
+    public QualityScore OptimisticScore(QualityCandidate listing) =>
+        QualityScorer.OptimisticScore(Profile, _formats, listing, _regexes);
+
+    public bool CouldUpgrade(QualityScore current, int? currentPageCount, bool trusted, QualityCandidate listing) =>
+        QualityScorer.CouldUpgrade(Profile, _formats, current, currentPageCount, trusted, listing, _regexes);
+
+    public QualityCandidate CandidateFor(ChapterFile file, string? language) => Candidate(file, language);
+
+    /// <summary>
+    /// A copy that is not a library file yet: listing data, a probe or a freshly packaged archive.
+    /// Unknown measurements stay null. <paramref name="fileName"/> is the name it would be stored under.
+    /// </summary>
+    public QualityCandidate CandidateFor(
+        string sourceName, string? group, string fileName, int? pageCount, int? medianWidth, string? imageFormat,
+        long? sizeBytes, string? language)
+    {
+        var kind = _quality.KindOf(sourceName);
+        return new QualityCandidate(
+            QualityTierResolver.Resolve(kind, null, fileName, isVolume: false),
+            sourceName, kind, group, fileName, pageCount, medianWidth, imageFormat, sizeBytes, language);
+    }
+
+    public static QualitySnapshot Snapshot(ChapterFile file, int score) => new()
+    {
+        Tier = QualitySnapshot.TierName(file.Tier),
+        SourceName = file.SourceName,
+        SourceChapterId = file.SourceChapterId,
+        Group = file.Group,
+        PageCount = file.PageCount,
+        MedianWidth = file.MedianWidth,
+        MedianHeight = file.MedianHeight,
+        ImageFormat = file.ImageFormat,
+        SizeBytes = file.Size,
+        Score = score,
+        ReleaseName = file.ReleaseName,
+        ReleaseHash = file.ReleaseHash
+    };
+
     private QualityCandidate Candidate(ChapterFile file, string? language) => new(
         file.Tier,
         file.SourceName,
@@ -168,7 +209,7 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
         var evaluators = profiles.Values.ToDictionary(p => p.Id, p => new UpgradeEvaluator(p, formats, quality, regexes));
 
         var query = db.Chapters.AsNoTracking()
-            .Where(c => c.ChapterFileId != null && c.ChapterFile!.MeasuredAtUtc != null);
+            .Where(c => c.ChapterFileId != null && c.ChapterFile!.MeasuredAtUtc != null && !c.ChapterFile.Trusted);
         if (seriesId is { } onlySeries)
         {
             query = query.Where(c => c.SeriesId == onlySeries);
@@ -204,7 +245,8 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
                     MedianWidth = c.ChapterFile.MedianWidth,
                     MedianHeight = c.ChapterFile.MedianHeight,
                     ImageFormat = c.ChapterFile.ImageFormat,
-                    MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc
+                    MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
+                    Trusted = c.ChapterFile.Trusted
                 }
             })
             .ToListAsync(ct);

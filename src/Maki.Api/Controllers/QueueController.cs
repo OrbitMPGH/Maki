@@ -6,6 +6,7 @@ using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -83,11 +84,19 @@ public class QueueController(
             .Take(pageSize)
             .ToListAsync(ct);
 
+        var historyIds = items
+            .Where(q => q.Origin == DownloadOrigin.Upgrade)
+            .Select(q => UpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryId)
+            .OfType<int>()
+            .ToList();
+        var upgrades = await UpgradeHistoryStates.LoadAsync(db, historyIds, ct);
+
         var dtos = items
             .Where(q => q.Series != null)
             .Select(q => QueueItemDto.FromEntity(
                 q, q.Chapter, q.Series!,
-                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?")))
+                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"),
+                UpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryId is { } historyId ? upgrades.GetValueOrDefault(historyId) : null))
             .ToList();
 
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));

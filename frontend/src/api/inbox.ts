@@ -24,6 +24,8 @@ export type InboxEventType =
   | 'backupFinished'
   | 'sourceMatchFinished'
   | 'importListFinished'
+  | 'chapterUpgraded'
+  | 'upgradeRestoreFailed'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -93,7 +95,11 @@ export const INBOX_CATEGORIES: {
     label: msg`Library`,
     types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished', 'importListFinished'],
   },
-  { id: 'downloads', label: msg`Downloads`, types: ['chapterDownloaded', 'downloadFailed'] },
+  {
+    id: 'downloads',
+    label: msg`Downloads`,
+    types: ['chapterDownloaded', 'downloadFailed', 'chapterUpgraded', 'upgradeRestoreFailed'],
+  },
   { id: 'progress', label: msg`Progress`, types: ['achievementUnlocked', 'levelUp'] },
   {
     id: 'requests',
@@ -129,6 +135,8 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   backupFinished: msg`Backup taken`,
   sourceMatchFinished: msg`Source matching finished`,
   importListFinished: msg`Import list finished`,
+  chapterUpgraded: msg`Chapter upgraded`,
+  upgradeRestoreFailed: msg`Upgrade restore failed`,
 }
 
 /**
@@ -138,6 +146,8 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
  */
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
   importListFinished: msg`A tracker list sync added or requested series.`,
+  chapterUpgraded: msg`A better release replaced a downloaded chapter's file.`,
+  upgradeRestoreFailed: msg`A file could not be put back after a failed upgrade and is waiting in the trash folder.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */
@@ -147,6 +157,7 @@ export const INBOX_ADMIN_ONLY: InboxEventType[] = [
   'updateAvailable',
   'importFinished',
   'backupFinished',
+  'upgradeRestoreFailed',
 ]
 
 export function useInbox(filter?: { unreadOnly?: boolean; type?: InboxEventType | null }) {

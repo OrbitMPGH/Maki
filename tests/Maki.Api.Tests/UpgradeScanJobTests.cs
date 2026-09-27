@@ -1,0 +1,76 @@
+using Maki.Api.Jobs;
+using Maki.Api.Services;
+using Maki.Core.Configuration;
+using Maki.Core.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Quartz;
+
+namespace Maki.Api.Tests;
+
+[Collection(ConfigDirCollection.Name)]
+public class UpgradeScanJobTests : IDisposable
+{
+    private readonly UpgradeWorld _world = new();
+
+    public UpgradeScanJobTests()
+    {
+        _world.Seed();
+        _world.Chapter(1);
+        _world.Settings.Set(SettingKeys.UpgradesScanHour, "0");
+    }
+
+    public void Dispose() => _world.Dispose();
+
+    private async Task RunJobAsync(bool force, Maki.Data.MakiDbContext? db = null)
+    {
+        using var own = _world.Db.NewContext();
+        using var batches = _world.Batches();
+        var job = new UpgradeScanJob(_world.Scanner(db ?? own, batches), _world.Settings, TimeProvider.System,
+            NullLogger<UpgradeScanJob>.Instance);
+        await job.Execute(new TestJobContext(force ? new JobDataMap { [UpgradeScanJob.ForceKey] = true } : null));
+    }
+
+    private int UpgradeRows()
+    {
+        using var db = _world.Db.NewContext();
+        return db.DownloadQueue.AsNoTracking().Count(q => q.Origin == DownloadOrigin.Upgrade);
+    }
+
+    [Fact]
+    public async Task The_scheduled_run_honours_the_global_switch()
+    {
+        await RunJobAsync(force: false);
+
+        Assert.Equal(0, UpgradeRows());
+        Assert.Null(await _world.Settings.GetAsync(SettingKeys.UpgradesLastScanDate));
+
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "true");
+        await RunJobAsync(force: false);
+
+        Assert.Equal(1, UpgradeRows());
+        Assert.NotNull(await _world.Settings.GetAsync(SettingKeys.UpgradesLastScanDate));
+    }
+
+    [Fact]
+    public async Task A_forced_run_scans_with_the_switch_off()
+    {
+        await RunJobAsync(force: true);
+
+        Assert.Equal(1, UpgradeRows());
+    }
+
+    [Fact]
+    public async Task A_crashed_scan_still_writes_the_marker()
+    {
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "true");
+        var broken = _world.Db.NewContext();
+        await broken.DisposeAsync();
+
+        await RunJobAsync(force: false, broken);
+
+        Assert.Equal(UpgradeOptions.MarkerDate(UpgradeOptions.LocalNow(TimeProvider.System)),
+            await _world.Settings.GetAsync(SettingKeys.UpgradesLastScanDate));
+        Assert.False(UpgradeScanService.IsRunning);
+    }
+}

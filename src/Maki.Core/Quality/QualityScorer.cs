@@ -144,6 +144,88 @@ public static class QualityScorer
         return candidateRank == currentRank && candidate.Score >= current.Score + profile.MinScoreDelta;
     }
 
+    /// <summary>
+    /// The highest score <paramref name="listing"/> could still reach once its unknown attributes are
+    /// measured: a positively scored format counts when every condition it can evaluate matches,
+    /// treating a condition on an unknown attribute as matched; a zero or negative one only counts
+    /// when it matches on what is already known.
+    /// </summary>
+    public static QualityScore OptimisticScore(
+        UpgradeProfile profile, IReadOnlyList<QualityFormat> formats, QualityCandidate listing, RegexCache regexes)
+    {
+        var matched = new List<int>();
+        var score = 0;
+        foreach (var format in formats)
+        {
+            var weight = profile.FormatScores.FirstOrDefault(s => s.FormatId == format.Id)?.Score ?? 0;
+            var hit = weight > 0 ? MatchesOptimistic(format, listing, regexes) : Matches(format, listing, regexes);
+            if (!hit)
+            {
+                continue;
+            }
+
+            matched.Add(format.Id);
+            score += weight;
+        }
+
+        return new QualityScore(listing.Tier, score, matched);
+    }
+
+    /// <summary>
+    /// <see cref="IsUpgrade"/> on listing data alone: the candidate's width is assumed known, its page
+    /// count equal to the current file's, and its score is <see cref="OptimisticScore"/>. False means
+    /// no measurement could make this candidate win, so it is not worth probing.
+    /// </summary>
+    public static bool CouldUpgrade(
+        UpgradeProfile profile, IReadOnlyList<QualityFormat> formats, QualityScore current, int? currentPageCount,
+        bool trusted, QualityCandidate listing, RegexCache? regexes = null) =>
+        IsUpgrade(profile, current, currentPageCount, trusted,
+            OptimisticScore(profile, formats, listing, regexes ?? new RegexCache()),
+            candidateWidth: listing.MedianWidth ?? 1, candidatePageCount: listing.PageCount ?? currentPageCount);
+
+    private static bool MatchesOptimistic(QualityFormat format, QualityCandidate candidate, RegexCache regexes)
+    {
+        if (format.Conditions.Count == 0)
+        {
+            return false;
+        }
+
+        var hasOptional = false;
+        var optionalMatched = false;
+        foreach (var condition in format.Conditions)
+        {
+            var hit = IsUnknown(condition.Type, candidate) || ConditionMatches(condition, candidate, regexes);
+            if (condition.Required)
+            {
+                if (!hit)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                hasOptional = true;
+                optionalMatched |= hit;
+            }
+        }
+
+        return !hasOptional || optionalMatched;
+    }
+
+    private static bool IsUnknown(FormatConditionType type, QualityCandidate c) => type switch
+    {
+        FormatConditionType.SourceIs => string.IsNullOrWhiteSpace(c.SourceName),
+        FormatConditionType.SourceKindIs => c.SourceKind is null,
+        FormatConditionType.GroupMatches => string.IsNullOrEmpty(c.Group),
+        FormatConditionType.ReleaseNameMatches => string.IsNullOrEmpty(c.ReleaseName),
+        FormatConditionType.MinWidth => c.MedianWidth is null,
+        FormatConditionType.ImageFormatIs => string.IsNullOrWhiteSpace(c.ImageFormat),
+        FormatConditionType.MinBytesPerPage => c.SizeBytes is null || c.PageCount is not > 0,
+        FormatConditionType.MinPages => c.PageCount is null,
+        FormatConditionType.LanguageIs => string.IsNullOrWhiteSpace(c.Language),
+        _ => false
+    };
+
     public static bool IsValidRegex(string pattern) => RegexCache.IsValid(pattern);
 
     /// <summary>A plain non-negative integer: no sign, no separators, no decimals.</summary>

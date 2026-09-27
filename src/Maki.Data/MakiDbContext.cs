@@ -87,6 +87,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
     public DbSet<UpgradeProfile> UpgradeProfiles => Set<UpgradeProfile>();
     public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
+    public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
+    public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
 
     public override int SaveChanges()
     {
@@ -474,6 +476,26 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.SourceMapping).WithMany().HasForeignKey(q => q.SourceMappingId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UpgradeAttempt>(e =>
+        {
+            e.HasQueryFilter(a => _scope.Unrestricted || Series.Any(s => s.Id == a.SeriesId));
+            e.HasIndex(a => new { a.ChapterId, a.SourceMappingId, a.SourceChapterId, a.ProfileId, a.ProfileVersion }).IsUnique();
+            e.HasIndex(a => a.SeriesId);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(a => a.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(a => a.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<SourceMapping>().WithMany().HasForeignKey(a => a.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UpgradeHistory>(e =>
+        {
+            e.HasQueryFilter(h => _scope.Unrestricted || Series.Any(s => s.Id == h.SeriesId));
+            e.HasIndex(h => new { h.SeriesId, h.CreatedAtUtc });
+            e.HasIndex(h => h.ChapterFileId);
+            e.HasOne<Series>().WithMany().HasForeignKey(h => h.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(h => h.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ChapterFile>().WithMany().HasForeignKey(h => h.ChapterFileId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AppConfigEntry>(e =>

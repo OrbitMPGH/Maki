@@ -86,7 +86,92 @@ public record CutoffUnmetPageDto(IReadOnlyList<CutoffUnmetRowDto> Rows, int Tota
 /// <param name="ProfilesConfigured">
 /// True when at least one series the caller can see resolves to a profile, its own or the default.
 /// </param>
-public record UpgradeSummaryDto(int CutoffUnmet, bool ProfilesConfigured);
+/// <param name="LastScanDate">Local date (yyyy-MM-dd) of the last daily scan, or null.</param>
+public record UpgradeSummaryDto(
+    int CutoffUnmet,
+    bool ProfilesConfigured,
+    long TrashBytes = 0,
+    int TrashFiles = 0,
+    string? LastScanDate = null,
+    bool ScanRunning = false);
+
+/// <param name="Tier">Lowercase <see cref="QualityTier"/> name.</param>
+public record QualitySnapshotDto(
+    string Tier,
+    string? SourceName,
+    string? Group,
+    int? PageCount,
+    int? MedianWidth,
+    int? MedianHeight,
+    string? ImageFormat,
+    long? SizeBytes,
+    int Score)
+{
+    public static QualitySnapshotDto From(QualitySnapshot s) => new(
+        QualityNames.TryParseTier(s.Tier, out var tier) ? QualityNames.Tier(tier) : "unknown",
+        s.SourceName, s.Group, s.PageCount, s.MedianWidth, s.MedianHeight, s.ImageFormat, s.SizeBytes, s.Score);
+}
+
+/// <summary>Where an applied upgrade's history row stands, for the queue's Revert button.</summary>
+public record UpgradeHistoryState(bool Reverted, bool TrashAvailable);
+
+/// <param name="Outcome">pending, applied or rejected.</param>
+/// <param name="Reason">A reason code when rejected, worded by the client.</param>
+/// <param name="Reverted">The applied upgrade has since been reverted.</param>
+/// <param name="TrashAvailable">The replaced copy is still in the trash, so a revert can happen.</param>
+public record UpgradeQueueInfoDto(
+    string Outcome,
+    string? Reason,
+    QualitySnapshotDto Before,
+    QualitySnapshotDto Predicted,
+    QualitySnapshotDto? After,
+    int? HistoryId,
+    bool Reverted,
+    bool TrashAvailable)
+{
+    public static UpgradeQueueInfoDto? From(string? json, UpgradeHistoryState? history = null) =>
+        UpgradeInfo.Parse(json) is { } info
+            ? new UpgradeQueueInfoDto(
+                info.Outcome,
+                info.Reason,
+                QualitySnapshotDto.From(info.Before),
+                QualitySnapshotDto.From(info.Predicted),
+                info.After is null ? null : QualitySnapshotDto.From(info.After),
+                info.HistoryId,
+                history?.Reverted ?? false,
+                history?.TrashAvailable ?? false)
+            : null;
+}
+
+/// <param name="TrashAvailable">The replaced copy is still on disk, so the upgrade can be reverted.</param>
+public record UpgradeHistoryRowDto(
+    int Id,
+    int SeriesId,
+    string SeriesTitle,
+    int ChapterId,
+    decimal? ChapterNumber,
+    string? ChapterTitle,
+    int FileId,
+    string FileName,
+    QualitySnapshotDto Before,
+    QualitySnapshotDto After,
+    string ProfileName,
+    long TrashBytes,
+    bool TrashAvailable,
+    DateTime CreatedAt,
+    DateTime? RevertedAt);
+
+public record UpgradeHistoryPageDto(IReadOnlyList<UpgradeHistoryRowDto> Rows, int Total, int Page, int PageSize);
+
+/// <param name="Skipped">Chapters and candidates passed over, keyed by reason code.</param>
+public record UpgradeScanResultDto(
+    int SeriesScanned, int ChaptersChecked, int CandidatesProbed, int Enqueued, IReadOnlyDictionary<string, int> Skipped);
+
+public record UpgradeScanRequest(int? SeriesId);
+
+public record SetTrustedRequest(bool Trusted);
+
+public record TrustedDto(bool Trusted);
 
 /// <summary>Wire spellings for the quality enums: tiers lowercase, condition types camelCase.</summary>
 public static class QualityNames

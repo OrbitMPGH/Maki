@@ -1,7 +1,22 @@
 import { msg } from '@lingui/core/macro'
 import { t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import type { QueueItemDto } from './types'
+import type { QueueItemDto, QueueOrigin } from './types'
+
+const QUEUE_ORIGINS: QueueOrigin[] = [
+  'unknown',
+  'manual',
+  'smartdownload',
+  'monitorrefresh',
+  'requestapproval',
+  'healthrepair',
+  'upgrade',
+]
+
+/** A newer server can send an origin this build has no case for; treat it as 'unknown' rather than crash. */
+export function queueOriginOrUnknown(value: string): QueueOrigin {
+  return (QUEUE_ORIGINS as string[]).includes(value) ? (value as QueueOrigin) : 'unknown'
+}
 
 /**
  * What a queue row says, worded here rather than by the server.
@@ -44,6 +59,8 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.noChapterToResolve': msg`This queue item has no chapter to find a source for`,
   'error.download.importRejected': msg`Import rejected, the library was left as it was`,
   'error.download.torrentMissing': msg`The torrent never appeared in qBittorrent`,
+  'error.download.upgradeTargetGone': msg`The file this upgrade was meant to replace is gone`,
+  'error.download.upgradeMoveFailed': msg`The old file could not be moved aside for the upgrade`,
 }
 
 /**

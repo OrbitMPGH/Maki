@@ -68,6 +68,7 @@ public class ChapterController(
                 // Only the quality columns; a new instance in a projection is never tracked.
                 File = c.ChapterFile == null ? null : new ChapterFile
                 {
+                    Id = c.ChapterFile.Id,
                     RelativePath = c.ChapterFile.RelativePath,
                     Size = c.ChapterFile.Size,
                     SourceName = c.ChapterFile.SourceName,
@@ -78,7 +79,8 @@ public class ChapterController(
                     MedianWidth = c.ChapterFile.MedianWidth,
                     MedianHeight = c.ChapterFile.MedianHeight,
                     ImageFormat = c.ChapterFile.ImageFormat,
-                    MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc
+                    MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
+                    Trusted = c.ChapterFile.Trusted
                 }
             })
             .ToListAsync(ct);
