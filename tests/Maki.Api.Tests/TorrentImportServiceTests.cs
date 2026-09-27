@@ -2,6 +2,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Import;
 using Maki.Core.Kavita;
 using Maki.Core.Reading;
 using Maki.Core.Sources;
@@ -440,6 +441,51 @@ public class TorrentImportServiceTests : IDisposable
         Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
             c => Assert.Equal(file.Id, c.ChapterFileId));
     }
+
+    /// <summary>
+    /// The extension lies. A release that is 7z data under a ".cbz" name used to be opened as a
+    /// zip, read as empty and dropped from the plan, or worse placed as-is into the library where
+    /// no reader could open it. The bytes decide: it is repacked into a real zip, and the original
+    /// in the download folder is untouched because the torrent is still seeding from it.
+    /// </summary>
+    [Fact]
+    public async Task A_7z_named_cbz_is_repacked_rather_than_placed()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        var disguised = Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbz");
+        File.WriteAllBytes(disguised, Convert.FromBase64String(SevenZipOfSixPages));
+        var originalBytes = File.ReadAllBytes(disguised);
+        Assert.Equal(ArchiveSignature.Container.Other, ArchiveSignature.Sniff(disguised));
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+        Assert.Null(plan.ErrorKey);
+        var planned = Assert.Single(plan.Files);
+        Assert.Equal(6, planned.NewChapters.Count);
+
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied, outcome.Error ?? outcome.ErrorKey);
+        var imported = Path.Combine(_root, "Berserk", "Berserk v01 (Digital) (1r0n).cbz");
+        Assert.Equal(ArchiveSignature.Container.Zip, ArchiveSignature.Sniff(imported));
+        Assert.Equal(6, CbzReader.PageNames(imported).Count);
+
+        // The seeding copy keeps its bytes and its name; the library got a new file, not a rewrite.
+        Assert.Equal(originalBytes, File.ReadAllBytes(disguised));
+        Assert.NotEqual(new FileInfo(disguised).Length, new FileInfo(imported).Length);
+
+        using var db = _db.NewContext();
+        var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Equal(file.Id, c.ChapterFileId));
+    }
+
+    /// <summary>
+    /// A stored 7z holding "Berserk - c001 - p001 [Oak].png" through c006, each four bytes of
+    /// "page". SharpCompress reads 7z but cannot write it, so the fixture is baked in.
+    /// </summary>
+    private const string SevenZipOfSixPages =
+        "N3q8ryccAATdwB8anwAAAAAAAAAiAAAAAAAAANc5VhFwYWdlcGFnZXBhZ2VwYWdlcGFnZXBhZ2UAAIEzB66tixMmvTI/mh5abFMQpAp7A6IluzdsN1W0E+1RSHewg6eY/TlNHh/rkz8Sk5MxEUFGXWNdHh7MSC0Xj2CIysesro/C7ufiWbC96LDnx6ZlHs6iKdqVWsjRb0gerTkZC+SMGqw90GRD8Qg7Z6xWgvuF4Nf48FS+jINYpVUEfg6iEQAXBhgBCYCHAAcLAQABIwMBAQVdABAAAAyCJgoBgLU2+wAA";
 
     /// <summary>A zip is already a CBZ container, so it goes in as it is under the right name.</summary>
     [Fact]
