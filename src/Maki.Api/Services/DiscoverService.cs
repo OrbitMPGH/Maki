@@ -495,8 +495,10 @@ public class DiscoverService(
             return await store.GetBrowseAsync(sqlFeed, limit, request.Genre, request.Filters, ct);
         }
 
+        // Each excluded id can remove at most one row, so this is enough to fill the page however
+        // many of the head rows the caller already owns. The scan costs the same at any LIMIT.
         var fetched = await store.GetBrowseAsync(
-            sqlFeed, limit + Math.Min(exclude.Count, 600), request.Genre, request.Filters, ct);
+            sqlFeed, limit + exclude.Count, request.Genre, request.Filters, ct);
         return fetched
             .Where(r => !long.TryParse(r.ProviderId, out var id) || !exclude.Contains(id))
             .Take(limit)

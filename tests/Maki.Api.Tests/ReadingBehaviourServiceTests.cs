@@ -286,4 +286,32 @@ public class ReadingBehaviourServiceTests : IDisposable
         Assert.Equal(4, (await service.GetAsync(other, allRootFolders: false, refresh: false)).ChaptersRead);
         Assert.Equal(8, (await service.GetAsync(other, allRootFolders: true, refresh: false)).ChaptersRead);
     }
+
+    [Fact]
+    public async Task Revoked_folder_grant_is_not_served_from_the_cache()
+    {
+        var other = _db.SeedUser("other", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        var granted = SeedSeries("Granted");
+        using (var db = _db.NewContext())
+        {
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder
+            {
+                UserId = other, RootFolderId = db.Series.Single(s => s.Id == granted).RootFolderId
+            });
+            db.SaveChanges();
+        }
+
+        Seed(granted, downloaded: 4, read: 4, userId: other);
+
+        var service = Service();
+        Assert.Equal(4, (await service.GetAsync(other, allRootFolders: false, refresh: false)).ChaptersRead);
+
+        using (var db = _db.NewContext())
+        {
+            db.UserRootFolders.RemoveRange(db.UserRootFolders.Where(g => g.UserId == other));
+            db.SaveChanges();
+        }
+
+        Assert.Equal(0, (await service.GetAsync(other, allRootFolders: false, refresh: false)).ChaptersRead);
+    }
 }

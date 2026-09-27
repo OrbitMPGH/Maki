@@ -307,14 +307,17 @@ public sealed class StatsInsightsServiceTests : IDisposable
             s.Genres = ["Horror"];
         });
         var open = _db.SeedSeries("Open", configure: s => s.Genres = ["Comedy"]);
+        _db.SeedSeries("Shelf", configure: s => s.Genres = ["Drama"]);
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 5, secret);
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 5, open);
 
         var dto = await Service().GetAsync(Owner, YearStart, YearEnd, 0, CancellationToken.None);
 
         Assert.Equal(5, dto.Taste.Types.Sum(t => t.Count));
-        Assert.Equal(1.0, dto.Taste.Lean.Single(l => l.Name == "Comedy").ReadShare, 5);
-        Assert.Equal(0.0, dto.Taste.Lean.Single(l => l.Name == "Horror").ReadShare, 5);
+        var comedy = dto.Taste.Lean.Single(l => l.Name == "Comedy");
+        Assert.Equal(1.0, comedy.ReadShare, 5);
+        Assert.Equal(0.5, comedy.LibraryShare, 5);
+        Assert.DoesNotContain(dto.Taste.Lean, l => l.Name == "Horror");
     }
 
     [Fact]

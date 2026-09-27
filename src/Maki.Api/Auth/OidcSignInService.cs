@@ -209,6 +209,9 @@ public class OidcSignInService(
         MakiUser user, string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
     {
         var changed = false;
+        using var adminLock = options.MapsPermissions && user.Permissions.Grants(MakiPermission.Admin)
+            ? await AdminGuard.LockAsync(ct)
+            : null;
 
         if (options.MapsPermissions)
         {

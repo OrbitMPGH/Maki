@@ -106,6 +106,7 @@ public class UsersController(
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveUserRequest request, CancellationToken ct)
     {
+        using var adminLock = await AdminGuard.LockAsync(ct);
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
         if (user is null)
         {
@@ -217,6 +218,7 @@ public class UsersController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
+        using var adminLock = await AdminGuard.LockAsync(ct);
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
         if (user is null)
         {

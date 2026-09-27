@@ -3500,13 +3500,41 @@ export function useImportLists() {
   })
 }
 
+/**
+ * Each save sends the whole record, so two quick edits built from the same fetched prefs would
+ * undo each other. The patch goes into the cache straight away, saves run one at a time, and each
+ * one sends the cached record, which by then holds every edit made so far.
+ */
 export function useSaveImportListPrefs() {
   const queryClient = useQueryClient()
+  const key = ['importlists']
+  const mutationKey = ['importlists', 'prefs']
   return useMutation({
-    mutationFn: (value: ImportListTrackerPrefs & { service: string }) =>
-      api<void>('/importlists/prefs', { method: 'PUT', body: JSON.stringify(value) }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
+    mutationKey,
+    scope: { id: 'importlists-prefs' },
+    mutationFn: ({ service, patch }: { service: string; patch: Partial<ImportListTrackerPrefs> }) => {
+      const current = queryClient
+        .getQueryData<ImportListsStatusDto>(key)
+        ?.trackers.find((t) => t.service === service)?.prefs
+      return api<void>('/importlists/prefs', {
+        method: 'PUT',
+        body: JSON.stringify({ service, ...current, ...patch }),
+      })
+    },
+    onMutate: async ({ service, patch }) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      queryClient.setQueryData<ImportListsStatusDto>(key, (data) =>
+        data && {
+          ...data,
+          trackers: data.trackers.map((t) => (t.service === service ? { ...t, prefs: { ...t.prefs, ...patch } } : t)),
+        },
+      )
+    },
+    onSettled: () => {
+      // Refetching while a later save is still queued would put the server's older copy back.
+      if (queryClient.isMutating({ mutationKey }) === 1) {
+        void queryClient.invalidateQueries({ queryKey: key })
+      }
     },
   })
 }

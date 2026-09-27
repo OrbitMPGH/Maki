@@ -142,6 +142,11 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
         {
             return [];
         }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The client's own timeout, not the caller cancelling: this locale is slow, the rest stand.
+            return [];
+        }
 
         var doc = await Parser.ParseDocumentAsync(html, ct);
 

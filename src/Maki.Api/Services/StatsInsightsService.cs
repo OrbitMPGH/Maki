@@ -267,7 +267,10 @@ public class StatsInsightsService(
             }
         }
 
-        var libraryGenres = await db.Series.AsNoTracking().Select(s => s.Genres).ToListAsync(ct);
+        var libraryGenres = await db.Series.AsNoTracking()
+            .Where(s => s.Incognito != IncognitoMode.Full)
+            .Select(s => s.Genres)
+            .ToListAsync(ct);
 
         return Taste(weighted, libraryGenres);
     }

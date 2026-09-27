@@ -1221,9 +1221,29 @@ public class SeriesController(
                 }
             }
         }
-        else if (!folders.Any(f => Directory.Exists(Path.Combine(destination.Path, f))))
+        else
         {
-            return this.Fail(localizer, "error.series.filesNotMoved", new { folder = newFolder });
+            if (!folders.Any(f => Directory.Exists(Path.Combine(destination.Path, f))))
+            {
+                return this.Fail(localizer, "error.series.filesNotMoved", new { folder = newFolder });
+            }
+
+            // A series can span several folders. Repointing it while one is still under the old root
+            // strands those chapters, so every tracked file still sitting there must also be present
+            // at the destination. A file missing from both was already gone and does not block.
+            var trackedPaths = await db.ChapterFiles.Where(f => f.SeriesId == id)
+                .Select(f => f.RelativePath).ToListAsync(ct);
+            foreach (var path in trackedPaths)
+            {
+                var key = LibraryPaths.ComparisonKey(path);
+                if (LibraryPaths.Resolve(series.RootFolder.Path, key) is { } from && System.IO.File.Exists(from)
+                    && LibraryPaths.Resolve(destination.Path, key) is var to
+                    && (to is null || !System.IO.File.Exists(to)))
+                {
+                    return this.Fail(localizer, "error.series.filesNotMoved",
+                        new { folder = to ?? Path.Combine(destination.Path, key) });
+                }
+            }
         }
 
         var oldRootFolderPath = series.RootFolder.Path;
