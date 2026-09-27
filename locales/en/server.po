@@ -360,7 +360,7 @@ msgstr "You can keep at most {max} rails"
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr "'{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch."
+msgstr "\"{title}\" is already in the library with downloaded files. Delete it first if you want to re-import from scratch."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.folderGone"
@@ -377,7 +377,7 @@ msgstr "No items to import"
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.renameTargetExists"
-msgstr "Cannot rename: '{name}' already exists in the root folder"
+msgstr "Cannot rename: \"{name}\" already exists in the root folder"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1234,7 +1234,7 @@ msgstr "Backup is missing maki.db. This is not a Maki backup."
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupTooNew"
-msgstr "Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it."
+msgstr "Backup is from a newer version (migration \"{migration}\" unknown to this build). Upgrade Maki before restoring it."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.noFileUploaded"

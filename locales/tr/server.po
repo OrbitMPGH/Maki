@@ -509,10 +509,10 @@ msgstr "En fazla {max} bölümünüz olabilir"
 
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
+#. English: "{title}" is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr "'{title}' indirilmiş dosyalarıyla birlikte zaten kitaplıkta. Baştan içe aktarmak istiyorsan önce sil."
+msgstr "\"{title}\" indirilmiş dosyalarıyla birlikte zaten kitaplıkta. Baştan içe aktarmak istiyorsan önce sil."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -534,10 +534,10 @@ msgstr "İçe aktarılacak öğe yok"
 
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: Cannot rename: '{name}' already exists in the root folder
+#. English: Cannot rename: "{name}" already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr "Yeniden adlandırılamıyor: '{name}' kök klasörde zaten var"
+msgstr "Yeniden adlandırılamıyor: \"{name}\" kök klasörde zaten var"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1775,10 +1775,10 @@ msgstr "Yedekte maki.db yok. Bu bir Maki yedeği değil."
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
-#. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
+#. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr "Yedek daha yeni bir sürümden alınmış (bu derlemede '{migration}' geçişi bilinmiyor). Geri yüklemeden önce Maki'yi güncelle."
+msgstr "Yedek daha yeni bir sürümden alınmış (bu derlemede \"{migration}\" geçişi bilinmiyor). Geri yüklemeden önce Maki'yi güncelle."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

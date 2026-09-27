@@ -509,10 +509,10 @@ msgstr "섹션은 최대 {max}개까지 저장할 수 있습니다"
 
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
+#. English: "{title}" is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr "'{title}'은(는) 다운로드한 파일이 있는 상태로 이미 라이브러리에 있습니다. 처음부터 다시 가져오려면 먼저 삭제하세요."
+msgstr "\"{title}\"은(는) 다운로드한 파일이 있는 상태로 이미 라이브러리에 있습니다. 처음부터 다시 가져오려면 먼저 삭제하세요."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -534,10 +534,10 @@ msgstr "가져올 항목이 없습니다"
 
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: Cannot rename: '{name}' already exists in the root folder
+#. English: Cannot rename: "{name}" already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr "이름을 바꿀 수 없습니다. 루트 폴더에 '{name}'이(가) 이미 있습니다"
+msgstr "이름을 바꿀 수 없습니다. 루트 폴더에 \"{name}\"이(가) 이미 있습니다"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1775,10 +1775,10 @@ msgstr "백업에 maki.db가 없습니다. Maki 백업이 아닙니다."
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
-#. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
+#. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr "백업이 더 최신 버전에서 만들어졌습니다(이 빌드에서 마이그레이션 '{migration}'을 알 수 없음). 백업을 복원하기 전에 Maki를 업그레이드하세요."
+msgstr "백업이 더 최신 버전에서 만들어졌습니다(이 빌드에서 마이그레이션 \"{migration}\"을 알 수 없음). 백업을 복원하기 전에 Maki를 업그레이드하세요."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

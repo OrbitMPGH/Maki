@@ -509,10 +509,10 @@ msgstr "Puedes guardar como máximo {max} filas"
 
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
+#. English: "{title}" is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr "'{title}' ya está en la biblioteca y tiene archivos descargados. Elimínala primero si quieres volver a importarla desde cero."
+msgstr "\"{title}\" ya está en la biblioteca y tiene archivos descargados. Elimínala primero si quieres volver a importarla desde cero."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -534,10 +534,10 @@ msgstr "No hay elementos que importar"
 
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: Cannot rename: '{name}' already exists in the root folder
+#. English: Cannot rename: "{name}" already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr "No se puede cambiar el nombre: '{name}' ya existe en la carpeta raíz"
+msgstr "No se puede cambiar el nombre: \"{name}\" ya existe en la carpeta raíz"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1775,10 +1775,10 @@ msgstr "Falta maki.db en la copia de seguridad. No es una copia de Maki."
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
-#. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
+#. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr "La copia de seguridad procede de una versión más reciente (esta compilación no conoce la migración '{migration}'). Actualiza Maki antes de restaurarla."
+msgstr "La copia de seguridad procede de una versión más reciente (esta compilación no conoce la migración \"{migration}\"). Actualiza Maki antes de restaurarla."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

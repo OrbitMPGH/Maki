@@ -509,10 +509,10 @@ msgstr "最多只能保留 {max} 个推荐栏"
 
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
+#. English: "{title}" is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr "'{title}' 已在资料库中，并且已有下载的文件。若要从头重新导入，请先将其删除。"
+msgstr "\"{title}\" 已在资料库中，并且已有下载的文件。若要从头重新导入，请先将其删除。"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -534,10 +534,10 @@ msgstr "没有要导入的项目"
 
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: Cannot rename: '{name}' already exists in the root folder
+#. English: Cannot rename: "{name}" already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr "无法重命名：'{name}' 已存在于根文件夹中"
+msgstr "无法重命名：\"{name}\" 已存在于根文件夹中"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1775,10 +1775,10 @@ msgstr "备份缺少 maki.db，不是有效的 Maki 备份。"
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
-#. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
+#. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr "备份来自较新版本（此构建版本无法识别迁移 '{migration}'）。请升级 Maki 后再恢复。"
+msgstr "备份来自较新版本（此构建版本无法识别迁移 \"{migration}\"）。请升级 Maki 后再恢复。"
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.

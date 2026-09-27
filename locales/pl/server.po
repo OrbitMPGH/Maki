@@ -509,10 +509,10 @@ msgstr "Możesz mieć maksymalnie {max} sekcji."
 
 #. {title} is the metadata provider's title for the series, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: '{title}' is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
+#. English: "{title}" is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
 #, fuzzy
 msgid "error.libraryImport.alreadyInLibrary"
-msgstr "Seria '{title}' jest już w bibliotece i ma pobrane pliki. Usuń ją, jeśli chcesz zaimportować ją od początku."
+msgstr "Seria „{title}” jest już w bibliotece i ma pobrane pliki. Usuń ją, jeśli chcesz zaimportować ją od początku."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
@@ -534,10 +534,10 @@ msgstr "Brak elementów do zaimportowania"
 
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
-#. English: Cannot rename: '{name}' already exists in the root folder
+#. English: Cannot rename: "{name}" already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
-msgstr "Nie można zmienić nazwy: '{name}' już istnieje w folderze głównym."
+msgstr "Nie można zmienić nazwy: „{name}” już istnieje w folderze głównym."
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1775,10 +1775,10 @@ msgstr "W kopii zapasowej brakuje pliku maki.db. To nie jest kopia zapasowa Maki
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
-#. English: Backup is from a newer version (migration '{migration}' unknown to this build). Upgrade Maki before restoring it.
+#. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
 #, fuzzy
 msgid "error.system.backupTooNew"
-msgstr "Kopia zapasowa pochodzi z nowszej wersji (migracja '{migration}' nie jest znana tej kompilacji). Zaktualizuj Maki przed jej przywróceniem."
+msgstr "Kopia zapasowa pochodzi z nowszej wersji (migracja „{migration}” nie jest znana tej kompilacji). Zaktualizuj Maki przed jej przywróceniem."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
