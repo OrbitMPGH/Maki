@@ -262,6 +262,68 @@ public class AnimeResumeResolverTests
     }
 
     [Fact]
+    public void Watched_recap_film_does_not_stand_in_for_an_unwatched_content_film()
+    {
+        var result = AnimeResumeResolver.Resolve(
+        [
+            Row("Show", AnimeWatchStatus.Completed, start: "2019-04-06", end: "2019-09-28"),
+            Row("Show Recap Movie", AnimeWatchStatus.Completed, format: "MOVIE", start: "2020-02-01", episodes: 1),
+            Row("Show the Movie", AnimeWatchStatus.Planning, format: "MOVIE", start: "2020-10-16", episodes: 1),
+            Row("Show Season 2", AnimeWatchStatus.Planning, start: "2021-12-05"),
+        ], SeasonFilmSeason, null);
+
+        Assert.Equal(53m, result?.CoveredTo);
+        Assert.Equal("S1", result?.CoveredLabel);
+    }
+
+    private static readonly AnimeSpan[] SeasonTwoFilmsSeason =
+        [Season("S1", 1, 53), Film("Movie", 54, 66), Film("OVA", 67, 72), Season("S2", 73, 100)];
+
+    [Fact]
+    public void One_watched_film_with_two_film_spans_in_the_window_does_not_extend()
+    {
+        var result = AnimeResumeResolver.Resolve(
+        [
+            Row("Show", AnimeWatchStatus.Completed, start: "2019-04-06", end: "2019-09-28"),
+            Row("Show OVA", AnimeWatchStatus.Completed, format: "OVA", start: "2020-06-01", episodes: 2),
+            Row("Show Season 2", AnimeWatchStatus.Planning, start: "2021-12-05"),
+        ], SeasonTwoFilmsSeason, null);
+
+        Assert.Equal(53m, result?.CoveredTo);
+    }
+
+    [Fact]
+    public void Two_watched_films_do_not_chain_through_two_film_spans()
+    {
+        var result = AnimeResumeResolver.Resolve(
+        [
+            Row("Show", AnimeWatchStatus.Completed, start: "2019-04-06", end: "2019-09-28"),
+            Row("Show Recap Movie", AnimeWatchStatus.Completed, format: "MOVIE", start: "2020-02-01", episodes: 1),
+            Row("Show OVA", AnimeWatchStatus.Completed, format: "OVA", start: "2020-06-01", episodes: 2),
+            Row("Show Season 2", AnimeWatchStatus.Planning, start: "2021-12-05"),
+        ], SeasonTwoFilmsSeason, null);
+
+        Assert.Equal(53m, result?.CoveredTo);
+    }
+
+    [Fact]
+    public void Recap_film_span_behind_the_frontier_does_not_block_the_content_film()
+    {
+        AnimeSpan[] spans =
+            [Season("S1", 1, 53), Film("Recap Film", 1, 53), Film("Mugen Train Movie", 54, 66), Season("S2", 67, 97)];
+
+        var result = AnimeResumeResolver.Resolve(
+        [
+            Row("Show", AnimeWatchStatus.Completed, start: "2019-04-06", end: "2019-09-28"),
+            Row("Show the Movie", AnimeWatchStatus.Completed, format: "MOVIE", start: "2020-10-16", episodes: 1),
+            Row("Show Season 2", AnimeWatchStatus.Planning, start: "2021-12-05"),
+        ], spans, null);
+
+        Assert.Equal(66m, result?.CoveredTo);
+        Assert.Equal("Mugen Train Movie", result?.CoveredLabel);
+    }
+
+    [Fact]
     public void Film_that_aired_after_the_next_season_does_not_extend()
     {
         var result = AnimeResumeResolver.Resolve(

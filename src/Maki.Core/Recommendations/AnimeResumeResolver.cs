@@ -85,7 +85,7 @@ public static class AnimeResumeResolver
 
         var lastFinished = groups[backing - 1].Last;
         var nextTv = backing < groups.Count ? groups[backing].Parts[0] : null;
-        frontier = ExtendWithFilms(frontier, spans, seasons, lastFinished, nextTv);
+        frontier = ExtendWithFilms(frontier, spans, seasons, lastFinished, nextTv, next?.From);
 
         if (lastKnownChapter is { } known && frontier.CoveredTo > known) return null;
 
@@ -217,41 +217,43 @@ public static class AnimeResumeResolver
 
     /// <summary>
     /// A film that picks up right where the TV run stopped (Mugen Train after Demon Slayer S1) moves
-    /// the frontier, but only when the reader finished a movie or OVA that aired between the last
-    /// TV entry they finished and the next one.
+    /// the frontier, but only when it is the one film span between here and the next season and the
+    /// reader finished every movie or OVA they listed as airing between the last TV entry they
+    /// finished and the next one. MangaBaka's spans carry no anime id, so a watched recap film cannot
+    /// be told apart from the content film by anything else: two candidate spans, or an unfinished
+    /// film in that date window, leave the frontier where it is.
     /// </summary>
     private static Frontier ExtendWithFilms(
         Frontier frontier,
         IReadOnlyList<AnimeSpan> spans,
         IReadOnlyList<AnimeWatchedSeason> seasons,
         AnimeWatchedSeason lastFinished,
-        AnimeWatchedSeason? nextTv)
+        AnimeWatchedSeason? nextTv,
+        decimal? nextSeasonFrom)
     {
         if (lastFinished.StartDate is not { } after) return frontier;
 
-        var films = SpansOfKind(spans, AnimeSpanKind.Film);
-        var watched = seasons
-            .Where(s => IsWatchedFilm(s, after, nextTv?.StartDate))
-            .OrderBy(s => s.StartDate)
+        var candidates = SpansOfKind(spans, AnimeSpanKind.Film)
+            .Where(f => (f.OpenEnded || f.To is null || f.To > frontier.CoveredTo)
+                && (nextSeasonFrom is null || f.From < nextSeasonFrom))
             .ToList();
+        if (candidates.Count != 1) return frontier;
 
-        while (watched.Count > 0)
+        var film = candidates[0];
+        if (film.OpenEnded || film.To is null
+            || film.From < frontier.CoveredTo || film.From > frontier.CoveredTo + 1)
         {
-            var film = films.FirstOrDefault(f =>
-                !f.OpenEnded && f.To > frontier.CoveredTo
-                && f.From >= frontier.CoveredTo && f.From <= frontier.CoveredTo + 1);
-            if (film is null) break;
-
-            watched.RemoveAt(0);
-            films.Remove(film);
-            frontier = new Frontier(film.To!.Value, film.Label);
+            return frontier;
         }
-        return frontier;
+
+        var listed = seasons.Where(s => IsFilmInWindow(s, after, nextTv?.StartDate)).ToList();
+        if (listed.Count == 0 || listed.Any(s => s.Status != AnimeWatchStatus.Completed)) return frontier;
+
+        return new Frontier(film.To.Value, film.Label);
     }
 
-    private static bool IsWatchedFilm(AnimeWatchedSeason row, DateOnly after, DateOnly? before) =>
-        row.Status == AnimeWatchStatus.Completed
-        && row.Format is not null && FilmFormats.Contains(row.Format)
+    private static bool IsFilmInWindow(AnimeWatchedSeason row, DateOnly after, DateOnly? before) =>
+        row.Format is not null && FilmFormats.Contains(row.Format)
         && row.StartDate is { } start
         && start > after
         && (before is null || start < before);
