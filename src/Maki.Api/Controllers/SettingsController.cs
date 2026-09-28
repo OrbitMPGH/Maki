@@ -1327,13 +1327,12 @@ public class SettingsController(
         var snap = embeddingStatus.Snapshot();
         var dumpPresent = (await mangaBakaDump.GetStatusAsync(ct)).Present;
 
-        // The recommendable total needs a full-table count; compute it once when idle and
-        // cache it on the status object so status polls stay cheap.
+        // The recommendable total needs a full-table count over the dump. It fills in on the status
+        // object in the background so this response never waits on it.
         var total = snap.RecommendableTotal;
         if (total is null && !snap.Running && dumpPresent)
         {
-            total = await embeddingIndexer.CountRecommendableAsync(ct);
-            embeddingStatus.SetTotal(total.Value);
+            embeddingIndexer.WarmRecommendableTotal();
         }
 
         var prebuiltEnabled = await prebuiltIndex.IsEnabledAsync(ct);

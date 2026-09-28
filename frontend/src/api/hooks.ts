@@ -1431,9 +1431,14 @@ export function useRecommendationIndex() {
   return useQuery({
     queryKey: ['recommendation-index'],
     queryFn: () => api<RecommendationIndexStatus>('/settings/recommendations'),
-    // Poll quickly while an index pass or a live model switch is running; back off when idle.
-    refetchInterval: (query) =>
-      query.state.data?.running || query.state.data?.modelSwitching ? 2000 : false,
+    // Poll quickly while an index pass or a live model switch is running, or while the server is
+    // still counting the catalogue in the background; back off when idle.
+    refetchInterval: (query) => {
+      const d = query.state.data
+      if (!d) return false
+      const counting = d.recommendableTotal === null && d.dumpPresent && d.embeddingModel !== 'off'
+      return d.running || d.modelSwitching || counting ? 2000 : false
+    },
   })
 }
 
