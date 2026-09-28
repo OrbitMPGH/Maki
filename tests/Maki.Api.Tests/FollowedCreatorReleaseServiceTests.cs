@@ -90,23 +90,31 @@ public sealed class FollowedCreatorReleaseServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_failed_notification_write_leaves_the_watermark_for_the_next_pass()
+    public async Task A_transient_notification_write_failure_is_retried_once()
     {
         var reader = Follower("reader", follows: [new CatalogueCredit("Junji Ito")]);
         await RunAsync();
 
         _dump.AddSeries(10, "Dark Colors", year: ThisYear, authorsJson: """["Junji Ito"]""");
-        _inbox.FailDurableRaises = true;
-        await RunAsync();
-
-        Assert.Empty(_inbox.Raised);
-        Assert.Equal("2", await _settings.GetAsync(SettingKeys.DiscoverFollowingWatermark));
-
-        _inbox.FailDurableRaises = false;
+        _inbox.DurableRaiseFailures = 1;
         await RunAsync();
 
         var (_, _, audience) = Assert.Single(_inbox.Raised);
         Assert.Equal(InboxAudience.User(reader), audience);
+        Assert.Equal("10", await _settings.GetAsync(SettingKeys.DiscoverFollowingWatermark));
+    }
+
+    [Fact]
+    public async Task A_notification_write_that_keeps_failing_does_not_hold_back_the_watermark()
+    {
+        Follower("reader", follows: [new CatalogueCredit("Junji Ito")]);
+        await RunAsync();
+
+        _dump.AddSeries(10, "Dark Colors", year: ThisYear, authorsJson: """["Junji Ito"]""");
+        _inbox.DurableRaiseFailures = int.MaxValue;
+        await RunAsync();
+
+        Assert.Empty(_inbox.Raised);
         Assert.Equal("10", await _settings.GetAsync(SettingKeys.DiscoverFollowingWatermark));
     }
 

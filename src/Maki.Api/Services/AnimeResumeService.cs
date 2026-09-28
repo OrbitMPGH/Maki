@@ -307,7 +307,7 @@ public class AnimeResumeService(
             var library = Library(coveredTo, chapters!, await CompletedAsync([series!.Id], ct));
             var ids = library.UnmarkedIds.Take(ReaderController.MaxBulkChapters).ToList();
             updated = await reader.MarkWatchedAsync(ids, ct);
-            nothingToTick = !chapters!.Any(c => c.Number <= coveredTo);
+            nothingToTick = chapters!.Count == 0;
         }
 
         await progress.ImportSilentAsync(UserId, series!.Id, kavitaSeriesId: null, series.Title,
@@ -319,12 +319,21 @@ public class AnimeResumeService(
             // Source matching can save the first chapters between the read above and the marker
             // landing, after which nothing would ever apply it.
             var latest = await ChaptersAsync([series.Id], ct);
-            if (latest.Any(c => c.Number <= coveredTo))
+            if (latest.Count > 0)
             {
                 chapters = latest;
                 var late = Library(coveredTo, latest, await CompletedAsync([series.Id], ct));
-                updated = await reader.MarkWatchedAsync(
-                    late.UnmarkedIds.Take(ReaderController.MaxBulkChapters).ToList(), ct);
+                try
+                {
+                    updated = await reader.MarkWatchedAsync(
+                        late.UnmarkedIds.Take(ReaderController.MaxBulkChapters).ToList(), ct);
+                }
+                catch (DbUpdateException)
+                {
+                    // The pending applier ticked the same chapters first and won the unique index.
+                    db.ChangeTracker.Clear();
+                }
+
                 await SetPendingAsync(series.Id, null, ct);
             }
         }

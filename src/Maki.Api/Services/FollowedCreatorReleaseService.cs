@@ -108,7 +108,6 @@ public class FollowedCreatorReleaseService(
             var byCeiling = new Dictionary<string, Dictionary<long, MangaBakaRecommendation>>(StringComparer.Ordinal);
             var releasedIds = perUser.SelectMany(u => u.Releases).Select(r => r.MangaBakaId).Distinct().ToList();
             var thisYear = time.GetUtcNow().Year;
-            var failedFor = new List<int>();
 
             foreach (var (userId, ceiling, releases) in perUser)
             {
@@ -131,22 +130,7 @@ public class FollowedCreatorReleaseService(
                     .Where(x => hidden.MatchesNames(x.Item!.MatchedGenres, []))
                     .ToList();
 
-                try
-                {
-                    await NotifyAsync(userId, wanted.Select(x => (x.Release, x.Item!)).ToList(), ct);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    failedFor.Add(userId);
-                    logger.LogWarning(ex, "Could not save follow notifications for user {UserId}", userId);
-                }
-            }
-
-            // Left where it was so the next run tries the same window again. A reader who already
-            // got theirs can hear about a title twice, which beats never hearing about it.
-            if (failedFor.Count > 0)
-            {
-                return;
+                await TryNotifyAsync(userId, wanted.Select(x => (x.Release, x.Item!)).ToList(), ct);
             }
         }
 
@@ -182,6 +166,32 @@ public class FollowedCreatorReleaseService(
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// One retry for a transient write failure, then the reader is skipped. The watermark moves
+    /// regardless: holding it back for a reader whose write can never succeed (deleted mid-run, say)
+    /// would re-notify everyone else on every later run.
+    /// </summary>
+    private async Task TryNotifyAsync(
+        int userId, IReadOnlyList<(FollowedRelease Release, MangaBakaRecommendation Item)> releases, CancellationToken ct)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await NotifyAsync(userId, releases, ct);
+                return;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Could not save follow notifications for user {UserId} (attempt {Attempt})", userId, attempt);
+                if (attempt == 2)
+                {
+                    return;
+                }
+            }
+        }
     }
 
     private async Task NotifyAsync(

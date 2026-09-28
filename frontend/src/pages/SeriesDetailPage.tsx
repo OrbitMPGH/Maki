@@ -497,11 +497,18 @@ export default function SeriesDetailPage() {
 
   const hasSpecials = useMemo(() => (chapters ?? []).some(isSpecial), [chapters])
   const canFilterUnread = readTracking && progress.have > 0
-  // The remembered filter may not be offered on this series, and a filter with no segment to show
-  // it would hide chapters with nothing on screen saying why.
+  const rememberedFilterMatchesNothing = useMemo(
+      () =>
+          chapterFilterPreference !== 'all' &&
+          !(chapters ?? []).some(filters[chapterFilterPreference] ?? filters.all),
+      [chapters, filters, chapterFilterPreference],
+  )
+  // The remembered filter may not be offered on this series, or may match nothing on it, and either
+  // would show an empty table with nothing on screen saying why.
   const chapterFilter: ChapterFilter =
       (chapterFilterPreference === 'main' && !hasSpecials) ||
-      (chapterFilterPreference === 'unread' && !canFilterUnread)
+      (chapterFilterPreference === 'unread' && !canFilterUnread) ||
+      rememberedFilterMatchesNothing
           ? 'all'
           : chapterFilterPreference
 

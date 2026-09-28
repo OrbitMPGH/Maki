@@ -54,10 +54,29 @@ public class HostStartupTests : IDisposable
 
     public HostStartupTests()
     {
+        EnsureWebRoot();
         _configDir = Path.Combine(Path.GetTempPath(), "maki-hoststartup-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_configDir);
         _previousConfigDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
         Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
+    }
+
+    /// <summary>
+    /// wwwroot is gitignored and holds the built SPA, so a checkout that never built the frontend
+    /// (CI's backend job) has none, and the host warns about it on every boot. An empty one is
+    /// enough.
+    /// </summary>
+    private static void EnsureWebRoot()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        {
+            var api = Path.Combine(dir.FullName, "src", "Maki.Api");
+            if (File.Exists(Path.Combine(api, "Maki.Api.csproj")))
+            {
+                Directory.CreateDirectory(Path.Combine(api, "wwwroot"));
+                return;
+            }
+        }
     }
 
     public void Dispose()
@@ -112,7 +131,6 @@ public class HostStartupTests : IDisposable
         var noisy = Directory.GetFiles(Path.Combine(_configDir, "logs"), "*.log")
             .SelectMany(ReadShared)
             .Where(line => line.Contains("[ERR]") || line.Contains("[WRN]"))
-            .Where(line => !line.Contains("StaticFileMiddleware"))
             .ToList();
         Assert.Empty(noisy);
     }

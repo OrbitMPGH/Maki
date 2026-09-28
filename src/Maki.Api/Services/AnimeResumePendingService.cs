@@ -56,9 +56,13 @@ public class AnimeResumePendingService(IServiceScopeFactory scopes, ILogger<Anim
             .Select(c => c.Id)
             .Take(ReaderController.MaxBulkChapters)
             .ToList();
-        if (chapterIds.Count == 0) return;
 
-        await scope.ServiceProvider.GetRequiredService<ReaderService>().MarkWatchedAsync(chapterIds, ct);
+        // Cleared even with nothing to tick: chapters that all sit past the frontier mean the mark
+        // has nothing to land on, and keeping it would tick older chapters whenever they turn up.
+        if (chapterIds.Count > 0)
+        {
+            await scope.ServiceProvider.GetRequiredService<ReaderService>().MarkWatchedAsync(chapterIds, ct);
+        }
 
         var state = await db.UserSeriesStates.FirstAsync(s => s.SeriesId == seriesId, ct);
         state.AnimeWatchPendingTo = null;

@@ -58,14 +58,16 @@ public class SeriesEmbeddingIndexer(
     }
 
     private int _warming;
+    private volatile bool _warmFailed;
 
     /// <summary>
     /// Fills the status total in the background. The count is a full scan of the multi-GB dump, so
-    /// a status poll must not wait on it; one runs at a time and a failure just leaves the total unset.
+    /// a status poll must not wait on it; one runs at a time and a failure leaves the total unset and is not retried, so a
+    /// dump that cannot be counted is not rescanned on every poll.
     /// </summary>
     public void WarmRecommendableTotal()
     {
-        if (Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        if (_warmFailed || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
         {
             return;
         }
@@ -78,6 +80,7 @@ public class SeriesEmbeddingIndexer(
             }
             catch (Exception ex)
             {
+                _warmFailed = true;
                 logger.LogDebug(ex, "Recommendable count failed");
             }
             finally

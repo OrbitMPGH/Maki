@@ -11,17 +11,24 @@ export async function copyText(text: string): Promise<boolean> {
       // fall through to the legacy path
     }
   }
+  // Inside the open dialog when there is one: a modal's focus trap pulls focus back from anything
+  // outside it, and copying needs the textarea focused.
+  const previous = document.activeElement as HTMLElement | null
+  const host = previous?.closest('[role="dialog"]') ?? document.body
   const area = document.createElement('textarea')
   area.value = text
+  area.readOnly = true
   area.style.position = 'fixed'
   area.style.opacity = '0'
-  document.body.appendChild(area)
+  host.appendChild(area)
+  area.focus()
   area.select()
   try {
     return document.execCommand('copy')
   } catch {
     return false
   } finally {
-    document.body.removeChild(area)
+    host.removeChild(area)
+    previous?.focus?.()
   }
 }
