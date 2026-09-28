@@ -1528,8 +1528,9 @@ msgstr "İndirme zaman aşımı 0 (sınırsız) olmalı veya {min} ile {max} dak
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
 msgid "error.settings.bulkHoldRange"
-msgstr ""
+msgstr "Toplu bekletme 0 (kapalı) ile {max} bölüm arasında olmalı"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
@@ -1995,14 +1996,16 @@ msgstr "{series}: {count, plural, one {# yeni bölüm indirme için kuyruğa al�
 
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters held back
+#, fuzzy
 msgid "inbox.chapters.held.title"
-msgstr ""
+msgstr "Yeni bölümler bekletildi"
 
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "inbox.chapters.held.body"
-msgstr ""
+msgstr "{series}: Bir kerede {count, plural, one {# yeni bölüm} other {# yeni bölüm}} bulundu ve otomatik olarak indirilmedi. Gerçekse seri sayfasından indirebilirsiniz."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2632,8 +2635,9 @@ msgstr "{series}: {count, plural, one {# yeni bölüm} other {# yeni bölüm}} i
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "notify.chapters.held.body"
-msgstr ""
+msgstr "{series}: Bir kerede {count, plural, one {# yeni bölüm} other {# yeni bölüm}} bulundu ve otomatik olarak indirilmedi. Gerçekse seri sayfasından indirebilirsiniz."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded

@@ -1528,8 +1528,9 @@ msgstr "O tempo limite de download deve ser 0 (sem limite) ou entre {min} e {max
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
 msgid "error.settings.bulkHoldRange"
-msgstr ""
+msgstr "O limite de retenção deve estar entre 0 (desativado) e {max} capítulos"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
@@ -1995,14 +1996,16 @@ msgstr "{series}: {count, plural, one {# novo capítulo enfileirado para downloa
 
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters held back
+#, fuzzy
 msgid "inbox.chapters.held.title"
-msgstr ""
+msgstr "Novos capítulos retidos"
 
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "inbox.chapters.held.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# novo capítulo encontrado de uma vez e não baixado automaticamente} many {# novos capítulos encontrados de uma vez e não baixados automaticamente} other {# novos capítulos encontrados de uma vez e não baixados automaticamente}}. Baixe-os pela página da série se forem reais."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2632,8 +2635,9 @@ msgstr "{series}: {count, plural, one {# novo capítulo} many {# novos capítulo
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "notify.chapters.held.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# novo capítulo encontrado de uma vez e não baixado automaticamente} many {# novos capítulos encontrados de uma vez e não baixados automaticamente} other {# novos capítulos encontrados de uma vez e não baixados automaticamente}}. Baixe-os pela página da série se forem reais."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded

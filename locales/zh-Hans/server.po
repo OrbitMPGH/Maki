@@ -1528,8 +1528,9 @@ msgstr "下载超时时间必须为 0（无限制），或介于 {min} 和 {max}
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
 msgid "error.settings.bulkHoldRange"
-msgstr ""
+msgstr "批量保留数必须介于 0（关闭）和 {max} 章之间"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
@@ -1995,14 +1996,16 @@ msgstr "{series}：有 {count, plural, other {# 个新章节}} 已加入下载�
 
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters held back
+#, fuzzy
 msgid "inbox.chapters.held.title"
-msgstr ""
+msgstr "新章节已保留"
 
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "inbox.chapters.held.body"
-msgstr ""
+msgstr "{series}：一次性发现 {count, plural, other {# 个新章节}}，未自动下载。如果确实是新章节，请从该系列页面下载。"
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2632,8 +2635,9 @@ msgstr "{series}：有 {count, plural, other {# 个新章节}} 已加入下载�
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "notify.chapters.held.body"
-msgstr ""
+msgstr "{series}：一次性发现 {count, plural, other {# 个新章节}}，未自动下载。如果确实是新章节，请从该系列页面下载。"
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded

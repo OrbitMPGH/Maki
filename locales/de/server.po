@@ -1528,8 +1528,9 @@ msgstr "Das Download-Timeout muss 0 (keine Begrenzung) oder zwischen {min} und {
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
 msgid "error.settings.bulkHoldRange"
-msgstr ""
+msgstr "Die Rückhalteschwelle muss zwischen 0 (aus) und {max} Kapiteln liegen"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
@@ -1995,14 +1996,16 @@ msgstr "{series}: {count, plural, one {# neues Kapitel zum Download eingereiht} 
 
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters held back
+#, fuzzy
 msgid "inbox.chapters.held.title"
-msgstr ""
+msgstr "Neue Kapitel zurückgehalten"
 
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "inbox.chapters.held.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# neues Kapitel} other {# neue Kapitel}} auf einmal gefunden und nicht automatisch heruntergeladen. Lade sie auf der Serienseite herunter, falls sie echt sind."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2632,8 +2635,9 @@ msgstr "{series}: {count, plural, one {# neues Kapitel} other {# neue Kapitel}} 
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "notify.chapters.held.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# neues Kapitel} other {# neue Kapitel}} auf einmal gefunden und nicht automatisch heruntergeladen. Lade sie auf der Serienseite herunter, falls sie echt sind."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded

@@ -2907,8 +2907,9 @@ msgid "Building metadata search indexes"
 msgstr "Creando índices de búsqueda de metadatos"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Bulk new chapters"
-msgstr ""
+msgstr "Muchos capítulos nuevos de golpe"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -6149,8 +6150,9 @@ msgid "Hold a feed token and read through an OPDS app"
 msgstr "Conserva un token de feed y lee mediante una aplicación OPDS"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Hold back more than (chapters)"
-msgstr ""
+msgstr "Retener a partir de más de (capítulos)"
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
@@ -14294,8 +14296,9 @@ msgid "When"
 msgstr "Cuándo"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "When a refresh finds more new chapters for a series than this, none of them are queued. That usually means a source renumbered or backfilled its list, not a real release. They stay wanted, so you can download them from the series page. 0 means always queue."
-msgstr ""
+msgstr "Cuando una actualización encuentra más capítulos nuevos para una serie que este número, no se pone ninguno en cola. Normalmente significa que una fuente renumeró o completó retroactivamente su lista, no que se trate de un lanzamiento real. Se quedan como solicitados, así que puedes descargarlos desde la página de la serie. 0 significa que siempre se pondrán en cola."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

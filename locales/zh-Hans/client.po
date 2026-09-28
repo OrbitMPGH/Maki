@@ -2907,8 +2907,9 @@ msgid "Building metadata search indexes"
 msgstr "正在建立元数据搜索索引"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Bulk new chapters"
-msgstr ""
+msgstr "批量新章节"
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -6149,8 +6150,9 @@ msgid "Hold a feed token and read through an OPDS app"
 msgstr "持有订阅源令牌并通过 OPDS 应用阅读"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Hold back more than (chapters)"
-msgstr ""
+msgstr "保留阈值（章）"
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
@@ -14294,8 +14296,9 @@ msgid "When"
 msgstr "时间"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "When a refresh finds more new chapters for a series than this, none of them are queued. That usually means a source renumbered or backfilled its list, not a real release. They stay wanted, so you can download them from the series page. 0 means always queue."
-msgstr ""
+msgstr "如果刷新时为某个系列发现的新章节数量超过此值，将不会加入下载队列。这通常意味着源重新编号或补全了列表，而不是真正的新发布。章节仍保持“想要”状态，你可以从系列页面下载它们。0 表示始终加入队列。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

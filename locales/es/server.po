@@ -1528,8 +1528,9 @@ msgstr "El tiempo de espera de descarga debe ser 0, sin límite, o estar entre {
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
 msgid "error.settings.bulkHoldRange"
-msgstr ""
+msgstr "El umbral de retención debe estar entre 0 (desactivado) y {max} capítulos"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
@@ -1995,14 +1996,16 @@ msgstr "{series}: {count, plural, one {# capítulo nuevo puesto en cola para des
 
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters held back
+#, fuzzy
 msgid "inbox.chapters.held.title"
-msgstr ""
+msgstr "Capítulos nuevos retenidos"
 
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "inbox.chapters.held.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# capítulo nuevo encontrado de golpe y no descargado automáticamente} many {# capítulos nuevos encontrados de golpe y no descargados automáticamente} other {# capítulos nuevos encontrados de golpe y no descargados automáticamente}}. Descárgalos desde la página de la serie si son reales."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2632,8 +2635,9 @@ msgstr "{series}: {count, plural, one {# capítulo nuevo} many {# capítulos nue
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "notify.chapters.held.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# capítulo nuevo encontrado de golpe y no descargado automáticamente} many {# capítulos nuevos encontrados de golpe y no descargados automáticamente} other {# capítulos nuevos encontrados de golpe y no descargados automáticamente}}. Descárgalos desde la página de la serie si son reales."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded

@@ -1528,8 +1528,9 @@ msgstr "Le délai de téléchargement doit être 0 (aucune limite) ou compris en
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
 msgid "error.settings.bulkHoldRange"
-msgstr ""
+msgstr "Le seuil de mise en attente doit être compris entre 0 (désactivé) et {max} chapitres"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
@@ -1995,14 +1996,16 @@ msgstr "{series} : {count, plural, one {# nouveau chapitre mis en file pour tél
 
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: New chapters held back
+#, fuzzy
 msgid "inbox.chapters.held.title"
-msgstr ""
+msgstr "Nouveaux chapitres mis en attente"
 
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "inbox.chapters.held.body"
-msgstr ""
+msgstr "{series} : {count, plural, one {# nouveau chapitre} many {# nouveaux chapitres} other {# nouveaux chapitres}} trouvé(s) d'un coup et non téléchargé(s) automatiquement. Téléchargez-les depuis la page de la série s'ils sont réels."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2632,8 +2635,9 @@ msgstr "{series} : {count, plural, one {# nouveau chapitre mis en file pour tél
 #. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 #. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
 msgid "notify.chapters.held.body"
-msgstr ""
+msgstr "{series} : {count, plural, one {# nouveau chapitre} many {# nouveaux chapitres} other {# nouveaux chapitres}} trouvé(s) d'un coup et non téléchargé(s) automatiquement. Téléchargez-les depuis la page de la série s'ils sont réels."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded
