@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
   ActionIcon, Button, Chip, Group, Kbd, Modal, Popover, SegmentedControl, Switch, Tabs, Text,
-  TextInput,
+  TextInput, Tooltip,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -55,9 +55,10 @@ function useContentLabels(): Record<SourceContent, string> {
   }
 }
 
-function SourceTags({ source, contentLabels }: {
+function SourceTags({ source, contentLabels, nameOfLanguage }: {
   source: SourceInfo
   contentLabels: Record<SourceContent, string>
+  nameOfLanguage: (code: string) => string
 }) {
   const languages = source.supportedLanguages ?? []
   const languageCount = new Set(languages.map(baseLanguage)).size
@@ -72,12 +73,22 @@ function SourceTags({ source, contentLabels }: {
       {source.rating === 'adult' && <span className="source-tag" data-tone="adult"><Trans>18+</Trans></span>}
       {source.rating === 'mature' && <span className="source-tag" data-tone="mature"><Trans>Mature</Trans></span>}
       {languageCount > 3 ? (
-        <span className="source-tag" data-tone="languages">
-          <Plural value={languageCount} one="# language" other="# languages" />
-        </span>
+        <Tooltip
+          label={[...new Set(languages.map(nameOfLanguage))].sort((a, b) => a.localeCompare(b)).join(', ')}
+          events={{ hover: true, focus: true, touch: true }}
+          withArrow
+          multiline
+          w={280}
+        >
+          <span className="source-tag" data-tone="languages" tabIndex={0}>
+            <Plural value={languageCount} one="# language" other="# languages" />
+          </span>
+        </Tooltip>
       ) : (
         languages.map((code) => (
-          <span key={code} className="source-tag" data-tone="language">{code}</span>
+          <Tooltip key={code} label={nameOfLanguage(code)} events={{ hover: true, focus: true, touch: true }} withArrow>
+            <span className="source-tag" data-tone="language" tabIndex={0}>{code}</span>
+          </Tooltip>
         ))
       )}
       {source.needsFlareSolverr && (
@@ -373,7 +384,7 @@ export function ManageSourcesModal({ opened, onClose }: { opened: boolean; onClo
             <span>{label}</span>
             <span className="source-row-host">{sourceHost(source.baseUrl)}</span>
           </div>
-          <SourceTags source={source} contentLabels={contentLabels} />
+          <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
         </div>
         <Switch
           checked={on}
