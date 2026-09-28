@@ -1,4 +1,6 @@
-﻿using AngleSharp.Html.Parser;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
+using AngleSharp.Html.Parser;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -9,7 +11,7 @@ namespace Maki.Sources.WeebCentral;
 /// endpoints directly (search/data, full-chapter-list, chapter images).
 /// Series id is stored as "{ULID}/{slug}".
 /// </summary>
-public class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
+public partial class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
 {
     public const string HttpClientName = "source-weebcentral";
 
@@ -23,6 +25,26 @@ public class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
     public IReadOnlyList<string> CoverHosts => ["temp.compsci88.com"];
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
+
+    // The site renders every numbered entry as "<word> <number>", and the word is picked per series:
+    // "Chapter 12", "Episode 12", "Plot 49", "Mischief 225". Nothing else in the listing carries the
+    // number, so the trailing number is the chapter whatever the word is.
+    [GeneratedRegex(@"\s(\d+(?:\.\d+)?)\s*$")]
+    private static partial Regex TrailingNumberRegex();
+
+    internal static ParsedChapter ParseLabel(string label)
+    {
+        var parsed = ChapterNumberParser.Parse(label);
+        if (parsed.Number is not null || parsed.Volume is not null)
+        {
+            return parsed;
+        }
+
+        var trailing = TrailingNumberRegex().Match(label);
+        return trailing.Success
+            ? new ParsedChapter(decimal.Parse(trailing.Groups[1].Value, CultureInfo.InvariantCulture), null, false)
+            : parsed;
+    }
 
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
@@ -122,7 +144,7 @@ public class WeebCentralSource(IHttpClientFactory httpClientFactory) : ISource
 
             var label = link.QuerySelector("span.grow > span")?.TextContent.Trim()
                         ?? link.TextContent.Trim();
-            var parsed = ChapterNumberParser.Parse(label);
+            var parsed = ParseLabel(label);
 
             DateTime? releaseDate = null;
             var time = link.QuerySelector("time")?.GetAttribute("datetime");

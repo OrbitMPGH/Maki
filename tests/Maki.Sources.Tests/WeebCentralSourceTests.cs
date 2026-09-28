@@ -64,6 +64,25 @@ public class WeebCentralSourceTests
         Assert.All(chapters, c => Assert.Null(c.Number));
     }
 
+    [Theory]
+    [InlineData("Chapter 12", 12)]
+    [InlineData("Episode 124", 124)]
+    [InlineData("Plot 49", 49)]
+    [InlineData("Mischief 225", 225)]
+    [InlineData("Mischief 10.5", 10.5)]
+    public void ParseLabel_takes_the_number_whatever_the_series_calls_its_chapters(string label, double expected)
+    {
+        Assert.Equal((decimal)expected, WeebCentralSource.ParseLabel(label).Number);
+    }
+
+    [Theory]
+    [InlineData("Oneshot")]
+    [InlineData("Extra")]
+    public void ParseLabel_leaves_unnumbered_labels_unnumbered(string label)
+    {
+        Assert.Null(WeebCentralSource.ParseLabel(label).Number);
+    }
+
     [Fact]
     public async Task GetPages_returns_urls_with_referer()
     {
