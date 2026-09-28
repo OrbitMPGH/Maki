@@ -24,10 +24,27 @@ const walk = (dir) => {
 }
 walk(root)
 
+// Mantine's clipboard helpers call navigator.clipboard inside the library, so the pattern check
+// above never sees them. They set an error and copy nothing, with no feedback to the user.
+const bannedImports = [
+  { name: 'CopyButton', from: '@mantine/core' },
+  { name: 'useClipboard', from: '@mantine/hooks' },
+]
+const importBlock = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"](@mantine\/[\w-]+)['"]/g
+
 const failures = []
 for (const file of files) {
   const rel = relative(root, file).split(sep).join('/')
-  readFileSync(file, 'utf8')
+  const source = readFileSync(file, 'utf8')
+  for (const match of source.matchAll(importBlock)) {
+    const names = match[1].split(',').map((n) => n.trim().split(/\s+as\s+/)[0].replace(/^type\s+/, ''))
+    for (const { name, from } of bannedImports) {
+      if (match[2] !== from || !names.includes(name)) continue
+      const line = source.slice(0, match.index).split('\n').length
+      failures.push(`frontend/src/${rel}:${line}: ${name} from ${from} copies nothing over plain HTTP. Use useCopyText() from 'components/ui/useCopyText'.`)
+    }
+  }
+  source
     .split('\n')
     .forEach((line, i) => {
       if (/^\s*(\/\/|\*|\/\*)/.test(line)) return

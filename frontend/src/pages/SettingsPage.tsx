@@ -139,7 +139,7 @@ import { ImportListsSection } from '../components/ImportListsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
-import { copyText } from '../lib/clipboard'
+import { useCopyText } from '../components/ui/useCopyText'
 
 function RootFoldersSection() {
   const { t } = useLingui()
@@ -864,6 +864,7 @@ function OpdsSection() {
   const save = useSaveOpdsSettings()
   const rotate = useRotateOpdsToken()
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
+  const { copy: copyFeedUrl } = useCopyText()
 
   // The token itself is never stored, only its SHA-256 digest, so the full feed URL exists exactly
   // once, in the response that minted it. Held here for as long as the page stays open; after that
@@ -890,7 +891,7 @@ function OpdsSection() {
 
   const copy = () => {
     if (!feedUrl) return
-    void copyText(feedUrl).then((ok) => {
+    void copyFeedUrl(feedUrl).then((ok) => {
       if (ok) notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' })
     })
   }

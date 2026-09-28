@@ -4055,6 +4055,10 @@ msgstr "已损坏"
 msgid "Could not build a plan for this series."
 msgstr "无法为此系列生成重新关联方案。"
 
+#: src/components/ui/useCopyText.ts
+msgid "Could not copy to the clipboard. Select the text and copy it by hand."
+msgstr ""
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

@@ -4055,6 +4055,10 @@ msgstr "손상됨"
 msgid "Could not build a plan for this series."
 msgstr "이 시리즈의 계획을 만들지 못했습니다."
 
+#: src/components/ui/useCopyText.ts
+msgid "Could not copy to the clipboard. Select the text and copy it by hand."
+msgstr ""
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
