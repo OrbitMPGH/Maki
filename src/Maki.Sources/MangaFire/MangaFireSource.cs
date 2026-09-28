@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
 namespace Maki.Sources.MangaFire;
@@ -156,13 +157,18 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
                 : (DateTime?)null;
             var official = item.TryGetProperty("type", out var type) && type.GetString() == "official";
 
+            // Whole-volume uploads are listed as chapter 0 titled "Volume 9". Carrying the volume
+            // is what lets them sort inside that volume rather than ahead of chapter 1.
+            var titled = ChapterNumberParser.Parse(name);
+            int? volume = number.GetDecimal() == 0 && titled is { Number: null, Volume: { } v } ? v : null;
+
             chapters.Add((new SourceChapter(
                 SourceName,
                 sourceSeriesId,
                 item.GetProperty("id").GetInt64().ToString(),
                 number.GetRawText(),
                 number.GetDecimal(),
-                Volume: null,
+                Volume: volume,
                 Title: string.IsNullOrWhiteSpace(name) ? null : name,
                 Language: itemLanguage ?? languages[0],
                 ReleaseDate: released,

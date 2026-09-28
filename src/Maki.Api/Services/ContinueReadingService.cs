@@ -87,12 +87,9 @@ public class ContinueReadingService(MakiDbContext db)
             if (maxCompletedNumber.HasValue)
             {
                 // Return the earliest unread chapter whose number exceeds the last completed one.
-                var afterLast = unread
-                    .Where(c => c.Number is null || c.Number > maxCompletedNumber.Value)
-                    .OrderBy(c => c.Number is null ? 1 : 0)
-                    .ThenBy(c => c.Number)
-                    .ThenBy(c => c.Volume)
-                    .ThenBy(c => c.Id)
+                var afterLast = ChapterOrder.Sort(
+                        unread.Where(c => c.Number is null || c.Number > maxCompletedNumber.Value),
+                        c => c.Number, c => c.Volume, c => c.Id)
                     .FirstOrDefault();
 
                 if (afterLast is not null)
@@ -105,12 +102,7 @@ public class ContinueReadingService(MakiDbContext db)
                 else
                 {
                     // All remaining unread chapters have lower numbers — fall back to earliest.
-                    var fallback = unread
-                        .OrderBy(c => c.Number is null ? 1 : 0)
-                        .ThenBy(c => c.Number)
-                        .ThenBy(c => c.Volume)
-                        .ThenBy(c => c.Id)
-                        .First();
+                    var fallback = ChapterOrder.Sort(unread, c => c.Number, c => c.Volume, c => c.Id)[0];
                     next = new NextChapter(
                         fallback.Id,
                         ChapterLabel.For(fallback.Number, fallback.Volume, fallback.Title, fallback.IsOneShot),
@@ -120,12 +112,7 @@ public class ContinueReadingService(MakiDbContext db)
             else
             {
                 // No completed chapters yet: offer the earliest unread (original behaviour).
-                var first = unread
-                    .OrderBy(c => c.Number is null ? 1 : 0)
-                    .ThenBy(c => c.Number)
-                    .ThenBy(c => c.Volume)
-                    .ThenBy(c => c.Id)
-                    .First();
+                var first = ChapterOrder.Sort(unread, c => c.Number, c => c.Volume, c => c.Id)[0];
                 next = new NextChapter(
                     first.Id,
                     ChapterLabel.For(first.Number, first.Volume, first.Title, first.IsOneShot),

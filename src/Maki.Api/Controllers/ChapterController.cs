@@ -5,6 +5,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Reading;
 using Maki.Core.Sources;
 using Maki.Core.Security;
 using Maki.Data;
@@ -43,7 +44,6 @@ public class ChapterController(
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
             .Include(c => c.ChapterFile)
-            .OrderBy(c => c.Number == null ? 1 : 0).ThenBy(c => c.Number).ThenBy(c => c.Volume)
             .Select(c => new
             {
                 c.Id,
@@ -70,7 +70,7 @@ public class ChapterController(
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
         // carry no volume metadata (parsing can't run inside the EF query, so it's
         // done here in memory over the materialized rows).
-        var chapters = rows.Select(c => new
+        var chapters = ChapterOrder.Sort(rows, c => c.Number, c => c.Volume, c => c.Id).Select(c => new
         {
             c.Id,
             c.SeriesId,

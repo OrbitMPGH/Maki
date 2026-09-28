@@ -1,4 +1,4 @@
-using Maki.Sources.MangaFire;
+﻿using Maki.Sources.MangaFire;
 
 namespace Maki.Sources.Tests;
 
@@ -24,6 +24,21 @@ public class MangaFireSourceTests
 
         var chapter = Assert.Single(chapters);
         Assert.Equal("es", chapter.Language);
+    }
+
+    [Fact]
+    public void BuildChapters_reads_the_volume_of_a_whole_volume_upload_listed_as_chapter_zero()
+    {
+        var chapters = MangaFireSource.BuildChapters(
+            "7wypj-some-slug",
+            [
+                """{"id":1,"number":0,"name":"Volume 9","type":"official","language":"en"}""",
+                """{"id":2,"number":0,"name":"Prologue","type":"official","language":"en"}""",
+            ],
+            ["en"]);
+
+        Assert.Equal(9, chapters.Single(c => c.Title == "Volume 9").Volume);
+        Assert.Null(chapters.Single(c => c.Title == "Prologue").Volume);
     }
 
     [Fact]
