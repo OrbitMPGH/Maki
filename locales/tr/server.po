@@ -1527,6 +1527,11 @@ msgid "error.settings.downloadTimeoutRange"
 msgstr "İndirme zaman aşımı 0 (sınırsız) olmalı veya {min} ile {max} dakika arasında olmalı"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Bulk hold must be between 0 (off) and {max} chapters
+msgid "error.settings.bulkHoldRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
 #, fuzzy
 msgid "error.settings.backupsToKeepRange"
@@ -1987,6 +1992,17 @@ msgstr "Yeni bölümler mevcut"
 #, fuzzy
 msgid "inbox.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# yeni bölüm indirme için kuyruğa alındı} other {# yeni bölüm indirme için kuyruğa alındı}}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: New chapters held back
+msgid "inbox.chapters.held.title"
+msgstr ""
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+msgid "inbox.chapters.held.body"
+msgstr ""
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2612,6 +2628,12 @@ msgstr "{series}: {count, plural, one {# yeni bölüm} other {# yeni bölüm}} m
 #, fuzzy
 msgid "notify.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# yeni bölüm} other {# yeni bölüm}} indirme için kuyruğa alındı"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+msgid "notify.chapters.held.body"
+msgstr ""
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded

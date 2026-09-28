@@ -2906,6 +2906,10 @@ msgstr "Katalog inceleniyor"
 msgid "Building metadata search indexes"
 msgstr "Meta veri arama dizinleri oluşturuluyor"
 
+#: src/pages/SettingsPage.tsx
+msgid "Bulk new chapters"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Busiest day"
@@ -6143,6 +6147,10 @@ msgstr "Geçmiş"
 #, fuzzy
 msgid "Hold a feed token and read through an OPDS app"
 msgstr "Bir besleme belirteci tutar ve bir OPDS uygulaması üzerinden okur"
+
+#: src/pages/SettingsPage.tsx
+msgid "Hold back more than (chapters)"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/nav.ts
@@ -14284,6 +14292,10 @@ msgstr "v{version} sürümündeki yenilikler"
 #, fuzzy
 msgid "When"
 msgstr "Ne zaman"
+
+#: src/pages/SettingsPage.tsx
+msgid "When a refresh finds more new chapters for a series than this, none of them are queued. That usually means a source renumbered or backfilled its list, not a real release. They stay wanted, so you can download them from the series page. 0 means always queue."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy

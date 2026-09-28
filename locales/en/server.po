@@ -1065,6 +1065,10 @@ msgid "error.settings.downloadTimeoutRange"
 msgstr "Download timeout must be 0 (no limit) or between {min} and {max} minutes"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.bulkHoldRange"
+msgstr "Bulk hold must be between 0 (off) and {max} chapters"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.backupsToKeepRange"
 msgstr "Backups to keep must be between {min} and {max}"
 
@@ -1385,6 +1389,17 @@ msgid "inbox.chapters.queued.body"
 msgstr ""
 "{series}: {count, plural, one {# new chapter queued for download} other {# new chapters queued "
 "for download}}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.held.title"
+msgstr "New chapters held back"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.held.body"
+msgstr ""
+"{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
+"downloaded automatically. Download them from the series page if they are real."
 
 #: src/Maki.Api/Program.cs
 msgid "inbox.backup.preUpgrade.title"
@@ -1833,6 +1848,13 @@ msgstr "{series}: {count, plural, one {# new chapter} other {# new chapters}} av
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 msgid "notify.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# new chapter} other {# new chapters}} queued for download"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "notify.chapters.held.body"
+msgstr ""
+"{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
+"downloaded automatically. Download them from the series page if they are real."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "notify.chapter.downloaded.title"

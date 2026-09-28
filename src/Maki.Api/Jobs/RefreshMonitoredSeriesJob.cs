@@ -1,5 +1,7 @@
-﻿using Maki.Api.Localization;
+﻿using System.Globalization;
+using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
@@ -110,8 +112,14 @@ public class RefreshMonitoredSeriesJob(
         // false for Smart, so the predicate above simply never matched. It matches now.
         var smart = series?.MonitorNewItems == NewChapterMonitorMode.Smart;
 
+        // A burst this size is almost never a release. It is a source renumbering or backfilling its
+        // list, and queueing it downloads the whole series in one go. The chapters stay wanted, so
+        // "Search missing" still gets them once someone has looked.
+        var threshold = smart ? 0 : await BulkHoldThresholdAsync(scope.ServiceProvider.GetRequiredService<IAppSettings>(), ct);
+        var held = threshold > 0 && wanted.Count > threshold;
+
         var queuedItemIds = new List<int>();
-        if (!smart)
+        if (!smart && !held)
         {
             foreach (var chapterId in wanted)
             {
@@ -123,17 +131,28 @@ public class RefreshMonitoredSeriesJob(
             }
         }
 
-        logger.LogInformation(
-            smart ? "Series {SeriesId}: found {Count} new chapter(s), left to Smart Download"
-                  : "Series {SeriesId}: queued {Count} new chapter(s)",
-            seriesId, wanted.Count);
+        if (held)
+        {
+            logger.LogWarning(
+                "Series {SeriesId}: found {Count} new chapter(s), more than the bulk hold threshold of {Threshold}; not queued",
+                seriesId, wanted.Count, threshold);
+        }
+        else
+        {
+            logger.LogInformation(
+                smart ? "Series {SeriesId}: found {Count} new chapter(s), left to Smart Download"
+                      : "Series {SeriesId}: queued {Count} new chapter(s)",
+                seriesId, wanted.Count);
+        }
 
         var locale = await locales.DefaultAsync();
         var title = series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");
 
         // Two messages rather than one with a `select`, because "available" and "queued for
         // download" are different sentences, not two words in the same one.
-        var bodyKey = smart ? "notify.chapters.available.body" : "notify.chapters.queued.body";
+        var bodyKey = held ? "notify.chapters.held.body"
+            : smart ? "notify.chapters.available.body"
+            : "notify.chapters.queued.body";
         notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
             NotificationEventType.NewChapterAvailable,
             Title: localizer.GetFor(locale, "notify.chapters.available.title"),
@@ -146,7 +165,7 @@ public class RefreshMonitoredSeriesJob(
             // {series} is filled at read time from SeriesId, not from `title` here, so somebody
             // whose ui.titlelanguage is Japanese reads the Japanese title in their bell.
             inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
-                    Key: smart ? "inbox.chapters.available" : "inbox.chapters.queued",
+                    Key: held ? "inbox.chapters.held" : smart ? "inbox.chapters.available" : "inbox.chapters.queued",
                     Params: InboxMessage.Args(new { count = wanted.Count }),
                     SeriesId: seriesId,
                     Url: $"/series/{seriesId}"),
@@ -160,6 +179,15 @@ public class RefreshMonitoredSeriesJob(
             await batches.QueuedAsync(seriesId, title, queuedItemIds, DownloadOrigin.MonitorRefresh, announce: false);
         }
     }
+
+    internal const int DefaultBulkHoldThreshold = 5;
+
+    /// <summary><see cref="SettingKeys.MonitoringBulkHoldThreshold"/>; 0 means never hold.</summary>
+    internal static async Task<int> BulkHoldThresholdAsync(IAppSettings settings, CancellationToken ct) =>
+        int.TryParse(await settings.GetAsync(SettingKeys.MonitoringBulkHoldThreshold, ct),
+            NumberStyles.Integer, CultureInfo.InvariantCulture, out var threshold) && threshold >= 0
+            ? threshold
+            : DefaultBulkHoldThreshold;
 
     /// <summary>
     /// Ids of series worth refreshing: any with an enabled source mapping that is either not

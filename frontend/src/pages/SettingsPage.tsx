@@ -1134,6 +1134,7 @@ function DownloadSection() {
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
   const [useHardlinks, setUseHardlinks] = useState(true)
+  const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number | string>(5)
 
   useEffect(() => {
     if (settings) {
@@ -1143,6 +1144,7 @@ function DownloadSection() {
       setSmartDownloadChapters(settings.smartDownloadChapters)
       setItemTimeoutMinutes(settings.itemTimeoutMinutes)
       setUseHardlinks(settings.useHardlinks)
+      setBulkHoldThreshold(settings.bulkHoldThreshold)
     }
   }, [settings])
 
@@ -1153,7 +1155,8 @@ function DownloadSection() {
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
       Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
-      useHardlinks !== settings.useHardlinks)
+      useHardlinks !== settings.useHardlinks ||
+      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold)
 
   return (
     <Panel>
@@ -1206,6 +1209,26 @@ function DownloadSection() {
           w={220}
         />
       </Group>
+      <Text fw={500} size="sm" mb={4}>
+        <Trans>Bulk new chapters</Trans>
+      </Text>
+      <SettingsHelp mb="xs">
+        <Trans>
+          When a refresh finds more new chapters for a series than this, none of them are queued.
+          That usually means a source renumbered or backfilled its list, not a real release. They
+          stay wanted, so you can download them from the series page. 0 means always queue.
+        </Trans>
+      </SettingsHelp>
+      <NumberInput
+        label={t`Hold back more than (chapters)`}
+        min={0}
+        max={1000}
+        clampBehavior="strict"
+        value={bulkHoldThreshold}
+        onChange={setBulkHoldThreshold}
+        w={220}
+        mb="md"
+      />
       <Text fw={500} size="sm" mb={4}>
         <Trans>Stuck downloads</Trans>
       </Text>
@@ -1276,6 +1299,7 @@ function DownloadSection() {
                 smartDownloadChapters: Number(smartDownloadChapters),
                 itemTimeoutMinutes: Number(itemTimeoutMinutes),
                 useHardlinks,
+                bulkHoldThreshold: Number(bulkHoldThreshold),
               },
               {
                 onSuccess: () =>

@@ -3081,6 +3081,8 @@ export interface DownloadSettings {
   itemTimeoutMinutes: number
   /** Hardlink completed torrents into the library where possible instead of copying them. */
   useHardlinks: boolean
+  /** More new chapters than this in one refresh are held back instead of queued. 0 means never hold. */
+  bulkHoldThreshold: number
 }
 
 export function useDownloadSettings() {

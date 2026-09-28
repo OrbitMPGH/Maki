@@ -67,6 +67,14 @@ public static class SettingKeys
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
     /// <summary>
+    /// More new wanted chapters than this in one monitored refresh of a series are held back instead
+    /// of queued. Default 5; 0 turns the hold off. A real release rarely drops that many at once, but
+    /// a source that renumbers or backfills its list does, and every "new" row of that shape would
+    /// otherwise download the whole series. Held chapters stay wanted, so "Search missing" gets them.
+    /// </summary>
+    public const string MonitoringBulkHoldThreshold = "monitoring.bulkholdthreshold";
+
+    /// <summary>
     /// "false" → don't rewrite ComicInfo.xml inside files Maki adopts from disk (torrent grabs,
     /// manual imports). Chapters Maki downloads itself from a source always get a fresh ComicInfo —
     /// that CBZ is built by Maki, not an existing file being modified. Default on.

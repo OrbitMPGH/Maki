@@ -118,6 +118,9 @@ public class SettingsController(
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
     /// See <see cref="SettingKeys.DownloadItemTimeoutMinutes"/>.
     /// </param>
+    /// <param name="BulkHoldThreshold">
+    /// See <see cref="SettingKeys.MonitoringBulkHoldThreshold"/>. Null on a write leaves it alone.
+    /// </param>
     /// <param name="UseHardlinks">
     /// Hardlink completed torrents into the library instead of copying them, where the
     /// filesystem allows it. See <see cref="SettingKeys.DownloadUseHardlinks"/>.
@@ -125,7 +128,7 @@ public class SettingsController(
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -786,7 +789,8 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
-        await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false"));
+        await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
+        await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct)));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -810,6 +814,11 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.downloadTimeoutRange", new { min = 10, max = 1440 });
         }
 
+        if (request.BulkHoldThreshold is < 0 or > 1000)
+        {
+            return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -826,7 +835,13 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
-        return Ok(request);
+        if (request.BulkHoldThreshold is { } bulkHold)
+        {
+            await settings.SetAsync(SettingKeys.MonitoringBulkHoldThreshold,
+                bulkHold.ToString(CultureInfo.InvariantCulture), ct);
+        }
+
+        return Ok(request with { BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct) });
     }
 
     [Authorize(Policy = Policies.Admin)]
