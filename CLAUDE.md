@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-See [README.md](README.md) for overview.
+See [README.md](README.md) for overview. Before a release, or when asked to smoke-test one, work through [docs/release-checklist.md](docs/release-checklist.md).
 
 Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you touch matching files: `auth.md`, `series-matching.md`, `reader-progress.md`, `recommendations.md`, `opds.md`, `downloads.md`, `stats-notifications.md`, `i18n.md`, `infra.md`, `design-system.md`. `distribution/CLAUDE.md` and `src/Maki.Sources/CLAUDE.md` are separate nested files, same deal.
 
