@@ -29,7 +29,7 @@ No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", 
 - `src/Maki.Api/wwwroot/` must exist or startup throws `DirectoryNotFoundException` before any app code runs. Produced by the frontend build; a fresh clone that only ran the backend needs it created by hand.
 - Frontend type-checking is `npx tsc -b`, **not** `npx tsc --noEmit`: root `tsconfig.json` is `"files": []` plus project references, so `--noEmit` checks nothing and exits 0 on a broken tree.
 
-- **Self-hosters reach the SPA over plain HTTP on the LAN, which is not a secure context.** `crypto.randomUUID`, `navigator.clipboard`, and `crypto.subtle` are undefined there and throw at the call site (issue #104: the Import button silently did nothing). Use `randomUUID()` from `frontend/src/lib/uuid.ts`, never `crypto.randomUUID()`, and feature-detect or fall back for the other secure-context APIs. `localhost` in dev is secure, so this never shows up locally.
+- **Self-hosters reach the SPA over plain HTTP on the LAN, which is not a secure context.** `crypto.randomUUID`, `navigator.clipboard`, and `crypto.subtle` are undefined there and throw at the call site (issue #104: the Import button silently did nothing). Use `randomUUID()` from `frontend/src/lib/uuid.ts` and `copyText()` from `frontend/src/lib/clipboard.ts`, never the raw APIs. `localhost` in dev is secure, so this never shows up locally. `npm run check:secure-context` (a CI step) fails on any raw use outside those helpers; add new secure-context APIs to `scripts/frontend/check-secure-context.mjs`.
 
 ## Non-obvious domain facts
 

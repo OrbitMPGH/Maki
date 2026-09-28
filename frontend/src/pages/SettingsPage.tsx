@@ -139,6 +139,7 @@ import { ImportListsSection } from '../components/ImportListsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
+import { copyText } from '../lib/clipboard'
 
 function RootFoldersSection() {
   const { t } = useLingui()
@@ -889,9 +890,9 @@ function OpdsSection() {
 
   const copy = () => {
     if (!feedUrl) return
-    void navigator.clipboard
-      .writeText(feedUrl)
-      .then(() => notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' }))
+    void copyText(feedUrl).then((ok) => {
+      if (ok) notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' })
+    })
   }
 
   return (
