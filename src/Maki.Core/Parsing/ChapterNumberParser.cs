@@ -12,7 +12,9 @@ public record ParsedChapter(decimal? Number, int? Volume, bool IsOneShot);
 /// </summary>
 public static partial class ChapterNumberParser
 {
-    [GeneratedRegex(@"(?:\bch(?:apter)?\b\.?\s*)(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
+    // "Episode 12" is how WeebCentral labels webtoons; read as a one-shot, every episode of a series
+    // turned into its own unnumbered chapter.
+    [GeneratedRegex(@"(?:\b(?:ch(?:apter)?|ep(?:isode)?)\b\.?\s*)(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterPattern();
 
     [GeneratedRegex(@"^\s*#?(\d+(?:\.\d+)?)\s*(?:[-:–].*)?$")]

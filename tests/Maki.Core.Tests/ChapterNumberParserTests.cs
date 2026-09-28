@@ -15,6 +15,8 @@ public class ChapterNumberParserTests
     [InlineData("#12", 12, null, false)]
     [InlineData("100 - The Ending", 100, null, false)]
     [InlineData("5.5: Extras", 5.5, null, false)]
+    [InlineData("Episode 124", 124, null, false)]
+    [InlineData("Ep. 7.5", 7.5, null, false)]
     public void Parses_chapter_numbers(string input, double expected, int? volume, bool oneShot)
     {
         var result = ChapterNumberParser.Parse(input);
