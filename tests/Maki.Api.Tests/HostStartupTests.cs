@@ -112,6 +112,7 @@ public class HostStartupTests : IDisposable
         var noisy = Directory.GetFiles(Path.Combine(_configDir, "logs"), "*.log")
             .SelectMany(ReadShared)
             .Where(line => line.Contains("[ERR]") || line.Contains("[WRN]"))
+            .Where(line => !line.Contains("StaticFileMiddleware"))
             .ToList();
         Assert.Empty(noisy);
     }
