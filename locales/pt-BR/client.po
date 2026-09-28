@@ -8194,6 +8194,10 @@ msgstr "nova versão, verificar atualizações, lançamento, github"
 msgid "Newest"
 msgstr "Mais recentes"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Newest first"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
@@ -9054,6 +9058,10 @@ msgstr "OK"
 #, fuzzy
 msgid "Oldest"
 msgstr "Mais antigos"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Oldest first"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -12240,6 +12248,14 @@ msgstr "Ordenar"
 #, fuzzy
 msgid "Sort by"
 msgstr "Ordenar por"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort newest first"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort oldest first"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx

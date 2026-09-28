@@ -54,6 +54,8 @@ import {
   IconDotsVertical,
   IconPhotoSearch,
   IconEyeOff,
+  IconSortAscendingNumbers,
+  IconSortDescendingNumbers,
 } from '@tabler/icons-react'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
@@ -155,6 +157,14 @@ type Tab = (typeof TABS)[number]
 const CHAPTER_PAGE_SIZE_STORAGE_KEY = 'series-chapter-page-size'
 const CHAPTER_PAGE_SIZES = ['10', '25', '50', '75', '100', 'all'] as const
 type ChapterPageSize = (typeof CHAPTER_PAGE_SIZES)[number]
+
+const CHAPTER_FILTER_STORAGE_KEY = 'series-chapter-filter'
+const CHAPTER_FILTERS = ['all', 'wanted', 'missing', 'downloaded', 'unread', 'main', 'specials'] as const
+type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
+
+const CHAPTER_SORT_STORAGE_KEY = 'series-chapter-sort'
+const CHAPTER_SORTS = ['asc', 'desc'] as const
+type ChapterSort = (typeof CHAPTER_SORTS)[number]
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -399,7 +409,24 @@ export default function SeriesDetailPage() {
   const setChaptersWanted = useSetChaptersWanted()
   const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
-  const [chapterFilter, setChapterFilter] = useState('all')
+  // Remembered across series, so someone who never wants specials picks Main once rather than on
+  // every series they open.
+  const [chapterFilterPreference, setChapterFilterPreference] = useState<ChapterFilter>(() =>
+      readStored(CHAPTER_FILTER_STORAGE_KEY, CHAPTER_FILTERS, 'all'),
+  )
+  const setChapterFilter = (value: string) => {
+    if (!CHAPTER_FILTERS.includes(value as ChapterFilter)) return
+    setChapterFilterPreference(value as ChapterFilter)
+    writeStored(CHAPTER_FILTER_STORAGE_KEY, value)
+  }
+  const [chapterSort, setChapterSortState] = useState<ChapterSort>(() =>
+      readStored(CHAPTER_SORT_STORAGE_KEY, CHAPTER_SORTS, 'asc'),
+  )
+  const toggleChapterSort = () => {
+    const next = chapterSort === 'asc' ? 'desc' : 'asc'
+    setChapterSortState(next)
+    writeStored(CHAPTER_SORT_STORAGE_KEY, next)
+  }
   const [chapterSearch, setChapterSearch] = useState('')
   const [chapterPageSizePreference, setChapterPageSizePreference] = useState<ChapterPageSize>(() =>
       readStored(CHAPTER_PAGE_SIZE_STORAGE_KEY, CHAPTER_PAGE_SIZES, '50'),
@@ -452,6 +479,32 @@ export default function SeriesDetailPage() {
 
   const tagListRef = useRef<HTMLDivElement>(null)
 
+  // Straight from the DTO rather than recomputed off the chapter list: this page and the library
+  // cards used to hold two independent copies of the same arithmetic, which is exactly how a
+  // denominator change lands on one surface and not the other. Costs a refetch of `['series']` for
+  // the bar to move after a Wanted toggle, which the toggle mutations already invalidate.
+  //
+  // Zeroed while the series is still loading: this hook has to run before the `!series` early
+  // return below, so it can't be conditional and the render never reads it in that state anyway.
+  const progress = useMemo(
+      () =>
+          seriesProgressVisual(
+              series ?? { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
+              readTracking,
+          ),
+      [series, readTracking],
+  )
+
+  const hasSpecials = useMemo(() => (chapters ?? []).some(isSpecial), [chapters])
+  const canFilterUnread = readTracking && progress.have > 0
+  // The remembered filter may not be offered on this series, and a filter with no segment to show
+  // it would hide chapters with nothing on screen saying why.
+  const chapterFilter: ChapterFilter =
+      (chapterFilterPreference === 'main' && !hasSpecials) ||
+      (chapterFilterPreference === 'unread' && !canFilterUnread)
+          ? 'all'
+          : chapterFilterPreference
+
   /**
    * The rows the table is currently showing. Shift-ranges and "Select all" both work over this
    * rather than the full chapter list: with a filter active, a range drawn between two visible
@@ -460,7 +513,15 @@ export default function SeriesDetailPage() {
   const visibleChapters = useMemo(() => {
     const query = chapterSearch.trim().toLocaleLowerCase()
     const numberQuery = query.match(/^(?:ch(?:apter)?\.?\s*)?(\d+(?:\.\d+)?)$/)?.[1]
-    return (chapters ?? [])
+    // The API sends numbered chapters ascending with unnumbered one-shots after them. Descending
+    // flips only the numbered run, so a pile of one-shots doesn't bury the latest chapter.
+    const ordered = chapterSort === 'desc'
+        ? [
+          ...(chapters ?? []).filter((c) => c.number !== null).reverse(),
+          ...(chapters ?? []).filter((c) => c.number === null),
+        ]
+        : (chapters ?? [])
+    return ordered
         .filter(filters[chapterFilter] ?? filters.all)
         .filter((chapter) => {
           if (!query) return true
@@ -471,7 +532,7 @@ export default function SeriesDetailPage() {
               chapter.title?.toLocaleLowerCase().includes(query)
           )
         })
-  }, [chapters, filters, chapterFilter, chapterSearch, i18n.locale])
+  }, [chapters, chapterSort, filters, chapterFilter, chapterSearch, i18n.locale])
 
   // "Main" is everything that isn't a decimal-numbered special, so one-shots land there rather
   // than in neither bucket, where the dropdown could never reach them.
@@ -521,22 +582,6 @@ export default function SeriesDetailPage() {
   const missingWanted = useMemo(
       () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !queueByChapterId.has(c.id)).length,
       [chapters, queueByChapterId],
-  )
-
-  // Straight from the DTO rather than recomputed off the chapter list: this page and the library
-  // cards used to hold two independent copies of the same arithmetic, which is exactly how a
-  // denominator change lands on one surface and not the other. Costs a refetch of `['series']` for
-  // the bar to move after a Wanted toggle, which the toggle mutations already invalidate.
-  //
-  // Zeroed while the series is still loading: this hook has to run before the `!series` early
-  // return below, so it can't be conditional and the render never reads it in that state anyway.
-  const progress = useMemo(
-      () =>
-          seriesProgressVisual(
-              series ?? { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
-              readTracking,
-          ),
-      [series, readTracking],
   )
 
 
@@ -741,7 +786,7 @@ export default function SeriesDetailPage() {
   useEffect(() => {
     setChapterPage(1)
     selectAnchor.current = null
-  }, [chapterFilter, chapterSearch, chapterPageSizePreference])
+  }, [chapterFilter, chapterSort, chapterSearch, chapterPageSizePreference])
 
   useEffect(() => {
     if (chapterPage > chapterPageCount) setChapterPage(chapterPageCount)
@@ -807,13 +852,16 @@ export default function SeriesDetailPage() {
         if (cells.length === 0) continue
         const startEl = markerRefs.current.get(`${span.key}:start`)
         const endEl = markerRefs.current.get(`${span.key}:end`)
+        // Sorted descending, the end badge is the one on top.
+        const topEl = chapterSort === 'desc' ? endEl : startEl
+        const bottomEl = chapterSort === 'desc' ? startEl : endEl
         // Clip to the visible run, below the table header. Either badge can be on another
         // page (or hidden by a filter), including both on a middle page of a long season.
-        const top = startEl
-            ? startEl.getBoundingClientRect().bottom - wrapRect.top + 2
+        const top = topEl
+            ? topEl.getBoundingClientRect().bottom - wrapRect.top + 2
             : cells[0].getBoundingClientRect().top - wrapRect.top
-        const bottom = endEl
-            ? endEl.getBoundingClientRect().top - wrapRect.top - 2
+        const bottom = bottomEl
+            ? bottomEl.getBoundingClientRect().top - wrapRect.top - 2
             : cells[cells.length - 1].getBoundingClientRect().bottom - wrapRect.top
         if (bottom - top < 4) continue
 
@@ -833,8 +881,8 @@ export default function SeriesDetailPage() {
           top,
           height: bottom - top,
           left: holderRect.left - wrapRect.left + holderRect.width / 2,
-          openStart: !startEl,
-          openEnded: !endEl,
+          openStart: !topEl,
+          openEnded: !bottomEl,
         })
       }
 
@@ -872,7 +920,7 @@ export default function SeriesDetailPage() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, pagedRows, markerSlot])
+  }, [chapterTable, animeSpans, foldedSpans, pagedRows, markerSlot, chapterSort])
 
   const setChaptersState = useSetChaptersState(seriesId)
 
@@ -1184,11 +1232,11 @@ export default function SeriesDetailPage() {
         { value: 'wanted', label: t`Wanted (${wantedFilterCount})` },
         { value: 'missing', label: t`Missing (${missingFilterCount})` },
         { value: 'downloaded', label: t`Have (${downloadedFilterCount})` },
-        ...(readTracking && progress.have > 0
+        ...(canFilterUnread
             ? [{ value: 'unread', label: t`Unread (${unreadFilterCount})` }]
             : []),
         // Without a special to hide, "Main" is "All" under a second name.
-        ...(specialsFilterCount > 0 ? [{ value: 'main', label: t`Main (${mainFilterCount})` }] : []),
+        ...(hasSpecials ? [{ value: 'main', label: t`Main (${mainFilterCount})` }] : []),
         { value: 'specials', label: t`Specials (${specialsFilterCount})` },
       ]
       : []
@@ -1894,6 +1942,18 @@ export default function SeriesDetailPage() {
                             data={chapterFilterData}
                         />
                     )}
+                    <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
+                      <ActionIcon
+                          size="input-xs"
+                          variant="default"
+                          aria-label={chapterSort === 'asc' ? t`Sort newest first` : t`Sort oldest first`}
+                          onClick={toggleChapterSort}
+                      >
+                        {chapterSort === 'asc'
+                            ? <IconSortAscendingNumbers size={16} />
+                            : <IconSortDescendingNumbers size={16} />}
+                      </ActionIcon>
+                    </Tooltip>
                     <Select
                         size="xs"
                         aria-label={t`Chapters per page`}

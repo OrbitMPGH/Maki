@@ -8194,6 +8194,10 @@ msgstr "yeni sürüm, güncellemeleri kontrol et, sürüm, github"
 msgid "Newest"
 msgstr "En yeni"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Newest first"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
@@ -9054,6 +9058,10 @@ msgstr "Tamam"
 #, fuzzy
 msgid "Oldest"
 msgstr "En eski"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Oldest first"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -12240,6 +12248,14 @@ msgstr "Sırala"
 #, fuzzy
 msgid "Sort by"
 msgstr "Sıralama ölçütü"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort newest first"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort oldest first"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx

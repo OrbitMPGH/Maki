@@ -8194,6 +8194,10 @@ msgstr "새 버전, 업데이트 확인, 릴리스, GitHub"
 msgid "Newest"
 msgstr "최신순"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Newest first"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
@@ -9054,6 +9058,10 @@ msgstr "정상"
 #, fuzzy
 msgid "Oldest"
 msgstr "오래된 순"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Oldest first"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -12240,6 +12248,14 @@ msgstr "정렬"
 #, fuzzy
 msgid "Sort by"
 msgstr "정렬 기준"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort newest first"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort oldest first"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx

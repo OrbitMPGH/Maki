@@ -6656,6 +6656,10 @@ msgstr "new version, check for updates, release, github"
 msgid "Newest"
 msgstr "Newest"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Newest first"
+msgstr "Newest first"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Newly enabled sources join at the bottom."
 msgstr "Newly enabled sources join at the bottom."
@@ -7349,6 +7353,10 @@ msgstr "OK"
 #: src/api/hooks.ts
 msgid "Oldest"
 msgstr "Oldest"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Oldest first"
+msgstr "Oldest first"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -9934,6 +9942,14 @@ msgstr "Sort"
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Sort by"
 msgstr "Sort by"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort newest first"
+msgstr "Sort newest first"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Sort oldest first"
+msgstr "Sort oldest first"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
