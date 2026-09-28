@@ -7503,6 +7503,7 @@ msgstr "映射到"
 msgid "Mark all read"
 msgstr "全部标记为已读"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
 msgid "Mark ch. 1 to {coveredTo} watched"
@@ -13246,6 +13247,10 @@ msgstr "时间范围"
 msgid "time read"
 msgstr "阅读时间"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
@@ -14035,6 +14040,7 @@ msgstr "越南语"
 msgid "View {title}"
 msgstr "查看 {title}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View & add"
@@ -14045,6 +14051,7 @@ msgstr "查看并添加"
 msgid "View activity"
 msgstr "查看活动"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View and add {title}"

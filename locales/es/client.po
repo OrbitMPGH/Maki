@@ -7503,6 +7503,7 @@ msgstr "Asignado a"
 msgid "Mark all read"
 msgstr "Marcar todo como leído"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
 msgid "Mark ch. 1 to {coveredTo} watched"
@@ -13246,6 +13247,10 @@ msgstr "Periodo"
 msgid "time read"
 msgstr "tiempo leído"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
@@ -14035,6 +14040,7 @@ msgstr "Vietnamita"
 msgid "View {title}"
 msgstr "Ver {title}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View & add"
@@ -14045,6 +14051,7 @@ msgstr "Ver y añadir"
 msgid "View activity"
 msgstr "Ver actividad"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View and add {title}"

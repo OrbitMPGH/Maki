@@ -82,3 +82,6 @@ public record MangaBakaRecommendation(
     bool CoRead = false,
     bool TasteMatch = false,
     int? FranchiseId = null);
+
+/// <summary>A dump row's anime range, as <c>AnimeCoverage.Parse</c> reads it, plus its chapter count.</summary>
+public record MangaBakaAnimeCoverage(string? AnimeStart, string? AnimeEnd, int? TotalChapters);

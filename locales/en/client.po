@@ -6087,6 +6087,7 @@ msgstr "Mapped to"
 msgid "Mark all read"
 msgstr "Mark all read"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Mark ch. 1 to {coveredTo} watched"
 msgstr "Mark ch. 1 to {coveredTo} watched"
@@ -10737,6 +10738,10 @@ msgstr "Time range"
 msgid "time read"
 msgstr "time read"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+msgstr "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Time read"
 msgstr "Time read"
@@ -11376,6 +11381,7 @@ msgstr "Vietnamese"
 msgid "View {title}"
 msgstr "View {title}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "View & add"
 msgstr "View & add"
@@ -11384,6 +11390,7 @@ msgstr "View & add"
 msgid "View activity"
 msgstr "View activity"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "View and add {title}"
 msgstr "View and add {title}"

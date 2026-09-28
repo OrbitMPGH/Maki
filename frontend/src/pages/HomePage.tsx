@@ -344,7 +344,7 @@ export default function HomePage() {
       fromAnime && fromAnime.length > 0 && (
         <>
           <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
-          <AnimeResumeRail items={fromAnime} />
+          <AnimeResumeRail items={fromAnime} onOpen={setDetailItem} />
         </>
       )
     ),

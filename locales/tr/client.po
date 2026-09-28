@@ -7503,6 +7503,7 @@ msgstr "Şuna eşlendi"
 msgid "Mark all read"
 msgstr "Tümünü okundu işaretle"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
 msgid "Mark ch. 1 to {coveredTo} watched"
@@ -13246,6 +13247,10 @@ msgstr "Zaman aralığı"
 msgid "time read"
 msgstr "okuma süresi"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
@@ -14035,6 +14040,7 @@ msgstr "Vietnamca"
 msgid "View {title}"
 msgstr "{title} adlı seriyi görüntüle"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View & add"
@@ -14045,6 +14051,7 @@ msgstr "Görüntüle ve ekle"
 msgid "View activity"
 msgstr "Etkinliği görüntüle"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View and add {title}"
