@@ -217,7 +217,9 @@ public class HealthScanService(MakiDbContext db)
         var cacheId = $"{analysis.Hash}:{ArchiveHealthAnalyzer.VerifyVersion}";
         if (analysis.Hash != null && analysis.Status == "complete" && !await db.HealthAnalyses.AnyAsync(a => a.Id == cacheId, ct))
             db.HealthAnalyses.Add(new() { Id = cacheId, ContentHash = analysis.Hash, AnalyzerVersion = ArchiveHealthAnalyzer.VerifyVersion, AnalysisJson = file.AnalysisJson });
-        var problems = analysis.Problems.ToList();
+        // Partial analysis is a hint about what the analyzer could not check, not a problem with
+        // the file. It stays on the analysis and never becomes a finding.
+        var problems = analysis.Problems.Where(p => p.Kind != "incomplete").ToList();
         if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "health.finding.unlinked"));
         else if (await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
             problems.Add(new("sizeMismatch", "warning", "health.finding.sizeMismatch"));

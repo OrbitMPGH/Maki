@@ -307,7 +307,7 @@ public static class ArchiveHealthAnalyzer
 
     private static ArchiveAnalysis Partial(ArchiveAnalysis result, string key)
     {
-        if (!result.Problems.Any(x => x.MessageKey == key)) result.Problems.Add(new("incomplete", "warning", key));
+        if (!result.Problems.Any(x => x.MessageKey == key)) result.Problems.Add(new("incomplete", "info", key));
         return result with { Status = "partial" };
     }
 
