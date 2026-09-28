@@ -39,8 +39,9 @@ msgid "(blank when unset)"
 msgstr "(ayarlanmadığında boş)"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "(cannot be undone)"
-msgstr ""
+msgstr "(geri alınamaz)"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -55,33 +56,39 @@ msgstr "{0, plural, one {# uyarlama} other {# uyarlama}}"
 
 #. placeholder {0}: counts.fills
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# becomes readable} other {# become readable}}"
-msgstr ""
+msgstr "{0, plural, one {# okunabilir hale gelir} other {# okunabilir hale gelir}}"
 
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter moves onto a volume} other {# chapters move onto volumes}}"
-msgstr ""
+msgstr "{0, plural, one {# bölüm ciltlere taşınır} other {# bölüm ciltlere taşınır}}"
 
 #. placeholder {0}: row.labels.length
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter onto this volume} other {# chapters onto this volume}}"
-msgstr ""
+msgstr "{0, plural, one {# bölüm bu cilde taşınır} other {# bölüm bu cilde taşınır}}"
 
 #. placeholder {0}: r.moved
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter relinked} other {# chapters relinked}}"
-msgstr ""
+msgstr "{0, plural, one {# bölüm yeniden bağlandı} other {# bölüm yeniden bağlandı}}"
 
 #. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
-msgstr ""
+msgstr "{0, plural, one {# bölüm seçildi} other {# bölüm seçildi}}"
 
 #. placeholder {0}: chapterIds.length
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
-msgstr ""
+msgstr "{0, plural, one {# bölüm} other {# bölüm}}"
 
 #. placeholder {0}: r.failed
 #: src/components/SeriesFilesSection.tsx
@@ -91,13 +98,15 @@ msgstr "{0, plural, one {# silinemedi (kilitli veya izin reddedildi)} other {# s
 
 #. placeholder {0}: r.failed
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# file could not be deleted (locked or permission denied)} other {# files could not be deleted (locked or permission denied)}}"
-msgstr ""
+msgstr "{0, plural, one {# dosya silinemedi (kilitli veya izin reddedildi)} other {# dosya silinemedi (kilitli veya izin reddedildi)}}"
 
 #. placeholder {0}: r.deleted
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
-msgstr ""
+msgstr "{0, plural, one {# dosya silindi} other {# dosya silindi}}"
 
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
@@ -107,13 +116,15 @@ msgstr "{0, plural, one {# tanesi {displayName} üzerinde yok, bu yüzden olduğ
 
 #. placeholder {0}: counts.kept
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# kept where it is} other {# kept where they are}}"
-msgstr ""
+msgstr "{0, plural, one {# olduğu yerde bırakıldı} other {# oldukları yerde bırakıldı}}"
 
 #. placeholder {0}: counts.kept
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# kept} other {# kept}}"
-msgstr ""
+msgstr "{0, plural, one {# bırakıldı} other {# bırakıldı}}"
 
 #. placeholder {0}: items.length
 #: src/components/CatalogueBrowser.tsx
@@ -169,8 +180,9 @@ msgstr "{0, plural, one {Onaylandı, # bölüm kuyruğa alındı} other {Onaylan
 
 #. placeholder {0}: row.labels.length
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {becomes readable} other {become readable}}"
-msgstr ""
+msgstr "{0, plural, one {okunabilir hale gelir} other {okunabilir hale gelir}}"
 
 #. placeholder {0}: queue?.total ?? 0
 #: src/pages/ActivityPage.tsx
@@ -433,8 +445,9 @@ msgid "{completed} / {total} files inspected"
 msgstr "{total} dosyanın {completed} tanesi incelendi"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{completeVolumes, plural, one {# volume already complete} other {# volumes already complete}}"
-msgstr ""
+msgstr "{completeVolumes, plural, one {# cilt zaten tamamlanmış} other {# cilt zaten tamamlanmış}}"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -527,16 +540,19 @@ msgid "{embedded, plural, one {# new} other {# new}}"
 msgstr "{embedded, plural, one {# yeni} other {# yeni}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{emptied, plural, one {# single file ends up holding nothing} other {# single files end up holding nothing}}"
-msgstr ""
+msgstr "{emptied, plural, one {# tek dosya artık hiçbir şey içermiyor} other {# tek dosya artık hiçbir şey içermiyor}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{emptied, plural, one {Delete # file} other {Delete # files}}"
-msgstr ""
+msgstr "{emptied, plural, one {# dosyayı sil} other {# dosyayı sil}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{emptied, plural, one {Keep that file} other {Keep those # files}}"
-msgstr ""
+msgstr "{emptied, plural, one {bu dosyayı tut} other {# dosyayı tut}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -564,8 +580,9 @@ msgid "{fileCount, plural, one {# file} other {# files}}"
 msgstr "{fileCount, plural, one {# dosya} other {# dosya}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
-msgstr ""
+msgstr "{fileCount, plural, one {# tek dosya} other {# tek dosya}}"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -804,8 +821,9 @@ msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "{missingWanted} istenen bölüm eksik"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
-msgstr ""
+msgstr "{moreCount, plural, one {+# tane daha} other {+# tane daha}}"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -1188,12 +1206,14 @@ msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folde
 msgstr "{total, plural, one {# klasörden {ok} tanesi içe aktarıldı} other {# klasörden {ok} tanesi içe aktarıldı}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{total, plural, one {Relink # chapter and delete} other {Relink # chapters and delete}}"
-msgstr ""
+msgstr "{total, plural, one {# bölümü yeniden bağla ve sil} other {# bölümü yeniden bağla ve sil}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{total, plural, one {Relink # chapter} other {Relink # chapters}}"
-msgstr ""
+msgstr "{total, plural, one {# bölümü yeniden bağla} other {# bölümü yeniden bağla}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -1241,20 +1261,24 @@ msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel} (başka bir profil)"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "{unlinkedFilesOnDisk, plural, one {# file in the series folder isn't linked to any chapter.} other {# files in the series folder aren't linked to any chapter.}}"
-msgstr ""
+msgstr "{unlinkedFilesOnDisk, plural, one {Seri klasöründeki # dosya hiçbir bölüme bağlı değil.} other {Seri klasöründeki # dosya hiçbir bölüme bağlı değil.}}"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "{unlinkedOnDisk, plural, one {# file in this folder isn't linked to any chapter, so it can't be read yet.} other {# files in this folder aren't linked to any chapter, so they can't be read yet.}}"
-msgstr ""
+msgstr "{unlinkedOnDisk, plural, one {Bu klasördeki # dosya hiçbir bölüme bağlı değil, bu yüzden henüz okunamıyor.} other {Bu klasördeki # dosya hiçbir bölüme bağlı değil, bu yüzden henüz okunamıyor.}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{unmatched, plural, one {# file could not be matched to a chapter. Link it by hand on the Files tab.} other {# files could not be matched to a chapter. Link them by hand on the Files tab.}}"
-msgstr ""
+msgstr "{unmatched, plural, one {# dosya bir bölümle eşleştirilemedi. Dosyalar sekmesinden elle bağlayın.} other {# dosya bir bölümle eşleştirilemedi. Dosyalar sekmesinden elle bağlayın.}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{unmatched, plural, one {# file Maki could not match to a chapter} other {# files Maki could not match to a chapter}}"
-msgstr ""
+msgstr "{unmatched, plural, one {Maki # dosyayı bir bölümle eşleştiremedi} other {Maki # dosyayı bir bölümle eşleştiremedi}}"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -1659,8 +1683,9 @@ msgid "A newer Maki release was published."
 msgstr "Daha yeni bir Maki sürümü yayımlandı."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
-msgstr ""
+msgstr "Tüm ciltleri diskte bulunan tamamlanmış bir seri için orantılı bir tahmin. Yalnızca bölümü daha iyi karşılayan bir seçenek olmadığında kullanılır."
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -2265,8 +2290,9 @@ msgid "Analyze new files and run daily reconciliation"
 msgstr "Yeni dosyaları analiz et ve günlük uzlaştırma çalıştır"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "and"
-msgstr ""
+msgstr "ve"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2748,8 +2774,9 @@ msgid "Because: {reasonList}"
 msgstr "Neden: {reasonList}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "becomes readable"
-msgstr ""
+msgstr "okunabilir hale gelir"
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -3079,12 +3106,14 @@ msgid "Ch. {chapters}"
 msgstr "B. {chapters}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {first}"
-msgstr ""
+msgstr "B. {first}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {first} to {last}"
-msgstr ""
+msgstr "B. {first} ile {last}"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -3112,12 +3141,14 @@ msgid "ch. {from}+"
 msgstr "b. {from}+"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {label}: {detail}"
-msgstr ""
+msgstr "B. {label}: {detail}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {list}"
-msgstr ""
+msgstr "B. {list}"
 
 #: src/components/home/AnimeResumeRail.tsx
 #, fuzzy
@@ -3171,8 +3202,9 @@ msgstr "B. {start}–{end}"
 
 #. placeholder {0}: c.number
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Ch.{0}"
-msgstr ""
+msgstr "B.{0}"
 
 #: src/api/queue.ts
 #, fuzzy
@@ -3205,8 +3237,9 @@ msgid "Change how individual titles affect recommendations."
 msgstr "Bireysel başlıkların önerileri nasıl etkilediğini değiştirin."
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Change linked chapters"
-msgstr ""
+msgstr "Bağlı bölümleri değiştir"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3586,8 +3619,9 @@ msgid "Click a token to insert it."
 msgstr "Eklemek için bir belirtece tıklayın."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "click one to keep it where it is"
-msgstr ""
+msgstr "Olduğu yerde bırakmak için birine tıklayın"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/SettingsPage.tsx
@@ -4008,8 +4042,9 @@ msgid "Corrupt"
 msgstr "Bozuk"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Could not build a plan for this series."
-msgstr ""
+msgstr "Bu seri için bir plan oluşturulamadı."
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -4044,12 +4079,14 @@ msgid "Could not load your signals: {loadError}"
 msgstr "Sinyalleriniz yüklenemedi: {loadError}"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
-msgstr ""
+msgstr "{seriesFailed, plural, one {# seri} other {# seri}} için ilerleme okunamadı"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
-msgstr ""
+msgstr "{seriesFailed, plural, one {# seri} other {# seri}} için ilerleme okunamadı: {titles}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4067,28 +4104,34 @@ msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface} geri bildirimi güncellenemedi: {reason}"
 
 #: src/components/NotificationsSection.tsx
+#, fuzzy
 msgid "Couldn't load notification connections"
-msgstr ""
+msgstr "Bildirim bağlantıları yüklenemedi"
 
 #: src/components/rails/CustomRailSection.tsx
+#, fuzzy
 msgid "Couldn't load this rail"
-msgstr ""
+msgstr "Bu bölümü yükleyemedik"
 
 #: src/pages/HomePage.tsx
+#, fuzzy
 msgid "Couldn't load your library"
-msgstr ""
+msgstr "Kitaplığınız yüklenemedi"
 
 #: src/pages/NotificationsPage.tsx
+#, fuzzy
 msgid "Couldn't load your notifications"
-msgstr ""
+msgstr "Bildirimleriniz yüklenemedi"
 
 #: src/pages/HomePage.tsx
+#, fuzzy
 msgid "Couldn't load your reading progress"
-msgstr ""
+msgstr "Okuma ilerlemeniz yüklenemedi"
 
 #: src/components/RatingImportModal.tsx
+#, fuzzy
 msgid "Couldn't reach {label}."
-msgstr ""
+msgstr "{label} ile bağlantı kurulamadı."
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4169,8 +4212,9 @@ msgid "Created under Apps in Gotify."
 msgstr "Gotify'deki Apps bölümünden oluşturulur."
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Creator"
-msgstr ""
+msgstr "Yaratıcı"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4417,8 +4461,9 @@ msgid "Delete the rail \"{railName}\"? Its filters go with it."
 msgstr "\"{railName}\" bölümü silinsin mi? Filtreleri de silinir."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Delete them, free {emptiedSize}"
-msgstr ""
+msgstr "Bunları sil, {emptiedSize} alan aç"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4446,8 +4491,9 @@ msgid "Deleting"
 msgstr "Siliniyor"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Deleting files needs the Delete series permission"
-msgstr ""
+msgstr "Dosyaları silmek için Serileri silme izni gerekir"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5047,8 +5093,9 @@ msgid "Esc closes"
 msgstr "Esc kapatır"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Estimated"
-msgstr ""
+msgstr "Tahmini"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -5061,16 +5108,19 @@ msgid "Every chapter"
 msgstr "Her bölüm"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Every chapter after"
-msgstr ""
+msgstr "Sonraki tüm bölümler"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Every chapter is already on the best file available."
-msgstr ""
+msgstr "Her bölüm zaten kullanılabilecek en iyi dosyayla eşleşmiş."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Every chapter is already on the best file available. Nothing to change."
-msgstr ""
+msgstr "Her bölüm zaten kullanılabilecek en iyi dosyayla eşleşmiş. Değiştirilecek bir şey yok."
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -5221,8 +5271,9 @@ msgid "Existing folders on import"
 msgstr "İçe aktarırken var olan klasörler"
 
 #: src/components/layout/PageLayoutEditor.tsx
+#, fuzzy
 msgid "Exit editing"
-msgstr ""
+msgstr "Düzenlemeyi bitir"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -5381,8 +5432,9 @@ msgid "File naming on import"
 msgstr "İçe aktarmada dosya adlandırma"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "file on disk, not linked"
-msgstr ""
+msgstr "diskteki dosya, bağlı değil"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -5398,8 +5450,9 @@ msgid "Files"
 msgstr "Dosyalar"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Files that hold chapters marked missing"
-msgstr ""
+msgstr "Eksik olarak işaretlenmiş bölümleri içeren dosyalar"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -5407,8 +5460,9 @@ msgid "Film / OVA"
 msgstr "Film / OVA"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Filter by chapter number or title"
-msgstr ""
+msgstr "Bölüm numarasına veya başlığa göre filtrele"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -5663,16 +5717,19 @@ msgid "From"
 msgstr "Başlangıç"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From its name"
-msgstr ""
+msgstr "Dosya adından"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From its pages"
-msgstr ""
+msgstr "Sayfa adlarından"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From metadata"
-msgstr ""
+msgstr "Üst verilerden"
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -5685,8 +5742,9 @@ msgid "From the metadata provider, not your own tags"
 msgstr "Meta veri sağlayıcısından, kendi etiketleriniz değil"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From their names"
-msgstr ""
+msgstr "Dosya adlarından"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6133,8 +6191,9 @@ msgid "Hours"
 msgstr "Saat"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Hover a cell for its number."
-msgstr ""
+msgstr "Numarasını görmek için hücrenin üzerine gelin."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -6668,12 +6727,14 @@ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Ful
 msgstr "Bu seriyi takip hizmetine göndermenin dışında tutar; Full ise onu istatistiklerden de tamamen hariç tutar."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Kept as linked"
-msgstr ""
+msgstr "Mevcut bağlantı korundu"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "kept where it is"
-msgstr ""
+msgstr "olduğu yerde bırakıldı"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -6805,8 +6866,9 @@ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped,
 msgstr "Son çalıştırma {when}: {added} eklendi, {requested} istendi, {skipped} atlandı, {errors} hata"
 
 #: src/components/ImportListsSection.tsx
+#, fuzzy
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
-msgstr ""
+msgstr "Son çalıştırma {when}: atlandı, yerel MangaBaka veritabanı henüz indirilmedi"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7026,8 +7088,9 @@ msgid "Link"
 msgstr "Bağla"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Link {chapterLbl} to a file"
-msgstr ""
+msgstr "{chapterLbl} bölümünü bir dosyaya bağla"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -7055,21 +7118,25 @@ msgid "Link and unlink per-series sources"
 msgstr "Seri bazında kaynakları bağlar ve ayırır"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Link by hand"
-msgstr ""
+msgstr "Elle bağla"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Link chapters"
-msgstr ""
+msgstr "Bölümleri bağla"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Link chapters to {fileName}"
-msgstr ""
+msgstr "Bölümleri {fileName} dosyasına bağla"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Link chapters to this file"
-msgstr ""
+msgstr "Bölümleri bu dosyaya bağla"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -7082,12 +7149,14 @@ msgid "Link source"
 msgstr "Kaynağı bağla"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Link those by hand on the Files tab."
-msgstr ""
+msgstr "Bunları Dosyalar sekmesinden elle bağlayın."
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Link to a file already on disk"
-msgstr ""
+msgstr "Diskteki bir dosyaya bağla"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7156,8 +7225,9 @@ msgid "Load more"
 msgstr "Daha fazla yükle"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Loading chapters…"
-msgstr ""
+msgstr "Bölümler yükleniyor…"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
@@ -7315,8 +7385,9 @@ msgid "Maki can't reach this folder"
 msgstr "Maki bu klasöre erişemiyor"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
-msgstr ""
+msgstr "Maki klasörü bölüm listesiyle karşılaştırdı. Güvenilecekleri işaretleyin ve eşleme görünümünü izleyin. Dosyaları yeniden bağla düğmesine basana kadar hiçbir şey değişmez."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7643,8 +7714,9 @@ msgid "minutes read"
 msgstr "okunan dakika"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "missing"
-msgstr ""
+msgstr "eksik"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
@@ -7865,8 +7937,9 @@ msgid "Move up in queue"
 msgstr "Kuyrukta yukarı taşı"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "moves onto a volume"
-msgstr ""
+msgstr "bir cilde taşınıyor"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -8144,8 +8217,9 @@ msgid "No chapters known."
 msgstr "Bilinen bölüm yok."
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "No chapters match that filter."
-msgstr ""
+msgstr "Filtreyle eşleşen bölüm yok."
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -8475,8 +8549,9 @@ msgid "not {names}"
 msgstr "{names} hariç"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Not a valid creator name"
-msgstr ""
+msgstr "Geçerli bir yaratıcı adı değil"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8547,8 +8622,9 @@ msgid "Not linked yet. Sign in with {displayName} once to enable it for this acc
 msgstr "Henüz bağlanmadı. Bu hesap için etkinleştirmek üzere bir kez {displayName} ile oturum açın."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Not listed:"
-msgstr ""
+msgstr "Listede yok:"
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -8655,12 +8731,14 @@ msgid "Nothing here is final. Every option is also in Settings."
 msgstr "Buradaki hiçbir ayar kesin değil. Her seçenek Ayarlar'da da bulunur."
 
 #: src/components/ImportListsSection.tsx
+#, fuzzy
 msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr ""
+msgstr "Hiçbir şey içe aktarılmadı: içe aktarma listeleri için yerel MangaBaka veritabanı gerekir."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
-msgstr ""
+msgstr "Dosyadaki hiçbir bilgi bu bölümleri açıklamıyor, bu yüzden mevcut bağlantıya güveniliyor."
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -8768,8 +8846,9 @@ msgid "Nothing to recommend yet"
 msgstr "Henüz önerilecek bir şey yok"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Nothing to relink"
-msgstr ""
+msgstr "Yeniden bağlanacak bir şey yok"
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -8944,8 +9023,9 @@ msgid "On"
 msgstr "Açık"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "On another file"
-msgstr ""
+msgstr "Başka bir dosyada"
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -10004,8 +10084,9 @@ msgid "Reading stats need Kavita"
 msgstr "Okuma istatistikleri için Kavita gerekir"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Reading the folder and every volume archive…"
-msgstr ""
+msgstr "Klasör ve tüm cilt arşivleri okunuyor…"
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -10038,8 +10119,9 @@ msgid "Rebuild all"
 msgstr "Tümünü yeniden oluştur"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Rebuild chapter links from the folder, volumes first"
-msgstr ""
+msgstr "Klasörden bölüm bağlantılarını yeniden oluştur, önce ciltleri tara"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10281,12 +10363,14 @@ msgstr "Devam Ediyor"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Relink files"
-msgstr ""
+msgstr "Dosyaları yeniden bağla"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
-msgstr ""
+msgstr "Dosyaları yeniden bağla, içindeki bölümleri bulmak için her cilt dosyasını okur. Yerleştiremediği bölümleri elle bağlayabilirsiniz."
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -11465,8 +11549,9 @@ msgid "Select filtered"
 msgstr "Filtrelenenleri seç"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Select missing ({missingCount})"
-msgstr ""
+msgstr "Eksikleri seç ({missingCount})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11911,8 +11996,9 @@ msgid "Sign out everywhere else"
 msgstr "Her yerde oturumu kapat"
 
 #: src/components/settings/AccountSection.tsx
+#, fuzzy
 msgid "Sign-in relies on your identity provider. A code, once set up, protects password sign-in only."
-msgstr ""
+msgstr "Oturum açma işlemi kimlik sağlayıcınıza bağlıdır. Ayarlandıktan sonra bir kod yalnızca parola ile oturum açmayı korur."
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -12341,12 +12427,14 @@ msgid "Stay here"
 msgstr "Burada kal"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "stay missing"
-msgstr ""
+msgstr "eksik kalır"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "stay where they are"
-msgstr ""
+msgstr "oldukları yerde kalır"
 
 #: src/components/discover/DiscoverTasteStrip.tsx
 #, fuzzy
@@ -12625,8 +12713,9 @@ msgid "That chapter no longer exists"
 msgstr "Bu bölüm artık mevcut değil"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
-msgstr ""
+msgstr "Bu, omnibus ciltlerde ve eşleştiricinin ayrıştıramadığı adlarda olur. Önce Dosyaları yeniden bağla seçeneğini deneyin; her cildi okuyup içindeki bölümleri bulur. Yerleştiremediği bölümler için satırdaki bağlama düğmesini kullanın."
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -12679,8 +12768,9 @@ msgid "The catalogue rails need the local MangaBaka database (Settings → Metad
 msgstr "Katalog rayları yerel MangaBaka veritabanını gerektirir (Ayarlar → Meta veri → yerel veritabanı)."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "The chapter numbers are in the archive's page file names. Certain."
-msgstr ""
+msgstr "Bölüm numaraları arşivdeki sayfa dosyalarının adlarında yer alıyor. Kesin."
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -12693,8 +12783,9 @@ msgid "The file is already off the disk, so nothing is deleted. This drops the r
 msgstr "Dosya zaten diskten kalkmış, bu yüzden hiçbir şey silinmiyor. Bu, bölümlerin indirildiğini söylemeye devam eden kaydı düşürür; seri sayfasında mevcut olarak okunmalarının nedeni de budur."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "The file is named for its chapter."
-msgstr ""
+msgstr "Dosyanın adı bölümünü belirtiyor."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12737,8 +12828,9 @@ msgid "the last 90 days"
 msgstr "son 90 gün"
 
 #: src/components/layout/PageLayoutEditor.tsx
+#, fuzzy
 msgid "The layout could not be loaded."
-msgstr ""
+msgstr "Düzen yüklenemedi."
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
@@ -12776,8 +12868,9 @@ msgid "The profile and its reader settings are removed. This can't be undone."
 msgstr "Profil ve okuyucu ayarları silinir. Bu işlem geri alınamaz."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
-msgstr ""
+msgstr "Sağlayıcı bu bölümleri bu cilde atıyor. Genellikle doğrudur, derleme sınırları farklı olabilir."
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -12963,8 +13056,9 @@ msgid "This files a request for every matching entry from your {label} list, up 
 msgstr "Bu, {label} listendeki her eşleşen kayıt için çalıştırma başına sınıra kadar istek oluşturur."
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "This link is missing the creator's name."
-msgstr ""
+msgstr "Bu bağlantıda yaratıcı adı eksik."
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -13033,8 +13127,9 @@ msgid "This replaces your current library and settings with <0>{backupName}</0>,
 msgstr "Geçerli kitaplığınız ve ayarlarınız <0>{backupName}</0> ile değiştirilir, ardından Maki yeniden başlatılır. Geçerli veriler saklanmaz; geri dönebilmek istiyorsanız önce yedek alın. Docker ve systemd Maki'yi kendileri yeniden başlatır; diğer durumlarda Maki'yi yeniden başlatmanız gerekir."
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
-msgstr ""
+msgstr "Bu seride henüz bölüm yok. Maki'nin neyi bağlayacağını bilmesi için önce bir kaynak eşlemesi ekleyin."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -13122,8 +13217,9 @@ msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgstr "Bir öneriyi beğenin, gizleyin veya kapatın, burada görünür."
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
-msgstr ""
+msgstr "Bu dosyanın içerdiği tüm bölümleri işaretleyin. Omnibus veya derleme genellikle bir aralığı kapsar: ilk bölüme tıklayın, ardından Shift tuşuna basılı tutarak son bölüme tıklayın."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -13364,8 +13460,9 @@ msgid "Tries {sourceNames} in priority order and takes the first that has the ch
 msgstr "{sourceNames} kaynaklarını öncelik sırasına göre dener ve bölüme sahip olan ilkini alır. Bunun yerine bir kaynak adlandırmak onu sabitler: geri dönüş yoktur, bu yüzden yalnızca seçtiğiniz yerden bir aday alırsınız."
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Trust {name}"
-msgstr ""
+msgstr "{name} dosyasına güven"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -13503,8 +13600,9 @@ msgid "Unavailable"
 msgstr "Kullanılamıyor"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "unchanged"
-msgstr ""
+msgstr "değişmedi"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -13521,8 +13619,9 @@ msgstr "Geri al"
 
 #. placeholder {0}: String(error)
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Undo failed: {0}"
-msgstr ""
+msgstr "Geri alma başarısız: {0}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -13959,8 +14058,9 @@ msgstr "C. {volume}"
 #. placeholder {0}: c.volume
 #. placeholder {1}: c.number
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Vol.{0} Ch.{1}"
-msgstr ""
+msgstr "Cilt {0} B. {1}"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -14006,8 +14106,9 @@ msgid "Volumes {number}-{volumeEnd}"
 msgstr "{number}-{volumeEnd}. Ciltler"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Volumes that hold chapters still read from single files"
-msgstr ""
+msgstr "Bölümleri içeren ciltler tek dosyalardan okunmaya devam ediyor"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

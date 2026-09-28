@@ -49,8 +49,9 @@ msgstr "Рейтинг должен быть одним из: {ratings}"
 #. its own dedicated refusal above.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: That key scope is not valid
+#, fuzzy
 msgid "error.account.invalidScope"
-msgstr ""
+msgstr "Недопустимая область действия ключа"
 
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -95,8 +96,9 @@ msgstr "Двухфакторная аутентификация уже вклю�
 #. OIDC-linked account cannot also enrol a local authenticator.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: This account signs in through single sign-on, which handles two-factor itself
+#, fuzzy
 msgid "error.account.twoFactorDelegatedToSso"
-msgstr ""
+msgstr "Эта учётная запись использует единый вход, который сам обеспечивает двухфакторную аутентификацию"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -322,8 +324,9 @@ msgstr "У серии нет корневой папки"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path belongs to another series' folder
+#, fuzzy
 msgid "error.chapter.pathInOtherSeries"
-msgstr ""
+msgstr "Путь находится в папке другой серии"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
@@ -543,8 +546,9 @@ msgstr "Папка больше не существует"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
+#, fuzzy
 msgid "error.libraryImport.invalidFolderName"
-msgstr ""
+msgstr "Недопустимое имя папки"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -1037,8 +1041,9 @@ msgstr "У серии выполняется загрузка. Дождитес�
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has an active download. Wait for it to finish before relinking files.
+#, fuzzy
 msgid "error.series.activeDownloadRelink"
-msgstr ""
+msgstr "В серии идёт загрузка. Дождитесь её завершения, прежде чем перепривязывать файлы."
 
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1076,8 +1081,9 @@ msgstr "Файлы не перемещены: {folder} не существует
 #. {folder} is a folder name inside the root folder and is never translated.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself.
+#, fuzzy
 msgid "error.series.folderContainsLinks"
-msgstr ""
+msgstr "Нельзя переместить {folder}: это символическая ссылка или точка соединения либо она содержит такую ссылку. Замените ссылку реальными файлами или переместите папку вручную."
 
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1114,8 +1120,9 @@ msgstr "Не удалось получить метаданные: у серии
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Could not save the series move: {message}
+#, fuzzy
 msgid "error.series.moveSaveFailed"
-msgstr ""
+msgstr "Не удалось сохранить перемещение серии: {message}"
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
@@ -1225,8 +1232,9 @@ msgstr "Серия не найдена"
 #. Shown when the naming formats or metadata changed after the rename preview was loaded.
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+#, fuzzy
 msgid "error.seriesRename.planChanged"
-msgstr ""
+msgstr "План переименования изменился после загрузки предпросмотра. Проверьте новый план и попробуйте ещё раз."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -1825,8 +1833,9 @@ msgstr "В резервной копии нет maki.db. Это не резер�
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: The database in this backup is damaged or is not a Maki database. Nothing was changed.
+#, fuzzy
 msgid "error.system.backupInvalidDb"
-msgstr ""
+msgstr "База данных в этой резервной копии повреждена или это не база Maki. Изменений не внесено."
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
@@ -1837,8 +1846,9 @@ msgstr "Резервная копия создана в более новой в
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
+#, fuzzy
 msgid "error.system.backupUnreadable"
-msgstr ""
+msgstr "Этот файл не является читаемой резервной копией Maki. Повреждён ZIP-архив или его манифест. Изменений не внесено."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
@@ -1848,13 +1858,15 @@ msgstr "Файл не загружен."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Another backup is being created right now. Try again in a moment.
+#, fuzzy
 msgid "error.system.backupInProgress"
-msgstr ""
+msgstr "Прямо сейчас создаётся другая резервная копия. Попробуйте ещё раз через минуту."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Could not create the backup. Check the server logs for details.
+#, fuzzy
 msgid "error.system.backupFailed"
-msgstr ""
+msgstr "Не удалось создать резервную копию. Подробности есть в журналах сервера."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -3207,13 +3219,15 @@ msgstr "{kind} завершено: {path}"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Permanently deleted {path}; chapter records and Wanted flags preserved
+#, fuzzy
 msgid "health.history.deletedFile"
-msgstr ""
+msgstr "Файл {path} удалён безвозвратно; записи о главах и отметки о запрошенных главах сохранены"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Cleared the record for missing {path}; chapter records and Wanted flags preserved
+#, fuzzy
 msgid "health.history.deletedMissing"
-msgstr ""
+msgstr "Очищена запись об отсутствующем файле {path}; записи о главах и отметки о запрошенных главах сохранены"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

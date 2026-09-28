@@ -49,8 +49,9 @@ msgstr "평점은 다음 중 하나여야 합니다: {ratings}"
 #. its own dedicated refusal above.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: That key scope is not valid
+#, fuzzy
 msgid "error.account.invalidScope"
-msgstr ""
+msgstr "해당 키의 권한 범위가 올바르지 않습니다."
 
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -95,8 +96,9 @@ msgstr "2단계 인증이 이미 활성화되어 있습니다"
 #. OIDC-linked account cannot also enrol a local authenticator.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: This account signs in through single sign-on, which handles two-factor itself
+#, fuzzy
 msgid "error.account.twoFactorDelegatedToSso"
-msgstr ""
+msgstr "이 계정은 2단계 인증을 직접 처리하는 SSO를 통해 로그인합니다."
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -322,8 +324,9 @@ msgstr "시리즈에 루트 폴더가 없습니다"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path belongs to another series' folder
+#, fuzzy
 msgid "error.chapter.pathInOtherSeries"
-msgstr ""
+msgstr "경로가 다른 시리즈의 폴더에 속합니다."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
@@ -543,8 +546,9 @@ msgstr "폴더가 더 이상 없습니다"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
+#, fuzzy
 msgid "error.libraryImport.invalidFolderName"
-msgstr ""
+msgstr "폴더 이름이 올바르지 않습니다."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -1037,8 +1041,9 @@ msgstr "시리즈에 활성 다운로드가 있습니다. 이동하기 전에 �
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has an active download. Wait for it to finish before relinking files.
+#, fuzzy
 msgid "error.series.activeDownloadRelink"
-msgstr ""
+msgstr "시리즈 다운로드가 진행 중입니다. 다운로드가 완료될 때까지 기다린 후 파일을 다시 연결하세요."
 
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1076,8 +1081,9 @@ msgstr "파일을 이동하지 않았습니다: {folder}이(가) 존재하지 �
 #. {folder} is a folder name inside the root folder and is never translated.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself.
+#, fuzzy
 msgid "error.series.folderContainsLinks"
-msgstr ""
+msgstr "{folder} 폴더는 심볼릭 링크나 정션이거나 이를 포함하므로 이동할 수 없습니다. 링크를 실제 파일로 바꾸거나 폴더를 직접 이동하세요."
 
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1114,8 +1120,9 @@ msgstr "메타데이터 조회 실패: 시리즈에 제공자 ID가 없거나 �
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Could not save the series move: {message}
+#, fuzzy
 msgid "error.series.moveSaveFailed"
-msgstr ""
+msgstr "시리즈 이동을 저장하지 못했습니다: {message}"
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
@@ -1225,8 +1232,9 @@ msgstr "시리즈를 찾을 수 없습니다"
 #. Shown when the naming formats or metadata changed after the rename preview was loaded.
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+#, fuzzy
 msgid "error.seriesRename.planChanged"
-msgstr ""
+msgstr "미리보기를 불러온 뒤 이름 변경 계획이 바뀌었습니다. 새 계획을 확인하고 다시 시도하세요."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -1825,8 +1833,9 @@ msgstr "백업에 maki.db가 없습니다. Maki 백업이 아닙니다."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: The database in this backup is damaged or is not a Maki database. Nothing was changed.
+#, fuzzy
 msgid "error.system.backupInvalidDb"
-msgstr ""
+msgstr "백업의 데이터베이스가 손상되었거나 Maki 데이터베이스가 아닙니다. 변경 사항은 없습니다."
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
@@ -1837,8 +1846,9 @@ msgstr "백업이 더 최신 버전에서 만들어졌습니다(이 빌드에서
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
+#, fuzzy
 msgid "error.system.backupUnreadable"
-msgstr ""
+msgstr "이 파일은 읽을 수 있는 Maki 백업이 아닙니다. ZIP 파일이나 매니페스트가 손상되었습니다. 변경 사항은 없습니다."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
@@ -1848,13 +1858,15 @@ msgstr "업로드된 파일이 없습니다."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Another backup is being created right now. Try again in a moment.
+#, fuzzy
 msgid "error.system.backupInProgress"
-msgstr ""
+msgstr "다른 백업을 만들고 있습니다. 잠시 후 다시 시도하세요."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Could not create the backup. Check the server logs for details.
+#, fuzzy
 msgid "error.system.backupFailed"
-msgstr ""
+msgstr "백업을 만들지 못했습니다. 자세한 내용은 서버 로그를 확인하세요."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -3207,13 +3219,15 @@ msgstr "{kind} 완료: {path}"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Permanently deleted {path}; chapter records and Wanted flags preserved
+#, fuzzy
 msgid "health.history.deletedFile"
-msgstr ""
+msgstr "{path} 파일을 영구 삭제했습니다. 챕터 기록과 원함 상태를 보존했습니다."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Cleared the record for missing {path}; chapter records and Wanted flags preserved
+#, fuzzy
 msgid "health.history.deletedMissing"
-msgstr ""
+msgstr "누락된 {path}의 기록을 삭제했습니다. 챕터 기록과 원함 상태를 보존했습니다."
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

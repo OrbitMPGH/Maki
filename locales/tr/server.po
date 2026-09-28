@@ -49,8 +49,9 @@ msgstr "Derecelendirme şunlardan biri olmalı: {ratings}"
 #. its own dedicated refusal above.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: That key scope is not valid
+#, fuzzy
 msgid "error.account.invalidScope"
-msgstr ""
+msgstr "Bu anahtarın izin kapsamı geçerli değil"
 
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
@@ -95,8 +96,9 @@ msgstr "İki adımlı doğrulama zaten etkin"
 #. OIDC-linked account cannot also enrol a local authenticator.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: This account signs in through single sign-on, which handles two-factor itself
+#, fuzzy
 msgid "error.account.twoFactorDelegatedToSso"
-msgstr ""
+msgstr "Bu hesap SSO üzerinden oturum açıyor; iki aşamalı doğrulamayı kimlik sağlayıcısı yönetiyor"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -322,8 +324,9 @@ msgstr "Serinin kök klasörü yok"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path belongs to another series' folder
+#, fuzzy
 msgid "error.chapter.pathInOtherSeries"
-msgstr ""
+msgstr "Yol başka bir serinin klasörüne ait"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
@@ -543,8 +546,9 @@ msgstr "Klasör artık yok"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
+#, fuzzy
 msgid "error.libraryImport.invalidFolderName"
-msgstr ""
+msgstr "Geçersiz klasör adı"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -1037,8 +1041,9 @@ msgstr "Serinin devam eden bir indirmesi var, taşımadan önce bitmesini bekley
 
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has an active download. Wait for it to finish before relinking files.
+#, fuzzy
 msgid "error.series.activeDownloadRelink"
-msgstr ""
+msgstr "Serinin etkin bir indirmesi var. Dosyaları yeniden bağlamadan önce indirme tamamlanana kadar bekleyin."
 
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1076,8 +1081,9 @@ msgstr "Dosyalar taşınmadı: {folder} mevcut değil. Önce dosyaları oraya ta
 #. {folder} is a folder name inside the root folder and is never translated.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself.
+#, fuzzy
 msgid "error.series.folderContainsLinks"
-msgstr ""
+msgstr "{folder} klasörü taşınamıyor: kendisi veya içeriği sembolik bağlantı ya da junction içeriyor. Bağlantıyı gerçek dosyalarla değiştirin veya klasörü kendiniz taşıyın."
 
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -1114,8 +1120,9 @@ msgstr "Meta veri araması başarısız oldu, serinin sağlayıcı kimliği yok 
 #. database write failed, so the move is rolled back.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Could not save the series move: {message}
+#, fuzzy
 msgid "error.series.moveSaveFailed"
-msgstr ""
+msgstr "Seri taşıma işlemi kaydedilemedi: {message}"
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
@@ -1225,8 +1232,9 @@ msgstr "Seri bulunamadı"
 #. Shown when the naming formats or metadata changed after the rename preview was loaded.
 #: src/Maki.Api/Services/SeriesRenameService.cs
 #. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+#, fuzzy
 msgid "error.seriesRename.planChanged"
-msgstr ""
+msgstr "Önizleme yüklendikten sonra yeniden adlandırma planı değişti. Yeni planı gözden geçirip tekrar deneyin."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -1825,8 +1833,9 @@ msgstr "Yedekte maki.db yok. Bu bir Maki yedeği değil."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: The database in this backup is damaged or is not a Maki database. Nothing was changed.
+#, fuzzy
 msgid "error.system.backupInvalidDb"
-msgstr ""
+msgstr "Bu yedekteki veritabanı hasarlı veya bir Maki veritabanı değil. Hiçbir şey değiştirilmedi."
 
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
@@ -1837,8 +1846,9 @@ msgstr "Yedek daha yeni bir sürümden alınmış (bu derlemede \"{migration}\" 
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
+#, fuzzy
 msgid "error.system.backupUnreadable"
-msgstr ""
+msgstr "Bu dosya okunabilir bir Maki yedeği değil. ZIP dosyası ya da manifest dosyası hasarlı. Hiçbir şey değiştirilmedi."
 
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
@@ -1848,13 +1858,15 @@ msgstr "Dosya yüklenmedi."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Another backup is being created right now. Try again in a moment.
+#, fuzzy
 msgid "error.system.backupInProgress"
-msgstr ""
+msgstr "Şu anda başka bir yedek oluşturuluyor. Birazdan tekrar deneyin."
 
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Could not create the backup. Check the server logs for details.
+#, fuzzy
 msgid "error.system.backupFailed"
-msgstr ""
+msgstr "Yedek oluşturulamadı. Ayrıntılar için sunucu günlüklerini kontrol edin."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -3207,13 +3219,15 @@ msgstr "{kind} tamamlandı: {path}"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Permanently deleted {path}; chapter records and Wanted flags preserved
+#, fuzzy
 msgid "health.history.deletedFile"
-msgstr ""
+msgstr "{path} kalıcı olarak silindi; bölüm kayıtları ve İsteniyor işaretleri korundu"
 
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Cleared the record for missing {path}; chapter records and Wanted flags preserved
+#, fuzzy
 msgid "health.history.deletedMissing"
-msgstr ""
+msgstr "Eksik {path} kaydı temizlendi; bölüm kayıtları ve İsteniyor işaretleri korundu"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

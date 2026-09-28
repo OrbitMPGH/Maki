@@ -39,8 +39,9 @@ msgid "(blank when unset)"
 msgstr "（未设置时留空）"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "(cannot be undone)"
-msgstr ""
+msgstr "（无法撤销）"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -55,33 +56,39 @@ msgstr "{0, plural, other {# 个改编作品}}"
 
 #. placeholder {0}: counts.fills
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# becomes readable} other {# become readable}}"
-msgstr ""
+msgstr "{0, plural, other {# 个章节变为可阅读}}"
 
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter moves onto a volume} other {# chapters move onto volumes}}"
-msgstr ""
+msgstr "{0, plural, other {# 个章节移至卷文件}}"
 
 #. placeholder {0}: row.labels.length
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter onto this volume} other {# chapters onto this volume}}"
-msgstr ""
+msgstr "{0, plural, other {# 个章节移至此卷}}"
 
 #. placeholder {0}: r.moved
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter relinked} other {# chapters relinked}}"
-msgstr ""
+msgstr "{0, plural, other {# 个章节已重新关联}}"
 
 #. placeholder {0}: selected.size
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
-msgstr ""
+msgstr "{0, plural, other {# 个章节已选中}}"
 
 #. placeholder {0}: chapterIds.length
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# chapter} other {# chapters}}"
-msgstr ""
+msgstr "{0, plural, other {# 个章节}}"
 
 #. placeholder {0}: r.failed
 #: src/components/SeriesFilesSection.tsx
@@ -91,13 +98,15 @@ msgstr "{0, plural, other {# 个无法删除（文件被锁定或权限不足）
 
 #. placeholder {0}: r.failed
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# file could not be deleted (locked or permission denied)} other {# files could not be deleted (locked or permission denied)}}"
-msgstr ""
+msgstr "{0, plural, other {# 个文件无法删除（已锁定或权限不足）}}"
 
 #. placeholder {0}: r.deleted
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
-msgstr ""
+msgstr "{0, plural, other {已删除 # 个文件}}"
 
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
@@ -107,13 +116,15 @@ msgstr "{0, plural, other {# 个不在 {displayName} 上，因此保持原样。
 
 #. placeholder {0}: counts.kept
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# kept where it is} other {# kept where they are}}"
-msgstr ""
+msgstr "{0, plural, other {# 个保持原位}}"
 
 #. placeholder {0}: counts.kept
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {# kept} other {# kept}}"
-msgstr ""
+msgstr "{0, plural, other {# 个保留}}"
 
 #. placeholder {0}: items.length
 #: src/components/CatalogueBrowser.tsx
@@ -169,8 +180,9 @@ msgstr "{0, plural, other {已批准，已将 # 个章节加入队列}}"
 
 #. placeholder {0}: row.labels.length
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{0, plural, one {becomes readable} other {become readable}}"
-msgstr ""
+msgstr "{0, plural, other {变为可阅读}}"
 
 #. placeholder {0}: queue?.total ?? 0
 #: src/pages/ActivityPage.tsx
@@ -433,8 +445,9 @@ msgid "{completed} / {total} files inspected"
 msgstr "已检查 {completed} / {total} 个文件"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{completeVolumes, plural, one {# volume already complete} other {# volumes already complete}}"
-msgstr ""
+msgstr "{completeVolumes, plural, other {# 个卷已完整}}"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -527,16 +540,19 @@ msgid "{embedded, plural, one {# new} other {# new}}"
 msgstr "{embedded, plural, other {新增 # 个}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{emptied, plural, one {# single file ends up holding nothing} other {# single files end up holding nothing}}"
-msgstr ""
+msgstr "{emptied, plural, other {# 个单独文件将变为空}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{emptied, plural, one {Delete # file} other {Delete # files}}"
-msgstr ""
+msgstr "{emptied, plural, other {删除 # 个文件}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{emptied, plural, one {Keep that file} other {Keep those # files}}"
-msgstr ""
+msgstr "{emptied, plural, other {保留这 # 个文件}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -564,8 +580,9 @@ msgid "{fileCount, plural, one {# file} other {# files}}"
 msgstr "{fileCount, plural, other {# 个文件}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
-msgstr ""
+msgstr "{fileCount, plural, other {# 个单独的文件}}"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -804,8 +821,9 @@ msgid "{missingWanted} wanted chapter(s) are missing"
 msgstr "缺少 {missingWanted} 个想要的章节"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
-msgstr ""
+msgstr "{moreCount, plural, other {还有 +# 个}}"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -1188,12 +1206,14 @@ msgid "{total, plural, one {Imported {ok}/# folder} other {Imported {ok}/# folde
 msgstr "{total, plural, other {已导入 {ok}/# 个文件夹}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{total, plural, one {Relink # chapter and delete} other {Relink # chapters and delete}}"
-msgstr ""
+msgstr "{total, plural, other {重新关联 # 个章节并删除}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{total, plural, one {Relink # chapter} other {Relink # chapters}}"
-msgstr ""
+msgstr "{total, plural, other {重新关联 # 个章节}}"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -1241,20 +1261,24 @@ msgid "{typeLabel} (another profile)"
 msgstr "{typeLabel}（另一个配置文件）"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "{unlinkedFilesOnDisk, plural, one {# file in the series folder isn't linked to any chapter.} other {# files in the series folder aren't linked to any chapter.}}"
-msgstr ""
+msgstr "{unlinkedFilesOnDisk, plural, other {系列文件夹中有 # 个文件未关联到任何章节。}}"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "{unlinkedOnDisk, plural, one {# file in this folder isn't linked to any chapter, so it can't be read yet.} other {# files in this folder aren't linked to any chapter, so they can't be read yet.}}"
-msgstr ""
+msgstr "{unlinkedOnDisk, plural, other {此文件夹中有 # 个文件未关联到任何章节，因此暂时无法阅读。}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{unmatched, plural, one {# file could not be matched to a chapter. Link it by hand on the Files tab.} other {# files could not be matched to a chapter. Link them by hand on the Files tab.}}"
-msgstr ""
+msgstr "{unmatched, plural, other {# 个文件无法匹配到章节。请在“文件”标签页中手动关联。}}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "{unmatched, plural, one {# file Maki could not match to a chapter} other {# files Maki could not match to a chapter}}"
-msgstr ""
+msgstr "{unmatched, plural, other {Maki 无法将 # 个文件匹配到章节}}"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -1659,8 +1683,9 @@ msgid "A newer Maki release was published."
 msgstr "Maki 发布了更新版本。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
-msgstr ""
+msgstr "这是对已完结且所有卷文件都在磁盘上的系列所作的按比例估算。仅在没有更合适的文件涵盖该章节时使用。"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -2265,8 +2290,9 @@ msgid "Analyze new files and run daily reconciliation"
 msgstr "分析新文件并执行每日核对"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "and"
-msgstr ""
+msgstr "和"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2748,8 +2774,9 @@ msgid "Because: {reasonList}"
 msgstr "原因：{reasonList}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "becomes readable"
-msgstr ""
+msgstr "变为可阅读"
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -3079,12 +3106,14 @@ msgid "Ch. {chapters}"
 msgstr "第 {chapters} 章"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {first}"
-msgstr ""
+msgstr "第 {first} 章"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {first} to {last}"
-msgstr ""
+msgstr "第 {first} 至 {last} 章"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -3112,12 +3141,14 @@ msgid "ch. {from}+"
 msgstr "第 {from} 章起"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {label}: {detail}"
-msgstr ""
+msgstr "第 {label} 章：{detail}"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Ch. {list}"
-msgstr ""
+msgstr "第 {list} 章"
 
 #: src/components/home/AnimeResumeRail.tsx
 #, fuzzy
@@ -3171,8 +3202,9 @@ msgstr "第 {start}–{end} 章"
 
 #. placeholder {0}: c.number
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Ch.{0}"
-msgstr ""
+msgstr "第 {0} 章"
 
 #: src/api/queue.ts
 #, fuzzy
@@ -3205,8 +3237,9 @@ msgid "Change how individual titles affect recommendations."
 msgstr "更改各个标题对推荐的影响。"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Change linked chapters"
-msgstr ""
+msgstr "更改关联的章节"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -3586,8 +3619,9 @@ msgid "Click a token to insert it."
 msgstr "点击令牌以插入。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "click one to keep it where it is"
-msgstr ""
+msgstr "点击某个章节，将其保留在当前位置"
 
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/SettingsPage.tsx
@@ -4008,8 +4042,9 @@ msgid "Corrupt"
 msgstr "已损坏"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Could not build a plan for this series."
-msgstr ""
+msgstr "无法为此系列生成重新关联方案。"
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -4044,12 +4079,14 @@ msgid "Could not load your signals: {loadError}"
 msgstr "无法加载你的信号：{loadError}"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
-msgstr ""
+msgstr "无法读取 {seriesFailed, plural, other {# 个系列}} 的阅读进度"
 
 #: src/pages/SettingsPage.tsx
+#, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
-msgstr ""
+msgstr "无法读取 {seriesFailed, plural, other {# 个系列}} 的阅读进度：{titles}"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4067,28 +4104,34 @@ msgid "Could not update {surface} feedback: {reason}"
 msgstr "无法更新 {surface} 反馈：{reason}"
 
 #: src/components/NotificationsSection.tsx
+#, fuzzy
 msgid "Couldn't load notification connections"
-msgstr ""
+msgstr "无法加载通知连接"
 
 #: src/components/rails/CustomRailSection.tsx
+#, fuzzy
 msgid "Couldn't load this rail"
-msgstr ""
+msgstr "无法加载此横栏"
 
 #: src/pages/HomePage.tsx
+#, fuzzy
 msgid "Couldn't load your library"
-msgstr ""
+msgstr "无法加载你的资料库"
 
 #: src/pages/NotificationsPage.tsx
+#, fuzzy
 msgid "Couldn't load your notifications"
-msgstr ""
+msgstr "无法加载你的通知"
 
 #: src/pages/HomePage.tsx
+#, fuzzy
 msgid "Couldn't load your reading progress"
-msgstr ""
+msgstr "无法加载你的阅读进度"
 
 #: src/components/RatingImportModal.tsx
+#, fuzzy
 msgid "Couldn't reach {label}."
-msgstr ""
+msgstr "无法连接到 {label}。"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4169,8 +4212,9 @@ msgid "Created under Apps in Gotify."
 msgstr "在 Gotify 的 Apps 下创建。"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Creator"
-msgstr ""
+msgstr "创作者"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -4417,8 +4461,9 @@ msgid "Delete the rail \"{railName}\"? Its filters go with it."
 msgstr "删除推荐栏“{railName}”？其筛选条件也会一并删除。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Delete them, free {emptiedSize}"
-msgstr ""
+msgstr "删除这些文件，释放 {emptiedSize}"
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -4446,8 +4491,9 @@ msgid "Deleting"
 msgstr "正在删除"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Deleting files needs the Delete series permission"
-msgstr ""
+msgstr "删除文件需要“删除系列”权限"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5047,8 +5093,9 @@ msgid "Esc closes"
 msgstr "按 Esc 关闭"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Estimated"
-msgstr ""
+msgstr "估算"
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -5061,16 +5108,19 @@ msgid "Every chapter"
 msgstr "每个章节"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Every chapter after"
-msgstr ""
+msgstr "此后的所有章节"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Every chapter is already on the best file available."
-msgstr ""
+msgstr "每个章节都已关联到当前可用的最佳文件。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Every chapter is already on the best file available. Nothing to change."
-msgstr ""
+msgstr "每个章节都已关联到当前可用的最佳文件。无需更改。"
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -5221,8 +5271,9 @@ msgid "Existing folders on import"
 msgstr "导入时对已有文件夹的处理方式"
 
 #: src/components/layout/PageLayoutEditor.tsx
+#, fuzzy
 msgid "Exit editing"
-msgstr ""
+msgstr "退出编辑"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -5381,8 +5432,9 @@ msgid "File naming on import"
 msgstr "导入时的文件命名"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "file on disk, not linked"
-msgstr ""
+msgstr "磁盘上未关联的文件"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -5398,8 +5450,9 @@ msgid "Files"
 msgstr "文件"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Files that hold chapters marked missing"
-msgstr ""
+msgstr "包含当前标记为缺失的章节的文件"
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -5407,8 +5460,9 @@ msgid "Film / OVA"
 msgstr "电影 / OVA"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Filter by chapter number or title"
-msgstr ""
+msgstr "按章节编号或标题筛选"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -5663,16 +5717,19 @@ msgid "From"
 msgstr "从"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From its name"
-msgstr ""
+msgstr "根据文件名"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From its pages"
-msgstr ""
+msgstr "根据压缩包内的页面文件名"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From metadata"
-msgstr ""
+msgstr "根据元数据"
 
 #: src/components/discover/DiscoverReviews.tsx
 #, fuzzy
@@ -5685,8 +5742,9 @@ msgid "From the metadata provider, not your own tags"
 msgstr "来自元数据提供方，而不是你自己的标签"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "From their names"
-msgstr ""
+msgstr "根据文件名"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -6133,8 +6191,9 @@ msgid "Hours"
 msgstr "小时"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Hover a cell for its number."
-msgstr ""
+msgstr "将鼠标悬停在单元格上可查看章节编号。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -6668,12 +6727,14 @@ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Ful
 msgstr "让此系列不出现在跟踪器推送中，完整模式下还会将其完全排除在统计之外。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Kept as linked"
-msgstr ""
+msgstr "保持现有关联"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "kept where it is"
-msgstr ""
+msgstr "保持原位"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -6805,8 +6866,9 @@ msgid "Last run {when}: {added} added, {requested} requested, {skipped} skipped,
 msgstr "上次运行{when}：添加{added}个，申请{requested}个，跳过{skipped}个，{errors}个错误"
 
 #: src/components/ImportListsSection.tsx
+#, fuzzy
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
-msgstr ""
+msgstr "上次运行于 {when}：已跳过，尚未下载本地 MangaBaka 数据库"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7026,8 +7088,9 @@ msgid "Link"
 msgstr "关联"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Link {chapterLbl} to a file"
-msgstr ""
+msgstr "将 {chapterLbl} 关联到文件"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -7055,21 +7118,25 @@ msgid "Link and unlink per-series sources"
 msgstr "关联和取消关联每个系列的来源"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Link by hand"
-msgstr ""
+msgstr "手动关联"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Link chapters"
-msgstr ""
+msgstr "关联章节"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Link chapters to {fileName}"
-msgstr ""
+msgstr "将章节关联到 {fileName}"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Link chapters to this file"
-msgstr ""
+msgstr "将章节关联到此文件"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -7082,12 +7149,14 @@ msgid "Link source"
 msgstr "关联来源"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Link those by hand on the Files tab."
-msgstr ""
+msgstr "请在“文件”标签页中手动关联这些章节。"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Link to a file already on disk"
-msgstr ""
+msgstr "关联到磁盘上已有的文件"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -7156,8 +7225,9 @@ msgid "Load more"
 msgstr "加载更多"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Loading chapters…"
-msgstr ""
+msgstr "正在加载章节…"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationBell.tsx
@@ -7315,8 +7385,9 @@ msgid "Maki can't reach this folder"
 msgstr "Maki 无法访问此文件夹"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Maki checked the folder against the chapter list. Tick what to trust and watch the map. Nothing changes until you press Relink."
-msgstr ""
+msgstr "Maki 已将文件夹与章节列表进行比对。勾选要信任的文件，并查看映射结果。按下“重新关联”前不会更改任何内容。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7643,8 +7714,9 @@ msgid "minutes read"
 msgstr "阅读分钟数"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "missing"
-msgstr ""
+msgstr "缺失"
 
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/pages/HealthPage.tsx
@@ -7865,8 +7937,9 @@ msgid "Move up in queue"
 msgstr "在队列中上移"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "moves onto a volume"
-msgstr ""
+msgstr "移至卷文件"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -8144,8 +8217,9 @@ msgid "No chapters known."
 msgstr "没有已知章节。"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "No chapters match that filter."
-msgstr ""
+msgstr "没有符合筛选条件的章节。"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -8475,8 +8549,9 @@ msgid "not {names}"
 msgstr "不包含 {names}"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Not a valid creator name"
-msgstr ""
+msgstr "创作者名称无效"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8547,8 +8622,9 @@ msgid "Not linked yet. Sign in with {displayName} once to enable it for this acc
 msgstr "尚未关联。使用 {displayName} 登录一次即可为此账户启用。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Not listed:"
-msgstr ""
+msgstr "未列出："
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -8655,12 +8731,14 @@ msgid "Nothing here is final. Every option is also in Settings."
 msgstr "这里的设置都不是最终决定。之后也可以在“设置”中修改。"
 
 #: src/components/ImportListsSection.tsx
+#, fuzzy
 msgid "Nothing imported: import lists need the local MangaBaka database."
-msgstr ""
+msgstr "未导入任何内容：导入列表需要本地 MangaBaka 数据库。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
-msgstr ""
+msgstr "文件中没有信息可以确定这些章节，因此保留当前关联。"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -8768,8 +8846,9 @@ msgid "Nothing to recommend yet"
 msgstr "暂无推荐内容"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Nothing to relink"
-msgstr ""
+msgstr "无需重新关联"
 
 #: src/components/LuckyButton.tsx
 #, fuzzy
@@ -8944,8 +9023,9 @@ msgid "On"
 msgstr "开启"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "On another file"
-msgstr ""
+msgstr "在另一个文件中"
 
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
@@ -10004,8 +10084,9 @@ msgid "Reading stats need Kavita"
 msgstr "阅读统计需要 Kavita"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Reading the folder and every volume archive…"
-msgstr ""
+msgstr "正在读取文件夹和所有卷压缩包…"
 
 #: src/components/RatingImportModal.tsx
 #, fuzzy
@@ -10038,8 +10119,9 @@ msgid "Rebuild all"
 msgstr "全部重建"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "Rebuild chapter links from the folder, volumes first"
-msgstr ""
+msgstr "根据文件夹重建章节关联，优先处理卷文件"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -10281,12 +10363,14 @@ msgstr "发布中"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Relink files"
-msgstr ""
+msgstr "重新关联文件"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
-msgstr ""
+msgstr "重新关联操作会读取每个卷文件以查找其中的章节。无法匹配的内容可手动关联。"
 
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -11465,8 +11549,9 @@ msgid "Select filtered"
 msgstr "选择筛选结果"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Select missing ({missingCount})"
-msgstr ""
+msgstr "选择缺失章节 ({missingCount})"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11911,8 +11996,9 @@ msgid "Sign out everywhere else"
 msgstr "退出其他所有设备"
 
 #: src/components/settings/AccountSection.tsx
+#, fuzzy
 msgid "Sign-in relies on your identity provider. A code, once set up, protects password sign-in only."
-msgstr ""
+msgstr "登录依赖身份提供方。设置验证码后，它只会保护密码登录。"
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -12341,12 +12427,14 @@ msgid "Stay here"
 msgstr "留在这里"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "stay missing"
-msgstr ""
+msgstr "仍标记为缺失"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "stay where they are"
-msgstr ""
+msgstr "保持原位"
 
 #: src/components/discover/DiscoverTasteStrip.tsx
 #, fuzzy
@@ -12625,8 +12713,9 @@ msgid "That chapter no longer exists"
 msgstr "该章节已不存在"
 
 #: src/components/SeriesFilesSection.tsx
+#, fuzzy
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
-msgstr ""
+msgstr "合订卷或匹配器无法解析的文件名会导致这种情况。先尝试“重新关联文件”，此操作会读取每个卷文件以查找其中的章节；无法匹配的内容可点击所在行的关联按钮手动处理。"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -12679,8 +12768,9 @@ msgid "The catalogue rails need the local MangaBaka database (Settings → Metad
 msgstr "目录横栏需要本地 MangaBaka 数据库（设置 → 元数据 → 本地数据库）。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "The chapter numbers are in the archive's page file names. Certain."
-msgstr ""
+msgstr "压缩包内的页面文件名包含章节编号，这个判断很确定。"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -12693,8 +12783,9 @@ msgid "The file is already off the disk, so nothing is deleted. This drops the r
 msgstr "文件已经不在磁盘上，因此不会删除任何内容。这会删除仍表明章节已下载的记录，所以系列页面不再将它们显示为可用。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "The file is named for its chapter."
-msgstr ""
+msgstr "文件名对应其章节编号。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -12737,8 +12828,9 @@ msgid "the last 90 days"
 msgstr "过去 90 天"
 
 #: src/components/layout/PageLayoutEditor.tsx
+#, fuzzy
 msgid "The layout could not be loaded."
-msgstr ""
+msgstr "无法加载布局。"
 
 #: src/pages/stats/AchievementGrid.tsx
 #, fuzzy
@@ -12776,8 +12868,9 @@ msgid "The profile and its reader settings are removed. This can't be undone."
 msgstr "配置及其阅读器设置将被删除。此操作无法撤销。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "The provider assigns these chapters to this volume. Usually right, compilation boundaries can differ."
-msgstr ""
+msgstr "元数据提供方将这些章节分配给此卷。通常准确，但合集分卷边界可能不同。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -12963,8 +13056,9 @@ msgid "This files a request for every matching entry from your {label} list, up 
 msgstr "这会为你在{label}列表中每个匹配的条目提交申请，最多达到每次运行上限。"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "This link is missing the creator's name."
-msgstr ""
+msgstr "此链接缺少创作者名称。"
 
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
@@ -13033,8 +13127,9 @@ msgid "This replaces your current library and settings with <0>{backupName}</0>,
 msgstr "这会使用 <0>{backupName}</0> 替换当前资料库和设置，然后重启 Maki。当前数据不会保留；如果需要恢复，请先备份。Docker 和 systemd 会自动重新启动 Maki；否则请手动重新启动。"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
-msgstr ""
+msgstr "此系列还没有章节。请先添加来源映射，让 Maki 知道要关联哪些内容。"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -13122,8 +13217,9 @@ msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgstr "对推荐进行点赞、隐藏或忽略后，内容会显示在这里。"
 
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
-msgstr ""
+msgstr "勾选此文件包含的所有章节。合订本或合集通常包含一段章节范围：先点击第一章，再按住 Shift 点击最后一章。"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -13364,8 +13460,9 @@ msgid "Tries {sourceNames} in priority order and takes the first that has the ch
 msgstr "按优先级顺序尝试 {sourceNames}，并采用第一个包含该章节的来源。指定来源则会将其固定：不会回退，因此候选项只会来自你选择的来源。"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Trust {name}"
-msgstr ""
+msgstr "信任 {name}"
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -13503,8 +13600,9 @@ msgid "Unavailable"
 msgstr "不可用"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "unchanged"
-msgstr ""
+msgstr "未更改"
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -13521,8 +13619,9 @@ msgstr "撤销"
 
 #. placeholder {0}: String(error)
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Undo failed: {0}"
-msgstr ""
+msgstr "撤销失败：{0}"
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -13959,8 +14058,9 @@ msgstr "第 {volume} 卷"
 #. placeholder {0}: c.volume
 #. placeholder {1}: c.number
 #: src/components/LinkFileToChaptersModal.tsx
+#, fuzzy
 msgid "Vol.{0} Ch.{1}"
-msgstr ""
+msgstr "第 {0} 卷，第 {1} 章"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -14006,8 +14106,9 @@ msgid "Volumes {number}-{volumeEnd}"
 msgstr "第 {number}-{volumeEnd} 卷"
 
 #: src/components/RelinkFilesModal.tsx
+#, fuzzy
 msgid "Volumes that hold chapters still read from single files"
-msgstr ""
+msgstr "卷文件将接收目前仍关联到单个文件的章节"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
