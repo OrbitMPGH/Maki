@@ -106,7 +106,7 @@ public class SemanticSearcher(
         var plan = index.Plan(filters);
         if (credits.SeriesIds is { } restricted)
         {
-            plan = plan with { CreditMask = index.BuildRowMask(restricted) };
+            plan = plan.RestrictTo(index.BuildRowMask(restricted));
         }
 
         // An impossible catalogue filter still gets as far as exact-title detection below: exact

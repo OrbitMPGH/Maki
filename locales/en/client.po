@@ -2020,8 +2020,8 @@ msgstr "Archives inventoried"
 msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
 
+#: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Art"
 msgstr "Art"
@@ -2822,6 +2822,10 @@ msgstr "Check for updates"
 msgid "Check now"
 msgstr "Check now"
 
+#: src/api/inbox.ts
+msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
+msgstr "Checked after each nightly catalogue update. Follow someone from their creator page."
+
 #: src/components/MetadataDumpProgress.tsx
 msgid "Checking for a new metadata snapshot"
 msgstr "Checking for a new metadata snapshot"
@@ -3429,6 +3433,14 @@ msgstr "Creator"
 msgid "Creators"
 msgstr "Creators"
 
+#: src/components/CreditPicker.tsx
+msgid "Creators and studios"
+msgstr "Creators and studios"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Creators you follow"
+msgstr "Creators you follow"
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Creators you return to"
 msgstr "Creators you return to"
@@ -3740,6 +3752,7 @@ msgstr "Discord channel ID"
 msgid "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound, tags, requests, series added, series removed, manual match"
 msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound, tags, requests, series added, series removed, manual match"
 
+#: src/api/inbox.ts
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
@@ -4239,6 +4252,10 @@ msgstr "Everything else"
 msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
 msgstr "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
 
+#: src/components/discover/FollowingRail.tsx
+msgid "Everything they have in the catalogue is already in your library."
+msgstr "Everything they have in the catalogue is already in your library."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Everything you own"
 msgstr "Everything you own"
@@ -4603,6 +4620,14 @@ msgstr "Folder path"
 #: src/pages/ImportPage.tsx
 msgid "Folders are renamed to the English title and their comic files are linked to chapters."
 msgstr "Folders are renamed to the English title and their comic files are linked to chapters."
+
+#: src/pages/CreatorPage.tsx
+msgid "Follow"
+msgstr "Follow"
+
+#: src/pages/CreatorPage.tsx
+msgid "Following"
+msgstr "Following"
 
 #: src/components/ui/seriesNotifications.ts
 msgid "Follows the default on your notification settings."
@@ -5300,10 +5325,6 @@ msgstr "Incognito: {incognito}"
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Incognito: {mode}"
 msgstr "Incognito: {mode}"
-
-#: src/pages/HealthPage.tsx
-msgid "Incomplete"
-msgstr "Incomplete"
 
 #: src/pages/HealthPage.tsx
 msgid "Index"
@@ -6013,6 +6034,10 @@ msgstr "Maki speaks your language"
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 msgstr "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 
+#: src/components/discover/FollowingRail.tsx
+msgid "Manage"
+msgstr "Manage"
+
 #: src/components/settings/UsersSection.tsx
 msgid "Manage queue"
 msgstr "Manage queue"
@@ -6583,6 +6608,11 @@ msgstr "New chapters fetched automatically, last 30 days."
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "New chapters, finished downloads and unlocked achievements land here."
 
+#: src/api/hooks.ts
+#: src/components/discover/FollowingRail.tsx
+msgid "New from creators you follow"
+msgstr "New from creators you follow"
+
 #: src/pages/SettingsPage.tsx
 msgid "New OPDS feed URL generated"
 msgstr "New OPDS feed URL generated"
@@ -6607,6 +6637,10 @@ msgstr "New series"
 #: src/pages/SettingsPage.tsx
 msgid "New series defaults"
 msgstr "New series defaults"
+
+#: src/api/inbox.ts
+msgid "New series from creators you follow"
+msgstr "New series from creators you follow"
 
 #: src/components/TagManagerModal.tsx
 msgid "New tag…"
@@ -6753,6 +6787,7 @@ msgstr "No match"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/CreditPicker.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -9169,6 +9204,10 @@ msgstr "Search (Ctrl+K)"
 msgid "Search by chapter number or title"
 msgstr "Search by chapter number or title"
 
+#: src/components/CreditPicker.tsx
+msgid "Search by name"
+msgstr "Search by name"
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Search by title, description, or author:\"Junji Ito\""
 msgstr "Search by title, description, or author:\"Junji Ito\""
@@ -9645,6 +9684,7 @@ msgstr "Show less"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "Show more"
@@ -9674,6 +9714,10 @@ msgstr "Show reading streaks"
 #: src/components/AnimeCoverageBar.tsx
 msgid "Show source text"
 msgstr "Show source text"
+
+#: src/pages/CreatorPage.tsx
+msgid "Show their newest titles in a rail on Home and Discover"
+msgstr "Show their newest titles in a rail on Home and Discover"
 
 #: src/components/layout/SectionProperties.tsx
 msgid "Show this section"
@@ -10111,6 +10155,10 @@ msgstr "Still early access on {source}, Maki will check again later"
 msgid "Still going"
 msgstr "Still going"
 
+#: src/pages/CreatorPage.tsx
+msgid "Stop showing their new titles on Home and Discover"
+msgstr "Stop showing their new titles on Home and Discover"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Stopped before finishing"
 msgstr "Stopped before finishing"
@@ -10119,8 +10167,8 @@ msgstr "Stopped before finishing"
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Storage, metadata, download clients and integrations for your Maki instance."
 
+#: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Story"
 msgstr "Story"
@@ -10133,7 +10181,7 @@ msgstr "Streak"
 msgid "Stuck downloads"
 msgstr "Stuck downloads"
 
-#: src/pages/CreatorPage.tsx
+#: src/components/CreditPicker.tsx
 msgid "Studio"
 msgstr "Studio"
 
@@ -10434,6 +10482,11 @@ msgstr "The most explicit rating shown to you in search, Discover and recommenda
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "The most popular titles in the MangaBaka catalogue."
 
+#: src/components/discover/discoverSectionDefs.ts
+#: src/components/home/homeSectionDefs.ts
+msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
+msgstr "The newest titles from the creators and studios you follow. Empty until you follow someone."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "The odd one out"
 msgstr "The odd one out"
@@ -10726,6 +10779,10 @@ msgstr "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
 msgstr "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+msgstr "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Time"
 msgstr "Time"
@@ -10737,10 +10794,6 @@ msgstr "Time range"
 #: src/components/home/ProgressCard.tsx
 msgid "time read"
 msgstr "time read"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
-msgstr "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Time read"
@@ -10790,6 +10843,10 @@ msgstr "Title search"
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Titles"
 msgstr "Titles"
+
+#: src/components/CreditPicker.tsx
+msgid "Titles credited to any of them."
+msgstr "Titles credited to any of them."
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Titles from"
@@ -11012,6 +11069,7 @@ msgstr "Type"
 msgid "Type mix"
 msgstr "Type mix"
 
+#: src/components/CreditPicker.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "Type to search…"
 msgstr "Type to search…"
@@ -11059,6 +11117,14 @@ msgstr "Undo failed: {0}"
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Undone"
 msgstr "Undone"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Unfollow"
+msgstr "Unfollow"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Unfollow {name}"
+msgstr "Unfollow {name}"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -11788,6 +11854,10 @@ msgstr "You finished {animeTitle} ({coveredLabel}). That likely covers up to ch.
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
+
+#: src/components/discover/FollowingRail.tsx
+msgid "You follow nobody yet. Open a creator or studio and press Follow."
+msgstr "You follow nobody yet. Open a creator or studio and press Follow."
 
 #: src/components/AnimeCoverageBar.tsx
 msgid "You have read to ch. {readChapter}"

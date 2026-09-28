@@ -1,5 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import {
+  IconBell,
   IconBook,
   IconBookmarks,
   IconChartBar,
@@ -59,6 +60,11 @@ export const HOME_SECTION_DEFS: SectionRegistry = {
     icon: IconBookmarks,
     label: HOME_SECTION_LABELS.recent,
     description: msg`Series with newly added chapters.`,
+  },
+  following: {
+    icon: IconBell,
+    label: HOME_SECTION_LABELS.following,
+    description: msg`The newest titles from the creators and studios you follow. Empty until you follow someone.`,
   },
   recommended: {
     icon: IconSparkles,

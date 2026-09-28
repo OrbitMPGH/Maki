@@ -34,6 +34,23 @@ public sealed record FilterPlan(
         MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
         Genres is null && Tags is null && ContentRatings is null && CreditMask is null &&
         Rules is null && Hidden is null && Exclude is null;
+
+    /// <summary>Narrows <see cref="CreditMask"/> to rows <paramref name="mask"/> also allows.</summary>
+    public FilterPlan RestrictTo(bool[] mask)
+    {
+        if (CreditMask is not { } current)
+        {
+            return this with { CreditMask = mask };
+        }
+
+        var both = new bool[mask.Length];
+        for (var i = 0; i < both.Length; i++)
+        {
+            both[i] = mask[i] && current[i];
+        }
+
+        return this with { CreditMask = both };
+    }
 }
 
 /// <summary>A <see cref="CatalogueRule"/> resolved to this index's ids.</summary>
@@ -472,7 +489,8 @@ public sealed class VectorIndex(
             resolvedGenres,
             resolvedTags,
             ResolveBytes(filters.ContentRatings, vocabularies.ContentRatings),
-            impossible,
+            impossible || filters.CreditIds is { Count: 0 },
+            CreditMask: filters.CreditIds is { Count: > 0 } creditIds ? BuildRowMask(creditIds.ToArray()) : null,
             Rules: rules?.ToArray(),
             Hidden: hidden);
     }

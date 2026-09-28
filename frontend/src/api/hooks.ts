@@ -204,6 +204,14 @@ export interface RecommendationFilters {
   contentRatings?: string[]
   /** Genre and tag rules, ANDed together. See {@link CatalogueRule}. */
   rules?: CatalogueRule[]
+  /** Creators and studios; a series credited to any one of them passes. */
+  credits?: CatalogueCredit[]
+}
+
+/** A creator or studio by name. `role` narrows it to one credit; omitted means any. */
+export interface CatalogueCredit {
+  name: string
+  role?: 'author' | 'artist' | 'studio' | null
 }
 
 /**
@@ -868,6 +876,7 @@ export const HOME_SECTIONS = [
   'jumpback',
   'fromanime',
   'recent',
+  'following',
   'recommended',
   'popular',
 ] as const
@@ -887,6 +896,7 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   recent: msg`Recently added`,
   jumpback: msg`Jump back in`,
   fromanime: msg`Continue from the anime`,
+  following: msg`New from creators you follow`,
   recommended: msg`You might like`,
   popular: msg`Currently popular`,
 }
@@ -910,6 +920,7 @@ export const DISCOVER_SECTIONS = [
   'hero',
   'taste',
   'recent',
+  'following',
   'sideinterests',
   'cohort',
   'trending',
@@ -923,6 +934,7 @@ export const DISCOVER_SECTION_LABELS: Record<DiscoverSectionKey, MessageDescript
   hero: msg`Spotlight`,
   taste: msg`Your taste`,
   recent: msg`Based on your recent activity`,
+  following: msg`New from creators you follow`,
   sideinterests: msg`Side interests`,
   cohort: msg`Readers like you`,
   trending: msg`Trending now`,
@@ -1275,6 +1287,7 @@ export interface SearchDefaults {
   minRating?: number | null
   contentRatings?: string[] | null
   rules?: CatalogueRule[] | null
+  credits?: CatalogueCredit[] | null
 }
 
 /** The caller's saved Discover-search filters; an all-empty spec means they have none. */

@@ -92,6 +92,7 @@ import { RecommenderDials } from '../components/discover/RecommenderDials'
 import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
 import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { FollowingRail } from '../components/discover/FollowingRail'
 import { LuckyButton } from '../components/LuckyButton'
 import { pickRandom } from '../lib/lucky'
 import {
@@ -110,6 +111,7 @@ import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
 import { reconcileLayout } from '../components/layout/pageLayout'
 import { DISCOVER_LAYOUT_CONFIG, DISCOVER_SECTION_DEFS } from '../components/discover/discoverSectionDefs'
 import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '../api/customRails'
+import { FOLLOWING_RAIL_KEY } from '../api/following'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -903,9 +905,11 @@ function FeedExpandModal({
   const { density, setDensity, cols } = useDensityPref('discover-expand')
 
   // Reset filters whenever a different rail is opened. A custom rail opens with its filter loaded
-  // instead, since the filter is the whole point of the rail.
+  // instead, since the filter is the whole point of the rail, and so does the follow rail, whose
+  // filter is the people followed.
   const railKey = rail?.key
-  const presetFilters = railKey?.startsWith(CUSTOM_RAIL_PREFIX) ? rail?.filters : null
+  const presetFilters =
+    railKey?.startsWith(CUSTOM_RAIL_PREFIX) || railKey === FOLLOWING_RAIL_KEY ? rail?.filters : null
   const resetAll = catalogue.reset
   const hydrateAll = catalogue.hydrate
   useEffect(() => {
@@ -1184,6 +1188,14 @@ function DiscoverBrowseTab({
     navigate(location.pathname, { replace: true, state: null })
   }, [expandRailId, customRails, navigate, location.pathname])
 
+  // Home's follow rail hands over the same way.
+  const expandFollowing = (location.state as { expandFollowing?: DiscoverRail } | null)?.expandFollowing
+  useEffect(() => {
+    if (!expandFollowing) return
+    setExpandedRail(expandFollowing)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [expandFollowing, navigate, location.pathname])
+
   const recommendFrom = useCallback(
     (item: RecommendationItem) =>
       navigate('/discover/recommended', {
@@ -1320,6 +1332,16 @@ function DiscoverBrowseTab({
     ) : recentFetching ? (
       <RailSkeleton engine title />
     ) : null,
+
+    following: (
+      <FollowingRail
+        enabled={on('following')}
+        limit={40}
+        seriesIdFor={seriesIdFor}
+        onOpen={setDetailItem}
+        onShowMore={setExpandedRail}
+      />
+    ),
 
     sideinterests: (
       <>

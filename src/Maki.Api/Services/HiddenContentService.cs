@@ -1,5 +1,6 @@
 using Maki.Core.Configuration;
 using Maki.Core.Recommendations;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 
@@ -8,9 +9,11 @@ namespace Maki.Api.Services;
 /// <summary>
 /// The caller's never-show list (<see cref="HiddenContentSpec"/>), applied two ways: folded into a
 /// request's filters so it narrows before a page is cut, and as a predicate over the shared rails,
-/// which are cached instance-wide and so cannot carry one reader's list into their build.
+/// which are cached instance-wide and so cannot carry one reader's list into their build. Also where
+/// a request's creator filter is resolved, since every filtered request already passes through here.
 /// </summary>
-public class HiddenContentService(IUserSettings userSettings, VectorIndexCache vectorIndex)
+public class HiddenContentService(
+    IUserSettings userSettings, VectorIndexCache vectorIndex, CatalogueIndexCache catalogueIndex)
 {
     private IReadOnlyList<CatalogueTerm>? _terms;
     private bool _loaded;
@@ -27,11 +30,24 @@ public class HiddenContentService(IUserSettings userSettings, VectorIndexCache v
     }
 
     /// <summary>
-    /// The filters with the caller's list in <see cref="RecommendationFilters.Hidden"/>. Always
-    /// overwrites: the list is a setting, and a request cannot choose to see past it.
+    /// The filters with the caller's list in <see cref="RecommendationFilters.Hidden"/> and their
+    /// creators resolved. Always overwrites: the list is a setting, and a request cannot choose to
+    /// see past it.
     /// </summary>
     public async Task<RecommendationFilters> ApplyAsync(RecommendationFilters filters, CancellationToken ct = default) =>
-        filters with { Hidden = await TermsAsync(ct) };
+        await ResolveCreditsAsync(filters with { Hidden = await TermsAsync(ct) }, ct);
+
+    /// <summary>Fills <see cref="RecommendationFilters.CreditIds"/> from the filter's named creators.</summary>
+    public async Task<RecommendationFilters> ResolveCreditsAsync(RecommendationFilters filters, CancellationToken ct = default)
+    {
+        if (filters.Credits is not { Count: > 0 })
+        {
+            return CreditFilter.Resolve(filters, null, 0);
+        }
+
+        var catalogue = await catalogueIndex.GetAsync(ct);
+        return CreditFilter.Resolve(filters, catalogue?.Credits, CatalogueOptions.Default.CreditResolveMaxDistance);
+    }
 
     /// <summary>
     /// A request's filters bounded by the caller: rules trimmed to sane sizes, content ratings
@@ -55,6 +71,8 @@ public class HiddenContentService(IUserSettings userSettings, VectorIndexCache v
         {
             Rules = CatalogueRules.Normalize(filters?.Rules),
             Hidden = null,
+            Credits = CatalogueCredits.Normalize(filters?.Credits),
+            CreditIds = null,
         };
 
     /// <summary>

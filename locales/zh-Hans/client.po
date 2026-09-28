@@ -2494,8 +2494,8 @@ msgstr "已盘点归档"
 msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "在“首页”和“发现”页面上调整布局：选择要显示的区块、拖动以排序，并添加自己的推荐栏。如果你不在 Maki 中阅读，可以关闭“首页”：该标签页会消失，“资料库”将成为起始页。"
 
+#: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Art"
@@ -3482,6 +3482,10 @@ msgstr "检查更新"
 msgid "Check now"
 msgstr "立即检查"
 
+#: src/api/inbox.ts
+msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
+msgstr ""
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Checking for a new metadata snapshot"
@@ -4226,6 +4230,14 @@ msgstr "创作者"
 msgid "Creators"
 msgstr "创作者"
 
+#: src/components/CreditPicker.tsx
+msgid "Creators and studios"
+msgstr ""
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Creators you follow"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "Creators you return to"
@@ -4610,6 +4622,7 @@ msgstr "Discord 频道 ID"
 msgid "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound, tags, requests, series added, series removed, manual match"
 msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, 告警, 事件, 通知, 发出, 标签, 申请, 系列已添加, 系列已移除, 手动匹配"
 
+#: src/api/inbox.ts
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
@@ -5225,6 +5238,10 @@ msgstr "其他所有内容"
 msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
 msgstr "一切正常。打开“显示正常项”以查看全部 {totalChecks, plural, other {# 项检查}}。"
 
+#: src/components/discover/FollowingRail.tsx
+msgid "Everything they have in the catalogue is already in your library."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Everything you own"
@@ -5673,6 +5690,14 @@ msgstr "文件夹路径"
 #, fuzzy
 msgid "Folders are renamed to the English title and their comic files are linked to chapters."
 msgstr "文件夹会重命名为英文标题，漫画文件会关联到对应章节。"
+
+#: src/pages/CreatorPage.tsx
+msgid "Follow"
+msgstr ""
+
+#: src/pages/CreatorPage.tsx
+msgid "Following"
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -6534,11 +6559,6 @@ msgstr "隐身：{incognito}"
 #, fuzzy
 msgid "Incognito: {mode}"
 msgstr "隐身：{mode}"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "Incomplete"
-msgstr "未完成"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7414,6 +7434,10 @@ msgstr "Maki 支持你的语言"
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 msgstr "Maki 界面现已支持 {languageCount} 种语言。可在此选择，或随时在设置、语言中更改。"
 
+#: src/components/discover/FollowingRail.tsx
+msgid "Manage"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Manage queue"
@@ -8113,6 +8137,11 @@ msgstr "过去 30 天自动获取的新章节。"
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "新章节、已完成的下载和已解锁的成就都会显示在这里。"
 
+#: src/api/hooks.ts
+#: src/components/discover/FollowingRail.tsx
+msgid "New from creators you follow"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -8143,6 +8172,10 @@ msgstr "新系列"
 #, fuzzy
 msgid "New series defaults"
 msgstr "新作品默认设置"
+
+#: src/api/inbox.ts
+msgid "New series from creators you follow"
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -8324,6 +8357,7 @@ msgstr "无匹配"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/CreditPicker.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -11304,6 +11338,10 @@ msgstr "搜索（Ctrl+K）"
 msgid "Search by chapter number or title"
 msgstr "按章节编号或标题搜索"
 
+#: src/components/CreditPicker.tsx
+msgid "Search by name"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Search by title, description, or author:\"Junji Ito\""
@@ -11894,6 +11932,7 @@ msgstr "显示更少"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -11930,6 +11969,10 @@ msgstr "显示阅读连续记录"
 #, fuzzy
 msgid "Show source text"
 msgstr "显示来源文本"
+
+#: src/pages/CreatorPage.tsx
+msgid "Show their newest titles in a rail on Home and Discover"
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -12468,6 +12511,10 @@ msgstr "{source} 上仍处于抢先体验阶段，Maki 稍后会再次检查"
 msgid "Still going"
 msgstr "仍在阅读"
 
+#: src/pages/CreatorPage.tsx
+msgid "Stop showing their new titles on Home and Discover"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Stopped before finishing"
@@ -12478,8 +12525,8 @@ msgstr "读完前停下"
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Maki 实例的存储、元数据、下载客户端和集成。"
 
+#: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Story"
@@ -12495,7 +12542,7 @@ msgstr "连续记录"
 msgid "Stuck downloads"
 msgstr "卡住的下载"
 
-#: src/pages/CreatorPage.tsx
+#: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Studio"
 msgstr "工作室"
@@ -12868,6 +12915,11 @@ msgstr "搜索、“发现”和推荐内容中向你显示的最高内容分级
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "MangaBaka 目录中最受欢迎的作品。"
 
+#: src/components/discover/discoverSectionDefs.ts
+#: src/components/home/homeSectionDefs.ts
+msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The odd one out"
@@ -13232,6 +13284,10 @@ msgstr "对推荐进行点赞、隐藏或忽略后，内容会显示在这里。
 msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
 msgstr "勾选此文件包含的所有章节。合订本或合集通常包含一段章节范围：先点击第一章，再按住 Shift 点击最后一章。"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -13246,10 +13302,6 @@ msgstr "时间范围"
 #, fuzzy
 msgid "time read"
 msgstr "阅读时间"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
-msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -13310,6 +13362,10 @@ msgstr "标题搜索"
 #, fuzzy
 msgid "Titles"
 msgstr "标题"
+
+#: src/components/CreditPicker.tsx
+msgid "Titles credited to any of them."
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -13584,6 +13640,7 @@ msgstr "类型"
 msgid "Type mix"
 msgstr "类型分布"
 
+#: src/components/CreditPicker.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Type to search…"
@@ -13642,6 +13699,14 @@ msgstr "撤销失败：{0}"
 #, fuzzy
 msgid "Undone"
 msgstr "已撤销"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Unfollow"
+msgstr ""
+
+#: src/components/discover/FollowingRail.tsx
+msgid "Unfollow {name}"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -14546,6 +14611,10 @@ msgstr "你已看完《{animeTitle}》（{coveredLabel}）。动画可能改编�
 #, fuzzy
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "你已看完《{animeTitle}》。动画改编到第 {coveredTo} 章。请从第 {resumeAt} 章开始阅读。"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "You follow nobody yet. Open a creator or studio and press Follow."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

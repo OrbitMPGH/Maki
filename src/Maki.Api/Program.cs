@@ -756,6 +756,7 @@ try
     // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
     builder.Services.AddSingleton<InboxAudienceResolver>();
     builder.Services.AddSingleton<InboxService>();
+    builder.Services.AddSingleton<FollowedCreatorReleaseService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
     {
@@ -1069,6 +1070,16 @@ try
             .ForJob(Maki.Api.Jobs.ReaderCohortJob.Key)
             .WithIdentity("reader-cohorts-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
+        // New series from followed creators. Triggered after a dump install too; this daily run only
+        // covers an install whose trigger a restart swallowed.
+        q.AddJob<Maki.Api.Jobs.FollowedCreatorReleaseJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key)
+            .WithIdentity("followed-creator-releases-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.

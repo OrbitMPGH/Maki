@@ -77,6 +77,7 @@ public static class UserSettingKeys
         SettingKeys.RecommendationsDefaults,
         SettingKeys.DiscoverSearchDefaults,
         SettingKeys.DiscoverHidden,
+        SettingKeys.DiscoverFollowing,
         SettingKeys.OpdsEnabled,
         SettingKeys.OpdsTrackProgress,
         SettingKeys.ScrobblePlanToRead,

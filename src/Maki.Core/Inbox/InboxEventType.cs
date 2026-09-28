@@ -34,6 +34,9 @@ public enum InboxEventType
     BackupFinished = 14,
     SourceMatchFinished = 15,
     ImportListFinished = 16,
+
+    /// <summary>A creator or studio the user follows has a new series in the catalogue.</summary>
+    FollowedCreatorRelease = 17,
 }
 
 /// <summary>

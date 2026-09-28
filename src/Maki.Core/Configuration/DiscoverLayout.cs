@@ -10,12 +10,15 @@ public static class DiscoverSections
     public const string RecentActivity = "recent";
     public const string SideInterests = "sideinterests";
     public const string Cohort = "cohort";
+
+    /// <summary>The newest titles from the creators and studios the reader follows.</summary>
+    public const string Following = "following";
     public const string Trending = "trending";
     public const string Catalogue = "catalogue";
     public const string Genres = "genres";
 
     public static readonly string[] All =
-        [Hero, Taste, RecentActivity, SideInterests, Cohort, Trending, Catalogue, Genres];
+        [Hero, Taste, RecentActivity, Following, SideInterests, Cohort, Trending, Catalogue, Genres];
 }
 
 /// <summary>

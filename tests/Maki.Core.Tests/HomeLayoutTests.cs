@@ -88,10 +88,11 @@ public class HomeLayoutTests
 
         var merged = stored.Merge();
 
-        var last = merged.Sections![^1];
-        Assert.Equal(HomeSections.FromAnime, last.Key);
-        Assert.True(last.Enabled);
-        Assert.Null(last.Hero);
+        var appended = merged.Sections!.Skip(stored.Sections!.Count).ToList();
+        var fromAnime = Assert.Single(appended, s => s.Key == HomeSections.FromAnime);
+        Assert.True(fromAnime.Enabled);
+        Assert.Null(fromAnime.Hero);
+        Assert.Contains(appended, s => s.Key == HomeSections.Following && s.Enabled);
         Assert.Equal(HomeSections.All.Length, merged.Sections.Count);
     }
 

@@ -2164,6 +2164,28 @@ msgstr "İçe aktarma listesi tamamlandı"
 msgid "inbox.importList.finished.body"
 msgstr "{tracker}: {added, plural, one {# eklendi} other {# eklendi}}{requested, plural, =0 {} one {, # istendi} other {, # istendi}}{skipped, plural, =0 {} one {, # atlandı} other {, # atlandı}}{errors, plural, =0 {} one {, # hata} other {, # hata}}"
 
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from {creator}
+msgid "inbox.followedRelease.title"
+msgstr ""
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {title} is new in the catalogue.
+msgid "inbox.followedRelease.body"
+msgstr ""
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from creators you follow
+msgid "inbox.followedReleases.title"
+msgstr ""
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+msgid "inbox.followedReleases.body"
+msgstr ""
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
 #, fuzzy
