@@ -38,6 +38,7 @@ public class HealthScanService(MakiDbContext db)
         var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         var trackedLocations = await db.ChapterFiles.Join(db.Series, f => f.SeriesId, s => s.Id, (f, s) => new { s.RootFolderId, f.RelativePath }).ToListAsync(ct);
         var files = new List<HealthFile>();
+        var retired = new List<int>();
         foreach (var root in roots)
         {
             if (scan.RootFolderId != null && root.Id != scan.RootFolderId) continue;
@@ -62,6 +63,14 @@ public class HealthScanService(MakiDbContext db)
                     if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
                     var file = knownFiles.FirstOrDefault(f => seen.Comparer.Equals(f.RelativePath, relative));
                     if (selected.Length > 0 && (file == null || !selected.Contains(file.Id))) continue;
+                    // Gone from disk with no record pointing at it: Maki deleted it itself (relink,
+                    // chapter delete, rename) or the owner did. There is nothing left to report on.
+                    if (trackedFile == null && file != null && !File.Exists(absolute))
+                    {
+                        file.Removed = true;
+                        retired.Add(file.Id);
+                        continue;
+                    }
                     if (file == null)
                     {
                         file = new HealthFile { RootFolderId = root.Id, RelativePath = relative };
@@ -85,6 +94,9 @@ public class HealthScanService(MakiDbContext db)
             if (!files.Contains(file)) files.Add(file);
         scan.Total = files.Count;
         await db.SaveChangesAsync(ct);
+        if (retired.Count > 0)
+            await db.HealthFindings.Where(f => retired.Contains(f.FileId) && f.State != "resolved")
+                .ExecuteUpdateAsync(u => u.SetProperty(f => f.State, "resolved"), ct);
 
         // From here the scan works by id and lets every entity go after each file. Keeping them
         // tracked is what a scan naturally does and it does not survive a real library: each
