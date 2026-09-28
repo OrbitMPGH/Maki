@@ -108,6 +108,7 @@ public class FollowedCreatorReleaseService(
             var byCeiling = new Dictionary<string, Dictionary<long, MangaBakaRecommendation>>(StringComparer.Ordinal);
             var releasedIds = perUser.SelectMany(u => u.Releases).Select(r => r.MangaBakaId).Distinct().ToList();
             var thisYear = time.GetUtcNow().Year;
+            var failedFor = new List<int>();
 
             foreach (var (userId, ceiling, releases) in perUser)
             {
@@ -130,7 +131,22 @@ public class FollowedCreatorReleaseService(
                     .Where(x => hidden.MatchesNames(x.Item!.MatchedGenres, []))
                     .ToList();
 
-                Notify(userId, wanted.Select(x => (x.Release, x.Item!)).ToList());
+                try
+                {
+                    await NotifyAsync(userId, wanted.Select(x => (x.Release, x.Item!)).ToList(), ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    failedFor.Add(userId);
+                    logger.LogWarning(ex, "Could not save follow notifications for user {UserId}", userId);
+                }
+            }
+
+            // Left where it was so the next run tries the same window again. A reader who already
+            // got theirs can hear about a title twice, which beats never hearing about it.
+            if (failedFor.Count > 0)
+            {
+                return;
             }
         }
 
@@ -168,7 +184,8 @@ public class FollowedCreatorReleaseService(
         return found;
     }
 
-    private void Notify(int userId, IReadOnlyList<(FollowedRelease Release, MangaBakaRecommendation Item)> releases)
+    private async Task NotifyAsync(
+        int userId, IReadOnlyList<(FollowedRelease Release, MangaBakaRecommendation Item)> releases, CancellationToken ct)
     {
         if (releases.Count == 0)
         {
@@ -177,10 +194,10 @@ public class FollowedCreatorReleaseService(
 
         if (releases.Count > MaxSingleNotifications)
         {
-            inbox.Raise(InboxEventType.FollowedCreatorRelease, new InboxMessage(
+            await inbox.RaiseOrThrowAsync(InboxEventType.FollowedCreatorRelease, new InboxMessage(
                 "inbox.followedReleases",
                 new Dictionary<string, object?> { ["count"] = releases.Count },
-                Url: "/discover"), InboxAudience.User(userId));
+                Url: "/discover"), InboxAudience.User(userId), ct);
             return;
         }
 
@@ -190,13 +207,13 @@ public class FollowedCreatorReleaseService(
             // between dumps and would title the notification with a name they never picked.
             var name = release.Credit.Name;
             var role = release.Credit.Role is { } r ? $"&role={r}" : string.Empty;
-            inbox.Raise(InboxEventType.FollowedCreatorRelease, new InboxMessage(
+            await inbox.RaiseOrThrowAsync(InboxEventType.FollowedCreatorRelease, new InboxMessage(
                 "inbox.followedRelease",
                 // A catalogue title, not a library series, so there is no per-user display title to
                 // resolve at read time; the series is not in anybody's library yet.
                 new Dictionary<string, object?> { ["creator"] = name, ["title"] = item.Title },
                 Url: $"/creator/{Uri.EscapeDataString(name)}?open={release.MangaBakaId}{role}"),
-                InboxAudience.User(userId));
+                InboxAudience.User(userId), ct);
         }
     }
 

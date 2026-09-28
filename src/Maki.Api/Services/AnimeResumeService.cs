@@ -314,6 +314,21 @@ public class AnimeResumeService(
             (double)coveredTo, 0, ct);
         await SetPendingAsync(series.Id, nothingToTick ? coveredTo : null, ct);
 
+        if (nothingToTick)
+        {
+            // Source matching can save the first chapters between the read above and the marker
+            // landing, after which nothing would ever apply it.
+            var latest = await ChaptersAsync([series.Id], ct);
+            if (latest.Any(c => c.Number <= coveredTo))
+            {
+                chapters = latest;
+                var late = Library(coveredTo, latest, await CompletedAsync([series.Id], ct));
+                updated = await reader.MarkWatchedAsync(
+                    late.UnmarkedIds.Take(ReaderController.MaxBulkChapters).ToList(), ct);
+                await SetPendingAsync(series.Id, null, ct);
+            }
+        }
+
         var resumeChapter = ResumeAfter(coveredTo, chapters!);
         return (AnimeResumeError.None, new AnimeResumeApplyResult(updated, resumeChapter?.Id, coveredTo));
     }

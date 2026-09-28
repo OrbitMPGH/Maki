@@ -49,6 +49,17 @@ internal sealed class RecordingInbox() : InboxService(
     public override void RaiseForSeries(InboxEventType type, InboxMessage message, int seriesId) =>
         RaisedForSeries.Add((type, message, seriesId));
 
+    /// <summary>Makes <see cref="RaiseOrThrowAsync"/> fail, as a database write that errors would.</summary>
+    public bool FailDurableRaises { get; set; }
+
+    public override Task RaiseOrThrowAsync(
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+    {
+        if (FailDurableRaises) throw new InvalidOperationException("inbox write failed");
+        Raised.Add((type, message, audience));
+        return Task.CompletedTask;
+    }
+
     public override Task RaiseAsync(
         InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
     {
