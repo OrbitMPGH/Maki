@@ -51,8 +51,11 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
         return id;
     }
 
-    public string? ResolveSeriesIdFromUrl(Uri url) =>
-        SourceUrl.PathTail(url, BaseUrl, "/manga/");
+    public string? ResolveSeriesIdFromUrl(Uri url)
+    {
+        var tail = SourceUrl.PathTail(url, BaseUrl, "/manga/");
+        return tail is not null && !tail.Contains('/') ? tail : null;
+    }
 
     // ── Search ────────────────────────────────────────────────────────
 

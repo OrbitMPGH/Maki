@@ -30,6 +30,7 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
     public string DisplayName => "TCB Scans";
     public string BaseUrl => "https://tcbonepiecechapters.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Scanlator;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
@@ -66,6 +67,10 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
             var label = link.TextContent.Trim();
             var parsed = ChapterNumberParser.Parse(label);
 
+            // A null Number is deduped by title downstream (ChapterIdentity), so it must never
+            // carry a null Title too, or two different specials read as one chapter.
+            var title = parsed.Number is null ? label : null;
+
             chapters.Add(new SourceChapter(
                 Name,
                 sourceSeriesId,
@@ -73,7 +78,7 @@ public partial class TCBScansSource(IHttpClientFactory httpClientFactory) : ISou
                 label,
                 parsed.Number,
                 parsed.Volume,
-                Title: null,
+                title,
                 Language: "en", // TCB is English-only
                 ReleaseDate: null,
                 Url: $"{BaseUrl}/chapters/{chapterId}"));

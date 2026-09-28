@@ -239,6 +239,61 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task Build_WithoutAPublishedStartDateColumn_StillBuilds_FallingBackToTheYear()
+    {
+        // The fixture's schema in the constructor never had this column — the old-dump case.
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+
+        var index = await Cache(dimensions: 4).GetAsync();
+
+        Assert.NotNull(index);
+        Assert.True(index!.TryGetRow(1, out var row));
+        Assert.Equal(new DateOnly(1999, 1, 1).DayNumber, index.StartDayAt(row));
+    }
+
+    [Fact]
+    public async Task Build_WithAPublishedStartDateColumn_ReadsItOverTheYear()
+    {
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                ALTER TABLE series ADD COLUMN published_start_date TEXT;
+                UPDATE series SET published_start_date = '1990-07-08' WHERE id = 1;
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var index = await Cache(dimensions: 4).GetAsync();
+
+        Assert.True(index!.TryGetRow(1, out var row));
+        Assert.Equal(new DateOnly(1990, 7, 8).DayNumber, index.StartDayAt(row));
+    }
+
+    [Theory]
+    [InlineData("2020-05-15", 2020, 5, 15)]
+    [InlineData("2020-05", 2020, 5, 1)]
+    [InlineData("2020", 2020, 1, 1)]
+    [InlineData("2020-05-15T10:30:00Z", 2020, 5, 15)]
+    public void ParseStartDay_ParsesFullAndPartialDates(string value, int year, int month, int day)
+    {
+        Assert.Equal(new DateOnly(year, month, day).DayNumber, VectorIndexCache.ParseStartDay(value));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("not a date")]
+    [InlineData("2020-13-40")]
+    public void ParseStartDay_ReturnsNull_ForGarbage(string? value)
+    {
+        Assert.Null(VectorIndexCache.ParseStartDay(value));
+    }
+
+    [Fact]
     public async Task NoVectorDb_IsNull() =>
         Assert.Null(await new VectorIndexCache(
             new EmbeddingOptions(_dir, Path.Combine(_dir, "missing.db"), _dir, EmbeddingModelProfile.Base),

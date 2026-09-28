@@ -22,34 +22,11 @@ import {
 import type { SeriesScrobbleServiceDto } from '../api/types'
 import { formatDate } from '../format'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { msg, t as now } from '@lingui/core/macro'
-import type { MessageDescriptor } from '@lingui/core'
+import { t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
-
-function statusColor(status: string | null): string {
-  switch (status) {
-    case 'completed':
-      return 'green'
-    case 'reading':
-      return 'brand'
-    case 'plan_to_read':
-      return 'cyan'
-    default:
-      return 'gray'
-  }
-}
-
-const STATUS_LABELS: Record<string, MessageDescriptor> = {
-  completed: msg`Completed`,
-  reading: msg`Reading`,
-  plan_to_read: msg`Plan to read`,
-  other: msg`Listed`,
-}
-
-function statusLabel(status: string | null): MessageDescriptor | string {
-  if (!status) return '-'
-  return STATUS_LABELS[status] ?? status
-}
+import { statusToken, trackerConnectionVisual, trackerStatusVisual } from './ui/status'
+import { StatusDot } from './ui/StatusDot'
+import { Panel } from './ui/Panel'
 
 /** "-> ch 12" / "ch 12, vol 2" summary for a synced service. */
 function progressLabel(s: SeriesScrobbleServiceDto): string {
@@ -74,7 +51,7 @@ function ReviewControls({
 
   // Errors are reported globally (see main.tsx); only success needs saying here.
   const notify = {
-    ok: (message: string) => notifications.show({ message, color: 'green' }),
+    ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
   }
 
   const doMatch = (remoteId: string) =>
@@ -90,7 +67,8 @@ function ReviewControls({
           <Button
             size="compact-xs"
             variant="light"
-            loading={match.isPending}
+            disabled={match.isPending}
+            loading={match.isPending && match.variables?.remoteId === c.id}
             onClick={() => doMatch(c.id)}
           >
             <Trans>Use</Trans>
@@ -100,19 +78,19 @@ function ReviewControls({
           </Anchor>
         </Group>
       ))}
-      <Group gap={6} wrap="nowrap">
+      <Group gap={6}>
         <TextInput
+          className="scrobble-review-input"
           size="xs"
           placeholder={t`Paste id or URL`}
           value={manual}
           onChange={(e) => setManual(e.currentTarget.value)}
-          w={160}
         />
         <Button
           size="compact-xs"
           variant="default"
-          disabled={!manual.trim()}
-          loading={match.isPending}
+          disabled={!manual.trim() || match.isPending}
+          loading={match.isPending && match.variables?.remoteId === manual.trim()}
           onClick={() => doMatch(manual.trim())}
         >
           <Trans>Link</Trans>
@@ -153,7 +131,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
         <Group gap="xs" align="baseline">
           <Title order={3}><Trans>Scrobbling</Trans></Title>
           {!data.matched && (
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>not yet synced</Trans>
             </Text>
           )}
@@ -165,7 +143,7 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
           loading={syncNow.isPending}
           onClick={() =>
             syncNow.mutate(undefined, {
-              onSuccess: (r) => notifications.show({ message: r.message, color: 'green' }),
+              onSuccess: (r) => notifications.show({ message: r.message, color: 'var(--ok)' }),
             })
           }
         >
@@ -174,100 +152,105 @@ export function SeriesScrobbleSection({ seriesId }: { seriesId: number }) {
       </Group>
 
       {data.services.length === 0 ? (
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Trans>No tracker is connected.</Trans> <Trans>Connect one on the Scrobble page.</Trans>
         </Text>
       ) : (
-        <Table.ScrollContainer minWidth={560}>
-          <Table verticalSpacing="xs">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th w={120}><Trans>Tracker</Trans></Table.Th>
-                <Table.Th w={150}><Trans>Progress</Trans></Table.Th>
-                <Table.Th><Trans>State</Trans></Table.Th>
-                <Table.Th w={140}><Trans>Synced</Trans></Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {data.services.map((s) => (
-                <Table.Tr key={s.service}>
-                  <Table.Td>
-                    <Group gap={6} wrap="nowrap">
-                      <Tooltip label={s.connected ? t`Connected` : t`Not connected`} withArrow>
-                        <span
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            background: `var(--mantine-color-${s.connected ? 'green' : 'gray'}-6)`,
-                            flexShrink: 0,
-                          }}
-                        />
-                      </Tooltip>
-                      <Text size="sm" fw={550}>
-                        {s.label}
-                      </Text>
-                      {s.url && (
-                        <Anchor href={s.url} target="_blank" rel="noopener noreferrer" title={t`Open entry`}>
-                          <IconExternalLink size={13} />
-                        </Anchor>
-                      )}
-                    </Group>
-                  </Table.Td>
-
-                  {s.reviewReason ? (
-                    <Table.Td colSpan={3}>
-                      <Group gap={8} align="flex-start" wrap="nowrap">
-                        <Badge size="sm" color="yellow" variant="light">
-                          <Trans>Needs review</Trans>
-                        </Badge>
-                        {data.kavitaSeriesId != null && (
-                          <ReviewControls kavitaSeriesId={data.kavitaSeriesId} service={s} />
+        <Panel p={0} className="table-panel">
+          <Table.ScrollContainer minWidth={560}>
+            <Table className="panel-table ops-table scrobble-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th><Trans>Tracker</Trans></Table.Th>
+                  <Table.Th><Trans>Progress</Trans></Table.Th>
+                  <Table.Th><Trans>State</Trans></Table.Th>
+                  <Table.Th><Trans>Synced</Trans></Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.services.map((s) => (
+                  <Table.Tr key={s.service}>
+                    <Table.Td>
+                      <Group gap={6} wrap="nowrap">
+                        <Tooltip label={s.connected ? t`Connected` : t`Not connected`} withArrow>
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background: `var(--${statusToken(trackerConnectionVisual(s.connected, true).color)})`,
+                              flexShrink: 0,
+                            }}
+                          />
+                        </Tooltip>
+                        <Text size="sm" fw={600}>
+                          {s.label}
+                        </Text>
+                        {s.url && (
+                          <Anchor href={s.url} target="_blank" rel="noopener noreferrer" title={t`Open entry`}>
+                            <IconExternalLink size={13} />
+                          </Anchor>
                         )}
                       </Group>
                     </Table.Td>
-                  ) : s.method === 'ignored' ? (
-                    <Table.Td colSpan={3}>
-                      <Badge size="sm" color="gray" variant="light">
-                        <Trans>Ignored</Trans>
-                      </Badge>
-                    </Table.Td>
-                  ) : (
-                    <>
-                      <Table.Td>
-                        <Text size="sm" className="tnum">
-                          {progressLabel(s)}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        {s.error ? (
-                          <Tooltip label={s.error} withArrow multiline w={280}>
-                            <Badge size="sm" color="red" variant="light">
-                              <Trans>Error</Trans>
-                            </Badge>
-                          </Tooltip>
-                        ) : s.syncedAt ? (
-                          <Badge size="sm" color={statusColor(s.status)} variant="light">
-                            {renderLabel(statusLabel(s.status))}
+
+                    {s.reviewReason ? (
+                      <Table.Td colSpan={3}>
+                        <Group gap={8} align="flex-start" wrap="nowrap">
+                          <Badge size="sm" color="var(--warn)" variant="light">
+                            <Trans>Needs review</Trans>
                           </Badge>
-                        ) : (
-                          <Text size="sm" c="dimmed">
-                            <Trans>Not yet synced</Trans>
+                          {data.kavitaSeriesId != null && (
+                            <ReviewControls kavitaSeriesId={data.kavitaSeriesId} service={s} />
+                          )}
+                        </Group>
+                      </Table.Td>
+                    ) : s.method === 'ignored' ? (
+                      <Table.Td colSpan={3}>
+                        <Badge size="sm" color="gray" variant="light">
+                          <Trans>Ignored</Trans>
+                        </Badge>
+                      </Table.Td>
+                    ) : (
+                      <>
+                        <Table.Td>
+                          <Text size="sm" className="tnum">
+                            {progressLabel(s)}
                           </Text>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" c="dimmed" className="tnum">
-                          {s.syncedAt ? formatDate(s.syncedAt) : '-'}
-                        </Text>
-                      </Table.Td>
-                    </>
-                  )}
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+                        </Table.Td>
+                        <Table.Td>
+                          {s.error ? (
+                            <Tooltip label={s.error} withArrow multiline w={280}>
+                              <StatusDot tone="danger">
+                                <Trans>Error</Trans>
+                              </StatusDot>
+                            </Tooltip>
+                          ) : s.syncedAt ? (
+                            (() => {
+                              const visual = trackerStatusVisual(s.status ?? '')
+                              return (
+                                <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
+                              )
+                            })()
+                          ) : (
+                            <Text size="sm" c="var(--ink-3)">
+                              <Trans>Not yet synced</Trans>
+                            </Text>
+                          )}
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="var(--ink-3)" className="tnum">
+                            {s.syncedAt ? formatDate(s.syncedAt) : '-'}
+                          </Text>
+                        </Table.Td>
+                      </>
+                    )}
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Panel>
       )}
     </div>
   )

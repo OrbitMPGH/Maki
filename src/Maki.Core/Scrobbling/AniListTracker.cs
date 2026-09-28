@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -172,43 +173,49 @@ public class AniListTracker(
                 throw new TrackerException($"AniList request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 429)
+            try
             {
-                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
-                logger.LogWarning("AniList rate limited, waiting {Wait}s", wait.TotalSeconds);
-                await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
-                continue;
-            }
-
-            // A 5xx is AniList having a moment, not a bad request — worth another go.
-            if ((int)response.StatusCode >= 500 && !lastAttempt)
-            {
-                logger.LogWarning(
-                    "AniList returned {Status}; retrying (attempt {Attempt}/{Max})",
-                    (int)response.StatusCode, attempt, maxAttempts);
-                response.Dispose();
-                await Task.Delay(BackoffFor(attempt), ct);
-                continue;
-            }
-
-            var body = await response.Content.ReadAsStringAsync(ct);
-            using var json = JsonDocument.Parse(body);
-            if (!response.IsSuccessStatusCode ||
-                (json.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind != JsonValueKind.Null))
-            {
-                var detail = Truncate(json.RootElement.TryGetProperty("errors", out var e2) ? e2.GetRawText() : body);
-                // AniList answers 404 "Not Found." when a Media id no longer resolves (deleted or
-                // merged entry). That's not transient — surface it as actionable so the caller drops
-                // the stale mapping and re-matches, instead of erroring on the dead id every sync.
-                if ((int)response.StatusCode == 404)
+                if ((int)response.StatusCode == 429)
                 {
-                    throw new TrackerEntryNotFoundException($"AniList entry not found (404): {detail}");
+                    var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10);
+                    logger.LogWarning("AniList rate limited, waiting {Wait}s", wait.TotalSeconds);
+                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    continue;
                 }
 
-                throw new TrackerException($"AniList API error ({(int)response.StatusCode}): {detail}");
-            }
+                // A 5xx is AniList having a moment, not a bad request, so worth another go.
+                if ((int)response.StatusCode >= 500 && !lastAttempt)
+                {
+                    logger.LogWarning(
+                        "AniList returned {Status}; retrying (attempt {Attempt}/{Max})",
+                        (int)response.StatusCode, attempt, maxAttempts);
+                    await Task.Delay(BackoffFor(attempt), ct);
+                    continue;
+                }
 
-            return json.RootElement.GetProperty("data").Clone();
+                var body = await response.Content.ReadAsStringAsync(ct);
+                using var json = JsonDocument.Parse(body);
+                if (!response.IsSuccessStatusCode ||
+                    (json.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind != JsonValueKind.Null))
+                {
+                    var detail = Truncate(json.RootElement.TryGetProperty("errors", out var e2) ? e2.GetRawText() : body);
+                    // AniList answers 404 "Not Found." when a Media id no longer resolves (deleted or
+                    // merged entry). That's not transient. Surface it as actionable so the caller drops
+                    // the stale mapping and re-matches, instead of erroring on the dead id every sync.
+                    if ((int)response.StatusCode == 404)
+                    {
+                        throw new TrackerEntryNotFoundException($"AniList entry not found (404): {detail}");
+                    }
+
+                    throw new TrackerException($"AniList API error ({(int)response.StatusCode}): {detail}");
+                }
+
+                return json.RootElement.GetProperty("data").Clone();
+            }
+            finally
+            {
+                response.Dispose();
+            }
         }
 
         throw new TrackerException("AniList API rate limit persisted after retry");
@@ -315,12 +322,108 @@ public class AniListTracker(
                     continue;
                 }
 
-                var id = m.GetProperty("id").GetInt32().ToString();
+                var id = m.GetProperty("id").GetInt32().ToString(CultureInfo.InvariantCulture);
                 results.Add(new ScrobbleCandidate(id, valid[0], valid.Skip(1).ToList(), $"https://anilist.co/manga/{id}"));
             }
         }
 
         return results;
+    }
+
+    /// <summary>AniList list statuses that map onto each internal status, for <c>status_in</c>.</summary>
+    private static IEnumerable<string> RemoteStatusesFor(ScrobbleStatus status) => status switch
+    {
+        ScrobbleStatus.Reading => ["CURRENT", "REPEATING"],
+        ScrobbleStatus.Completed => ["COMPLETED"],
+        ScrobbleStatus.PlanToRead => ["PLANNING"],
+        _ => ["PAUSED", "DROPPED"],
+    };
+
+    public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
+    {
+        if (statuses.Count == 0)
+        {
+            return [];
+        }
+
+        var viewer = await QueryAsync(userId, "query { Viewer { id } }", new { }, auth: true, ct);
+        if (!viewer.TryGetProperty("Viewer", out var v) || GetInt(v, "id") is not { } viewerId)
+        {
+            throw new TrackerException("AniList did not return a viewer id");
+        }
+
+        const string query = """
+            query($userId:Int,$chunk:Int,$statuses:[MediaListStatus]){
+              MediaListCollection(userId:$userId, type:MANGA, status_in:$statuses, chunk:$chunk,
+                                  perChunk:500, sort:[MEDIA_ID]){
+                hasNextChunk
+                lists { entries { status media { id idMal title { romaji english } } } } } }
+            """;
+
+        var remoteStatuses = statuses.SelectMany(RemoteStatusesFor).Distinct().ToArray();
+        var entries = new List<RemoteListEntry>();
+        var seen = new HashSet<long>();
+        const int maxChunks = 200;
+        var truncated = false;
+        for (var chunk = 1; chunk <= maxChunks; chunk++)
+        {
+            var data = await QueryAsync(
+                userId, query, new { userId = viewerId, chunk, statuses = remoteStatuses }, auth: true, ct);
+            if (!data.TryGetProperty("MediaListCollection", out var collection) ||
+                collection.ValueKind != JsonValueKind.Object)
+            {
+                break;
+            }
+
+            if (collection.TryGetProperty("lists", out var lists) && lists.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var row in lists.EnumerateArray()
+                             .Where(l => l.TryGetProperty("entries", out var e) && e.ValueKind == JsonValueKind.Array)
+                             .SelectMany(l => l.GetProperty("entries").EnumerateArray()))
+                {
+                    if (!row.TryGetProperty("media", out var media) || media.ValueKind != JsonValueKind.Object ||
+                        GetInt(media, "id") is not { } mediaId || !seen.Add(mediaId))
+                    {
+                        continue;
+                    }
+
+                    var status = StatusToInternal.GetValueOrDefault(GetString(row, "status") ?? "", ScrobbleStatus.Other);
+                    if (!statuses.Contains(status))
+                    {
+                        continue;
+                    }
+
+                    var titles = media.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.Object ? t : default;
+                    entries.Add(new RemoteListEntry(
+                        mediaId.ToString(CultureInfo.InvariantCulture),
+                        status,
+                        (titles.ValueKind == JsonValueKind.Object
+                            ? GetString(titles, "english") ?? GetString(titles, "romaji")
+                            : null) ?? "",
+                        AniListId: mediaId,
+                        MalId: GetInt(media, "idMal")));
+                }
+            }
+
+            if (collection.TryGetProperty("hasNextChunk", out var next) && next.ValueKind == JsonValueKind.True)
+            {
+                truncated = chunk == maxChunks;
+                continue;
+            }
+
+            break;
+        }
+
+        if (truncated)
+        {
+            logger.LogWarning(
+                "AniList manga list for user {UserId} stopped at the {MaxChunks}-chunk cap ({Count} entries); " +
+                "the rest of the list was not read",
+                userId, maxChunks, entries.Count);
+        }
+
+        return entries;
     }
 
     /// <summary>AniList knows the MAL id for most entries — free cross-mapping.</summary>
@@ -332,7 +435,7 @@ public class AniListTracker(
             var data = await QueryAsync(userId: 0, "query($id:Int){ Media(id:$id, type:MANGA){ idMal } }",
                 new { id = int.Parse(anilistId) }, auth: false, ct);
             return data.TryGetProperty("Media", out var media) && media.ValueKind == JsonValueKind.Object
-                ? GetInt(media, "idMal")?.ToString()
+                ? GetInt(media, "idMal")?.ToString(CultureInfo.InvariantCulture)
                 : null;
         }
         catch (TrackerException)
@@ -378,10 +481,11 @@ public class AniListTracker(
     /// <para>
     /// perPage is 25 rather than AniList's 50 because the relation sub-selection multiplies the
     /// query's complexity budget: 50 rows each expanding their relations is rejected outright on a
-    /// large list, and a rejection costs the whole page rather than one row.
+    /// large list, and a rejection costs the whole page rather than one row. The format, episode
+    /// and date fields are scalars on the media node and do not move that budget.
     /// </para>
     /// </summary>
-    public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+    public async Task<AnimeListResult> ListAnimeAsync(int userId, CancellationToken ct = default)
     {
         var viewer = await QueryAsync(userId, "query { Viewer { id } }", new { }, auth: true, ct);
         if (!viewer.TryGetProperty("Viewer", out var v) || GetInt(v, "id") is not { } viewerId)
@@ -396,8 +500,9 @@ public class AniListTracker(
             query($userId:Int,$page:Int){ Page(page:$page, perPage:25){
               pageInfo { hasNextPage }
               mediaList(userId:$userId, type:ANIME, sort: [MEDIA_ID]){
-                score(format: POINT_10) status
-                media { id idMal title { romaji english }
+                score(format: POINT_10) status progress
+                media { id idMal title { romaji english } format episodes
+                  startDate { year month day } endDate { year month day }
                   relations { edges { relationType node { id idMal type format } } } } } } }
             """;
 
@@ -444,7 +549,7 @@ public class AniListTracker(
                 userId, maxPages, entries.Count);
         }
 
-        return entries;
+        return new AnimeListResult(entries, truncated);
     }
 
     /// <summary>
@@ -491,8 +596,18 @@ public class AniListTracker(
             AniListMangaId: pick?.Id,
             MalMangaId: pick?.IdMal,
             RelationsResolved: true,
-            MalAnimeId: GetInt(media, "idMal"));
+            MalAnimeId: GetInt(media, "idMal"),
+            Format: AnimeListFields.NormalizeFormat(GetString(media, "format")),
+            StartDate: FuzzyDateOf(media, "startDate"),
+            EndDate: FuzzyDateOf(media, "endDate"),
+            Episodes: GetInt(media, "episodes") is { } episodes and > 0 ? episodes : null,
+            Progress: GetInt(row, "progress"));
     }
+
+    private static DateOnly? FuzzyDateOf(JsonElement media, string name) =>
+        media.TryGetProperty(name, out var d) && d.ValueKind == JsonValueKind.Object
+            ? AnimeListFields.DateOf(GetInt(d, "year"), GetInt(d, "month"), GetInt(d, "day"))
+            : null;
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
 }

@@ -27,6 +27,9 @@ public static class ComicInfoUpdater
     /// </summary>
     public static bool UpdateFile(string cbzPath, Series series, ParsedReleaseFile parsed, Chapter? chapter)
     {
+        // A PDF read in place is left exactly as it was found; there is no ComicInfo.xml to write.
+        if (Reading.ComicFile.IsPdf(cbzPath)) return false;
+
         string newXml;
         using (var source = ZipFile.OpenRead(cbzPath))
         {
@@ -72,9 +75,6 @@ public static class ComicInfoUpdater
         info.Genre = series.Genres.Count > 0 ? string.Join(", ", series.Genres) : info.Genre;
         info.Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags) : info.Tags;
         info.Web = SeriesWebLinks.Joined(series) ?? info.Web;
-        info.CountSerialized = series.Status == SeriesStatus.Completed
-            ? series.TotalChapters?.ToString(CultureInfo.InvariantCulture)
-            : null;
         info.Manga = "YesAndRightToLeft";
 
         // File-level fields: prefer the linked chapter, then the parsed file name,
@@ -90,6 +90,13 @@ public static class ComicInfoUpdater
         {
             info.VolumeSerialized = v.ToString(CultureInfo.InvariantCulture);
         }
+
+        // Kavita compares Count against the highest volume when the files carry no chapter
+        // number, so a volume-only file has to count volumes or a finished series reads 12 / 119.
+        var volumeOnly = string.IsNullOrWhiteSpace(info.Number) && !string.IsNullOrWhiteSpace(info.VolumeSerialized);
+        info.CountSerialized = series.Status == SeriesStatus.Completed
+            ? (volumeOnly ? series.TotalVolumes : series.TotalChapters)?.ToString(CultureInfo.InvariantCulture)
+            : null;
 
         if (string.IsNullOrWhiteSpace(info.Title))
         {

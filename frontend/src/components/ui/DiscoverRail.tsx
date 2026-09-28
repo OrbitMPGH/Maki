@@ -26,11 +26,30 @@ import { Trans, useLingui } from '@lingui/react/macro'
  * has no library id, no download counts and no read progress.
  */
 
+/**
+ * "Sequel to X" and friends. `kind` is the server's wire value; each gets its own whole sentence
+ * because the preposition belongs to the kind, and in most languages so does the word order.
+ */
+export function relationPhrase(kind: string, relatedTo: string): string {
+  switch (kind) {
+    case 'Sequel':
+      return now`Sequel to ${relatedTo}`
+    case 'Prequel':
+      return now`Prequel to ${relatedTo}`
+    case 'Spin-off':
+      return now`Spin-off of ${relatedTo}`
+    case 'Side story':
+      return now`Side story of ${relatedTo}`
+    case 'Main story':
+      return now`Main story of ${relatedTo}`
+    default:
+      return now`${kind} to ${relatedTo}`
+  }
+}
+
 function reasonFor(item: RecommendationItem): string {
   if (item.relationKind) {
-    const { relationKind } = item
-    const relatedTo = item.relatedToTitle ?? ''
-    return now`${relationKind} of ${relatedTo}`
+    return relationPhrase(item.relationKind, item.relatedToTitle ?? '')
   }
   const parts: string[] = []
   if (item.authorMatch) parts.push(now`same author`)
@@ -111,7 +130,7 @@ export const RecommendationCard = memo(function RecommendationCard({
 
         {item.rating != null && (
           <span className="cover-badge discover-rating">
-            <IconStar size={10} style={{ color: '#f5c518' }} />
+            <IconStar size={10} style={{ color: 'var(--rating)' }} />
             {(item.rating / 10).toFixed(1)}
           </span>
         )}
@@ -144,7 +163,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             {item.year && <span className="tnum">{item.year}</span>}
             <span className="discover-sub-status">· {item.status}</span>
             {totalChapters && (
-              <span>
+              <span className="discover-sub-chapters">
                 · <Trans>{totalChapters} ch</Trans>
               </span>
             )}
@@ -226,7 +245,7 @@ export const RecommendationRow = memo(function RecommendationRow({
         <div className="row-progress">
           {item.rating != null && (
             <span className="cover-badge" style={{ flexShrink: 0 }}>
-              <IconStar size={11} style={{ color: '#f5c518' }} />
+              <IconStar size={11} style={{ color: 'var(--rating)' }} />
               {(item.rating / 10).toFixed(1)}
             </span>
           )}
@@ -252,8 +271,7 @@ export const RecommendationRow = memo(function RecommendationRow({
 /** The strongest thing the engine can say about one pick, and the icon that says which kind it is. */
 function engineWhy(item: RecommendationItem): { Glyph: Icon; text: string } {
   if (item.relationKind && item.relatedToTitle) {
-    const { relationKind, relatedToTitle } = item
-    return { Glyph: IconAffiliate, text: now`${relationKind} to ${relatedToTitle}` }
+    return { Glyph: IconAffiliate, text: relationPhrase(item.relationKind, item.relatedToTitle) }
   }
   if (item.becauseOfTitle) {
     const { becauseOfTitle } = item
@@ -318,7 +336,7 @@ export const EngineCard = memo(function EngineCard({
 
         {item.rating != null && (
           <span className="cover-badge discover-rating">
-            <IconStar size={10} style={{ color: '#f5c518' }} />
+            <IconStar size={10} style={{ color: 'var(--rating)' }} />
             {(item.rating / 10).toFixed(1)}
           </span>
         )}
@@ -341,7 +359,7 @@ export const EngineCard = memo(function EngineCard({
             {item.year && <span className="tnum">{item.year}</span>}
             <span className="discover-sub-status">· {item.status}</span>
             {totalChapters && (
-              <span>
+              <span className="discover-sub-chapters">
                 · <Trans>{totalChapters} ch</Trans>
               </span>
             )}

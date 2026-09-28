@@ -9,10 +9,11 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowRight, IconBan, IconFileZip } from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowRight, IconBan, IconFileTypePdf, IconFileZip } from '@tabler/icons-react'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useImportPlan, useSettleImport } from '../api/hooks'
 import type { ImportDecision, ImportPlanFileDto } from '../api/types'
+import { isPdfFile } from '../lib/files'
 
 function formatSize(bytes: number): string {
   if (bytes <= 0) return '-'
@@ -41,30 +42,34 @@ function PlanFile({ file }: { file: ImportPlanFileDto }) {
     <Card withBorder padding="sm" radius="md">
       <Group justify="space-between" wrap="nowrap" align="flex-start">
         <Group gap={8} wrap="nowrap" align="flex-start">
-          <IconFileZip size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          {isPdfFile(fileName) ? (
+            <IconFileTypePdf size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          ) : (
+            <IconFileZip size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          )}
           <div>
             <Text size="sm" fw={600} lineClamp={1}>
               {fileName}
             </Text>
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="var(--ink-3)">
               <ChapterList chapters={chapters} />
             </Text>
           </div>
         </Group>
         <Group gap={6} wrap="nowrap">
           {label && (
-            <Badge size="sm" variant="light" color="gray">
+            <Badge size="sm" variant="light" color="var(--neutral)">
               {label}
             </Badge>
           )}
-          <Text size="xs" c="dimmed" className="tnum">
+          <Text size="xs" c="var(--ink-3)" className="tnum">
             {formatSize(size)}
           </Text>
         </Group>
       </Group>
 
       {newChapterCount > 0 && (
-        <Text size="xs" c="teal" mt={6}>
+        <Text size="xs" c="var(--ok)" mt={6}>
           <Plural
             value={newChapterCount}
             one="Brings # chapter you do not have"
@@ -78,7 +83,7 @@ function PlanFile({ file }: { file: ImportPlanFileDto }) {
           {replaces.map((existing) => {
             const replacedFileName = existing.relativePath.split(/[\\/]/).pop()
             return (
-              <Group key={existing.chapterFileId} gap={6} wrap="nowrap" c="dimmed">
+              <Group key={existing.chapterFileId} gap={6} wrap="nowrap" c="var(--ink-3)">
                 <IconArrowRight size={13} style={{ flexShrink: 0 }} />
                 <Text size="xs" lineClamp={1} style={{ flex: 1 }}>
                   <Trans>replaces {replacedFileName}</Trans>
@@ -127,7 +132,6 @@ export function ImportReviewModal({
       onClose={onClose}
       title={t`Review import`}
       size="lg"
-      radius="md"
     >
       {isLoading || !plan ? (
         <Group justify="center" py="xl">
@@ -135,14 +139,14 @@ export function ImportReviewModal({
         </Group>
       ) : plan.error ? (
         <Stack gap="md">
-          <Alert color="red" icon={<IconAlertTriangle size={16} />} title={t`Can't read this download`}>
+          <Alert color="var(--danger)" icon={<IconAlertTriangle size={16} />} title={t`Can't read this download`}>
             {plan.error}
           </Alert>
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose}>
               <Trans>Close</Trans>
             </Button>
-            <Button color="red" variant="light" onClick={() => decide('Reject')} loading={settle.isPending}>
+            <Button color="var(--danger)" variant="light" onClick={() => decide('Reject')} loading={settle.isPending}>
               <Trans>Discard download</Trans>
             </Button>
           </Group>
@@ -153,7 +157,7 @@ export function ImportReviewModal({
             <Text size="sm" fw={600} lineClamp={2}>
               {plan.releaseName}
             </Text>
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="var(--ink-3)">
               <Trans>
                 {seriesTitle} - <Plural value={fileCount} one="# file" other="# files" /> downloaded,{' '}
                 <Plural value={replacedFiles} one="# existing file" other="# existing files" /> affected,{' '}
@@ -162,7 +166,7 @@ export function ImportReviewModal({
             </Text>
           </div>
 
-          <Stack gap="xs" mah={360} style={{ overflowY: 'auto' }}>
+          <Stack gap="xs" mah="min(360px, 35dvh)" style={{ overflowY: 'auto' }}>
             {plan.files.map((file) => (
               <PlanFile key={file.fileName} file={file} />
             ))}
@@ -170,7 +174,7 @@ export function ImportReviewModal({
 
           <Stack gap="xs">
             <Button
-              color="red"
+              color="var(--danger-fill)"
               onClick={() => decide('Replace')}
               loading={settle.isPending}
               leftSection={<IconAlertTriangle size={16} />}
@@ -185,7 +189,7 @@ export function ImportReviewModal({
             </Button>
             <Button
               variant="subtle"
-              color="gray"
+              color="var(--neutral)"
               onClick={() => decide('Reject')}
               loading={settle.isPending}
               leftSection={<IconBan size={16} />}
@@ -194,7 +198,7 @@ export function ImportReviewModal({
             </Button>
           </Stack>
 
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>The torrent keeps seeding whichever you pick.</Trans>{' '}
             <Trans>Deleted files are removed from disk and cannot be recovered from Maki.</Trans>
           </Text>

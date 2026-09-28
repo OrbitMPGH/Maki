@@ -3,7 +3,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Maki.Metadata.Embedding;
 
-/// <summary>Outcome of asking to switch models: whether a switch actually started, and why not.</summary>
+/// <summary>
+/// Outcome of asking to switch models: whether a switch actually started, and why not.
+/// <see cref="Reason"/> is a server message catalogue key, not display text; this project has no
+/// <c>ILocalizer</c> (see <c>CLAUDE.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
+/// renders it.
+/// </summary>
 public record ModelSwitchStart(bool Started, string Model, string Reason);
 
 /// <summary>
@@ -33,12 +38,19 @@ public class EmbeddingModelSwitcher(
     private readonly SemaphoreSlim _gate = new(1, 1);
     private volatile bool _switching;
     private volatile string? _lastError;
+    private volatile object? _lastErrorArgs;
 
     /// <summary>True while a switch is downloading in the background.</summary>
     public bool Switching => _switching;
 
-    /// <summary>Why the last switch didn't fully complete (e.g. no prebuilt index for that model), or null.</summary>
+    /// <summary>
+    /// Why the last switch didn't fully complete (e.g. no prebuilt index for that model), or null. A
+    /// server message catalogue key, not display text; same reason as <see cref="ModelSwitchStart"/>.
+    /// </summary>
     public string? LastError => _lastError;
+
+    /// <summary>ICU placeholder values for <see cref="LastError"/>.</summary>
+    public object? LastErrorArgs => _lastErrorArgs;
 
     /// <summary>The model in effect right now ("off"/"base").</summary>
     public string CurrentModel => options.Enabled ? options.Model.Kind : EmbeddingModelProfile.OffKind;
@@ -56,26 +68,26 @@ public class EmbeddingModelSwitcher(
 
         if (string.Equals(targetKind, CurrentModel, StringComparison.Ordinal))
         {
-            return new ModelSwitchStart(false, targetKind, "Already using this model.");
+            return new ModelSwitchStart(false, targetKind, "install.embeddingModel.alreadyOn");
         }
 
         if (indexStatus.Running)
         {
-            return new ModelSwitchStart(false, CurrentModel,
-                "An indexing pass is running; try again once it finishes.");
+            return new ModelSwitchStart(false, CurrentModel, "install.embeddingModel.indexingRunning");
         }
 
         // Non-blocking acquire: hold the gate for the whole background run so a second request
         // can't start an overlapping switch. Released in RunAsync's finally.
         if (!_gate.Wait(0))
         {
-            return new ModelSwitchStart(false, CurrentModel, "A model switch is already in progress.");
+            return new ModelSwitchStart(false, CurrentModel, "install.embeddingModel.switchInProgress");
         }
 
         _switching = true;
         _lastError = null;
+        _lastErrorArgs = null;
         _ = Task.Run(() => RunAsync(targetKind, target));
-        return new ModelSwitchStart(true, targetKind, "Switching…");
+        return new ModelSwitchStart(true, targetKind, "install.embeddingModel.switching");
     }
 
     private async Task RunAsync(string targetKind, EmbeddingModelProfile? target)
@@ -112,10 +124,11 @@ public class EmbeddingModelSwitcher(
             var install = await prebuilt.InstallAsync(force: true);
 
             _lastError = !modelReady
-                ? "The embedding model failed to download."
+                ? "install.embeddingModel.downloadFailed"
                 : install.Installed
                     ? null
                     : install.Reason;
+            _lastErrorArgs = !modelReady || install.Installed ? null : install.ReasonArgs;
 
             if (_lastError is null)
             {

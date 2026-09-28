@@ -9,6 +9,13 @@ public class WebhookNotificationProvider(IHttpClientFactory httpClientFactory) :
 {
     public NotificationType Type => NotificationType.Webhook;
 
+    public NotificationProviderDescriptor Descriptor { get; } = new(
+        NotificationType.Webhook,
+        [
+            new NotificationField("url", NotificationFieldKind.Url, Required: true, Placeholder: "https://example.com/hook"),
+            new NotificationField("bearerToken", NotificationFieldKind.Secret)
+        ]);
+
     public async Task SendAsync(Notification connection, NotificationMessage message, CancellationToken ct = default)
     {
         var config = NotificationConfig.Webhook(connection.ConfigJson);
@@ -39,7 +46,7 @@ public class WebhookNotificationProvider(IHttpClientFactory httpClientFactory) :
         }
 
         var client = httpClientFactory.CreateClient(DiscordNotificationProvider.HttpClientName);
-        var response = await client.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        using var response = await client.SendAsync(request, ct);
+        NotificationDeliveryException.ThrowIfFailed("Webhook", response);
     }
 }

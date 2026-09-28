@@ -106,7 +106,16 @@ public class OpdsController(
         }
 
         var path = Path.Combine(paths.MediaCoverDir, seriesId.ToString(), "cover.jpg");
-        return System.IO.File.Exists(path) ? PhysicalFile(path, "image/jpeg") : NotFound();
+        if (!System.IO.File.Exists(path))
+        {
+            return NotFound();
+        }
+
+        // No `?v=` cache-buster on this URL, so no `immutable`: a shorter max-age plus ETag/Last-Modified lets a revalidating client pick up a replaced cover, and private matches the token's per-user scope.
+        var info = new System.IO.FileInfo(path);
+        var etag = new EntityTagHeaderValue($"\"{seriesId}-{info.Length}-{info.LastWriteTimeUtc.Ticks}\"");
+        Response.Headers.CacheControl = "private, max-age=3600";
+        return PhysicalFile(path, "image/jpeg", lastModified: info.LastWriteTimeUtc, entityTag: etag);
     }
 
     /// <summary>The request path with the token segment removed, safe to log.</summary>
@@ -221,8 +230,10 @@ public class OpdsController(
             return NotFound();
         }
 
-        var name = $"{slice.Series.Title} - {ChapterLabel.For(slice.Chapter)}.cbz";
-        return PhysicalFile(slice.ArchivePath, OpdsXml.ComicBookType, SanitizeFileName(name), enableRangeProcessing: true);
+        var name = $"{slice.Series.Title} - {ChapterLabel.For(slice.Chapter)}{Path.GetExtension(slice.ArchivePath)}";
+        return PhysicalFile(
+            slice.ArchivePath, OpdsXml.MimeType(slice.ArchivePath), SanitizeFileName(name),
+            enableRangeProcessing: true);
     }
 
     /// <summary>
@@ -265,21 +276,16 @@ public class OpdsController(
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
-        // Immutable and long-lived, matching the built-in reader: the archive does not change, and
-        // the size in the ETag guards against a re-import reusing the id. Worth knowing alongside
-        // progress tracking — a reader that re-reads from its own cache without revalidating
-        // reports nothing, so a re-read only starts registering again at the first page it has to
-        // actually fetch. Harmless in practice: completion is sticky, so nothing is lost, and the
-        // resume position catches up as soon as the reader moves past what it cached.
-        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
-
-        var stream = CbzReader.OpenPage(slice.ArchivePath, entry);
+        var stream = await reader.OpenPageAsync(slice, entry, ct);
         if (stream is null)
         {
             return NotFound();
         }
 
-        // Range processing stays off: the zip entry stream is forward-only.
+        // Revalidated rather than immutable: the page URL stays the same across a re-download, so
+        // only the ETag can tell a reader its cached copy is stale. The 304 above keeps that cheap.
+        Response.Headers.CacheControl = "private, no-cache";
+
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }
 

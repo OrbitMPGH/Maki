@@ -28,7 +28,7 @@ function Figure({
 }
 
 /**
- * Home's progression figures, matching the Stats overview's ProgressStrip so the same numbers read
+ * Home's progression figures, matching the Stats page's Progress section so the same numbers read
  * the same in both places. The whole group links to Stats for the full picture.
  *
  * Deliberately without a card of its own: it is one half of Home's glance strip, which supplies
@@ -45,7 +45,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   return (
     // A plain Link rather than a Mantine element with `component`: the polymorphic prop types do
     // not carry react-router's `to` through, and this element only needs to be a flex row.
-    <Link to="/stats" className="home-glance-progress">
+    <Link to="/stats?section=progress" className="home-glance-progress">
       <Group gap={11} wrap="nowrap">
         <RingProgress
           size={46}

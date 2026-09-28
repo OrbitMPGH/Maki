@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
+import { SettingsHelp } from './SettingsHelp'
+import { SaveButton } from './SaveButton'
 import {
   Alert,
-  Button,
-  Card,
   Code,
   Group,
   NumberInput,
   Stack,
   Switch,
-  Text,
   TextInput,
   Title,
 } from '@mantine/core'
@@ -23,6 +22,7 @@ import {
 } from '../../api/auth'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
+import { Panel } from '../ui/Panel'
 
 /**
  * Instance security settings. Admin-only.
@@ -47,37 +47,36 @@ export function SecuritySection() {
   const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
 
   return (
-    <Card withBorder radius="md" padding="md" id="security">
+    <Panel id="security">
       <Title order={4} mb="sm">
         <Trans>Security</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>Changes take effect after Maki restarts.</Trans>
-      </Text>
+      </SettingsHelp>
 
       <Stack gap="md">
         <Switch
           label={t`Require HTTPS`}
-          description={t`Redirects HTTP to HTTPS, sends HSTS, and marks the session cookie Secure. Turn this on once Maki is behind TLS, and not before, because a Secure cookie sent over plain HTTP never comes back and sign-in fails with nothing to show why.`}
+          description={t`Redirects HTTP to HTTPS, sends HSTS and marks the session cookie Secure. Only turn this on once Maki is behind TLS: over plain HTTP, sign-in fails without saying why.`}
           checked={draft.requireHttps}
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
 
         <TextInput
           label={t`Trusted proxies`}
-          description={t`Comma-separated IP addresses or CIDR networks, e.g. 172.18.0.0/16. Only these are believed when they set X-Forwarded-For. Leave empty if Maki is reached directly.`}
+          description={t`Comma-separated IPs or CIDR networks. Only these are trusted to set X-Forwarded-For. Leave empty if Maki is reached directly.`}
           placeholder="172.18.0.0/16, 10.0.0.5"
           value={draft.trustedProxies}
           onChange={(e) => setDraft({ ...draft, trustedProxies: e.currentTarget.value })}
         />
 
         {!draft.trustedProxies.trim() && (
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
-              With no trusted proxy configured, forwarded headers are ignored entirely, deliberately,
-              since believing them from anyone would let a client claim any address and slip past both
-              rate limiting and account lockout. Behind a reverse proxy that means every failed sign-in
-              is attributed to the proxy: name it above so lockout and the audit log see the real client.
+              With no trusted proxy, forwarded headers are ignored, so behind a reverse proxy every
+              failed sign-in is blamed on the proxy. Name it above so lockout and the audit log see
+              the real client.
             </Trans>
           </Alert>
         )}
@@ -110,25 +109,23 @@ export function SecuritySection() {
         </Group>
 
         <Group justify="flex-end">
-          <Button
+          <SaveButton
+            dirty={dirty}
             loading={save.isPending}
-            disabled={!dirty}
             onClick={() =>
               save.mutate(draft, {
                 onSuccess: () =>
                   notifications.show({
                     message: now`Security settings saved. Restart Maki to apply them.`,
-                    color: 'green',
+                    color: 'var(--ok)',
                   }),
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
-          >
-            <Trans>Save</Trans>
-          </Button>
+          />
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -154,11 +151,11 @@ export function OidcSection() {
   const redirectUrl = `${window.location.origin}${draft.redirectPath}`
 
   return (
-    <Card withBorder radius="md" padding="md" id="oidc">
+    <Panel id="oidc">
       <Title order={4} mb="sm">
         <Trans>Single sign-on</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
           Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
           take effect after Maki restarts. Register{' '}
@@ -166,7 +163,7 @@ export function OidcSection() {
           If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
           register that host&apos;s variant as well.
         </Trans>
-      </Text>
+      </SettingsHelp>
 
       <Stack gap="md">
         <Switch
@@ -221,7 +218,7 @@ export function OidcSection() {
         />
 
         {draft.breakGlassActive && (
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
               <Code>MAKI_ALLOW_LOCAL_LOGIN</Code> is set in this instance&apos;s environment, so password
               sign-in is available to every account regardless of the switch above. Remove the variable
@@ -263,7 +260,7 @@ export function OidcSection() {
         </Group>
 
         {mapsPermissions && (
-          <Alert color="blue" variant="light">
+          <Alert color="var(--info)" variant="light">
             <Trans>
               With either claim set, your provider is the authority on permissions: they are recomputed
               on every sign-in, so changes made on the Users page are overwritten the next time that
@@ -273,24 +270,22 @@ export function OidcSection() {
         )}
 
         <Group justify="flex-end">
-          <Button
+          <SaveButton
+            dirty={dirty}
             loading={save.isPending}
-            disabled={!dirty}
             onClick={() =>
               save.mutate(draft, {
                 onSuccess: () =>
                   notifications.show({
                     message: now`Single sign-on saved. Restart Maki to apply it.`,
-                    color: 'green',
+                    color: 'var(--ok)',
                   }),
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
-          >
-            <Trans>Save</Trans>
-          </Button>
+          />
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }

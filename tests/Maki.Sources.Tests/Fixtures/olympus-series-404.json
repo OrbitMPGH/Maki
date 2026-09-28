@@ -1,0 +1,10 @@
+{
+  "error": true,
+  "url": "https://olympusxyz.com/api/__stale_slug_404?type=comic",
+  "statusCode": 404,
+  "statusMessage": "Page not found: /api/__stale_slug_404?type=comic",
+  "message": "Page not found: /api/__stale_slug_404?type=comic",
+  "data": {
+    "path": "/api/__stale_slug_404?type=comic"
+  }
+}

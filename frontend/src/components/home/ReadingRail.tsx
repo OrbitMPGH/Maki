@@ -1,7 +1,10 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
+import { IconPlayerPlay } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
 
 /**
  * Horizontal rail of "open this chapter" posters, for Home's Continue reading and Jump back in.
@@ -10,19 +13,21 @@ import { plural } from '@lingui/core/macro'
  * series page, whereas these link straight into the reader and carry a chapter label rather than
  * download counts. It reuses that card's CSS classes, so the two match without new layout rules.
  */
-export function ReadingRail({ items }: { items: HomeReadingItem[] }) {
+export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
   return (
     <div className="discover-rail">
       {items.map((item) => (
-        <div key={item.chapterId} className="discover-rail-item">
+        <div key={item.chapterId} className="discover-rail-item reading-card">
           <ReadingCard item={item} />
+          <ReadingCardMenu item={item} rail={rail} className="reading-card-menu" />
         </div>
       ))}
     </div>
   )
 }
 
-function ReadingCard({ item }: { item: HomeReadingItem }) {
+// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem }) {
   const { t } = useLingui()
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
   const resumePct =
@@ -44,14 +49,20 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
         )}
         <div className="cover-scrim" />
 
+        <span className="discover-corner" data-play="true" aria-hidden="true">
+          <IconPlayerPlay size={18} />
+        </span>
+
         {unreadChapters > 0 && (
-          <div className="cover-corner cover-corner-left">
-            <span
-              className="cover-badge cover-badge-unread"
-              data-tip={plural(unreadChapters, { one: '# unread', other: '# unread' })}
-            >
-              {unreadChapters}
-            </span>
+          <div className="cover-corners">
+            <div className="cover-corner cover-corner-left">
+              <span
+                className="cover-badge cover-badge-unread"
+                data-tip={plural(unreadChapters, { one: '# unread', other: '# unread' })}
+              >
+                {unreadChapters}
+              </span>
+            </div>
           </div>
         )}
 
@@ -59,7 +70,14 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
           <span className="cover-title" title={item.seriesTitle}>
             {item.seriesTitle}
           </span>
-          <span className="home-chapter-label">{item.chapterLabel}</span>
+          <span className="home-chapter-label" data-action>
+            <IconPlayerPlay size={10} />
+            {item.page > 0 ? t`Resume` : t`Start`}
+            <span className="home-chapter-sep" aria-hidden="true">
+              {' · '}
+            </span>
+            {item.chapterLabel}
+          </span>
           {resumePct !== null && (
             <div className="home-resume-bar" data-tip={t`Page ${pageNumber} of ${pageCount}`}>
               <div className="home-resume-fill" style={{ width: `${resumePct}%` }} />
@@ -69,4 +87,4 @@ function ReadingCard({ item }: { item: HomeReadingItem }) {
       </div>
     </Link>
   )
-}
+})

@@ -1,10 +1,12 @@
 ﻿using Maki.Api.Configuration;
+using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Progress;
 using Maki.Core.Reading;
+using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -63,7 +65,9 @@ public class ReaderController(
     UserMetricsService metrics,
     AchievementService achievements,
     AppPaths paths,
-    ILogger<ReaderController> logger) : ControllerBase
+    ILogger<ReaderController> logger,
+    ICurrentUser currentUser,
+    KavitaUserResolver kavitaUser) : ControllerBase
 {
     private const int ThumbnailWidth = 200;
 
@@ -179,6 +183,12 @@ public class ReaderController(
         var seriesWantedCount = await db.Chapters
             .CountAsync(c => c.SeriesId == slice.Series.Id && (c.Wanted || c.ChapterFileId != null), ct);
 
+        // Named on the end-of-chapter screen, and its number is how that screen tells a straight
+        // continuation from a jump over chapters that were never downloaded.
+        var nextChapter = next is int nextId
+            ? await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == nextId, ct)
+            : null;
+
         return Ok(new
         {
             chapterId = slice.Chapter.Id,
@@ -196,13 +206,17 @@ public class ReaderController(
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
+            nextChapterLabel = nextChapter is null ? null : ChapterLabel.For(nextChapter),
+            nextChapterNumber = nextChapter?.Number,
+            seriesCoverUrl = SeriesDto.CoverUrlFor(slice.Series.Id, slice.Series.CoverPath, slice.Series.LastMetadataRefresh),
             prefs = resolved.Prefs,
             prefsSource = resolved.Source.ToString(),
             profileId = resolved.ProfileId,
             profileName = resolved.ProfileName,
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
-            seriesType = slice.Series.Type
+            seriesType = slice.Series.Type,
+            pageVersion = PageVersion(slice)
         });
     }
 
@@ -217,24 +231,97 @@ public class ReaderController(
 
         var entry = slice.Pages[slice.StartPage + page];
 
-        // The archive is immutable in practice, and the size guards against a re-import
-        // reusing the id, so the response can be cached hard.
         var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveSize}-{slice.StartPage + page}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
-        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
+        if (ComicFile.IsPdf(slice.ArchivePath))
+        {
+            var cached = await GetOrRenderFullPageAsync(slice, slice.StartPage + page, entry, ct);
+            if (cached is null)
+            {
+                return NotFound();
+            }
 
-        var stream = CbzReader.OpenPage(slice.ArchivePath, entry);
+            SetPageCacheControl(slice);
+            return PhysicalFile(cached, CbzReader.ContentType(entry), lastModified: null, entityTag: etag, enableRangeProcessing: false);
+        }
+
+        var stream = await reader.OpenPageAsync(slice, entry, ct);
         if (stream is null)
         {
             return NotFound();
         }
 
-        // Range processing stays off (the default): the zip entry stream is forward-only.
+        SetPageCacheControl(slice);
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+    }
+
+    private static string PageVersion(ReaderService.ChapterSlice slice) => $"{slice.ChapterFileId}-{slice.ArchiveSize}";
+
+    /// <summary>
+    /// Page URLs are the same before and after a re-download, so a year-long immutable response is
+    /// only safe when the URL carries the manifest's <c>pageVersion</c> and it still matches the
+    /// file on disk. Anything else revalidates against the ETag.
+    /// </summary>
+    private void SetPageCacheControl(ReaderService.ChapterSlice slice) =>
+        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice)
+            ? "private, max-age=31536000, immutable"
+            : "private, no-cache";
+
+    /// <summary>
+    /// Full-size PDF page render, disk-cached alongside the thumbnail cache for the same chapter
+    /// file so a page opened twice (once by the reader, once to build its thumbnail) is only ever
+    /// rendered once. Named <c>{ArchiveSize}-{index}.full.jpg</c> so it shares the thumbnail
+    /// cache's per-directory eviction (missing ChapterFile row, stale archive size) without
+    /// colliding with the thumbnail's own <c>{ArchiveSize}-{index}.jpg</c> name.
+    /// </summary>
+    private async Task<string?> GetOrRenderFullPageAsync(ReaderService.ChapterSlice slice, int absoluteIndex, string entry, CancellationToken ct)
+    {
+        var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
+        var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.full.jpg");
+        if (System.IO.File.Exists(cached))
+        {
+            return cached;
+        }
+
+        await using var source = await CbzReader.OpenPageAsync(slice.ArchivePath, entry, ct);
+        if (source is null)
+        {
+            return null;
+        }
+
+        Directory.CreateDirectory(dir);
+        var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (var file = System.IO.File.Create(tmp))
+            {
+                await source.CopyToAsync(file, ct);
+            }
+
+            try
+            {
+                System.IO.File.Move(tmp, cached, overwrite: true);
+            }
+            catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
+                                              System.IO.File.Exists(cached))
+            {
+                // Another request already finished rendering the same page and has it open for
+                // reading (Windows refuses to replace an open file); the bytes are deterministic,
+                // so the loser can just use what is there.
+                System.IO.File.Delete(tmp);
+            }
+        }
+        catch
+        {
+            if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
+            throw;
+        }
+
+        return cached;
     }
 
     [HttpGet("chapter/{id:int}/thumb/{page:int}")]
@@ -249,24 +336,47 @@ public class ReaderController(
         var absoluteIndex = slice.StartPage + page;
         var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
         var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.jpg");
-        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
         if (!System.IO.File.Exists(cached))
         {
             var entry = slice.Pages[absoluteIndex];
             try
             {
-                await using var source = CbzReader.OpenPage(slice.ArchivePath, entry);
-                if (source is null)
+                // A PDF page is resized from its own cached full render rather than re-rendered,
+                // so opening a chapter's thumbnail strip does not re-run PDFium for every page it
+                // already rendered full-size. That render is already gated by ImageWorkGate on its
+                // own (PdfReader.RenderPageAsync), so it stays outside the gate below - nesting
+                // would be a reentrant wait on a semaphore that is not reentrant.
+                string? fullCached = null;
+                if (ComicFile.IsPdf(slice.ArchivePath))
                 {
-                    return NotFound();
+                    fullCached = await GetOrRenderFullPageAsync(slice, absoluteIndex, entry, ct);
+                    if (fullCached is null)
+                    {
+                        return NotFound();
+                    }
                 }
+
+                var missing = false;
 
                 // Gated. A client prefetching a chapter's whole thumbnail strip arrives as dozens
                 // of concurrent requests, each decoding a full page to produce a 200px JPEG, and
-                // nothing else in this path bounds them.
+                // nothing else in this path bounds them. The source page is opened inside the gate
+                // too, so a request queued behind it holds no page buffer until its turn comes.
                 await ImageWorkGate.RunAsync(async () =>
                 {
+                    var source = fullCached is not null
+                        ? System.IO.File.OpenRead(fullCached)
+                        : await reader.OpenPageAsync(slice, entry, ct);
+
+                    if (source is null)
+                    {
+                        missing = true;
+                        return;
+                    }
+
+                    await using var _ = source;
+
                     using var image = await Image.LoadAsync(source, ct);
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
@@ -274,9 +384,36 @@ public class ReaderController(
                         Mode = ResizeMode.Max
                     }));
 
+                    // Written aside and moved into place: an aborted request would otherwise leave a
+                    // truncated JPEG at the final path, served as immutable for a year.
                     Directory.CreateDirectory(dir);
-                    await image.SaveAsJpegAsync(cached, new JpegEncoder { Quality = 80 }, ct);
+                    var tmp = Path.Combine(dir, $"{Guid.NewGuid():N}.tmp");
+                    try
+                    {
+                        await image.SaveAsJpegAsync(tmp, new JpegEncoder { Quality = 80 }, ct);
+                        try
+                        {
+                            System.IO.File.Move(tmp, cached, overwrite: true);
+                        }
+                        catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
+                                                          System.IO.File.Exists(cached))
+                        {
+                            // Another request finished the same thumbnail and is serving it (Windows
+                            // refuses to replace an open file); the bytes match, so use that one.
+                            System.IO.File.Delete(tmp);
+                        }
+                    }
+                    catch
+                    {
+                        if (System.IO.File.Exists(tmp)) System.IO.File.Delete(tmp);
+                        throw;
+                    }
                 }, ct);
+
+                if (missing)
+                {
+                    return NotFound();
+                }
             }
             catch (Exception e)
             {
@@ -286,6 +423,7 @@ public class ReaderController(
             }
         }
 
+        SetPageCacheControl(slice);
         return PhysicalFile(cached, "image/jpeg");
     }
 
@@ -387,7 +525,7 @@ public class ReaderController(
 
     /// <summary>Largest set one call will act on. Bounds the per-chapter <c>read</c> pass, which
     /// has to open each chapter's archive to learn its page count.</summary>
-    private const int MaxBulkChapters = 2000;
+    internal const int MaxBulkChapters = 2000;
 
     /// <summary>
     /// Bulk read-state change, for the chapter table's select mode and for ticking a whole anime
@@ -467,19 +605,48 @@ public class ReaderController(
     /// call per series — so this returns immediately and the UI polls <c>GET import/kavita</c>.
     /// </summary>
     [HttpPost("import/kavita")]
-    public IActionResult StartKavitaImport() =>
-        readImport.Start()
+    public async Task<IActionResult> StartKavitaImport(CancellationToken ct)
+    {
+        if (!await MayUseKavitaImportAsync(ct))
+        {
+            return this.Forbidden(localizer, "error.reader.kavitaImportForbidden");
+        }
+
+        return readImport.Start()
             ? Accepted(new { started = true })
             : this.Conflict(localizer, "error.reader.importAlreadyRunning");
+    }
 
     [HttpGet("import/kavita")]
-    public IActionResult KavitaImportStatus() => Ok(new
+    public async Task<IActionResult> KavitaImportStatus(CancellationToken ct)
     {
-        running = readImport.State.Running,
-        finishedAt = readImport.State.FinishedAt,
-        result = readImport.State.Result,
-        error = readImport.State.Error,
-    });
+        if (!await MayUseKavitaImportAsync(ct))
+        {
+            return this.Forbidden(localizer, "error.reader.kavitaImportForbidden");
+        }
+
+        // The raw text comes from outside Maki and can carry the Kavita URL, so only an admin sees
+        // it. It is already logged by the import service.
+        var state = readImport.State;
+        string? error = state.ErrorKey is { } key
+            ? localizer.Get(key)
+            : state.RawError is null
+                ? null
+                : currentUser.Has(MakiPermission.Admin)
+                    ? state.RawError
+                    : localizer.Get("error.reader.kavitaImportFailed");
+        return Ok(new
+        {
+            running = state.Running,
+            finishedAt = state.FinishedAt,
+            result = state.Result,
+            error,
+        });
+    }
+
+    /// <summary>The import writes the Kavita-bound user's progress, so only that user or an admin may run it.</summary>
+    private async Task<bool> MayUseKavitaImportAsync(CancellationToken ct) =>
+        currentUser.Has(MakiPermission.Admin) || await kavitaUser.ResolveAsync(ct) == currentUser.UserId;
 
     [HttpGet("chapter/{id:int}/bookmarks")]
     public async Task<IActionResult> Bookmarks(int id, CancellationToken ct) =>
@@ -559,7 +726,8 @@ public class ReaderController(
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
         // so the ordered fallback below picks it up in its proper place.
         var inProgress = await db.ChapterProgress
-            .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0)
+            .Where(p => p.SeriesId == seriesId && !p.Completed && p.UnreadAt == null && p.PageIndex > 0 &&
+                        db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null))
             .OrderByDescending(p => p.UpdatedAt)
             .FirstOrDefaultAsync(ct);
         if (inProgress is not null)

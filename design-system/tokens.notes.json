@@ -1,0 +1,442 @@
+{
+  "_about": "Everything in the design system that the code cannot say: usage notes per token, type styles, Mantine defaults, fonts. Values come from frontend/src/theme.css and theme.ts at build time (scripts/design-system/build.mjs).",
+  "usage": {
+    "app-bg": "Page ground behind the shell, and the sunken layer in dark.",
+    "surface": "Default layer: every Card, Paper and Panel.",
+    "surface-2": "Second step up: tag chips, inputs at rest, the raised layer in dark.",
+    "surface-hover": "Hover fill on interactive rows and chips.",
+    "border": "Default 1px border on cards, panels, tables and the shell.",
+    "border-strong": "Emphasised border: hovered cards, chip outlines, scrollbar thumb.",
+    "hairline": "Row dividers inside tables and lists. An alias of border.",
+    "line-soft": "Softer divider: border at 76%.",
+    "surface-raised": "Overlays (modals, drawers, menus, popovers) and .layer-raised. Dark lightens, light stays white and casts shadow-raised.",
+    "surface-sunken": "Recessed wells (.layer-sunken): inset lists, code, empty tracks.",
+    "border-raised": "Border on the raised layer.",
+    "ink-hi": "Titles, figures and the active nav item, on every surface.",
+    "ink": "Body copy on app-bg, surface and surface-2.",
+    "ink-2": "Secondary copy: chip labels, status words, compact empty states.",
+    "ink-3": "Dimmed text (Mantine dimmed maps here): descriptions, labels, meta lines.",
+    "ink-4": "Quietest text: figure-strip labels, zero counts. Reads 4.5:1 on surface in both schemes.",
+    "brand": "The single accent: progress fills, selected borders, focus outlines, unread badges, panel edges. A fill and border colour, not body text: 3.5:1 on surface in light.",
+    "brand-hover": "Hover state for fills in brand.",
+    "brand-on": "Text and icons on a brand fill where the fill is brand itself (the play corner). Emerald and amber flip to near-black. Anything carrying small text sits on the Mantine primary fill with primary-on instead, since white on indigo brand is only 3.5:1.",
+    "brand-fg": "Brand-tinted text and icons on the surfaces: section-header icons and counts, engine reasons, links in prose. Light uses indigo-6 (5.8:1 on white). On cover art use brand-fg-on-art.",
+    "brand-fg-on-art": "Brand-tinted text over cover art under the dark scrim (Discover reason lines, the Resume label on Home cards). The scrim stays dark in Light, so Light keeps the pale indigo here.",
+    "brand-glow": "Selection highlight and the soft glow under a selected cover card. Never a text colour.",
+    "primary": "Mantine primary fill (filled Button, Switch, active Tabs, the unread badge, the add corner): the brand palette at primaryShade, dark 5 and light 6, except Rose, which steps to 6 because its shade 5 only reaches 4:1 under white.",
+    "primary-hover": "Hover on a primary fill: one shade darker.",
+    "primary-on": "Label and icon colour on a primary fill. Mantine autoContrast picks it: white on Indigo, Light and Rose, black on Emerald and Amber. Every pair clears 4.5:1.",
+    "ok": "Success, Completed, downloaded, positive deltas. As text or a dot on surface and surface-2.",
+    "ok-on": "Icon or text on an ok fill, such as the In library check on Discover cards. Near-black in dark (7.4:1 on ok), white in Light (5.3:1).",
+    "warn": "Hiatus, partial, needs attention. As text or a dot on surface and surface-2.",
+    "info": "Ongoing, in progress, read-progress rings. As text or a dot on surface and surface-2.",
+    "danger": "Failed, Cancelled, destructive actions, negative deltas. As text or a dot on surface and surface-2.",
+    "danger-fill": "Fill for filled danger buttons (ConfirmDialog and every destructive confirm). White labels read 5.6:1 on it; danger itself is too light for them in dark. The same value as Light danger.",
+    "watched": "Watched or read state. Kept apart from brand so a read row never looks selected. As text or a dot on surface and surface-2.",
+    "suggestive": "The Suggestive content rating and the 65 to 79 score band. Olive, so it stays clear of warn. As text or a dot on surface and surface-2.",
+    "neutral": "Unknown or idle status; the fallback for any unmapped state. As text or a dot on surface and surface-2.",
+    "ok-soft": "Tinted fill behind ok text: ok at 15%. Pair with ok as the foreground.",
+    "warn-soft": "Tinted fill behind warn text: warn at 15%. Pair with warn as the foreground.",
+    "info-soft": "Tinted fill behind info text: info at 15%. Pair with info as the foreground.",
+    "danger-soft": "Tinted fill behind danger text: danger at 15%. Pair with danger as the foreground.",
+    "watched-soft": "Tinted fill behind watched text: watched at 15%. Pair with watched as the foreground.",
+    "suggestive-soft": "Tinted fill behind suggestive text: suggestive at 15%. Pair with suggestive as the foreground.",
+    "neutral-soft": "Tinted fill behind neutral text: neutral at 15%. Pair with neutral as the foreground.",
+    "rating": "Star icons for ratings. An icon colour: 3.3:1 on white in light, so set the score number itself in ink-hi.",
+    "tier-1": "Achievement tier 1 of 6. The ladder runs cool to warm so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Tiers 1, 5 and 6 sit between 3.7 and 4.4:1 on surface in dark, so as text keep them bold and 19px or larger.",
+    "tier-2": "Achievement tier 2 of 6. The ladder runs cool to warm so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Tiers 1, 5 and 6 sit between 3.7 and 4.4:1 on surface in dark, so as text keep them bold and 19px or larger.",
+    "tier-3": "Achievement tier 3 of 6. The ladder runs cool to warm so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Tiers 1, 5 and 6 sit between 3.7 and 4.4:1 on surface in dark, so as text keep them bold and 19px or larger.",
+    "tier-4": "Achievement tier 4 of 6. The ladder runs cool to warm so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Tiers 1, 5 and 6 sit between 3.7 and 4.4:1 on surface in dark, so as text keep them bold and 19px or larger.",
+    "tier-5": "Achievement tier 5 of 6. The ladder runs cool to warm so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Tiers 1, 5 and 6 sit between 3.7 and 4.4:1 on surface in dark, so as text keep them bold and 19px or larger.",
+    "tier-6": "Achievement tier 6 of 6. The ladder runs cool to warm so it reads without its label; locked badges keep their shape and drop the colour. Badge rims, icons, level text. Tiers 1, 5 and 6 sit between 3.7 and 4.4:1 on surface in dark, so as text keep them bold and 19px or larger.",
+    "tier-1-soft": "Tinted fill behind tier-1: tier-1 at 15%.",
+    "tier-2-soft": "Tinted fill behind tier-2: tier-2 at 15%.",
+    "tier-3-soft": "Tinted fill behind tier-3: tier-3 at 15%.",
+    "tier-4-soft": "Tinted fill behind tier-4: tier-4 at 15%.",
+    "tier-5-soft": "Tinted fill behind tier-5: tier-5 at 15%.",
+    "tier-6-soft": "Tinted fill behind tier-6: tier-6 at 15%.",
+    "indigo-0": "Mantine brand[0]. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-1": "Mantine brand[1]. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-2": "Mantine brand[2]. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-3": "Mantine brand[3]. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-4": "Mantine brand[4]. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-5": "Mantine brand[5]. Primary shade in dark. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-6": "Mantine brand[6]. Primary shade in light. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-7": "Mantine brand[7]. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-8": "Mantine brand[8]. Reach for it only when a Mantine color prop needs a shade.",
+    "indigo-9": "Mantine brand[9]. Reach for it only when a Mantine color prop needs a shade.",
+    "rose-0": "Mantine rose[0] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "rose-1": "Mantine rose[1] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "rose-2": "Mantine rose[2] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "rose-3": "Mantine rose[3] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "rose-4": "Mantine rose[4] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "rose-5": "Mantine rose[5] (the rose accent's brand palette). Primary shade in dark. Reach for it only when a Mantine color prop needs a shade.",
+    "rose-6": "Mantine rose[6] (the rose accent's brand palette). Primary shade in light. Reach for it only when a Mantine color prop needs a shade.",
+    "rose-7": "Mantine rose[7] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "rose-8": "Mantine rose[8] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "rose-9": "Mantine rose[9] (the rose accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-0": "Mantine emerald[0] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-1": "Mantine emerald[1] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-2": "Mantine emerald[2] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-3": "Mantine emerald[3] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-4": "Mantine emerald[4] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-5": "Mantine emerald[5] (the emerald accent's brand palette). Primary shade in dark. Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-6": "Mantine emerald[6] (the emerald accent's brand palette). Primary shade in light. Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-7": "Mantine emerald[7] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-8": "Mantine emerald[8] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "emerald-9": "Mantine emerald[9] (the emerald accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-0": "Mantine amber[0] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-1": "Mantine amber[1] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-2": "Mantine amber[2] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-3": "Mantine amber[3] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-4": "Mantine amber[4] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-5": "Mantine amber[5] (the amber accent's brand palette). Primary shade in dark. Reach for it only when a Mantine color prop needs a shade.",
+    "amber-6": "Mantine amber[6] (the amber accent's brand palette). Primary shade in light. Reach for it only when a Mantine color prop needs a shade.",
+    "amber-7": "Mantine amber[7] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-8": "Mantine amber[8] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "amber-9": "Mantine amber[9] (the amber accent's brand palette). Reach for it only when a Mantine color prop needs a shade.",
+    "dark-0": "Mantine dark[0], the near-black elevation ramp: primary text. Prefer the semantic surface and ink tokens.",
+    "dark-1": "Mantine dark[1], the near-black elevation ramp. Prefer the semantic surface and ink tokens.",
+    "dark-2": "Mantine dark[2], the near-black elevation ramp: dimmed text. Prefer the semantic surface and ink tokens.",
+    "dark-3": "Mantine dark[3], the near-black elevation ramp. Prefer the semantic surface and ink tokens.",
+    "dark-4": "Mantine dark[4], the near-black elevation ramp: borders. Prefer the semantic surface and ink tokens.",
+    "dark-5": "Mantine dark[5], the near-black elevation ramp: elevated surfaces (modals). Prefer the semantic surface and ink tokens.",
+    "dark-6": "Mantine dark[6], the near-black elevation ramp: cards. Prefer the semantic surface and ink tokens.",
+    "dark-7": "Mantine dark[7], the near-black elevation ramp: app body. Prefer the semantic surface and ink tokens.",
+    "dark-8": "Mantine dark[8], the near-black elevation ramp. Prefer the semantic surface and ink tokens.",
+    "dark-9": "Mantine dark[9], the near-black elevation ramp. Prefer the semantic surface and ink tokens.",
+    "type-display": "Hero titles.",
+    "type-route": "Route titles.",
+    "type-feature": "Compact page titles, feature headings.",
+    "type-figure": "Figure-strip counts.",
+    "type-section": "Empty-state titles, panel headings.",
+    "type-subhead": "Subheads.",
+    "type-body": "Body copy, cover titles.",
+    "type-meta": "Chips, status words, operational table cells.",
+    "type-micro": "Cover counts, table headers, section-header counts.",
+    "type-label": "Uppercase labels, cover badges.",
+    "type-badge": "Smallest badge text.",
+    "radius-2xs": "Tiny marks: heatmap cells, reader strip thumbnails, bookmark flags, focus rings on thin lines.",
+    "radius-xs": "Small thumbnails, kbd keys, swatches, the inbox cover.",
+    "radius-sm": "Badges, checkboxes, engine chips. The same value as radius-control.",
+    "radius-md": "Default radius: buttons, inputs, choice cards.",
+    "radius-lg": "Cards, Panels, Papers, cover cards, modals.",
+    "radius-xl": "Large hero surfaces.",
+    "radius-control": "Small inline controls and counters.",
+    "radius-chip": "Tag chips and the Discover rank badge: deliberately squarer than a pill.",
+    "radius-thumb": "Cover thumbnails in rows and lists (SeriesRow, requests, the hero strip), and the scrollbar thumb.",
+    "radius-surface": "Strips and inline surfaces (FigureStrip), Rewind cover art.",
+    "radius-hero": "Hero posters and glass panels, the score pill, the brand-mark tile, the reader chapter banner.",
+    "radius-overlay": "Overlays: menus, popovers, the reader shortcut sheet.",
+    "radius-pill": "Anything whose ends should be fully round at any height: progress bars and their fills, cover badges, seeds, page badges.",
+    "shadow-sm": "Mantine shadow sm.",
+    "shadow-md": "Mantine shadow md: floating toolbars.",
+    "shadow-lg": "Mantine shadow lg: a hovered cover card.",
+    "shadow-card": "Resting card shadow where one is used at all.",
+    "shadow-raised": "The raised layer: none in dark, a real shadow in light.",
+    "content-wide": "Max width of a standard page (SurfaceFrame wide).",
+    "content-prose": "Max width of reading text.",
+    "section-space": "Vertical rhythm between editorial sections.",
+    "control-height-xs": "Extra-small controls.",
+    "control-height-md": "Medium controls (Mantine md).",
+    "fw-regular": "Separators and small print that should recede.",
+    "fw-medium": "Chip labels, status words, table cells.",
+    "fw-semibold": "Labels, nav links, badges, buttons, row titles in lists.",
+    "fw-strong": "Titles inside cards: cover and row titles, empty-state titles, section counts.",
+    "fw-bold": "Display titles, figures, headings h3 and h4, cover badges.",
+    "fw-heavy": "h1 and h2, stat values, Rewind numbers."
+  },
+  "familyNotes": {
+    "fontSize": "The role-based type scale as CSS variables, exactly as theme.css declares them. Pick the tier by what the text is; if none fits, add a tier instead of an off-scale value.",
+    "spacing": "Maki keeps Mantine's default spacing scale; these are the values in effect.",
+    "shadow": "Dark elevates by lightening (a shadow on near-black is invisible); light elevates by staying white and casting a real shadow.",
+    "layout": "Content widths and control heights from theme.css.",
+    "fontWeight": "The weight scale. A weight between two steps belongs on one of them."
+  },
+  "extraColors": [
+    {
+      "name": "mark-cream",
+      "value": "#f4ecd8",
+      "usage": "Brand mark: the rice body of the maki roll. Only for the mark and its echoes."
+    },
+    {
+      "name": "mark-nori",
+      "value": "#20301f",
+      "usage": "Brand mark: the nori bands top and bottom."
+    },
+    {
+      "name": "mark-ink",
+      "value": "#1a1a1a",
+      "usage": "Brand mark: outline, eyes and smile."
+    },
+    {
+      "name": "mark-blush",
+      "value": "#f7a8bf",
+      "usage": "Brand mark: cheeks."
+    }
+  ],
+  "spacing": [
+    {
+      "name": "spacing-xs",
+      "value": "0.625rem",
+      "usage": "Tight gaps inside controls and chip rows."
+    },
+    {
+      "name": "spacing-sm",
+      "value": "0.75rem",
+      "usage": "Gap between a section header and its content; grid gutters."
+    },
+    {
+      "name": "spacing-md",
+      "value": "1rem",
+      "usage": "StatTile padding, compact panel padding, operational pages."
+    },
+    {
+      "name": "spacing-lg",
+      "value": "1.25rem",
+      "usage": "Panel and modal padding; gap below a PageHeader."
+    },
+    {
+      "name": "spacing-xl",
+      "value": "2rem",
+      "usage": "Space above a SectionHeader; between page sections."
+    }
+  ],
+  "type": {
+    "fonts": [
+      {
+        "family": "Inter Variable",
+        "file": "fonts/InterVariable-latin.woff2",
+        "source": "frontend/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2",
+        "weight": "100 900",
+        "style": "normal"
+      },
+      {
+        "family": "Bricolage Grotesque Variable",
+        "file": "fonts/BricolageGrotesqueVariable-opsz-latin.woff2",
+        "source": "frontend/node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2",
+        "weight": "200 800",
+        "style": "normal"
+      }
+    ],
+    "groups": [
+      {
+        "name": "Display",
+        "family": "display",
+        "styles": [
+          {
+            "name": "display",
+            "lineHeight": 1,
+            "fontWeight": 700,
+            "letterSpacing": "-0.025em",
+            "sample": "Frieren",
+            "usage": "Hero titles (series hero, Rewind). type-display is clamp(2rem, 5vw, 4rem); shown at its top.",
+            "fontSizeVar": "type-display"
+          },
+          {
+            "name": "route",
+            "lineHeight": 1.1,
+            "fontWeight": 700,
+            "letterSpacing": "-0.025em",
+            "sample": "Library",
+            "usage": "Large route titles. type-route is clamp(2rem, 3vw, 2.8rem); shown at its top.",
+            "fontSizeVar": "type-route"
+          },
+          {
+            "name": "page-title",
+            "fontSize": "1.9rem",
+            "lineHeight": 1.2,
+            "fontWeight": 700,
+            "letterSpacing": "-0.025em",
+            "sample": "Downloads",
+            "usage": "PageHeader title: h1 size in the display face at 700."
+          },
+          {
+            "name": "section-title",
+            "fontSize": "1.3rem",
+            "lineHeight": 1.25,
+            "fontWeight": 700,
+            "letterSpacing": "-0.02em",
+            "sample": "Jump back in",
+            "usage": "SectionHeader title above a rail or grid."
+          },
+          {
+            "name": "wordmark",
+            "fontSize": "1.125rem",
+            "lineHeight": 1,
+            "fontWeight": 700,
+            "letterSpacing": "-0.025em",
+            "sample": "Maki",
+            "usage": "The product name beside the mark in the navbar."
+          }
+        ]
+      },
+      {
+        "name": "Headings",
+        "family": "sans",
+        "styles": [
+          {
+            "name": "h1",
+            "usage": "Mantine Title order 1 outside a PageHeader.",
+            "heading": "h1"
+          },
+          {
+            "name": "h2",
+            "usage": "Mantine Title order 2.",
+            "heading": "h2"
+          },
+          {
+            "name": "h3",
+            "usage": "Mantine Title order 3: card and modal titles.",
+            "heading": "h3"
+          },
+          {
+            "name": "h4",
+            "usage": "Mantine Title order 4.",
+            "heading": "h4"
+          }
+        ]
+      },
+      {
+        "name": "Roles",
+        "family": "sans",
+        "styles": [
+          {
+            "name": "feature",
+            "lineHeight": 1.2,
+            "fontWeight": 700,
+            "usage": "Compact page titles and feature headings. type-feature is clamp(1.25rem, 1.8vw, 1.625rem).",
+            "fontSizeVar": "type-feature"
+          },
+          {
+            "name": "stat-value",
+            "fontSize": "26px",
+            "lineHeight": 1.1,
+            "fontWeight": 800,
+            "sample": "1,284",
+            "usage": "The number in a StatTile. Always tabular figures."
+          },
+          {
+            "name": "figure",
+            "lineHeight": 1.05,
+            "fontWeight": 700,
+            "sample": "342",
+            "usage": "Counts in a FigureStrip. Tabular figures.",
+            "fontSizeVar": "type-figure"
+          },
+          {
+            "name": "section",
+            "lineHeight": 1.3,
+            "fontWeight": 650,
+            "usage": "EmptyState title, panel headings.",
+            "fontSizeVar": "type-section"
+          },
+          {
+            "name": "subhead",
+            "lineHeight": 1.55,
+            "fontWeight": 600,
+            "usage": "Subheads inside cards.",
+            "fontSizeVar": "type-subhead"
+          },
+          {
+            "name": "body",
+            "lineHeight": 1.55,
+            "fontWeight": 400,
+            "usage": "Default reading size for everything operated or read.",
+            "fontSizeVar": "type-body"
+          },
+          {
+            "name": "meta",
+            "lineHeight": 1.55,
+            "fontWeight": 500,
+            "usage": "Chip labels, status words, table cells on operational pages.",
+            "fontSizeVar": "type-meta"
+          },
+          {
+            "name": "micro",
+            "lineHeight": 1.45,
+            "fontWeight": 500,
+            "usage": "Counts on covers, table headers, small chips.",
+            "fontSizeVar": "type-micro"
+          },
+          {
+            "name": "label",
+            "lineHeight": 1.3,
+            "fontWeight": 600,
+            "letterSpacing": "0.08em",
+            "usage": "Uppercase labels over figures; cover badges at 700.",
+            "fontSizeVar": "type-label"
+          },
+          {
+            "name": "badge-text",
+            "lineHeight": 1,
+            "fontWeight": 700,
+            "letterSpacing": "0.02em",
+            "usage": "The smallest tier: badge text.",
+            "fontSizeVar": "type-badge"
+          }
+        ]
+      },
+      {
+        "name": "Code",
+        "family": "mono",
+        "styles": [
+          {
+            "name": "code",
+            "fontSize": "0.8125rem",
+            "lineHeight": 1.5,
+            "fontWeight": 400,
+            "sample": "{Series Title}/Vol.{Volume}",
+            "usage": "Naming-format tokens, paths, log lines."
+          }
+        ]
+      }
+    ]
+  },
+  "motion": {
+    "--ease": "a quick start and a long settle",
+    "--dur-fast": "tooltips, small fades, filters",
+    "--dur-base": "hover colour and background",
+    "--dur-medium": "cards lifting, posters moving",
+    "--dur-slow": "cover art scaling on hover"
+  },
+  "meta": {
+    "source": "github",
+    "repo": "OrbitMPGH/Maki",
+    "package": "frontend",
+    "paths": {
+      "tokens": [
+        "frontend/src/theme.css",
+        "frontend/src/theme.ts",
+        "frontend/src/theme-context.tsx"
+      ],
+      "fonts": [
+        "frontend/node_modules/@fontsource-variable/inter",
+        "frontend/node_modules/@fontsource-variable/bricolage-grotesque"
+      ],
+      "assets": [
+        "frontend/public/favicon.svg",
+        "frontend/public/favicon.png",
+        "frontend/node_modules/@tabler/icons/icons/outline"
+      ],
+      "docs": [
+        "README.md",
+        "CLAUDE.md"
+      ]
+    },
+    "components": {
+      "PageHeader": "frontend/src/components/ui/PageHeader.tsx",
+      "Panel": "frontend/src/components/ui/Panel.tsx",
+      "SectionHeader": "frontend/src/components/ui/SectionHeader.tsx",
+      "StatTile": "frontend/src/components/ui/StatTile.tsx",
+      "FigureStrip": "frontend/src/components/ui/FigureStrip.tsx",
+      "StatusDot": "frontend/src/components/ui/StatusDot.tsx",
+      "TagChip": "frontend/src/components/ui/TagChip.tsx",
+      "EmptyState": "frontend/src/components/ui/EmptyState.tsx",
+      "CoverCard": "frontend/src/components/ui/CoverCard.tsx",
+      "Button": "frontend/src/theme.ts",
+      "Badge": "frontend/src/theme.ts",
+      "ConfirmDialog": "frontend/src/components/ui/ConfirmDialog.tsx"
+    }
+  }
+}

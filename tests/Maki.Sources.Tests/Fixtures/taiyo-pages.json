@@ -1,0 +1,123 @@
+[
+  {
+    "result": {
+      "data": {
+        "json": {
+          "id": "a28e4286-b9b8-42b1-8264-76506e0c4349",
+          "title": "scopper gaban",
+          "number": 1140,
+          "volume": null,
+          "pages": [
+            {
+              "id": "beb54fd5-3534-4a3c-b0a3-4002441898e5",
+              "extension": "jpg"
+            },
+            {
+              "id": "734e817f-2b73-4b70-8c73-8cfdf533cb07",
+              "extension": "jpg"
+            },
+            {
+              "id": "3544a61e-4b1d-4b28-89bb-1cb705e036bc",
+              "extension": "jpg"
+            },
+            {
+              "id": "37726368-2a1b-48fb-a692-f581b4fc155b",
+              "extension": "jpg"
+            },
+            {
+              "id": "44523603-e157-4e60-ad9c-78bf95dd4482",
+              "extension": "jpg"
+            },
+            {
+              "id": "74cc0c9f-a498-41a8-8359-99699560fc9b",
+              "extension": "jpg"
+            },
+            {
+              "id": "beab7384-16c0-40eb-a9a5-2f8ed91a8d70",
+              "extension": "jpg"
+            },
+            {
+              "id": "b21217ef-a520-410f-b206-40e20f11526b",
+              "extension": "jpg"
+            },
+            {
+              "id": "963a6e9a-94a4-4f89-a626-9128e5c15b0c",
+              "extension": "jpg"
+            },
+            {
+              "id": "b00e59e4-d3a3-4f6d-8437-173b8349b294",
+              "extension": "jpg"
+            },
+            {
+              "id": "6f4faa79-e629-4c1c-92cf-4a2bc0459d92",
+              "extension": "jpg"
+            },
+            {
+              "id": "7d5159b4-837c-4170-88c1-72ecf3dddb90",
+              "extension": "jpg"
+            },
+            {
+              "id": "540257cc-789f-4dc1-ba6d-446b608916cd",
+              "extension": "jpg"
+            },
+            {
+              "id": "8a4a05bd-f27f-4d10-866c-0051f9bafbc6",
+              "extension": "jpg"
+            },
+            {
+              "id": "2583a0c4-cea8-4f3f-8cd8-4a837e9e67a7",
+              "extension": "jpg"
+            },
+            {
+              "id": "48a9656f-afab-4611-8290-3b3be149cb9a",
+              "extension": "jpg"
+            },
+            {
+              "id": "6f2f9eb3-b958-4068-b765-53e2fb32c66e",
+              "extension": "jpg"
+            }
+          ],
+          "previousChapter": {
+            "id": "4cab25e1-dce8-46b0-82ad-45c2514d938b",
+            "number": 1139,
+            "title": "O devorador de montanhas"
+          },
+          "nextChapter": null,
+          "uploader": {
+            "id": "3d929ab3-1767-4cef-b028-f117fc3858ab",
+            "name": "Ju"
+          },
+          "media": {
+            "id": "3cec0768-c247-468c-97fe-76e9a556d6ee",
+            "type": "MANGA",
+            "title": "One Piece",
+            "chapters": [
+              {
+                "id": "9a8944a1-0b29-446c-80c2-44c504fc79c5",
+                "number": 0,
+                "title": "A Biblioteca da Coruja"
+              },
+              {
+                "id": "966ca108-0ff6-46b9-9771-f04047b08412",
+                "number": 0,
+                "title": "Brinde à Amizade"
+              },
+              {
+                "id": "e6645c13-bfae-4448-abc7-d4953dad391c",
+                "number": 0,
+                "title": "Quero Que Me Elogie"
+              }
+            ]
+          },
+          "scans": [
+            {
+              "id": "65f39a59-01fc-4475-bc90-90cb234e2c16",
+              "name": "Kakusei Project"
+            }
+          ],
+          "comments": []
+        }
+      }
+    }
+  }
+]

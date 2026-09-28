@@ -1,0 +1,66 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Maki</title>
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--app-bg); color:var(--ink); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; width:960px; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; }
+  .tile { rx:var(--radius-lg); }
+  .brand { fill:var(--brand); }
+  .tint { fill:var(--brand-fg); }
+  .quiet { fill:var(--border-strong); }
+  .cream { fill:var(--mark-cream); }
+  .nori { fill:var(--mark-nori); }
+  .pill { fill:var(--brand); rx:2px; }
+  .pill-on { fill:var(--brand-fg); rx:2px; }
+  .words { position:absolute; left:40px; bottom:36px; max-width:440px; }
+  .name { margin:0; font-family:var(--font-display); font-size:120px; line-height:.92; font-weight:700; letter-spacing:-0.025em; color:var(--ink-hi); }
+  .tag { margin:12px 0 0 4px; font-size:14px; line-height:20px; color:var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      2:3 poster tiles, 96x144 (spacing-sm x8 by x12): brand x3 (the accent takes the weight), brand-fg x2 (the tint), border-strong x6 (quiet covers), one mark-cream tile with mark-nori bands (the maki roll cut from radii); about 40% of 960x288
+  arrangement the library grid scrolled mid-page: five columns at a spacing-sm gutter, each staggered by a spacing-sm multiple, bleeding off top, bottom and right
+  pattern     progress pills from the CoverCard bar, 4px tall at each tile foot, brand on quiet tiles and brand-fg on brand tiles; chosen because the README puts cover art first and the grid of covers is the product
+  scales      sides and gutters in spacing-sm (12px) multiples; tile corners radius-lg (13px); pill rx 2px, half its 4px height (radius-xs track)
+-->
+<defs><clipPath id="maki"><rect x="120" y="108" width="96" height="144" rx="13"/></clipPath></defs>
+<rect class="quiet tile" x="12" y="48" width="96" height="144"/>
+<rect class="pill" x="24" y="172" width="52" height="4"/>
+<rect class="tint tile" x="12" y="204" width="96" height="144"/>
+<rect class="brand tile" x="120" y="-48" width="96" height="144"/>
+<rect class="pill-on" x="132" y="76" width="29" height="4"/>
+<g clip-path="url(#maki)"><rect class="cream tile" x="120" y="108" width="96" height="144"/><rect class="nori" x="120" y="108" width="96" height="36"/><rect class="nori" x="120" y="220" width="96" height="32"/></g>
+<rect class="quiet tile" x="120" y="264" width="96" height="144"/>
+<rect class="pill" x="132" y="388" width="72" height="4"/>
+<rect class="quiet tile" x="228" y="12" width="96" height="144"/>
+<rect class="pill" x="240" y="136" width="40" height="4"/>
+<rect class="brand tile" x="228" y="168" width="96" height="144"/>
+<rect class="pill-on" x="240" y="292" width="61" height="4"/>
+<rect class="quiet tile" x="336" y="-84" width="96" height="144"/>
+<rect class="pill" x="348" y="40" width="22" height="4"/>
+<rect class="brand tile" x="336" y="72" width="96" height="144"/>
+<rect class="pill-on" x="348" y="196" width="45" height="4"/>
+<rect class="quiet tile" x="336" y="228" width="96" height="144"/>
+<rect class="pill" x="348" y="352" width="65" height="4"/>
+<rect class="tint tile" x="444" y="-12" width="96" height="144"/>
+<rect class="quiet tile" x="444" y="144" width="96" height="144"/>
+<rect class="pill" x="456" y="268" width="36" height="4"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Maki</h1>
+<p class="tag">Add a series once and Maki keeps it complete.</p>
+</div>
+</div>
+</body>
+</html>

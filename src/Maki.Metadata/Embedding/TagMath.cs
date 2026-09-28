@@ -192,6 +192,29 @@ public static class TagMath
     }
 
     /// <summary>
+    /// True when the packed blob carries any of <paramref name="sortedIds"/> at
+    /// <paramref name="minClass"/> or above. The ids must be sorted; a subtree can run to hundreds.
+    /// </summary>
+    public static bool ContainsAny(byte[]? blob, int[] sortedIds, byte minClass)
+    {
+        if (blob is null || blob.Length % EntrySize != 0)
+        {
+            return false;
+        }
+
+        for (var i = 0; i + EntrySize <= blob.Length; i += EntrySize)
+        {
+            if (blob[i + 4] >= minClass &&
+                Array.BinarySearch(sortedIds, BinaryPrimitives.ReadInt32LittleEndian(blob.AsSpan(i))) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// MangaBaka's tag taxonomy, flattened into "which ancestors does this tag imply, and how much".
     ///
     /// <para>

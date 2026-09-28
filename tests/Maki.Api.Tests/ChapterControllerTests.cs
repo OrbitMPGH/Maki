@@ -1,5 +1,6 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
+using Maki.Core.Tests;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Maki.Core.Security;
@@ -52,19 +53,29 @@ public class ChapterControllerTests : IDisposable
         new TestCurrentUser(1),
         NullLogger<ChapterController>.Instance);
 
-    /// <summary>A series rooted at the temp directory, plus one chapter, returning both ids.</summary>
-    private (int SeriesId, int ChapterId) SeedSeriesWithChapter(string title = "Series")
+    /// <summary>
+    /// A series rooted at the temp directory, plus one chapter, returning both ids. Passing
+    /// <paramref name="rootFolderId"/> puts a second series in the same root instead of creating
+    /// one, for tests where two series need to share a root the way a manual link can point one
+    /// series' file at another's folder.
+    /// </summary>
+    private (int SeriesId, int ChapterId) SeedSeriesWithChapter(string title = "Series", int? rootFolderId = null)
     {
         using var db = _db.NewContext();
-        var root = new RootFolder { Path = _root };
-        db.RootFolders.Add(root);
-        db.SaveChanges();
+        var rootId = rootFolderId;
+        if (rootId is null)
+        {
+            var root = new RootFolder { Path = _root };
+            db.RootFolders.Add(root);
+            db.SaveChanges();
+            rootId = root.Id;
+        }
 
         var series = new Series
         {
             Title = title,
             SortTitle = title.ToLowerInvariant(),
-            RootFolderId = root.Id,
+            RootFolderId = rootId.Value,
             FolderName = title,
             Added = DateTime.UtcNow
         };
@@ -125,6 +136,85 @@ public class ChapterControllerTests : IDisposable
         Assert.Equal(relativePath, file.RelativePath);
     }
 
+    // Regression: Resolve only proves the request text resolves *inside* the root; it says nothing
+    // about whether the text itself is a sane relative path to store. "./X/a.cbz" and "../<root
+    // name>/X/a.cbz" both resolve inside the root and used to be stored verbatim. LibraryPaths.TopFolder
+    // then read the raw first segment ("." or "..") as if it were a real folder name, and
+    // SeriesFolders.ForAsync handed that straight to rescan/relink, which enumerated the whole root
+    // (".") or its parent ("..") as this series' own folder.
+    [Fact]
+    public async Task Link_canonicalizes_a_path_with_a_leading_dot_segment()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var onDisk = Path.Combine("Series", "ch1.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, onDisk), "cbz");
+        var requestPath = "." + Path.DirectorySeparatorChar + onDisk;
+
+        using var db = _db.NewContext();
+        var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], requestPath), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        var file = Assert.Single(db.ChapterFiles);
+        Assert.Equal(seriesId, file.SeriesId);
+        Assert.Equal(onDisk, file.RelativePath);
+    }
+
+    [Fact]
+    public async Task Link_canonicalizes_a_path_that_leaves_and_reenters_the_root_by_name()
+    {
+        var (_, chapterId) = SeedSeriesWithChapter();
+        var onDisk = Path.Combine("Series", "ch1.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, onDisk), "cbz");
+        var requestPath = Path.Combine("..", Path.GetFileName(_root)!, onDisk);
+
+        using var db = _db.NewContext();
+        var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], requestPath), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        var file = Assert.Single(db.ChapterFiles);
+        Assert.Equal(onDisk, file.RelativePath);
+    }
+
+    [Fact]
+    public async Task Link_canonicalizes_a_path_with_an_internal_dot_dot_segment()
+    {
+        var (_, chapterId) = SeedSeriesWithChapter();
+        Directory.CreateDirectory(Path.Combine(_root, "Series", "Sub"));
+        var onDisk = Path.Combine("Series", "ch2.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, onDisk), "cbz");
+        var requestPath = Path.Combine("Series", "Sub", "..", "ch2.cbz");
+
+        using var db = _db.NewContext();
+        var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], requestPath), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        var file = Assert.Single(db.ChapterFiles);
+        Assert.Equal(onDisk, file.RelativePath);
+    }
+
+    [Fact]
+    public async Task Link_refuses_a_path_inside_another_series_folder()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var rootFolderId = await RootFolderIdOf(seriesId);
+        SeedSeriesWithChapter("Other", rootFolderId);
+        Directory.CreateDirectory(Path.Combine(_root, "Other"));
+        var relativePath = Path.Combine("Other", "ch1.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, relativePath), "cbz");
+
+        using var db = _db.NewContext();
+        var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], relativePath), default);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(db.ChapterFiles);
+    }
+
+    private async Task<int> RootFolderIdOf(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return (await db.Series.FindAsync(seriesId))!.RootFolderId;
+    }
+
     [Fact]
     public async Task Delete_refuses_a_batch_spanning_two_series()
     {
@@ -181,5 +271,210 @@ public class ChapterControllerTests : IDisposable
         {
             File.Delete(outside);
         }
+    }
+
+    [Fact]
+    public async Task Link_and_Delete_do_not_follow_a_directory_symlink_out_of_the_root()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var outside = Path.Combine(Path.GetTempPath(), $"maki-outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outside);
+        var external = Path.Combine(outside, "ch1.cbz");
+        await File.WriteAllTextAsync(external, "not really a cbz");
+        var link = Path.Combine(_root, "Series", "linked");
+        var throughLink = Path.Combine("Series", "linked", "ch1.cbz");
+
+        try
+        {
+            if (!TestLinks.TryLinkDirectory(link, outside))
+            {
+                return;
+            }
+
+            using (var db = _db.NewContext())
+            {
+                var result = await Controller(db).Link(new LinkChaptersRequest([chapterId], throughLink), default);
+
+                Assert.IsType<BadRequestObjectResult>(result);
+                Assert.Empty(db.ChapterFiles);
+            }
+
+            using (var seed = _db.NewContext())
+            {
+                var file = new ChapterFile
+                {
+                    SeriesId = seriesId,
+                    RelativePath = throughLink,
+                    Size = 1,
+                    SourceName = "Manual",
+                    DateAdded = DateTime.UtcNow
+                };
+                seed.ChapterFiles.Add(file);
+                seed.SaveChanges();
+                (await seed.Chapters.FirstAsync(c => c.Id == chapterId)).ChapterFileId = file.Id;
+                seed.SaveChanges();
+            }
+
+            using (var db = _db.NewContext())
+            {
+                var result = await Controller(db).Delete([chapterId], default);
+
+                Assert.IsType<OkObjectResult>(result);
+                Assert.Empty(db.Chapters);
+            }
+
+            Assert.True(File.Exists(external));
+        }
+        finally
+        {
+            TestLinks.UnlinkDirectory(link);
+            Directory.Delete(outside, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Delete_removes_a_chapter_file_symlink_and_its_row_but_not_the_target()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var outside = Path.Combine(Path.GetTempPath(), $"maki-outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outside);
+        var external = Path.Combine(outside, "ch1.cbz");
+        await File.WriteAllTextAsync(external, "not really a cbz");
+        var link = Path.Combine(_root, "Series", "ch1.cbz");
+
+        try
+        {
+            if (!TestLinks.TryLinkFile(link, external))
+            {
+                return;
+            }
+
+            using (var seed = _db.NewContext())
+            {
+                var file = new ChapterFile
+                {
+                    SeriesId = seriesId,
+                    RelativePath = Path.Combine("Series", "ch1.cbz"),
+                    Size = 1,
+                    SourceName = "Manual",
+                    DateAdded = DateTime.UtcNow
+                };
+                seed.ChapterFiles.Add(file);
+                seed.SaveChanges();
+                (await seed.Chapters.FirstAsync(c => c.Id == chapterId)).ChapterFileId = file.Id;
+                seed.SaveChanges();
+            }
+
+            using (var db = _db.NewContext())
+            {
+                Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId], default));
+                Assert.Empty(db.ChapterFiles);
+            }
+
+            Assert.False(File.Exists(link));
+            Assert.True(File.Exists(external));
+        }
+        finally
+        {
+            Directory.Delete(outside, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Delete_keeps_the_file_when_another_series_row_still_points_at_it()
+    {
+        // A cross-series ChapterFile pair, as a row written before Link's own-folder check (above)
+        // existed would look like: two different rows, same root, same physical path. Deleting the
+        // chapter on one row must not take the file out from under the other row.
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var rootFolderId = await RootFolderIdOf(seriesId);
+        var (otherSeriesId, otherChapterId) = SeedSeriesWithChapter("Other", rootFolderId);
+
+        var sharedPath = Path.Combine("Series", "ch1.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, sharedPath), "cbz");
+
+        int otherFileId;
+        using (var seed = _db.NewContext())
+        {
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId,
+                RelativePath = sharedPath,
+                Size = 1,
+                SourceName = "Manual",
+                DateAdded = DateTime.UtcNow
+            };
+            seed.ChapterFiles.Add(file);
+            seed.SaveChanges();
+            (await seed.Chapters.FirstAsync(c => c.Id == chapterId)).ChapterFileId = file.Id;
+
+            var otherFile = new ChapterFile
+            {
+                SeriesId = otherSeriesId,
+                RelativePath = sharedPath,
+                Size = 1,
+                SourceName = "Manual",
+                DateAdded = DateTime.UtcNow
+            };
+            seed.ChapterFiles.Add(otherFile);
+            seed.SaveChanges();
+            (await seed.Chapters.FirstAsync(c => c.Id == otherChapterId)).ChapterFileId = otherFile.Id;
+            seed.SaveChanges();
+            otherFileId = otherFile.Id;
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var result = await Controller(db).Delete([chapterId], default);
+
+            Assert.IsType<OkObjectResult>(result);
+            Assert.Null(await db.Chapters.FindAsync(chapterId));
+            var remaining = Assert.Single(db.ChapterFiles);
+            Assert.Equal(otherFileId, remaining.Id);
+        }
+
+        Assert.True(File.Exists(Path.Combine(_root, sharedPath)));
+    }
+
+    /// <summary>Throws from <see cref="SaveChangesAsync"/> so a test can force a mid-operation failure.</summary>
+    private sealed class FailingSaveDbContext(DbContextOptions<MakiDbContext> options) : MakiDbContext(options)
+    {
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Simulated save failure");
+    }
+
+    [Fact]
+    public async Task Delete_leaves_the_file_and_rows_intact_when_the_save_fails()
+    {
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var relativePath = Path.Combine("Series", "ch1.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, relativePath), "cbz");
+
+        using (var seed = _db.NewContext())
+        {
+            var file = new ChapterFile
+            {
+                SeriesId = seriesId,
+                RelativePath = relativePath,
+                Size = 1,
+                SourceName = "Manual",
+                DateAdded = DateTime.UtcNow
+            };
+            seed.ChapterFiles.Add(file);
+            seed.SaveChanges();
+            (await seed.Chapters.FirstAsync(c => c.Id == chapterId)).ChapterFileId = file.Id;
+            seed.SaveChanges();
+        }
+
+        using (var failing = new FailingSaveDbContext(_db.Options))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Controller(failing).Delete([chapterId], default));
+        }
+
+        using var db = _db.NewContext();
+        Assert.True(File.Exists(Path.Combine(_root, relativePath)));
+        Assert.NotNull(await db.Chapters.FindAsync(chapterId));
+        Assert.Single(db.ChapterFiles);
     }
 }

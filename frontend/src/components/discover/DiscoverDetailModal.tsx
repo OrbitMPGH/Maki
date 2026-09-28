@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import {
+  ActionIcon,
   Badge,
   Box,
   CloseButton, Divider,
@@ -23,10 +25,11 @@ import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
-import { altTitleLabel } from '../../api/titles'
+import { altTitleLabel, readableTitles } from '../../api/titles'
 import type { RootFolder } from '../../api/types'
 import { formatNumber } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
+import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
@@ -37,11 +40,15 @@ import {
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
+import { TagChip, TagChips } from '../ui/TagChip'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { DiscoverTags } from './DiscoverTags'
+import { DiceIcon } from '../LuckyButton'
+import { prefersReducedMotion, useDiceTumble } from '../../lib/lucky'
+import { cleanSynopsis } from '../../lib/synopsis'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 
@@ -51,6 +58,7 @@ export function DiscoverDetailModal({
   rootFolders,
   onClose,
   feedbackContext,
+  onReroll,
 }: {
   /** The card that was clicked; null closes the modal. Used for an instant header while detail loads. */
   item: RecommendationItem | null
@@ -59,8 +67,33 @@ export function DiscoverDetailModal({
   rootFolders: RootFolder[] | undefined
   onClose: () => void
   feedbackContext?: { surface: string }
+  /** Shows a dice beside the close button that swaps in another random pick. */
+  onReroll?: () => void
 }) {
   const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
+  const { scope: diceScope, tumble } = useDiceTumble()
+  const rerolling = useRef(false)
+  const rerollTimer = useRef<number | undefined>(undefined)
+  const open = item != null
+  useEffect(() => {
+    if (open) return
+    window.clearTimeout(rerollTimer.current)
+    rerolling.current = false
+  }, [open])
+  useEffect(() => () => window.clearTimeout(rerollTimer.current), [])
+  const reroll = () => {
+    if (!onReroll || rerolling.current) return
+    if (prefersReducedMotion()) {
+      onReroll()
+      return
+    }
+    rerolling.current = true
+    void tumble(500)
+    rerollTimer.current = window.setTimeout(() => {
+      rerolling.current = false
+      onReroll()
+    }, 500)
+  }
 
   const title = detail?.title ?? item?.title ?? ''
   // The card's 334x500 thumbnail stands in until the detail row's full-size art arrives: it is
@@ -71,12 +104,13 @@ export function DiscoverDetailModal({
   // Every one of these is on the card's own row as well as the detail response, so the band is
   // complete from the first frame and the detail request fills in rather than rearranges.
   const renderLabel = useLabel()
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const contentRating = contentRatingVisual(detail?.contentRating ?? null)
   const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item?.rating ?? null
   const band = ratingBandVisual(score ?? 0)
+  const altTitles = readableTitles(detail?.altTitles ?? [], i18n.locale)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
   const figures = [
@@ -129,7 +163,7 @@ export function DiscoverDetailModal({
       // of a stylesheet guessing at the band's height. `max-height` rather than `height`: a series
       // with a short synopsis and no reviews still gets a card its own size.
       styles={{
-        content: { maxHeight: 'min(94dvh, 1200px)', display: 'flex', flexDirection: 'column' },
+        content: { maxHeight: 'min(94dvh, 1200px)' },
         body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
       }}
     >
@@ -144,6 +178,19 @@ export function DiscoverDetailModal({
             aria-label={t`Close`}
             onClick={onClose}
           />
+          {onReroll && (
+            <Tooltip label={t`Roll again`} withArrow zIndex={1001}>
+              <ActionIcon
+                className="discover-modal-reroll"
+                size="lg"
+                variant="subtle"
+                aria-label={t`Roll again`}
+                onClick={reroll}
+              >
+                <DiceIcon spinRef={diceScope} />
+              </ActionIcon>
+            </Tooltip>
+          )}
 
           <Box className="series-hero" data-compact>
             <HeroBackdrop coverUrl={cover} />
@@ -164,7 +211,7 @@ export function DiscoverDetailModal({
                       className="discover-poster-skeleton"
                       w={176}
                       h={264}
-                      radius={11}
+                      radius="var(--radius-hero)"
                       style={{ flexShrink: 0 }}
                     />
                   )}
@@ -179,9 +226,9 @@ export function DiscoverDetailModal({
                         {[detail?.romanizedTitle, detail?.nativeTitle].filter(Boolean).join(' · ')}
                       </Text>
                     )}
-                    {detail?.altTitles && detail.altTitles.length > 0 && (
+                    {altTitles.length > 0 && (
                       <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
-                        {detail.altTitles.map(altTitleLabel).join(', ')}
+                        {altTitles.map(altTitleLabel).join(', ')}
                       </Text>
                     )}
 
@@ -269,7 +316,7 @@ export function DiscoverDetailModal({
                             <Badge
                               size="sm"
                               variant="light"
-                              color={readerHintHigher ? 'teal' : 'orange'}
+                              color={readerHintHigher ? 'var(--ok)' : 'var(--warn)'}
                               leftSection={
                                 readerHintHigher ? (
                                   <IconTrendingUp size={12} />
@@ -370,7 +417,7 @@ export function DiscoverDetailModal({
                     {(detail?.description || item.description) && (
                       <Spoiler maxHeight={120} showLabel={t`Show more`} hideLabel={t`Show less`}>
                         <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', lineHeight: 1.66 }}>
-                          {detail?.description ?? item.description}
+                          {cleanSynopsis(detail?.description ?? item.description)}
                         </Text>
                       </Spoiler>
                     )}
@@ -381,6 +428,14 @@ export function DiscoverDetailModal({
                       <Text size="sm" c="var(--ink-4)">
                         <Trans>The catalogue has no synopsis for this one.</Trans>
                       </Text>
+                    )}
+
+                    {detail?.animeResume && (
+                        <AnimeResumeCallout
+                            resume={detail.animeResume}
+                            variant="catalogue"
+                            inLibrarySeriesId={inLibrarySeriesId ?? detail.animeResume?.inLibrarySeriesId ?? null}
+                        />
                     )}
 
                     {(detail?.animeStart || detail?.animeEnd) && (
@@ -394,6 +449,7 @@ export function DiscoverDetailModal({
                               end={detail.animeEnd}
                               totalChapters={detail.totalChapters}
                               tooltipZIndex={1001}
+                              hideResumeHint={Boolean(detail?.animeResume)}
                           />
                         </>
                     )}
@@ -401,16 +457,16 @@ export function DiscoverDetailModal({
                     {genres.length > 0 && (
                       <div>
                         <Divider mb="md" color="var(--hairline)"/>
-                        <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6}>
+                        <Text size="xs" fw={700} c="var(--ink-3)" tt="uppercase" mb={6}>
                           <Trans>Genres</Trans>
                         </Text>
-                        <Group gap={6}>
+                        <TagChips>
                           {genres.map((g) => (
-                            <Badge key={g} variant="dot" color="blue">
+                            <TagChip key={g} dot="var(--info)">
                               {genreLabel(g)}
-                            </Badge>
+                            </TagChip>
                           ))}
-                        </Group>
+                        </TagChips>
                       </div>
                     )}
 

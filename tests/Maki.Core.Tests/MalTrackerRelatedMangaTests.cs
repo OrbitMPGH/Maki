@@ -2,6 +2,7 @@ using System.Net;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Scrobbling;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Core.Tests;
 
@@ -67,7 +68,8 @@ public class MalTrackerRelatedMangaTests
             "https://anilist.test/graphql", "https://anilist.test/oauth",
             "https://mal.test", "https://mal.test/oauth",
             "https://mangabaka.test",
-            "https://kitsu.test/api/edge", "https://kitsu.test/api/oauth"));
+            "https://kitsu.test/api/edge", "https://kitsu.test/api/oauth"),
+        NullLogger<MalTracker>.Instance);
 
     [Fact]
     public async Task Picks_the_adaptation_manga_off_AniLists_relations()

@@ -88,7 +88,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     var items = await db.DownloadQueue.Where(q => q.HealthOperationId == op.Id).ToListAsync(stoppingToken);
                     if (items.Any(i => i.Status is QueueStatus.Failed or QueueStatus.Cancelled))
                     {
-                        op.Status = "failed"; op.Error = "A replacement download failed. Request a new repair after reviewing Activity.";
+                        op.Status = "failed"; op.ErrorKey = "health.operation.error.downloadFailed";
                         foreach (var item in items.Where(i => i.Status != QueueStatus.Completed))
                         { item.Status = QueueStatus.Cancelled; scope.ServiceProvider.GetRequiredService<DownloadQueueService>().CancelWork(item.Id); }
                     }
@@ -96,7 +96,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     {
                         var file = await db.HealthFiles.FindAsync([op.FileId], stoppingToken);
                         var root = file == null ? null : await db.RootFolders.FindAsync([file.RootFolderId], stoppingToken);
-                        if (root == null) { op.Status = "failed"; op.Error = "Root folder no longer exists"; }
+                        if (root == null) { op.Status = "failed"; op.ErrorKey = "health.operation.error.rootMissing"; }
                         else
                         {
                             var candidates = new List<RepairCandidate>();
@@ -117,14 +117,14 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     }
                     var nextStatus = op.Status;
                     var nextJournal = op.JournalJson;
-                    var nextError = op.Error;
+                    var nextErrorKey = op.ErrorKey;
                     await HealthOperationService.MutationGate.WaitAsync(stoppingToken);
                     try
                     {
                         await db.Entry(op).ReloadAsync(stoppingToken);
                         if (op.Status == "downloading")
                         {
-                            op.Status = nextStatus; op.JournalJson = nextJournal; op.Error = nextError;
+                            op.Status = nextStatus; op.JournalJson = nextJournal; op.ErrorKey = nextErrorKey;
                             await db.SaveChangesAsync(stoppingToken);
                         }
                     }

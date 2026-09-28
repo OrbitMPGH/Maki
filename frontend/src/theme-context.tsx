@@ -18,8 +18,9 @@ export interface ThemePreset {
   label: MessageDescriptor
   /** Accent palette key in theme.ts `accents`. */
   accent: keyof typeof accents
-  scheme: 'dark' | 'light'
-  /** Swatch shown in the settings picker (the accent's primary shade). */
+  /** `system` follows the OS light/dark setting and changes with it live. */
+  scheme: 'dark' | 'light' | 'system'
+  /** Swatch shown in the settings picker (the accent's primary shade). Any CSS background. */
   swatch: string
 }
 
@@ -29,6 +30,13 @@ export const THEME_PRESETS: ThemePreset[] = [
   { id: 'emerald', label: msg`Emerald`, accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
   { id: 'amber', label: msg`Amber`, accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
   { id: 'light', label: msg`Light`, accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
+  {
+    id: 'system',
+    label: msg`Match system`,
+    accent: 'indigo',
+    scheme: 'system',
+    swatch: 'linear-gradient(135deg, #f4f5fa 50%, #0b0d13 50%)',
+  },
 ]
 
 const STORAGE_KEY = 'maki-theme'
@@ -46,6 +54,22 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+const DARK_QUERY = '(prefers-color-scheme: dark)'
+
+/** The OS light/dark setting, kept current so a `system` preset flips along with it. */
+function useSystemScheme(): 'dark' | 'light' {
+  const [scheme, setScheme] = useState<'dark' | 'light'>(() =>
+    window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light',
+  )
+  useEffect(() => {
+    const query = window.matchMedia(DARK_QUERY)
+    const onChange = (e: MediaQueryListEvent) => setScheme(e.matches ? 'dark' : 'light')
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
+  }, [])
+  return scheme
+}
+
 export function useThemeChoice(): ThemeContextValue {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useThemeChoice must be used within AppThemeProvider')
@@ -58,6 +82,8 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     () => localStorage.getItem(STORAGE_KEY) ?? DEFAULT_ID,
   )
   const preset = presetFor(themeId)
+  const systemScheme = useSystemScheme()
+  const scheme = preset.scheme === 'system' ? systemScheme : preset.scheme
 
   const setThemeId = useCallback((id: string) => {
     setThemeIdState(id)
@@ -68,7 +94,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = document.documentElement
     root.dataset.accent = preset.accent
-    root.dataset.theme = preset.scheme
+    root.dataset.theme = scheme
 
     // Keep the browser and OS chrome in step with the choice: Android's address bar, and the
     // status bar of an installed (standalone) window. Read back from `--app-bg` rather than
@@ -77,7 +103,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     const bg = getComputedStyle(root).getPropertyValue('--app-bg').trim()
     const meta = document.querySelector('meta[name="theme-color"]')
     if (bg && meta) meta.setAttribute('content', bg)
-  }, [preset.accent, preset.scheme])
+  }, [preset.accent, scheme])
 
   const mantineTheme = useMemo(() => createAppTheme(accents[preset.accent]), [preset.accent])
   const value = useMemo(
@@ -87,7 +113,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={value}>
-      <MantineProvider theme={mantineTheme} forceColorScheme={preset.scheme}>
+      <MantineProvider theme={mantineTheme} forceColorScheme={scheme}>
         {children}
       </MantineProvider>
     </ThemeContext.Provider>

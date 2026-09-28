@@ -4,7 +4,7 @@ import { useLingui } from '@lingui/react/macro'
 import type { MetadataLink } from '../api/types'
 import { MetadataSiteIcon } from './MetadataSiteIcon'
 
-/** Display label + color for each known metadata site key. */
+/** Display label + color for each known metadata site key. Colors are third-party brand colors, intentionally off-token. */
 const SITES: Record<string, { label: string; short: string; color: string }> = {
   mangabaka: { label: 'MangaBaka', short: 'MB', color: 'orange' },
   anilist: { label: 'AniList', short: 'AL', color: 'blue' },

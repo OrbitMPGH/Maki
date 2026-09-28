@@ -104,7 +104,7 @@ public class MangaBakaTracker(
     /// </param>
     private async Task<JsonElement> RequestAsync(
         int userId, HttpMethod method, string path, bool auth = false, int[]? okStatuses = null,
-        object? jsonBody = null, CancellationToken ct = default)
+        object? jsonBody = null, bool notFoundIsGone = false, CancellationToken ct = default)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         string? apiKey = null;
@@ -146,23 +146,35 @@ public class MangaBakaTracker(
                 throw new TrackerException($"MangaBaka request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 429)
+            try
             {
-                var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(5);
-                await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
-                continue;
-            }
+                if ((int)response.StatusCode == 429)
+                {
+                    var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(5);
+                    await Task.Delay(wait > TimeSpan.FromSeconds(60) ? TimeSpan.FromSeconds(60) : wait, ct);
+                    continue;
+                }
 
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if ((int)response.StatusCode >= 400 && !(okStatuses ?? []).Contains((int)response.StatusCode))
+                var body = await response.Content.ReadAsStringAsync(ct);
+                if (notFoundIsGone && (int)response.StatusCode == 404)
+                {
+                    throw new TrackerEntryNotFoundException($"MangaBaka {method} {path} not found (404)");
+                }
+
+                if ((int)response.StatusCode >= 400 && !(okStatuses ?? []).Contains((int)response.StatusCode))
+                {
+                    throw new TrackerException(
+                        $"MangaBaka {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
+                }
+
+                return body.Length == 0
+                    ? default
+                    : JsonDocument.Parse(body).RootElement.Clone();
+            }
+            finally
             {
-                throw new TrackerException(
-                    $"MangaBaka {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
+                response.Dispose();
             }
-
-            return body.Length == 0
-                ? default
-                : JsonDocument.Parse(body).RootElement.Clone();
         }
 
         throw new TrackerException($"MangaBaka {method} {path} rate limited after retry");
@@ -173,7 +185,8 @@ public class MangaBakaTracker(
     public async Task<RemoteEntry> GetEntryAsync(
         int userId, string remoteId, CancellationToken ct = default)
     {
-        var seriesResponse = await RequestAsync(userId, HttpMethod.Get, $"/v2/series/{remoteId}", ct: ct);
+        var seriesResponse = await RequestAsync(userId, HttpMethod.Get, $"/v2/series/{remoteId}",
+            notFoundIsGone: true, ct: ct);
         var series = seriesResponse.TryGetProperty("data", out var sd) && sd.ValueKind == JsonValueKind.Object
             ? sd
             : default;
@@ -232,6 +245,119 @@ public class MangaBakaTracker(
         {
             await RequestAsync(userId, HttpMethod.Post, $"/v1/my/library/{remoteId}", auth: true, jsonBody: body, ct: ct);
         }
+    }
+
+    private static IEnumerable<string> RemoteStatesFor(ScrobbleStatus status) => status switch
+    {
+        ScrobbleStatus.Reading => ["reading", "rereading"],
+        ScrobbleStatus.Completed => ["completed"],
+        ScrobbleStatus.PlanToRead => ["plan_to_read"],
+        _ => ["paused", "dropped", "considering"],
+    };
+
+    /// <summary>
+    /// The v2 library listing, because v1's entries carry no series id. Each row is
+    /// <c>{ entry, lists, series }</c>, and the embedded series' <c>source</c> object already holds
+    /// the AniList, MAL and Kitsu ids. One pass per <c>state</c>, like MAL: nothing documents that a
+    /// repeated <c>state</c> is ORed. A page that is empty or brings no new id ends the pass, so an
+    /// endpoint that ignores <c>page</c> cannot spin to the page bound.
+    /// </summary>
+    public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
+    {
+        const int pageSize = 100;
+        const int maxPages = 500;
+        var entries = new List<RemoteListEntry>();
+        var seen = new HashSet<long>();
+        foreach (var state in statuses.SelectMany(RemoteStatesFor).Distinct())
+        {
+            var truncated = false;
+            for (var page = 1; page <= maxPages; page++)
+            {
+                var data = await RequestAsync(userId, HttpMethod.Get,
+                    $"/v2/my/library?limit={pageSize}&page={page}&state={state}", auth: true, ct: ct);
+                if (data.ValueKind != JsonValueKind.Object ||
+                    !data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
+                {
+                    break;
+                }
+
+                var newIds = 0;
+                foreach (var row in rows.EnumerateArray())
+                {
+                    var entry = row.TryGetProperty("entry", out var e) && e.ValueKind == JsonValueKind.Object ? e : default;
+                    var series = row.TryGetProperty("series", out var s) && s.ValueKind == JsonValueKind.Object ? s : default;
+                    var seriesId = series.ValueKind == JsonValueKind.Object ? ToLong(series, "id") : null;
+                    seriesId ??= entry.ValueKind == JsonValueKind.Object ? ToLong(entry, "series_id") : null;
+                    if (seriesId is not { } id || entry.ValueKind != JsonValueKind.Object || !seen.Add(id))
+                    {
+                        continue;
+                    }
+
+                    newIds++;
+                    var status = StateToInternal.GetValueOrDefault(GetString(entry, "state") ?? "", ScrobbleStatus.Other);
+                    if (!statuses.Contains(status))
+                    {
+                        continue;
+                    }
+
+                    var source = series.ValueKind == JsonValueKind.Object &&
+                                 series.TryGetProperty("source", out var src) && src.ValueKind == JsonValueKind.Object
+                        ? src
+                        : default;
+                    entries.Add(new RemoteListEntry(
+                        id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        status,
+                        series.ValueKind == JsonValueKind.Object ? SeriesTitles(series).FirstOrDefault() ?? "" : "",
+                        AniListId: SourceId(source, "anilist"),
+                        MalId: SourceId(source, "my_anime_list"),
+                        KitsuId: SourceId(source, "kitsu"),
+                        MangaBakaId: id));
+                }
+
+                var hasNext = data.TryGetProperty("pagination", out var pagination) &&
+                              pagination.ValueKind == JsonValueKind.Object && GetString(pagination, "next") is not null;
+                truncated = newIds > 0 && hasNext && page == maxPages;
+                if (newIds == 0 || !hasNext)
+                {
+                    break;
+                }
+            }
+
+            if (truncated)
+            {
+                logger.LogWarning(
+                    "MangaBaka {State} list for user {UserId} stopped at the {MaxPages}-page cap ({Count} entries); " +
+                    "the rest of the list was not read",
+                    state, userId, maxPages, entries.Count);
+            }
+        }
+
+        return entries;
+    }
+
+    private static long? SourceId(JsonElement source, string site) =>
+        source.ValueKind == JsonValueKind.Object &&
+        source.TryGetProperty(site, out var entry) && entry.ValueKind == JsonValueKind.Object &&
+        ToLong(entry, "id") is > 0 and { } id
+            ? id
+            : null;
+
+    private static long? ToLong(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var p))
+        {
+            return null;
+        }
+
+        return p.ValueKind switch
+        {
+            JsonValueKind.Number when p.TryGetInt64(out var n) => n,
+            JsonValueKind.String when long.TryParse(
+                p.GetString(), System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out var n) => n,
+            _ => null,
+        };
     }
 
     // ---- search / matching ----

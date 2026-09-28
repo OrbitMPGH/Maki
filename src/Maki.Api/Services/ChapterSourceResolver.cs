@@ -38,14 +38,22 @@ public class ChapterSourceResolver(
     /// <paramref name="excludeMappingIds"/> drops candidates the caller has already ruled out; without it
     /// a caller's own narrowing means nothing, since a preferred mapping that doesn't list the chapter
     /// falls through to the priority order and can land straight back on a mapping that just failed.
+    /// <paramref name="onlyPreferred"/> turns that fallthrough off: the user picked this source's copy,
+    /// and landing on another source would hand them a file they never chose.
     /// </summary>
     public async Task<ResolvedChapterSource> ResolveAsync(
         MakiDbContext db, Chapter chapter, int? preferMappingId, CancellationToken ct,
-        IReadOnlyCollection<int>? excludeMappingIds = null, bool requireExactMatch = false)
+        IReadOnlyCollection<int>? excludeMappingIds = null, bool requireExactMatch = false,
+        bool onlyPreferred = false)
     {
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
         var query = db.SourceMappings
             .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName));
+
+        if (onlyPreferred && preferMappingId is { } only)
+        {
+            query = query.Where(m => m.Id == only);
+        }
 
         if (excludeMappingIds is { Count: > 0 })
         {

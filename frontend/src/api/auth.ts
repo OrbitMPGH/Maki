@@ -167,9 +167,13 @@ export function useTwoFactorStatus() {
   return useQuery({
     queryKey: ['account', '2fa'],
     queryFn: () =>
-      api<{ enabled: boolean; hasAuthenticator: boolean; recoveryCodesLeft: number; available: boolean }>(
-        '/account/2fa',
-      ),
+      api<{
+        enabled: boolean
+        hasAuthenticator: boolean
+        recoveryCodesLeft: number
+        available: boolean
+        ssoDelegated: boolean
+      }>('/account/2fa'),
   })
 }
 
@@ -217,8 +221,12 @@ export function useApiKeys() {
 export function useCreateApiKey() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string; scope: ApiKeyScope }) =>
-      api<CreatedApiKey>('/account/apikeys', { method: 'POST', body: JSON.stringify(body) }),
+    // Full keys only: the OPDS feed token is minted and rotated on the OPDS settings card.
+    mutationFn: (body: { name: string }) =>
+      api<CreatedApiKey>('/account/apikeys', {
+        method: 'POST',
+        body: JSON.stringify({ ...body, scope: 'Full' }),
+      }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['account', 'apikeys'] }),
   })
 }

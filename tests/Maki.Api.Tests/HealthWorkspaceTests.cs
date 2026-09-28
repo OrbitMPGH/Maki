@@ -57,7 +57,8 @@ public class HealthWorkspaceTests : IDisposable
         db.HealthFiles.Add(rival); await db.SaveChangesAsync();
         var match = await new HealthMatchService(db).MatchAsync(rival, default);
         Assert.Equal(series.Id, match!.SeriesId);
-        Assert.Equal("Chapter 3", match.Label);
+        Assert.Equal("chapter", match.LabelKind);
+        Assert.Equal(3m, match.Number);
         Assert.Equal(linked.Id, Assert.Single(match.Counterparts).ChapterFileId);
     }
     [Fact] public async Task Unlinked_archive_for_a_chapter_with_no_file_offers_no_comparison()
@@ -221,6 +222,29 @@ public class HealthWorkspaceTests : IDisposable
         var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);op.Status="deleting";await db.SaveChangesAsync();
         File.Delete(Path.Combine(root,"one.cbz"));await service.RecoverAsync(default);
         Assert.Equal("completed",op.Status);Assert.Empty(db.ChapterFiles);Assert.Equal(2,await db.Chapters.CountAsync());
+    }
+    [Fact] public async Task A_scan_retires_an_unlinked_archive_that_is_gone_from_disk()
+    {
+        // What a relink that deletes superseded single chapters leaves behind: the ChapterFile row
+        // is gone with the file, but the inventory still lists the path.
+        using var db=fixture.NewContext();var file=await Seed(db);
+        File.Delete(Path.Combine(root,"one.cbz"));
+        var scan=new HealthScan();db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        db.ChangeTracker.Clear();
+        Assert.True((await db.HealthFiles.SingleAsync()).Removed);
+        Assert.DoesNotContain(db.HealthFindings,f=>f.State=="open");
+        Assert.DoesNotContain(db.HealthFindings,f=>f.Kind=="missing");
+    }
+    [Fact] public async Task A_scan_still_reports_a_linked_archive_that_is_gone_from_disk()
+    {
+        using var db=fixture.NewContext();await Seed(db,true);
+        File.Delete(Path.Combine(root,"one.cbz"));
+        var scan=new HealthScan();db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        db.ChangeTracker.Clear();
+        Assert.False((await db.HealthFiles.SingleAsync()).Removed);
+        Assert.Contains(db.HealthFindings,f=>f.Kind=="missing"&&f.State=="open");
     }
     [Fact] public async Task Unavailable_root_does_not_resolve_prior_findings()
     {

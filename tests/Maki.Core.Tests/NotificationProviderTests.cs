@@ -211,7 +211,7 @@ public class NotificationProviderTests
             ConfigJson = """{"url":"https://example.com/hook"}"""
         };
 
-        await Assert.ThrowsAsync<HttpRequestException>(() =>
+        await Assert.ThrowsAsync<NotificationDeliveryException>(() =>
             provider.SendAsync(connection, new NotificationMessage(NotificationEventType.Test, "t", "b")));
     }
 }

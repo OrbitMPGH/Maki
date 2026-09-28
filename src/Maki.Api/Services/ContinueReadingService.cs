@@ -50,89 +50,36 @@ public class ContinueReadingService(MakiDbContext db)
                 .ToListAsync(ct))
             .ToHashSet();
 
-        // Build a per-series lookup: chapter id → number for completed chapters.
-        var completedNumbers = (await db.ChapterProgress
-                .Where(p => seriesIds.Contains(p.SeriesId) && p.Completed)
-                .Join(db.Chapters,
-                      progress => progress.ChapterId,
-                      chapter => chapter.Id,
-                      (progress, chapter) => new { progress.SeriesId, ChapterId = progress.ChapterId, Number = chapter.Number })
-                .ToListAsync(ct))
-            .GroupBy(p => p.SeriesId)
-            .ToDictionary(
-                g => g.Key,
-                g => g.ToDictionary(p => p.ChapterId, p => p.Number));
-
-        var candidates = await db.Chapters
-            .Where(c => seriesIds.Contains(c.SeriesId) && c.ChapterFileId != null)
-            .Select(c => new { c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot })
+        // Every chapter, not just downloaded ones: a volume's chapter 0 sorts by where the rest of
+        // its volume sits, and those chapters may not be on disk.
+        var chapters = await db.Chapters
+            .Where(c => seriesIds.Contains(c.SeriesId))
+            .Select(c => new { c.Id, c.SeriesId, c.Number, c.Volume, c.Title, c.IsOneShot, HasFile = c.ChapterFileId != null })
             .ToListAsync(ct);
 
         var result = new Dictionary<int, NextChapter>();
-        foreach (var group in candidates.GroupBy(c => c.SeriesId))
+        foreach (var group in chapters.GroupBy(c => c.SeriesId))
         {
-            var seriesId = group.Key;
-            var unread = group.Where(c => !completed.Contains(c.Id)).ToList();
+            var ordered = ChapterOrder.Sort(group, c => c.Number, c => c.Volume, c => c.Id);
+            var unread = ordered.Where(c => c.HasFile && !completed.Contains(c.Id)).ToList();
             if (unread.Count == 0)
             {
                 continue;
             }
 
-            // Find the highest-numbered completed chapter for this series.
-            var maxCompletedNumber = completedNumbers.TryGetValue(seriesId, out var numbers)
-                ? numbers.Values.Where(n => n is not null).Max()
-                : (decimal?)null;
+            // The earliest unread chapter after the furthest one read, else the earliest unread
+            // (everything past the furthest read is done, so offer what was skipped). Another
+            // language's copy of the furthest chapter is not "next".
+            var furthestRead = ordered.FindLastIndex(c => c.Number is not null && completed.Contains(c.Id));
+            var furthestNumber = furthestRead < 0 ? null : ordered[furthestRead].Number;
+            var next = ordered.Skip(furthestRead + 1)
+                           .FirstOrDefault(c => c.HasFile && !completed.Contains(c.Id) && (furthestRead < 0 || c.Number != furthestNumber))
+                       ?? unread[0];
 
-            NextChapter next;
-            if (maxCompletedNumber.HasValue)
-            {
-                // Return the earliest unread chapter whose number exceeds the last completed one.
-                var afterLast = unread
-                    .Where(c => c.Number is null || c.Number > maxCompletedNumber.Value)
-                    .OrderBy(c => c.Number is null ? 1 : 0)
-                    .ThenBy(c => c.Number)
-                    .ThenBy(c => c.Volume)
-                    .ThenBy(c => c.Id)
-                    .FirstOrDefault();
-
-                if (afterLast is not null)
-                {
-                    next = new NextChapter(
-                        afterLast.Id,
-                        ChapterLabel.For(afterLast.Number, afterLast.Volume, afterLast.Title, afterLast.IsOneShot),
-                        unread.Count);
-                }
-                else
-                {
-                    // All remaining unread chapters have lower numbers — fall back to earliest.
-                    var fallback = unread
-                        .OrderBy(c => c.Number is null ? 1 : 0)
-                        .ThenBy(c => c.Number)
-                        .ThenBy(c => c.Volume)
-                        .ThenBy(c => c.Id)
-                        .First();
-                    next = new NextChapter(
-                        fallback.Id,
-                        ChapterLabel.For(fallback.Number, fallback.Volume, fallback.Title, fallback.IsOneShot),
-                        unread.Count);
-                }
-            }
-            else
-            {
-                // No completed chapters yet: offer the earliest unread (original behaviour).
-                var first = unread
-                    .OrderBy(c => c.Number is null ? 1 : 0)
-                    .ThenBy(c => c.Number)
-                    .ThenBy(c => c.Volume)
-                    .ThenBy(c => c.Id)
-                    .First();
-                next = new NextChapter(
-                    first.Id,
-                    ChapterLabel.For(first.Number, first.Volume, first.Title, first.IsOneShot),
-                    unread.Count);
-            }
-
-            result[seriesId] = next;
+            result[group.Key] = new NextChapter(
+                next.Id,
+                ChapterLabel.For(next.Number, next.Volume, next.Title, next.IsOneShot),
+                unread.Count);
         }
 
         return result;

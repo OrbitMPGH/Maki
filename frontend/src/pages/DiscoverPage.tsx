@@ -1,13 +1,11 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
 import '@mantine/charts/styles.css'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
-  Badge,
   Button,
-  Card,
   Collapse,
   Group,
   Modal,
@@ -31,14 +29,15 @@ import {
   IconCompass,
   IconDeviceFloppy,
   IconFlame,
-  IconLibrary,
+  IconLayoutDashboard,
   IconLayoutGrid,
+  IconLibrary,
   IconPlus,
   IconRefresh,
-  IconHeartFilled,
   IconSparkles,
   IconUsers,
 } from '@tabler/icons-react'
+import { useIsFetching } from '@tanstack/react-query'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -56,12 +55,15 @@ import {
   useMetadataSearch,
   useRecommendationDefaults,
   useRecommendations,
-  useRecommendationTags,
   useRootFolders,
   useSaveRecommendationDefaults,
   useSeries,
   useSeriesIdLookup,
+  useUiSettings,
+  isRailKey,
+  railIdOf,
   type DiscoverRail,
+  type DiscoverSectionKey,
   type RecommendationDefaults,
   type RecommendationFilters,
   type RecommendationItem,
@@ -76,7 +78,7 @@ import {
   CHAPTER_MAX,
   CHAPTER_MIN,
   filtersFromSpec,
-  useGenreOptions,
+  normalizeStoredYears,
   useStatusOptions,
   useTypeOptions,
   useCatalogueFilters,
@@ -86,9 +88,12 @@ import {
 import { DiscoverCatalogue } from '../components/discover/DiscoverCatalogue'
 import { DiscoverGenreWall } from '../components/discover/DiscoverGenreWall'
 import { DiscoverHero } from '../components/discover/DiscoverHero'
+import { RecommenderDials } from '../components/discover/RecommenderDials'
 import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
 import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { LuckyButton } from '../components/LuckyButton'
+import { pickRandom } from '../lib/lucky'
 import {
   DiscoverRailRow,
   EngineCard,
@@ -97,8 +102,20 @@ import {
   RecommendationRow,
 } from '../components/ui/DiscoverRail'
 import { CatalogueBrowser, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
+import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
+import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
+import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
+import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
+import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
+import { reconcileLayout } from '../components/layout/pageLayout'
+import { DISCOVER_LAYOUT_CONFIG, DISCOVER_SECTION_DEFS } from '../components/discover/discoverSectionDefs'
+import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '../api/customRails'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
+import { RailSkeleton } from '../components/ui/RailSkeleton'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
 import { TasteTab } from './discover/TasteTab'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -173,30 +190,12 @@ function DiscoverHeroSkeleton() {
   )
 }
 
-function DiscoverRailSkeleton({ engine = false }: { engine?: boolean }) {
-  return (
-    <div aria-hidden>
-      <Group gap="sm" mt="xl" mb="sm">
-        <Skeleton circle h={30} />
-        <Skeleton h={18} w={190} />
-      </Group>
-      <div className="discover-rail" data-engine={engine || undefined}>
-        {Array.from({ length: 12 }, (_, i) => (
-          <div key={i} className="discover-rail-item">
-            <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function DiscoverCatalogueSkeleton({ density }: { density: Density }) {
   return (
     <div aria-hidden>
-      <Group gap="xs" wrap="wrap" mb="md">
-        {[82, 104, 96, 88, 112].map((width) => (
-          <Skeleton key={width} h={32} w={width} radius="md" />
+      <Group gap={24} wrap="wrap" mb="md" pb={10}>
+        {[62, 84, 76, 68, 92].map((width) => (
+          <Skeleton key={width} h={12} w={width} />
         ))}
       </Group>
       <Group justify="space-between" mb="sm">
@@ -211,10 +210,7 @@ function DiscoverCatalogueSkeleton({ density }: { density: Density }) {
 function DiscoverGenreSkeleton() {
   return (
     <div aria-hidden>
-      <Group gap="sm" mt="xl" mb="sm">
-        <Skeleton circle h={30} />
-        <Skeleton h={18} w={130} />
-      </Group>
+      <Skeleton h={18} w={130} mt="xl" mb="sm" />
       <div className="discover-genre-wall">
         {Array.from({ length: 8 }, (_, i) => (
           <Skeleton key={i} h={80} radius="lg" />
@@ -241,15 +237,15 @@ function RecommendedTab() {
   const [seedSearch, setSeedSearch] = useState('')
   const [debouncedSearch] = useDebouncedValue(seedSearch, 300)
   const { data: seedSearchResults } = useMetadataSearch(debouncedSearch)
-  const [years, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
+  const [yearsStored, setYears] = usePageState<[number, number]>(`${MEM}:years`, [YEAR_MIN, YEAR_MAX])
+  const years = normalizeStoredYears(yearsStored)
   const [types, setTypes] = usePageState<string[]>(`${MEM}:types`, [])
   const [statuses, setStatuses] = usePageState<string[]>(`${MEM}:statuses`, [])
-  const [genres, setGenres] = usePageState<string[]>(`${MEM}:genres`, [])
-  const [tags, setTags] = usePageState<string[]>(`${MEM}:tags`, [])
-  const { data: tagOptions } = useRecommendationTags()
+  const terms = useTermFilters(`${MEM}:terms`)
+  const { hydrate: hydrateTerms, reset: resetTerms } = terms
+  const ruleChips = useRuleChips()
   const typeOptions = useTypeOptions()
   const statusOptions = useStatusOptions()
-  const genreOptions = useGenreOptions()
   const [chapters, setChapters] = usePageState<[number, number]>(`${MEM}:chapters`, [CHAPTER_MIN, CHAPTER_MAX])
   const [minRating, setMinRating] = usePageState(`${MEM}:min-rating`, 0)
   const [obscurity, setObscurity] = usePageState(`${MEM}:obscurity`, 0)
@@ -310,8 +306,15 @@ function RecommendedTab() {
   // effect below re-runs on each one until it manages to latch.
   const carried = useMemo(() => {
     const state = location.state as RecommendationApplyState | null
-    return state?.source === 'taste-profile' || state?.source === 'discover-hero'
-      ? { filters: state.recommendationFilters, seeds: state.seeds, source: state.source }
+    return state?.source === 'taste-profile' || state?.source === 'discover-hero' ||
+      state?.source === 'custom-rail'
+      ? {
+          filters: state.recommendationFilters,
+          seeds: state.seeds,
+          source: state.source,
+          obscurity: state.obscurity ?? 0,
+          diversity: state.diversity ?? 0,
+        }
       : null
   }, [location.state])
 
@@ -325,13 +328,12 @@ function RecommendedTab() {
       setYears([carriedFilters.yearMin ?? YEAR_MIN, carriedFilters.yearMax ?? YEAR_MAX])
       setTypes(carriedFilters.types ?? [])
       setStatuses(carriedFilters.statuses ?? [])
-      setGenres(carriedFilters.genres ?? [])
-      setTags(carriedFilters.tags ?? [])
+      hydrateTerms(carriedFilters)
       setChapters([carriedFilters.minChapters ?? CHAPTER_MIN, carriedFilters.maxChapters ?? CHAPTER_MAX])
       setMinRating((carriedFilters.minRating ?? 0) / 10)
       setContentRatings(carriedFilters.contentRatings ?? [])
-      setObscurity(0)
-      setDiversity(0)
+      setObscurity(carried.obscurity)
+      setDiversity(carried.diversity)
       if (source === 'discover-hero') setCustomizeOpen(true)
       // Seeds arrive when the caller asked for one taste group rather than the whole library. Only
       // some carry titles, so the label cache is filled from what there is and the rest resolve
@@ -349,6 +351,8 @@ function RecommendedTab() {
       setApplied({
         seedIds: carriedSeeds?.length ? carriedSeeds.map((seed) => seed.id) : undefined,
         filters: Object.keys(carriedFilters).length ? carriedFilters : undefined,
+        obscurity: carried.obscurity !== 0 ? carried.obscurity : undefined,
+        diversity: carried.diversity !== 0 ? carried.diversity : undefined,
         nonce: 0,
       })
       setHydrated(true)
@@ -376,8 +380,7 @@ function RecommendedTab() {
     setYears([d.yearMin ?? YEAR_MIN, d.yearMax ?? YEAR_MAX])
     setTypes(d.types ?? [])
     setStatuses(d.statuses ?? [])
-    setGenres(d.genres ?? [])
-    setTags(d.tags ?? [])
+    hydrateTerms(filtersFromSpec(d))
     setChapters([d.minChapters ?? CHAPTER_MIN, d.maxChapters ?? CHAPTER_MAX])
     setMinRating((d.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, slider is 0–10
     setObscurity(d.obscurity)
@@ -395,7 +398,7 @@ function RecommendedTab() {
     setHydrated(true)
   }, [
     hydrated, defaultsLoaded, defaultsFailed, savedDefaults, carried, location.pathname, navigate,
-    setSeedIds, setLabelCache, setYears, setTypes, setStatuses, setGenres, setTags, setChapters,
+    setSeedIds, setLabelCache, setYears, setTypes, setStatuses, hydrateTerms, setChapters,
     setMinRating, setObscurity, setDiversity, setContentRatings, setCustomizeOpen, setApplied,
     setHydrated,
   ])
@@ -411,13 +414,23 @@ function RecommendedTab() {
     if (years[1] < YEAR_MAX) filters.yearMax = years[1]
     if (types.length) filters.types = types
     if (statuses.length) filters.statuses = statuses
-    if (genres.length) filters.genres = genres
-    if (tags.length) filters.tags = tags
+    Object.assign(filters, terms.build())
     if (chapters[0] > CHAPTER_MIN) filters.minChapters = chapters[0]
     if (chapters[1] < CHAPTER_MAX) filters.maxChapters = chapters[1]
     if (minRating > 0) filters.minRating = minRating * 10 // slider is 0–10, dump rating is 0–100
     if (contentRatings.length) filters.contentRatings = contentRatings
     return filters
+  }
+
+  /** A saved catalogue filter into the panel. Seeds and the two dials are not part of one. */
+  const loadCatalogueFilters = (f: RecommendationFilters) => {
+    setYears([f.yearMin ?? YEAR_MIN, f.yearMax ?? YEAR_MAX])
+    setTypes(f.types ?? [])
+    setStatuses(f.statuses ?? [])
+    hydrateTerms(f)
+    setChapters([f.minChapters ?? CHAPTER_MIN, f.maxChapters ?? CHAPTER_MAX])
+    setMinRating((f.minRating ?? 0) / 10)
+    setContentRatings(f.contentRatings ?? [])
   }
 
   const apply = (refresh = false) => {
@@ -447,11 +460,13 @@ function RecommendedTab() {
     saveDefaults.mutate(spec, {
       onSuccess: () =>
         notifications.show({
-          color: 'green',
+          color: 'var(--ok)',
           message: isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
-      onError: (err) =>
-        notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
+      onError: (err) => {
+        const detail = err instanceof Error ? err.message : String(err)
+        notifications.show({ color: 'var(--danger)', message: now`Failed to save default: ${detail}` })
+      },
     })
   }
 
@@ -460,8 +475,7 @@ function RecommendedTab() {
     setYears([YEAR_MIN, YEAR_MAX])
     setTypes([])
     setStatuses([])
-    setGenres([])
-    setTags([])
+    resetTerms()
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setObscurity(0)
@@ -476,8 +490,7 @@ function RecommendedTab() {
     years[1] < YEAR_MAX ||
     types.length > 0 ||
     statuses.length > 0 ||
-    genres.length > 0 ||
-    tags.length > 0 ||
+    terms.isCustomized ||
     chapters[0] > CHAPTER_MIN ||
     chapters[1] < CHAPTER_MAX ||
     minRating > 0 ||
@@ -503,15 +516,14 @@ function RecommendedTab() {
       const diversityChip = diversity.toFixed(2)
       chips.push(t`varied (${diversityChip})`)
     }
-    for (const g of genres) chips.push(g)
-    for (const tagName of tags) chips.push(tagName)
+    chips.push(...ruleChips(terms.rules))
     for (const typeName of types) chips.push(typeName)
     for (const s of statuses) chips.push(s)
     for (const c of contentRatings) chips.push(renderLabel(CONTENT_RATING_LABELS[c] ?? c))
     return chips
   }, [
-    seedIds, years, minRating, chapters, obscurity, diversity, genres, tags, types, statuses,
-    contentRatings, renderLabel, i18n.locale, t,
+    seedIds, years, minRating, chapters, obscurity, diversity, terms.rules, ruleChips, types,
+    statuses, contentRatings, renderLabel, i18n.locale, t,
   ])
 
   // --- detail modal ---
@@ -528,6 +540,29 @@ function RecommendedTab() {
   const seriesIdFor = (item: RecommendationItem) =>
     seriesIdByMangaBaka.get(Number(item.providerId)) ?? null
 
+  const luckyItems = useMemo(() => {
+    const seen = new Set<string>()
+    const pages = data?.pages ?? []
+    return [...(pages[0]?.related ?? []), ...pages.flatMap((p) => p.similar)].filter((item) => {
+      if (seen.has(item.providerId)) return false
+      seen.add(item.providerId)
+      return true
+    })
+  }, [data])
+  const luckyPool = useMemo(
+    () =>
+      luckyItems.map((item) => ({
+        key: item.providerId,
+        title: item.title,
+        coverUrl: item.thumbUrlHiDpi ?? item.thumbUrl ?? item.coverUrl,
+      })),
+    [luckyItems],
+  )
+  const rerollDetail = () => {
+    const next = pickRandom(luckyItems, (item) => item.providerId === detailItem?.providerId)
+    if (next) setDetailItem(next)
+  }
+
   // Named locals for the panel's caption sentences below: Lingui names a placeholder after the
   // expression only when it is a plain identifier, so a member access or method call has to be
   // hoisted first or it extracts as an unlabelled {0}.
@@ -536,8 +571,6 @@ function RecommendedTab() {
   const yearRangeMin = years[0]
   const yearRangeMax = years[1]
   const minRatingDisplay = minRating.toFixed(1)
-  const obscurityDisplay = obscurity.toFixed(2)
-  const diversityDisplay = diversity.toFixed(2)
 
   return (
     <>
@@ -550,6 +583,10 @@ function RecommendedTab() {
         >
           {isCustomized ? <Trans>Customized</Trans> : <Trans>Customize</Trans>}
         </Button>
+        <LuckyButton
+          candidates={luckyPool}
+          onPick={(key) => setDetailItem(luckyItems.find((item) => item.providerId === key) ?? null)}
+        />
         <Button
           variant="default"
           leftSection={<IconRefresh size={16} />}
@@ -561,7 +598,7 @@ function RecommendedTab() {
       </Group>
 
       <Collapse expanded={customizeOpen}>
-        <Card withBorder radius="md" padding="md" mb="md">
+        <Panel p="md" mb="md">
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}
@@ -579,37 +616,7 @@ function RecommendedTab() {
               maxDropdownHeight={260}
             />
 
-            <MultiSelect
-              label={t`Genres`}
-              description={t`Only show titles tagged with every selected genre.`}
-              placeholder={genres.length ? undefined : t`Any`}
-              data={genreOptions}
-              value={genres}
-              onChange={setGenres}
-              searchable
-              clearable
-              hidePickedOptions
-              maxDropdownHeight={260}
-            />
-
-            <MultiSelect
-              label={t`Tags`}
-              description={t`Only show titles carrying every selected tag (from the MangaBaka tag vocabulary).`}
-              placeholder={tags.length ? undefined : t`Any`}
-              data={tagOptions ?? []}
-              value={tags}
-              onChange={setTags}
-              searchable
-              clearable
-              hidePickedOptions
-              limit={50}
-              nothingFoundMessage={
-                (tagOptions?.length ?? 0) === 0
-                  ? t`Tags appear once the recommendation index is built`
-                  : t`No matches`
-              }
-              maxDropdownHeight={260}
-            />
+            <TermFilters controls={terms} />
 
             <MultiSelect
                 label={t`Type`}
@@ -694,78 +701,45 @@ function RecommendedTab() {
                   ]}
                 />
               </div>
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  {obscurity === 0 ? (
-                    <Trans>Obscurity: balanced</Trans>
-                  ) : obscurity > 0 ? (
-                    <Trans>Obscurity: hidden gems (+{obscurityDisplay})</Trans>
-                  ) : (
-                    <Trans>Obscurity: mainstream ({obscurityDisplay})</Trans>
-                  )}
-                </Text>
-                <Slider
-                  min={-1}
-                  max={1}
-                  step={0.25}
-                  value={obscurity}
-                  onChange={setObscurity}
-                  label={(v) => (v === 0 ? t`balanced` : v > 0 ? t`obscure` : t`popular`)}
-                  marks={[
-                    { value: -1, label: t`popular` },
-                    { value: 0, label: '·' },
-                    { value: 1, label: t`gems` },
-                  ]}
-                  color={obscurity >= 0 ? 'grape' : 'blue'}
-                />
-              </div>
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  {diversity === 0 ? (
-                    <Trans>Variety: closest matches</Trans>
-                  ) : (
-                    <Trans>Variety: spread out ({diversityDisplay})</Trans>
-                  )}
-                </Text>
-                <Slider
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  value={diversity}
-                  onChange={setDiversity}
-                  label={(v) => (v === 0 ? t`closest` : v.toFixed(1))}
-                  marks={[
-                    { value: 0, label: t`closest` },
-                    { value: 0.5, label: '·' },
-                    { value: 1, label: t`varied` },
-                  ]}
-                  color="teal"
-                />
-                {/* Mark labels are absolutely positioned, so they take no layout space — this has
-                    to clear them by hand or the caption lands on top of "closest"/"varied". */}
-                <Text size="xs" c="dimmed" mt={26}>
-                  <Trans>Trades a little similarity for picks that aren't near-copies of each other.</Trans>
-                </Text>
-              </div>
+              <RecommenderDials
+                obscurity={obscurity}
+                setObscurity={setObscurity}
+                diversity={diversity}
+                setDiversity={setDiversity}
+              />
             </SimpleGrid>
 
             <Group justify="space-between">
-              <Button
-                variant="subtle"
-                size="xs"
-                leftSection={<IconDeviceFloppy size={14} />}
-                loading={saveDefaults.isPending}
-                // Nothing set and nothing stored: there is neither a default to save nor one to clear.
-                disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
-                onClick={saveAsDefault}
-                title={
-                  isCustomized
-                    ? t`Open Recommended with these filters from now on`
-                    : t`Clear your saved default`
-                }
-              >
-                {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
-              </Button>
+              <Group gap="xs">
+                <PresetMenu
+                  current={currentFilters}
+                  onLoad={loadCatalogueFilters}
+                  railDraft={() => ({
+                    source: 'recommendations',
+                    filters: currentFilters(),
+                    seeds: seedIds.map((id) => ({ id: Number(id), title: labelCache[id] ?? null })),
+                    obscurity,
+                    diversity,
+                  })}
+                />
+                <HiddenContentButton />
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  leftSection={<IconDeviceFloppy size={14} />}
+                  loading={saveDefaults.isPending}
+                  // Nothing set and nothing stored: there is neither a default to save nor one to clear.
+                  disabled={!isCustomized && !hasAnyDefault(savedDefaults)}
+                  onClick={saveAsDefault}
+                  title={
+                    isCustomized
+                      ? t`Open Recommended with these filters from now on`
+                      : t`Clear your saved default`
+                  }
+                >
+                  {isCustomized ? <Trans>Save as default</Trans> : <Trans>Clear default</Trans>}
+                </Button>
+              </Group>
               <Group gap="xs">
                 <Button variant="subtle" size="xs" onClick={reset} disabled={!isCustomized}>
                   <Trans>Reset</Trans>
@@ -776,27 +750,25 @@ function RecommendedTab() {
               </Group>
             </Group>
           </Stack>
-        </Card>
+        </Panel>
       </Collapse>
 
       {isCustomized && !customizeOpen && (
-        <Group gap={6} mb="md">
+        <TagChips style={{ marginBottom: 'var(--mantine-spacing-md)' }}>
           {activeFilterChips.map((chip) => (
-            <Badge key={chip} variant="light" color="brand" size="sm" radius="sm">
-              {chip}
-            </Badge>
+            <TagChip key={chip}>{chip}</TagChip>
           ))}
-        </Group>
+        </TagChips>
       )}
 
       {error && (
-        <Alert color="yellow" variant="light">
+        <Alert color="var(--warn)" variant="light">
           {String(error)}
         </Alert>
       )}
       {isFetching && !data && (
         <>
-          <Text c="dimmed" size="sm" mb="sm">
+          <Text c="var(--ink-3)" size="sm" mb="sm">
             <Trans>Scanning the MangaBaka database for matches…</Trans>
           </Text>
           <PosterSkeletons density={density} viewMode={viewMode} />
@@ -805,7 +777,6 @@ function RecommendedTab() {
 
       {data && related.length === 0 && similar.length === 0 && (
         <EmptyState
-          icon={IconSparkles}
           title={isCustomized ? t`No matches` : t`Nothing to recommend yet`}
           description={
             isCustomized
@@ -903,6 +874,7 @@ function RecommendedTab() {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        onReroll={luckyItems.length > 1 ? rerollDetail : undefined}
       />
     </>
   )
@@ -930,13 +902,21 @@ function FeedExpandModal({
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
   const { density, setDensity, cols } = useDensityPref('discover-expand')
 
-  // Reset filters whenever a different rail is opened.
+  // Reset filters whenever a different rail is opened. A custom rail opens with its filter loaded
+  // instead, since the filter is the whole point of the rail.
   const railKey = rail?.key
+  const presetFilters = railKey?.startsWith(CUSTOM_RAIL_PREFIX) ? rail?.filters : null
   const resetAll = catalogue.reset
+  const hydrateAll = catalogue.hydrate
   useEffect(() => {
-    resetAll()
-    setApplied({})
-  }, [railKey, resetAll])
+    if (presetFilters) {
+      hydrateAll(presetFilters)
+      setApplied(presetFilters)
+    } else {
+      resetAll()
+      setApplied({})
+    }
+  }, [railKey, presetFilters, resetAll, hydrateAll])
 
   // The personalised rail carries seeds instead of a browse feed, and `GetFeedAsync` has no
   // ordering for it — page the recommender with those seeds instead. Both queries are declared
@@ -952,7 +932,14 @@ function FeedExpandModal({
 
   const feedRequest =
     rail && !personalised && !cohort
-      ? { feed: rail.feed, genre: rail.genre, filters: applied, limit: 120 }
+      ? {
+          feed: rail.feed,
+          genre: rail.genre,
+          filters: applied,
+          limit: 120,
+          sort: rail.sort,
+          excludeOwned: rail.excludeOwned,
+        }
       : null
   const feedQuery = useDiscoverFeed(feedRequest)
 
@@ -1017,7 +1004,7 @@ function FeedExpandModal({
       }
       styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
     >
-      <Card withBorder radius="md" padding="md" mb="md">
+      <Panel p="md" mb="md">
         <Stack gap="md">
           <CatalogueFilters controls={catalogue.controls} />
           <CatalogueFilterActions
@@ -1027,12 +1014,27 @@ function FeedExpandModal({
               setApplied({})
             }}
             onApply={() => setApplied(catalogue.build())}
+            extra={
+              <>
+                <PresetMenu
+                  current={catalogue.build}
+                  onLoad={(f) => {
+                    catalogue.hydrate(f)
+                    setApplied(f)
+                  }}
+                />
+                <HiddenContentButton />
+                {!personalised && !cohort && rail && (
+                  <FilterMatchCount filters={catalogue.build()} feed={rail.feed} genre={rail.genre} />
+                )}
+              </>
+            }
           />
         </Stack>
-      </Card>
+      </Panel>
 
       {error && (
-        <Alert color="yellow" variant="light">
+        <Alert color="var(--warn)" variant="light">
           {String(error)}
         </Alert>
       )}
@@ -1041,7 +1043,6 @@ function FeedExpandModal({
 
       {items && items.length === 0 && (
         <EmptyState
-          icon={IconCompass}
           title={t`No matches`}
           description={t`No titles match these filters. Try loosening them.`}
         />
@@ -1050,7 +1051,7 @@ function FeedExpandModal({
       {items && items.length > 0 && (
         <>
           <Group justify="space-between" mb="sm">
-            <Text c="dimmed" size="sm">
+            <Text c="var(--ink-3)" size="sm">
               <Plural value={items.length} one="# title" other="# titles" />
             </Text>
             <DensityControl value={density} onChange={setDensity} />
@@ -1098,6 +1099,8 @@ function DiscoverBrowseTab({
   refreshNonce,
   onRefresh,
   density,
+  editing,
+  onExitEditing,
 }: {
   /** Bumped by the page header's refresh action; busts the server-side rail cache. */
   refreshNonce: number
@@ -1106,20 +1109,81 @@ function DiscoverBrowseTab({
       page header. Every card below sizes from it: the rails through CSS variables on the wrapper,
       the catalogue grid through the shared column counts. */
   density: DensityPref
+  /** Layout edit mode: the sections become compact cards, and nothing below fetches. */
+  editing: boolean
+  onExitEditing: () => void
 }) {
   const { t } = useLingui()
-  const { data: rails, isFetching, error } = useDiscover(refreshNonce)
-  const { data: recentRail, isFetching: recentFetching } = useDiscoverRecentActivity(refreshNonce)
-  const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(refreshNonce)
-  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres()
+  const { data: ui, isError: uiFailed } = useUiSettings()
+  const { data: customRails, isError: railsFailed } = useCustomRails()
+  const discoverRails = useMemo(
+    () => customRails?.filter((r) => r.placement === 'discover'),
+    [customRails],
+  )
+
+  // Shipping order while the setting loads, so the page doesn't reflow once it arrives.
+  const layout = useMemo(
+    () =>
+      ui?.discoverLayout?.sections ??
+      reconcileLayout([], DISCOVER_LAYOUT_CONFIG, (discoverRails ?? []).map((r) => r.id)),
+    [ui, discoverRails],
+  )
+  const on = (key: DiscoverSectionKey) =>
+    !editing && (layout.find((s) => s.key === key)?.enabled ?? false)
+
+  // Every query is gated on the section that shows it, so a switched-off section costs nothing.
+  // The hero is the exception that proves it: it borrows the recent-activity picks, and Trending
+  // when those run short, so it keeps both of those alive on its own.
+  const recent = useDiscoverRecentActivity(refreshNonce, on('recent') || on('hero'))
+  const { data: recentRail, isFetching: recentFetching } = recent
+  const heroNeedsTrending = on('hero') && !recentFetching && (recentRail?.items.length ?? 0) < 3
+  const { data: rails, isFetching, error } = useDiscover(
+    refreshNonce,
+    on('trending') || on('catalogue') || heroNeedsTrending,
+  )
+  const { data: sideInterests, isFetching: sideInterestsFetching } = useDiscoverSideInterests(
+    refreshNonce,
+    on('sideinterests'),
+  )
+  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres(
+    refreshNonce,
+    on('genres'),
+  )
   const cohortRequest = useMemo(() => ({}), [])
-  const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest)
+  const { data: cohortRail, isFetching: cohortFetching, refetch: refetchCohort } = useDiscoverCohort(
+    cohortRequest,
+    on('cohort'),
+  )
+  // The cohort rail has no per-user server cache to bust, and its request body never changes
+  // shape, so its query key never changes and bumping refreshNonce wouldn't refetch it the way it
+  // does for the rails above. Refetch it directly instead; skip the initial nonce so this doesn't
+  // double-fetch on mount.
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      return
+    }
+    if (on('cohort')) void refetchCohort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshNonce])
 
   const { data: rootFolders } = useRootFolders()
   const navigate = useNavigate()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
+
+  // A catalogue rail on Home expands here, since this is where the expand view lives.
+  const location = useLocation()
+  const expandRailId = (location.state as { expandRailId?: number } | null)?.expandRailId
+  useEffect(() => {
+    if (expandRailId == null || !customRails) return
+    const rail = customRails.find((r) => r.id === expandRailId)
+    if (rail) setExpandedRail(customRailAsDiscoverRail(rail, []))
+    navigate(location.pathname, { replace: true, state: null })
+  }, [expandRailId, customRails, navigate, location.pathname])
+
   const recommendFrom = useCallback(
     (item: RecommendationItem) =>
       navigate('/discover/recommended', {
@@ -1149,201 +1213,285 @@ function DiscoverBrowseTab({
     [rails],
   )
 
-  const body = (
-    <div className="discover-density" data-density={density.density}>
-      {heroItems.length > 0 ? (
+  if (editing) {
+    return ui && customRails ? (
+      <PageLayoutEditor
+        page="discover"
+        placement="discover"
+        registry={DISCOVER_SECTION_DEFS}
+        config={DISCOVER_LAYOUT_CONFIG}
+        initial={layout}
+        rails={discoverRails}
+        railLimit={40}
+        summary={(key) =>
+          key === 'sideinterests' && sideInterests
+            ? t`${sideInterests.length} rows right now`
+            : null
+        }
+        preview={(key) => {
+          const items =
+            key === 'hero'
+              ? heroItems
+              : key === 'recent'
+                ? recentRail?.items
+                : key === 'cohort'
+                  ? cohortRail?.items
+                  : key === 'trending'
+                    ? trendingRail?.items
+                    : key === 'catalogue'
+                      ? catalogueRails[0]?.items
+                      : key === 'sideinterests'
+                        ? sideInterests?.[0]?.items
+                        : undefined
+          return (items ?? []).map((i) => i.thumbUrl ?? i.coverUrl)
+        }}
+        onExit={onExitEditing}
+      />
+    ) : (
+      <PageLayoutEditorLoading failed={uiFailed || railsFailed} onExit={onExitEditing} />
+    )
+  }
+
+  // The catalogue query's failure and loading states. They live with the catalogue section rather
+  // than at the top of the page, since the hero and the personalised rows come from other endpoints
+  // and survive this one being down; with that section off they move to Trending instead.
+  const catalogueStatus = error ? (
+    <Alert
+      color="var(--warn)"
+      variant="light"
+      icon={<IconAlertTriangle size={18} />}
+      title={t`Catalogue unavailable`}
+    >
+      <Stack gap="sm" align="flex-start">
+        <Text size="sm">{String(error)}</Text>
+        <Button
+          size="xs"
+          variant="default"
+          leftSection={<IconRefresh size={14} />}
+          loading={isFetching}
+          onClick={onRefresh}
+        >
+          <Trans>Try again</Trans>
+        </Button>
+      </Stack>
+    </Alert>
+  ) : null
+
+  const sections: Record<DiscoverSectionKey, React.ReactNode> = {
+    hero:
+      heroItems.length > 0 ? (
         <DiscoverHero items={heroItems} onOpen={setDetailItem} onRecommend={recommendFrom} />
-      ) : ((isFetching && !rails) || (recentFetching && recentRail === undefined)) ? (
+      ) : (isFetching && !rails) || (recentFetching && recentRail === undefined) ? (
         <DiscoverHeroSkeleton />
-      ) : null}
+      ) : null,
 
-      <DiscoverTasteStrip />
+    taste: <DiscoverTasteStrip />,
 
-      {recentRail ? (
-        <div>
-          <SectionHeader
-            icon={IconLibrary}
-            title={recentRail.title}
-            count={recentRail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(recentRail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {/* The covers of the series this was built from, with the server's prose subtitle as the
-              fallback for a reader whose seeds no longer resolve to library rows. */}
-          {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
-            <DiscoverSeedStrip seedIds={recentRail.seedIds} />
-          ) : (
-            recentRail.subtitle && (
-              <Text c="dimmed" size="sm" mb="sm">
-                {recentRail.subtitle}
-              </Text>
-            )
-          )}
-          <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
-        </div>
-      ) : recentFetching ? (
-        <DiscoverRailSkeleton engine />
-      ) : null}
-
-      {sideInterests?.map((rail) => (
-        <div key={rail.key}>
-          <SectionHeader
-            icon={IconCompass}
-            title={rail.title}
-            count={rail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(rail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {rail.seedIds && rail.seedIds.length > 0 ? (
-            <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
-          ) : (
-            <Text c="dimmed" size="sm" mb="sm">{rail.subtitle}</Text>
-          )}
-          <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
-        </div>
-      ))}
-      {!sideInterests && sideInterestsFetching ? <DiscoverRailSkeleton engine /> : null}
-
-      {cohortRail ? (
-        <div>
-          <SectionHeader
-            icon={IconUsers}
-            title={cohortRail.title}
-            count={cohortRail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(cohortRail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {cohortRail.subtitle && (
-            <Text c="dimmed" size="sm" mb="sm">
-              {cohortRail.subtitle}
+    recent: recentRail ? (
+      <div>
+        <SectionHeader
+          icon={IconLibrary}
+          title={recentRail.title}
+          count={recentRail.items.length}
+          action={
+            <Button
+              variant="subtle"
+              size="xs"
+              rightSection={<IconChevronRight size={14} />}
+              onClick={() => setExpandedRail(recentRail)}
+            >
+              <Trans>Show more</Trans>
+            </Button>
+          }
+        />
+        {/* The covers of the series this was built from, with the server's prose subtitle as the
+            fallback for a reader whose seeds no longer resolve to library rows. */}
+        {recentRail.seedIds && recentRail.seedIds.length > 0 ? (
+          <DiscoverSeedStrip seedIds={recentRail.seedIds} />
+        ) : (
+          recentRail.subtitle && (
+            <Text c="var(--ink-3)" size="sm" mb="sm">
+              {recentRail.subtitle}
             </Text>
-          )}
-          {/* Not an engine rail, despite being personalised: cohort items hydrate straight from the
-              MangaBaka dump, so they carry no `coRead`/`matchedTags`/`becauseOfTitle` and every
-              card's footer would read "Similar feel". The heading is the only grounds there is. */}
-          <DiscoverRailRow
-            items={cohortRail.items}
-            seriesIdFor={seriesIdFor}
-            onOpen={setDetailItem}
-          />
-        </div>
-      ) : cohortFetching ? (
-        <DiscoverRailSkeleton />
-      ) : null}
+          )
+        )}
+        <EngineRailRow items={recentRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      </div>
+    ) : recentFetching ? (
+      <RailSkeleton engine title />
+    ) : null,
 
-      {trendingRail ? (
-        <div>
-          <SectionHeader
-            icon={IconFlame}
-            title={trendingRail.title}
-            count={trendingRail.items.length}
-            action={
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={() => setExpandedRail(trendingRail)}
-              >
-                <Trans>Show more</Trans>
-              </Button>
-            }
-          />
-          {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
-              Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}
-          <div className="discover-ranked">
-            <DiscoverRailRow
-              items={trendingRail.items}
+    sideinterests: (
+      <>
+        {sideInterests?.map((rail) => (
+          <div key={rail.key}>
+            <SectionHeader
+              icon={IconCompass}
+              title={rail.title}
+              count={rail.items.length}
+              action={
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  rightSection={<IconChevronRight size={14} />}
+                  onClick={() => setExpandedRail(rail)}
+                >
+                  <Trans>Show more</Trans>
+                </Button>
+              }
+            />
+            {rail.seedIds && rail.seedIds.length > 0 ? (
+              <DiscoverSeedStrip seedIds={rail.seedIds} label={t`From your library`} />
+            ) : (
+              <Text c="var(--ink-3)" size="sm" mb="sm">{rail.subtitle}</Text>
+            )}
+            <EngineRailRow items={rail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          </div>
+        ))}
+        {!sideInterests && sideInterestsFetching ? <RailSkeleton engine title /> : null}
+      </>
+    ),
+
+    cohort: cohortRail ? (
+      <div>
+        <SectionHeader
+          icon={IconUsers}
+          title={cohortRail.title}
+          count={cohortRail.items.length}
+          action={
+            <Button
+              variant="subtle"
+              size="xs"
+              rightSection={<IconChevronRight size={14} />}
+              onClick={() => setExpandedRail(cohortRail)}
+            >
+              <Trans>Show more</Trans>
+            </Button>
+          }
+        />
+        {cohortRail.subtitle && (
+          <Text c="var(--ink-3)" size="sm" mb="sm">
+            {cohortRail.subtitle}
+          </Text>
+        )}
+        {/* Not an engine rail, despite being personalised: cohort items hydrate straight from the
+            MangaBaka dump, so they carry no `coRead`/`matchedTags`/`becauseOfTitle` and every
+            card's footer would read "Similar feel". The heading is the only grounds there is. */}
+        <DiscoverRailRow items={cohortRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+      </div>
+    ) : cohortFetching ? (
+      <RailSkeleton title />
+    ) : null,
+
+    trending: (
+      <>
+        {!on('catalogue') && catalogueStatus}
+        {trendingRail ? (
+          <div>
+            <SectionHeader
+              icon={IconFlame}
+              title={trendingRail.title}
+              count={trendingRail.items.length}
+              action={
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  rightSection={<IconChevronRight size={14} />}
+                  onClick={() => setExpandedRail(trendingRail)}
+                >
+                  <Trans>Show more</Trans>
+                </Button>
+              }
+            />
+            {/* Ranks are the point of a trending row, so the row is numbered. The counter lives on a
+                Discover-only wrapper: `.discover-rail-item` is shared with five other surfaces. */}
+            <div className="discover-ranked">
+              <DiscoverRailRow items={trendingRail.items} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+            </div>
+          </div>
+        ) : isFetching && !rails ? (
+          <RailSkeleton title />
+        ) : null}
+      </>
+    ),
+
+    catalogue: (
+      <div>
+        <SectionHeader
+          icon={IconCompass}
+          title={t`Browse the catalogue`}
+          action={
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconAdjustmentsHorizontal size={14} />}
+              onClick={() =>
+                setExpandedRail({
+                  key: 'catalogue',
+                  title: t`The whole catalogue`,
+                  feed: 'Popular',
+                  genre: null,
+                  items: [],
+                })
+              }
+            >
+              <Trans>Filter the catalogue</Trans>
+            </Button>
+          }
+        />
+        {catalogueStatus ??
+          (isFetching && !rails ? (
+            <>
+              <Text c="var(--ink-3)" size="sm" mb="sm">
+                <Trans>Scanning the MangaBaka catalogue…</Trans>
+              </Text>
+              <DiscoverCatalogueSkeleton density={density.density} />
+            </>
+          ) : catalogueRails.length > 0 ? (
+            <DiscoverCatalogue
+              rails={catalogueRails}
+              cols={density.cols}
               seriesIdFor={seriesIdFor}
               onOpen={setDetailItem}
+              onShowMore={setExpandedRail}
             />
-          </div>
-        </div>
-      ) : isFetching && !rails ? (
-        <DiscoverRailSkeleton />
-      ) : null}
-
-      {/* The rails, and whatever stands in for them. The failure and loading states live down here
-          rather than at the top of the page: the hero and the personalised rows come from other
-          endpoints and survive this one being down, so a bar above them mislabels the whole page as
-          broken. */}
-      <div>
-        <SectionHeader icon={IconCompass} title={t`Browse the catalogue`} />
-        {error ? (
-          <Alert
-            color="yellow"
-            variant="light"
-            icon={<IconAlertTriangle size={18} />}
-            title={t`Catalogue unavailable`}
-          >
-            <Stack gap="sm" align="flex-start">
-              <Text size="sm">{String(error)}</Text>
-              <Button
-                size="xs"
-                variant="default"
-                leftSection={<IconRefresh size={14} />}
-                loading={isFetching}
-                onClick={onRefresh}
-              >
-                <Trans>Try again</Trans>
-              </Button>
-            </Stack>
-          </Alert>
-        ) : isFetching && !rails ? (
-          <>
-            <Text c="dimmed" size="sm" mb="sm">
-              <Trans>Scanning the MangaBaka catalogue…</Trans>
-            </Text>
-            <DiscoverCatalogueSkeleton density={density.density} />
-          </>
-        ) : catalogueRails.length > 0 ? (
-          <DiscoverCatalogue
-            rails={catalogueRails}
-            cols={density.cols}
-            seriesIdFor={seriesIdFor}
-            onOpen={setDetailItem}
-            onShowMore={setExpandedRail}
-          />
-        ) : (
-          <EmptyState
-            icon={IconCompass}
-            title={t`Nothing to browse yet`}
-            description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
-          />
-        )}
+          ) : (
+            <EmptyState
+              title={t`Nothing to browse yet`}
+              description={t`The catalogue rails need the local MangaBaka database (Settings → Metadata → local DB).`}
+            />
+          ))}
       </div>
+    ),
 
-      {genreRails && genreRails.length > 0 ? (
+    genres:
+      genreRails && genreRails.length > 0 ? (
         <div>
           <SectionHeader icon={IconLayoutGrid} title={t`Every genre`} count={genreRails.length} />
           <DiscoverGenreWall rails={genreRails} onOpen={setExpandedRail} />
         </div>
       ) : genresFetching ? (
         <DiscoverGenreSkeleton />
-      ) : null}
+      ) : null,
+  }
+
+  const renderSection = (key: string) => {
+    if (!isRailKey(key)) return sections[key as DiscoverSectionKey]
+    const rail = discoverRails?.find((r) => r.id === railIdOf(key))
+    return rail ? (
+      <CustomRailSection rail={rail} limit={40} onOpen={setDetailItem} onShowMoreCatalogue={setExpandedRail} />
+    ) : null
+  }
+
+  const body = (
+    <div className="discover-density" data-density={density.density}>
+      {layout.filter((s) => s.enabled).map((s) => (
+        <Fragment key={s.key}>{renderSection(s.key)}</Fragment>
+      ))}
+
+      <Group justify="center" mt="xl">
+        <AddRailButton placement="discover" />
+      </Group>
 
       {expandedRail && (
         <FeedExpandModal
@@ -1397,12 +1545,13 @@ export default function DiscoverPage() {
         : 'browse'
 
   // The rails are cached for an hour on both sides, so the only way back to a fresh catalogue is
-  // this. It lives up here rather than in the tab so it can sit in the page header, and reads the
-  // same query the tab does: same key, so React Query serves it from cache and nothing extra is
-  // requested.
+  // this. It lives up here rather than in the tab so it can sit in the page header. The spinner
+  // watches the tab's query rather than running its own, which would fetch the catalogue even with
+  // every section that shows it switched off.
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const { isFetching: railsFetching } = useDiscover(refreshNonce, active === 'browse')
+  const railsFetching = useIsFetching({ queryKey: ['discover-rails'] }) > 0
   const refreshRails = useCallback(() => setRefreshNonce((n) => n + 1), [])
+  const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode(active === 'browse')
 
   // One density for the whole Discover tab, up here for the same reason as the refresh action: the
   // control belongs in the page header. Its own scope rather than `discover`, which the Recommended
@@ -1411,13 +1560,16 @@ export default function DiscoverPage() {
   const browseDensity = useDensityPref('discover-browse')
 
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={t`Discover`}
         description={t`Browse the MangaBaka catalogue, or get personalised picks from your library's feel.`}
         actions={
-          active === 'browse' ? (
-            <Group gap="xs" wrap="nowrap">
+          active === 'browse' && !editing ? (
+            <Group gap="xs" wrap="wrap">
+              <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
+                <Trans>Edit layout</Trans>
+              </Button>
               <DensityControl
                 value={browseDensity.density}
                 onChange={browseDensity.setDensity}
@@ -1425,7 +1577,7 @@ export default function DiscoverPage() {
               <Tooltip label={t`Refresh the catalogue`} withArrow>
                 <ActionIcon
                   variant="subtle"
-                  color="gray"
+                  color="var(--neutral)"
                   size="lg"
                   loading={railsFetching}
                   onClick={refreshRails}
@@ -1443,16 +1595,17 @@ export default function DiscoverPage() {
         className="discover-page-tabs"
         value={active}
         onChange={(v) => navigate(TAB_PATHS[(v as DiscoverTab) ?? 'browse'])}
-        mb="md"
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
       >
         <Tabs.List>
-          <Tabs.Tab value="browse" leftSection={<IconCompass size={16} />}>
-            Discover
+          <Tabs.Tab value="browse">
+            <Trans>Discover</Trans>
           </Tabs.Tab>
-          <Tabs.Tab value="recommended" leftSection={<IconSparkles size={16} />}>
+          <Tabs.Tab value="recommended" disabled={editing}>
             <Trans>Recommended</Trans>
           </Tabs.Tab>
-          <Tabs.Tab value="taste" leftSection={<IconHeartFilled size={16} />}>
+          <Tabs.Tab value="taste" disabled={editing}>
             <Trans>Your Taste</Trans>
           </Tabs.Tab>
         </Tabs.List>
@@ -1467,8 +1620,10 @@ export default function DiscoverPage() {
           refreshNonce={refreshNonce}
           onRefresh={refreshRails}
           density={browseDensity}
+          editing={editing}
+          onExitEditing={exitEditing}
         />
       )}
-    </>
+    </SurfaceFrame>
   )
 }

@@ -2,6 +2,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Import;
 using Maki.Core.Kavita;
 using Maki.Core.Reading;
 using Maki.Core.Sources;
@@ -58,7 +59,7 @@ public class TorrentImportServiceTests : IDisposable
             new SourceAvailability(_settings, registry),
             NullLogger<CbzLinkService>.Instance);
         var rename = new SeriesRenameService(
-            db, new NamingService(_settings), scans, NullLogger<SeriesRenameService>.Instance);
+            db, new NamingService(_settings), scans, new TestLocalizer(), NullLogger<SeriesRenameService>.Instance);
 
         return new TorrentImportService(
             db, null!, null!, linker, rename, archives, _settings,
@@ -159,7 +160,7 @@ public class TorrentImportServiceTests : IDisposable
 
         var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
 
-        Assert.Null(plan.Error);
+        Assert.Null(plan.ErrorKey);
         Assert.True(plan.HasConflicts);
         Assert.Equal(6, plan.ReplacedFileCount);
         Assert.Equal(0, plan.NewChapterCount);
@@ -169,6 +170,69 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Equal(6, file.Chapters.Count);
         Assert.Empty(file.NewChapters);
         Assert.Contains(file.Replaces, r => r.RelativePath.EndsWith("Berserk Vol.1 Ch.1.cbz"));
+    }
+
+    /// <summary>
+    /// The link step can run twice for one placed file: the poll that imported it was cut off before
+    /// the queue row was saved, or a parked item is settled after the job already placed the files.
+    /// The second pass finds the file in the folder, skips placing it, and must find its row too.
+    /// </summary>
+    [Fact]
+    public async Task Importing_the_same_download_twice_keeps_one_row_per_file()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+
+        var first = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+        var second = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(first.Applied);
+        Assert.True(second.Applied);
+        Assert.Equal(1, second.Imported);
+
+        using var db = _db.NewContext();
+        var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Equal(file.Id, c.ChapterFileId));
+        Assert.Equal(1, db.StatsEvents.Count(e => e.SeriesId == series.Id && e.Type == StatsEventType.ChapterDownloaded));
+    }
+
+    /// <summary>
+    /// A row written on Windows carries a backslash; the same file adopted again under Docker is
+    /// spelled with a slash, and the two must still be one row.
+    /// </summary>
+    [Fact]
+    public async Task A_row_stored_with_the_other_separator_is_reused_rather_than_duplicated()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+        int existingId;
+        using (var db = _db.NewContext())
+        {
+            var existing = new ChapterFile
+            {
+                SeriesId = series.Id,
+                RelativePath = @"berserk\Berserk v01 (Digital) (1r0n).cbz",
+                SourceName = "rescan",
+                DateAdded = DateTime.UtcNow
+            };
+            db.ChapterFiles.Add(existing);
+            db.SaveChanges();
+            existingId = existing.Id;
+        }
+
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied);
+        using var check = _db.NewContext();
+        var file = Assert.Single(check.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.Equal(existingId, file.Id);
+        Assert.Equal(Path.Combine("Berserk", "Berserk v01 (Digital) (1r0n).cbz"), file.RelativePath);
+        Assert.All(check.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Equal(existingId, c.ChapterFileId));
     }
 
     [Fact]
@@ -223,6 +287,19 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Equal(3, outcome.Deleted);
         Assert.True(File.Exists(Path.Combine(_root, "Berserk", "Berserk Vol.1 Ch.4.cbz")));
         Assert.False(File.Exists(Path.Combine(_root, "Berserk", "Berserk Vol.1 Ch.3.cbz")));
+    }
+
+    [Fact]
+    public async Task Plan_for_a_partial_volume_lists_only_the_files_its_pages_replace()
+    {
+        var (series, item) = SeedLibrary();
+        SeedVolumeDownload(1, 2, 3);
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Assert.Equal(3, plan.ReplacedFileCount);
+        var file = Assert.Single(plan.Files);
+        Assert.DoesNotContain(file.Replaces, r => r.RelativePath.EndsWith("Berserk Vol.1 Ch.4.cbz"));
     }
 
     [Fact]
@@ -329,7 +406,7 @@ public class TorrentImportServiceTests : IDisposable
         var plan = await Service().PlanAsync(
             item, series, Path.Combine(_root, "nope"), CancellationToken.None);
 
-        Assert.NotNull(plan.Error);
+        Assert.NotNull(plan.ErrorKey);
         Assert.False(plan.HasConflicts);
     }
 
@@ -364,6 +441,51 @@ public class TorrentImportServiceTests : IDisposable
         Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
             c => Assert.Equal(file.Id, c.ChapterFileId));
     }
+
+    /// <summary>
+    /// The extension lies. A release that is 7z data under a ".cbz" name used to be opened as a
+    /// zip, read as empty and dropped from the plan, or worse placed as-is into the library where
+    /// no reader could open it. The bytes decide: it is repacked into a real zip, and the original
+    /// in the download folder is untouched because the torrent is still seeding from it.
+    /// </summary>
+    [Fact]
+    public async Task A_7z_named_cbz_is_repacked_rather_than_placed()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        var disguised = Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbz");
+        File.WriteAllBytes(disguised, Convert.FromBase64String(SevenZipOfSixPages));
+        var originalBytes = File.ReadAllBytes(disguised);
+        Assert.Equal(ArchiveSignature.Container.Other, ArchiveSignature.Sniff(disguised));
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+        Assert.Null(plan.ErrorKey);
+        var planned = Assert.Single(plan.Files);
+        Assert.Equal(6, planned.NewChapters.Count);
+
+        var outcome = await Service().ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied, outcome.Error ?? outcome.ErrorKey);
+        var imported = Path.Combine(_root, "Berserk", "Berserk v01 (Digital) (1r0n).cbz");
+        Assert.Equal(ArchiveSignature.Container.Zip, ArchiveSignature.Sniff(imported));
+        Assert.Equal(6, CbzReader.PageNames(imported).Count);
+
+        // The seeding copy keeps its bytes and its name; the library got a new file, not a rewrite.
+        Assert.Equal(originalBytes, File.ReadAllBytes(disguised));
+        Assert.NotEqual(new FileInfo(disguised).Length, new FileInfo(imported).Length);
+
+        using var db = _db.NewContext();
+        var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+        Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(),
+            c => Assert.Equal(file.Id, c.ChapterFileId));
+    }
+
+    /// <summary>
+    /// A stored 7z holding "Berserk - c001 - p001 [Oak].png" through c006, each four bytes of
+    /// "page". SharpCompress reads 7z but cannot write it, so the fixture is baked in.
+    /// </summary>
+    private const string SevenZipOfSixPages =
+        "N3q8ryccAATdwB8anwAAAAAAAAAiAAAAAAAAANc5VhFwYWdlcGFnZXBhZ2VwYWdlcGFnZXBhZ2UAAIEzB66tixMmvTI/mh5abFMQpAp7A6IluzdsN1W0E+1RSHewg6eY/TlNHh/rkz8Sk5MxEUFGXWNdHh7MSC0Xj2CIysesro/C7ufiWbC96LDnx6ZlHs6iKdqVWsjRb0gerTkZC+SMGqw90GRD8Qg7Z6xWgvuF4Nf48FS+jINYpVUEfg6iEQAXBhgBCYCHAAcLAQABIwMBAQVdABAAAAyCJgoBgLU2+wAA";
 
     /// <summary>A zip is already a CBZ container, so it goes in as it is under the right name.</summary>
     [Fact]
@@ -415,7 +537,9 @@ public class TorrentImportServiceTests : IDisposable
 
         var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
 
-        Assert.Equal("No comics found in the completed download (found 2 .pdf)", plan.Error);
+        Assert.Equal("error.torrentImport.noComicsFound", plan.ErrorKey);
+        var detail = plan.ErrorArgs?.GetType().GetProperty("detail")?.GetValue(plan.ErrorArgs);
+        Assert.Equal("found 2 .pdf", detail);
     }
 
     private static void WriteTar(string path, IReadOnlyList<string> pageNames)

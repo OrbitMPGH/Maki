@@ -5,7 +5,7 @@
 # under qemu emulation for the second platform. Only the final runtime stage below actually needs
 # to differ per architecture (it pulls a per-arch base image and installs native apt packages).
 # ---- Frontend build ----
-FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -74,12 +74,17 @@ RUN expected="$(ls -1d locales/*/ | wc -l)" \
 FROM alpine:3 AS trimmed-publish
 ARG TARGETARCH
 COPY --from=backend /app/publish /app
+# Docnet.Core (pdfium, for reading PDFs in place) ships its x64 native library under
+# runtimes/linux/native, with no arch suffix, rather than runtimes/linux-x64 like everything
+# else, so amd64 has to keep both "linux-x64" and the suffix-less "linux" directory, or pdfium.so
+# is trimmed away and every PDF becomes unreadable on that architecture. arm64's copy is at the
+# normal runtimes/linux-arm64/native path and needs no extra keep.
 RUN case "$TARGETARCH" in \
-      amd64) keep=linux-x64 ;; \
+      amd64) keep="linux-x64 linux" ;; \
       arm64) keep=linux-arm64 ;; \
       *) echo "unknown TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
     esac \
-    && find /app/runtimes -mindepth 1 -maxdepth 1 -type d ! -name "$keep" -exec rm -rf {} +
+    && find /app/runtimes -mindepth 1 -maxdepth 1 -type d $(for k in $keep; do echo "! -name $k"; done) -exec rm -rf {} +
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0

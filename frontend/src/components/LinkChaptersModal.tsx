@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Badge, Button, Group, Loader, Modal, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core'
-import { IconFileZip } from '@tabler/icons-react'
+import { IconFileZip, IconLinkOff } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -23,6 +23,12 @@ export function LinkChaptersModal({
   const { data: files, isLoading } = useSeriesFiles(seriesId, opened)
   const link = useLinkChapters()
   const [picked, setPicked] = useState<string | null>(null)
+  // Files nothing points at yet float to the top: that is almost always the omnibus or the
+  // oddly named release the user opened this dialog for.
+  const sorted = useMemo(() => {
+    const rank = (f: SeriesFileDto) => (!f.onDisk ? 2 : f.status === 'linked' ? 1 : 0)
+    return [...(files ?? [])].sort((a, b) => rank(a) - rank(b))
+  }, [files])
   const chapterCount = chapterIds.length
   const chapterPhrase = plural(chapterCount, { one: '# chapter', other: '# chapters' })
 
@@ -39,7 +45,7 @@ export function LinkChaptersModal({
         onSuccess: () => {
           notifications.show({
             message: now`Linked ${chapterPhrase} to ${fileName}`,
-            color: 'green',
+            color: 'var(--ok)',
           })
           handleClose()
         },
@@ -50,7 +56,7 @@ export function LinkChaptersModal({
   return (
     <Modal opened={opened} onClose={handleClose} title={t`Link ${chapterPhrase} to a file`} size="lg">
       <Stack gap="sm">
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>
             Pick the file in the series folder these chapters are actually contained in, useful for
             compilation CBZs or oddly-named releases the automatic matcher couldn't parse.
@@ -59,25 +65,25 @@ export function LinkChaptersModal({
         {isLoading ? (
           <Group py="md" gap="xs">
             <Loader size="sm" />
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>Scanning folder…</Trans>
             </Text>
           </Group>
         ) : !files || files.length === 0 ? (
-          <Text c="dimmed" size="sm" py="sm">
+          <Text c="var(--ink-3)" size="sm" py="sm">
             <Trans>No files found in the series folder.</Trans>
           </Text>
         ) : (
-          <ScrollArea.Autosize mah={420}>
+          <ScrollArea.Autosize mah="min(420px, 45dvh)">
             <Stack gap={4}>
-              {files.map((f) => (
+              {sorted.map((f) => (
                 <UnstyledButton
                   key={f.relativePath}
                   onClick={() => setPicked(f.relativePath)}
                   disabled={!f.onDisk || link.isPending}
                   p="xs"
                   style={{
-                    borderRadius: 8,
+                    borderRadius: 'var(--radius-thumb)',
                     border: `1px solid ${picked === f.relativePath ? 'var(--mantine-color-brand-5)' : 'var(--border)'}`,
                     opacity: f.onDisk ? 1 : 0.5,
                   }}
@@ -90,12 +96,17 @@ export function LinkChaptersModal({
                       </Text>
                     </Group>
                     <Group gap={6} wrap="nowrap">
+                      {f.onDisk && f.status !== 'linked' && (
+                        <Badge size="sm" variant="light" color="var(--warn)" leftSection={<IconLinkOff size={11} />}>
+                          <Trans>Not linked</Trans>
+                        </Badge>
+                      )}
                       {f.parsedLabel && (
-                        <Badge size="sm" variant="light" color={f.isVolume ? 'indigo' : 'gray'} className="tnum">
+                        <Badge size="sm" variant="light" color={f.isVolume ? 'indigo' : 'var(--neutral)'} className="tnum">
                           {f.parsedLabel}
                         </Badge>
                       )}
-                      <Text size="xs" c="dimmed" className="tnum">
+                      <Text size="xs" c="var(--ink-3)" className="tnum">
                         {formatBytes(f.size)}
                       </Text>
                     </Group>

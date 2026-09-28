@@ -40,11 +40,18 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
                 string id, string category, string status, string key, object? args = null,
                 string? url = null, bool connection = false) =>
                 checks.Add((id, category, status, key, args is null ? null : JsonSerializer.Serialize(args), url, connection));
+            var folded = new HashSet<string>(StringComparer.Ordinal);
+            var stillFailingSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
             {
                 foreach (var issue in await legacy.GetIssuesAsync(ct))
+                {
                     Add($"legacy:{issue.Key ?? $"{issue.Type}:{issue.SeriesId}"}", "library", issue.Severity,
-                        issue.MessageKey, issue.Params, issue.SeriesId is {} id ? $"/series/{id}" : "/settings");
+                        issue.MessageKey, issue.Params,
+                        issue.SeriesId is {} id ? $"/series/{id}" : issue.Covers is null ? "/settings" : null);
+                    foreach (var mappingId in issue.Covers ?? []) folded.Add($"legacy:mapping:{mappingId}");
+                    if (issue.Source is { } failingSource) stillFailingSources.Add($"legacy:source:{failingSource}");
+                }
             }
             catch { Add("library-check", "library", "unavailable", "health.check.libraryUnavailable"); }
             var roots = await db.RootFolders.ToListAsync(ct);
@@ -163,6 +170,11 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             if (!checks.Any(c => c.Id == "library-check"))
                 foreach (var row in old.Where(r => r.Id.StartsWith("legacy:") && !checks.Any(c => c.Id == r.Id) && r.Status != "healthy"))
                 {
+                    // Still failing, now counted in its source's row. Announcing it as recovered
+                    // would send one false all-clear per series the moment a site goes down.
+                    // Same the other way: an outage row whose count fell under the threshold has
+                    // its remaining failures back on their own rows, so the site has not recovered.
+                    if (folded.Contains(row.Id) || stillFailingSources.Contains(row.Id)) { db.HealthChecks.Remove(row); continue; }
                     row.Status = row.NotifiedStatus = "healthy";
                     row.ChangedAt = row.CheckedAt = DateTime.UtcNow;
                     await NotifyAsync(row, true, ct);
@@ -231,10 +243,31 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             InboxEventType.HealthIssue,
             new InboxMessage(
                 Key: recovered ? "inbox.health.recovered" : "inbox.health.issue",
-                Params: InboxMessage.Args(new { check = row.Id, detail = row.MessageKey ?? row.Message }),
+                Params: InboxDetailArgs(row),
                 Level: level,
                 Url: "/health"),
             InboxAudience.Admins);
+    }
+
+    /// <summary>
+    /// The inbox row's parameters: the check's message key (or its English, on a row from before the
+    /// checks were keyed) as <c>detail</c>, and the check's own values under a <c>detail.</c> prefix.
+    /// <see cref="Localization.InboxRenderer"/> renders the detail per reader from those. Prefixed
+    /// because the renderer owns <c>{series}</c>, and a check's own <c>{series}</c> would otherwise be
+    /// replaced with the inbox's.
+    /// </summary>
+    private static Dictionary<string, object?> InboxDetailArgs(HealthCheckRecord row)
+    {
+        var args = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["detail"] = row.MessageKey ?? row.Message,
+        };
+        foreach (var (name, value) in HealthParams(row.ParamsJson))
+        {
+            args[$"detail.{name}"] = value;
+        }
+
+        return args;
     }
 
     /// <summary>

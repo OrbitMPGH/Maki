@@ -88,6 +88,20 @@ public class KavitaClient(IHttpClientFactory httpClientFactory)
                ?? (matches.Count == 1 ? matches[0] : null);
     }
 
+    public record KavitaLibrary(
+        [property: JsonPropertyName("id")] int Id,
+        [property: JsonPropertyName("name")] string? Name);
+
+    /// <summary>The libraries the API key's user can see, for picking which ones to scrobble.</summary>
+    public async Task<List<KavitaLibrary>> GetLibrariesAsync(
+        string baseUrl, string apiKey, CancellationToken ct = default)
+    {
+        using var response = await SendAuthedAsync(baseUrl, apiKey,
+            client => client.GetAsync("api/Library/libraries", ct), ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<KavitaLibrary>>(cancellationToken: ct) ?? [];
+    }
+
     public record KavitaSeriesSummary(
         [property: JsonPropertyName("id")] int Id,
         [property: JsonPropertyName("name")] string? Name,

@@ -73,7 +73,7 @@ export function PriorityList({
             style={{
               position: 'relative',
               transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
-              transition: 'transform 150ms ease',
+              transition: 'transform var(--dur-base) var(--ease)',
               pointerEvents: dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
             }}
           >
@@ -105,16 +105,16 @@ export function PriorityList({
               onDragEnd={commitDrag}
               style={{
                 cursor: 'grab',
-                borderRadius: 4,
+                borderRadius: 'var(--mantine-radius-xs)',
                 opacity: dragFromIndex === i ? 0 : 1,
               }}
             >
               <Group gap="sm" wrap="nowrap">
                 <IconGripVertical size={14} opacity={0.5} />
-                <Text size="sm" c="dimmed" w={20}>
+                <Text size="sm" c="var(--ink-3)" w={20}>
                   {i + 1}
                 </Text>
-                <Text size="sm" fw={500} c={disabled.includes(id) ? 'dimmed' : undefined}>
+                <Text size="sm" fw={500} c={disabled.includes(id) ? 'var(--ink-3)' : undefined}>
                   {renderLabel(id)}
                 </Text>
                 {renderExtra?.(id)}

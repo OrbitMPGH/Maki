@@ -150,22 +150,22 @@ public class NamingFormatterTests
     }
 
     [Theory]
-    [InlineData("", "empty")]
-    [InlineData("   ", "empty")]
-    [InlineData("{Nonsense Token}", "Unknown token")]
-    [InlineData("Just a literal", "at least one token")]
-    [InlineData("{Series Title}/{Chapter Number}", "path separators")]
-    [InlineData("{Series Title}\\x", "path separators")]
-    [InlineData("../{Series Title}", "\"..\"")]
-    [InlineData("{Series {Title}}", "inside a token")]
-    [InlineData("{Series Title", "no matching")]
-    [InlineData("Series Title}", "no matching")]
-    [InlineData("{Series Title:000}", "does not take a padding")]
-    [InlineData("{Chapter Number:abc}", "must be zeroes")]
-    public void Invalid_formats_are_refused(string format, string expectedFragment)
+    [InlineData("", "error.naming.formatEmpty")]
+    [InlineData("   ", "error.naming.formatEmpty")]
+    [InlineData("{Nonsense Token}", "error.naming.unknownToken")]
+    [InlineData("Just a literal", "error.naming.noTokens")]
+    [InlineData("{Series Title}/{Chapter Number}", "error.naming.pathSeparators")]
+    [InlineData("{Series Title}\\x", "error.naming.pathSeparators")]
+    [InlineData("../{Series Title}", "error.naming.doubleDot")]
+    [InlineData("{Series {Title}}", "error.naming.braceInsideToken")]
+    [InlineData("{Series Title", "error.naming.unmatchedOpenBrace")]
+    [InlineData("Series Title}", "error.naming.unmatchedCloseBrace")]
+    [InlineData("{Series Title:000}", "error.naming.noPadding")]
+    [InlineData("{Chapter Number:abc}", "error.naming.paddingNotZero")]
+    public void Invalid_formats_are_refused(string format, string expectedKey)
     {
         var errors = NamingFormatter.Validate(format);
-        Assert.Contains(errors, e => e.Contains(expectedFragment, StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(errors, e => e.Key == expectedKey);
     }
 
     [Fact]

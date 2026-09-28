@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Button,
   Group,
   Loader,
   Modal,
   Pagination,
   Progress,
-  SimpleGrid,
   Stack,
   Table,
   Text,
@@ -19,11 +17,7 @@ import {
   IconArrowBarToUp,
   IconArrowDown,
   IconArrowUp,
-  IconAlertTriangle,
-  IconClock,
   IconHistory,
-  IconInbox,
-  IconLoader2,
   IconRefresh,
   IconTrash,
   IconX,
@@ -42,17 +36,23 @@ import { useAuth } from '../auth/AuthProvider'
 import { ImportReviewModal } from '../components/ImportReviewModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
-import { isQueueActive, needsImportReview, queueStatusVisual } from '../components/ui/status'
+import { Panel } from '../components/ui/Panel'
+import { TableSkeleton } from '../components/ui/TableSkeleton'
+import { FigureStrip } from '../components/ui/FigureStrip'
+import { StatusDot } from '../components/ui/StatusDot'
+import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
 import { queueErrorMessage, queueItemLabel } from '../api/queue'
 import { useLabel } from '../i18n-context'
+import { useSourceLabel } from '../sourceLabels'
 import { formatDateTime, formatTime } from '../format'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const HISTORY_PAGE_SIZE = 25
 
 export default function ActivityPage() {
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const sourceLabel = useSourceLabel()
   const { data: queue } = useQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
@@ -103,213 +103,216 @@ export default function ActivityPage() {
   )
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
+        compact
         title={t`Activity`}
         description={t`Live download queue: pages are fetched, validated and packaged into CBZ files two at a time.`}
         actions={
           canManageQueue && queue && queue.total > 0 ? (
-            <Button color="red" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
+            <Button color="var(--danger)" variant="light" leftSection={<IconTrash size={16} />} onClick={() => setClearConfirmOpen(true)}>
               <Trans>Clear queue</Trans>
             </Button>
           ) : undefined
         }
       />
 
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm" mb="lg" maw={740}>
-        <StatTile label={t`In progress`} value={stats.active} icon={IconLoader2} accent="info" />
-        <StatTile label={t`Queued`} value={stats.queued} icon={IconClock} accent="gray" />
-        <StatTile label={t`Needs review`} value={stats.review} icon={IconAlertTriangle} accent="warn" />
-        <StatTile label={t`Failed`} value={stats.failed} icon={IconX} accent="danger" />
-      </SimpleGrid>
+      <FigureStrip
+        loading={!queue}
+        figures={[
+          { label: t`In progress`, value: stats.active, tone: 'info' },
+          { label: t`Queued`, value: stats.queued },
+          { label: t`Needs review`, value: stats.review, tone: 'warn' },
+          { label: t`Failed`, value: stats.failed, tone: 'danger' },
+        ]}
+      />
 
-      {queueItems.length === 0 ? (
+      {!queue ? (
+        <TableSkeleton columns={5} rows={4} />
+      ) : queueItems.length === 0 ? (
         <EmptyState
-          icon={IconInbox}
+          compact
           title={t`Nothing in the queue`}
           description={t`Queued and downloading chapters show up here. Trigger a search from a series page or the library.`}
         />
       ) : (
-        <Table.ScrollContainer minWidth={720}>
-          <Table verticalSpacing="sm">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>
-                  <Trans>Series</Trans>
-                </Table.Th>
-                <Table.Th>
-                  <Trans>Chapter</Trans>
-                </Table.Th>
-                <Table.Th>
-                  <Trans>Source</Trans>
-                </Table.Th>
-                <Table.Th w={240}>
-                  <Trans>Progress</Trans>
-                </Table.Th>
-                <Table.Th w={150}>
-                  <Trans>Status</Trans>
-                </Table.Th>
-                <Table.Th w={190} />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {queueItems.map((q, index) => {
-                const visual = queueStatusVisual(q.status)
-                const reorderable = q.status === 'Queued' || q.status === 'RateLimited'
-                const { retryCount, nextAttempt } = q
-                const nextAttemptTime = nextAttempt ? formatTime(nextAttempt) : null
-                const retryInfo =
-                  q.status === 'Failed' && retryCount > 0
-                    ? nextAttemptTime
-                      ? t`Retried ${retryCount}x - next attempt ${nextAttemptTime}`
-                      : t`Retried ${retryCount}x`
-                    : null
-                const failure = queueErrorMessage(q, renderLabel)
-                const tooltipLabel =
-                  [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
-                return (
-                  <Table.Tr key={q.id}>
-                    <Table.Td>
-                      <Text
-                        component={Link}
-                        to={`/series/${q.seriesId}`}
-                        size="sm"
-                        fw={600}
-                        c="brand.4"
-                        lineClamp={1}
-                      >
-                        {q.seriesTitle}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" className="tnum">
-                        {queueItemLabel(q)}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      {q.status === 'Resolving' ? (
-                        <Group gap={6} wrap="nowrap">
-                          <Loader size="xs" />
-                          <Text size="sm" c="dimmed">
-                            <Trans>Finding source</Trans>
-                          </Text>
-                        </Group>
-                      ) : (
-                        <Text size="sm" c="dimmed">
-                          {q.sourceName}
-                        </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      {q.pagesTotal > 0 ? (
-                        <Group gap="xs" wrap="nowrap">
-                          <Progress
-                            value={(q.pagesDone / q.pagesTotal) * 100}
-                            style={{ flex: 1 }}
-                            radius="xl"
-                            animated={q.status === 'Downloading'}
-                            color={q.status === 'Failed' ? 'red' : 'brand'}
-                          />
-                          <Text size="xs" c="dimmed" w={52} className="tnum" ta="right">
-                            {q.pagesDone}/{q.pagesTotal}
-                          </Text>
-                        </Group>
-                      ) : (
-                        <Text size="xs" c="dimmed">
-                          -
-                        </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo}>
-                        <Badge
+        <Panel p={0} className="table-panel">
+          <Table.ScrollContainer minWidth={720}>
+            <Table className="panel-table activity-queue-table" verticalSpacing="sm">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>
+                    <Trans>Series</Trans>
+                  </Table.Th>
+                  <Table.Th>
+                    <Trans>Chapter</Trans>
+                  </Table.Th>
+                  <Table.Th data-priority="low">
+                    <Trans>Source</Trans>
+                  </Table.Th>
+                  <Table.Th>
+                    <Trans>Progress</Trans>
+                  </Table.Th>
+                  <Table.Th>
+                    <Trans>Status</Trans>
+                  </Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {queueItems.map((q, index) => {
+                  const visual = queueStatusVisual(q.status)
+                  const reorderable = q.status === 'Queued' || q.status === 'RateLimited'
+                  const { retryCount, nextAttempt } = q
+                  const nextAttemptTime = nextAttempt ? formatTime(nextAttempt) : null
+                  const retryInfo =
+                    q.status === 'Failed' && retryCount > 0
+                      ? nextAttemptTime
+                        ? t`Retried ${retryCount}x - next attempt ${nextAttemptTime}`
+                        : t`Retried ${retryCount}x`
+                      : null
+                  const failure = queueErrorMessage(q, renderLabel)
+                  const tooltipLabel =
+                    [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
+                  return (
+                    <Table.Tr key={q.id}>
+                      <Table.Td>
+                        <Text
+                          component={Link}
+                          to={`/series/${q.seriesId}`}
                           size="sm"
-                          color={visual.color}
-                          variant="light"
-                          leftSection={<visual.Icon size={12} />}
+                          fw={600}
+                          c="brand.4"
+                          lineClamp={1}
                         >
-                          {renderLabel(visual.label)}
-                        </Badge>
-                      </Tooltip>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap={4} wrap="nowrap" justify="flex-end">
-                        {reorderable && (
-                          <>
-                            <Tooltip label={t`Move to top`} withArrow>
-                              <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                disabled={index === 0}
-                                onClick={() => moveToTop(index)}
-                                aria-label={t`Move to top of queue`}
-                              >
-                                <IconArrowBarToUp size={16} />
-                              </ActionIcon>
-                            </Tooltip>
-                            <Tooltip label={t`Move up`} withArrow>
-                              <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                disabled={index === 0}
-                                onClick={() => moveItem(index, -1)}
-                                aria-label={t`Move up in queue`}
-                              >
-                                <IconArrowUp size={16} />
-                              </ActionIcon>
-                            </Tooltip>
-                            <Tooltip label={t`Move down`} withArrow>
-                              <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                disabled={index === queueItems.length - 1}
-                                onClick={() => moveItem(index, 1)}
-                                aria-label={t`Move down in queue`}
-                              >
-                                <IconArrowDown size={16} />
-                              </ActionIcon>
-                            </Tooltip>
-                          </>
+                          {q.seriesTitle}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" className="tnum">
+                          {queueItemLabel(q)}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td data-priority="low">
+                        {q.status === 'Resolving' ? (
+                          <Group gap={6} wrap="nowrap">
+                            <Loader size="xs" />
+                            <Text size="sm" c="var(--ink-3)">
+                              <Trans>Finding source</Trans>
+                            </Text>
+                          </Group>
+                        ) : (
+                          <Text size="sm" c="var(--ink-3)">
+                            {sourceLabel(q.sourceName)}
+                          </Text>
                         )}
-                        {needsImportReview(q.status) && canManageQueue && (
-                          <Button size="compact-sm" variant="light" color="yellow" onClick={() => setReviewing(q.id)}>
-                            <Trans>Review</Trans>
-                          </Button>
+                      </Table.Td>
+                      <Table.Td>
+                        {q.pagesTotal > 0 ? (
+                          <Group gap="xs" wrap="nowrap">
+                            <Progress
+                              value={(q.pagesDone / q.pagesTotal) * 100}
+                              style={{ flex: 1 }}
+                              radius="xl"
+                              animated={q.status === 'Downloading'}
+                              color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                            />
+                            <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
+                              {q.pagesDone}/{q.pagesTotal}
+                            </Text>
+                          </Group>
+                        ) : (
+                          <Text size="xs" c="var(--ink-3)">
+                            -
+                          </Text>
                         )}
-                        {q.status === 'Failed' && (
-                          <Tooltip label={t`Retry`} withArrow>
+                      </Table.Td>
+                      <Table.Td>
+                        <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo}>
+                          <StatusDot tone={statusToken(visual.color)} live={isQueueActive(q.status)}>
+                            {renderLabel(visual.label)}
+                          </StatusDot>
+                        </Tooltip>
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap={4} wrap="nowrap" justify="flex-end">
+                          {reorderable && (
+                            <>
+                              <Tooltip label={t`Move to top`} withArrow>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="var(--neutral)"
+                                  disabled={index === 0 || reorder.isPending}
+                                  onClick={() => moveToTop(index)}
+                                  aria-label={t`Move to top of queue`}
+                                >
+                                  <IconArrowBarToUp size={16} />
+                                </ActionIcon>
+                              </Tooltip>
+                              <Tooltip label={t`Move up`} withArrow>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="var(--neutral)"
+                                  disabled={index === 0 || reorder.isPending}
+                                  onClick={() => moveItem(index, -1)}
+                                  aria-label={t`Move up in queue`}
+                                >
+                                  <IconArrowUp size={16} />
+                                </ActionIcon>
+                              </Tooltip>
+                              <Tooltip label={t`Move down`} withArrow>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="var(--neutral)"
+                                  disabled={index === queueItems.length - 1 || reorder.isPending}
+                                  onClick={() => moveItem(index, 1)}
+                                  aria-label={t`Move down in queue`}
+                                >
+                                  <IconArrowDown size={16} />
+                                </ActionIcon>
+                              </Tooltip>
+                            </>
+                          )}
+                          {needsImportReview(q.status) && canManageQueue && (
+                            <Button size="compact-sm" variant="light" color="var(--warn)" onClick={() => setReviewing(q.id)}>
+                              <Trans>Review</Trans>
+                            </Button>
+                          )}
+                          {q.status === 'Failed' && (
+                            <Tooltip label={t`Retry`} withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="var(--neutral)"
+                                onClick={() => retry.mutate(q.id)}
+                                aria-label={t`Retry download`}
+                              >
+                                <IconRefresh size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                          )}
+                          <Tooltip label={t`Remove`} withArrow>
                             <ActionIcon
                               variant="subtle"
-                              color="gray"
-                              onClick={() => retry.mutate(q.id)}
-                              aria-label={t`Retry download`}
+                              color="var(--danger)"
+                              onClick={() => remove.mutate(q.id)}
+                              aria-label={t`Remove from queue`}
                             >
-                              <IconRefresh size={16} />
+                              <IconX size={16} />
                             </ActionIcon>
                           </Tooltip>
-                        )}
-                        <Tooltip label={t`Remove`} withArrow>
-                          <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            onClick={() => remove.mutate(q.id)}
-                            aria-label={t`Remove from queue`}
-                          >
-                            <IconX size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                )
-              })}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Panel>
       )}
 
       {truncated && (
-        <Text size="xs" c="dimmed" mt="xs">
+        <Text size="xs" c="var(--ink-3)" mt="xs">
           <Trans>
             Showing {shownQueueCount} of {totalQueueCount} queued items. The rest are still queued
             and will download, they're just not listed here.
@@ -340,7 +343,7 @@ export default function ActivityPage() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="red"
+              color="var(--danger-fill)"
               loading={clear.isPending}
               onClick={() => {
                 clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
@@ -360,83 +363,80 @@ export default function ActivityPage() {
           </Title>
         </Group>
 
-        {!history || history.items.length === 0 ? (
+        {!history ? (
+          <TableSkeleton columns={5} />
+        ) : history.items.length === 0 ? (
           <EmptyState
-            icon={IconHistory}
+            compact
             title={t`No history yet`}
             description={t`Completed and cancelled downloads show up here.`}
           />
         ) : (
           <>
-            <Table.ScrollContainer minWidth={640}>
-              <Table verticalSpacing="sm">
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>
-                      <Trans>Series</Trans>
-                    </Table.Th>
-                    <Table.Th>
-                      <Trans>Chapter</Trans>
-                    </Table.Th>
-                    <Table.Th>
-                      <Trans>Source</Trans>
-                    </Table.Th>
-                    <Table.Th w={150}>
-                      <Trans>Status</Trans>
-                    </Table.Th>
-                    <Table.Th w={160}>
-                      <Trans>Completed</Trans>
-                    </Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {history.items.map((q) => {
-                    const visual = queueStatusVisual(q.status)
-                    return (
-                      <Table.Tr key={q.id}>
-                        <Table.Td>
-                          <Text
-                            component={Link}
-                            to={`/series/${q.seriesId}`}
-                            size="sm"
-                            fw={600}
-                            c="brand.4"
-                            lineClamp={1}
-                          >
-                            {q.seriesTitle}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm" className="tnum">
-                            {queueItemLabel(q)}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm" c="dimmed">
-                            {q.sourceName}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Badge
-                            size="sm"
-                            color={visual.color}
-                            variant="light"
-                            leftSection={<visual.Icon size={12} />}
-                          >
-                            {renderLabel(visual.label)}
-                          </Badge>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="xs" c="dimmed" className="tnum">
-                            {q.completedAt ? formatDateTime(q.completedAt) : '-'}
-                          </Text>
-                        </Table.Td>
-                      </Table.Tr>
-                    )
-                  })}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
+            <Panel p={0} className="table-panel">
+              <Table.ScrollContainer minWidth={640}>
+                <Table className="panel-table activity-history-table" verticalSpacing="sm">
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>
+                        <Trans>Series</Trans>
+                      </Table.Th>
+                      <Table.Th>
+                        <Trans>Chapter</Trans>
+                      </Table.Th>
+                      <Table.Th data-priority="low">
+                        <Trans>Source</Trans>
+                      </Table.Th>
+                      <Table.Th>
+                        <Trans>Status</Trans>
+                      </Table.Th>
+                      <Table.Th data-priority="low">
+                        <Trans>Completed</Trans>
+                      </Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {history.items.map((q) => {
+                      const visual = queueStatusVisual(q.status)
+                      return (
+                        <Table.Tr key={q.id}>
+                          <Table.Td>
+                            <Text
+                              component={Link}
+                              to={`/series/${q.seriesId}`}
+                              size="sm"
+                              fw={600}
+                              c="brand.4"
+                              lineClamp={1}
+                            >
+                              {q.seriesTitle}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm" className="tnum">
+                              {queueItemLabel(q)}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td data-priority="low">
+                            <Text size="sm" c="var(--ink-3)">
+                              {sourceLabel(q.sourceName)}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <StatusDot tone={statusToken(visual.color)}>{renderLabel(visual.label)}</StatusDot>
+                          </Table.Td>
+                          <Table.Td data-priority="low">
+                            <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
+                              {q.completedAt ? formatDateTime(q.completedAt) : '-'}
+                            </Text>
+                          </Table.Td>
+                        </Table.Tr>
+                      )
+                    })}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            </Panel>
 
             {historyPageCount > 1 && (
               <Group justify="center">
@@ -446,6 +446,6 @@ export default function ActivityPage() {
           </>
         )}
       </Stack>
-    </>
+    </SurfaceFrame>
   )
 }

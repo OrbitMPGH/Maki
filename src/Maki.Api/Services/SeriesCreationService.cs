@@ -1,7 +1,9 @@
-﻿using Maki.Core.Configuration;
+﻿using Maki.Api.Localization;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
+using Maki.Core.Notifications;
 using Maki.Data;
 using Maki.Data.Identity;
 using System.Security.Cryptography;
@@ -40,9 +42,17 @@ public enum SeriesCreationError
 }
 
 public record SeriesCreationResult(Series? Series, SeriesCreationError? Error, List<string> Warnings,
-    bool Replayed = false)
+    bool Replayed = false, int? ExistingSeriesId = null, string? ExistingSeriesTitle = null)
 {
     public static SeriesCreationResult Failed(SeriesCreationError error) => new(null, error, []);
+
+    /// <summary>
+    /// The series already exists. Carries its id and title so a caller resolving a request against
+    /// it (see <c>SeriesRequestsController.Approve</c>) can still link the request to the series
+    /// instead of leaving it a dead end.
+    /// </summary>
+    public static SeriesCreationResult AlreadyInLibrary(int seriesId, string title) =>
+        new(null, SeriesCreationError.AlreadyInLibrary, [], ExistingSeriesId: seriesId, ExistingSeriesTitle: title);
 
     /// <summary>
     /// The mutation id an approved request's add operates under.
@@ -78,6 +88,9 @@ public class SeriesCreationService(
     SeriesIdentityService identity,
     IAppSettings appSettings,
     NamingService naming,
+    NotificationService notifications,
+    IUserLocaleResolver locales,
+    IMessageCatalog catalog,
     ILogger<SeriesCreationService> logger)
 {
     /// <param name="deferSourceMatching">
@@ -139,10 +152,16 @@ public class SeriesCreationService(
             return SeriesCreationResult.Failed(SeriesCreationError.MetadataNotFound);
         }
 
-        if (metadata.MangaBakaId is int existingId &&
-            await db.Series.AnyAsync(s => s.MangaBakaId == existingId, ct))
+        if (metadata.MangaBakaId is int existingId)
         {
-            return SeriesCreationResult.Failed(SeriesCreationError.AlreadyInLibrary);
+            var existing = await db.Series
+                .Where(s => s.MangaBakaId == existingId)
+                .Select(s => new { s.Id, s.Title })
+                .FirstOrDefaultAsync(ct);
+            if (existing is not null)
+            {
+                return SeriesCreationResult.AlreadyInLibrary(existing.Id, existing.Title);
+            }
         }
 
         var series = SeriesMetadataMapper.NewFromMetadata(metadata);
@@ -182,7 +201,7 @@ public class SeriesCreationService(
             {
                 UserId = attributedUserId.Value, Series = series,
                 AddedToLibraryAtUtc = now,
-                AddedFrom = addedFrom is "recommendation" or "request" ? addedFrom : "library",
+                AddedFrom = addedFrom is "recommendation" or "request" or ImportListService.AddedFrom ? addedFrom : "library",
                 UpdatedAt = now
             });
             bumpSignalFor = attributedUserId.Value;
@@ -206,6 +225,8 @@ public class SeriesCreationService(
             await db.SaveChangesAsync(ct);
             await creationTransaction.CommitAsync(ct);
         }
+
+        await NotifyAddedAsync(series, originatingRequest, ct);
 
         // The series row is already committed, so these steps can't fail the request — but they
         // can't be swallowed either. Collect what went wrong and hand it back with the result.
@@ -275,6 +296,11 @@ public class SeriesCreationService(
                 {
                     await chapterSyncService.SyncSeriesAsync(series.Id, ct);
                 }
+                else
+                {
+                    await SourceMatchWorkerHostedService.NotifyManualMatchNeededAsync(
+                        notifications, locales, catalog, series, logger, ct);
+                }
             }
             catch (Exception ex)
             {
@@ -284,6 +310,34 @@ public class SeriesCreationService(
         }
 
         return new SeriesCreationResult(series, null, warnings);
+    }
+
+    private async Task NotifyAddedAsync(Series series, SeriesRequest? request, CancellationToken ct)
+    {
+        try
+        {
+            var requester = request is null
+                ? null
+                : await db.Users.Where(u => u.Id == request.UserId)
+                    .Select(u => u.DisplayName ?? u.UserName).FirstOrDefaultAsync(ct);
+            var locale = await locales.DefaultAsync(ct);
+            notifications.Dispatch(NotificationEventType.SeriesAdded, new NotificationMessage(
+                NotificationEventType.SeriesAdded,
+                Title: catalog.GetFor(locale, "notify.series.added.title"),
+                Body: catalog.GetFor(locale, "notify.series.added.body", new
+                {
+                    series = series.Title,
+                    hasRequester = requester is null ? "no" : "yes",
+                    user = requester ?? string.Empty,
+                }),
+                SeriesTitle: series.Title,
+                SeriesId: series.Id,
+                Url: $"/series/{series.Id}"));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not send the series added notification for {Title}", series.Title);
+        }
     }
 
     private async Task<NewChapterMonitorMode> DefaultedMonitorMode(NewChapterMonitorMode requested, CancellationToken ct) =>

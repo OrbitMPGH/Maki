@@ -266,6 +266,42 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task One_shot_titled_by_a_now_numbered_label_is_promoted_in_place()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        int fileId;
+        using (var db = _db.NewContext())
+        {
+            var file = new ChapterFile { SeriesId = seriesId, RelativePath = "Series/Episode 124.cbz" };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            fileId = file.Id;
+            db.Chapters.Add(new Chapter
+            {
+                SeriesId = seriesId, Number = null, IsOneShot = true, Title = "Episode 124",
+                Language = "en", ChapterFileId = fileId
+            });
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ => [fake.Chapter(124) with { NumberRaw = "Episode 124" }]
+        };
+
+        var newIds = await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        var chapter = Assert.Single(ChaptersOf(seriesId));
+        Assert.Equal(124m, chapter.Number);
+        Assert.False(chapter.IsOneShot);
+        Assert.Null(chapter.Title);
+        Assert.Equal(fileId, chapter.ChapterFileId);
+    }
+
+    [Fact]
     public async Task MainOnly_mode_leaves_specials_unwanted()
     {
         var seriesId = _db.SeedSeries(monitor: NewChapterMonitorMode.MainOnly, mappings: Mapping("fake"));

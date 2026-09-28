@@ -206,11 +206,11 @@ public class SourceMappingController(
 
         try
         {
-            return Ok(comparePreviews.Start(request.SeriesId, candidates, request.ChapterNumber));
+            return Ok(comparePreviews.Start(request.SeriesId, candidates, request.ChapterNumber, localizer));
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            return Conflict(new { error = ex.Message });
+            return this.Conflict(localizer, "error.sourceMapping.compareAlreadyRunning");
         }
     }
 
@@ -222,7 +222,7 @@ public class SourceMappingController(
             return NotFound();
         }
 
-        return comparePreviews.Snapshot(seriesId) is { } snapshot ? Ok(snapshot) : NotFound();
+        return comparePreviews.Snapshot(seriesId, localizer) is { } snapshot ? Ok(snapshot) : NotFound();
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { IconBook } from '@tabler/icons-react'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
@@ -21,7 +22,8 @@ export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) 
   )
 }
 
-function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
+// Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
+const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
   const navigate = useNavigate()
   const { t } = useLingui()
   const { newChapterCount } = item
@@ -41,37 +43,39 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
         )}
         <div className="cover-scrim" />
 
-        <div className="cover-corner cover-corner-left">
-          <span
-            className="cover-badge cover-badge-unread"
-            data-tip={plural(newChapterCount, {
-              one: '# recent chapter file',
-              other: '# recent chapter files',
-            })}
-          >
-            +{newChapterCount}
-          </span>
-        </div>
-
-        {item.readChapterId != null && (
-          <div className="cover-corner cover-corner-right">
-            {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
-                imperatively and stops the outer card's navigation. */}
+        <div className="cover-corners">
+          <div className="cover-corner cover-corner-left">
             <span
-              className="cover-badge home-read-badge"
-              role="button"
-              tabIndex={0}
-              data-tip={t`Read next chapter`}
-              onClick={openReader}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') openReader(e)
-              }}
+              className="cover-badge cover-badge-unread"
+              data-tip={plural(newChapterCount, {
+                one: '# recent chapter file',
+                other: '# recent chapter files',
+              })}
             >
-              <IconBook size={11} />
-              <Trans>Read</Trans>
+              +{newChapterCount}
             </span>
           </div>
-        )}
+
+          {item.readChapterId != null && (
+            <div className="cover-corner cover-corner-right">
+              {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
+                  imperatively and stops the outer card's navigation. */}
+              <span
+                className="cover-badge home-read-badge"
+                role="button"
+                tabIndex={0}
+                data-tip={t`Read next chapter`}
+                onClick={openReader}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') openReader(e)
+                }}
+              >
+                <IconBook size={11} />
+                <Trans>Read</Trans>
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="cover-meta">
           <span className="cover-title" title={item.seriesTitle}>
@@ -84,4 +88,4 @@ function RecentCard({ item }: { item: HomeRecentSeriesItem }) {
       </div>
     </Link>
   )
-}
+})

@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import { Box, Card, Group, Text, Title, Tooltip } from '@mantine/core'
+import { Box, Group, Text, Title, Tooltip } from '@mantine/core'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import type { HeatmapDay } from '../../api/hooks'
+import { Panel } from '../../components/ui/Panel'
 import { formatDate, monthName } from '../../format'
 
 const WEEKS = 53
@@ -76,7 +77,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
   }, [days, i18n.locale])
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel p="md">
       <Title order={4} mb="xs">
         <Trans>Reading days</Trans>
       </Title>
@@ -86,7 +87,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
             {columns.map((_, i) => {
               const label = monthLabels.find((m) => m.index === i)
               return (
-                <Box key={i} style={{ width: 11, fontSize: 9, color: 'var(--mantine-color-dimmed)' }}>
+                <Box key={i} style={{ width: 11, fontSize: 9, color: 'var(--ink-3)' }}>
                   {label?.label ?? ''}
                 </Box>
               )
@@ -118,7 +119,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
                         style={{
                           width: 11,
                           height: 11,
-                          borderRadius: 2,
+                          borderRadius: 'var(--radius-2xs)',
                           background: SHADES[level(cell.chapters, cell.seconds)],
                         }}
                       />
@@ -131,16 +132,16 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
         </Box>
       </Box>
       <Group justify="flex-end" gap={4} mt="xs">
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>Less</Trans>
         </Text>
         {SHADES.map((shade) => (
-          <Box key={shade} style={{ width: 11, height: 11, borderRadius: 2, background: shade }} />
+          <Box key={shade} style={{ width: 11, height: 11, borderRadius: 'var(--radius-2xs)', background: shade }} />
         ))}
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>More</Trans>
         </Text>
       </Group>
-    </Card>
+    </Panel>
   )
 }

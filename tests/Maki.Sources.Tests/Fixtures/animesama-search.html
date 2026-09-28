@@ -1,0 +1,1478 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta name="keywords" content="anime-sama, anime, scan, anime sama, vostfr, vf, streaming, streaming vostfr, streaming vf, sans pubs, streaming sans pubs, streaming scan">
+    <meta name="description" content="Anime-Sama | Site de streaming et de catalogage pour animes et scans.">
+    <title>Catalogue | Anime-Sama - Streaming et catalogage d'animes et scans.</title>
+    <link rel="canonical" href="https://anime-sama.org/" />
+
+    
+
+<!-- Meta Tags -->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="index, nofollow">
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QK64GJ58E9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-QK64GJ58E9');
+</script>
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="/img/icon.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/icone_AS.png?v=4">
+<link rel="icon" href="/img/favicon.ico?v=4">
+
+<!-- CSS -->
+<link rel="stylesheet" href="/css/tailwind.css?v=1783185405">
+<link rel="stylesheet" href="/css/defaut.css?v=1786138192">
+<!-- jQuery & JS -->
+<script src="/node_modules/jquery/dist/jquery.min.js"></script>
+<script defer src="/js/defaut/defaut.js?v=1785754575"></script>
+
+<!-- Adcash -->
+<script id="aclib" type="text/javascript" async src="//acscdn.com/script/aclib.js"></script>
+
+<!-- NAV BAR -->
+<nav class="asn-navbar">
+    <!-- Menu burger mobile -->
+    <button class="asn-burger">
+        <svg class="w-6 h-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"></path>
+        </svg>
+    </button>
+
+    <!-- Searchbar mobile -->
+    <div class="asn-mobile-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z" />
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd" />
+        </svg>
+        <input name="search_text" type="search" placeholder="Rechercher..." autocomplete="off" spellcheck="false"/>
+    </div>
+    <!-- Mobile Results (outside search box) -->
+    <div id="asn-result-mobile"></div>
+
+    <!-- Logo -->
+    <a href="/" class="asn-logo">
+        <img class="asn-logo-desktop" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo_banniere.png" alt="Logo" style="display: none;"/>
+        <img class="asn-logo-mobile" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo.png" alt="Logo"/>
+    </a>
+
+    <!-- Donate -->
+    <a href="https://www.paypal.com/donate/?hosted_button_id=3FBNLMGT3JAJ2" class="asn-donate-btn">
+        <img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/flag_pal.png" alt="PayPal"/>
+    </a>
+
+    <!-- Social Discord -->
+    <a href="https://discord.gg/mKbYYbmxY8" class="asn-social-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+            <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+        </svg>
+    </a>
+
+    <!-- Social X -->
+    <a href="https://x.com/anime_samafr" class="asn-social-link">
+        <svg viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="currentColor"/>
+        </svg>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <div class="asn-nav-desktop">
+        <!-- Search -->
+        <div class="asn-desktop-search">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z" />
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd" />
+            </svg>
+            <input name="search_text" type="search" placeholder="Rechercher..." autocomplete="off" spellcheck="false"/>
+            <div id="asn-result-desktop"></div>
+        </div>
+
+        <!-- Catalogue -->
+        <a href="/catalogue" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+            </svg>
+            <span>Catalogue</span>
+        </a>
+
+        <!-- Planning -->
+        <a href="/planning" class="asn-nav-link">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+				<path d="M12.75 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM8.25 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM9.75 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM10.5 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM14.25 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 13.5a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+				<path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd" />
+			</svg>
+            <span>Planning</span>
+        </a>
+
+        <!-- Aide -->
+        <a href="/aide" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 0 1-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 0 1-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584ZM12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+            </svg>
+            <span>Aide</span>
+        </a>
+
+        <!-- Profil -->
+        <a href="/profil" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+            </svg>
+            <span>Profil (Déconnecté)</span>        </a>
+    </div>
+</nav>
+
+<!-- MOBILE MENU DRAWER -->
+<div class="asn-mobile-menu">
+    <div class="asn-menu-backdrop"></div>
+    
+    <nav class="asn-menu-panel">
+        <div class="asn-menu-nav">
+            <a href="/catalogue">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                </svg>
+                <span>Catalogue</span>
+            </a>
+            <a href="/planning">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M12.75 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM8.25 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM9.75 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM10.5 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM14.25 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 13.5a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+					<path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd" />
+				</svg>
+                <span>Planning</span>
+            </a>
+            <a href="/aide">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 0 1-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 0 1-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584ZM12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                </svg>
+                <span>Aide</span>
+            </a>
+
+            <a href="https://discord.gg/mKbYYbmxY8">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+                    <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+                </svg>
+                <span>Discord</span>
+            </a>
+
+            <a href="https://x.com/anime_samafr">
+                <svg viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="currentColor"/>
+                </svg>
+                <span>X</span>
+            </a>
+
+            <a href="/profil">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                </svg>
+                <span>Profil (Déconnecté)</span>            </a>
+        </div>
+    </nav>
+</div>
+
+<!-- Scroll to Top Button -->
+<div style="z-index:300;" id="scrollProgressWrapper">
+    <svg id="scrollProgressSvg" width="60" height="60" viewBox="0 0 60 60" class="absolute top-0 left-0 z-10" style="opacity: 1; transition: opacity 0.3s ease; pointer-events: none;">
+        <circle cx="30" cy="30" r="26" stroke="#0c4a6e" stroke-width="4" fill="none" stroke-linecap="round" />
+    </svg>
+
+	<button onclick="topFunction()" id="topBtn" style="background: rgba(39, 56, 70, 0.3);" class="pointer-events-auto rounded-full p-2 w-12 h-12 flex items-center justify-center hover:opacity-80 transition-all duration-200 z-20 relative">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-black" viewBox="0 0 20 20" fill="currentColor">
+		<path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+		</svg>
+	</button>
+</div>
+    <link rel="stylesheet" href="/css/cards.css?v=1784088733">
+    <link rel="stylesheet" href="/css/catalogue.css?v=1786748389">
+    <script defer src="/js/defaut/catalogue.js?v=1783186203"></script>
+
+</head>
+
+<body>
+
+    <div id="blocEntier" class="grid grid-cols-8 pb-16">
+
+	<div id="sousBlocLeft" style="margin-top: 600px; margin-left: 20px;" class="hidden lg:block">
+		<div id="bannLeft" class="ad-container">
+		<span class="ad-label">Publicité</span>
+			
+			<div class="ad-content"><script type="text/javascript">aclib.runBanner({zoneId: '8653010',});</script></div>
+			<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_skyscraper.jpg" alt="Eneba - Jeux moins chers" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+		
+		</div>
+	</div>
+
+	<div id="sousBlocMiddle" class="col-span-8 mx-3 lg:col-span-6 lg:mx-0 mt-6 z-20">
+    <!-- 
+    <h4 class="flex flex-inline text-4xl lg:text-5xl uppercase text-white font-bold mb-10">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-11 w-11 mr-3 pb-0.5 lg:h-12 lg:w-12 lg:pb-0 lg:pt-0.5 justify-center items-center" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+        </svg>
+        Catalogue
+    </h4>-->
+
+    <form action="" method="GET">
+
+        <div class="catalog-wrapper">
+
+            <div class="catalog-main">
+
+                <!-- SIDEBAR FILTRES -->
+                <aside class="catalog-sidebar">
+                    <div class="filters-section">
+                        
+                        <!-- TYPES -->
+                        <div class="filter-group">
+                            <div class="filter-header" onclick="toggleFilter('types')">
+								<svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+								</svg>
+                                <span class="filter-title">Types</span>
+                                <svg id="iconTypes" class="filter-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                            <div id="list_types" class="filter-content">
+                                        <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="type[]"
+                   value="Anime"
+                    />
+            <span>Anime</span>
+        </label>
+                <label class="filter-checkbox-item checked">
+            <input type="checkbox" class="filter-checkbox" name="type[]"
+                   value="Scans"
+                   checked />
+            <span>Scans</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="type[]"
+                   value="Film"
+                    />
+            <span>Film</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="type[]"
+                   value="Autres"
+                    />
+            <span>Autres</span>
+        </label>
+                                    </div>
+                        </div>
+
+                        <!-- LANGUES -->
+                        <div class="filter-group">
+                            <div class="filter-header" onclick="toggleFilter('langues')">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="filter-icon">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802" />
+                                </svg>
+                                <span class="filter-title">Langues</span>
+                                <svg id="iconLangues" class="filter-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                            <div id="list_langues" class="filter-content">
+                                        <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="langue[]"
+                   value="VOSTFR"
+                    />
+            <span>VOSTFR</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="langue[]"
+                   value="VF"
+                    />
+            <span>VF</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="langue[]"
+                   value="VASTFR"
+                    />
+            <span>VASTFR</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="langue[]"
+                   value="VCN"
+                    />
+            <span>VCN</span>
+        </label>
+                                    </div>
+                        </div>
+                        
+                        <!-- STATUT (Current) -->
+                        <div class="filter-group">
+                            <div class="filter-header" onclick="toggleFilter('current')">
+                                <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                                <span class="filter-title">Statut</span>
+                                <svg id="iconCurrent" class="filter-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                            <div id="list_current" class="filter-content">
+                                        <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="current[]"
+                   value="En cours"
+                    />
+            <span>En cours</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="current[]"
+                   value="Terminé"
+                    />
+            <span>Terminé</span>
+        </label>
+                                    </div>
+                        </div>
+
+                        <!-- ANNÉE DE CRÉATION -->
+                        <div class="filter-group">
+                            <div class="filter-header" onclick="toggleFilter('annee')">
+                                <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v9.75" />
+                                </svg>
+                                <span class="filter-title">Année</span>
+                                <svg id="iconAnnee" class="filter-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                            <div id="list_annee" class="filter-content">
+                                <div class="filter-range-inputs">
+                                    <input type="number" name="annee_min" placeholder="De (ex: 1990)" 
+                                        class="filter-range-input" min="1900" max="2099"
+                                        value="" />
+                                    <span class="filter-range-separator">—</span>
+                                    <input type="number" name="annee_max" placeholder="À (ex: 2025)" 
+                                        class="filter-range-input" min="1900" max="2099"
+                                        value="" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NOMBRE D'ÉPISODES -->
+                        <div class="filter-group">
+                            <div class="filter-header" onclick="toggleFilter('episodes')">
+                                <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                                <span class="filter-title">Épisodes</span>
+                                <svg id="iconEpisodes" class="filter-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                            <div id="list_episodes" class="filter-content">
+                                <div class="filter-range-inputs">
+                                    <input type="number" name="episodes_min" placeholder="Min" 
+                                        class="filter-range-input" min="0"
+                                        value="" />
+                                    <span class="filter-range-separator">—</span>
+                                    <input type="number" name="episodes_max" placeholder="Max" 
+                                        class="filter-range-input" min="0"
+                                        value="" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NOMBRE DE CHAPITRES -->
+                        <div class="filter-group">
+                            <div class="filter-header" onclick="toggleFilter('chapitres')">
+                                <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                                </svg>
+                                <span class="filter-title">Chapitres</span>
+                                <svg id="iconChapitres" class="filter-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                            <div id="list_chapitres" class="filter-content">
+                                <div class="filter-range-inputs">
+                                    <input type="number" name="chapitres_min" placeholder="Min" 
+                                        class="filter-range-input" min="0"
+                                        value="" />
+                                    <span class="filter-range-separator">—</span>
+                                    <input type="number" name="chapitres_max" placeholder="Max" 
+                                        class="filter-range-input" min="0"
+                                        value="" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GENRES -->
+                        <div class="filter-group">
+                            <div class="filter-header" onclick="toggleFilter('genres')">
+								<svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+								</svg>
+
+                                <span class="filter-title">Genres</span>
+                                <svg id="iconGenres" class="filter-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </div>
+                            <div id="list_genres" class="filter-content">
+                                <div class="genre-search-container">
+                                    <input 
+                                        type="text" 
+                                        id="genreSearchInput" 
+                                        placeholder="Rechercher un genre..." 
+                                        class="genre-search"
+                                    />
+                                </div>
+                                <div id="genreList">
+                                            <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Action"
+                    />
+            <span>Action</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Adolescence"
+                    />
+            <span>Adolescence</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Aliens / Extra-terrestres"
+                    />
+            <span>Aliens / Extra-terrestres</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Amitié"
+                    />
+            <span>Amitié</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Amour"
+                    />
+            <span>Amour</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Apocalypse"
+                    />
+            <span>Apocalypse</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Art"
+                    />
+            <span>Art</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Arts martiaux"
+                    />
+            <span>Arts martiaux</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Assassinat"
+                    />
+            <span>Assassinat</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Autre monde"
+                    />
+            <span>Autre monde</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Aventure"
+                    />
+            <span>Aventure</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Combats"
+                    />
+            <span>Combats</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Comédie"
+                    />
+            <span>Comédie</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Crime"
+                    />
+            <span>Crime</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Cyberpunk"
+                    />
+            <span>Cyberpunk</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Danse"
+                    />
+            <span>Danse</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Démons"
+                    />
+            <span>Démons</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Détective"
+                    />
+            <span>Détective</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Donghua"
+                    />
+            <span>Donghua</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Dragon"
+                    />
+            <span>Dragon</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Drame"
+                    />
+            <span>Drame</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Ecchi"
+                    />
+            <span>Ecchi</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Ecole"
+                    />
+            <span>Ecole</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Elfe"
+                    />
+            <span>Elfe</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Enquête"
+                    />
+            <span>Enquête</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Famille"
+                    />
+            <span>Famille</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Fantastique"
+                    />
+            <span>Fantastique</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Fantasy"
+                    />
+            <span>Fantasy</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Fantômes"
+                    />
+            <span>Fantômes</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Futur"
+                    />
+            <span>Futur</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Gastronomie"
+                    />
+            <span>Gastronomie</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Ghibli"
+                    />
+            <span>Ghibli</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Guerre"
+                    />
+            <span>Guerre</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Harcèlement"
+                    />
+            <span>Harcèlement</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Harem"
+                    />
+            <span>Harem</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Harem inversé"
+                    />
+            <span>Harem inversé</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Histoire"
+                    />
+            <span>Histoire</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Historique"
+                    />
+            <span>Historique</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Homosexualité"
+                    />
+            <span>Homosexualité</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Horreur"
+                    />
+            <span>Horreur</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Isekai"
+                    />
+            <span>Isekai</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Jeunesse"
+                    />
+            <span>Jeunesse</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Jeux"
+                    />
+            <span>Jeux</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Jeux vidéo"
+                    />
+            <span>Jeux vidéo</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Josei"
+                    />
+            <span>Josei</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Journalisme"
+                    />
+            <span>Journalisme</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Kaï"
+                    />
+            <span>Kaï</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="LGBT+"
+                    />
+            <span>LGBT+</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Mafia"
+                    />
+            <span>Mafia</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Magical girl"
+                    />
+            <span>Magical girl</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Magie"
+                    />
+            <span>Magie</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Maladie"
+                    />
+            <span>Maladie</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Mariage"
+                    />
+            <span>Mariage</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Mature"
+                    />
+            <span>Mature</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Mechas"
+                    />
+            <span>Mechas</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Médiéval"
+                    />
+            <span>Médiéval</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Militaire"
+                    />
+            <span>Militaire</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Monde virtuel"
+                    />
+            <span>Monde virtuel</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Monstres"
+                    />
+            <span>Monstres</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Musique"
+                    />
+            <span>Musique</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Mystère"
+                    />
+            <span>Mystère</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Nekketsu"
+                    />
+            <span>Nekketsu</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Ninjas"
+                    />
+            <span>Ninjas</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Nostalgie"
+                    />
+            <span>Nostalgie</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Paranormal"
+                    />
+            <span>Paranormal</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Philosophie"
+                    />
+            <span>Philosophie</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Pirates"
+                    />
+            <span>Pirates</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Police"
+                    />
+            <span>Police</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Politique"
+                    />
+            <span>Politique</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Post-apocalyptique"
+                    />
+            <span>Post-apocalyptique</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Pouvoirs psychiques"
+                    />
+            <span>Pouvoirs psychiques</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Préhistoire"
+                    />
+            <span>Préhistoire</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Prison"
+                    />
+            <span>Prison</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Psychologique"
+                    />
+            <span>Psychologique</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Quotidien"
+                    />
+            <span>Quotidien</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Religion"
+                    />
+            <span>Religion</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Réincarnation / Transmigration"
+                    />
+            <span>Réincarnation / Transmigration</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Romance"
+                    />
+            <span>Romance</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Samouraïs"
+                    />
+            <span>Samouraïs</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="School Life"
+                    />
+            <span>School Life</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Science-Fantasy"
+                    />
+            <span>Science-Fantasy</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Science-fiction"
+                    />
+            <span>Science-fiction</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Scientifique"
+                    />
+            <span>Scientifique</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Seinen"
+                    />
+            <span>Seinen</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Shôjo"
+                    />
+            <span>Shôjo</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Shôjo-Ai"
+                    />
+            <span>Shôjo-Ai</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Shônen"
+                    />
+            <span>Shônen</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Shônen-Ai"
+                    />
+            <span>Shônen-Ai</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Slice of Life"
+                    />
+            <span>Slice of Life</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Société"
+                    />
+            <span>Société</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Sport"
+                    />
+            <span>Sport</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Super pouvoirs"
+                    />
+            <span>Super pouvoirs</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Super-héros"
+                    />
+            <span>Super-héros</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Surnaturel"
+                    />
+            <span>Surnaturel</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Survie"
+                    />
+            <span>Survie</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Survival game"
+                    />
+            <span>Survival game</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Technologies"
+                    />
+            <span>Technologies</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Thriller"
+                    />
+            <span>Thriller</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Tournois"
+                    />
+            <span>Tournois</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Travail"
+                    />
+            <span>Travail</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Vampires"
+                    />
+            <span>Vampires</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Vengeance"
+                    />
+            <span>Vengeance</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Voyage"
+                    />
+            <span>Voyage</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Voyage temporel"
+                    />
+            <span>Voyage temporel</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Webcomic"
+                    />
+            <span>Webcomic</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Yakuza"
+                    />
+            <span>Yakuza</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Yaoi"
+                    />
+            <span>Yaoi</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Yokai"
+                    />
+            <span>Yokai</span>
+        </label>
+                <label class="filter-checkbox-item ">
+            <input type="checkbox" class="filter-checkbox" name="genre[]"
+                   value="Yuri"
+                    />
+            <span>Yuri</span>
+        </label>
+                                        </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </aside>
+
+                <!-- CONTENU CATALOGUE -->
+                <div class="catalog-content">
+
+                    <!-- SEARCHBAR -->
+                    <div class="searchbar-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="searchbar-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z" />
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd" />
+                        </svg>
+                        <input 
+                            type="text" 
+                            name="search" 
+                            placeholder="Rechercher un titre..." 
+                            class="searchbar-input"
+                            value="one piece"
+                        />
+                    </div>
+
+                    <!-- BOUTONS ACTION -->
+                    <div class="action-buttons-container">
+
+                        <button id="btnTri" type="submit" class="catalog-btn" style="order: 3;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="catalog-btn-icon" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h5a1 1 0 000-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z" />
+                            </svg>
+                            <p>Trier</p>
+                        </button>
+
+                        <a href="/catalogue" id="btnReset" class="catalog-btn catalog-btn-reset" style="order: 1;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="catalog-btn-icon">
+                                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                        </a>
+                        <button id="btnRandom" name="random" value="1" class="catalog-btn catalog-btn-random" style="order: 2;">
+                            <p class="hidden md:block">Aléatoire</p>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="catalog-btn-icon-large">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
+                            </svg>
+                        </button>
+                        
+                    </div>
+
+                    <!-- CATALOGUE -->
+                    <div id="list_catalog" class="overflow-y-scroll">
+                        <div class="shrink-0 catalog-card card-base">
+    <a href="https://anime-sama.to/catalogue/one-piece/">
+        <div class="card-image-container">
+            <img 
+                loading="lazy"
+                class="card-image" 
+                src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/thumb/one-piece.webp"
+                alt="One Piece"
+            >
+            <div class="image-overlay"></div>
+            <div class="image-shine"></div>
+        </div>
+        <div class="card-content">
+            <h2 class="card-title">One Piece</h2>
+            <p class="alternate-titles">Wan Pisu, ONE PIECE FAN LETTER, One Piece Log: Fish-Man Island Saga, One Piece: Pirate King</p>
+            <div class="content-divider"></div>
+            <div class="catalog-info">
+                <!-- Genres en tags rectangulaires -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                        </svg>
+                        Genres
+                    </span>
+                    <div class="genre-tags">
+                                                    <span class="genre-tag">Action</span>
+                                                    <span class="genre-tag">Aventure</span>
+                                                    <span class="genre-tag">Comédie</span>
+                                                    <span class="genre-tag">Drame</span>
+                                                    <span class="genre-tag">Fantastique</span>
+                                                                            <span class="genre-tag" style="opacity: 0.5;">…</span>
+                                            </div>
+                </div>
+                <!-- Types avec icône -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                        Types
+                    </span>
+                    <div class="type-row">
+                                                    <svg class="type-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                                                <p class="info-value">Anime, Scans</p>
+                    </div>
+                </div>
+                <!-- Langues avec drapeaux SVG -->
+                <div class="info-row">
+                    <span class="info-label">
+                        <svg class="info-label-icon" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.264.26-2.467.732-3.558" />
+                        </svg>
+                        Langues
+                    </span>
+                                            <div class="lang-flags">
+                                                            <span class="lang-flag" title="JP">
+                                    <svg viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="120" fill="#BC002D"/></svg>                                </span>
+                                                            <span class="lang-flag" title="FR">
+                                    <svg viewBox="0 0 900 600"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ED2939"/></svg>                                </span>
+                                                    </div>
+                                    </div>
+            </div>
+            <!-- Tooltip Synopsis au hover (desktop seulement) -->
+            <div class="synopsis-tooltip">
+                <span class="synopsis-label">Synopsis</span>
+                <div class="synopsis-content">Il fut un temps où Gold Roger était le plus grand de tous les pirates, le &quot;Roi des Pirates&quot; était son surnom. A sa mort, son trésor d'une valeur inestimable connu sous le nom de &quot;One Piece&quot; fut caché quelque part sur &quot;Grand Line&quot;. De nombreux pirates sont partis à la recherche de ce trésor mais tous sont morts avant même de l'atteindre. Monkey D. Luffy rêve de retrouver ce trésor légendaire et de devenir le nouveau &quot;Roi des Pirates&quot;. Après avoir mangé un fruit du démon, il possède un pouvoir lui permettant de réaliser son rêve. Il lui faut maintenant trouver un équipage pour partir à l'aventure !</div>
+            </div>
+        </div>
+    </a>
+</div>                    </div>
+
+                    <!-- PAGINATION -->
+                    <div id="list_pagination">
+                                            </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </form>
+
+    <div id="blocBottom" class="flex flex-col items-center justify-center gap-4 mt-10">
+			<p class="text-sm text-white text-center font-medium opacity-50 pb-2">Cliquer sur une pub est le meilleur moyen de nous soutenir.</p>
+			<div id="bannBot" class="ad-container">
+				<span class="ad-label">Publicité</span>
+				<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_leaderboard.jpg" alt="Eneba - Jeux moins chers" width="728" height="90" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+				
+				<span class="ad-label mt-2">Publicité</span>
+
+				<div class="ad-content flex items-center justify-center mt-2"><script type="text/javascript">aclib.runBanner({zoneId: '8653014',});</script></div>
+
+			</div>
+			<div id="squBot" style="margin-top:5px;" class="ad-container">
+				<span class="ad-label">Publicité</span>
+				<div class="ad-content sm:inline-flex items-center justify-center pt-1">
+
+					<script async data-cfasync="false" data-size="300x250" data-category="common" data-id="dl-banner-300x250" data-zone="7809940" src="//a-zzz.com/btag.min.js"></script>
+					<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_square.jpg" alt="Eneba - Jeux moins chers" loading="lazy" width="300" height="300" style="max-width:100%; height:auto; border-radius:6px;"></a>
+					<div><script type="text/javascript">aclib.runBanner({zoneId: '8653002',});</script></div>
+
+				</div>
+			</div>
+		</div>
+
+	</div>
+	
+	<div id="sousBlocRight" style="margin-top: 600px; margin-left: 30px;" class="hidden lg:block">
+		<div id="bannRight" class="ad-container">
+			<span class="ad-label">Publicité</span>
+
+			<div class="ad-content"><script type="text/javascript">aclib.runBanner({zoneId: '8653006',});</script></div>
+			<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_skyscraper.jpg" alt="Eneba - Jeux moins chers" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+			
+		</div>
+	</div>
+
+	<div id="bandeau-pubs-nuit" role="status" hidden>
+		<div class="bpn-contenu">
+			<span class="bpn-icone" aria-hidden="true">🌙</span>
+			<p>
+				<strong>Période creuse nocturne (3h–6h)</strong><br>
+				Nous affichons pendant ce créneau quelques publicités intrusives pour financer le site.
+				Vous pouvez utiliser un bloqueur de pubs pour les retirer.
+			</p>
+			<span class="bpn-compteur" aria-hidden="true"></span>
+			<button type="button" class="bpn-fermer" aria-label="Fermer">&times;</button>
+		</div>
+	</div>
+
+	<style>
+	#bandeau-pubs-nuit {
+		position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
+		background: #1c2333; color: #e8ecf4;
+		border-top: 2px solid #f0b429;
+		font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.5;
+		box-shadow: 0 -2px 12px rgba(0,0,0,.35);
+		transition: opacity .4s ease, transform .4s ease;
+	}
+	#bandeau-pubs-nuit[hidden] { display: none; }
+	#bandeau-pubs-nuit.bpn-sortie {
+		opacity: 0;
+		transform: translateY(100%);
+	}
+	#bandeau-pubs-nuit .bpn-contenu {
+		max-width: 900px; margin: 0 auto; padding: 14px 18px;
+		display: flex; align-items: center; gap: 14px;
+	}
+	#bandeau-pubs-nuit p { margin: 0; flex: 1; }
+	#bandeau-pubs-nuit strong { color: #f0b429; }
+	#bandeau-pubs-nuit .bpn-icone { font-size: 24px; }
+
+	/* Compteur discret */
+	#bandeau-pubs-nuit .bpn-compteur {
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		color: #5c6678;
+		min-width: 18px;
+		text-align: right;
+		user-select: none;
+	}
+
+	#bandeau-pubs-nuit .bpn-fermer {
+		background: none; border: 0; color: #8a94a6;
+		font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px;
+	}
+	#bandeau-pubs-nuit .bpn-fermer:hover { color: #e8ecf4; }
+	@media (max-width: 600px) {
+		#bandeau-pubs-nuit .bpn-contenu { padding: 12px 14px; gap: 10px; }
+		#bandeau-pubs-nuit { font-size: 13px; }
+		#bandeau-pubs-nuit .bpn-compteur { font-size: 11px; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		#bandeau-pubs-nuit { transition: none; }
+	}
+	</style>
+
+	<script>
+	(function () {
+		var HEURE_DEBUT = 3;
+		var HEURE_FIN   = 6;
+		var DUREE       = 10;   // secondes avant fermeture automatique
+
+		// Heure LOCALE du visiteur, selon les réglages de son appareil
+		var h = new Date().getHours();
+		if (h < HEURE_DEBUT || h >= HEURE_FIN) return;
+
+		// --- Bandeau ---
+		var b = document.getElementById('bandeau-pubs-nuit');
+		if (b && !sessionStorage.getItem('bpn-ferme')) {
+			b.hidden = false;
+
+			var compteur = b.querySelector('.bpn-compteur');
+			var restant  = DUREE;
+			var tic;
+
+			function fermer(memoriser) {
+				clearInterval(tic);
+				if (memoriser) sessionStorage.setItem('bpn-ferme', '1');
+				b.classList.add('bpn-sortie');
+				setTimeout(function () { b.remove(); }, 400);
+			}
+
+			function tick() {
+				restant--;
+				if (restant <= 0) { fermer(true); return; }
+				compteur.textContent = restant + 's';
+			}
+
+			compteur.textContent = restant + 's';
+			tic = setInterval(tick, 1000);
+
+			// Fermeture manuelle : mémorisée pour toute la session
+			b.querySelector('.bpn-fermer').addEventListener('click', function () {
+				fermer(true);
+			});
+
+			// On met en pause si le visiteur survole ou touche le bandeau
+			b.addEventListener('mouseenter', function () { clearInterval(tic); });
+			b.addEventListener('mouseleave', function () {
+				clearInterval(tic);
+				tic = setInterval(tick, 1000);
+			});
+		}
+
+		// --- Scripts pop, une seule fois, après le chargement complet ---
+		if (window.__popsCharges) return;
+		window.__popsCharges = true;
+
+		window.addEventListener('load', function () {
+			setTimeout(function () {
+				var s1 = document.createElement('script');
+				s1.dataset.zone = '11435645';
+				s1.src = 'https://llvpn.com/tag.min.js';
+				document.body.appendChild(s1);
+
+				/*var s1 = document.createElement('script');
+				s1.src = 'https://kingdomparlor.com/da/e2/6d/dae26dc95137e78aa26c2df53aeab9c2.js';
+				document.body.appendChild(s1);*/
+				
+			}, 1500);
+		});
+	})();
+	</script>
+
+</div>
+<script>window.__CF$cv$params={r:'a40ebb62cdd9ac1d',t:'MTc5MDM4ODYyMw==',u:'01a0db7a5a2677fdb83b071c6b0b6080',ut:'AKPiI1cpBMli.bXEITqoS3Qq3KjkwUNybeaU7GTzjTk-1790388623-1.2.1.1-xx.8MIrd92BVa9JmdV1lYZmQRp4Dz19MVJPON6So.Wx5F9BHyNns.5k8kwQSdZEDwcqdTEBxpAB93YKZhp_ZLVmb0C3qnqlVShjZYG5yLmo',i:60};(function(){if(!document.body)return;var s=document.createElement('script');s.src='/cdn-cgi/challenge-platform/scripts/precursor/main.js';document.head.appendChild(s);})();</script></body>
+
+<footer>
+    <footer class="asn-footer" role="contentinfo" aria-label="Pied de page site">
+  <div class="container">
+    <!-- Colonne 1 : Qui sommes-nous -->
+    <div class="col-about">
+      <h4>Qui sommes-nous</h4>
+      <p>Anime-Sama est un site de catalogue et de référencement d'animation APAC. Navigation optimisée, publicités réduites et fiches organisées pour faciliter vos recherches.</p>
+      <p class="legal">Anime-Sama n'héberge pas les vidéos. Pour toute réclamation liée au droit d'auteur, consultez la page DMCA ou contactez la plateforme d'hébergement concernée.</p>
+    </div>
+
+    <!-- Colonne 2 : Liens utiles -->
+    <div class="col-links">
+      <h4>Liens utiles</h4>
+      <ul class="links" aria-label="Liens utiles">
+        <li><a href="/catalogue">Catalogue</a></li>
+        <li><a href="/planning">Planning des sorties</a></li>
+        <li><a href="/aide">Centre d'aide</a></li>
+        <li><a href="/aide/#dmca">DMCA & signalements</a></li>
+        <li><a href="/profil">Mon profil</a></li>
+      </ul>
+    </div>
+
+    <!-- Colonne 3 : Soutien -->
+    <div class="col-support">
+      <h4>Soutenir les causes</h4>
+
+      <ul class="links" aria-label="Soutien les causes">
+        <li>
+          <a href="https://www.paypal.com/donate/?hosted_button_id=3FBNLMGT3JAJ2" target="_blank" rel="noopener">
+            <img class="flag" src="https://flagcdn.com/w40/ps.png" alt="Drapeau Palestine">
+            <span>Palestine</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="https://life-ong.org/en-us/urgence-soudan" target="_blank" rel="noopener">
+            <img class="flag" src="https://flagcdn.com/w40/sd.png" alt="Drapeau Soudan">
+            <span>Soudan</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="https://soutenir.msf.fr/faire-un-don/~mon-don?ns_ira_cr_arg=IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMy8U8gFXy%2BvsdzSPrRo%2Fs2RMylPSbGlljZY1f0RudDLg%3D%3D&_cv=1" target="_blank" rel="noopener">
+            <img class="flag" src="https://flagcdn.com/w40/cd.png" alt="Drapeau RDC">
+            <span>RDC</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="container bottom">
+    <div class="brand-inline" style="align-items:center;">
+      <img class="logo-mobile"  src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo.png" alt="Logo Anime-Sama mini">
+      <div>
+        <span class="copyright" style="color:#8ea8bb; font-weight:700;">© 2026 Anime-Sama</span>
+        <div class="reserved" style="color:#6f8899;">Tous droits réservés</div>
+      </div>
+    </div>
+
+    <div>
+
+    <nav aria-label="Discord">
+        <a href="https://discord.gg/mKbYYbmxY8" aria-label="Discord" target="_blank" rel="noopener" title="Discord" class="social-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+              <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+          </svg>
+          <span>Discord</span>
+        </a>
+      </nav>
+      
+      <nav aria-label="Réseau social X">
+        <a href="https://x.com/Anime_samaFR" aria-label="X" target="_blank" rel="noopener" title="X" class="social-link">
+          <svg viewBox="0 0 1200 1227" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true">
+            <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"/>
+          </svg>
+          <span>@Anime_samaFR</span>
+        </a>
+      </nav>
+
+
+    </div>
+  </div>
+</footer>
+</footer>
+
+</html>

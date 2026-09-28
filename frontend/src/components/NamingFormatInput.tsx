@@ -56,7 +56,7 @@ export function NamingFormatInput({
         }
       />
       {example && !error && (
-        <Text size="sm" c="dimmed" mt={4}>
+        <Text size="sm" c="var(--ink-3)" mt={4}>
           <Trans>Example: {example}</Trans>
         </Text>
       )}

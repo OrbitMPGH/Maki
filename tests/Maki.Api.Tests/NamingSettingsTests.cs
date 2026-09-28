@@ -29,9 +29,9 @@ public class NamingSettingsTests : IDisposable
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
         settings: _settings,
         naming: new NamingService(_settings),
-        flareSolverr: null!, prowlarr: null!, qbittorrent: null!, kavita: null!, configFile: null!,
+        flareSolverr: null!, prowlarr: null!, qbittorrent: null!, kavita: null!,
         sourceRegistry: null!, sourceAvailability: null!, mangaBakaDump: null!, embeddingModel: null!,
-        embeddingStore: null!, embeddingStatus: null!, embeddingIndexer: null!, embeddingOptions: null!,
+        embeddingStore: null!, embeddingStatus: null!, embeddingIndexer: null!,
         prebuiltIndex: null!, recoGraph: null!, recoGraphCache: null!, coReadInstaller: null!,
         coReadCache: null!, readerCohortInstaller: null!, readerCohortCache: null!,
         tasteVectorInstaller: null!, vectorIndexCache: null!, modelSwitcher: null!,
@@ -138,7 +138,7 @@ public class NamingSettingsTests : IDisposable
         var preview = Assert.IsType<SettingsController.NamingPreviewResponse>(
             Assert.IsType<OkObjectResult>(result).Value);
 
-        Assert.Contains(preview.Errors, e => e.StartsWith("Series folder format:"));
+        Assert.Contains(preview.Errors, e => e.Contains("field=error.naming.fieldSeriesFolder"));
     }
 
     [Fact]

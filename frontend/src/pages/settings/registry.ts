@@ -80,7 +80,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'integrations',
     label: msg`Integrations`,
-    description: msg`Kavita, the trackers Maki scrobbles to, and outbound notifications.`,
+    description: msg`Kavita, the trackers Maki scrobbles to, and Discord and webhook alerts.`,
   },
   {
     key: 'users',
@@ -90,7 +90,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
   {
     key: 'system',
     label: msg`System`,
-    description: msg`Backups, updates and instance-level details.`,
+    description: msg`Backups, the image cache and updates.`,
   },
 ]
 
@@ -118,7 +118,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'account',
     title: msg`Appearance`,
     keywords: msg({
-      message: `theme, dark mode, light mode, accent colour, accent color, colour`,
+      message: `theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -134,15 +134,6 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
-    id: 'start-page',
-    tab: 'account',
-    title: msg`Start page`,
-    keywords: msg({
-      message: `landing page, home, library, discover, opens on, default page`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
     id: 'title-language',
     tab: 'account',
     title: msg`Title language`,
@@ -154,9 +145,9 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'home-screen',
     tab: 'account',
-    title: msg`Home screen`,
+    title: msg`Home & start page`,
     keywords: msg({
-      message: `home sections, rails, continue reading, recently added, section order, disable home`,
+      message: `home sections, rails, continue reading, recently added, section order, edit layout, drag, reorder, hero, glance, discover layout, disable home, start page, landing page, opens on, default page`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -175,16 +166,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     tab: 'reading',
     title: msg`Reader`,
     keywords: msg({
-      message: `reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, mark read in kavita, import read status`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
-    id: 'reading-profiles',
-    tab: 'reading',
-    title: msg`Reading profiles`,
-    keywords: msg({
-      message: `profile, manga, manhwa, manhua, webtoon, oel, series type, auto select, per series`,
+      message: `reading direction, right to left, rtl, ltr, webtoon, vertical, double page, page fit, tap zones, auto next chapter, reader defaults, reading profiles, profile, manga, manhwa, manhua, oel, series type, auto select, per series`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -210,10 +192,19 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'discover-rating',
     tab: 'reading',
-    title: msg`Discover`,
+    title: msg`Content rating`,
     permission: 'ChangeContentRating',
     keywords: msg({
       message: `content rating, nsfw, erotica, mature, safe, adult`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'kavita-sync',
+    tab: 'reading',
+    title: msg`Kavita sync`,
+    keywords: msg({
+      message: `mark read in kavita, push to kavita, import read status, kavita progress`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -231,20 +222,30 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'library-files',
     tab: 'library',
-    title: msg`Library files`,
+    title: msg`Files`,
     admin: true,
     keywords: msg({
-      message: `comicinfo, comicinfo.xml, folder naming, rename folder, imported files, chapter format, series folder format, naming tokens, file name`,
+      message: `comicinfo, comicinfo.xml, cover.jpg, folder poster, library files, komga`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'naming',
+    tab: 'library',
+    title: msg`Naming`,
+    admin: true,
+    keywords: msg({
+      message: `folder naming, rename folder, rename files, imported files, chapter format, series folder format, naming tokens, file name, rename all`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
     id: 'monitoring',
     tab: 'library',
-    title: msg`Monitoring`,
+    title: msg`New series defaults`,
     admin: true,
     keywords: msg({
-      message: `specials, omake, decimal chapters, monitor new items`,
+      message: `specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -285,7 +286,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Sources`,
     admin: true,
     keywords: msg({
-      message: `scrapers, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder`,
+      message: `scrapers, manage sources, priority, source priority, 18+, adult sources, mangadex, mangafire, webtoons, asura, tcb, flame comics, order sources, disable source, auto-match, reorder, dynasty scans, dynasty, yuri, mangalib, toonily, manhwa, gigaviewer, jump+, shonen jump plus, comic days, sunday webry, magcomi, tonari no young jump, zenon, kurage bunch, manhwa18, manhwa18.net, manhwa18net, manhwaweb, manhwa web, manhwaweb.com, shinigami, shngm, olympus, olympus scanlation, olympusxyz, subo de nivel solo, animesama, anime-sama, anime sama, naver, naver webtoon, 네이버 웹툰, manga-tube, mangatube, manga tube, manhuagui, 漫画柜, mhgui, cuutruyen, cứu truyện, cuu truyen, mangaworld, manga world, comic walker, comicwalker, kadocomi, kadokawa, rawkuma, raw, raw manga, ラークマ, mangadenizi, manga denizi, teamx, team-x, team x, olympustaff, taiyo, taiyo.moe`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -321,22 +322,12 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   },
 
   {
-    id: 'kavita-user',
-    tab: 'integrations',
-    title: msg`Kavita reading`,
-    admin: true,
-    keywords: msg({
-      message: `attribute reading, kavita user, progress owner`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
     id: 'kavita',
     tab: 'integrations',
     title: msg`Kavita`,
     admin: true,
     keywords: msg({
-      message: `scan, api key, path mapping, covers, library server`,
+      message: `scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -346,17 +337,27 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Scrobbling`,
     permission: 'UseTrackers',
     keywords: msg({
-      message: `anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read`,
+      message: `anilist, myanimelist, mal, mangabaka, kitsu, trackers, oauth, client id, client secret, sync interval, plan to read, kavita libraries`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'import-lists',
+    tab: 'integrations',
+    title: msg`Import lists`,
+    permission: 'UseTrackers',
+    keywords: msg({
+      message: `import list, anilist, mal, kitsu, tracker, auto add`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
   {
     id: 'notifications',
     tab: 'integrations',
-    title: msg`Notifications`,
+    title: msg`Outbound notifications`,
     admin: true,
     keywords: msg({
-      message: `discord, webhook, apprise, alerts, events`,
+      message: `discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound, tags, requests, series added, series removed, manual match`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
@@ -419,16 +420,6 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     admin: true,
     keywords: msg({
       message: `new version, check for updates, release, github`,
-      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
-    }),
-  },
-  {
-    id: 'general',
-    tab: 'system',
-    title: msg`General`,
-    admin: true,
-    keywords: msg({
-      message: `port, setup guide, first-time setup, instance`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

@@ -58,7 +58,8 @@ public class InboxController(
     ICurrentUser currentUser,
     InboxRenderer renderer,
     IRequestLocale requestLocale,
-    TimeProvider time) : ControllerBase
+    TimeProvider time,
+    ILocalizer localizer) : ControllerBase
 {
     /// <summary>One page of the feed. Deliberately modest: the bell shows far fewer.</summary>
     private const int MaxTake = 100;
@@ -215,10 +216,8 @@ public class InboxController(
         // no such field, and must not be 400'd out of saving the switches it does know about.
         if (!string.IsNullOrWhiteSpace(spec.SeriesDefault) && !SeriesDefaults.IsAllowed(spec.SeriesDefault))
         {
-            return BadRequest(new
-            {
-                error = $"seriesDefault must be one of: {string.Join(", ", SeriesDefaults.Allowed)}"
-            });
+            return this.Fail(localizer, "error.inbox.unknownSeriesDefault",
+                new { allowed = string.Join(", ", SeriesDefaults.Allowed) });
         }
 
         var merged = spec.Merge();

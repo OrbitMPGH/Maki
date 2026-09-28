@@ -1,4 +1,4 @@
-import { Button, Center, Loader, Stack, Text } from '@mantine/core'
+import { Button, Center, Stack, Text } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -15,6 +15,8 @@ import {
 import type { UnlockedAchievement } from '../../api/reader'
 import { useMarkAchievementsSeen } from '../../api/hooks'
 import ChapterBanner from './ChapterBanner'
+import ChapterEnd from './ChapterEnd'
+import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -57,6 +59,7 @@ export default function ReaderPage() {
   // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
   // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
   const enterAtEndRef = useRef(false)
+  const leavingRef = useRef(false)
   // The chrome starts hidden and is summoned by a tap in the middle of the page: the art gets
   // the whole viewport until you ask for controls.
   const [chrome, setChrome] = useState(false)
@@ -66,13 +69,19 @@ export default function ReaderPage() {
   const [zoom, setZoom] = useState(1)
   const [incognito, setIncognito] = useState(false)
   const [atEnd, setAtEnd] = useState(false)
+  // The chapter this visit ran off the end of. Sticky, so "Stay here" and paging back cannot take
+  // the completion back out of a write that has not gone out yet.
+  const [finishedFor, setFinishedFor] = useState<number | null>(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   const pageCount = manifest?.pageCount ?? 0
-  const urls = usePageUrls(chapterId, pageCount)
-  const thumbs = usePageUrls(chapterId, stripOpen ? pageCount : 0, true)
+  const urls = usePageUrls(chapterId, pageCount, manifest?.pageVersion)
+  const thumbs = usePageUrls(chapterId, stripOpen ? pageCount : 0, manifest?.pageVersion, true)
   const { wide, measure } = usePageAspects(urls)
   const spreads = useSpreads(pageCount, wide, prefs.mode === 'double')
   const spreadIndex = useMemo(() => spreadIndexOf(spreads, page), [spreads, page])
+  // `page` is a spread's first index; the position on record is the furthest page on screen.
+  const shownTo = useMemo(() => Math.max(page, ...(spreads[spreadIndex] ?? [])), [spreads, spreadIndex, page])
 
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
@@ -89,7 +98,7 @@ export default function ReaderPage() {
    * request and no hub subscription. Acknowledging them is what stops the same unlock announcing
    * itself on every page turn after the one that earned it.
    */
-  const markSeen = useMarkAchievementsSeen()
+  const { mutate: markSeenMutate } = useMarkAchievementsSeen()
   const onAchievementsUnlocked = useCallback(
     (unlocked: UnlockedAchievement[]) => {
       for (const achievement of unlocked) {
@@ -103,18 +112,26 @@ export default function ReaderPage() {
         })
       }
 
-      markSeen.mutate(unlocked.map((a) => a.id))
+      markSeenMutate(unlocked.map((a) => a.id))
     },
-    [markSeen],
+    [markSeenMutate],
   )
 
   // The position writer stays off until the chapter has resumed. `page` is 0 until then, and
   // writing that would overwrite the saved position with page 1, the very thing being resumed to.
   const tracking = resumedFor === manifest?.chapterId && !incognito
+  const finished = finishedFor != null && finishedFor === manifest?.chapterId
   // Lives here rather than inside the progress hook so a chapter change can hand its banked
   // seconds to the same flush that writes the position out.
   const clock = useReadingClock(tracking)
-  useReaderProgress(manifest?.chapterId, page, tracking, clock, onAchievementsUnlocked)
+  const { settle: settleProgress } = useReaderProgress(
+    manifest?.chapterId,
+    finished ? pageCount - 1 : shownTo,
+    finished,
+    tracking,
+    clock,
+    onAchievementsUnlocked,
+  )
 
   /**
    * Resume where the chapter was left off, once per chapter, and only off a freshly fetched
@@ -129,6 +146,8 @@ export default function ReaderPage() {
     seekToPage(toEnd ? Math.max(0, manifest.pageCount - 1) : manifest.resumePage)
     setZoom(1)
     setAtEnd(false)
+    setFinishedFor(null)
+    leavingRef.current = false
   }, [manifest, isFetching, resumedFor, seekToPage])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
@@ -166,54 +185,83 @@ export default function ReaderPage() {
    */
   const goToChapter = useCallback(
     async (target: number | null, complete: boolean, toEnd = false) => {
-      if (target === null) return
+      if (target === null || leavingRef.current) return
+      leavingRef.current = true
       enterAtEndRef.current = toEnd
       // Same gate as the position writer: before the resume lands, `page` is 0 and not a position.
       if (manifest && tracking) {
-        await flushProgress(
+        const done = complete || finished
+        await settleProgress()
+        const unlocked = await flushProgress(
           manifest.chapterId,
-          complete ? pageCount - 1 : page,
-          complete || undefined,
+          done ? pageCount - 1 : shownTo,
+          done || undefined,
           // Banked time belongs to the chapter being left, and the next chapter's clock starts
           // from nothing, so it has to go out with this write or it is lost.
           clock.take(),
-        ).catch(() => {})
+        ).catch(() => [] as UnlockedAchievement[])
+        if (unlocked.length > 0) onAchievementsUnlocked(unlocked)
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', manifest.seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', manifest.seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series'] })
       }
+      // ReaderPage stays mounted across /read/:chapterId changes, so a manifest cached from an
+      // earlier visit to `target` would otherwise be served as-is (staleTime is Infinity) with its
+      // now-stale resumePage. Drop it so the coming mount always fetches fresh.
+      queryClient.removeQueries({ queryKey: ['reader-manifest', target] })
       navigate(`/read/${target}`, { replace: true })
     },
-    [manifest, navigate, page, pageCount, queryClient, tracking, clock],
+    [
+      manifest,
+      navigate,
+      shownTo,
+      pageCount,
+      queryClient,
+      tracking,
+      clock,
+      finished,
+      settleProgress,
+      onAchievementsUnlocked,
+    ],
   )
 
+  const reachEnd = useCallback(() => {
+    setAtEnd(true)
+    if (manifest && tracking) setFinishedFor(manifest.chapterId)
+  }, [manifest, tracking])
+
   const next = useCallback(() => {
+    // On the end screen the forward key is the "second press" it asks for.
+    if (atEnd) {
+      if (manifest?.nextChapterId != null) void goToChapter(manifest.nextChapterId, true)
+      return
+    }
     const nextSpread = spreads[spreadIndex + 1]
     if (nextSpread) {
       seekToPage(nextSpread[0])
       return
     }
     if (manifest?.nextChapterId == null) {
-      setAtEnd(true)
+      reachEnd()
       return
     }
     // Auto-advance means what it says: the page turn off the last page lands in the next chapter.
     // With it off, an interstitial instead: the chapter ends where you asked it to, and the jump
     // is a deliberate second press.
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
-    else setAtEnd(true)
-  }, [spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage])
+    else reachEnd()
+  }, [atEnd, spreads, spreadIndex, manifest, prefs.autoNextChapter, goToChapter, seekToPage, reachEnd])
 
   /** Continuous mode's equivalent of `next()` hitting the chapter boundary: no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
   const continuousPastEnd = useCallback(() => {
     if (manifest?.nextChapterId == null) {
-      setAtEnd(true)
+      reachEnd()
       return
     }
     if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
-    else setAtEnd(true)
-  }, [manifest, prefs.autoNextChapter, goToChapter])
+    else reachEnd()
+  }, [manifest, prefs.autoNextChapter, goToChapter, reachEnd])
 
   const previous = useCallback(() => {
     if (atEnd) {
@@ -234,6 +282,15 @@ export default function ReaderPage() {
       const target = event.target as HTMLElement | null
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
 
+      // The sheet is read, not driven: while it is up the only keys that do anything close it.
+      if (shortcutsOpen) {
+        if (event.key === 'Escape' || event.key === '?') {
+          event.preventDefault()
+          setShortcutsOpen(false)
+        }
+        return
+      }
+
       // In right-to-left reading the left arrow advances; in left-to-right it goes back.
       const forwardKey = prefs.direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
       const backKey = prefs.direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft'
@@ -248,8 +305,9 @@ export default function ReaderPage() {
           previous()
           break
         case ' ':
-          // Continuous mode keeps the browser's native space-to-scroll.
-          if (prefs.mode !== 'vertical') {
+          // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
+          // where there is nothing to scroll.
+          if (prefs.mode !== 'vertical' || atEnd) {
             event.preventDefault()
             if (event.shiftKey) previous()
             else next()
@@ -294,6 +352,9 @@ export default function ReaderPage() {
         case '0':
           setZoom(1)
           break
+        case '?':
+          setShortcutsOpen(true)
+          break
         case 'Escape':
           if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
           break
@@ -303,6 +364,8 @@ export default function ReaderPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [
+    shortcutsOpen,
+    atEnd,
     next,
     previous,
     pageCount,
@@ -342,7 +405,7 @@ export default function ReaderPage() {
     return (
       <div className="reader-root">
         <Center h="100dvh">
-          <Loader />
+          <div className="reader-page-skeleton" aria-hidden />
         </Center>
       </div>
     )
@@ -353,7 +416,7 @@ export default function ReaderPage() {
       <div className="reader-root">
         <Center h="100dvh">
           <Stack align="center" gap="sm">
-            <Text c="dimmed">
+            <Text c="var(--ink-3)">
               <Trans>This chapter has no readable file.</Trans>
             </Text>
             <Button component={Link} to="/library" variant="light">
@@ -365,7 +428,10 @@ export default function ReaderPage() {
     )
   }
 
-  const { label: chapterLabel } = manifest
+  // The manifest's read count is a snapshot from when the chapter opened, so finishing this one on
+  // screen is added here, on the same condition the server uses. Incognito writes nothing.
+  const readingCounted =
+    !incognito && !manifest.completed && (finished || shownTo >= manifest.pageCount - 1)
 
   return (
     <div className="reader-root" style={{ background: prefs.background }}>
@@ -386,38 +452,24 @@ export default function ReaderPage() {
         onToggleFullscreen={toggleFullscreen}
         incognito={incognito}
         onIncognito={setIncognito}
+        readingCounted={readingCounted}
         bookmarked={bookmarked}
         onToggleBookmark={() => toggleBookmark.mutate(page)}
         stripOpen={stripOpen}
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
         onHold={setChromeHeld}
+        onShortcuts={() => setShortcutsOpen(true)}
       />
 
       {atEnd ? (
-        <Center h="100dvh">
-          <Stack align="center" gap="sm">
-            <Text fz="sm" c="dimmed">
-              {manifest.nextChapterId == null ? (
-                <Trans>{chapterLabel} is the last chapter. No more chapters available.</Trans>
-              ) : (
-                <Trans>End of {chapterLabel}</Trans>
-              )}
-            </Text>
-            {manifest.nextChapterId != null ? (
-              <Button onClick={() => void goToChapter(manifest.nextChapterId, true)}>
-                <Trans>Next chapter</Trans>
-              </Button>
-            ) : (
-              <Button component={Link} to={`/series/${manifest.seriesId}`}>
-                <Trans>Exit reader</Trans>
-              </Button>
-            )}
-            <Button variant="subtle" color="gray" onClick={() => setAtEnd(false)}>
-              <Trans>Stay here</Trans>
-            </Button>
-          </Stack>
-        </Center>
+        <ChapterEnd
+          manifest={manifest}
+          readingCounted={readingCounted}
+          rtl={prefs.direction === 'rtl'}
+          onNext={() => void goToChapter(manifest.nextChapterId, true)}
+          onStay={() => setAtEnd(false)}
+        />
       ) : (
         <div
           className="reader-surface"
@@ -484,6 +536,10 @@ export default function ReaderPage() {
           label={manifest.label}
           pageCount={manifest.pageCount}
         />
+      )}
+
+      {shortcutsOpen && (
+        <ShortcutSheet rtl={prefs.direction === 'rtl'} onClose={() => setShortcutsOpen(false)} />
       )}
 
       {prefs.showPageNumber && !chrome && !atEnd && (

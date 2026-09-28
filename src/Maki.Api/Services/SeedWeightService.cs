@@ -235,7 +235,8 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
             var animeRows = await db.AnimeSignals.AsNoTracking()
                 .Where(x => x.UserId == scope.UserId && x.MangaBakaId != null)
                 .Select(x => new AnimeSignalRow(
-                    x.Service, x.AnimeId, x.MalAnimeId, x.Title, x.Score, x.Status, x.MangaBakaId))
+                    x.Service, x.AnimeId, x.MalAnimeId, x.Title, x.Score, x.Status, x.MangaBakaId,
+                    x.Format, x.StartDate, x.EndDate, x.Episodes, x.Progress))
                 .ToListAsync(ct);
 
             // Grouped, never row by row. The raw rows hold one show once per tracker the reader

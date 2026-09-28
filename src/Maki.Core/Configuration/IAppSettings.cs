@@ -67,6 +67,14 @@ public static class SettingKeys
     public const string MonitoringUnmonitorSpecials = "monitoring.unmonitorspecials";
 
     /// <summary>
+    /// More new wanted chapters than this in one monitored refresh of a series are held back instead
+    /// of queued. Default 5; 0 turns the hold off. A real release rarely drops that many at once, but
+    /// a source that renumbers or backfills its list does, and every "new" row of that shape would
+    /// otherwise download the whole series. Held chapters stay wanted, so "Search missing" gets them.
+    /// </summary>
+    public const string MonitoringBulkHoldThreshold = "monitoring.bulkholdthreshold";
+
+    /// <summary>
     /// "false" → don't rewrite ComicInfo.xml inside files Maki adopts from disk (torrent grabs,
     /// manual imports). Chapters Maki downloads itself from a source always get a fresh ComicInfo —
     /// that CBZ is built by Maki, not an existing file being modified. Default on.
@@ -161,6 +169,13 @@ public static class SettingKeys
     /// </para>
     /// </summary>
     public const string UiHomeSections = "ui.homesections";
+
+    /// <summary>
+    /// How Discover's Browse tab is arranged, as a <see cref="DiscoverLayoutSpec"/> JSON blob: the
+    /// built-in sections and the user's Discover rails, in their order. Unset = shipping order, all
+    /// on, rails before Trending.
+    /// </summary>
+    public const string UiDiscoverSections = "ui.discoversections";
 
     /// <summary>
     /// Which supplementary rails the series page shows, as a <see cref="SeriesSectionsSpec"/> JSON
@@ -283,15 +298,15 @@ public static class SettingKeys
     public const string ProgressLastNotifiedLevel = "progress.lastnotifiedlevel";
 
     /// <summary>
-    /// How many scraper chapter downloads run at once. Read once at startup — the worker pool is
-    /// fixed for the process lifetime, so a change needs a restart to take effect.
+    /// How many scraper chapter downloads run at once. The worker re-reads it every few seconds, so a
+    /// change applies without a restart; lowering it retires workers after their current item.
     /// </summary>
     public const string DownloadConcurrentChapters = "download.concurrentchapters";
 
     /// <summary>
     /// Wall-clock cap on one scraper chapter download before the worker abandons it and marks it
-    /// Failed (so the normal retry backoff picks it up). Default 120; 0 disables the cap. Read once
-    /// at startup alongside <see cref="DownloadConcurrentChapters"/>.
+    /// Failed (so the normal retry backoff picks it up). Default 120; 0 disables the cap. Re-read
+    /// alongside <see cref="DownloadConcurrentChapters"/>, and applied to each item as it starts.
     /// <para>
     /// Exists because a worker held by an item that never finishes is indistinguishable from a dead
     /// queue: the row keeps an in-flight status so the orphan sweep sees it as owned and skips it,
@@ -517,6 +532,12 @@ public static class SettingKeys
     /// </summary>
     public const string DiscoverSearchDefaults = "discover.searchdefaults";
 
+    /// <summary>
+    /// Per user: genres and tags never shown on Discover, as a <see cref="HiddenContentSpec"/> JSON
+    /// blob. Applied by the server to every Discover and recommendation request, never read from one.
+    /// </summary>
+    public const string DiscoverHidden = "discover.hidden";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";
@@ -542,6 +563,18 @@ public static class SettingKeys
 
     /// <summary>Per-tracker "push ratings to this service" toggle. Unset = on.</summary>
     public static string ScrobbleRatingsKey(string service) => $"scrobble.{service}.ratings";
+
+    /// <summary>Instance switch for the scheduled import list pass. Unset = on.</summary>
+    public const string ImportListEnabled = "importlist.enabled";
+    /// <summary>Minutes between scheduled import list passes. Default 360.</summary>
+    public const string ImportListIntervalMinutes = "importlist.interval";
+    public const string ImportListLastRunAt = "importlist.lastrunat";
+    /// <summary>Per-user <c>ImportListPrefs</c> JSON blob, keyed by tracker name.</summary>
+    public const string ImportListPrefs = "importlist.prefs";
+    public const string ImportListLastRunPrefix = "importlist.lastrun.";
+
+    /// <summary>Per-user JSON of the last import list run for one tracker.</summary>
+    public static string ImportListLastRunKey(string service) => $"{ImportListLastRunPrefix}{service}";
 
     /// <summary>How many backups to keep per kind (auto/manual). Oldest beyond this are pruned. Default 5.</summary>
     public const string BackupRetention = "backup.retention";

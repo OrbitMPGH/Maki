@@ -13,7 +13,10 @@ public enum ComicSourceKind
     Repack,
 
     /// <summary>A folder of loose page images, the usual shape of an older set.</summary>
-    LooseImages
+    LooseImages,
+
+    /// <summary>A PDF. Placed as it is, read in place, never converted to a CBZ.</summary>
+    Pdf
 }
 
 /// <summary>
@@ -21,8 +24,9 @@ public enum ComicSourceKind
 /// anything so a plan can be shown before any work is done.
 /// </summary>
 /// <param name="Name">
-/// The CBZ file name this produces. Everything downstream reads the volume and chapter off it, so
-/// it keeps the source's own name and only changes the extension.
+/// The file name this produces (CBZ, or PDF for <see cref="ComicSourceKind.Pdf"/>). Everything
+/// downstream reads the volume and chapter off it, so it keeps the source's own name and only
+/// changes the extension.
 /// </param>
 /// <param name="Path">The archive or folder it comes from.</param>
 /// <param name="Size">Bytes on disk, or the entry's uncompressed size for a nested archive.</param>
@@ -44,5 +48,5 @@ public sealed record ComicSource(
     string? Entry = null)
 {
     /// <summary>Whether the file itself can be placed in the library, rather than rebuilt.</summary>
-    public bool IsReadyToPlace => Kind is ComicSourceKind.Cbz or ComicSourceKind.Zip;
+    public bool IsReadyToPlace => Kind is ComicSourceKind.Cbz or ComicSourceKind.Zip or ComicSourceKind.Pdf;
 }

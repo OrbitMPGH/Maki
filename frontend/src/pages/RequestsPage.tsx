@@ -9,8 +9,7 @@ import {
   Image,
   Modal,
   NumberInput,
-  Paper,
-  SegmentedControl,
+  Tabs,
   Select,
   Stack,
   Text,
@@ -20,7 +19,6 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   IconCheck,
-  IconInbox,
   IconExternalLink,
   IconPencil,
   IconTrash,
@@ -42,16 +40,19 @@ import {
   type SeriesRequest,
 } from '../api/requests'
 import { useAuth } from '../auth/AuthProvider'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
 import { useLabel } from '../i18n-context'
 import { formatDate } from '../format'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
-  Pending: 'yellow',
-  Processing: 'blue',
-  Approved: 'green',
-  Rejected: 'red',
+  Pending: 'var(--warn)',
+  Processing: 'var(--info)',
+  Approved: 'var(--ok)',
+  Rejected: 'var(--danger)',
 }
 
 /** Descriptors, not strings: this table is built once, when the module loads. */
@@ -83,6 +84,8 @@ export default function RequestsPage() {
   const [approveNote, setApproveNote] = useState('')
 
   const [rejecting, setRejecting] = useState<SeriesRequest | null>(null)
+  const [removing, setRemoving] = useState<SeriesRequest | null>(null)
+  const removingTitle = removing?.title ?? ''
   const [rejectNote, setRejectNote] = useState('')
 
   const [editing, setEditing] = useState<SeriesRequest | null>(null)
@@ -109,7 +112,7 @@ export default function RequestsPage() {
           const range = chapterRangeInline(result.chapterStart, result.chapterEnd)
           notifications.show({
             message: now`Now ${range}`,
-            color: 'green',
+            color: 'var(--ok)',
           })
         },
       },
@@ -144,7 +147,7 @@ export default function RequestsPage() {
                     other: 'Approved, queued # chapters',
                   })
                 : now`Approved`,
-            color: 'green',
+            color: 'var(--ok)',
           })
         },
       },
@@ -158,7 +161,7 @@ export default function RequestsPage() {
       {
         onSuccess: () => {
           setRejecting(null)
-          notifications.show({ message: now`Request rejected`, color: 'gray' })
+          notifications.show({ message: now`Request rejected`, color: 'var(--neutral)' })
         },
       },
     )
@@ -171,8 +174,9 @@ export default function RequestsPage() {
   )
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational">
       <PageHeader
+        compact
         title={t`Requests`}
         description={
           isAdmin
@@ -181,27 +185,33 @@ export default function RequestsPage() {
         }
       />
 
-      <Group mb="lg">
-        <SegmentedControl
-          value={filter}
-          onChange={(v) => setFilter(v as RequestFilter)}
-          data={[
-            { value: 'pending', label: t`Pending` },
-            { value: 'resolved', label: t`Resolved` },
-            { value: 'all', label: t`All` },
-          ]}
-        />
-      </Group>
+      <Tabs
+        value={filter}
+        onChange={(v) => v && setFilter(v as RequestFilter)}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="pending">
+            <Trans>Pending</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="resolved">
+            <Trans>Resolved</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value="all">
+            <Trans>All</Trans>
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
 
       {(approve.isError || reject.isError || remove.isError || edit.isError) && (
-        <Alert color="red" variant="light" mb="md">
+        <Alert color="var(--danger)" variant="light" mb="md">
           {String(approve.error ?? reject.error ?? remove.error ?? edit.error)}
         </Alert>
       )}
 
       {!isPending && (requests?.length ?? 0) === 0 ? (
         <EmptyState
-          icon={IconInbox}
           title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={
             isAdmin
@@ -216,47 +226,38 @@ export default function RequestsPage() {
             const askedFor = chapterRangeInline(r.originalChapterStart, r.originalChapterEnd)
             const { title, editedBy, resolvedBy } = r
             return (
-              <Paper key={r.id} withBorder radius="lg" p="sm">
-                <Group wrap="nowrap" align="flex-start">
-                  <div
-                    style={{
-                      width: 48,
-                      height: 72,
-                      flexShrink: 0,
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      background: 'var(--surface-2)',
-                    }}
-                  >
+              <Panel key={r.id} p="sm">
+                <div className="requests-row">
+                  <div className="requests-row-cover">
                     {r.coverUrl && <Image src={r.coverUrl} w={48} h={72} fit="cover" alt="" />}
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <Group gap="xs" wrap="nowrap">
+                  <div className="requests-row-main">
+                    <Group gap="xs">
                       <Text fw={650} lineClamp={1}>
                         {r.title}
                       </Text>
                       {r.year && (
-                        <Text size="sm" c="dimmed" className="tnum">
+                        <Text size="sm" c="var(--ink-3)" className="tnum">
                           {r.year}
                         </Text>
                       )}
                       <Badge size="sm" variant="light" color={STATUS_COLOR[r.status]}>
                         {renderLabel(STATUS_LABEL[r.status])}
                       </Badge>
-                      <Badge size="sm" variant="outline" color="gray">
+                      <Badge size="sm" variant="outline" color="var(--neutral)">
                         {r.kind === 'NewSeries' ? t`New series` : t`Chapters`}
                       </Badge>
                     </Group>
 
                     <Group gap="xs" mt={4}>
-                      <Text size="sm" c={r.editedAt ? undefined : 'dimmed'} fw={r.editedAt ? 600 : undefined}>
+                      <Text size="sm" c={r.editedAt ? undefined : 'var(--ink-3)'} fw={r.editedAt ? 600 : undefined}>
                         {chapterRangeLabel(r.chapterStart, r.chapterEnd)}
                       </Text>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="var(--ink-3)">
                         ·
                       </Text>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="var(--ink-3)">
                         {r.requestedBy}, {formatDate(r.created)}
                       </Text>
                     </Group>
@@ -265,7 +266,7 @@ export default function RequestsPage() {
                         asked for has to stay visible, or a trimmed request reads as the requester's
                         own. */}
                     {r.editedAt && (
-                      <Text size="xs" c="dimmed" mt={2}>
+                      <Text size="xs" c="var(--ink-3)" mt={2}>
                         {editedBy ? (
                           <Trans>
                             Adjusted by {editedBy}, asked for {askedFor}
@@ -283,7 +284,7 @@ export default function RequestsPage() {
                     )}
 
                     {r.status !== 'Pending' && (
-                      <Text size="xs" c="dimmed" mt={4}>
+                      <Text size="xs" c="var(--ink-3)" mt={4}>
                         {resolvedBy && r.status !== 'Processing' ? (
                           r.status === 'Approved' ? (
                             <Trans>Approved by {resolvedBy}</Trans>
@@ -304,14 +305,14 @@ export default function RequestsPage() {
                     )}
                   </div>
 
-                  <Group gap="xs" wrap="nowrap">
+                  <div className="requests-row-actions">
                     {r.seriesId != null && (
                       <Tooltip label={t`Open series`} withArrow>
                         <ActionIcon
                           component={Link}
                           to={`/series/${r.seriesId}`}
                           variant="subtle"
-                          color="gray"
+                          color="var(--neutral)"
                           aria-label={t`Open ${title}`}
                         >
                           <IconExternalLink size={17} />
@@ -323,7 +324,7 @@ export default function RequestsPage() {
                         <Tooltip label={t`Change the chapter range`} withArrow>
                           <ActionIcon
                             variant="subtle"
-                            color="gray"
+                            color="var(--neutral)"
                             aria-label={t`Edit request for ${title}`}
                             onClick={() => openEdit(r)}
                           >
@@ -333,7 +334,7 @@ export default function RequestsPage() {
                         <Button
                           size="xs"
                           variant="light"
-                          color="green"
+                          color="var(--ok)"
                           leftSection={<IconCheck size={15} />}
                           onClick={() => openApprove(r)}
                         >
@@ -342,7 +343,7 @@ export default function RequestsPage() {
                         <Button
                           size="xs"
                           variant="subtle"
-                          color="red"
+                          color="var(--danger)"
                           leftSection={<IconX size={15} />}
                           onClick={() => {
                             setRejecting(r)
@@ -357,18 +358,18 @@ export default function RequestsPage() {
                       <Tooltip label={isAdmin ? t`Delete request` : t`Cancel request`} withArrow>
                         <ActionIcon
                           variant="subtle"
-                          color="red"
+                          color="var(--danger)"
                           aria-label={t`Remove request`}
-                          onClick={() => remove.mutate(r.id)}
+                          onClick={() => setRemoving(r)}
                           loading={remove.isPending && remove.variables === r.id}
                         >
                           <IconTrash size={17} />
                         </ActionIcon>
                       </Tooltip>
                     )}
-                  </Group>
-                </Group>
-              </Paper>
+                  </div>
+                </div>
+              </Panel>
             )
           })}
         </Stack>
@@ -404,7 +405,7 @@ export default function RequestsPage() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="green"
+              color="var(--ok)"
               onClick={submitApprove}
               loading={approve.isPending}
               disabled={needsRootFolder && !rootFolderId}
@@ -423,8 +424,9 @@ export default function RequestsPage() {
             </Trans>
           </Text>
 
-          <Group gap="sm" align="flex-end" wrap="nowrap">
+          <Group gap="sm" align="flex-end" className="requests-form-range">
             <NumberInput
+              className="requests-form-field"
               label={t`From`}
               placeholder={t`first`}
               value={editStart}
@@ -432,9 +434,9 @@ export default function RequestsPage() {
               min={0}
               step={1}
               decimalScale={3}
-              w={130}
             />
             <NumberInput
+              className="requests-form-field"
               label={t`To`}
               placeholder={t`latest`}
               value={editEnd}
@@ -442,10 +444,9 @@ export default function RequestsPage() {
               min={0}
               step={1}
               decimalScale={3}
-              w={130}
             />
           </Group>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Leave a field blank for no bound. Approving queues exactly this range.</Trans>
           </Text>
 
@@ -475,12 +476,23 @@ export default function RequestsPage() {
             <Button variant="default" onClick={() => setRejecting(null)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button color="red" onClick={submitReject} loading={reject.isPending}>
+            <Button color="var(--danger-fill)" onClick={submitReject} loading={reject.isPending}>
               <Trans>Reject</Trans>
             </Button>
           </Group>
         </Stack>
       </Modal>
-    </>
+
+      <ConfirmDialog
+        opened={removing !== null}
+        onClose={() => setRemoving(null)}
+        title={isAdmin ? <Trans>Delete this request?</Trans> : <Trans>Cancel this request?</Trans>}
+        confirmLabel={isAdmin ? t`Delete request` : t`Cancel request`}
+        loading={remove.isPending}
+        onConfirm={() => removing && remove.mutate(removing.id, { onSuccess: () => setRemoving(null) })}
+      >
+        <Trans>The request for {removingTitle} is removed. This can't be undone.</Trans>
+      </ConfirmDialog>
+    </SurfaceFrame>
   )
 }

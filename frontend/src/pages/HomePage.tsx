@@ -1,22 +1,23 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Group, Paper, Skeleton, Text } from '@mantine/core'
+import { Box, Button, Group, Paper } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { msg } from '@lingui/core/macro'
 import {
   IconBook,
   IconBookmarks,
   IconChevronRight,
-  IconClock,
+  IconDeviceTv,
   IconDownload,
   IconFlame,
-  IconLayoutList,
-  IconLibrary,
+  IconLayoutDashboard,
   IconPlayerPlay,
   IconPlus,
   IconSparkles,
 } from '@tabler/icons-react'
+import { useHomeFromAnime } from '../api/animeResume'
 import {
-  HOME_SECTIONS,
+  HOME_HERO_DEFAULTS,
   useDiscover,
   useProgressSummary,
   useHomeReading,
@@ -29,19 +30,36 @@ import {
   useSeries,
   useSeriesIdLookup,
   useUiSettings,
+  isRailKey,
+  railIdOf,
+  type HomeGlancePanel,
+  type HomeLayoutKey,
+  type HomeReadingItem,
+  type HomeSection,
   type HomeSectionKey,
   type RecommendationItem,
 } from '../api/hooks'
+import { useCustomRails } from '../api/customRails'
+import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
+import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
+import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
+import { reconcileLayout, sectionVisible } from '../components/layout/pageLayout'
+import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSectionDefs'
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
+import { ContinueRail } from '../components/home/ContinueRail'
+import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
 import { DownloadingStrip } from '../components/home/DownloadingStrip'
+import { AnimeResumeRail } from '../components/home/AnimeResumeRail'
 import { ProgressCard } from '../components/home/ProgressCard'
-import { ReadingRail } from '../components/home/ReadingRail'
 import { RecentlyAddedRail } from '../components/home/RecentlyAddedRail'
 import { DiscoverRailRow, EngineRailRow } from '../components/ui/DiscoverRail'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SectionHeader } from '../components/ui/SectionHeader'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { isQueueActive } from '../components/ui/status'
 import { formatNumber } from '../format'
 
@@ -64,12 +82,13 @@ function FindMore() {
 
 export default function HomePage() {
   const { t } = useLingui()
-  const { data: series, isLoading: seriesLoading } = useSeries()
+  const { data: series, isLoading: seriesLoading, isError: seriesFailed, refetch: refetchSeries } = useSeries()
   const { data: metadata } = useMetadataSettings()
   const { data: rootFolders } = useRootFolders()
-  const { data: ui } = useUiSettings()
+  const { data: ui, isLoading: uiLoading, isError: uiFailed } = useUiSettings()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
+  const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
 
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
@@ -77,23 +96,44 @@ export default function HomePage() {
   const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
   const hasLibrary = (series?.length ?? 0) > 0
 
+  const { data: homeRails, isError: railsFailed } = useCustomRails('home')
+
   // Default to the shipping order while the setting loads, so the page doesn't reflow once it
   // arrives. `on` is what every query below gates on: a section the user turned off must not
-  // cost a request, which is most of the point of being able to turn one off.
-  const layout = ui?.homeLayout.sections ?? HOME_SECTIONS.map((key) => ({ key, enabled: true }))
-  const on = (key: HomeSectionKey) => layout.some((s) => s.key === key && s.enabled)
+  // cost a request, which is most of the point of being able to turn one off. Nothing fetches
+  // while the layout is being edited either: the editor shows compact cards, not the sections.
+  const layout = useMemo(
+    () =>
+      ui?.homeLayout.sections ??
+      (reconcileLayout([], HOME_LAYOUT_CONFIG, (homeRails ?? []).map((r) => r.id)) as HomeSection[]),
+    [ui, homeRails],
+  )
+  const sectionOf = (key: HomeSectionKey) => layout.find((s) => s.key === key)
+  // Before `ui` has loaded, `layout` is the reconciled fallback, which enables every canonical
+  // section (see `reconcileLayout`). A disabled rail must not fetch just because the setting that
+  // disables it has not arrived yet.
+  const on = (key: HomeSectionKey) => !editing && Boolean(ui) && (sectionOf(key)?.enabled ?? false)
+  const panelOn = (panel: HomeGlancePanel) =>
+    on('glance') && (sectionOf('glance')?.panels?.find((p) => p.key === panel)?.enabled ?? false)
+  const heroOn = (key: HomeSectionKey) => sectionOf(key)?.hero ?? HOME_HERO_DEFAULTS[key] ?? false
 
   const needsReading = on('continue') || on('jumpback')
   const needsDiscover = discoverAvailable && hasLibrary
 
-  const { data: reading, isLoading: readingLoading } = useHomeReading(12, needsReading)
-  const { data: recent } = useHomeRecentlyAdded(12, on('recent'))
+  const {
+    data: reading,
+    isLoading: readingLoading,
+    isError: readingFailed,
+    refetch: refetchReading,
+  } = useHomeReading(12, needsReading)
+  const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(12, on('recent'))
+  const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(12, on('fromanime'))
   const { data: queue } = useQueue()
-  const { data: rails } = useDiscover(0, needsDiscover && on('popular'))
+  const { data: rails, isLoading: railsLoading } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's
   // default Recommended tab, so this rail can never thrash that shared pool with different seeds.
   const recommendations = useRecommendations({}, needsDiscover && on('recommended'))
-  const { data: progress } = useProgressSummary(undefined, on('progress'))
+  const { data: progress } = useProgressSummary(undefined, panelOn('progress'))
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
@@ -126,35 +166,100 @@ export default function HomePage() {
       title={t`Home`}
       description={t`Pick up where you left off.`}
       actions={
-        <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
-          <Trans>Add series</Trans>
-        </Button>
+        editing ? undefined : (
+          <>
+            <Button variant="default" leftSection={<IconLayoutDashboard size={16} />} onClick={enterEditing}>
+              <Trans>Edit layout</Trans>
+            </Button>
+            <Button component={Link} to="/add" leftSection={<IconPlus size={16} />}>
+              <Trans>Add series</Trans>
+            </Button>
+          </>
+        )
       }
     />
   )
 
-  if (!seriesLoading && !hasLibrary) {
+  if (editing) {
     return (
-      <>
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {header}
+        {ui && homeRails ? (
+          <PageLayoutEditor
+            page="home"
+            placement="home"
+            registry={HOME_SECTION_DEFS}
+            config={HOME_LAYOUT_CONFIG}
+            initial={ui.homeLayout.sections}
+            rails={homeRails}
+            railLimit={RAIL_SIZE}
+            unavailable={(key) =>
+              !discoverAvailable &&
+              (key === 'recommended' || key === 'popular' ||
+                (isRailKey(key) && homeRails.find((r) => r.id === railIdOf(key))?.spec.source !== 'library'))
+                ? msg`Needs the local MangaBaka database`
+                : null
+            }
+            panelHint={(_section, panel) =>
+              panel === 'toread' && !readTracking
+                ? msg`Needs read tracking: use the reader or connect Kavita.`
+                : panel === 'progress' && progress && !progress.enabled
+                  ? msg`Hidden while progression is switched off.`
+                  : null
+            }
+            onExit={exitEditing}
+          />
+        ) : (
+          <PageLayoutEditorLoading failed={uiFailed || railsFailed} onExit={exitEditing} />
+        )}
+      </SurfaceFrame>
+    )
+  }
+
+  if (!seriesLoading && seriesFailed) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
         {header}
         <EmptyState
-          icon={IconLibrary}
+          title={t`Couldn't load your library`}
+          actionLabel={t`Retry`}
+          onAction={() => void refetchSeries()}
+        />
+      </SurfaceFrame>
+    )
+  }
+
+  if (!seriesLoading && !hasLibrary) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {header}
+        <EmptyState
           title={t`Nothing in your library yet`}
           description={t`Add a series and Maki will start tracking chapters for it. This page fills up as you read and download.`}
           actionLabel={t`Add series`}
           actionTo="/add"
         />
-      </>
+      </SurfaceFrame>
     )
   }
 
-  // The panels that are just labelled numbers. Each is its own bordered panel, because each is
-  // switched on and off separately in Settings, but they share one wrapping row rather than each
-  // taking a heading and the full page width — see `.home-glance`. The row renders at the position
-  // of whichever member the user's order puts first, in their order; every other member's key
-  // renders nothing.
-  const glancePanels: Partial<Record<HomeSectionKey, React.ReactNode>> = {
-    stats: on('stats') && (
+  // Keep a skeleton up rather than let the per-section fallbacks (`StartReadingPrompt` and the
+  // like) flash empty while `ui` is still loading and every gated query above is held off by `on`.
+  if (uiLoading) {
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        {header}
+        <RailSkeleton title />
+        <RailSkeleton title />
+      </SurfaceFrame>
+    )
+  }
+
+  // The panels that are just labelled numbers. Each is its own bordered panel, switched on and off
+  // separately, but they share one wrapping row rather than each taking a heading and the full
+  // page width: see `.home-glance`.
+  const glancePanels: Partial<Record<string, React.ReactNode>> = {
+    stats: panelOn('stats') && (
       <GlancePanel key="stats">
         <LibraryFigure label={t`Series`} value={stats.total} />
         <LibraryFigure label={t`Monitored`} value={stats.monitored} />
@@ -165,7 +270,7 @@ export default function HomePage() {
 
     // Nothing at all when the user has switched progression off: the section stays in their layout
     // list, so turning it back on restores its position.
-    progress: progress?.enabled && (
+    progress: panelOn('progress') && progress?.enabled && (
       <GlancePanel key="progress" wide>
         <ProgressCard summary={progress} />
       </GlancePanel>
@@ -173,7 +278,7 @@ export default function HomePage() {
 
     // Only ever with tracking on: without it every downloaded chapter reads as unread, and the
     // panel would tell a Kavita-less library that it has 12,000 chapters waiting.
-    toread: on('toread') && readTracking && (
+    toread: panelOn('toread') && readTracking && (
       <GlancePanel key="toread">
         <LibraryFigure label={t`Unread`} value={waiting.unread} />
         <LibraryFigure label={t`Started`} value={waiting.started} />
@@ -182,24 +287,19 @@ export default function HomePage() {
     ),
   }
 
-  const glanceOrder = layout.filter((s) => s.enabled && glancePanels[s.key])
-  const glanceRow =
-    glanceOrder.length > 0 ? (
-      <div className="home-glance" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
-        {glanceOrder.map((s) => glancePanels[s.key])}
-      </div>
-    ) : null
-  const glanceLead = glanceOrder[0]?.key
+  const glanceShown = (sectionOf('glance')?.panels ?? []).filter((p) => p.enabled && glancePanels[p.key])
 
   // One node per section key. Rendered in the user's order below; a section with nothing to show
   // yields null and takes up no space, exactly as when it is switched off.
   const sections: Record<HomeSectionKey, React.ReactNode> = {
     continue: readingLoading ? (
       <RailSkeleton />
+    ) : readingFailed ? (
+      <ReadingErrorPrompt onRetry={() => void refetchReading()} />
     ) : continueReading.length > 0 ? (
       <>
         <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
-        <ReadingRail items={continueReading} />
+        <ReadingSection items={continueReading} rail="continue" hero={heroOn('continue')} />
       </>
     ) : (
       // Only nudge when there is genuinely nothing to resume *and* nothing to jump back into,
@@ -214,60 +314,103 @@ export default function HomePage() {
       </>
     ),
 
-    recent: recent && recent.length > 0 && (
-      <>
-        <SectionHeader icon={IconBookmarks} title={t`Recently added`} count={recent.length} />
-        <RecentlyAddedRail items={recent} />
-      </>
+    recent: recentLoading ? (
+      <RailSkeleton />
+    ) : (
+      recent && recent.length > 0 && (
+        <>
+          <SectionHeader icon={IconBookmarks} title={t`Recently added`} count={recent.length} />
+          <RecentlyAddedRail items={recent} />
+        </>
+      )
     ),
 
-    jumpback: jumpBackIn.length > 0 && (
-      <>
-        <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
-        <ReadingRail items={jumpBackIn} />
-      </>
+    jumpback: readingLoading ? (
+      <RailSkeleton />
+    ) : readingFailed ? (
+      on('continue') ? null : <ReadingErrorPrompt onRetry={() => void refetchReading()} />
+    ) : (
+      jumpBackIn.length > 0 && (
+        <>
+          <SectionHeader icon={IconBook} title={t`Jump back in`} count={jumpBackIn.length} />
+          <ReadingSection items={jumpBackIn} rail="jumpback" hero={heroOn('jumpback')} />
+        </>
+      )
     ),
 
-    recommended: youMightLike.length > 0 && (
-      <>
-        <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} />
-        <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
-      </>
+    fromanime: fromAnimeLoading ? (
+      <RailSkeleton />
+    ) : (
+      fromAnime && fromAnime.length > 0 && (
+        <>
+          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
+          <AnimeResumeRail items={fromAnime} />
+        </>
+      )
     ),
 
-    popular: popular.length > 0 && (
-      <>
-        <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} />
-        <DiscoverRailRow
-          items={popular.slice(0, RAIL_SIZE)}
-          seriesIdFor={seriesIdFor}
-          onOpen={setDetailItem}
-        />
-      </>
+    recommended: recommendations.isLoading ? (
+      <RailSkeleton />
+    ) : (
+      youMightLike.length > 0 && (
+        <>
+          <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} />
+          <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+        </>
+      )
     ),
 
-    stats: glanceLead === 'stats' ? glanceRow : null,
-    progress: glanceLead === 'progress' ? glanceRow : null,
-    toread: glanceLead === 'toread' ? glanceRow : null,
+    popular: railsLoading ? (
+      <RailSkeleton />
+    ) : (
+      popular.length > 0 && (
+        <>
+          <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} />
+          <DiscoverRailRow
+            items={popular.slice(0, RAIL_SIZE)}
+            seriesIdFor={seriesIdFor}
+            onOpen={setDetailItem}
+          />
+        </>
+      )
+    ),
+
+    glance: glanceShown.length > 0 && (
+      <div className="home-glance" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
+        {glanceShown.map((p) => glancePanels[p.key])}
+      </div>
+    ),
   }
 
-  const visible = layout.filter((s) => s.enabled)
+  const visible = layout.filter(sectionVisible)
+
+  // A custom rail's key only names it; the rail itself comes from the rails list. One whose source
+  // is the catalogue waits on the local database like the borrowed Discover rails above.
+  const renderSection = (key: HomeLayoutKey) => {
+    if (!isRailKey(key)) return sections[key]
+    const rail = homeRails?.find((r) => r.id === railIdOf(key))
+    if (!rail || (rail.spec.source !== 'library' && !discoverAvailable)) return null
+    return <CustomRailSection rail={rail} limit={RAIL_SIZE} onOpen={setDetailItem} />
+  }
 
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       {header}
 
       {visible.length === 0 ? (
         <EmptyState
-          icon={IconLayoutList}
           title={t`Every section is switched off`}
-          description={t`Home has nothing to show. Turn sections back on, or disable Home entirely, in Settings.`}
-          actionLabel={t`Open settings`}
-          actionTo="/settings"
+          description={t`Home has nothing to show. Turn some sections back on in the layout editor, or switch Home off entirely in Settings.`}
+          actionLabel={t`Edit layout`}
+          onAction={enterEditing}
         />
       ) : (
-        visible.map((s) => <Fragment key={s.key}>{sections[s.key]}</Fragment>)
+        visible.map((s) => <Fragment key={s.key}>{renderSection(s.key)}</Fragment>)
       )}
+
+      <Group justify="center" mt="xl">
+        <AddRailButton placement="home" />
+      </Group>
 
       <DiscoverDetailModal
         item={detailItem}
@@ -276,6 +419,30 @@ export default function HomePage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
+    </SurfaceFrame>
+  )
+}
+
+/**
+ * A reading list, optionally led by large tiles: the first few as `ContinueLead`'s cover tiles and
+ * the rest as a rail, or everything as a rail.
+ */
+function ReadingSection({
+  items,
+  rail,
+  hero,
+}: {
+  items: HomeReadingItem[]
+  rail: ReadingRailKind
+  hero: boolean
+}) {
+  if (!hero) return <ContinueRail items={items} rail={rail} />
+  // Exactly one item spilling past the lead tiles would sit alone on its own row, so two lead tiles take that case instead of three.
+  const leadCount = items.length === CONTINUE_LEAD_MAX + 1 ? 2 : CONTINUE_LEAD_MAX
+  return (
+    <>
+      <ContinueLead items={items.slice(0, leadCount)} rail={rail} />
+      {items.length > leadCount && <ContinueRail items={items.slice(leadCount)} rail={rail} />}
     </>
   )
 }
@@ -314,15 +481,13 @@ function LibraryFigure({
   )
 }
 
-function RailSkeleton() {
+/** Shown in place of the reading rails when `/home/reading` itself failed, rather than the start-reading nudge. */
+function ReadingErrorPrompt({ onRetry }: { onRetry: () => void }) {
+  const { t } = useLingui()
   return (
-    <div className="discover-rail" style={{ marginTop: 'var(--mantine-spacing-xl)' }}>
-      {Array.from({ length: 12 }, (_, i) => (
-        <div key={i} className="discover-rail-item">
-          <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
-        </div>
-      ))}
-    </div>
+    <Box mt="xl">
+      <EmptyState title={t`Couldn't load your reading progress`} actionLabel={t`Retry`} onAction={onRetry} />
+    </Box>
   )
 }
 
@@ -331,28 +496,24 @@ function RailSkeleton() {
  * tracking configured the rails would stay empty no matter how much the user reads elsewhere.
  */
 function StartReadingPrompt({ tracking }: { tracking: boolean }) {
+  const { t } = useLingui()
   return (
-    <Paper withBorder radius="lg" p="lg" mt="xl">
-      <Group gap="sm" justify="space-between" wrap="wrap">
-        <div style={{ minWidth: 0 }}>
-          <Text fw={700} c="var(--ink-hi)">
-            <Trans>Nothing to pick up yet</Trans>
-          </Text>
-          <Text size="sm" c="var(--ink-3)" mt={4}>
-            {tracking ? (
-              <Trans>Open a chapter and it will show up here, ready to resume.</Trans>
-            ) : (
-              <Trans>
-                Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking where
-                you are.
-              </Trans>
-            )}
-          </Text>
-        </div>
-        <Button component={Link} to="/library" variant="light" leftSection={<IconClock size={16} />}>
-          <Trans>Browse library</Trans>
-        </Button>
-      </Group>
-    </Paper>
+    <Box mt="xl">
+      <EmptyState
+        title={t`Nothing to pick up yet`}
+        description={
+          tracking ? (
+            <Trans>Open a chapter and it will show up here, ready to resume.</Trans>
+          ) : (
+            <Trans>
+              Open any chapter in the built-in reader, or connect Kavita, and Maki starts tracking
+              where you are.
+            </Trans>
+          )
+        }
+        actionLabel={t`Browse library`}
+        actionTo="/library"
+      />
+    </Box>
   )
 }

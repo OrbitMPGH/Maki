@@ -5,6 +5,7 @@ using Maki.Api.Hubs;
 using Maki.Core.Entities;
 using Maki.Core.Http;
 using Maki.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -34,6 +35,12 @@ public class DownloadQueueService(
     // for the other, and the next sweep re-queued a download that was still running.
     private readonly ConcurrentDictionary<int, int> _inFlight = new();
     private readonly ConcurrentDictionary<int, byte> _resolving = new();
+
+    /// <summary>
+    /// Rows re-pinned while their previous resolve still owned them. That resolve drives them again
+    /// on the way out, instead of leaving them Resolving until the orphan sweep comes round.
+    /// </summary>
+    private readonly ConcurrentDictionary<int, int> _resolveAgain = new();
 
     // A queue item can be cleared while a worker is fetching pages or a detached resolve is
     // finding a source. Its database row is cancelled or removed, but that alone cannot interrupt
@@ -187,6 +194,27 @@ public class DownloadQueueService(
     }
 
     /// <summary>
+    /// Restores a cooldown persisted on a RateLimited row, so a restart right after a 429 doesn't
+    /// send the next request straight back to the source. Never shortens a longer one.
+    /// </summary>
+    public void RestoreCooldown(string sourceName, DateTime until)
+    {
+        lock (_cooldownLock)
+        {
+            if (!_cooldowns.TryGetValue(sourceName, out var state))
+            {
+                state = new TrackerCooldown();
+                _cooldowns[sourceName] = state;
+            }
+
+            if (until.Ticks > state.UntilTicks)
+            {
+                state.UntilTicks = until.Ticks;
+            }
+        }
+    }
+
+    /// <summary>
     /// Snapshot of the sources currently cooling down, for <see cref="ClaimNextAsync"/> to exclude in
     /// SQL. Usually empty, which is the case the query is optimized for.
     /// </summary>
@@ -238,15 +266,43 @@ public class DownloadQueueService(
             QueuedAt = time.GetUtcNow().UtcDateTime, SortOrder = await NextSortOrderAsync(db, ct)
         };
         db.DownloadQueue.Add(item);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            db.Entry(item).State = EntityState.Detached;
+            throw new InvalidOperationException("A download is already queued for this chapter");
+        }
         await SignalAsync(item.Id, ct);
     }
 
+    // On a queue insert only the unique index on ActiveChapterId can raise this.
+    private static bool IsUniqueViolation(DbUpdateException e) =>
+        e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 };
+
+    /// <param name="preferMappingId">
+    /// Pins the download to one of the series' enabled source mappings, e.g. a user picking a
+    /// specific source copy of the chapter from the compare view. Tried first regardless of priority
+    /// when this item (re-)resolves — see <see cref="ChapterSourceResolver.ResolveAsync"/>. Persisted
+    /// on the row (<see cref="DownloadQueueItem.PreferredMappingId"/>) so it survives resolution
+    /// happening later, possibly across a restart.
+    /// <para>
+    /// Also changes the dedupe outcome: a pinned request for a chapter that is already queued but not
+    /// yet actively fetching (still <see cref="QueueStatus.Resolving"/>, <see cref="QueueStatus.Queued"/>,
+    /// or <see cref="QueueStatus.RateLimited"/>) overrides that row's preference in place and re-resolves
+    /// it, rather than being dropped like a second plain enqueue is. An item already past that point
+    /// (fetching pages, downloading, etc.) is not cheap to redirect mid-flight, so the existing row is
+    /// returned unchanged instead.
+    /// </para>
+    /// </param>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(
         int chapterId,
         CancellationToken ct = default,
         DownloadOrigin origin = DownloadOrigin.Unknown,
-        int? queuedByUserId = null)
+        int? queuedByUserId = null,
+        int? preferMappingId = null)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -257,14 +313,10 @@ public class DownloadQueueService(
             && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new InvalidOperationException("A health review is active for this series");
 
-        var alreadyQueued = await db.DownloadQueue.AnyAsync(q =>
-            q.ChapterId == chapterId &&
-            q.Status != QueueStatus.Completed &&
-            q.Status != QueueStatus.Failed &&
-            q.Status != QueueStatus.Cancelled, ct);
-        if (alreadyQueued)
+        var existing = await db.DownloadQueue.FirstOrDefaultAsync(q => q.ActiveChapterId == chapterId, ct);
+        if (existing is not null)
         {
-            return null;
+            return await OnAlreadyActiveAsync(existing);
         }
 
         // Cheap, DB-only check: a series with literally no enabled mapping can be rejected
@@ -283,16 +335,65 @@ public class DownloadQueueService(
             QueuedAt = time.GetUtcNow().UtcDateTime,
             SortOrder = await NextSortOrderAsync(db, ct),
             Origin = origin,
-            QueuedByUserId = queuedByUserId
+            QueuedByUserId = queuedByUserId,
+            PreferredMappingId = preferMappingId
         };
         db.DownloadQueue.Add(item);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (IsUniqueViolation(e))
+        {
+            // Lost a race with another enqueue (a double click, or a manual download against
+            // SmartDownloadJob) between the check above and this insert.
+            db.Entry(item).State = EntityState.Detached;
+            var winner = await db.DownloadQueue.FirstOrDefaultAsync(q => q.ActiveChapterId == chapterId, ct);
+            if (winner is null)
+            {
+                throw;
+            }
+            return await OnAlreadyActiveAsync(winner);
+        }
 
         // Detached from the request that enqueued it — CancellationToken.None, own scope inside —
         // since resolution can and should outlive the HTTP request that triggered it.
         _ = ResolveAndActivateAsync(item.Id, chapterId, CancellationToken.None);
 
         return item;
+
+        async Task<DownloadQueueItem?> OnAlreadyActiveAsync(DownloadQueueItem active)
+        {
+            if (preferMappingId is null)
+            {
+                return null;
+            }
+
+            // Conditional, because a worker can claim the row between the read above and this write,
+            // and a plain save would drag an active download back to Resolving. Already fetching or
+            // downloading means the pin is not applied: the caller sees the row's own
+            // PreferredMappingId still differs from what it asked for.
+            var repinned = await db.DownloadQueue
+                .Where(q => q.Id == active.Id &&
+                            (q.Status == QueueStatus.Resolving || q.Status == QueueStatus.Queued ||
+                             q.Status == QueueStatus.RateLimited))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.PreferredMappingId, preferMappingId)
+                    .SetProperty(q => q.SourceMappingId, (int?)null)
+                    .SetProperty(q => q.SourceChapterId, (string?)null)
+                    .SetProperty(q => q.Status, QueueStatus.Resolving)
+                    .SetProperty(q => q.ErrorKey, (string?)null)
+                    .SetProperty(q => q.ErrorParamsJson, (string?)null)
+                    .SetProperty(q => q.ErrorMessage, (string?)null), ct);
+            await db.Entry(active).ReloadAsync(ct);
+
+            if (repinned > 0)
+            {
+                _resolveAgain[active.Id] = chapterId;
+                _ = ResolveAndActivateAsync(active.Id, chapterId, CancellationToken.None);
+            }
+            return active;
+        }
     }
 
     /// <summary>
@@ -314,6 +415,7 @@ public class DownloadQueueService(
         {
             return;
         }
+        _resolveAgain.TryRemove(itemId, out _);
 
         var workCancellation = WorkCancellationToken(itemId);
 
@@ -358,6 +460,11 @@ public class DownloadQueueService(
         {
             _resolving.TryRemove(itemId, out _);
             ReleaseWorkCancellation(itemId);
+
+            if (_resolveAgain.TryRemove(itemId, out var againChapterId))
+            {
+                _ = ResolveAndActivateAsync(itemId, againChapterId, CancellationToken.None);
+            }
         }
     }
 
@@ -450,42 +557,71 @@ public class DownloadQueueService(
         }
 
         string sourceNameForBroadcast;
-        try
+        var pin = item.PreferredMappingId;
+        while (true)
         {
-            var resolved = await sourceResolver.ResolveAsync(db, chapter, preferMappingId: null, ct);
-            var cooldownUntil = CooldownUntil(resolved.Mapping.SourceName);
-
-            item.SourceMappingId = resolved.Mapping.Id;
-            item.SourceChapterId = resolved.SourceChapterId;
-            item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
-            item.NextAttempt = cooldownUntil;
-            if (cooldownUntil is null)
+            ResolvedChapterSource? resolved = null;
+            try
             {
-                item.ClearError();
+                resolved = await sourceResolver.ResolveAsync(db, chapter, pin, ct, onlyPreferred: pin != null);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Resolving queue item {Id} failed", itemId);
+            }
+
+            // A pick can land while this resolve is already running, and the enqueue then leaves the
+            // row to this call. The write lock makes the re-read and the save one step, so a pick
+            // either shows up here and is resolved again, or lands after and re-resolves on its own.
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+            var latestPin = await db.DownloadQueue
+                .Where(q => q.Id == itemId)
+                .Select(q => q.PreferredMappingId)
+                .FirstOrDefaultAsync(ct);
+            if (latestPin != pin)
+            {
+                pin = latestPin;
+                continue;
+            }
+
+            if (resolved is not null)
+            {
+                var cooldownUntil = CooldownUntil(resolved.Mapping.SourceName);
+
+                item.SourceMappingId = resolved.Mapping.Id;
+                item.SourceChapterId = resolved.SourceChapterId;
+                item.Status = cooldownUntil is null ? QueueStatus.Queued : QueueStatus.RateLimited;
+                item.NextAttempt = cooldownUntil;
+                if (cooldownUntil is null)
+                {
+                    item.ClearError();
+                }
+                else
+                {
+                    item.SetError("error.download.rateLimited", new { source = resolved.Mapping.SourceName });
+                }
+                sourceNameForBroadcast = resolved.Mapping.SourceName;
             }
             else
             {
-                item.SetError("error.download.rateLimited", new { source = resolved.Mapping.SourceName });
+                item.Status = QueueStatus.Failed;
+                item.SetError(pin is null ? "error.download.unexpected" : "error.download.pickedSourceUnavailable");
+                item.RetryCount++;
+                item.NextAttempt = NextRetryAttempt(item.RetryCount);
+                sourceNameForBroadcast = "?";
             }
-            sourceNameForBroadcast = resolved.Mapping.SourceName;
-        }
-        catch (Exception ex)
-        {
-            item.Status = QueueStatus.Failed;
-            item.SetError("error.download.unexpected");
-            item.RetryCount++;
-            item.NextAttempt = NextRetryAttempt(item.RetryCount);
-            sourceNameForBroadcast = "?";
-        }
 
-        try
-        {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Removed (e.g. QueueController.Remove) while this was resolving. Nothing left to update.
-            return;
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Removed (e.g. QueueController.Remove) while this was resolving. Nothing left to update.
+                return;
+            }
+            break;
         }
 
         if (item.Status is QueueStatus.Queued or QueueStatus.RateLimited)
@@ -536,10 +672,14 @@ public class DownloadQueueService(
             // the life of the process — so on a queue of a few thousand items the old form turned a
             // single-row pick into a repeated full scan of the table, and SQLite's writer lock made
             // that contend with the very status updates the pipeline needs to make progress.
+            // NextAttempt is the persisted half of a cooldown: the in-memory one is gone after a
+            // restart, and a row parked RateLimited must still wait out its own time.
+            var now = time.GetUtcNow().UtcDateTime;
             var cooling = CoolingDownSources();
             var candidate = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                             (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited) &&
+                            (q.NextAttempt == null || q.NextAttempt <= now) &&
                             (q.SourceMapping == null || !cooling.Contains(q.SourceMapping.SourceName)))
                 .OrderBy(q => q.SortOrder)
                 .ThenBy(q => q.QueuedAt)
@@ -554,8 +694,11 @@ public class DownloadQueueService(
 
             // Registered before the flip, not after: the sweep only has the status and these two
             // dictionaries to go on, so an id registered a moment late is one it can read as an
-            // orphan and re-queue out from under the worker about to run it.
+            // orphan and re-queue out from under the worker about to run it. The cancellation source
+            // is registered here too, for the same reason: a clear-queue request that lands between
+            // the flip and CancelWork's TryGetValue must always find a token to cancel, never a gap.
             _inFlight.AddOrUpdate(candidate.Id, 1, (_, owners) => owners + 1);
+            WorkCancellationToken(candidate.Id);
 
             int claimed;
             try
@@ -574,7 +717,6 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
-                WorkCancellationToken(candidate.Id);
                 return candidate.Id;
             }
 
@@ -658,10 +800,19 @@ public class DownloadQueueService(
             .Select(q => q.Id)
             .ToList();
 
+        var requeued = 0;
         if (orphanedDownloads.Count > 0)
         {
-            await db.DownloadQueue
-                .Where(q => orphanedDownloads.Contains(q.Id))
+            // The status is re-checked in the same statement: a worker can settle a row between the
+            // snapshot above and this write, and updating by id alone dragged a Completed row back
+            // to Queued and downloaded it again.
+            requeued = await db.DownloadQueue
+                .Where(q => orphanedDownloads.Contains(q.Id) &&
+                            (q.Status == QueueStatus.FetchingPages ||
+                             q.Status == QueueStatus.Downloading ||
+                             q.Status == QueueStatus.Validating ||
+                             q.Status == QueueStatus.Packaging ||
+                             q.Status == QueueStatus.Importing))
                 .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Queued), ct);
 
             foreach (var id in orphanedDownloads)
@@ -680,7 +831,9 @@ public class DownloadQueueService(
             // RetryCount 0 and no NextAttempt puts it straight back in RequeueEligibleFailuresAsync's
             // sights — the same job run would flip it to Queued again, and the row would cycle
             // between the two passes forever instead of settling.
-            var rows = await db.DownloadQueue.Where(q => unresolvable.Contains(q.Id)).ToListAsync(ct);
+            var rows = await db.DownloadQueue
+                .Where(q => unresolvable.Contains(q.Id) && q.Status == QueueStatus.Resolving)
+                .ToListAsync(ct);
             foreach (var row in rows)
             {
                 row.Status = QueueStatus.Failed;
@@ -700,7 +853,7 @@ public class DownloadQueueService(
             }
         }
 
-        return orphanedDownloads.Count + orphanedResolves.Count;
+        return requeued + orphanedResolves.Count;
     }
 
     /// <summary>
@@ -766,8 +919,15 @@ public class DownloadQueueService(
                         q.Status == QueueStatus.Failed &&
                         q.HealthOperationId == null &&
                         q.RetryCount < maxAttempts &&
-                        (q.NextAttempt == null || q.NextAttempt <= now))
+                        (q.NextAttempt == null || q.NextAttempt <= now) &&
+                        (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)))
             .ToListAsync(ct);
+
+        // A chapter can hold several failed rows from separate enqueues, and only one may go active.
+        eligible = eligible
+            .GroupBy(q => q.ChapterId is { } chapterId ? (long)chapterId : -q.Id)
+            .Select(g => g.MaxBy(q => q.Id)!)
+            .ToList();
 
         foreach (var item in eligible)
         {

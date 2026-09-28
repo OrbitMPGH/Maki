@@ -20,12 +20,20 @@ public static class UserTimeZone
     /// day boundary in the wrong place.
     /// </summary>
     public static async Task<TimeZoneInfo> ResolveAsync(
+        IUserSettingsStore userSettings, int userId, CancellationToken ct = default) =>
+        await TryResolveAsync(userSettings, userId, ct) ?? TimeZoneInfo.Utc;
+
+    /// <summary>
+    /// The user's stored time zone, or null when none is stored or the stored id is unknown here.
+    /// For callers that have a better fallback than UTC, such as the browser's current offset.
+    /// </summary>
+    public static async Task<TimeZoneInfo?> TryResolveAsync(
         IUserSettingsStore userSettings, int userId, CancellationToken ct = default)
     {
         var id = await userSettings.GetAsync(userId, SettingKeys.UserTimeZone, ct);
         if (string.IsNullOrWhiteSpace(id))
         {
-            return TimeZoneInfo.Utc;
+            return null;
         }
 
         try
@@ -34,7 +42,7 @@ public static class UserTimeZone
         }
         catch (Exception e) when (e is TimeZoneNotFoundException or InvalidTimeZoneException)
         {
-            return TimeZoneInfo.Utc;
+            return null;
         }
     }
 }

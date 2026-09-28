@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using Maki.Api.Configuration;
+using Maki.Api.Localization;
 using Maki.Core.Download;
 using Maki.Core.Http;
 using Maki.Core.Images;
@@ -26,6 +27,13 @@ public record ComparePanel(
     string Status,
     string? Error,
     string? ChapterLabel,
+    /// <summary>
+    /// Total pages this source's own listing reports for the target chapter, from the same
+    /// <c>GetPagesAsync</c> call the sample is drawn from — not the (smaller) number of pages
+    /// actually sampled and shown. Null when the chapter was never successfully fetched (failed
+    /// before or during that call).
+    /// </summary>
+    int? PageCount,
     /// <summary>
     /// This source's pages were matched against the others' by image content. False for a source
     /// carrying a different edition, whose column is shown for ranking but lines up with nothing.
@@ -107,9 +115,14 @@ public sealed class SourceComparePreviewService(
     /// Starts (or restarts) the comparison for a series. Returns as soon as the panels exist —
     /// they fill in independently, so one dead source never holds up the rest.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Too many comparisons already running.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Too many comparisons already running. The message is for the log, not the response;
+    /// <see cref="Controllers.SourceMappingController.StartCompare"/> catches this and always
+    /// answers with the fixed <c>error.sourceMapping.compareAlreadyRunning</c> key.
+    /// </exception>
     public CompareSnapshot Start(
-        int seriesId, IReadOnlyList<SourceCompareCandidate> candidates, decimal? chapterNumber)
+        int seriesId, IReadOnlyList<SourceCompareCandidate> candidates, decimal? chapterNumber,
+        ILocalizer localizer)
     {
         // Finished jobs are kept so a modal left open still has something to draw, but only for as
         // long as anyone could still be looking at one.
@@ -126,8 +139,7 @@ public sealed class SourceComparePreviewService(
         }
         else if (_jobs.Count(pair => !pair.Value.Finished) >= MaxConcurrentJobs)
         {
-            throw new InvalidOperationException(
-                "Another source comparison is already running. Wait for it to finish and try again.");
+            throw new InvalidOperationException("Too many source comparisons running");
         }
 
         // A superseded run is cancelled, not awaited, so its in-flight page writes can still hold
@@ -150,12 +162,12 @@ public sealed class SourceComparePreviewService(
 
         _jobs[seriesId] = job;
         job.Work = Task.Run(() => RunAsync(job));
-        return Snapshot(job);
+        return Snapshot(job, localizer);
     }
 
     /// <summary>Current state of a series' comparison, or null when none has been started.</summary>
-    public CompareSnapshot? Snapshot(int seriesId) =>
-        _jobs.TryGetValue(seriesId, out var job) ? Snapshot(job) : null;
+    public CompareSnapshot? Snapshot(int seriesId, ILocalizer localizer) =>
+        _jobs.TryGetValue(seriesId, out var job) ? Snapshot(job, localizer) : null;
 
     /// <summary>
     /// The file holding one sampled page, or null. The source name is resolved through the registry
@@ -237,14 +249,14 @@ public sealed class SourceComparePreviewService(
             // Waiting out a source's backoff can mean fifteen minutes of a spinner. Say so instead.
             if (queue.CooldownRemaining(panel.SourceName) > TimeSpan.Zero)
             {
-                Fail(job, panel, "Rate limited right now, try again shortly");
+                Fail(job, panel, "error.sourceMapping.compareRateLimited");
                 return;
             }
 
             var source = sourceRegistry.Find(panel.SourceName);
             if (source is null)
             {
-                Fail(job, panel, "Source is no longer registered");
+                Fail(job, panel, "error.sourceMapping.compareSourceUnregistered");
                 return;
             }
 
@@ -258,7 +270,7 @@ public sealed class SourceComparePreviewService(
 
             if (chapters.Count == 0)
             {
-                Fail(job, panel, "Source lists no chapters for this series");
+                Fail(job, panel, "error.sourceMapping.compareNoChaptersListed");
             }
         }
         catch (Exception ex)
@@ -368,7 +380,7 @@ public sealed class SourceComparePreviewService(
 
         if (target is null)
         {
-            Fail(job, panel, "Chapter not listed by this source");
+            Fail(job, panel, "error.sourceMapping.compareChapterNotListed");
             return;
         }
 
@@ -380,7 +392,7 @@ public sealed class SourceComparePreviewService(
             var pages = await source.GetPagesAsync(target, ct);
             if (pages.Pages.Count == 0)
             {
-                Fail(job, panel, "Source returned no pages");
+                Fail(job, panel, "error.sourceMapping.compareNoPages");
                 return;
             }
 
@@ -433,6 +445,7 @@ public sealed class SourceComparePreviewService(
                 // is nothing to align against until the last one is in. AlignPages trims this.
                 panel.Pages = rendered;
                 panel.Hashes = hashes;
+                panel.PageCount = pages.Pages.Count;
                 panel.Status = PanelStatus.Ready;
             }
         }
@@ -485,7 +498,7 @@ public sealed class SourceComparePreviewService(
     {
         if (ex is OperationCanceledException)
         {
-            Fail(job, panel, "Timed out");
+            Fail(job, panel, "error.sourceMapping.compareTimedOut");
             return;
         }
 
@@ -497,16 +510,28 @@ public sealed class SourceComparePreviewService(
         {
             var until = queue.EnterRateLimitCooldown(panel.SourceName, retryAfter);
             logger.LogInformation("Source comparison rate-limited by {Source} until {Until:u}", panel.SourceName, until);
-            Fail(job, panel, "Rate limited, try again shortly");
+            Fail(job, panel, "error.sourceMapping.compareRateLimited");
             return;
         }
 
         logger.LogWarning(ex, "Source comparison failed on {Source} for series {SeriesId}",
             panel.SourceName, job.SeriesId);
-        Fail(job, panel, ex.Message);
+        FailRaw(job, panel, ex.Message);
     }
 
-    private static void Fail(Job job, PanelState panel, string error)
+    /// <summary>Records a Maki-worded failure as a catalogue key, rendered later by <see cref="Snapshot(Job, ILocalizer)"/>.</summary>
+    private static void Fail(Job job, PanelState panel, string errorKey, object? args = null)
+    {
+        lock (job.Sync)
+        {
+            panel.Status = PanelStatus.Failed;
+            panel.ErrorKey = errorKey;
+            panel.ErrorArgs = args;
+        }
+    }
+
+    /// <summary>Records text nobody at Maki worded: whatever the source library's own exception said.</summary>
+    private static void FailRaw(Job job, PanelState panel, string error)
     {
         lock (job.Sync)
         {
@@ -515,7 +540,7 @@ public sealed class SourceComparePreviewService(
         }
     }
 
-    private static CompareSnapshot Snapshot(Job job)
+    private static CompareSnapshot Snapshot(Job job, ILocalizer localizer)
     {
         lock (job.Sync)
         {
@@ -531,10 +556,11 @@ public sealed class SourceComparePreviewService(
                     p.SourceName,
                     p.DisplayName,
                     p.Status,
-                    p.Error,
+                    p.ErrorKey is not null ? localizer.Get(p.ErrorKey, p.ErrorArgs) : p.Error,
                     // Invariant: a decimal chapter renders "6,5" on a comma-decimal server, which
                     // then sits next to the "6.5" the chapter picker shows.
                     p.Target?.Number?.ToString(CultureInfo.InvariantCulture) ?? p.Target?.NumberRaw,
+                    p.PageCount,
                     p.Aligned,
                     p.Pages))]);
         }
@@ -572,9 +598,16 @@ public sealed class SourceComparePreviewService(
         public required string? LanguageFilter { get; init; }
 
         public string Status { get; set; } = PanelStatus.Listing;
+
+        /// <summary>Raw text nobody at Maki worded: an exception from the source library itself.
+        /// Null when <see cref="ErrorKey"/> carries a Maki-worded failure instead.</summary>
         public string? Error { get; set; }
+        public string? ErrorKey { get; set; }
+        public object? ErrorArgs { get; set; }
+
         public IReadOnlyList<SourceChapter>? Chapters { get; set; }
         public SourceChapter? Target { get; set; }
+        public int? PageCount { get; set; }
         public List<ComparePage?> Pages { get; set; } = [];
 
         /// <summary>

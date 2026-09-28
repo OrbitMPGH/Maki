@@ -6,8 +6,8 @@ public class SourceChapterListTests
 {
     private static SourceChapter Ch(
         decimal? number, int? volume = null, string language = "en", string id = "x",
-        DateTime? released = null) =>
-        new("test", "series-1", id, number?.ToString(), number, volume, null, language, released);
+        DateTime? released = null, string? title = null) =>
+        new("test", "series-1", id, number?.ToString(), number, volume, title, language, released);
 
     [Fact]
     public void Orders_Ascending_By_Number()
@@ -75,6 +75,27 @@ public class SourceChapterListTests
 
         Assert.Equal(2, result.Count);
         Assert.Equal("oneshot", result[0].SourceChapterId);
+    }
+
+    [Fact]
+    public void Keeps_Unnumbered_Chapters_With_Different_Titles_In_One_Volume()
+    {
+        var result = SourceChapterList.Normalize(
+        [
+            Ch(null, volume: 1, id: "a", title: "Extra"),
+            Ch(null, volume: 1, id: "b", title: "Afterword"),
+            Ch(null, volume: 1, id: "c", title: "extra"),
+        ]);
+
+        Assert.Equal(["a", "b"], result.Select(c => c.SourceChapterId));
+    }
+
+    [Fact]
+    public void Title_Does_Not_Split_Numbered_Duplicates()
+    {
+        var result = SourceChapterList.Normalize([Ch(1, id: "a", title: "One"), Ch(1, id: "b", title: "Uno")]);
+
+        Assert.Equal("a", Assert.Single(result).SourceChapterId);
     }
 
     [Fact]

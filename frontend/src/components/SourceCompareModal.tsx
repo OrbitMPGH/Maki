@@ -29,6 +29,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import {
   useChapters,
+  useDownloadChapterFrom,
   useRedownloadFromSource,
   useReorderMappings,
   useSaveSourcePriority,
@@ -55,9 +56,22 @@ function formatSize(bytes: number): string {
   return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`
 }
 
+/** The chapter a `pick` run is about: one fixed chapter, re-fetched from whichever panel wins. */
+export interface PickChapter {
+  id: number
+  number: number
+  label: string
+  /** What the file on disk came from, so its panel can say so. Null for imports and torrents. */
+  currentSourceName: string | null
+}
+
 /**
  * Side-by-side view of the same chapter as each of a series' sources scans it, with the columns
  * draggable into a preference order that is written back as this series' source priority.
+ *
+ * In `pick` mode the same grid answers a narrower question: this one chapter came out badly, which
+ * source has a better scan of it. Ranking is out of the way (no drag, no chapter picker, no save)
+ * and each column offers to fetch that chapter from itself, overwriting the file.
  *
  * Source names are hidden by default: seeing "MangaDex" above a panel is exactly the kind of prior
  * that the comparison exists to get around. They reveal on the toggle, and after the order is saved.
@@ -66,10 +80,14 @@ export function SourceCompareModal({
   seriesId,
   opened,
   onClose,
+  mode = 'compare',
+  chapter,
 }: {
   seriesId: number
   opened: boolean
   onClose: () => void
+  mode?: 'compare' | 'pick'
+  chapter?: PickChapter
 }) {
   const { can } = useAuth()
   const { t, i18n } = useLingui()
@@ -84,6 +102,8 @@ export function SourceCompareModal({
   const { data: chapters } = useChapters(seriesId)
   const { data: allSources } = useSources()
   const redownload = useRedownloadFromSource()
+  const downloadFrom = useDownloadChapterFrom()
+  const pick = mode === 'pick' && chapter ? chapter : null
 
   const [order, setOrder] = useState<number[]>([])
   // Until the user drags something, failed panels are floated to the back. Seeding can't do it —
@@ -111,11 +131,11 @@ export function SourceCompareModal({
       setZoom(null)
       setOrder([])
       setRanked(false)
-      start.mutate({ seriesId })
+      start.mutate({ seriesId, chapterNumber: pick?.number })
     }
     // start.mutate is stable; re-running this on every render would restart the job in a loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, seriesId])
+  }, [opened, seriesId, pick?.number])
 
   // Seed the ranking from the server's order (current priority) once, then leave it to the user —
   // reseeding on every poll would undo a drag the moment the next panel finished fetching.
@@ -198,7 +218,7 @@ export function SourceCompareModal({
         onSuccess: () => {
           setSaved(true)
           setBlind(false)
-          notifications.show({ message: now`Source priority updated`, color: 'green' })
+          notifications.show({ message: now`Source priority updated`, color: 'var(--ok)' })
         },
       },
     )
@@ -217,7 +237,7 @@ export function SourceCompareModal({
       },
       {
         onSuccess: () =>
-          notifications.show({ message: now`Default source order updated`, color: 'green' }),
+          notifications.show({ message: now`Default source order updated`, color: 'var(--ok)' }),
       },
     )
   }
@@ -319,9 +339,23 @@ export function SourceCompareModal({
                     other: `Queued # chapters from ${displayName}.`,
                   })
           notifications.show({
-            color: result.queued > 0 ? 'green' : undefined,
+            color: result.queued > 0 ? 'var(--ok)' : undefined,
             message,
           })
+        },
+      },
+    )
+  }
+
+  const pickPanel = (panel: ComparePanel) => {
+    if (!pick) return
+    const label = pick.label
+    downloadFrom.mutate(
+      { chapterId: pick.id, sourceMappingId: panel.mappingId },
+      {
+        onSuccess: () => {
+          notifications.show({ color: 'var(--ok)', message: now`Fetching ${label} again. The file is replaced when it lands.` })
+          onClose()
         },
       },
     )
@@ -337,18 +371,13 @@ export function SourceCompareModal({
       <Modal
         opened={opened}
         onClose={onClose}
-        size="95%"
-        title={t`Compare sources`}
+        size="min(1180px, calc(100vw - 3rem))"
+        title={pick ? t`Find a better copy of ${pick.label}` : t`Compare sources`}
         // Full height with the column row taking what's left, so the row scrolls inside the modal
         // and its horizontal scrollbar stays on screen. Otherwise the modal itself scrolls and a
         // webtoon's tall pages push that scrollbar far below the fold.
         styles={{
-          content: {
-            height: 'calc(100dvh - var(--modal-y-offset) * 2)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          },
+          content: { height: 'calc(100dvh - var(--modal-y-offset) * 2)' },
           body: { paddingTop: 0, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
         }}
         // Both modals hear the same Escape, so without this one keypress closes the zoom *and*
@@ -356,17 +385,24 @@ export function SourceCompareModal({
         closeOnEscape={zoom === null}
       >
         <Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
-          <Text size="sm" c="dimmed">
-            <Trans>
-              The same chapter as each source scans it, heaviest first. Drag the columns so your
-              favourite is first, then save: that becomes the order chapters download in for this
-              series.
-            </Trans>
+          <Text size="sm" c="var(--ink-3)">
+            {pick ? (
+              <Trans>
+                This chapter as each source scans it, heaviest first. Pick the one that looks best
+                and Maki downloads it again from there, replacing the file you have.
+              </Trans>
+            ) : (
+              <Trans>
+                The same chapter as each source scans it, heaviest first. Drag the columns so your
+                favourite is first, then save: that becomes the order chapters download in for this
+                series.
+              </Trans>
+            )}
           </Text>
 
           <Group justify="space-between" wrap="wrap" gap="sm">
             <Group gap="sm">
-              {chapterOptions.length > 0 && (
+              {!pick && chapterOptions.length > 0 && (
                 <Select
                   size="xs"
                   w={160}
@@ -390,7 +426,7 @@ export function SourceCompareModal({
                   multiline
                   w={300}
                 >
-                  <Badge size="sm" variant="light" color="teal" leftSection={<IconPhotoCheck size={12} />}>
+                  <Badge size="sm" variant="light" color="var(--ok)" leftSection={<IconPhotoCheck size={12} />}>
                     <Trans>Pages matched</Trans>
                   </Badge>
                 </Tooltip>
@@ -406,7 +442,7 @@ export function SourceCompareModal({
           </Group>
 
           {snapshot?.mixedChapters && (
-            <Alert color="yellow" icon={<IconAlertTriangle size={16} />}>
+            <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />}>
               <Trans>
                 Not every source carries chapter {chapterNumber}, so some columns are
                 showing their own first chapter instead. Each column says which one it got.
@@ -439,7 +475,7 @@ export function SourceCompareModal({
                     style={{
                       flex: `0 0 ${COLUMN_WIDTH}px`,
                       transform: shift ? `translateX(${shift * COLUMN_WIDTH}px)` : undefined,
-                      transition: 'transform 150ms ease',
+                      transition: 'transform var(--dur-base) var(--ease)',
                       opacity: dragFromIndex === i ? 0 : 1,
                       pointerEvents:
                         dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
@@ -450,8 +486,9 @@ export function SourceCompareModal({
                       radius="md"
                       padding="xs"
                       h="100%"
-                      draggable
+                      draggable={!pick}
                       onDragStart={(e) => {
+                        if (pick) return
                         // setDragImage on the live node keeps tracking it, so the ghost goes
                         // invisible along with the column once opacity flips to 0. A detached
                         // clone is an independent snapshot.
@@ -468,19 +505,24 @@ export function SourceCompareModal({
                         setDragFromIndex(i)
                         setHoverIndex(i)
                       }}
-                      onDragEnd={commitDrag}
-                      style={{ cursor: 'grab' }}
+                      onDragEnd={pick ? undefined : commitDrag}
+                      style={{ cursor: pick ? undefined : 'grab' }}
                     >
                       <Group gap={6} wrap="nowrap" mb="xs">
-                        <IconGripVertical size={14} style={{ opacity: 0.5 }} />
+                        {!pick && <IconGripVertical size={14} style={{ opacity: 0.5 }} />}
                         <Badge size="sm" variant="filled">
                           #{i + 1}
                         </Badge>
                         <Text size="sm" fw={500} truncate>
                           {blind ? (blindLabels.get(panel.mappingId) ?? '?') : panel.displayName}
                         </Text>
+                        {pick && pick.currentSourceName === panel.sourceName && (
+                          <Badge size="xs" variant="light" color="var(--neutral)">
+                            <Trans>Current copy</Trans>
+                          </Badge>
+                        )}
                         {snapshot?.mixedChapters && panel.chapterLabel && (
-                          <Badge size="xs" variant="light" color="gray">
+                          <Badge size="xs" variant="light" color="var(--neutral)">
                             <Trans>Ch. {chapterLabel}</Trans>
                           </Badge>
                         )}
@@ -491,7 +533,7 @@ export function SourceCompareModal({
                             multiline
                             w={280}
                           >
-                            <Badge size="xs" variant="light" color="orange">
+                            <Badge size="xs" variant="light" color="var(--warn)">
                               <Trans>Unmatched</Trans>
                             </Badge>
                           </Tooltip>
@@ -505,14 +547,36 @@ export function SourceCompareModal({
                           multiline
                           w={280}
                         >
-                          <Text size="xs" c="dimmed" mb={6}>
+                          <Text size="xs" c="var(--ink-3)" mb={6}>
                             <Trans>{weight} total</Trans>
                           </Text>
                         </Tooltip>
                       )}
 
+                      {pick && panel.status === 'ready' && (
+                        <Stack gap={6} mb="xs">
+                          {panel.pageCount !== null && (
+                            <Text size="xs" c="var(--ink-3)">
+                              {plural(panel.pageCount, { one: '# page', other: '# pages' })}
+                            </Text>
+                          )}
+                          <Button
+                            size="xs"
+                            variant="light"
+                            fullWidth
+                            loading={
+                              downloadFrom.isPending &&
+                              downloadFrom.variables?.sourceMappingId === panel.mappingId
+                            }
+                            onClick={() => pickPanel(panel)}
+                          >
+                            <Trans>Use this copy</Trans>
+                          </Button>
+                        </Stack>
+                      )}
+
                       {panel.status === 'failed' ? (
-                        <Text size="xs" c="dimmed">
+                        <Text size="xs" c="var(--ink-3)">
                           {panel.error ?? <Trans>Failed</Trans>}
                         </Text>
                       ) : panel.status === 'ready' ? (
@@ -529,7 +593,7 @@ export function SourceCompareModal({
                                   onMouseDown={(e) => e.stopPropagation()}
                                   onClick={() => setZoom({ panel: i, page: pageIndex })}
                                 />
-                                <Text size="10px" c="dimmed" ta="center" mt={2}>
+                                <Text size="10px" c="var(--ink-3)" ta="center" mt={2}>
                                   {page.width ? `${page.width}×${page.height} · ` : ''}
                                   {formatSize(page.bytes)}
                                 </Text>
@@ -543,12 +607,12 @@ export function SourceCompareModal({
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  border: '1px dashed var(--mantine-color-dimmed)',
-                                  borderRadius: 4,
+                                  border: '1px dashed var(--ink-3)',
+                                  borderRadius: 'var(--mantine-radius-xs)',
                                   opacity: 0.4,
                                 }}
                               >
-                                <Text size="xs" c="dimmed">
+                                <Text size="xs" c="var(--ink-3)">
                                   <Trans>No matching page</Trans>
                                 </Text>
                               </Box>
@@ -558,7 +622,7 @@ export function SourceCompareModal({
                       ) : (
                         <Stack gap="xs">
                           <Skeleton height={320} radius="sm" />
-                          <Text size="xs" c="dimmed" ta="center">
+                          <Text size="xs" c="var(--ink-3)" ta="center">
                             {panel.status === 'listing' ? (
                               <Trans>Looking up chapters…</Trans>
                             ) : (
@@ -576,7 +640,7 @@ export function SourceCompareModal({
 
           <Group justify="space-between">
             <Group gap="xs">
-              {saved && staleChapters > 0 && winner && (
+              {!pick && saved && staleChapters > 0 && winner && (
                 <Tooltip
                   label={`${plural(staleChapters, {
                     one: '# downloaded chapter came from another source.',
@@ -599,7 +663,7 @@ export function SourceCompareModal({
                   </Button>
                 </Tooltip>
               )}
-              {saved && isAdmin && (
+              {!pick && saved && isAdmin && (
                 <Tooltip
                   label={t`Puts these sources, in this order, at the front of the global priority list used when new series auto-match.`}
                   withArrow
@@ -621,13 +685,15 @@ export function SourceCompareModal({
               <Button variant="default" onClick={onClose}>
                 <Trans>Close</Trans>
               </Button>
-              <Button
-                loading={reorder.isPending}
-                disabled={panels.length === 0}
-                onClick={save}
-              >
-                <Trans>Save order</Trans>
-              </Button>
+              {!pick && (
+                <Button
+                  loading={reorder.isPending}
+                  disabled={panels.length === 0}
+                  onClick={save}
+                >
+                  <Trans>Save order</Trans>
+                </Button>
+              )}
             </Group>
           </Group>
         </Stack>
@@ -670,7 +736,7 @@ export function SourceCompareModal({
                   <IconChevronRight size={16} />
                 </ActionIcon>
               </Group>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   Row {zoomRowNumber} of {zoomTotalPages}
                 </Trans>
@@ -695,7 +761,7 @@ export function SourceCompareModal({
               />
             </Box>
 
-            <Text size="xs" c="dimmed" ta="center" px="sm" py={6}>
+            <Text size="xs" c="var(--ink-3)" ta="center" px="sm" py={6}>
               <Trans>← → swap source</Trans> · <Trans>↑ ↓ change page</Trans> · <Trans>Esc closes</Trans>
             </Text>
           </Stack>

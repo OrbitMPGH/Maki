@@ -23,6 +23,20 @@ public record RemoteEntry(
     /// <summary>The user's score on the tracker, normalized to 1–10; null = unrated there.</summary>
     int? Score = null);
 
+/// <summary>
+/// One entry of a user's remote list, as returned by <see cref="IScrobbleTracker.ListAsync"/>.
+/// Cross ids are whatever the tracker hands out alongside its own id (AniList exposes MAL ids,
+/// Kitsu exposes mappings); null when unknown. MangaBakaId is only set by the MangaBaka tracker.
+/// </summary>
+public record RemoteListEntry(
+    string RemoteId,
+    ScrobbleStatus Status,
+    string Title,
+    long? AniListId = null,
+    long? MalId = null,
+    long? KitsuId = null,
+    long? MangaBakaId = null);
+
 /// <summary>A search result offered for matching.</summary>
 public record ScrobbleCandidate(string Id, string Title, IReadOnlyList<string> AltTitles, string Url);
 
@@ -91,6 +105,14 @@ public interface IScrobbleTracker
     Task UpdateRatingAsync(int userId, string remoteId, int score, CancellationToken ct = default);
 
     Task<IReadOnlyList<ScrobbleCandidate>> SearchAsync(int userId, string title, CancellationToken ct = default);
+
+    /// <summary>
+    /// The user's whole manga list filtered to <paramref name="statuses"/>, paged through to the end.
+    /// Used by import lists; throws <see cref="TrackerException"/> on auth or transport failure.
+    /// </summary>
+    Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default) =>
+        throw new NotSupportedException($"{Name} cannot list entries");
 
     string EntryUrl(string remoteId);
 }

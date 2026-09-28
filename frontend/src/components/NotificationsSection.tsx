@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ComponentType, type CSSProperties } from 'react'
 import {
   ActionIcon,
   Badge,
   Button,
-  Card,
   Group,
   Modal,
+  MultiSelect,
+  NumberInput,
   PasswordInput,
   Select,
   Stack,
@@ -15,102 +16,362 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { IconBellPlus, IconPencil, IconTrash } from '@tabler/icons-react'
+import {
+  IconBell,
+  IconBellPlus,
+  IconBellRinging,
+  IconBrandDiscord,
+  IconBrandSlack,
+  IconBrandTelegram,
+  IconBroadcast,
+  IconDeviceMobileMessage,
+  IconPencil,
+  IconServer,
+  IconTrash,
+  IconWebhook,
+} from '@tabler/icons-react'
 import { notifications as toast } from '@mantine/notifications'
 import {
   useCreateNotification,
   useDeleteNotification,
+  useNotificationProviders,
   useNotifications,
+  useTags,
   useTestNotification,
   useUpdateNotification,
 } from '../api/hooks'
-import type { NotificationDto, NotificationRequest, NotificationType } from '../api/types'
+import type {
+  NotificationDto,
+  NotificationFieldDescriptor,
+  NotificationProviderDescriptor,
+  NotificationRequest,
+  NotificationType,
+  TagDto,
+} from '../api/types'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { Panel } from './ui/Panel'
+import { EmptyState } from './ui/EmptyState'
 import { useLabel } from '../i18n-context'
 
-const EVENT_FIELDS: { key: keyof NotificationRequest['events']; label: MessageDescriptor; description: MessageDescriptor }[] = [
-  { key: 'chapterDownloaded', label: msg`Chapter downloaded`, description: msg`A chapter finished downloading and imported.` },
-  { key: 'downloadFailed', label: msg`Download failed`, description: msg`A chapter download failed.` },
-  { key: 'newChapterAvailable', label: msg`New chapter available`, description: msg`A refresh found new chapters for a series.` },
-  { key: 'importCompleted', label: msg`Import completed`, description: msg`A library import folder finished.` },
-  { key: 'healthIssue', label: msg`Health issue`, description: msg`A new system health problem was detected.` },
-  { key: 'updateAvailable', label: msg`Update available`, description: msg`A newer Maki release was published.` },
+interface EventField {
+  key: keyof NotificationRequest['events']
+  label: MessageDescriptor
+  description: MessageDescriptor
+}
+
+const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[] }[] = [
+  {
+    title: msg`Downloads`,
+    fields: [
+      { key: 'chapterDownloaded', label: msg`Chapter downloaded`, description: msg`A chapter finished downloading and imported.` },
+      { key: 'downloadFailed', label: msg`Download failed`, description: msg`A chapter download failed.` },
+      { key: 'newChapterAvailable', label: msg`New chapter available`, description: msg`A refresh found new chapters for a series.` },
+      { key: 'importCompleted', label: msg`Import completed`, description: msg`A library import folder finished.` },
+    ],
+  },
+  {
+    title: msg`Library`,
+    fields: [
+      { key: 'seriesAdded', label: msg`Series added`, description: msg`A series was added to the library, by hand or from an approved request.` },
+      { key: 'seriesRemoved', label: msg`Series removed`, description: msg`A series was removed from the library.` },
+      { key: 'manualMatchNeeded', label: msg`Manual match needed`, description: msg`Automatic source matching found nothing for a new series.` },
+    ],
+  },
+  {
+    title: msg`Requests`,
+    fields: [
+      { key: 'requestSubmitted', label: msg`Request submitted`, description: msg`Someone asked for a series.` },
+      { key: 'requestResolved', label: msg`Request resolved`, description: msg`A request was approved or rejected.` },
+    ],
+  },
+  {
+    title: msg`System`,
+    fields: [
+      { key: 'healthIssue', label: msg`Health issue`, description: msg`A new system health problem was detected.` },
+      { key: 'updateAvailable', label: msg`Update available`, description: msg`A newer Maki release was published.` },
+    ],
+  },
 ]
 
 /**
- * "Discord" is a product name and is never translated; "Webhook" is a generic connector kind and
- * is. Kept as descriptors rather than plain strings because the module evaluates once and would
- * freeze whatever language was active then.
+ * Product names are never translated; "Webhook" is a generic connector kind and is. Descriptors
+ * rather than plain strings because the module evaluates once and would freeze the language.
  */
-const NOTIFICATION_TYPE_LABELS: Record<NotificationType, MessageDescriptor | string> = {
+const TYPE_LABELS: Record<NotificationType, MessageDescriptor | string> = {
   Discord: 'Discord',
   Webhook: msg`Webhook`,
+  Telegram: 'Telegram',
+  Notifiarr: 'Notifiarr',
+  Ntfy: 'ntfy',
+  Gotify: 'Gotify',
+  Pushover: 'Pushover',
+  Apprise: 'Apprise',
+  SlackWebhook: 'Slack / Mattermost',
 }
 
-function useNotificationTypeOptions() {
+const TYPE_STYLE: Record<NotificationType, { icon: ComponentType<{ size?: number }>; color: string }> = {
+  Discord: { icon: IconBrandDiscord, color: 'var(--info)' },
+  Webhook: { icon: IconWebhook, color: 'var(--neutral)' },
+  Telegram: { icon: IconBrandTelegram, color: '#229ED9' },
+  Notifiarr: { icon: IconBroadcast, color: '#9b59b6' },
+  Ntfy: { icon: IconBellRinging, color: '#317f6f' },
+  Gotify: { icon: IconServer, color: '#4b8dd9' },
+  Pushover: { icon: IconDeviceMobileMessage, color: '#249DF1' },
+  Apprise: { icon: IconBell, color: '#f39c12' },
+  SlackWebhook: { icon: IconBrandSlack, color: '#E01E5A' },
+}
+
+const FALLBACK_STYLE = { icon: IconBell, color: 'var(--neutral)' }
+
+// The server may know a type this build does not, so both lookups fall back rather than trust the union.
+const typeStyle = (type: NotificationType) => TYPE_STYLE[type] ?? FALLBACK_STYLE
+const typeLabel = (type: NotificationType): MessageDescriptor | string => TYPE_LABELS[type] ?? type
+
+interface FieldCopy {
+  label: MessageDescriptor
+  description?: MessageDescriptor
+}
+
+/** Looked up as `${type}.${key}` first, then by `key` alone, so shared keys carry one label. */
+const FIELD_COPY: Record<string, FieldCopy> = {
+  webhookUrl: { label: msg`Webhook URL` },
+  url: { label: msg`URL` },
+  bearerToken: { label: msg`Bearer token` },
+  botToken: { label: msg`Bot token`, description: msg`The token @BotFather gave you.` },
+  chatId: { label: msg`Chat ID`, description: msg`User, group or channel ID. Public channels can use @name.` },
+  threadId: { label: msg`Topic ID`, description: msg`Posts into one topic of a forum group.` },
+  silent: { label: msg`Send silently`, description: msg`Delivers without a notification sound.` },
+  apiKey: { label: msg`API key` },
+  channelId: { label: msg`Discord channel ID`, description: msg`Notifiarr posts here through its Discord bot.` },
+  serverUrl: { label: msg`Server URL` },
+  topic: { label: msg`Topic` },
+  token: { label: msg`Access token` },
+  priority: { label: msg`Priority` },
+  appToken: { label: msg`Application token` },
+  userKey: { label: msg`User key` },
+  device: { label: msg`Device`, description: msg`Leave empty to send to every device.` },
+  configKey: { label: msg`Config key`, description: msg`Uses a configuration saved on the Apprise server.` },
+  urls: { label: msg`Notification URLs`, description: msg`Comma separated Apprise URLs, used when there is no config key.` },
+  tag: { label: msg`Tag`, description: msg`Only notify services with this tag.` },
+  channel: { label: msg`Channel`, description: msg`Overrides the default channel of the webhook.` },
+  'Webhook.url': { label: msg`URL`, description: msg`Receives a JSON POST for each event.` },
+  'SlackWebhook.webhookUrl': { label: msg`Webhook URL`, description: msg`An incoming webhook from Slack or Mattermost.` },
+  'Ntfy.token': { label: msg`Access token`, description: msg`Only needed for protected topics.` },
+  'Ntfy.priority': { label: msg`Priority`, description: msg`1 (lowest) to 5 (highest).` },
+  'Gotify.appToken': { label: msg`Application token`, description: msg`Created under Apps in Gotify.` },
+  'Gotify.priority': { label: msg`Priority`, description: msg`Higher numbers are more intrusive.` },
+  'Pushover.appToken': { label: msg`Application token`, description: msg`The API token of your Pushover application.` },
+  'Pushover.userKey': { label: msg`User key`, description: msg`Your user or group key.` },
+  'Pushover.priority': { label: msg`Priority`, description: msg`-2 (lowest) to 2 (emergency).` },
+}
+
+/** Looked up by `${type}`, same approach as `TYPE_LABELS`, falling back to a generic placeholder. */
+const NAME_PLACEHOLDERS: Partial<Record<NotificationType, MessageDescriptor>> = {
+  Discord: msg`My Discord server`,
+  Telegram: msg`My phone`,
+  Ntfy: msg`Home server`,
+  SlackWebhook: msg`Team channel`,
+}
+const GENERIC_NAME_PLACEHOLDER = msg`My connection`
+const namePlaceholder = (type: NotificationType): MessageDescriptor => NAME_PLACEHOLDERS[type] ?? GENERIC_NAME_PLACEHOLDER
+
+function useTypeOptions(providers: NotificationProviderDescriptor[] | undefined, current: NotificationType | undefined) {
   const renderLabel = useLabel()
   const { i18n } = useLingui()
-  return useMemo(
-    () =>
-      (['Discord', 'Webhook'] as NotificationType[]).map((value) => ({
-        value,
-        label: renderLabel(NOTIFICATION_TYPE_LABELS[value]),
-      })),
-    [renderLabel, i18n.locale],
-  )
+  return useMemo(() => {
+    const types = (providers ?? []).map((p) => p.type)
+    if (current && !types.includes(current)) types.push(current)
+    return types.map((value) => ({ value, label: renderLabel(typeLabel(value)) }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [providers, current, renderLabel, i18n.locale])
 }
 
-const EMPTY: NotificationRequest = {
-  name: '',
-  type: 'Discord',
-  enabled: true,
-  config: { webhookUrl: null, url: null, bearerToken: null },
-  events: {
-    chapterDownloaded: true,
-    downloadFailed: true,
-    newChapterAvailable: false,
-    importCompleted: false,
-    healthIssue: false,
-    updateAvailable: false,
-  },
+const EMPTY_EVENTS: NotificationRequest['events'] = {
+  chapterDownloaded: true,
+  downloadFailed: true,
+  newChapterAvailable: false,
+  importCompleted: false,
+  healthIssue: false,
+  updateAvailable: false,
+  seriesAdded: false,
+  seriesRemoved: false,
+  requestSubmitted: false,
+  requestResolved: false,
+  manualMatchNeeded: false,
 }
 
 function toRequest(n: NotificationDto): NotificationRequest {
-  return { name: n.name, type: n.type, enabled: n.enabled, config: n.config, events: n.events }
+  return { name: n.name, type: n.type, enabled: n.enabled, config: { ...n.config }, events: n.events, tagIds: n.tagIds }
+}
+
+function TagDot({ color }: { color: string }) {
+  return <i className="tag-dot" style={{ '--bucket': `var(--mantine-color-${color}-6)` } as CSSProperties} />
+}
+
+function useTagOptions() {
+  const { data: tags } = useTags()
+  return useMemo(
+    () => (tags ?? []).map((tag) => ({ value: String(tag.id), label: tag.label })),
+    [tags],
+  )
+}
+
+/** Coloured badges for the connections table; "All series" is the unscoped default. */
+function TagScope({ tagIds, tags }: { tagIds: number[]; tags: TagDto[] | undefined }) {
+  if (tagIds.length === 0) {
+    return (
+      <Text size="sm" c="var(--ink-3)">
+        <Trans>All series</Trans>
+      </Text>
+    )
+  }
+  const byId = new Map((tags ?? []).map((tag) => [tag.id, tag]))
+  return (
+    <Group gap={4} wrap="wrap">
+      {tagIds.map((id) => {
+        const tag = byId.get(id)
+        if (!tag) return null
+        return (
+          <Badge key={id} size="sm" variant="light" color={tag.color}>
+            {tag.label}
+          </Badge>
+        )
+      })}
+    </Group>
+  )
+}
+
+const isBlank = (v: string | undefined) => !v || v.trim() === ''
+
+function ConfigField({
+  type,
+  field,
+  value,
+  onChange,
+}: {
+  type: NotificationType
+  field: NotificationFieldDescriptor
+  value: string | undefined
+  onChange: (value: string) => void
+}) {
+  const renderLabel = useLabel()
+  const { t } = useLingui()
+  const copy = FIELD_COPY[`${type}.${field.key}`] ?? FIELD_COPY[field.key]
+  const label = copy ? renderLabel(copy.label) : field.key
+  const description = copy?.description ? renderLabel(copy.description) : undefined
+  const common = {
+    label,
+    description,
+    required: field.required,
+    placeholder: field.placeholder ?? undefined,
+  }
+
+  switch (field.kind) {
+    case 'Secret':
+      return <PasswordInput {...common} value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
+    case 'Number': {
+      const { min, max } = field
+      const rangeDescription =
+        min != null && max != null
+          ? t`${min} to ${max}`
+          : min != null
+            ? t`${min} or more`
+            : max != null
+              ? t`Up to ${max}`
+              : undefined
+      return (
+        <NumberInput
+          {...common}
+          description={common.description ?? rangeDescription}
+          min={min ?? undefined}
+          max={max ?? undefined}
+          allowDecimal={false}
+          value={value ?? ''}
+          onChange={(v) => onChange(v === '' ? '' : String(v))}
+        />
+      )
+    }
+    case 'Boolean':
+      return (
+        <Switch
+          label={label}
+          description={description}
+          checked={value === 'true'}
+          onChange={(e) => onChange(e.currentTarget.checked ? 'true' : 'false')}
+        />
+      )
+    default:
+      return <TextInput {...common} value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value)} />
+  }
+}
+
+function TypeIcon({ type }: { type: NotificationType }) {
+  const { icon: Icon, color } = typeStyle(type)
+  return (
+    <span style={{ color, display: 'inline-flex' }}>
+      <Icon size={16} />
+    </span>
+  )
+}
+
+function TypeBadge({ type }: { type: NotificationType }) {
+  const renderLabel = useLabel()
+  const { icon: Icon, color } = typeStyle(type)
+  return (
+    <Badge size="sm" variant="light" color={color} leftSection={<Icon size={12} />}>
+      {renderLabel(typeLabel(type))}
+    </Badge>
+  )
 }
 
 export function NotificationsSection() {
   const { t } = useLingui()
   const renderLabel = useLabel()
-  const typeOptions = useNotificationTypeOptions()
-  const { data: connections } = useNotifications()
+  const { data: providers } = useNotificationProviders()
+  const { data: connections, isError: connectionsError, refetch: refetchConnections } = useNotifications()
+  const { data: tags } = useTags()
+  const tagOptions = useTagOptions()
   const create = useCreateNotification()
   const update = useUpdateNotification()
   const remove = useDeleteNotification()
   const test = useTestNotification()
 
   const [editing, setEditing] = useState<{ id: number | null; form: NotificationRequest } | null>(null)
+  const typeOptions = useTypeOptions(providers, editing?.form.type)
+  const descriptor = providers?.find((p) => p.type === editing?.form.type)
 
-  const openNew = () => setEditing({ id: null, form: { ...EMPTY, config: { ...EMPTY.config }, events: { ...EMPTY.events } } })
+  const openNew = () => {
+    if (!providers || providers.length === 0) return
+    setEditing({
+      id: null,
+      form: { name: '', type: providers[0].type, enabled: true, config: {}, events: { ...EMPTY_EVENTS }, tagIds: [] },
+    })
+  }
   const openEdit = (n: NotificationDto) => setEditing({ id: n.id, form: toRequest(n) })
   const close = () => setEditing(null)
 
   const setForm = (patch: Partial<NotificationRequest>) =>
     setEditing((e) => (e ? { ...e, form: { ...e.form, ...patch } } : e))
-  const setConfig = (patch: Partial<NotificationRequest['config']>) =>
-    setEditing((e) => (e ? { ...e, form: { ...e.form, config: { ...e.form.config, ...patch } } } : e))
+  const setConfig = (key: string, value: string) =>
+    setEditing((e) => {
+      if (!e) return e
+      const config = { ...e.form.config }
+      if (value === '') delete config[key]
+      else config[key] = value
+      return { ...e, form: { ...e.form, config } }
+    })
   const setEvent = (key: keyof NotificationRequest['events'], value: boolean) =>
     setEditing((e) => (e ? { ...e, form: { ...e.form, events: { ...e.form.events, [key]: value } } } : e))
 
   const save = () => {
     if (!editing) return
     const onSuccess = () => {
-      toast.show({ message: now`Saved`, color: 'green' })
+      toast.show({ message: now`Saved`, color: 'var(--ok)' })
       close()
     }
-    const onError = (err: Error) => toast.show({ title: now`Save failed`, message: err.message, color: 'red' })
+    const onError = (err: Error) => toast.show({ title: now`Save failed`, message: err.message, color: 'var(--danger)' })
     if (editing.id === null) create.mutate(editing.form, { onSuccess, onError })
     else update.mutate({ id: editing.id, value: editing.form }, { onSuccess, onError })
   }
@@ -121,36 +382,46 @@ export function NotificationsSection() {
       onSuccess: (r) =>
         toast.show({
           message: r.success ? now`Test notification sent` : now`Test failed`,
-          color: r.success ? 'green' : 'red',
+          color: r.success ? 'var(--ok)' : 'var(--danger)',
         }),
-      onError: (err: Error) => toast.show({ title: now`Test failed`, message: err.message, color: 'red' }),
+      onError: (err: Error) => toast.show({ title: now`Test failed`, message: err.message, color: 'var(--danger)' }),
     })
   }
 
   const form = editing?.form
+  const missingRequired =
+    !form || isBlank(form.name) || (descriptor?.fields ?? []).some((f) => f.required && isBlank(form.config[f.key]))
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Group justify="space-between" mb="sm">
-        <Title order={4}><Trans>Notifications</Trans></Title>
-        <Button size="xs" leftSection={<IconBellPlus size={16} />} onClick={openNew}>
+        <Title order={4}><Trans>Outbound notifications</Trans></Title>
+        <Button
+          size="xs"
+          leftSection={<IconBellPlus size={16} />}
+          onClick={openNew}
+          disabled={!providers || providers.length === 0}
+        >
           <Trans>Add connection</Trans>
         </Button>
       </Group>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          Send alerts to Discord or a generic webhook when chapters download, downloads fail, new
-          chapters appear, imports finish, or a health issue is detected.
-        </Trans>{' '}
-        <Trans>Each connection chooses which events it fires on.</Trans>
+      <Text size="sm" c="var(--ink-3)" mb="md">
+        <Trans>Send events to chat apps, push services or a webhook. Each connection picks its own events.</Trans>
       </Text>
 
-      {connections && connections.length > 0 ? (
-        <Table>
+      {connectionsError ? (
+        <EmptyState
+          title={t`Couldn't load notification connections`}
+          actionLabel={t`Retry`}
+          onAction={() => void refetchConnections()}
+        />
+      ) : connections && connections.length > 0 ? (
+        <Table className="panel-table ops-table">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Name</Trans></Table.Th>
               <Table.Th><Trans>Type</Trans></Table.Th>
+              <Table.Th><Trans>Scope</Trans></Table.Th>
               <Table.Th><Trans>Status</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
@@ -160,12 +431,13 @@ export function NotificationsSection() {
               <Table.Tr key={n.id}>
                 <Table.Td>{n.name}</Table.Td>
                 <Table.Td>
-                  <Badge size="sm" variant="light">
-                    {renderLabel(NOTIFICATION_TYPE_LABELS[n.type])}
-                  </Badge>
+                  <TypeBadge type={n.type} />
                 </Table.Td>
                 <Table.Td>
-                  <Badge size="sm" variant="light" color={n.enabled ? 'green' : 'gray'}>
+                  <TagScope tagIds={n.tagIds} tags={tags} />
+                </Table.Td>
+                <Table.Td>
+                  <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
                     {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
                   </Badge>
                 </Table.Td>
@@ -176,7 +448,7 @@ export function NotificationsSection() {
                     </ActionIcon>
                     <ActionIcon
                       variant="subtle"
-                      color="red"
+                      color="var(--danger)"
                       onClick={() => remove.mutate(n.id)}
                       aria-label={t`Delete connection`}
                     >
@@ -189,7 +461,7 @@ export function NotificationsSection() {
           </Table.Tbody>
         </Table>
       ) : (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>No notification connections yet.</Trans>
         </Text>
       )}
@@ -204,7 +476,8 @@ export function NotificationsSection() {
           <Stack>
             <TextInput
               label={t`Name`}
-              placeholder={t`My Discord server`}
+              placeholder={renderLabel(namePlaceholder(form.type))}
+              required
               value={form.name}
               onChange={(e) => setForm({ name: e.currentTarget.value })}
             />
@@ -212,32 +485,20 @@ export function NotificationsSection() {
               label={t`Type`}
               data={typeOptions}
               value={form.type}
-              onChange={(v) => v && setForm({ type: v as NotificationType })}
+              leftSection={<TypeIcon type={form.type} />}
+              onChange={(v) => v && v !== form.type && setForm({ type: v as NotificationType, config: {} })}
               allowDeselect={false}
             />
 
-            {form.type === 'Discord' ? (
-              <TextInput
-                label={t`Webhook URL`}
-                placeholder="https://discord.com/api/webhooks/..."
-                value={form.config.webhookUrl ?? ''}
-                onChange={(e) => setConfig({ webhookUrl: e.currentTarget.value || null })}
+            {descriptor?.fields.map((field) => (
+              <ConfigField
+                key={field.key}
+                type={form.type}
+                field={field}
+                value={form.config[field.key]}
+                onChange={(value) => setConfig(field.key, value)}
               />
-            ) : (
-              <>
-                <TextInput
-                  label={t`URL`}
-                  placeholder="https://example.com/hook"
-                  value={form.config.url ?? ''}
-                  onChange={(e) => setConfig({ url: e.currentTarget.value || null })}
-                />
-                <PasswordInput
-                  label={t`Bearer token (optional)`}
-                  value={form.config.bearerToken ?? ''}
-                  onChange={(e) => setConfig({ bearerToken: e.currentTarget.value || null })}
-                />
-              </>
-            )}
+            ))}
 
             <Switch
               label={t`Enabled`}
@@ -245,28 +506,55 @@ export function NotificationsSection() {
               onChange={(e) => setForm({ enabled: e.currentTarget.checked })}
             />
 
+            <MultiSelect
+              label={t`Only for tagged series`}
+              description={t`Leave empty to send for every series. Instance events like health and updates ignore this.`}
+              data={tagOptions}
+              value={form.tagIds.map(String)}
+              onChange={(values) => setForm({ tagIds: values.map(Number) })}
+              renderOption={({ option, checked }) => {
+                const tag = (tags ?? []).find((tg) => String(tg.id) === option.value)
+                return (
+                  <Group gap="xs" wrap="nowrap">
+                    {tag && <TagDot color={tag.color} />}
+                    <span>{option.label}</span>
+                    {checked && <Text size="xs" c="var(--ink-3)" ml="auto"><Trans>Selected</Trans></Text>}
+                  </Group>
+                )
+              }}
+              clearable
+              searchable
+            />
+
             <Text size="sm" fw={600} mt="xs">
               <Trans>Events</Trans>
             </Text>
-            {EVENT_FIELDS.map((f) => (
-              <Switch
-                key={f.key}
-                label={renderLabel(f.label)}
-                description={renderLabel(f.description)}
-                checked={form.events[f.key]}
-                onChange={(e) => setEvent(f.key, e.currentTarget.checked)}
-              />
+            {EVENT_GROUPS.map((group) => (
+              <Stack key={group.title.id} gap="xs">
+                <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase">
+                  {renderLabel(group.title)}
+                </Text>
+                {group.fields.map((f) => (
+                  <Switch
+                    key={f.key}
+                    label={renderLabel(f.label)}
+                    description={renderLabel(f.description)}
+                    checked={form.events[f.key]}
+                    onChange={(e) => setEvent(f.key, e.currentTarget.checked)}
+                  />
+                ))}
+              </Stack>
             ))}
 
             <Group justify="space-between" mt="sm">
-              <Button variant="default" loading={test.isPending} onClick={runTest}>
+              <Button variant="default" loading={test.isPending} disabled={missingRequired} onClick={runTest}>
                 <Trans>Test</Trans>
               </Button>
               <Group>
                 <Button variant="subtle" onClick={close}>
                   <Trans>Cancel</Trans>
                 </Button>
-                <Button loading={create.isPending || update.isPending} onClick={save}>
+                <Button loading={create.isPending || update.isPending} disabled={missingRequired} onClick={save}>
                   <Trans>Save</Trans>
                 </Button>
               </Group>
@@ -274,6 +562,6 @@ export function NotificationsSection() {
           </Stack>
         )}
       </Modal>
-    </Card>
+    </Panel>
   )
 }

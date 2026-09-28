@@ -1,6 +1,7 @@
 using Maki.Api.Auth;
 using Maki.Api.Configuration;
 using Maki.Api.Jobs;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +15,6 @@ namespace Maki.Api.Controllers;
 [Route("api/v1/system")]
 public class SystemController(
     AppPaths paths,
-    HealthCheckService healthCheck,
     BackupService backups,
     UpdateCheckService updateCheck,
     MemoryDiagnostics memory,
@@ -134,8 +134,17 @@ public class SystemController(
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPost("backups")]
-    public async Task<IActionResult> CreateBackup(CancellationToken ct) =>
-        Ok(await backups.CreateAsync("manual", ct));
+    public async Task<IActionResult> CreateBackup(CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await backups.CreateAsync("manual", ct));
+        }
+        catch (BackupCreateException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
+    }
 
     [Authorize(Policy = Policies.Admin)]
     [HttpGet("backups/{name}")]
@@ -174,6 +183,10 @@ public class SystemController(
         {
             await backups.StagePendingRestoreFromFileAsync(name, ct);
         }
+        catch (BackupRestoreException ex)
+        {
+            return this.Fail(localizer, ex.Key, ex.Args);
+        }
         catch (Exception ex) when (ex is ArgumentException or FileNotFoundException or InvalidOperationException)
         {
             return BadRequest(new { message = ex.Message });
@@ -189,12 +202,16 @@ public class SystemController(
     public async Task<IActionResult> RestoreUpload(IFormFile file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
-            return BadRequest(new { message = "No file uploaded." });
+            return this.Fail(localizer, "error.system.noFileUploaded");
 
         try
         {
             await using var stream = file.OpenReadStream();
             await backups.StagePendingRestoreFromUploadAsync(stream, ct);
+        }
+        catch (BackupRestoreException ex)
+        {
+            return this.Fail(localizer, ex.Key, ex.Args);
         }
         catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
         {

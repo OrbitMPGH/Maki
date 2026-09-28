@@ -133,6 +133,9 @@ public static class AuthServiceCollectionExtensions
                 o.Cookie.HttpOnly = true;
                 o.Cookie.SameSite = SameSiteMode.Lax;
                 o.ExpireTimeSpan = TimeSpan.FromDays(30);
+                // Without this a remembered browser keeps skipping 2FA after a password change or a
+                // sign-out-everywhere, both of which rotate the security stamp.
+                o.Events.OnValidatePrincipal = SecurityStampValidator.ValidateAsync<ITwoFactorSecurityStampValidator>;
             })
             // Where the OpenID Connect handler deposits its result. It is not a session: the
             // callback endpoint reads it, decides which Maki account the subject belongs to, issues
@@ -220,9 +223,17 @@ public static class AuthServiceCollectionExtensions
                 {
                     // Otherwise the handler rethrows and the user sees the developer exception page
                     // or a bare 500 — on a URL they arrived at from another site, with no way back.
+                    //
+                    // ctx.Failure is an exception the OpenID Connect handler itself threw (a protocol
+                    // error, a correlation failure) and its Message is that library's own wording, not
+                    // Maki's; left as-is like every other raw ex.Message here. Only the fallback for
+                    // when there is no message at all is Maki's own text, so only that goes through
+                    // the catalogue.
                     ctx.HandleResponse();
-                    ctx.Response.Redirect(
-                        "/login?ssoError=" + Uri.EscapeDataString(ctx.Failure?.Message ?? "Sign-in failed"));
+                    var localizer = ctx.HttpContext.RequestServices
+                        .GetRequiredService<Maki.Api.Localization.ILocalizer>();
+                    ctx.Response.Redirect("/login?ssoError=" + Uri.EscapeDataString(
+                        ctx.Failure?.Message ?? localizer.Get("error.auth.ssoSignInFailed")));
                     return Task.CompletedTask;
                 };
             });
@@ -273,6 +284,7 @@ public static class AuthServiceCollectionExtensions
         services.AddScoped<DataScope>();
 
         services.AddScoped<OidcSignInService>();
+        services.AddScoped<OidcLoginIssuerRepairService>();
 
         services.AddScoped<CurrentUserContext>();
         services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUserContext>());

@@ -9,6 +9,9 @@ import {
   Table,
   createTheme,
 } from '@mantine/core'
+import type { ReactNode } from 'react'
+
+const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
 
 /**
  * Maki design system.
@@ -91,23 +94,27 @@ const dark: MantineColorsTuple = [
 
 /** Builds the Mantine theme for a given accent palette (defaults to indigo). */
 export function createAppTheme(accent: MantineColorsTuple = brand) {
-  return createTheme({ ...themeBase, colors: { brand: accent, dark } })
+  // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
+  const primaryShade = accent === rose ? ({ light: 6, dark: 6 } as const) : themeBase.primaryShade
+  return createTheme({ ...themeBase, primaryShade, colors: { brand: accent, dark } })
 }
 
 const themeBase: MantineThemeOverride = {
   primaryColor: 'brand',
   primaryShade: { light: 6, dark: 5 },
+  // Emerald and amber fills are too light for white labels; this flips them to black.
+  autoContrast: true,
   colors: { brand, dark },
   defaultRadius: 'md',
   fontFamily:
-    'InterVariable, Inter, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    '"Inter Variable", InterVariable, Inter, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   fontFamilyMonospace:
     'ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, monospace',
   headings: {
     fontWeight: '700',
     sizes: {
       h1: { fontSize: '1.9rem', lineHeight: '1.2', fontWeight: '800' },
-      h2: { fontSize: '1.5rem', lineHeight: '1.25', fontWeight: '750' },
+      h2: { fontSize: '1.5rem', lineHeight: '1.25', fontWeight: '800' },
       h3: { fontSize: '1.2rem', lineHeight: '1.3' },
       h4: { fontSize: '1rem', lineHeight: '1.4' },
     },
@@ -138,8 +145,31 @@ const themeBase: MantineThemeOverride = {
     Badge: Badge.extend({
       defaultProps: { radius: 'sm', fw: 600 },
     }),
+    /**
+     * The utility tier: every ordinary dialog gets the raised card, the sectioned header over a
+     * hairline and a body that scrolls under it, without touching the call site. The immersive
+     * Discover modal opts out by passing `padding={0} title={null} withCloseButton={false}` (no
+     * header renders at all) and its own content styles.
+     *
+     * No scroll wrapper around header and body: Mantine's default wraps both, so the scrollbar ran
+     * past the title and the content box could overflow on top of it. The content is a flex column
+     * instead and only `.utility-modal-body` scrolls (theme.css).
+     */
     Modal: Modal.extend({
-      defaultProps: { radius: 'lg', centered: true, overlayProps: { blur: 3, backgroundOpacity: 0.55 } },
+      defaultProps: {
+        radius: 'lg',
+        padding: 'lg',
+        centered: true,
+        scrollAreaComponent: ModalPassthrough,
+        overlayProps: { blur: 3, backgroundOpacity: 0.55 },
+        classNames: {
+          content: 'utility-modal-content',
+          header: 'utility-modal-header',
+          title: 'utility-modal-title',
+          close: 'utility-modal-close',
+          body: 'utility-modal-body',
+        },
+      },
     }),
     Table: Table.extend({
       defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md' },

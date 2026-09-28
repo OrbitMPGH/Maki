@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
 import {
   Alert, Badge, Button, Card, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
@@ -87,6 +88,20 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   const setStrength = useSetAnimeSignalsStrength()
   const [toggleError, setToggleError] = useState('')
 
+  // A finished sync can change which series have a finished-anime match, so the callout on the
+  // series page and the Discover modal (and Home's rail) need fresh data once one completes.
+  const queryClient = useQueryClient()
+  const wasSyncing = useRef(false)
+  useEffect(() => {
+    const syncing = data?.syncing ?? false
+    if (wasSyncing.current && !syncing) {
+      void queryClient.invalidateQueries({ queryKey: ['anime-resume'] })
+      void queryClient.invalidateQueries({ queryKey: ['recommendation-detail'] })
+      void queryClient.invalidateQueries({ queryKey: ['home', 'from-anime'] })
+    }
+    wasSyncing.current = syncing
+  }, [data?.syncing, queryClient])
+
   async function toggle(next: boolean) {
     setToggleError('')
     try { await setEnabled.mutateAsync(next) } catch (cause) { setToggleError(String(cause)) }
@@ -114,7 +129,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
 
   if (isLoading || !data) {
     return error ? (
-      <Alert color="red"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
     ) : null
   }
 
@@ -128,10 +143,11 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
         <Group justify="space-between" align="center" wrap="wrap">
           <div>
             <Text fw={600}><Trans>Anime you've watched</Trans></Text>
-            <Text size="xs" c="dimmed" maw={520}>
+            <Text size="xs" c="var(--ink-3)" maw={520}>
               <Trans>
                 A show you scored well nudges recommendations toward similar manga. A low score or
-                a dropped show pushes them away.
+                a dropped show pushes them away. Finishing one can also suggest where to start
+                reading its manga.
               </Trans>
             </Text>
           </div>
@@ -142,10 +158,10 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
           />
         </Group>
 
-        {toggleError && <Alert color="red">{toggleError}</Alert>}
+        {toggleError && <Alert color="var(--danger)">{toggleError}</Alert>}
 
         {noTracker && (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               Connect an AniList or MyAnimeList tracker to use this. <Link to="/scrobble">
                 <Trans>Open tracker settings</Trans>
@@ -163,7 +179,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
               onChange={(next) => void changeStrength(next)}
             />
             <Group gap="xs">
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <AnimeSignalsStatusLine data={data} />
               </Text>
               <Button size="xs" variant="subtle" onClick={onOpenList}>
@@ -270,8 +286,8 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
 
   const roleBadge = ((): { label: string; color: string } => {
     switch (entry.role) {
-      case 'positive': return { label: t`Positive`, color: 'teal' }
-      case 'avoided': return { label: t`Avoided`, color: 'red' }
+      case 'positive': return { label: t`Positive`, color: 'var(--ok)' }
+      case 'avoided': return { label: t`Avoided`, color: 'var(--danger)' }
       case 'neutral': return { label: t`Neutral`, color: 'gray' }
       case 'superseded':
         return entry.supersededBy === 'ignored'
@@ -319,9 +335,9 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     entry.supersededBy !== 'library' && entry.supersededBy !== 'feedback'
 
   return (
-    <Group gap="sm" wrap="nowrap" align="flex-start" py={8} className="signals-row">
+    <div className="signals-row">
       <SeriesThumb url={entry.mangaCoverUrl} alt={entry.mangaTitle ?? ''} large />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="signals-row-main">
         <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
           <Text size="sm" fw={500} truncate style={{ minWidth: 0 }}>{entry.title}</Text>
           {entry.animeCount > 1 && (
@@ -330,28 +346,28 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
             </Badge>
           )}
         </Group>
-        <Text size="xs" c="dimmed" truncate>
+        <Text size="xs" c="var(--ink-3)" truncate>
           {supersededNote ?? entry.mangaTitle ?? t`No manga match`}
         </Text>
       </div>
-      <div style={{ width: 120, flex: 'none' }}>
+      <div className="signals-col signals-col-services">
         <Group gap={4} wrap="wrap">
           {entry.services.map((service) => (
-            <Badge key={service} size="sm" variant="light" color="gray">
+            <Badge key={service} size="sm" variant="light" color="var(--neutral)">
               {labelFor(service)}
             </Badge>
           ))}
         </Group>
       </div>
-      <Text size="sm" className="tnum" style={{ width: 80, flex: 'none' }}>
+      <Text size="sm" className="tnum signals-col signals-col-score">
         {score !== null ? t`★ ${score}` : statusLabel}
       </Text>
-      <div style={{ width: 110, flex: 'none' }}>
+      <div className="signals-col signals-col-role">
         <Badge size="sm" variant="light" color={roleBadge.color}>
           {roleBadge.label}
         </Badge>
       </div>
-      <div style={{ width: 140, flex: 'none', textAlign: 'right' }}>
+      <div className="signals-col signals-col-action">
         {showExclude && entry.supersededBy === 'ignored' && (
           <Button size="xs" variant="subtle" loading={signal.isPending} onClick={() => void setExcluded(false)}>
             <Trans>Include</Trans>
@@ -359,14 +375,14 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
         )}
         {showExclude && entry.supersededBy !== 'ignored' && (
           <Button
-            size="xs" variant="subtle" color="gray" loading={signal.isPending}
+            size="xs" variant="subtle" color="var(--neutral)" loading={signal.isPending}
             onClick={() => void setExcluded(true)}
           >
             <Trans>Exclude</Trans>
           </Button>
         )}
-        {actionError && <Text c="red" size="xs">{actionError}</Text>}
+        {actionError && <Text c="var(--danger)" size="xs">{actionError}</Text>}
       </div>
-    </Group>
+    </div>
   )
 }

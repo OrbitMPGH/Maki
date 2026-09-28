@@ -25,6 +25,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
     public string DisplayName => "MangaKakalot";
     public string BaseUrl => "https://www.mangakakalot.gg";
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceContent Content => SourceContent.Manga | SourceContent.Manhwa;
 
     /// <summary>Both covers and page images are served from this CDN, and it 403s a missing Referer.</summary>
     public IReadOnlyList<string> CoverHosts => ["2xstorage.com"];
@@ -237,6 +238,10 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
             ? d
             : null;
 
+        // A null Number is deduped by title downstream (ChapterIdentity), so it must never carry
+        // a null Title too, or two different specials read as one chapter.
+        var chapterTitle = number is null ? label : null;
+
         return new SourceChapter(
             Name,
             seriesId,
@@ -244,7 +249,7 @@ public class MangakakalotSource(IHtmlFetcher fetcher) : ISource
             label,
             number,
             parsed.Volume,
-            Title: null,
+            chapterTitle,
             Language: "en",
             releaseDate,
             Url: $"{BaseUrl}/manga/{seriesId}/{slug}");

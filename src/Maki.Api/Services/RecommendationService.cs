@@ -1,6 +1,7 @@
 ﻿using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
 using Maki.Data;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -69,6 +70,12 @@ public class RecommendationService(
     /// </summary>
     private const int CacheSlots = 16;
 
+    /// <summary>
+    /// Custom rails' own budget, separate from <see cref="CacheSlots"/> so they cannot evict the
+    /// pools above. Each rail with its own filters is its own pool, and a reader can have several.
+    /// </summary>
+    private const int RailCacheSlots = 24;
+
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
     /// <summary>
@@ -92,20 +99,24 @@ public class RecommendationService(
     private const int FranchiseSpacing = 8;
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<string, RecommendationsResult> _pools = [];
+    private readonly RecommendationPoolCache _pools = new(CacheSlots, RailCacheSlots, CacheFor);
 
     /// <param name="scope">
     /// The caller's data scope, applied to the child scope this opens. A singleton creating its own
     /// scope gets a fresh unrestricted <see cref="DataScope"/>, which would seed recommendations from
     /// root folders the caller was never granted and weight them with somebody else's ratings.
     /// </param>
+    /// <param name="origin">
+    /// Whose cache budget the pool counts against. A parameter rather than a request field because
+    /// the request is bound from a POST body and a client must not be able to pick its own budget.
+    /// </param>
     public async Task<RecommendationsResult> GetAsync(
-        RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default)
+        RecommendationRequest request, ICurrentUser scope, CancellationToken ct = default,
+        PoolOrigin origin = PoolOrigin.Interactive)
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            throw new InvalidOperationException(
-                "Recommendations need the local MangaBaka database (Settings → Metadata → local DB)");
+            throw new LocalCatalogueUnavailableException("error.recommendation.needsLocalDb");
         }
 
         // MangaBaka id -> seed weight. A series rated 5 or better gets rating/5.0 (10→2.0, 5→1.0
@@ -196,11 +207,7 @@ public class RecommendationService(
         await _lock.WaitAsync(ct);
         try
         {
-            var pool = !request.Refresh &&
-                       _pools.TryGetValue(key, out var hit) &&
-                       DateTime.UtcNow - hit.GeneratedAt < CacheFor
-                ? hit
-                : null;
+            var pool = !request.Refresh && _pools.TryGet(key, origin, out var hit) ? hit : null;
 
             if (pool is null)
             {
@@ -240,7 +247,7 @@ public class RecommendationService(
                 similar = Spread(WithFranchises(similar, franchises));
 
                 pool = new RecommendationsResult(related, similar, DateTime.UtcNow);
-                Store(key, pool);
+                _pools.Store(key, pool, origin);
             }
 
             var version = $"{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16]}:{feedbackRevision}:{nextDismissalExpiry}";
@@ -367,34 +374,8 @@ public class RecommendationService(
         return !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Caches a pool, dropping expired entries first and then the oldest if the slots are still full.
-    /// Called under <see cref="_lock"/>.
-    /// </summary>
-    private void Store(string key, RecommendationsResult pool)
-    {
-        _pools[key] = pool;
-        if (_pools.Count <= CacheSlots)
-        {
-            return;
-        }
-
-        foreach (var stale in _pools
-                     .Where(kv => DateTime.UtcNow - kv.Value.GeneratedAt >= CacheFor)
-                     .Select(kv => kv.Key)
-                     .ToList())
-        {
-            _pools.Remove(stale);
-        }
-
-        while (_pools.Count > CacheSlots)
-        {
-            _pools.Remove(_pools.MinBy(kv => kv.Value.GeneratedAt).Key);
-        }
-    }
-
     private static string FilterKey(RecommendationFilters f) =>
         $"{f.YearMin}-{f.YearMax}-{f.MinRating}-{string.Join('.', f.Types ?? [])}-{string.Join('.', f.Statuses ?? [])}" +
         $"-{string.Join('.', f.Genres ?? [])}-{f.MinChapters}-{f.MaxChapters}-{string.Join('.', f.Tags ?? [])}" +
-        $"-{string.Join('.', f.ContentRatings ?? [])}";
+        $"-{string.Join('.', f.ContentRatings ?? [])}-{CatalogueRules.Key(f.Rules)}-{CatalogueRules.TermsKey(f.Hidden)}";
 }

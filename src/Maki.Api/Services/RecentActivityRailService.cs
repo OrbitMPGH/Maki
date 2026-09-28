@@ -126,14 +126,16 @@ public class RecentActivityRailService(
             "Recent-activity rail for user {UserId}: {Seeds} seed(s), {Items} item(s)",
             scope.UserId, seeds.Count, items.Count);
 
+        var (subtitleKey, subtitleArgs) = Because(seeds);
         return new DiscoverRail(
             RailKey,
-            "Based on your recent activity",
+            "discover.rail.recentActivity",
             RailFeed,
             Genre: null,
             items,
-            Subtitle: Because(seeds),
-            SeedIds: seedIds);
+            Subtitle: subtitleKey,
+            SeedIds: seedIds,
+            SubtitleArgs: subtitleArgs);
     }
 
     /// <summary>
@@ -257,13 +259,14 @@ public class RecentActivityRailService(
 
             rails.Add(new DiscoverRail(
                 $"{RailKey}-{seed.MangaBakaId}",
-                $"Because you read {seed.Title}",
+                "discover.rail.becauseYouRead",
                 RailFeed,
                 Genre: null,
                 items,
                 Subtitle: null,
                 SeedIds: [seed.MangaBakaId],
-                Seed: new SeedState(seed.Title, seed.ChaptersRead, seed.ChaptersAvailable, seed.State)));
+                Seed: new SeedState(seed.Title, seed.ChaptersRead, seed.ChaptersAvailable, seed.State),
+                TitleArgs: new { list = seed.Title }));
         }
 
         logger.LogDebug(
@@ -346,8 +349,15 @@ public class RecentActivityRailService(
             ? 0
             : a.Count(x => b.Contains(x, StringComparer.OrdinalIgnoreCase));
 
-    /// <summary>"Because you read A, B and C" — the seeds, most recent first, at most three named.</summary>
-    private static string Because(IReadOnlyList<RecentSeed> seeds)
+    /// <summary>
+    /// "Because you read A, B and C"; the seeds, most recent first, at most three named.
+    /// <para>
+    /// <c>list</c> is titles joined in English regardless of the caller's language, the same trade
+    /// <c>{ratings}</c> makes elsewhere: there is no list-format primitive in this catalogue's ICU
+    /// subset, and a title is a proper noun a translation would not touch anyway.
+    /// </para>
+    /// </summary>
+    private static (string Key, object Args) Because(IReadOnlyList<RecentSeed> seeds)
     {
         var named = seeds.Take(3).Select(s => s.Title).ToList();
         var list = named.Count switch
@@ -357,8 +367,8 @@ public class RecentActivityRailService(
             _ => $"{named[0]}, {named[1]} and {named[2]}",
         };
         return seeds.Count > named.Count
-            ? $"Because you read {list} and {seeds.Count - named.Count} more"
-            : $"Because you read {list}";
+            ? ("discover.rail.becauseYouReadMore", new { list, count = seeds.Count - named.Count })
+            : ("discover.rail.becauseYouRead", new { list });
     }
 
     /// <summary>

@@ -42,7 +42,7 @@ public sealed class OpdsCatalogTests : IDisposable
         var pusher = InertKavitaPusher.For(scopeFactory);
         var reader = new ReaderService(context, _archives,
             new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
-            pusher, NullLogger<ReaderService>.Instance);
+            pusher, new ReadingSessionService(context), NullLogger<ReaderService>.Instance);
         return new OpdsCatalogService(
             context, reader, new ContinueReadingService(context), new TestLocalizer());
     }

@@ -1,5 +1,6 @@
 ﻿using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Paths;
 
 namespace Maki.Api.Dtos;
 
@@ -230,7 +231,8 @@ public record SeriesDto(
         s.MonitorNewItems.ToString(),
         s.RootFolderId,
         s.FolderName,
-        isAdmin && s.RootFolder is not null ? Path.Combine(s.RootFolder.Path, s.FolderName) : null,
+        // LibraryPaths.Resolve, not Path.Combine, so a root path saved with mixed separators still displays with one throughout.
+        isAdmin && s.RootFolder is not null ? LibraryPaths.Resolve(s.RootFolder.Path, s.FolderName) : null,
         CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh),
         s.TotalChapters,
         s.TotalVolumes,

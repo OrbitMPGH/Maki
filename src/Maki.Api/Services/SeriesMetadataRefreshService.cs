@@ -40,6 +40,7 @@ public class SeriesMetadataRefreshService(
 
         series.CoverPath = coverPath;
         await coverService.WriteLibraryCoverAsync(series, ct);
+        series.LastMetadataRefresh = DateTime.UtcNow;
         return true;
     }
 

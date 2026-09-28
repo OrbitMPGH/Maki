@@ -1,0 +1,24 @@
+<!--
+Hand-made fixture for the audit/R18 gate path (not observed live — One Piece isn't gated).
+The __VIEWSTATE value is real lz-string compressToBase64 output (generated in Node with the
+reference algorithm, then verified round-tripping through this repo's LzString.DecompressFromBase64)
+of the fragment:
+<div class="chapter-list cf mt10" id="chapter-list-9"><ul><li><a href="/comic/99999/555111.html"
+title="第5话 测试章节" class="status0" target="_blank"><span>第5话<i>10p</i></span></a></li></ul></div>
+-->
+<html>
+<body>
+<div class="book-title"><h1>测试漫画</h1></div>
+<div class="book-cover fl"><p class="hcover"><img src="//cf.mhgui.com/cpic/h/99999.jpg" alt="测试漫画" /></p></div>
+<div id="intro-cut">测试简介</div>
+<ul>
+<li class="status"><span><strong>漫画状态：</strong><span class="red">连载中</span>。最近于 [<span class="red">2026-01-02</span>] 更新至 [ <a href="/comic/99999/555111.html" target="_blank" class="blue">第5话</a> ]。</span></li>
+</ul>
+<input type="hidden" id="__VIEWSTATE" name="__VIEWSTATE" value="DwEwlgbgBAxgNgQwM5ILwCIYAsEAcAuApgE4C0cYS+sAZlALb4CMADOlGCBtnkWRVVIBOdAD5gAVzjiK4hFCzFCNDAHoYAe3pgYqofv2qArCaZmAdFnz047fGHxxCGQDTeRwLvRUQNK2gVejAB16AQUHs8Mho6FQI+BJIbFD4CMQA5oT4GAD6AEaIAHYA1mLASLgI2aJu7sBgoqy4wKpVdUUl4qoILbJ1Ui3gEKJAA" />
+<div class="chapter cf mt16">
+<div class="chapter-bar"><h3>测试漫画 - 章节全集</h3></div>
+<h4><span>单话</span></h4>
+<div id="erroraudit_show"></div>
+</div>
+</body>
+</html>

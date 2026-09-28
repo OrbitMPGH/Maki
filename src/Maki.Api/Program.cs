@@ -28,18 +28,37 @@ using Maki.Sources.Common;
 using Maki.Sources.Atsumaru;
 using Maki.Sources.FlameComics;
 using Maki.Sources.MangaLivre;
+using Maki.Sources.ManhwaWeb;
+using Maki.Sources.Manhwa18Net;
+using Maki.Sources.NaverWebtoon;
 using Maki.Sources.SenManga;
+using Maki.Sources.Shinigami;
 using Maki.Sources.MangaDex;
 using Maki.Sources.MangaFire;
 using Maki.Sources.MangaKatana;
 using Maki.Sources.Mangakakalot;
+using Maki.Sources.Manhuagui;
 using Maki.Sources.MangaPill;
 using Maki.Sources.MangaPlus;
 using Maki.Sources.TCBScans;
+using Maki.Sources.Toonily;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
+using Maki.Sources.GigaViewer;
+using Maki.Sources.Olympus;
+using Maki.Sources.Taiyo;
 using System.Net;
 using Maki.Sources.TopManhua;
+using Maki.Sources.MangaLib;
+using Maki.Sources.Dynasty;
+using Maki.Sources.AnimeSama;
+using Maki.Sources.CuuTruyen;
+using Maki.Sources.MangaWorld;
+using Maki.Sources.MangaTube;
+using Maki.Sources.MangaDenizi;
+using Maki.Sources.ComicWalker;
+using Maki.Sources.Rawkuma;
+using Maki.Sources.TeamX;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -238,6 +257,8 @@ try
     builder.Services.AddSingleton<ReadingBehaviourService>();
     builder.Services.AddSingleton<SimilarSeriesService>();
     builder.Services.AddSingleton<DiscoverService>();
+    builder.Services.AddScoped<HiddenContentService>();
+    builder.Services.AddScoped<CustomRailService>();
 
     // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first
     // use) turns each series' description into a vector so Discover can match on "feel", not
@@ -309,11 +330,14 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Page and image clients fetch URLs the scraped site chose, so they may only reach public
+    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, qBittorrent or Prowlarr.
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
-    {
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
-        client.Timeout = TimeSpan.FromMinutes(2);
-    });
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.Timeout = TimeSpan.FromMinutes(2);
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
@@ -325,7 +349,22 @@ try
                  // Flame Comics — Next.js pages read for their embedded __NEXT_DATA__ props.
                  (FlameComicsSource.HttpClientName, "https://flamecomics.xyz/"),
                  // MangaKatana — SSR-rendered, no Cloudflare.
-                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/")
+                 (MangaKatanaSource.HttpClientName, "https://mangakatana.com/"),
+                 // GigaViewer sites (Hatena's white-label viewer, plain nginx/CloudFront, no
+                 // challenge). Page images go through their own client below.
+                 ($"source-{GigaViewerSites.ShonenJumpPlus.Name}", $"{GigaViewerSites.ShonenJumpPlus.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.ComicDays.Name}", $"{GigaViewerSites.ComicDays.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.SundayWebry.Name}", $"{GigaViewerSites.SundayWebry.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.Magcomi.Name}", $"{GigaViewerSites.Magcomi.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.TonarinoYj.Name}", $"{GigaViewerSites.TonarinoYj.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.ComicZenon.Name}", $"{GigaViewerSites.ComicZenon.BaseUrl}/"),
+                 ($"source-{GigaViewerSites.KurageBunch.Name}", $"{GigaViewerSites.KurageBunch.BaseUrl}/"),
+                 // Dynasty Scans — plain nginx, no Cloudflare.
+                 (DynastySource.HttpClientName, "https://dynasty-scans.com/"),
+                 // ManhwaWeb: separate JSON API host, no Cloudflare in front of it.
+                 (ManhwaWebSource.HttpClientName, ManhwaWebSource.ApiUrl + "/"),
+                 (MangaDeniziSource.HttpClientName, "https://mangadenizi.net"),
+                 (ComicWalkerSource.HttpClientName, "https://comic-walker.com/")
              })
     {
         var limiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
@@ -338,6 +377,39 @@ try
             .AddHttpMessageHandler(() => new RateLimitingHandler(limiter))
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
+
+    // MangaDenizi fetches its own page images through this client.
+    builder.Services.AddHttpClient(MangaDeniziSource.HttpClientName)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
+
+    // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
+    // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
+    var gigaViewerImageLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(GigaViewerSource.ImageHttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Shinigami: the website (numbered subdomain) is Cloudflare-challenged, but its JSON API
+    // (api.shngm.io) answers plain HTTP with no challenge, so this client's base address is the
+    // API host, not BaseUrl. Both are separately env-overridable since the site's leading number
+    // rotates independently of the API host.
+    var shinigamiApiUrl = Environment.GetEnvironmentVariable("MAKI_SOURCE_SHINIGAMI_APIURL")?.TrimEnd('/')
+        ?? "https://api.shngm.io";
+    var shinigamiLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(ShinigamiSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri($"{shinigamiApiUrl}/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(shinigamiLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     var topManhuaLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(TopManhuaSource.HttpClientName, client =>
@@ -428,6 +500,19 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLivreLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Naver Webtoon — official Korean platform, plain JSON API for search/detail/chapters,
+    // plain HTML for pages. The chapter list pages 20 at a time, so a long-running title costs
+    // dozens of requests; matches the Webtoons numbers.
+    var naverWebtoonLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(NaverWebtoonSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://comic.naver.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(naverWebtoonLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     // Atsumaru — JSON API behind the site's own origin (/api), no challenge to solve. Its
     // search index is Typesense and answers straight from this client too.
     var atsumaruLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 3);
@@ -459,6 +544,67 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaPlusLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // MangaLib (LibGroup): JSON API behind DDoS-Guard, not Cloudflare; answers a plain client
+    // 200 as long as every request carries a mangalib Referer (403 without it). The API host
+    // rotates (Keiyoushi exposes a picker), so MAKI_SOURCE_MANGALIB_APIURL overrides the default.
+    var mangaLibApiUrl = (Environment.GetEnvironmentVariable("MAKI_SOURCE_MANGALIB_APIURL") ?? "https://api.cdnlibs.org").TrimEnd('/');
+    var mangaLibLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(MangaLibSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri($"{mangaLibApiUrl}/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.DefaultRequestHeaders.Referrer = new Uri("https://mangalib.me/");
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Site-Id", "1");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaLibLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Manhuagui — Simplified Chinese manhua/manga aggregator, plain HTTP, no Cloudflare. Bans IPs
+    // on bulk reads, hence a standalone, stricter-than-usual limiter (1 req/2s) rather than a slot
+    // in the standard batch. Every response is gzip-compressed regardless of what Accept-Encoding
+    // asked for, hence AutomaticDecompression here (most named clients don't need it because they
+    // never request compression in the first place). isAdult=1 is the cookie Keiyoushi sends for
+    // audited/R18 titles; harmless on everything else, unverified whether it's load-bearing here.
+    var manhuaguiBaseUrl = (Environment.GetEnvironmentVariable("MAKI_SOURCE_MANHUAGUI_BASEURL")?.TrimEnd('/')
+        ?? "https://www.manhuagui.com") + "/";
+    var manhuaguiLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 1);
+    builder.Services.AddHttpClient(ManhuaguiSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri(manhuaguiBaseUrl);
+            // The plan pins this exact UA string (tested live); the shared browserUa const is a
+            // slightly older Chrome build number.
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36");
+            client.DefaultRequestHeaders.Referrer = new Uri("https://www.manhuagui.com/");
+            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("zh-CN,zh;q=0.9");
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(manhuaguiLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Manga-Tube, plain JSON API, but every request (API included) is first answered with a
+    // home-grown arithmetic challenge unless it carries a valid __mtbpass cookie, and that pass
+    // is bound to the User-Agent that solved it. UseCookies is off so the manual Cookie header
+    // MangaTubeSession attaches is the only one sent; the framework's own CookieContainer would
+    // otherwise merge with it unpredictably across the handler rotations IHttpClientFactory does.
+    var mangaTubeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(MangaTubeSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://manga-tube.me/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
     var challengeLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
     builder.Services.AddHttpClient(ChallengeAwareFetcher.HttpClientName, client =>
         {
@@ -472,6 +618,31 @@ try
 
     builder.Services.AddHttpClient(FlareSolverrClient.HttpClientName, client =>
         client.Timeout = TimeSpan.FromSeconds(90)); // FS solves can take a while
+
+    // CuuTruyen: the API side goes through IHtmlFetcher, but page bytes are
+    // binary and need unscrambling before they reach the downloader, so this client fetches raw
+    // images only. No BaseAddress: URLs already point at whichever storage-* host the page rewrite
+    // picked. ~1 MB pages, so a longer timeout than the plain-HTML sources above.
+    var cuuTruyenLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
+    builder.Services.AddHttpClient(CuuTruyenSource.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
+        .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
+
+    // Taiyo: no BaseAddress, since the source calls three hosts with absolute URLs
+    // (taiyo.moe for tRPC, meilisearch.taiyo.moe for search, cdn.taiyo.moe for images).
+    var taiyoLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 2);
+    builder.Services.AddHttpClient(TaiyoSource.HttpClientName, client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .AddHttpMessageHandler(() => new RateLimitingHandler(taiyoLimiter))
+        .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
     builder.Services.AddSingleton<SettingsService>();
     builder.Services.AddSingleton<IAppSettings>(sp => sp.GetRequiredService<SettingsService>());
@@ -531,6 +702,31 @@ try
     builder.Services.AddSingleton<ISource, SenMangaSource>();
     builder.Services.AddSingleton<ISource, BaoziManhuaSource>();
     builder.Services.AddSingleton<ISource, MangaLivreSource>();
+    builder.Services.AddSingleton<ISource, ShonenJumpPlusSource>();
+    builder.Services.AddSingleton<ISource, ComicDaysSource>();
+    builder.Services.AddSingleton<ISource, SundayWebrySource>();
+    builder.Services.AddSingleton<ISource, MagcomiSource>();
+    builder.Services.AddSingleton<ISource, TonarinoYjSource>();
+    builder.Services.AddSingleton<ISource, ComicZenonSource>();
+    builder.Services.AddSingleton<ISource, KurageBunchSource>();
+    builder.Services.AddSingleton<ISource, ToonilySource>();
+    builder.Services.AddSingleton<ISource, MangaLibSource>();
+    builder.Services.AddSingleton<ISource, DynastySource>();
+    builder.Services.AddSingleton<ISource, AnimeSamaSource>();
+    builder.Services.AddSingleton<ISource, ManhwaWebSource>();
+    builder.Services.AddSingleton<ISource, OlympusSource>();
+    builder.Services.AddSingleton<ISource, ShinigamiSource>();
+    builder.Services.AddSingleton<ISource, Manhwa18NetSource>();
+    builder.Services.AddSingleton<ISource, CuuTruyenSource>();
+    builder.Services.AddSingleton<ISource, MangaWorldSource>();
+    builder.Services.AddSingleton<ISource, NaverWebtoonSource>();
+    builder.Services.AddSingleton<ISource, ManhuaguiSource>();
+    builder.Services.AddSingleton<ISource, MangaTubeSource>();
+    builder.Services.AddSingleton<ISource, MangaDeniziSource>();
+    builder.Services.AddSingleton<ISource, TaiyoSource>();
+    builder.Services.AddSingleton<ISource, ComicWalkerSource>();
+    builder.Services.AddSingleton<ISource, RawkumaSource>();
+    builder.Services.AddSingleton<ISource, TeamXSource>();
     
     builder.Services.AddSingleton<SourceRegistry>();
     builder.Services.AddSingleton<SourceAvailability>();
@@ -547,6 +743,13 @@ try
     builder.Services.AddSingleton<INotificationCoverStore>(sp => sp.GetRequiredService<CoverService>());
     builder.Services.AddSingleton<INotificationProvider, DiscordNotificationProvider>();
     builder.Services.AddSingleton<INotificationProvider, WebhookNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, TelegramNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, NotifiarrNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, NtfyNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, GotifyNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, PushoverNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, AppriseNotificationProvider>();
+    builder.Services.AddSingleton<INotificationProvider, SlackWebhookNotificationProvider>();
     builder.Services.AddSingleton<NotificationService>();
 
     // In-app notifications: a separate, per-user pipeline. Singletons for the same reason
@@ -565,6 +768,8 @@ try
     builder.Services.AddSingleton<HealthState>();
     builder.Services.AddScoped<HealthCheckService>();
     builder.Services.AddScoped<HealthMonitor>();
+    builder.Services.AddSingleton<HealthSourceRecovery>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<HealthSourceRecovery>());
     builder.Services.AddScoped<HealthScanService>();
     builder.Services.AddScoped<HealthMatchService>();
     builder.Services.AddScoped<HealthOperationService>();
@@ -589,6 +794,7 @@ try
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
+    builder.Services.AddScoped<FileRelinkPlanner>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -603,9 +809,16 @@ try
     builder.Services.AddScoped<StatsBackfillService>();
     builder.Services.AddScoped<SeriesIdentityService>();
     builder.Services.AddScoped<SeriesIdentityRepairService>();
+    builder.Services.AddScoped<ImportPathRepairService>();
+    builder.Services.AddScoped<ChapterFileDuplicateRepairService>();
+    builder.Services.AddScoped<BaoziChapterRenumberRepairService>();
     builder.Services.AddScoped<ActivityStatsService>();
     builder.Services.AddScoped<UserViewResolver>();
     builder.Services.AddScoped<LibraryCompositionService>();
+    builder.Services.AddScoped<StatsInsightsService>();
+    builder.Services.AddScoped<StatsStandingService>();
+    builder.Services.AddScoped<ReadingSessionService>();
+    builder.Services.AddScoped<ReadingSessionBackfillService>();
     // Backs UserMetricsService's short-lived snapshot cache. The metrics are recomputed from the
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.
@@ -663,8 +876,16 @@ try
     builder.Services.AddSingleton<Maki.Core.Scrobbling.MangaBakaTracker>();
     builder.Services.AddSingleton<Maki.Core.Scrobbling.KitsuTracker>();
     builder.Services.AddSingleton<ScrobbleService>();
+    // The same four instances, in ScrobbleService's order, for consumers that only need the interface.
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.AniListTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MalTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.MangaBakaTracker>());
+    builder.Services.AddSingleton<Maki.Core.Scrobbling.IScrobbleTracker>(sp => sp.GetRequiredService<Maki.Core.Scrobbling.KitsuTracker>());
+    builder.Services.AddSingleton<ImportListService>();
+    builder.Services.AddScoped<SeriesRequestSubmitter>();
     builder.Services.AddSingleton<AnimeSignalSources>();
     builder.Services.AddSingleton<AnimeSignalSyncService>();
+    builder.Services.AddScoped<AnimeResumeService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
@@ -763,6 +984,15 @@ try
             .ForJob(Maki.Api.Jobs.ScrobbleJob.Key)
             .WithIdentity("scrobble-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Every-minute tick; ImportListService decides whether the configured interval has elapsed.
+        // Starts well after the scrobble tick so the first passes don't hit the trackers together.
+        q.AddJob<Maki.Api.Jobs.ImportListJob>(j => j.WithIdentity(Maki.Api.Jobs.ImportListJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ImportListJob.Key)
+            .WithIdentity("import-lists-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(10))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // Hourly tick; AnimeSignalSyncService decides whether its own (much longer) interval has
@@ -968,9 +1198,32 @@ try
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
+        // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist
+        // on the stats page from the first release rather than only for reads after upgrade.
+        scope.ServiceProvider.GetRequiredService<ReadingSessionBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
         // After the backfill, so rows it just seeded are already keyed and this pass has nothing
         // left to do for them.
         scope.ServiceProvider.GetRequiredService<SeriesIdentityRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        scope.ServiceProvider.GetRequiredService<ImportPathRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Rewrites any pre-existing bare-sub AspNetUserLogins rows for the oidc provider to the
+        // issuer-scoped key format. See OidcLoginIssuerRepairService.
+        scope.ServiceProvider.GetRequiredService<OidcLoginIssuerRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Folds ChapterFile rows that name one file twice (re-run torrent imports). Before Quartz
+        // so the completed-download poll cannot be inserting while this reads.
+        scope.ServiceProvider.GetRequiredService<ChapterFileDuplicateRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Renumbers Baozi Manhua chapters synced before chapter numbers came from the site's label
+        // instead of the zero-based chapter_slot. Same ordering reason as the duplicate repair above.
+        scope.ServiceProvider.GetRequiredService<BaoziChapterRenumberRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,
@@ -1017,15 +1270,23 @@ try
             ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
         };
         forwarded.KnownProxies.Clear();
-        forwarded.KnownNetworks.Clear();
+        forwarded.KnownIPNetworks.Clear();
         foreach (var entry in authOptions.TrustedProxies)
         {
             if (entry.Contains('/'))
             {
                 var parts = entry.Split('/', 2);
-                if (IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefix))
+                if (IPAddress.TryParse(parts[0], out var network) && int.TryParse(parts[1], out var prefix) && prefix >= 0)
                 {
-                    forwarded.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(network, prefix));
+                    // System.Net.IPNetwork rejects host bits and oversized prefixes that the old
+                    // HttpOverrides type tolerated, so normalise rather than fail startup.
+                    var bytes = network.GetAddressBytes();
+                    prefix = Math.Min(prefix, bytes.Length * 8);
+                    for (var bit = prefix; bit < bytes.Length * 8; bit++)
+                    {
+                        bytes[bit / 8] &= (byte)~(0x80 >> (bit % 8));
+                    }
+                    forwarded.KnownIPNetworks.Add(new System.Net.IPNetwork(new IPAddress(bytes), prefix));
                 }
             }
             else if (IPAddress.TryParse(entry, out var proxy))
@@ -1046,6 +1307,18 @@ try
         // The default template opens with a literal "HTTP" (the line is already labelled Http) and
         // renders the duration to four decimal places, which is four more than anyone reads.
         o.MessageTemplate = "{RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0} ms";
+    });
+
+    // A browser that navigates away mid-request cancels RequestAborted, and the query awaiting it
+    // throws. Left alone that reaches request logging and Kestrel as an unhandled 500.
+    app.Use(async (context, next) =>
+    {
+        try { await next(); }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            if (!context.Response.HasStarted)
+                context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+        }
     });
 
     app.UseMiddleware<SecurityHeadersMiddleware>();
@@ -1114,7 +1387,10 @@ try
         oidc = new
         {
             enabled = oidcOptions.Enabled,
-            displayName = oidcOptions.DisplayName,
+            // Empty when no admin ever typed a label, rather than the English default: an admin's
+            // own words go out verbatim, but "Single sign-on" itself has to go through the request's
+            // own language, and the client already carries its own translated copy for this blank case.
+            displayName = oidcOptions.DisplayNameIsCustom ? oidcOptions.DisplayName : string.Empty,
             localLoginRestricted = oidcOptions.OidcOnly
         }
     })).AllowAnonymous();

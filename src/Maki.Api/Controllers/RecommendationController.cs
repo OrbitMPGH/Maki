@@ -1,6 +1,7 @@
 ﻿using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Recommendations;
 using Maki.Core.Security;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
@@ -27,14 +28,29 @@ public class RecommendationController(
     MangaBakaLocalStore store,
     EmbeddingStore embeddings,
     IUserSettings userSettings,
-    MalReviewClient reviews) : ControllerBase
+    HiddenContentService hidden,
+    CustomRailService customRails,
+    MalReviewClient reviews,
+    AnimeResumeService animeResume) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Get([FromBody] RecommendationRequest? request, CancellationToken ct)
     {
         try
         {
-            return Ok(await recommendations.GetAsync(request ?? new RecommendationRequest(), currentUser, ct));
+            request ??= new RecommendationRequest();
+            var filters = await hidden.ApplyAsync(Sanitize(request.Filters), ct);
+            var result = await recommendations.GetAsync(request with { Filters = filters }, currentUser, ct);
+            // Relations skip the catalogue filters on purpose (a sequel is shown whatever the panel
+            // says), but a never-show list is not a panel setting.
+            var isHidden = await hidden.PredicateAsync(ct);
+            return Ok(isHidden is null
+                ? result
+                : result with { Related = HiddenContentService.Without(result.Related, isHidden) });
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -87,7 +103,7 @@ public class RecommendationController(
         {
             return Ok(new
             {
-                unavailable = "Needs the local MangaBaka database (Settings → Metadata → local DB)",
+                unavailable = localizer.Get("error.recommendation.tasteInsightsNeedsLocalDb"),
                 groups = Array.Empty<object>(),
                 drift = Array.Empty<object>(),
             });
@@ -96,7 +112,20 @@ public class RecommendationController(
         var parsed = string.Equals(view, "shelf", StringComparison.OrdinalIgnoreCase)
             ? TasteView.Shelf
             : TasteView.Read;
-        return Ok(await tasteInsights.GetAsync(currentUser, parsed, refresh, ct));
+        var insights = await tasteInsights.GetAsync(currentUser, parsed, refresh, ct);
+
+        // Groups/DriftUnavailable/Unavailable are catalogue keys, not display text; see the
+        // TasteInsights doc. TasteInsightsService is a singleton whose result is cached per user,
+        // so it renders nothing itself; this is the one place that does, with the caller's locale.
+        return Ok(insights with
+        {
+            Unavailable = insights.Unavailable is null
+                ? null : localizer.Get(insights.Unavailable, insights.UnavailableArgs),
+            GroupsUnavailable = insights.GroupsUnavailable is null
+                ? null : localizer.Get(insights.GroupsUnavailable),
+            DriftUnavailable = insights.DriftUnavailable is null
+                ? null : localizer.Get(insights.DriftUnavailable),
+        });
     }
 
     /// <summary>
@@ -118,9 +147,14 @@ public class RecommendationController(
         try
         {
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
-            return Ok(FilterRails(rails, suppressed));
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+            return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -134,7 +168,10 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await sideInterests.GetAsync(currentUser, refresh, ct));
+            var isHidden = await hidden.PredicateAsync(ct);
+            var rails = await sideInterests.GetAsync(currentUser, refresh, ct);
+            return Ok(LocalizeRails(
+                rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
         catch (InvalidOperationException ex)
         {
@@ -158,7 +195,11 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await recentActivity.GetAsync(currentUser, refresh, ct));
+            var isHidden = await hidden.PredicateAsync(ct);
+            var rail = await recentActivity.GetAsync(currentUser, refresh, ct);
+            return Ok(rail is null
+                ? null
+                : LocalizeRail(rail with { Items = HiddenContentService.Without(rail.Items, isHidden) }));
         }
         catch (InvalidOperationException ex)
         {
@@ -180,7 +221,10 @@ public class RecommendationController(
     {
         try
         {
-            return Ok(await recentActivity.GetGroupedAsync(currentUser, refresh, ct));
+            var isHidden = await hidden.PredicateAsync(ct);
+            var rails = await recentActivity.GetGroupedAsync(currentUser, refresh, ct);
+            return Ok(LocalizeRails(
+                rails.Select(r => r with { Items = HiddenContentService.Without(r.Items, isHidden) }).ToList()));
         }
         catch (InvalidOperationException ex)
         {
@@ -195,9 +239,14 @@ public class RecommendationController(
         try
         {
             var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
+            var isHidden = await hidden.PredicateAsync(ct);
             var rails = await discover.GetGenreFeedsAsync(
-                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed));
-            return Ok(FilterRails(rails, suppressed));
+                refresh, currentUser.MaxContentRating, ct, RailDepth(suppressed, isHidden));
+            return Ok(LocalizeRails(FilterRails(rails, suppressed, isHidden)));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -214,15 +263,13 @@ public class RecommendationController(
     {
         try
         {
-            var clamped = (request.Filters ?? RecommendationFilters.None) with
-            {
-                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
-                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
-                    : ContentRating.Allowed(currentUser.MaxContentRating)
-            };
-            var items = await discover.GetFeedAsync(request with { Filters = clamped }, ct);
-            var suppressed = await feedback.SuppressedAsync(currentUser.UserId, ct);
-            return Ok(items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id)).ToList());
+            var clamped = await ScopeAsync(request.Filters, ct);
+            var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+            return Ok(await discover.GetFeedAsync(request with { Filters = clamped }, ct, exclude));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -240,13 +287,12 @@ public class RecommendationController(
     {
         try
         {
-            var clamped = (request.Filters ?? RecommendationFilters.None) with
-            {
-                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
-                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
-                    : ContentRating.Allowed(currentUser.MaxContentRating)
-            };
+            var clamped = await ScopeAsync(request.Filters, ct);
             return Ok(await discover.SearchAsync(request with { Filters = clamped }, ct));
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -269,15 +315,14 @@ public class RecommendationController(
 
         try
         {
-            var clamped = (request.Filters ?? RecommendationFilters.None) with
-            {
-                ContentRatings = request.Filters?.ContentRatings is { Count: > 0 } requested
-                    ? ContentRating.Clamp(requested, currentUser.MaxContentRating)
-                    : ContentRating.Allowed(currentUser.MaxContentRating)
-            };
+            var clamped = await ScopeAsync(request.Filters, ct);
 
             var profile = await discover.GetCreatorAsync(request with { Filters = clamped }, ct);
             return profile is null ? this.NotFoundMessage(localizer, "error.recommendation.creatorNotFound") : Ok(profile);
+        }
+        catch (LocalCatalogueUnavailableException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {
@@ -362,20 +407,74 @@ public class RecommendationController(
     }
 
     /// <summary>
-    /// Tag names for the Discover tag filter, from the embedding index's tags_v2 vocabulary
-    /// (non-spoiler, most-used first). Empty until the index has been built.
+    /// Tags for the Discover tag filter, from the embedding index's tags_v2 vocabulary
+    /// (non-spoiler, most-used first). Each carries its place in MangaBaka's tag tree, because names
+    /// alone mislead: "Adult" is a sexual-content intensity, not an age, and the path is what says
+    /// so. Empty until the index has been built.
     /// </summary>
     [HttpGet("tags")]
     public IActionResult Tags()
     {
         embeddings.EnsureSchema();
-        var names = embeddings.GetVocab().Values
+        var visible = embeddings.GetVocab().Values
             .Where(t => !t.IsSpoiler)
             .OrderByDescending(t => t.SeriesCount)
-            .Select(t => t.Name)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .DistinctBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        return Ok(names);
+        // A tag has subtags when another tag's path runs through its own.
+        var parents = visible
+            .Select(t => ParentPath(t.NamePath))
+            .Where(p => p.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return Ok(visible.Select(t => new TagOption(
+            t.Name,
+            ParentPath(t.NamePath),
+            t.SeriesCount,
+            t.NamePath.Length > 0 && parents.Contains(t.NamePath))));
+    }
+
+    /// <param name="Path">The tag's ancestors, "Locations &gt; School" for College; empty at a root.</param>
+    /// <param name="HasSubtags">Whether the "include subtags" option would change anything.</param>
+    public record TagOption(string Name, string Path, long Count, bool HasSubtags);
+
+    private static string ParentPath(string namePath)
+    {
+        var cut = namePath.LastIndexOf(" > ", StringComparison.Ordinal);
+        return cut > 0 ? namePath[..cut] : string.Empty;
+    }
+
+    /// <summary>
+    /// How many catalogue series a set of filters leaves, for the panel's live count. Scoped like
+    /// every other POST here, so the number matches what Apply would show. <c>count</c> is null
+    /// when the search index is not built.
+    /// </summary>
+    [HttpPost("discover/count")]
+    public async Task<IActionResult> DiscoverCount([FromBody] DiscoverFeedRequest request, CancellationToken ct)
+    {
+        var scoped = await ScopeAsync(request.Filters, ct);
+        var exclude = await customRails.ExclusionsAsync(request.ExcludeOwned, ct);
+        return Ok(new { count = await discover.CountAsync(request with { Filters = scoped }, ct, exclude) });
+    }
+
+    /// <summary>The caller's never-show list.</summary>
+    [HttpGet("discover/hidden")]
+    public async Task<IActionResult> GetHidden(CancellationToken ct) =>
+        Ok(HiddenContentSpec.Parse(await userSettings.GetAsync(SettingKeys.DiscoverHidden, ct)));
+
+    /// <summary>
+    /// Replaces the caller's never-show list. Per user and needs no permission: it only ever hides
+    /// more. An empty list deletes the row.
+    /// </summary>
+    [HttpPut("discover/hidden")]
+    public async Task<IActionResult> SetHidden([FromBody] HiddenContentSpec request, CancellationToken ct)
+    {
+        var spec = (request ?? HiddenContentSpec.Empty).Normalize();
+        await userSettings.SetAsync(
+            SettingKeys.DiscoverHidden,
+            spec.IsEmpty ? null : HiddenContentSpec.Serialize(spec),
+            ct);
+        return Ok(spec);
     }
 
     /// <summary>
@@ -399,14 +498,20 @@ public class RecommendationController(
             // Re-clamped here as well as wherever the ids were chosen: every other POST on this
             // controller does the same, and a ceiling applied in only one of two places is not a
             // ceiling.
-            filters = filters with
+            filters = Sanitize(filters) with
             {
                 ContentRatings = ContentRating.Clamp(filters.ContentRatings, currentUser.MaxContentRating),
             };
         }
 
+        if (await hidden.TermsAsync(ct) is { Count: > 0 })
+        {
+            filters = await hidden.ApplyAsync(filters ?? RecommendationFilters.None, ct);
+        }
+
         var limit = Math.Clamp(request?.Limit ?? 40, 1, 120);
-        return Ok(await readerCohortRail.GetAsync(currentUser, filters, limit, ct));
+        var rail = await readerCohortRail.GetAsync(currentUser, filters, limit, ct);
+        return Ok(rail is null ? null : LocalizeRail(rail));
     }
 
     public record CohortRailRequest(RecommendationFilters? Filters, int? Limit);
@@ -416,8 +521,30 @@ public class RecommendationController(
     /// are shared instance-wide, so a reader with no feedback asking for refill headroom would make
     /// every reader pay a doubled catalogue scan for slack none of them use.
     /// </summary>
-    private static int RailDepth(HashSet<long> suppressed) =>
-        suppressed.Count > 0 ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+    private static int RailDepth(HashSet<long> suppressed, Func<long, bool>? isHidden) =>
+        suppressed.Count > 0 || isHidden is not null ? DiscoverService.RefillRailSize : DiscoverService.RailSize;
+
+    private Task<RecommendationFilters> ScopeAsync(RecommendationFilters? filters, CancellationToken ct) =>
+        hidden.ScopeAsync(filters, currentUser.MaxContentRating, ct);
+
+    private static RecommendationFilters Sanitize(RecommendationFilters? filters) =>
+        HiddenContentService.Sanitize(filters);
+
+    /// <summary>
+    /// Renders a rail's <see cref="DiscoverRail.Title"/> and <see cref="DiscoverRail.Subtitle"/> from
+    /// catalogue keys into the caller's language. Every rail producer on this controller is a
+    /// singleton whose output is cached instance-wide or across a locale-agnostic key, so none of
+    /// them can render prose themselves without freezing one language into the cache; see the
+    /// <see cref="DiscoverRail"/> doc.
+    /// </summary>
+    private DiscoverRail LocalizeRail(DiscoverRail rail) => rail with
+    {
+        Title = localizer.Get(rail.Title, rail.TitleArgs),
+        Subtitle = rail.Subtitle is null ? null : localizer.Get(rail.Subtitle, rail.SubtitleArgs),
+    };
+
+    private IReadOnlyList<DiscoverRail> LocalizeRails(IReadOnlyList<DiscoverRail> rails) =>
+        rails.Select(LocalizeRail).ToList();
 
     /// <summary>
     /// The viewer's suppression over a shared rail. Returns a new list every time: the cached rail
@@ -425,16 +552,18 @@ public class RecommendationController(
     /// titles from all of them.
     /// </summary>
     private static IReadOnlyList<DiscoverRail> FilterRails(
-        IReadOnlyList<DiscoverRail> rails, HashSet<long> suppressed)
+        IReadOnlyList<DiscoverRail> rails, HashSet<long> suppressed, Func<long, bool>? isHidden)
     {
-        if (suppressed.Count == 0)
+        if (suppressed.Count == 0 && isHidden is null)
         {
             return rails;
         }
 
         return rails.Select(rail => rail with
         {
-            Items = rail.Items.Where(x => !long.TryParse(x.ProviderId, out var id) || !suppressed.Contains(id))
+            Items = rail.Items
+                .Where(x => !long.TryParse(x.ProviderId, out var id) ||
+                    (!suppressed.Contains(id) && isHidden?.Invoke(id) != true))
                 .Take(DiscoverService.RailSize).ToList()
         }).ToList();
     }
@@ -458,11 +587,26 @@ public class RecommendationController(
         // the hint is the caller's alone, so mixing them at the query would put a user in a path
         // that has no business knowing about one. Same split MangaBakaRecommendation's "why" flags
         // already use, which the recommender fills rather than the store.
-        return Ok(detail with { ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct) });
+        return Ok(detail with
+        {
+            ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct),
+            AnimeResume = await animeResume.ForCatalogueAsync(
+                id, detail.AnimeStart, detail.AnimeEnd, detail.TotalChapters, ct),
+        });
     }
 
     /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>
     [HttpGet("reviews/{malId:int}")]
-    public async Task<IActionResult> Reviews(int malId, CancellationToken ct) =>
-        Ok(await reviews.GetReviewsAsync(malId, ct));
+    public async Task<IActionResult> Reviews(int malId, CancellationToken ct)
+    {
+        var found = await reviews.GetReviewsAsync(malId, ct);
+
+        // Author and Tags are catalogue keys, not display text; MalReviewClient caches reviews per
+        // MAL id across every caller, so it cannot render "Anonymous" or a sentiment label itself.
+        return Ok(found?.Select(r => r with
+        {
+            Author = r.Author ?? localizer.Get("discover.review.anonymousAuthor"),
+            Tags = r.Tags.Select(t => localizer.Get(t)).ToList(),
+        }).ToList());
+    }
 }

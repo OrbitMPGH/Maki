@@ -14,9 +14,8 @@ namespace Maki.Api.Controllers;
 /// Named Library filter presets ("ongoing, behind, action"). The spec is stored as opaque JSON and
 /// applied by the Library grid — see <see cref="LibraryFilterSpec"/>.
 /// <para>
-/// Readable by any signed-in user, writable only by an admin: the presets are currently one
-/// instance-wide list, so an unprivileged account could otherwise rename or delete everyone else's.
-/// The restriction goes away when saved filters become per-user.
+/// Presets are per-user: the <c>SavedFilter</c> owner query filter scopes every read and write to the
+/// signed-in caller, so each account sees and edits only its own list.
 /// </para>
 /// </summary>
 [ApiController]
@@ -40,6 +39,7 @@ public class LibraryFiltersController(
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var filters = await db.SavedFilters
+            .Where(f => f.Scope == SavedFilter.LibraryScope)
             .OrderBy(f => f.SortOrder)
             .ThenBy(f => f.Id)
             .ToListAsync(ct);
@@ -61,7 +61,7 @@ public class LibraryFiltersController(
             Spec = JsonSerializer.Serialize(request.Spec, SpecJson),
             // Per-user count: the query filter narrows it, so two users' presets don't interleave
             // their sort order.
-            SortOrder = await db.SavedFilters.CountAsync(ct),
+            SortOrder = await db.SavedFilters.CountAsync(f => f.Scope == SavedFilter.LibraryScope, ct),
             Created = DateTime.UtcNow,
         };
         db.SavedFilters.Add(filter);
@@ -73,7 +73,7 @@ public class LibraryFiltersController(
     public async Task<IActionResult> Update(int id, [FromBody] SaveFilterRequest request, CancellationToken ct)
     {
         var filter = await db.SavedFilters.FindAsync([id], ct);
-        if (filter is null)
+        if (filter is null || filter.Scope != SavedFilter.LibraryScope)
         {
             return NotFound();
         }
@@ -92,7 +92,7 @@ public class LibraryFiltersController(
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var filter = await db.SavedFilters.FindAsync([id], ct);
-        if (filter is null)
+        if (filter is null || filter.Scope != SavedFilter.LibraryScope)
         {
             return NotFound();
         }

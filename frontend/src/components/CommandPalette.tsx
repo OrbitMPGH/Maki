@@ -204,10 +204,10 @@ export default function CommandPalette({ navItems }: Props) {
             py={4}
             style={{ borderBottom: '1px solid var(--border)' }}
           />
-          <ScrollArea.Autosize mah={360} type="auto" viewportRef={listRef}>
+          <ScrollArea.Autosize mah="min(360px, 60dvh)" type="auto" viewportRef={listRef}>
             <Stack gap={2} p="xs">
               {results.length === 0 && (
-                <Text c="dimmed" size="sm" ta="center" py="lg">
+                <Text c="var(--ink-3)" size="sm" ta="center" py="lg">
                   <Trans>No matches.</Trans>
                 </Text>
               )}
@@ -222,7 +222,7 @@ export default function CommandPalette({ navItems }: Props) {
                   data-active={i === selected}
                   onMouseEnter={() => setSelected(i)}
                   onClick={() => go(r)}
-                  style={{ cursor: 'pointer', borderRadius: 8 }}
+                  style={{ cursor: 'pointer', borderRadius: 'var(--radius-thumb)' }}
                 >
                   {r.kind === 'nav' ? (
                     <r.icon size={18} stroke={1.7} />
@@ -240,16 +240,16 @@ export default function CommandPalette({ navItems }: Props) {
                       alt=""
                       width={24}
                       height={32}
-                      style={{ objectFit: 'cover', borderRadius: 3, flexShrink: 0 }}
+                      style={{ objectFit: 'cover', borderRadius: 'var(--mantine-radius-xs)', flexShrink: 0 }}
                     />
                   ) : (
                     <IconBooks size={18} stroke={1.7} />
                   )}
                   <Stack gap={0} style={{ minWidth: 0 }}>
-                    <Text size="sm" fw={550} truncate>
+                    <Text size="sm" fw={600} truncate>
                       {r.label}
                     </Text>
-                    <Text size="xs" c="dimmed" truncate>
+                    <Text size="xs" c="var(--ink-3)" truncate>
                       {r.sub}
                     </Text>
                   </Stack>

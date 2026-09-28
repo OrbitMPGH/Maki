@@ -9,8 +9,11 @@ import {
   IconEye,
   IconEyeCheck,
   IconEyeOff,
+  IconFileUnknown,
   IconFileZip,
   IconHourglass,
+  IconLink,
+  IconLinkOff,
   IconLoader2,
   IconPackage,
   IconPlayerPlay,
@@ -31,14 +34,17 @@ export interface StatusVisual {
   Icon: Icon
 }
 
-/** Mantine palette keys the library badges use, resolved to CSS vars once instead of per instance. */
+/**
+ * Library badge fills, in the design tokens rather than Mantine's stock palette, so a cover's
+ * "Completed" is the same green as every other "ok" in the app and follows the light theme.
+ */
 export const BADGE_COLOR: Record<string, string> = {
-  blue: 'var(--mantine-color-blue-filled)',
-  teal: 'var(--mantine-color-teal-filled)',
-  yellow: 'var(--mantine-color-yellow-filled)',
-  red: 'var(--mantine-color-red-filled)',
-  gray: 'var(--mantine-color-gray-filled)',
-  grape: 'var(--mantine-color-grape-filled)',
+  blue: 'var(--info)',
+  teal: 'var(--ok)',
+  yellow: 'var(--warn)',
+  red: 'var(--danger)',
+  gray: 'var(--neutral)',
+  grape: 'var(--watched)',
 }
 
 /**
@@ -52,11 +58,22 @@ const STATUS_TOKEN: Record<string, string> = {
   red: 'danger',
   violet: 'watched',
   gray: 'neutral',
+  cyan: 'info',
+  orange: 'warn',
+  grape: 'watched',
+  green: 'ok',
+  lime: 'suggestive',
+  brand: 'brand',
 }
 
 /** Token stem for a `StatusVisual.color`, for `var(--x)` / `var(--x-soft)` pairs. */
 export function statusToken(color: string): string {
   return STATUS_TOKEN[color] ?? 'neutral'
+}
+
+/** The same, as a colour value a Mantine `color` prop takes. */
+export function statusColor(color: string): string {
+  return `var(--${statusToken(color)})`
 }
 
 /**
@@ -246,4 +263,39 @@ export function isQueueActive(status: string): boolean {
     status !== 'Cancelled' &&
     !needsImportReview(status)
   )
+}
+
+/** A tracker's reading status for one series, as returned by scrobble sync. */
+export function trackerStatusVisual(status: string): StatusVisual {
+  switch (status) {
+    case 'completed':
+      return { color: 'green', label: msg`Completed`, Icon: IconCircleCheck }
+    case 'reading':
+      return { color: 'brand', label: msg`Reading`, Icon: IconPlayerPlay }
+    case 'plan_to_read':
+      return { color: 'cyan', label: msg`Plan to read`, Icon: IconClock }
+    default:
+      return { color: 'gray', label: status || msg`Listed`, Icon: IconHourglass }
+  }
+}
+
+/** A tracker connection's dot/state: connected, configured but not connected, or not configured. */
+export function trackerConnectionVisual(connected: boolean, configured: boolean): StatusVisual {
+  if (connected) return { color: 'green', label: msg`Connected`, Icon: IconLink }
+  if (configured) return { color: 'red', label: msg`Not connected`, Icon: IconLinkOff }
+  return { color: 'gray', label: msg`Not configured`, Icon: IconLinkOff }
+}
+
+/** A library file's link state against the series' chapters. */
+export function fileStatusVisual(status: string): StatusVisual {
+  switch (status) {
+    case 'linked':
+      return { color: 'teal', label: msg`Linked`, Icon: IconLink }
+    case 'unlinked':
+      return { color: 'yellow', label: msg`Not linked`, Icon: IconLinkOff }
+    case 'missing':
+      return { color: 'red', label: msg`Missing from disk`, Icon: IconFileUnknown }
+    default:
+      return { color: 'orange', label: msg`Unrecognized`, Icon: IconFileUnknown }
+  }
 }

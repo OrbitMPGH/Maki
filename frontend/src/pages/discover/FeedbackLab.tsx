@@ -20,6 +20,13 @@ import { AnimeSignalsSection } from './AnimeSignalsSection'
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
 
 /**
+ * Mirrors `RecommendationFeedbackPolicy.AvoidRatingCeiling`: a rating at or below this pushes down
+ * titles close to it, the same as a thumbs down. 5 stays neutral. Keep the "How signals work" copy
+ * above and {@link useShelfPillInfo} reading the same number.
+ */
+const AVOID_RATING_CEILING = 4
+
+/**
  * What the reader's own actions did to their recommendations, on the Taste tab.
  *
  * Summary and recent feedback only. Anything that changes one title is in the Manage signals modal,
@@ -129,7 +136,7 @@ export function SignalsCard() {
         }
       />
       <Stack gap="md">
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>
             Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch
             one title each.
@@ -142,29 +149,29 @@ export function SignalsCard() {
               <Text size="sm" fw={600}>
                 <Trans>How signals work</Trans>
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   <b>Thumbs up</b> counts toward your taste. Similar titles rank higher.
                 </Trans>
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   <b>Thumbs down</b> and ratings of 4 or under push down titles that are
                   closer to what you rejected than to what you kept. What they share shows up
                   above once three or more agree.
                 </Trans>
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   <b>Hide and dismiss</b> only affect that one title.
                 </Trans>
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   <b>Seen elsewhere</b> stops a title being recommended without changing taste.
                 </Trans>
               </Text>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   <b>Excluded from taste</b> keeps a shelf title out of the ranking. Reading
                   history is untouched.
@@ -176,12 +183,12 @@ export function SignalsCard() {
 
         {isLoading && <Loader size="sm" />}
         {error && (
-          <Alert color="red">
+          <Alert color="var(--danger)">
             <Trans>Could not load your signals: {loadError}</Trans>
           </Alert>
         )}
         {actionError && (
-          <Alert color="red">
+          <Alert color="var(--danger)">
             <Trans>{actionError} Refresh the page and try again.</Trans>
           </Alert>
         )}
@@ -209,9 +216,9 @@ export function SignalsCard() {
                 hint={t`${pushingDown} kept out of your taste`}
                 value={
                   <>
-                    <Text span inherit c="teal">{summary.liked}</Text>
-                    <Text span inherit c="dimmed" mx={8}>/</Text>
-                    <Text span inherit c="red">{summary.disliked}</Text>
+                    <Text span inherit c="var(--ok)">{summary.liked}</Text>
+                    <Text span inherit c="var(--ink-3)" mx={8}>/</Text>
+                    <Text span inherit c="var(--danger)">{summary.disliked}</Text>
                   </>
                 }
               />
@@ -227,14 +234,14 @@ export function SignalsCard() {
             {lab.avoids.length > 0 && <AvoidRow avoids={lab.avoids} />}
 
             {lab.rankingMode === 'fallback' && (
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>
                   Catalogue fallback is active. Personal add weights need semantic ranking.
                 </Trans>
               </Text>
             )}
             {lab.rankingMode === 'semantic' && !lab.capabilities.personalAddWeighting && (
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 <Trans>Personal add weighting is disabled for this instance.</Trans>
               </Text>
             )}
@@ -249,7 +256,7 @@ export function SignalsCard() {
                 </Button>
               </Group>
               {recent.length === 0 && padded.length === 0 && (
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="var(--ink-3)">
                   <Trans>
                     Thumbs, hide or dismiss a recommendation and it shows up here.
                   </Trans>
@@ -259,7 +266,7 @@ export function SignalsCard() {
                 {recent.map((item, index) => (
                   <div key={item.id}>
                     {dayOf(item) !== dayOf(recent[index - 1]) && (
-                      <Text size="xs" fw={600} c="dimmed" tt="uppercase" mt={index === 0 ? 0 : 10}>
+                      <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase" mt={index === 0 ? 0 : 10}>
                         <DayLabel value={item.occurredAtUtc} />
                       </Text>
                     )}
@@ -271,7 +278,7 @@ export function SignalsCard() {
                         </Text>
                         <Group gap={6} wrap="nowrap" mt={2}>
                           <ActionPill item={item} />
-                          <Text size="xs" c="dimmed" truncate>
+                          <Text size="xs" c="var(--ink-3)" truncate>
                             {[phrase(item.action), formatTime(item.occurredAtUtc)]
                               .filter(Boolean).join(' · ')}
                           </Text>
@@ -279,7 +286,8 @@ export function SignalsCard() {
                       </div>
                       {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && (
                         <Button
-                          size="xs" variant="subtle" loading={undo.isPending}
+                          size="xs" variant="subtle"
+                          loading={undo.isPending && undo.variables?.eventId === item.id}
                           onClick={() => void undoItem(item)}
                         >
                           <Trans>Undo</Trans>
@@ -289,7 +297,7 @@ export function SignalsCard() {
                   </div>
                 ))}
                 {padded.length > 0 && (
-                  <Text size="xs" fw={600} c="dimmed" tt="uppercase" mt={recent.length === 0 ? 0 : 10}>
+                  <Text size="xs" fw={600} c="var(--ink-3)" tt="uppercase" mt={recent.length === 0 ? 0 : 10}>
                     <Trans>From your shelf</Trans>
                   </Text>
                 )}
@@ -360,7 +368,7 @@ function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
             multiline
             w={260}
           >
-            <Badge size="sm" variant="light" color="red">
+            <Badge size="sm" variant="light" color="var(--danger)">
               {avoid.label} · <Plural value={count} one="# title" other="# titles" />
             </Badge>
           </Tooltip>
@@ -412,17 +420,19 @@ function formatRating(rating: number): string {
   return Number.isInteger(rating) ? String(rating) : rating.toFixed(1)
 }
 
-/** Pill + dimmed label for a shelf-derived row padding the recent-feedback card. */
+/** Pill + tertiary label for a shelf-derived row padding the recent-feedback card. */
 function useShelfPillInfo(item: ShelfPadItem) {
   const { t } = useLingui()
   if (item.kind === 'rated' && item.rating != null) {
     const label = t`★ ${formatRating(item.rating)} rated`
-    if (item.rating >= 4.5) return { label, color: 'teal', phrase: t`counts toward your taste` }
-    if (item.rating <= 2) return { label, color: 'red', phrase: t`pushes down titles close to it` }
-    return { label, color: 'gray', phrase: t`neutral, seeds at shelf weight` }
+    if (item.rating >= 4.5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
+    if (item.rating <= AVOID_RATING_CEILING) {
+      return { label, color: 'var(--danger)', phrase: t`pushes down titles close to it` }
+    }
+    return { label, color: 'var(--neutral)', phrase: t`neutral, seeds at shelf weight` }
   }
-  if (item.kind === 'read') return { label: t`Read`, color: 'blue', phrase: t`weighted by how far you got` }
-  return { label: t`Added by you`, color: 'grape', phrase: t`counts a little more than the rest` }
+  if (item.kind === 'read') return { label: t`Read`, color: 'var(--info)', phrase: t`weighted by how far you got` }
+  return { label: t`Added by you`, color: 'var(--watched)', phrase: t`counts a little more than the rest` }
 }
 
 function ShelfPill({ item }: { item: ShelfPadItem }) {
@@ -432,7 +442,7 @@ function ShelfPill({ item }: { item: ShelfPadItem }) {
 
 function ShelfPhrase({ item }: { item: ShelfPadItem }) {
   const { phrase } = useShelfPillInfo(item)
-  return <Text size="xs" c="dimmed" truncate>{phrase}</Text>
+  return <Text size="xs" c="var(--ink-3)" truncate>{phrase}</Text>
 }
 
 /** The short "what it did" phrase beside an action's badge. */

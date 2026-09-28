@@ -2,7 +2,9 @@ using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Reading;
 using Maki.Data;
+using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
@@ -96,6 +98,22 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
             .ToListAsync(ct);
+
+        // A removed series stays off both rails until any of its progress rows moves past the
+        // removal. The scan is newest-first, so its first row per series is that series' latest.
+        var hiddenAt = await db.UserSeriesStates
+            .AsNoTracking()
+            .Where(s => s.HiddenFromHomeAt != null)
+            .ToDictionaryAsync(s => s.SeriesId, s => s.HiddenFromHomeAt!.Value, ct);
+        if (hiddenAt.Count > 0)
+        {
+            var lastTouched = recent
+                .GroupBy(p => p.SeriesId)
+                .ToDictionary(g => g.Key, g => g.First().UpdatedAt);
+            recent = recent
+                .Where(p => !hiddenAt.TryGetValue(p.SeriesId, out var at) || lastTouched[p.SeriesId] > at)
+                .ToList();
+        }
 
         // Tombstones excluded: a chapter the user just marked unread is the most recently touched
         // incomplete row, and resuming into it would hijack "Continue reading". It is still unread,
@@ -200,6 +218,57 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         return Ok(new HomeReadingResponse(continueRail, jumpRail));
     }
 
+    /// <summary>Takes a series off this user's reading rails until they next read it.</summary>
+    [HttpPost("reading/{seriesId:int}/hide")]
+    public Task<IActionResult> HideFromReading(int seriesId, CancellationToken ct) =>
+        SetHiddenFromHomeAsync(seriesId, DateTime.UtcNow, ct);
+
+    /// <summary>Undoes <see cref="HideFromReading"/>.</summary>
+    [HttpDelete("reading/{seriesId:int}/hide")]
+    public Task<IActionResult> UnhideFromReading(int seriesId, CancellationToken ct) =>
+        SetHiddenFromHomeAsync(seriesId, null, ct);
+
+    private async Task<IActionResult> SetHiddenFromHomeAsync(int seriesId, DateTime? at, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            await WriteHiddenFromHomeAsync(seriesId, at, ct);
+        }
+        catch (DbUpdateException e) when (e.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 or 1555 })
+        {
+            // A double click inserts twice for a series with no state row yet; the loser updates
+            // the row the winner created.
+            db.ChangeTracker.Clear();
+            await WriteHiddenFromHomeAsync(seriesId, at, ct);
+        }
+
+        return NoContent();
+    }
+
+    private async Task WriteHiddenFromHomeAsync(int seriesId, DateTime? at, CancellationToken ct)
+    {
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
+        if (state is null)
+        {
+            if (at is null)
+            {
+                return;
+            }
+
+            state = new UserSeriesState { SeriesId = seriesId };
+            db.UserSeriesStates.Add(state);
+        }
+
+        state.HiddenFromHomeAt = at;
+        state.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>
     /// Series that recently gained chapter files, newest first.
     /// <para>
@@ -288,6 +357,17 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
 
         return Ok(items);
     }
+
+    /// <summary>
+    /// Library series whose anime the reader finished, starting after the last chapter it adapts.
+    /// Taken from the action rather than the constructor because only this rail needs it.
+    /// </summary>
+    [HttpGet("from-anime")]
+    public async Task<IActionResult> FromAnime(
+        [FromServices] AnimeResumeService animeResume,
+        [FromQuery] int limit = 12,
+        CancellationToken ct = default) =>
+        Ok(await animeResume.RailAsync(Math.Clamp(limit, 1, 50), ct));
 
     /// <summary>Labels for a set of chapter ids, in one query.</summary>
     private async Task<Dictionary<int, string>> ChapterLabelsAsync(

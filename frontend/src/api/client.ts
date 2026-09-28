@@ -1,4 +1,5 @@
 import { i18n } from '@lingui/core'
+import { t } from '@lingui/core/macro'
 
 interface InitializeInfo {
   apiRoot: string
@@ -27,7 +28,7 @@ let initialize: InitializeInfo | null = null
 export async function getInitialize(): Promise<InitializeInfo> {
   if (!initialize) {
     const res = await fetch('/initialize.json', { cache: 'no-cache' })
-    if (!res.ok) throw new Error('Failed to initialize')
+    if (!res.ok) throw new Error(t`Failed to initialize`)
     initialize = (await res.json()) as InitializeInfo
   }
   return initialize
@@ -39,8 +40,8 @@ export function invalidateInitialize(): void {
 
 /** Raised for a 401 so callers can distinguish "signed out" from a genuine request failure. */
 export class UnauthorizedError extends Error {
-  constructor() {
-    super('Unauthorized')
+  constructor(message?: string) {
+    super(message ?? t`Unauthorized`)
     this.name = 'UnauthorizedError'
   }
 }
@@ -126,8 +127,15 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     headers: authHeaders(options.headers),
   })
   if (res.status === 401) {
+    // A 401 body may be missing, non-JSON, or JSON without an `error` field; any of those falls
+    // back to UnauthorizedError's own generic message.
+    let message: string | undefined
+    try {
+      const body = await res.text()
+      message = (JSON.parse(body) as { error?: string }).error
+    } catch { /* no body, not JSON, or no error field */ }
     onUnauthorized?.()
-    throw new UnauthorizedError()
+    throw new UnauthorizedError(message)
   }
   if (!res.ok) {
     const body = await res.text()

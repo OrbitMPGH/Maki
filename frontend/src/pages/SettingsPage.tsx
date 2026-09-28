@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
 import { useLabel, useLanguageChoice } from '../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -9,7 +11,6 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Checkbox,
   Code,
   FileButton,
@@ -20,7 +21,6 @@ import {
   Progress,
   Radio,
   Select,
-  Slider,
   Stack,
   Switch,
   Table,
@@ -32,22 +32,26 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import {
+  IconAdjustments,
   IconAlertTriangle,
   IconCheck,
-  IconChevronDown,
-  IconChevronUp,
   IconCopy,
   IconDownload,
-  IconGripVertical,
+  IconLayoutDashboard,
   IconRefresh,
   IconTrash,
   IconUpload,
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
-import { RecommendationModelCards } from '../components/RecommendationModelCards'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { Panel } from '../components/ui/Panel'
+import { RecommendationModelSwitch } from '../components/RecommendationModelSwitch'
 import { NamingFormatInput } from '../components/NamingFormatInput'
 import { PriorityList } from '../components/PriorityList'
+import { SourceIcon, baseLanguage } from '../sourceIcons'
+import { ManageSourcesModal } from './settings/ManageSourcesModal'
 import { useAuth } from '../auth/AuthProvider'
 import { SETTINGS_ENTRIES, SETTINGS_TABS, entryVisible } from './settings/registry'
 import { useKavitaUser, useSetKavitaUser, useUsers } from '../api/auth'
@@ -78,8 +82,6 @@ import {
   useNamingPreview,
   useSaveLibrarySettings,
   useDiscoverSettings,
-  useFlareSolverrSettings,
-  useGeneralSettings,
   useDumpProgress,
   useMetadataSettings,
   useMonitoringSettings,
@@ -93,17 +95,17 @@ import {
   useRootFolders,
   useSaveDiscoverSettings,
   useSaveDownloadSettings,
-  useSaveFlareSolverr,
   useSaveMetadataSettings,
   useSaveMonitoringSettings,
   useSaveProwlarrOptions,
   useSaveScrobbleSettings,
+  useImportListSettings,
+  useSaveImportListSettings,
+  type ImportListSettings,
+  useKavitaLibraries,
   useSaveSourceLanguages,
-  useSaveSourcePriority,
   useSaveUiSettings,
   useUiSettings,
-  HOME_SECTION_LABELS,
-  type HomeSection,
   type SeriesSections,
   type UiSettings,
   useSetEmbeddingModel,
@@ -112,7 +114,6 @@ import {
   useSourceLanguages,
   useSourcePriority,
   useSources,
-  useTestFlareSolverr,
   useCheckForUpdatesNow,
   useImageCache,
   useRebuildImageCache,
@@ -121,15 +122,20 @@ import {
   useSeries,
   useUpdateSettings,
   useUpdateStatus,
+  CONTENT_RATING_LABELS,
   type FolderNamingMode,
+  type LibrarySettings,
   type ScrobbleSettings,
 } from '../api/hooks'
 import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '../api/reader'
-import { DEFAULT_PREFS, type ReaderPrefs } from './reader/prefs'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
+import { SaveButton, UnsavedSettingsContext } from '../components/settings/SaveButton'
+import { SettingsHelp } from '../components/settings/SettingsHelp'
+import { SettingsIndex } from '../components/settings/SettingsIndex'
 import { DumpProgressBar } from '../components/MetadataDumpProgress'
 import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
+import { ImportListsSection } from '../components/ImportListsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
@@ -149,16 +155,16 @@ function RootFoldersSection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Root Folders</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>Library folders where series are stored (point Kavita at the same location).</Trans>
-      </Text>
+      </SettingsHelp>
       <Stack>
         {rootFolders && rootFolders.length > 0 && (
-          <Table>
+          <Table className="panel-table ops-table">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th><Trans>Path</Trans></Table.Th>
@@ -169,10 +175,10 @@ function RootFoldersSection() {
             <Table.Tbody>
               {rootFolders.map((f) => (
                 <Table.Tr key={f.id}>
-                  <Table.Td>
+                  <Table.Td ff="monospace">
                     {f.path}
                     {!f.accessible && (
-                      <Text span c="red" size="xs" ml="xs">
+                      <Text span c="var(--danger)" size="xs" ml="xs">
                         <Trans>(inaccessible)</Trans>
                       </Text>
                     )}
@@ -181,7 +187,7 @@ function RootFoldersSection() {
                   <Table.Td>
                     <ActionIcon
                       variant="subtle"
-                      color="red"
+                      color="var(--danger)"
                       onClick={() =>
                         deleteFolder.mutate(f.id, {
                         })
@@ -208,7 +214,7 @@ function RootFoldersSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -235,25 +241,17 @@ function SourceLanguageSection() {
   const noneEnabled = order !== null && disabled !== null && order.every((c) => disabled.includes(c))
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Languages</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          Which languages to download, most preferred first. When auto-matching, every source is
-          ranked by the highest language on this list that it publishes, so a source carrying your
-          top language is tried before one that does not. Sources publishing none of the enabled
-          languages are skipped by auto-matching entirely. Drag to reorder.
+          Languages to download, most preferred first. Auto-match tries sources that publish your
+          top language first and skips sources that publish none of these. New auto-matched
+          sources get these languages; existing mappings are never changed. Drag to reorder.
         </Trans>
-      </Text>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          Sources with a language picker get it set to these languages when a mapping is created
-          automatically. Mappings that already exist are never rewritten, and switching a language on
-          or off never switches a source on or off.
-        </Trans>
-      </Text>
+      </SettingsHelp>
       {order && disabled && (
         <PriorityList
           items={order}
@@ -270,135 +268,88 @@ function SourceLanguageSection() {
         />
       )}
       {noneEnabled && (
-        <Text size="sm" c="red" mb="md">
+        <Text size="sm" c="var(--danger)" mb="md">
           <Trans>At least one language must stay enabled.</Trans>
         </Text>
       )}
-      <Button
-        variant="default"
-        disabled={!dirty || noneEnabled}
-        loading={save.isPending}
-        onClick={() =>
-          order &&
-          disabled &&
-          save.mutate(
-            { order, disabled, available: languages?.available ?? [] },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
-      >
-        <Trans>Save</Trans>
-      </Button>
-    </Card>
+      <Group justify="flex-end" mt="md">
+        <SaveButton
+          dirty={dirty}
+          disabled={noneEnabled}
+          loading={save.isPending}
+          onClick={() =>
+            order &&
+            disabled &&
+            save.mutate(
+              { order, disabled, available: languages?.available ?? [] },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+            )
+          }
+        />
+      </Group>
+    </Panel>
   )
 }
 
 function SourcePrioritySection() {
-  const { t } = useLingui()
   const { data: sources } = useSources()
   const { data: priority } = useSourcePriority()
-  const save = useSaveSourcePriority()
-  const [order, setOrder] = useState<string[] | null>(null)
-  const [disabled, setDisabled] = useState<string[] | null>(null)
+  const [managing, setManaging] = useState(false)
 
-  useEffect(() => {
-    if (priority) {
-      setOrder(priority.order)
-      setDisabled(priority.disabled)
-    }
-  }, [priority])
-
-  const displayName = (name: string) => sources?.find((s) => s.name === name)?.displayName ?? name
-  const key = (list: string[]) => [...list].sort().join(',')
-  const dirty =
-    order !== null &&
-    disabled !== null &&
-    priority !== undefined &&
-    (order.join(',') !== priority.order.join(',') || key(disabled) !== key(priority.disabled))
+  const byName = new Map((sources ?? []).map((s) => [s.name, s]))
+  const enabled = priority
+    ? priority.order.filter((name) => !priority.disabled.includes(name))
+    : (sources ?? []).filter((s) => s.enabled).map((s) => s.name)
+  const enabledCount = enabled.length
+  const total = sources?.length ?? priority?.order.length ?? 0
+  const languageCount = new Set(
+    enabled.flatMap((name) => (byName.get(name)?.supportedLanguages ?? []).map(baseLanguage)),
+  ).size
+  const more = enabledCount - 5
 
   return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        <Trans>Sources</Trans>
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          When a series auto-matches multiple sources, chapters download from the highest-priority
-          enabled source first. Applies to new auto-matches and manual "Auto-match" runs; existing
-          series mappings keep their current priorities. Drag to reorder.
-        </Trans>
-      </Text>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          A source publishing a higher-ranked language is ranked ahead of this list when
-          auto-matching.
-        </Trans>
-      </Text>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          Switching a source off skips it when auto-matching and stops every series from using it,
-          without changing the per-series toggles: turn it back on and each series picks up exactly
-          where it was.
-        </Trans>
-      </Text>
-      {order && disabled && (
-        <PriorityList
-          items={order}
-          disabled={disabled}
-          onChange={(nextOrder, nextDisabled) => {
-            setOrder(nextOrder)
-            setDisabled(nextDisabled)
-          }}
-          renderLabel={displayName}
-          toggleLabel={(name) => {
-            const sourceName = displayName(name)
-            return t`Enable ${sourceName}`
-          }}
-          renderExtra={(name) => {
-            const source = sources?.find((s) => s.name === name)
-            const langs = source?.supportedLanguages.filter((lang) => lang !== 'en') ?? []
-            return (
-              <>
-                <Text size="xs" c="dimmed">
-                  {source?.baseUrl}
-                </Text>
-                {source?.needsFlareSolverr && (
-                  <Badge size="sm" color="orange" variant="light">
-                    <Trans>Needs FlareSolverr</Trans>
-                  </Badge>
-                )}
-                {langs.length > 3 ? (
-                  <Badge size="sm" color="blue" variant="light">
-                    <Trans>Multi-language</Trans>
-                  </Badge>
-                ) : (
-                  langs.map((lang) => (
-                    <Badge key={lang} size="sm" color="blue" variant="light">
-                      {languageName(lang)}
-                    </Badge>
-                  ))
-                )}
-              </>
-            )
-          }}
-        />
+    <Panel>
+      <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+        <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+          <Title order={4} mb="sm">
+            <Trans>Sources</Trans>
+          </Title>
+          <SettingsHelp>
+            <Trans>
+              Download order when a series matches several sources, highest first. Language ranking
+              above comes first. Applies to new auto-matches and manual Auto-match runs; other series
+              keep their order.
+              Switching a source off pauses it for every series without touching their own toggles.
+            </Trans>
+          </SettingsHelp>
+        </div>
+        <Button leftSection={<IconAdjustments size={16} />} onClick={() => setManaging(true)}>
+          <Trans>Manage sources</Trans>
+        </Button>
+      </Group>
+      {(sources || priority) && (
+        <Group gap={14} mt="md" wrap="wrap">
+          {enabledCount > 0 && (
+            <div className="source-stack">
+              {enabled.slice(0, 5).map((name) => (
+                <SourceIcon key={name} name={name} label={byName.get(name)?.displayName} size={28} />
+              ))}
+              {more > 0 && <span className="source-stack-more">+{more}</span>}
+            </div>
+          )}
+          <Text size="sm" c="var(--ink-2)">
+            <Trans>
+              <b>{enabledCount}</b> of <Plural value={total} one="# source" other="# sources" /> enabled
+            </Trans>
+          </Text>
+          <span className="source-summary-sep" />
+          <Text size="sm" c="var(--ink-2)">
+            <Plural value={languageCount} one="Covers # language" other="Covers # languages" />
+          </Text>
+        </Group>
       )}
-      <Button
-        variant="default"
-        disabled={!dirty}
-        loading={save.isPending}
-        onClick={() =>
-          order &&
-          disabled &&
-          save.mutate(
-            { order, disabled },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
-      >
-        <Trans>Save</Trans>
-      </Button>
-    </Card>
+      <ManageSourcesModal opened={managing} onClose={() => setManaging(false)} />
+    </Panel>
   )
 }
 
@@ -418,17 +369,17 @@ function MetadataSection() {
     : undefined
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Metadata</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          Series metadata comes from MangaBaka. With the local database enabled, Maki keeps a
-          nightly snapshot on disk (~3 GB) so searches and library imports are instant instead of
-          rate-limited. Until the first download finishes, the API is used automatically.
+          Series metadata comes from MangaBaka. The local database keeps a nightly snapshot on
+          disk (~3 GB) so search and imports skip the API's rate limit, and Discover needs it. The
+          API is used until the first download finishes.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Stack gap="sm">
         <Switch
           label={t`Use local MangaBaka database`}
@@ -440,12 +391,12 @@ function MetadataSection() {
         />
         {downloading && progress && <DumpProgressBar progress={progress} />}
         {!downloading && lastError && (
-          <Text size="sm" c="red">
+          <Text size="sm" c="var(--danger)">
             <Trans>Last download failed: {lastError}. The next scheduled run retries.</Trans>
           </Text>
         )}
         <Group justify="space-between">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {settings === undefined ? (
               '...'
             ) : settings.dumpPresent ? (
@@ -474,7 +425,7 @@ function MetadataSection() {
                     message: result.alreadyRunning
                       ? now`A refresh is already running`
                       : now`Refresh started, downloading in the background if a new snapshot is available`,
-                    color: result.alreadyRunning ? 'gray' : 'green',
+                    color: result.alreadyRunning ? 'var(--neutral)' : 'var(--ok)',
                   }),
               })
             }
@@ -483,7 +434,7 @@ function MetadataSection() {
           </Button>
         </Group>
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -500,58 +451,121 @@ function RecommendationIndexSection() {
               ? now`Turning embeddings off…`
               : now`Switching to ${kind}: downloading the model and index…`
             : r.reason,
-          color: r.switching ? 'blue' : 'gray',
+          color: r.switching ? 'var(--info)' : 'var(--neutral)',
         }),
-      onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+      onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
     })
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Recommendations</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          Discover recommends by semantic "feel" and searches by description, using a local
-          embedding model. The vectors download prebuilt, so this normally needs no attention;
-          search falls back to titles and recommendations to genres whenever it's off or still
-          downloading.
+          A local embedding model lets Discover recommend by feel and search by description. The
+          vectors download prebuilt, so this normally needs no attention. While it's off or still
+          downloading, search falls back to titles and recommendations to genres.
         </Trans>
-      </Text>
+      </SettingsHelp>
 
-      <RecommendationModelCards status={status} busy={setModel.isPending} onSelect={selectModel} />
-    </Card>
+      <RecommendationModelSwitch status={status} busy={setModel.isPending} onSelect={selectModel} />
+    </Panel>
   )
 }
 
-function MonitoringSection() {
+/**
+ * The library settings are one record with one PUT, and the three required fields have to travel
+ * with every write. Same idea as useUiPatch: patch what changed, carry the rest over.
+ */
+function useLibraryPatch() {
+  const { data: settings } = useLibrarySettings()
+  const save = useSaveLibrarySettings()
+  const queryClient = useQueryClient()
+  const patch = (changes: Partial<LibrarySettings>) => {
+    // Merge over the freshest cache, not `settings`: that's a render snapshot, and two patches
+    // fired before the first refetch lands would otherwise have the second undo the first.
+    const current = queryClient.getQueryData<LibrarySettings>(['settings', 'library']) ?? settings
+    save.mutate(
+      {
+        writeComicInfo: current?.writeComicInfo ?? true,
+        folderNamingMode: current?.folderNamingMode ?? 'rename',
+        writeCoverToFolder: current?.writeCoverToFolder ?? false,
+        ...changes,
+      },
+      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+    )
+  }
+  return { settings, patch }
+}
+
+/** What a series starts with when it is added or imported: the specials rule and the incognito rules. */
+function NewSeriesDefaultsSection() {
   const { t } = useLingui()
-  const { data: settings } = useMonitoringSettings()
-  const save = useSaveMonitoringSettings()
+  const renderLabel = useLabel()
+  const incognitoOptions = useIncognitoOptions()
+  const { data: monitoring } = useMonitoringSettings()
+  const saveMonitoring = useSaveMonitoringSettings()
+  const { settings, patch } = useLibraryPatch()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
-        <Trans>Monitoring</Trans>
+        <Trans>New series defaults</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          Specials are decimal chapters (10.5 omake, x.1/x.2 splits). When enabled, specials on
-          newly added or imported series are marked "not wanted": they stay listed, but they never
-          download and they don't count toward the series' chapter total. Applies as each chapter
-          is discovered, so specials released later are covered too. Existing chapters are
-          unaffected; change them on the series page or in bulk from its Chapters tab.
+          What a series starts with when it is added or imported. Changing these never touches
+          series already in the library.
         </Trans>
-      </Text>
+      </SettingsHelp>
+
       <Switch
-        label={t`Don't want specials on new series`}
-        checked={settings?.unmonitorSpecials ?? false}
-        onChange={(e) =>
-          save.mutate(e.currentTarget.checked, {
-          })
-        }
+        mb="lg"
+        label={t`Don't want specials`}
+        description={t`Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too.`}
+        checked={monitoring?.unmonitorSpecials ?? false}
+        onChange={(e) => saveMonitoring.mutate(e.currentTarget.checked)}
       />
-    </Card>
+
+      <Text fw={500} size="sm" mb={4}>
+        <Trans>Incognito by content rating</Trans>
+      </Text>
+      <SettingsHelp mb="sm">
+        <Trans>
+          Pre-filled on the add form, where any single add can change it. "No scrobble" keeps a
+          series off your trackers; "Full" also keeps it out of stats and history.
+        </Trans>
+      </SettingsHelp>
+      <Stack gap="xs">
+        {CONTENT_RATINGS.map((rating) => {
+          const ratingLabel = renderLabel(CONTENT_RATING_LABELS[rating])
+          return (
+            <Group key={rating} gap="sm" wrap="nowrap">
+              <Text size="sm" w={110} style={{ flexShrink: 0 }}>
+                {ratingLabel}
+              </Text>
+              <Select
+                aria-label={t`Incognito for ${ratingLabel}`}
+                data={incognitoOptions}
+                value={settings?.incognitoByRating?.[rating] ?? 'Off'}
+                disabled={!settings}
+                size="xs"
+                w={170}
+                onChange={(value) =>
+                  patch({
+                    incognitoByRating: {
+                      ...(settings?.incognitoByRating ?? {}),
+                      [rating]: (value as IncognitoMode | null) ?? 'Off',
+                    },
+                  })
+                }
+              />
+            </Group>
+          )
+        })}
+      </Stack>
+    </Panel>
   )
 }
 
@@ -560,30 +574,61 @@ function DiscoverSection() {
   const save = useSaveDiscoverSettings()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
-        Discover
+        <Trans>Content rating</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          Highest content rating shown in "Add Series" search results, everything up to and
-          including it is allowed. Discover and recommendations never surface pornographic titles
-          regardless of this setting.
+          The most explicit rating shown to you in search, Discover and recommendations. Everything
+          up to and including it is allowed.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <ContentRatingCards
         value={settings?.maxContentRating ?? 'erotica'}
         onChange={(rating) => save.mutate(rating)}
       />
-    </Card>
+    </Panel>
   )
 }
 
-function LibrarySection() {
+/** What Maki writes into and next to the files: ComicInfo.xml and the folder poster. */
+function LibraryFilesSection() {
   const { t } = useLingui()
-  const incognitoOptions = useIncognitoOptions()
-  const { data: settings } = useLibrarySettings()
-  const save = useSaveLibrarySettings()
+  const { settings, patch } = useLibraryPatch()
+
+  return (
+    <Panel>
+      <Title order={4} mb="sm">
+        <Trans>Files</Trans>
+      </Title>
+      <SettingsHelp mb="md">
+        <Trans>
+          Writes a standard <Code>ComicInfo.xml</Code> into imported CBZs so Kavita groups and
+          names chapters consistently. Off leaves torrent grabs and manual imports untouched.
+          Maki's own downloads always get one, and PDFs never do. A series page's "Update
+          ComicInfo" action standardizes one series later.
+        </Trans>
+      </SettingsHelp>
+      <Switch
+        mb="lg"
+        label={t`Write ComicInfo.xml into imported files`}
+        checked={settings?.writeComicInfo ?? true}
+        onChange={(e) => patch({ writeComicInfo: e.currentTarget.checked })}
+      />
+      <Switch
+        label={t`Save a cover.jpg into each series' library folder`}
+        description={t`For readers like Komga and Kavita that pick up a poster from the folder. Runs right away when switched on.`}
+        checked={settings?.writeCoverToFolder ?? false}
+        onChange={(e) => patch({ writeCoverToFolder: e.currentTarget.checked })}
+      />
+    </Panel>
+  )
+}
+
+function NamingSection() {
+  const { t } = useLingui()
+  const { settings, patch } = useLibraryPatch()
   const { data: allSeries } = useSeries()
   const seriesCount = allSeries?.length ?? 0
   const renameMany = useRenameManySeries()
@@ -605,7 +650,7 @@ function LibrarySection() {
   const stale = debouncedFolder !== folderFormat || debouncedChapter !== chapterFormat
 
   const saveFormats = () => {
-    // A stale preview doesn't block the save — the server validates too, and a commit that lands
+    // A stale preview doesn't block the save: the server validates too, and a commit that lands
     // inside the debounce window (closing the token picker right after inserting one) would
     // otherwise be dropped silently.
     if (!settings || (!stale && previewErrors.length > 0)) {
@@ -619,77 +664,21 @@ function LibrarySection() {
       return
     }
 
-    save.mutate(
-      {
-        writeComicInfo: settings.writeComicInfo,
-        folderNamingMode: settings.folderNamingMode,
-        writeCoverToFolder: settings.writeCoverToFolder ?? false,
-        seriesFolderFormat: folderFormat,
-        chapterFormat: chapterFormat,
-      },
-      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-    )
+    patch({ seriesFolderFormat: folderFormat, chapterFormat: chapterFormat })
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
-        <Trans>Library files</Trans>
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          Maki writes a standardized <Code>ComicInfo.xml</Code> into each CBZ so Kavita groups and
-          names chapters consistently. Turn this off to leave imported files (torrent grabs and
-          manual imports) exactly as they came; chapters Maki downloads itself from a source still
-          get a ComicInfo, since Maki builds those files. You can always standardize a single
-          series later with the "Update ComicInfo" bulk action on its page.
-        </Trans>
-      </Text>
-      <Switch
-        mb="lg"
-        label={t`Write ComicInfo.xml into imported files`}
-        checked={settings?.writeComicInfo ?? true}
-        onChange={(e) =>
-          save.mutate(
-            {
-              writeComicInfo: e.currentTarget.checked,
-              folderNamingMode: settings?.folderNamingMode ?? 'rename',
-              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
-      />
-
-      <Switch
-        mb="lg"
-        label={t`Save a cover.jpg into each series' library folder`}
-        description={t`For other readers (Komga, Kavita) that read a poster placed directly in the folder. Will run immediately when switched on.`}
-        checked={settings?.writeCoverToFolder ?? false}
-        onChange={(e) =>
-          save.mutate(
-            {
-              writeComicInfo: settings?.writeComicInfo ?? true,
-              folderNamingMode: settings?.folderNamingMode ?? 'rename',
-              writeCoverToFolder: e.currentTarget.checked,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
-      />
-
-      <Text fw={500} size="sm" mb={4}>
         <Trans>Naming</Trans>
-      </Text>
-      <Text size="sm" c="dimmed" mb="sm">
+      </Title>
+      <SettingsHelp mb="md">
         <Trans>
-          How Maki names a series' folder and the chapter files it downloads. Both take tokens;
-          the "?" button lists every one with an example, and its dialog is directly editable too.
-          A change applies to series added and chapters downloaded from here on. Nothing already
-          on disk moves until you rename it, either from a series' page or with the button below
-          for the whole library.
+          How Maki names series folders and the chapter files it downloads. The "?" button lists
+          every token. Changes apply to new series and downloads; files already on disk stay put
+          until you rename them from a series' page or with the button below.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Stack gap="md" mb="md">
         <NamingFormatInput
           label={t`Series Folder Format`}
@@ -738,7 +727,7 @@ function LibrarySection() {
             <Trans>Cancel</Trans>
           </Button>
           <Button
-            color="red"
+            color="var(--danger-fill)"
             loading={renameMany.isPending}
             onClick={() =>
               renameMany.mutate((allSeries ?? []).map((s) => s.id), {
@@ -753,7 +742,7 @@ function LibrarySection() {
                       failed > 0
                         ? now`Renamed ${renamed}, ${failed} failed`
                         : plural(renamed, { one: 'Renamed # series', other: 'Renamed # series' }),
-                    color: failed > 0 ? 'yellow' : 'green',
+                    color: failed > 0 ? 'var(--warn)' : 'var(--ok)',
                   })
                   setConfirmRenameAll(false)
                 },
@@ -768,24 +757,15 @@ function LibrarySection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Folder naming on import</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="sm">
+      <SettingsHelp mb="sm">
         <Trans>
-          Only affects importing an existing series from disk: whether Maki renames its current
-          folder to match the Series Folder Format above, or leaves it as found.
+          When importing an existing series from disk: rename its folder to the Series Folder
+          Format, or keep it as found.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Radio.Group
         value={settings?.folderNamingMode ?? 'rename'}
-        onChange={(value) =>
-          save.mutate(
-            {
-              writeComicInfo: settings?.writeComicInfo ?? true,
-              folderNamingMode: value as FolderNamingMode,
-              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
+        onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
       >
         <Stack gap="xs" mt="xs">
           <Radio value="rename" label={t`Rename folder to Maki standard`} />
@@ -800,200 +780,68 @@ function LibrarySection() {
       <Text fw={500} size="sm" mt="lg" mb={4}>
         <Trans>File naming on import</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="sm">
+      <SettingsHelp mb="sm">
         <Trans>
-          Whether files Maki adopts from disk are renamed to the Chapter Format above. A scene
-          release's own name often carries more than the format can say (the edition, the group,
-          the year), so turning this off keeps what the release named it. Chapters Maki downloads
-          itself are always named by the format, and renaming a series from its own page still
+          Off keeps a release's own file name, which often says more than the format can. Maki's
+          own downloads always follow the format, and renaming a series from its page still
           renames everything in it.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Switch
-        mb="lg"
         label={t`Rename imported files to the Chapter Format`}
         checked={settings?.renameImportedFiles ?? true}
-        onChange={(e) =>
-          save.mutate(
-            {
-              writeComicInfo: settings?.writeComicInfo ?? true,
-              folderNamingMode: settings?.folderNamingMode ?? 'rename',
-              writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-              renameImportedFiles: e.currentTarget.checked,
-            },
-            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-          )
-        }
+        onChange={(e) => patch({ renameImportedFiles: e.currentTarget.checked })}
       />
-
-      <Text fw={500} size="sm" mt="lg" mb={4}>
-        <Trans>Incognito by content rating</Trans>
-      </Text>
-      <Text size="sm" c="dimmed" mb="sm">
-        <Trans>
-          What the incognito setting is pre-filled with when a series of each rating is added.
-          "No scrobble" keeps it off your trackers; "Full" also keeps it out of stats and reading
-          history. The add form still shows the value, so any single add can override it, and
-          changing a rule here never touches a series already in the library.
-        </Trans>
-      </Text>
-      <Stack gap="xs">
-        {CONTENT_RATINGS.map((rating) => (
-          <Group key={rating} gap="sm" wrap="nowrap">
-            <Text size="sm" tt="capitalize" w={110} style={{ flexShrink: 0 }}>
-              {rating}
-            </Text>
-            <Select
-              aria-label={t`Incognito for ${rating}`}
-              data={incognitoOptions}
-              value={settings?.incognitoByRating?.[rating] ?? 'Off'}
-              disabled={!settings}
-              size="xs"
-              w={170}
-              onChange={(value) =>
-                save.mutate(
-                  {
-                    writeComicInfo: settings?.writeComicInfo ?? true,
-                    folderNamingMode: settings?.folderNamingMode ?? 'rename',
-                    writeCoverToFolder: settings?.writeCoverToFolder ?? false,
-                    incognitoByRating: {
-                      ...(settings?.incognitoByRating ?? {}),
-                      [rating]: (value as IncognitoMode | null) ?? 'Off',
-                    },
-                  },
-                  { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-                )
-              }
-            />
-          </Group>
-        ))}
-      </Stack>
-    </Card>
+    </Panel>
   )
 }
 
-function ReaderSection() {
+/**
+ * Keeping Maki's reader and Kavita in step. The reader's own settings live on the Reader card
+ * (ReadingProfilesSection); this is only the two Kavita actions that used to sit underneath them.
+ */
+function KavitaSyncSection() {
   const { t } = useLingui()
   const { data: settings } = useReaderSettings()
   const save = useSaveReaderSettings()
   const { me } = useAuth()
-  const defaults = settings?.defaults ?? DEFAULT_PREFS
-  const [scale, setScale] = useState(defaults.scale)
-  useEffect(() => setScale(defaults.scale), [defaults.scale])
 
   // Push-back and the read-status import are only meaningful for the account Kavita is bound to:
   // pushing somebody else's read would land the echo in a different high-water row and count every
   // chapter into Rewind twice.
   const ownsKavita = settings?.kavitaUserId != null && settings.kavitaUserId === me?.id
 
-  const saveWith = (patch: Partial<typeof defaults>, pushToKavita?: boolean) =>
-    save.mutate(
-      { defaults: { ...defaults, ...patch }, pushToKavita: pushToKavita ?? settings?.pushToKavita ?? false },
-      { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
-    )
-
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
-        <Trans>Reader</Trans>
+        <Trans>Kavita sync</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          The fallback for Maki's built-in reader: what a series gets when no reading profile
-          covers its type and nothing is pinned or overridden on the series itself.
-        </Trans>
-      </Text>
 
       <Stack gap="md">
-        <Radio.Group
-          label={t`Layout`}
-          value={defaults.mode}
-          onChange={(value) => saveWith({ mode: value as ReaderPrefs['mode'] })}
-        >
-          <Stack gap="xs" mt="xs">
-            <Radio value="paged" label={t`Single page`} />
-            <Radio value="double" label={t`Two pages side by side`} />
-            <Radio value="vertical" label={t`Continuous vertical (webtoon)`} />
-          </Stack>
-        </Radio.Group>
-
-        <Radio.Group
-          label={t`Reading direction`}
-          value={defaults.direction}
-          onChange={(value) => saveWith({ direction: value as ReaderPrefs['direction'] })}
-        >
-          <Stack gap="xs" mt="xs">
-            <Radio value="rtl" label={t`Right to left (manga)`} />
-            <Radio value="ltr" label={t`Left to right`} />
-          </Stack>
-        </Radio.Group>
-
-        <Radio.Group
-          label={t`Page fit`}
-          value={defaults.fit}
-          onChange={(value) => saveWith({ fit: value as ReaderPrefs['fit'] })}
-        >
-          <Stack gap="xs" mt="xs">
-            <Radio value="height" label={t`Fit height`} />
-            <Radio value="width" label={t`Fit width`} />
-            <Radio value="screen" label={t`Fit screen`} />
-            <Radio value="original" label={t`Original size`} />
-          </Stack>
-        </Radio.Group>
-
-        {defaults.fit === 'original' && (
-          <div>
-            <Text size="sm" fw={500} mb={4}>
-              <Trans>Scale ({scale}%)</Trans>
-            </Text>
-            <Slider min={25} max={400} step={5} value={scale} onChange={setScale} onChangeEnd={(value) => saveWith({ scale: value })} />
-          </div>
-        )}
-
-        <Switch
-          label={t`Advance to the next chapter at the end`}
-          checked={defaults.autoNextChapter}
-          onChange={(e) => saveWith({ autoNextChapter: e.currentTarget.checked })}
-        />
-        <Switch
-          label={t`Tap zones (click the page edges to turn)`}
-          checked={defaults.tapZones}
-          onChange={(e) => saveWith({ tapZones: e.currentTarget.checked })}
-        />
-        <div>
-          <Switch
-            label={t`Flash the chapter name on chapter change`}
-            checked={defaults.chapterBanner}
-            onChange={(e) => saveWith({ chapterBanner: e.currentTarget.checked })}
-          />
-          <Text size="xs" c="dimmed" mt={4}>
-            <Trans>
-              Credit pages and the next chapter's opening pages often look the same, so a chapter
-              turn can pass unnoticed. This shows the chapter name over the page for a couple of
-              seconds when you enter one.
-            </Trans>
-          </Text>
-        </div>
-
         <div>
           <Switch
             label={t`Mark chapters read in Kavita too`}
             checked={settings?.pushToKavita ?? false}
-            disabled={!ownsKavita}
-            onChange={(e) => saveWith({}, e.currentTarget.checked)}
+            disabled={!ownsKavita || !settings}
+            onChange={(e) =>
+              settings &&
+              save.mutate(
+                { defaults: settings.defaults, pushToKavita: e.currentTarget.checked },
+                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+              )
+            }
           />
-          <Text size="xs" c="dimmed" mt={4}>
+          <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
-              Off by default. When on, finishing a chapter in Maki's reader also marks it read for
-              your Kavita user, so the two stay in step. Only applies to series Maki has matched to
-              a Kavita series, reading stats are never counted twice either way.
+              Finishing a chapter in Maki's reader also marks it read in Kavita. Only for series
+              matched to a Kavita series. Stats never count a chapter twice.
             </Trans>
           </Text>
           {ownsKavita ? null : (
-            <Text size="xs" c="dimmed" mt={4}>
+            <Text size="xs" c="var(--ink-3)" mt={4}>
               <Trans>
-                Kavita is one server behind one API key, so its reading belongs to a single Maki
-                account, and it isn't yours. An admin picks which one under Settings → Kavita.
+                Kavita's reading belongs to one Maki account, and it isn't yours. An admin can change
+                that under Settings → Integrations → Kavita.
               </Trans>
             </Text>
           )}
@@ -1001,7 +849,7 @@ function ReaderSection() {
 
         {ownsKavita ? <KavitaReadImportControl /> : null}
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1034,7 +882,7 @@ function OpdsSection() {
         onSuccess: (result) => {
           // Enabling for the first time mints the token, so this is the one save that reveals a URL.
           if (result.feedUrl) setRevealedPath(result.feedUrl)
-          notifications.show({ message: now`Saved`, color: 'green' })
+          notifications.show({ message: now`Saved`, color: 'var(--ok)' })
         },
       },
     )
@@ -1043,21 +891,20 @@ function OpdsSection() {
     if (!feedUrl) return
     void navigator.clipboard
       .writeText(feedUrl)
-      .then(() => notifications.show({ message: now`Feed URL copied`, color: 'green' }))
+      .then(() => notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' }))
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         OPDS
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          Serves the library as an OPDS catalogue so reading apps (Panels, Chunky, KOReader,
-          Mihon/Tachiyomi's OPDS extensions) connect straight to Maki, with no Kavita in between.
-          Chapters can be downloaded whole or streamed a page at a time.
+          Serves the library as an OPDS catalogue for reading apps like Panels, Chunky, KOReader
+          and Mihon. Chapters download whole or stream a page at a time.
         </Trans>
-      </Text>
+      </SettingsHelp>
 
       <Stack gap="md">
         <div>
@@ -1066,11 +913,10 @@ function OpdsSection() {
             checked={enabled}
             onChange={(e) => saveWith({ enabled: e.currentTarget.checked })}
           />
-          <Text size="xs" c="dimmed" mt={4}>
+          <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
-              The feed URL carries its own token and is the only credential a reading app needs,
-              so anyone holding it can read the whole library. It is deliberately not your API
-              key: revoking it below breaks configured readers and nothing else.
+              Anyone with the feed URL can read the whole library. Regenerating it breaks the apps
+              using it and nothing else.
             </Trans>
           </Text>
         </div>
@@ -1090,26 +936,25 @@ function OpdsSection() {
                     </ActionIcon>
                   </Tooltip>
                 </Group>
-                <Alert color="yellow" variant="light" mt="xs">
+                <Alert color="var(--warn)" variant="light" mt="xs">
                   <Trans>
-                    Copy this now, it is shown only once. Maki stores a fingerprint of the token,
-                    not the token, so it cannot be displayed again. Lose it and you regenerate.
+                    Copy this now. It can't be shown again; if you lose it, regenerate.
                   </Trans>
                 </Alert>
-                <Text size="xs" c="dimmed" mt={4}>
+                <Text size="xs" c="var(--ink-3)" mt={4}>
                   <Trans>
-                    Paste it into your reading app as an OPDS catalogue. If you reach Maki from
-                    outside your network, swap the host for the address you use there.
+                    Add it to your reading app as an OPDS catalogue. From outside your network, swap
+                    the host for the address you use there.
                   </Trans>
                 </Text>
               </>
             ) : (
               <Group gap="xs" wrap="nowrap">
-                <Code>{opds?.tokenPrefix ? `${opds.tokenPrefix}…` : 'none yet'}</Code>
+                <Code>{opds?.tokenPrefix ? `${opds.tokenPrefix}…` : t`none yet`}</Code>
                 <Button
                   size="compact-xs"
                   variant="light"
-                  color="red"
+                  color="var(--danger)"
                   leftSection={<IconRefresh size={14} />}
                   onClick={() => setRotateModalOpen(true)}
                 >
@@ -1127,11 +972,11 @@ function OpdsSection() {
               checked={trackProgress}
               onChange={(e) => saveWith({ trackProgress: e.currentTarget.checked })}
             />
-            <Text size="xs" c="dimmed" mt={4}>
+            <Text size="xs" c="var(--ink-3)" mt={4}>
               <Trans>
-                Pages fetched by a streaming reader count as read, so OPDS reading shows up in
-                your library, Rewind and your trackers. Turn it off if an app reports progress you
-                didn't make: some fetch pages ahead, or grab the last page to size their page bar.
+                Pages a streaming app fetches count as read, so OPDS reading reaches your library,
+                Rewind and trackers. Turn it off if an app reports progress you didn't make; some
+                fetch pages ahead.
               </Trans>
             </Text>
           </div>
@@ -1147,8 +992,8 @@ function OpdsSection() {
         <Stack>
           <Text size="sm">
             <Trans>
-              The current feed URL stops working immediately. Every reading app you've set up
-              with it will need the new URL.
+              The current feed URL stops working immediately. Every app using it needs the new
+              one.
             </Trans>
           </Text>
           <Group justify="flex-end">
@@ -1156,7 +1001,7 @@ function OpdsSection() {
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="red"
+              color="var(--danger-fill)"
               loading={rotate.isPending}
               onClick={() =>
                 rotate.mutate(undefined, {
@@ -1164,7 +1009,7 @@ function OpdsSection() {
                     setRotateModalOpen(false)
                     // The only moment the new URL exists in a readable form.
                     setRevealedPath(result.feedUrl)
-                    notifications.show({ message: now`New OPDS feed URL generated`, color: 'green' })
+                    notifications.show({ message: now`New OPDS feed URL generated`, color: 'var(--ok)' })
                   },
                 })
               }
@@ -1174,30 +1019,62 @@ function OpdsSection() {
           </Group>
         </Stack>
       </Modal>
-    </Card>
+    </Panel>
   )
 }
 
 function KavitaImportResultSummary({
   result,
 }: {
-  result: { seriesMatched: number; chaptersMarked: number; seriesUnmatched: number }
+  result: {
+    seriesMatched: number
+    chaptersMarked: number
+    seriesUnmatched: number
+    seriesFailed: number
+    failedTitles: string[]
+  }
 }) {
-  const { chaptersMarked, seriesMatched, seriesUnmatched } = result
+  const { chaptersMarked, seriesMatched, seriesUnmatched, seriesFailed, failedTitles } = result
+
+  // Capped so one huge Kavita library can't turn this line into a wall of titles; the rest are
+  // named only by count, in a suffix that still needs its own plural forms.
+  const shownTitles = failedTitles.slice(0, 5)
+  const moreCount = failedTitles.length - shownTitles.length
+  const titles =
+    moreCount > 0
+      ? `${shownTitles.join(', ')} ${plural(moreCount, { one: '+# more', other: '+# more' })}`
+      : shownTitles.join(', ')
+
   return (
-    <Text size="xs" c="dimmed">
-      {seriesUnmatched > 0 ? (
-        <Trans>
-          <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-          {seriesMatched} series, {seriesUnmatched} Kavita series unmatched
-        </Trans>
-      ) : (
-        <Trans>
-          <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-          {seriesMatched} series
-        </Trans>
+    <Stack gap={2}>
+      <Text size="xs" c="var(--ink-3)">
+        {seriesUnmatched > 0 ? (
+          <Trans>
+            <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
+            {seriesMatched} series, {seriesUnmatched} Kavita series unmatched
+          </Trans>
+        ) : (
+          <Trans>
+            <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
+            {seriesMatched} series
+          </Trans>
+        )}
+      </Text>
+      {seriesFailed > 0 && (
+        <Text size="xs" c="var(--danger)">
+          {titles ? (
+            <Trans>
+              Could not read progress for{' '}
+              <Plural value={seriesFailed} one="# series" other="# series" />: {titles}
+            </Trans>
+          ) : (
+            <Trans>
+              Could not read progress for <Plural value={seriesFailed} one="# series" other="# series" />
+            </Trans>
+          )}
+        </Text>
       )}
-    </Text>
+    </Stack>
   )
 }
 
@@ -1210,14 +1087,11 @@ function KavitaReadImportControl() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Import read status from Kavita</Trans>
       </Text>
-      <Text size="xs" c="dimmed" mb="sm">
+      <Text size="xs" c="var(--ink-3)" mb="sm">
         <Trans>
-          Marks every chapter you've already finished in Kavita as read in Maki, so the built-in
-          reader and the library's progress bars don't start from zero. Safe to run more than
-          once: it never un-marks anything. These chapters are deliberately left out of Rewind:
-          Kavita doesn't say when they were read, and dating them today would pile your whole back
-          catalogue onto one day of the year in review. Rewind keeps counting only the reading
-          Maki sees happen, through the scrobble sync and its own reader.
+          Marks chapters you finished in Kavita as read here, so progress doesn't start from zero.
+          Safe to rerun; it never unmarks anything. These reads stay out of Rewind because Kavita
+          doesn't record when they happened.
         </Trans>
       </Text>
       <Group gap="sm">
@@ -1226,19 +1100,19 @@ function KavitaReadImportControl() {
           loading={status?.running ?? false}
           onClick={() =>
             start.mutate(undefined, {
-              onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
             })
           }
         >
           <Trans>Import read status</Trans>
         </Button>
         {status?.running && (
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Reading progress from Kavita…</Trans>
           </Text>
         )}
         {!status?.running && status?.error && (
-          <Text size="xs" c="red">
+          <Text size="xs" c="var(--danger)">
             {status.error}
           </Text>
         )}
@@ -1253,47 +1127,48 @@ function DownloadSection() {
   const { data: settings } = useDownloadSettings()
   const save = useSaveDownloadSettings()
   const [concurrentChapters, setConcurrentChapters] = useState<number | string>(2)
-  const [retryEnabled, setRetryEnabled] = useState(true)
-  const [retryMaxAttempts, setRetryMaxAttempts] = useState<number | string>(5)
+  // One number on screen, two fields on the wire: 0 means retry is off, and turning it off keeps the
+  // stored cap so switching it back on doesn't forget what it was.
+  const [retryAttempts, setRetryAttempts] = useState<number | string>(5)
   const [smartDownloadChaptersLeft, setSmartDownloadChaptersLeft] = useState<number | string>(5)
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
   const [useHardlinks, setUseHardlinks] = useState(true)
+  const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number | string>(5)
 
   useEffect(() => {
     if (settings) {
       setConcurrentChapters(settings.concurrentChapters)
-      setRetryEnabled(settings.retryEnabled)
-      setRetryMaxAttempts(settings.retryMaxAttempts)
+      setRetryAttempts(settings.retryEnabled ? settings.retryMaxAttempts : 0)
       setSmartDownloadChaptersLeft(settings.smartDownloadChaptersLeft)
       setSmartDownloadChapters(settings.smartDownloadChapters)
       setItemTimeoutMinutes(settings.itemTimeoutMinutes)
       setUseHardlinks(settings.useHardlinks)
+      setBulkHoldThreshold(settings.bulkHoldThreshold)
     }
   }, [settings])
 
   const dirty =
     settings !== undefined &&
     (Number(concurrentChapters) !== settings.concurrentChapters ||
-      retryEnabled !== settings.retryEnabled ||
-      Number(retryMaxAttempts) !== settings.retryMaxAttempts ||
+      Number(retryAttempts) !== (settings.retryEnabled ? settings.retryMaxAttempts : 0) ||
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
       Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
-      useHardlinks !== settings.useHardlinks)
+      useHardlinks !== settings.useHardlinks ||
+      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold)
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Downloads</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          How many chapters download at once from scraper sources. Higher isn't always faster:
-          each worker is a live connection to the same site, and tripping its rate limit pauses
-          every download. Torrent releases aren't affected. Takes effect after a restart.
+          Chapters downloaded at once from scraper sources. More isn't always faster: tripping a
+          site's rate limit pauses every download. Torrents aren't affected.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <NumberInput
         label={t`Concurrent chapter downloads`}
         min={1}
@@ -1305,50 +1180,64 @@ function DownloadSection() {
         mb="md"
       />
       <Text fw={500} size="sm" mb={4}>
-        Smart Download
+        <Trans>Smart Download</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <SettingsHelp mb="xs">
         <Trans>
-          Automatically downloads the next chapters of a series when you have only a few unread
-          chapters left. The settings below control how many unread chapters trigger the download
-          and how many chapters are downloaded at once. Runs every five minutes, based on reading
-          progress from Kavita or the built-in reader. Enabled per series as a monitoring option.
+          Downloads the next chapters of a series when you're down to a few unread. Checks every
+          five minutes against progress from Kavita or the built-in reader. Turn it on per series
+          in its monitoring options.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Group align="flex-end" mb="md">
         <NumberInput
-        label={t`Chapters unread before trigger`}
-        min={1}
-        max={10}
-        clampBehavior="strict"
-        value={smartDownloadChaptersLeft}
-        onChange={setSmartDownloadChaptersLeft}
-        w={220}
-        mb="md"
-      />
+          label={t`Chapters unread before trigger`}
+          min={1}
+          max={10}
+          clampBehavior="strict"
+          value={smartDownloadChaptersLeft}
+          onChange={setSmartDownloadChaptersLeft}
+          w={220}
+        />
+        <NumberInput
+          label={t`Chapters to download at once`}
+          min={1}
+          max={20}
+          clampBehavior="strict"
+          value={smartDownloadChapters}
+          onChange={setSmartDownloadChapters}
+          w={220}
+        />
+      </Group>
+      <Text fw={500} size="sm" mb={4}>
+        <Trans>Bulk new chapters</Trans>
+      </Text>
+      <SettingsHelp mb="xs">
+        <Trans>
+          When a refresh finds more new chapters for a series than this, none of them are queued.
+          That usually means a source renumbered or backfilled its list, not a real release. They
+          stay wanted, so you can download them from the series page. 0 means always queue.
+        </Trans>
+      </SettingsHelp>
       <NumberInput
-        label={t`Chapters to download at once`}
-        min={1}
-        max={20}
+        label={t`Hold back more than (chapters)`}
+        min={0}
+        max={1000}
         clampBehavior="strict"
-        value={smartDownloadChapters}
-        onChange={setSmartDownloadChapters}
+        value={bulkHoldThreshold}
+        onChange={setBulkHoldThreshold}
         w={220}
         mb="md"
       />
-        </Group>
       <Text fw={500} size="sm" mb={4}>
         <Trans>Stuck downloads</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <SettingsHelp mb="xs">
         <Trans>
-          A chapter that never finishes holds a worker for as long as the app runs, and with only
-          a couple of workers that stops the whole queue: everything else sits on "Queued" with
-          nothing wrong with it. Past this many minutes the download is abandoned and marked
-          failed, so retry handling takes over. Set 0 to remove the limit. Takes effect after a
-          restart.
+          A chapter that never finishes holds a worker and can stall the whole queue. Past this
+          many minutes it is marked failed and retried like any other failure. 0 means no limit.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <NumberInput
         label={t`Give up on a chapter after (minutes)`}
         min={0}
@@ -1362,17 +1251,14 @@ function DownloadSection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Torrent imports</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <SettingsHelp mb="xs">
         <Trans>
-          A finished torrent keeps seeding from the download folder, so its files are brought into
-          the library rather than moved. A hardlink gives the library its own name for the same
-          bytes, so the release isn't stored twice. It only works when the download folder and the
-          library sit on the same filesystem; when they don't, Maki copies instead. Hardlinked
-          files are left exactly as the release built them, which means no ComicInfo.xml
-          standardization for them, so Kavita may group them separately from chapters Maki
-          downloaded itself.
+          Seeding torrents stay in the download folder, so imports are linked or copied, never
+          moved. A hardlink stores the files once but needs the download folder and library on the
+          same filesystem; otherwise Maki copies. Hardlinked files are left as released, without
+          Maki's ComicInfo.xml, so Kavita may group them apart from Maki's own downloads.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Switch
         label={t`Hardlink imported torrents when possible`}
         checked={useHardlinks}
@@ -1382,55 +1268,48 @@ function DownloadSection() {
       <Text fw={500} size="sm" mb={4}>
         <Trans>Retry Handling</Trans>
       </Text>
-      <Text size="sm" c="dimmed" mb="xs">
+      <SettingsHelp mb="xs">
         <Trans>
-          Failed downloads are automatically retried on an escalating backoff (5m, 10m, 20m, ...)
-          up to the attempt cap below. A manual retry from the Activity page doesn't count against
-          it.
+          Failed downloads retry on a growing backoff (5m, 10m, 20m, ...). 0 turns automatic retry
+          off. Manual retries from Activity don't count.
         </Trans>
-      </Text>
-      <Group align="flex-end" mb="md">
-        <Switch
-          label={t`Automatically retry failed downloads`}
-          checked={retryEnabled}
-          onChange={(e) => setRetryEnabled(e.currentTarget.checked)}
-        />
-        <NumberInput
-          label={t`Max attempts`}
-          min={1}
-          max={20}
-          clampBehavior="strict"
-          value={retryMaxAttempts}
-          onChange={setRetryMaxAttempts}
-          disabled={!retryEnabled}
-          w={140}
+      </SettingsHelp>
+      <NumberInput
+        label={t`Retry a failed download up to (attempts)`}
+        min={0}
+        max={20}
+        clampBehavior="strict"
+        value={retryAttempts}
+        onChange={setRetryAttempts}
+        w={220}
+        mb="md"
+      />
+      <Group justify="flex-end" mt="md">
+        <SaveButton
+          dirty={dirty}
+          loading={save.isPending}
+          onClick={() =>
+            save.mutate(
+              {
+                concurrentChapters: Number(concurrentChapters),
+                retryEnabled: Number(retryAttempts) > 0,
+                retryMaxAttempts:
+                  Number(retryAttempts) > 0 ? Number(retryAttempts) : (settings?.retryMaxAttempts ?? 5),
+                smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
+                smartDownloadChapters: Number(smartDownloadChapters),
+                itemTimeoutMinutes: Number(itemTimeoutMinutes),
+                useHardlinks,
+                bulkHoldThreshold: Number(bulkHoldThreshold),
+              },
+              {
+                onSuccess: () =>
+                  notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+              },
+            )
+          }
         />
       </Group>
-      <Button
-        variant="default"
-        disabled={!dirty}
-        loading={save.isPending}
-        onClick={() =>
-          save.mutate(
-            {
-              concurrentChapters: Number(concurrentChapters),
-              retryEnabled,
-              retryMaxAttempts: Number(retryMaxAttempts),
-              smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
-              smartDownloadChapters: Number(smartDownloadChapters),
-              itemTimeoutMinutes: Number(itemTimeoutMinutes),
-              useHardlinks,
-            },
-            {
-              onSuccess: () =>
-                notifications.show({ message: now`Saved`, color: 'green' }),
-            },
-          )
-        }
-      >
-        <Trans>Save</Trans>
-      </Button>
-    </Card>
+    </Panel>
   )
 }
 
@@ -1448,6 +1327,7 @@ function BackupSection() {
 
   const [retention, setRetention] = useState<number | string>(5)
   const [target, setTarget] = useState<RestoreTarget | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   // Named, so the restore sentence extracts as `<0>{backupName}</0>` instead of an anonymous slot.
   const backupName =
@@ -1464,7 +1344,7 @@ function BackupSection() {
     notifications.show({
       title: now`Restore staged`,
       message: now`Maki is restarting to apply it. Reload in a moment.`,
-      color: 'blue',
+      color: 'var(--info)',
       autoClose: false,
     })
 
@@ -1475,97 +1355,97 @@ function BackupSection() {
       restarting()
     }
     const onError = (e: Error) =>
-      notifications.show({ title: now`Restore failed`, message: e.message, color: 'red' })
+      notifications.show({ title: now`Restore failed`, message: e.message, color: 'var(--danger)' })
 
     if (target.kind === 'existing') restore.mutate(target.name, { onSuccess, onError })
     else upload.mutate(target.file, { onSuccess, onError })
   }
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Backup &amp; Restore</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          A backup is a zip of your database and <Code>config.json</Code>, your whole library and
-          all settings. Big, re-downloadable data (the MangaBaka dump, embeddings, covers, cache)
-          is left out. One is taken automatically right before any upgrade migration runs.
-          Restoring replaces the current data and restarts Maki.
+          A zip of your database and <Code>config.json</Code>: the library and every setting.
+          Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken
+          automatically before every upgrade migration.
         </Trans>
-      </Text>
-      <Alert color="yellow" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
+      </SettingsHelp>
+      <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
         <Trans>
-          Backup files contain your settings secrets (API keys, passwords) in plain text. Treat a
-          downloaded backup like a password. Restore auto-recovers only under a supervisor (Docker
-          / systemd); a bare process just stops and you restart it yourself.
+          Backups hold API keys and passwords in plain text. Treat a downloaded one like a
+          password.
         </Trans>
       </Alert>
 
       <Stack>
         {backups && backups.length > 0 && (
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th><Trans>Created</Trans></Table.Th>
-                <Table.Th><Trans>Kind</Trans></Table.Th>
-                <Table.Th><Trans>Version</Trans></Table.Th>
-                <Table.Th><Trans>Size</Trans></Table.Th>
-                <Table.Th />
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {backups.map((b) => (
-                <Table.Tr key={b.name}>
-                  <Table.Td>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
-                  <Table.Td>
-                    <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'gray' : 'blue'}>
-                      {b.manifest.kind}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="xs" c="dimmed">
-                      {b.manifest.appVersion}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>{formatBytes(b.sizeBytes)}</Table.Td>
-                  <Table.Td>
-                    <Group gap="xs" justify="flex-end" wrap="nowrap">
-                      <Button
-                        size="xs"
-                        variant="light"
-                        onClick={() => setTarget({ kind: 'existing', name: b.name })}
-                      >
-                        <Trans>Restore</Trans>
-                      </Button>
-                      <ActionIcon
-                        variant="subtle"
-                        onClick={() => void downloadBackup(b.name)}
-                        aria-label={t`Download backup`}
-                      >
-                        <IconDownload size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={() => remove.mutate(b.name)}
-                        aria-label={t`Delete backup`}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
+          <Table.ScrollContainer minWidth={520}>
+            <Table className="panel-table ops-table">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th><Trans>Created</Trans></Table.Th>
+                  <Table.Th><Trans>Kind</Trans></Table.Th>
+                  <Table.Th><Trans>Version</Trans></Table.Th>
+                  <Table.Th><Trans>Size</Trans></Table.Th>
+                  <Table.Th />
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {backups.map((b) => (
+                  <Table.Tr key={b.name}>
+                    <Table.Td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
+                    <Table.Td>
+                      <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'var(--neutral)' : 'var(--info)'}>
+                        {b.manifest.kind}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs" c="var(--ink-3)">
+                        {b.manifest.appVersion}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>{formatBytes(b.sizeBytes)}</Table.Td>
+                    <Table.Td>
+                      <Group gap="xs" justify="flex-end" wrap="nowrap">
+                        <Button
+                          size="xs"
+                          variant="light"
+                          onClick={() => setTarget({ kind: 'existing', name: b.name })}
+                        >
+                          <Trans>Restore</Trans>
+                        </Button>
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => void downloadBackup(b.name)}
+                          aria-label={t`Download backup`}
+                        >
+                          <IconDownload size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="var(--danger)"
+                          onClick={() => setDeleting(b.name)}
+                          aria-label={t`Delete backup`}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         )}
 
         <Group>
           <Button
             onClick={() =>
               create.mutate(undefined, {
-                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'green' }),
+                onSuccess: () => notifications.show({ message: now`Backup created`, color: 'var(--ok)' }),
               })
             }
             loading={create.isPending}
@@ -1591,19 +1471,16 @@ function BackupSection() {
             onChange={setRetention}
             w={220}
           />
-          <Button
-            variant="default"
-            disabled={!retentionDirty}
+          <SaveButton
+            dirty={retentionDirty}
             loading={saveRetention.isPending}
             onClick={() =>
               saveRetention.mutate(
                 { retention: Number(retention) },
-                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }) },
+                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
               )
             }
-          >
-            <Trans>Save</Trans>
-          </Button>
+          />
         </Group>
       </Stack>
 
@@ -1612,20 +1489,34 @@ function BackupSection() {
           <Text size="sm">
             <Trans>
               This replaces your current library and settings with <b>{backupName}</b>, then restarts
-              Maki. The current data is not kept, take a backup first if you want a way back.
+              Maki. The current data is not kept, so take a backup first if you want a way back.
+              Docker and systemd bring Maki back up on their own; otherwise start it again yourself.
             </Trans>
           </Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setTarget(null)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button color="red" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
+            <Button color="var(--danger-fill)" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
               <Trans>Restore &amp; restart</Trans>
             </Button>
           </Group>
         </Stack>
       </Modal>
-    </Card>
+
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={t`Delete backup`}
+        confirmLabel={<Trans>Delete backup</Trans>}
+        loading={remove.isPending}
+        onConfirm={() => deleting && remove.mutate(deleting, { onSuccess: () => setDeleting(null) })}
+      >
+        <Trans>
+          <b>{deleting}</b> is removed from disk. This can't be undone.
+        </Trans>
+      </ConfirmDialog>
+    </Panel>
   )
 }
 
@@ -1649,6 +1540,13 @@ function ProwlarrOptionsSection() {
     }
   }, [options])
 
+  const sortedIds = (ids: Iterable<number>) => [...ids].sort((a, b) => a - b).join(',')
+  const dirty =
+    options !== undefined &&
+    (sortedIds(selectedIndexers) !==
+      sortedIds((options.indexerIds ?? '').split(',').filter(Boolean).map(Number)) ||
+      categories.join(',') !== (options.categories ?? ''))
+
   const categoryData = [
     ...new Map(
       (indexers ?? [])
@@ -1664,7 +1562,7 @@ function ProwlarrOptionsSection() {
   return (
     <Stack gap="sm" mt="md">
       {configured && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>
             Restrict release searches to specific indexers and Torznab categories. With nothing
             selected, every indexer and category is searched.
@@ -1672,7 +1570,7 @@ function ProwlarrOptionsSection() {
         </Text>
       )}
       {configured && indexersErrorMessage != null && (
-        <Text size="sm" c="red">
+        <Text size="sm" c="var(--danger)">
           <Trans>Could not load indexers from Prowlarr: {indexersErrorMessage}</Trans>
         </Text>
       )}
@@ -1699,7 +1597,7 @@ function ProwlarrOptionsSection() {
               )
             })}
             {indexers.length === 0 && (
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>No indexers configured in Prowlarr.</Trans>
               </Text>
             )}
@@ -1714,7 +1612,8 @@ function ProwlarrOptionsSection() {
             clearable
           />
           <Group justify="flex-end">
-            <Button
+            <SaveButton
+              dirty={dirty}
               loading={save.isPending}
               onClick={() =>
                 save.mutate(
@@ -1723,72 +1622,15 @@ function ProwlarrOptionsSection() {
                     categories: categories.join(',') || null,
                   },
                   {
-                    onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+                    onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
                   },
                 )
               }
-            >
-              <Trans>Save</Trans>
-            </Button>
+            />
           </Group>
         </Stack>
       )}
     </Stack>
-  )
-}
-
-function FlareSolverrSection() {
-  const { data: settings } = useFlareSolverrSettings()
-  const save = useSaveFlareSolverr()
-  const test = useTestFlareSolverr()
-  const [url, setUrl] = useState('')
-
-  useEffect(() => {
-    if (settings?.url) setUrl(settings.url)
-  }, [settings?.url])
-
-  return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        FlareSolverr
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          Required for Cloudflare-protected sources like MangaFire. Point this at a running
-          FlareSolverr instance (e.g. http://localhost:8191).
-        </Trans>
-      </Text>
-      <Group>
-        <TextInput
-          placeholder="http://localhost:8191"
-          value={url}
-          onChange={(e) => setUrl(e.currentTarget.value)}
-          style={{ flex: 1 }}
-        />
-        <Button
-          variant="default"
-          loading={test.isPending}
-          onClick={() =>
-            test.mutate(url || null, {
-              onSuccess: () =>
-                notifications.show({ message: now`FlareSolverr is reachable`, color: 'green' }),
-            })
-          }
-        >
-          <Trans>Test</Trans>
-        </Button>
-        <Button
-          loading={save.isPending}
-          onClick={() =>
-            save.mutate(url || null, {
-              onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
-            })
-          }
-        >
-          <Trans>Save</Trans>
-        </Button>
-      </Group>
-    </Card>
   )
 }
 
@@ -1803,53 +1645,73 @@ function ScrobbleSection() {
     if (data && form === null) setForm(data)
   }, [data, form])
 
-  const conn = (service: string) => status?.connections.find((c) => c.service === service)
-
-  const set = (patch: Partial<ScrobbleSettings>) =>
-    setForm((f) => (f ? { ...f, ...patch } : f))
-
-  const origin = window.location.origin
   // The app registrations, interval and library filter belong to the instance. The server returns
   // them as null to anyone else and drops them on save, so a non-admin never sees the inputs.
   const isAdmin = data?.isAdmin ?? false
 
+  const conn = (service: string) => status?.connections.find((c) => c.service === service)
+
+  // Stored as a comma-separated id list. Ids Kavita no longer reports stay selectable, so a library
+  // that is briefly missing isn't dropped from the filter by the next save.
+  const { data: kavitaConnection, isSuccess: kavitaConnectionLoaded } = useConnectionSettings<{
+    url: string | null
+    apiKey: string | null
+  }>('kavita')
+  const kavitaNotSetUp = kavitaConnectionLoaded && !(kavitaConnection?.url && kavitaConnection?.apiKey)
+  const { data: kavitaLibraries, error: kavitaLibrariesError } = useKavitaLibraries(
+    isAdmin && kavitaConnectionLoaded && !kavitaNotSetUp,
+  )
+  const selectedLibraries = (form?.libraryIds ?? '').split(',').map((id) => id.trim()).filter(Boolean)
+  const libraryOptions = [
+    ...(kavitaLibraries ?? []).map((l) => ({ value: String(l.id), label: l.name ?? `#${l.id}` })),
+    ...selectedLibraries
+      .filter((id) => !(kavitaLibraries ?? []).some((l) => String(l.id) === id))
+      .map((id) => ({ value: id, label: `#${id}` })),
+  ]
+  const kavitaLibrariesErrorMessage = kavitaLibrariesError?.message ?? null
+
+  const set = (patch: Partial<ScrobbleSettings>) =>
+    setForm((f) => (f ? { ...f, ...patch } : f))
+  const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
+
+  const origin = window.location.origin
+
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="xs">
         <Trans>Scrobbling</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <SettingsHelp mb="sm">
         <Trans>
-          Pushes your Kavita reading progress to AniList, MyAnimeList and MangaBaka (any
-          combination, leave a site's credentials empty to disable it). Manage connections and
-          review matches on the Scrobble page. Uses the Kavita connection configured above.
+          Pushes your reading progress to your trackers. Connect your accounts and review matches
+          on the Scrobble page.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Stack gap="xs">
         <Text size="sm" fw={600}>
           AniList
         </Text>
         {isAdmin && (
           <>
-          <Text size="xs" c="dimmed">
-            <Trans>
-              Create an API client at anilist.co/settings/developer with redirect URL{' '}
-              <Code>{origin}/api/v1/scrobble/oauth/anilist</Code>
-            </Trans>
-          </Text>
-          <Group grow>
-            <TextInput
-              label={t`Client ID`}
-              value={form?.aniListClientId ?? ''}
-              onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
-            />
-            <TextInput
-              label={t`Client secret`}
-              type="password"
-              value={form?.aniListClientSecret ?? ''}
-              onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
-            />
-          </Group>
+            <Text size="xs" c="var(--ink-3)">
+              <Trans>
+                Create an API client at anilist.co/settings/developer with redirect URL{' '}
+                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/anilist</Code>
+              </Trans>
+            </Text>
+            <Group grow>
+              <TextInput
+                label={t`Client ID`}
+                value={form?.aniListClientId ?? ''}
+                onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
+              />
+              <TextInput
+                label={t`Client secret`}
+                type="password"
+                value={form?.aniListClientSecret ?? ''}
+                onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
+              />
+            </Group>
           </>
         )}
         <TrackerSyncControls service="anilist" label="AniList" connection={conn('anilist')} />
@@ -1859,28 +1721,27 @@ function ScrobbleSection() {
         </Text>
         {isAdmin && (
           <>
-          <Text size="xs" c="dimmed">
-            <Trans>
-              Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-              <Code>{origin}/api/v1/scrobble/oauth/mal</Code>. Paste the <b>Client ID</b> (not the
-              secret) exactly as shown there. If connecting opens a browser “sign in to
-              myanimelist.net” popup and then <Code>invalid_client</Code>, MyAnimeList didn&apos;t
-              recognise the Client ID: re-copy it and make sure the App Type is set.
-            </Trans>
-          </Text>
-          <Group grow>
-            <TextInput
-              label={t`Client ID`}
-              value={form?.malClientId ?? ''}
-              onChange={(e) => set({ malClientId: e.currentTarget.value })}
-            />
-            <TextInput
-              label={t`Client secret`}
-              type="password"
-              value={form?.malClientSecret ?? ''}
-              onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
-            />
-          </Group>
+            <SettingsHelp>
+              <Trans>
+                Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
+                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/mal</Code>. If
+                connecting ends in <Code>invalid_client</Code>, re-copy the Client ID (not the secret) and
+                check the App Type is set.
+              </Trans>
+            </SettingsHelp>
+            <Group grow>
+              <TextInput
+                label={t`Client ID`}
+                value={form?.malClientId ?? ''}
+                onChange={(e) => set({ malClientId: e.currentTarget.value })}
+              />
+              <TextInput
+                label={t`Client secret`}
+                type="password"
+                value={form?.malClientSecret ?? ''}
+                onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
+              />
+            </Group>
           </>
         )}
         <TrackerSyncControls service="mal" label="MyAnimeList" connection={conn('mal')} />
@@ -1890,7 +1751,7 @@ function ScrobbleSection() {
         </Text>
         <TextInput
           label={t`Personal Access Token`}
-          description={t`From MangaBaka settings, no OAuth needed, works immediately`}
+          description={t`From your MangaBaka settings. No OAuth needed.`}
           type="password"
           placeholder="mb-..."
           value={form?.mangaBakaToken ?? ''}
@@ -1917,26 +1778,38 @@ function ScrobbleSection() {
         <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
 
         {isAdmin && (
-          <Group grow mt="xs">
-            <TextInput
+          <Group grow mt="xs" align="flex-start">
+            <NumberInput
               label={t`Sync interval (minutes)`}
-              value={form?.intervalMinutes?.toString() ?? '30'}
-              onChange={(e) => {
-                const parsed = parseInt(e.currentTarget.value, 10)
-                set({ intervalMinutes: Number.isNaN(parsed) ? 30 : parsed })
-              }}
+              min={5}
+              max={1440}
+              clampBehavior="strict"
+              value={form?.intervalMinutes ?? 30}
+              onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 30 })}
             />
-            <TextInput
-              label={t`Kavita library ids`}
-              description={t`Comma-separated; empty = scrobble all libraries`}
-              value={form?.libraryIds ?? ''}
-              onChange={(e) => set({ libraryIds: e.currentTarget.value })}
+            <MultiSelect
+              label={t`Kavita libraries`}
+              description={
+                kavitaNotSetUp
+                  ? t`Set up the Kavita connection above to pick libraries.`
+                  : t`Leave empty to scrobble every library.`
+              }
+              placeholder={selectedLibraries.length === 0 ? t`All libraries` : undefined}
+              data={libraryOptions}
+              value={selectedLibraries}
+              onChange={(ids) => set({ libraryIds: ids.length > 0 ? ids.join(',') : null })}
+              error={
+                kavitaLibrariesErrorMessage != null
+                  ? t`Could not load libraries from Kavita: ${kavitaLibrariesErrorMessage}`
+                  : undefined
+              }
+              clearable
             />
           </Group>
         )}
         <Switch
           label={t`Add unread series as plan-to-read`}
-          description={t`Series in Kavita with no reading progress are added to the sites as 'plan to read'. Never modifies entries already on your lists.`}
+          description={t`Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed.`}
           checked={form?.planToRead ?? false}
           onChange={(e) => {
             const checked = e.currentTarget.checked
@@ -1944,21 +1817,93 @@ function ScrobbleSection() {
           }}
         />
         <Group justify="flex-end">
-          <Button
+          <SaveButton
+            dirty={dirty}
             loading={save.isPending}
-            disabled={!form}
             onClick={() =>
               form &&
               save.mutate(form, {
-                onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
+                onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
               })
             }
-          >
-            <Trans>Save</Trans>
-          </Button>
+          />
         </Group>
       </Stack>
-    </Card>
+    </Panel>
+  )
+}
+
+function ImportListSettingsSection() {
+  const { can } = useAuth()
+  return (
+    <Panel>
+      <Title order={4} mb="xs">
+        <Trans>Import lists</Trans>
+      </Title>
+      <SettingsHelp mb="sm">
+        <Trans>
+          Pulls your tracker lists on a schedule and adds matching series to the library, or files
+          requests when you cannot add series yourself. Connect trackers under Scrobbling first.
+        </Trans>
+      </SettingsHelp>
+      {can('Admin') && <ImportListInstanceControls />}
+      <ImportListsSection />
+    </Panel>
+  )
+}
+
+function ImportListInstanceControls() {
+  const { t } = useLingui()
+  const { data } = useImportListSettings()
+  const save = useSaveImportListSettings()
+  const [form, setForm] = useState<ImportListSettings | null>(null)
+  // Tracks whether the user has touched the form since the last seed/save, so a background
+  // refetch can rebase onto newer server values without clobbering an in-progress edit.
+  const editedRef = useRef(false)
+
+  useEffect(() => {
+    if (data && !editedRef.current) setForm(data)
+  }, [data])
+
+  const set = (patch: Partial<ImportListSettings>) => {
+    editedRef.current = true
+    setForm((f) => (f ? { ...f, ...patch } : f))
+  }
+  const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
+
+  return (
+    <Stack gap="xs" mb="lg">
+      <Switch
+        label={t`Enable import lists for everyone`}
+        checked={form?.enabled ?? true}
+        disabled={data === undefined}
+        onChange={(e) => set({ enabled: e.currentTarget.checked })}
+      />
+      <NumberInput
+        label={t`Sync interval (minutes)`}
+        min={15}
+        max={1440}
+        clampBehavior="strict"
+        value={form?.intervalMinutes ?? 15}
+        disabled={data === undefined}
+        onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
+      />
+      <Group justify="flex-end">
+        <SaveButton
+          dirty={dirty}
+          loading={save.isPending}
+          onClick={() =>
+            form &&
+            save.mutate(form, {
+              onSuccess: () => {
+                editedRef.current = false
+                notifications.show({ message: now`Saved`, color: 'var(--ok)' })
+              },
+            })
+          }
+        />
+      </Group>
+    </Stack>
   )
 }
 
@@ -1971,15 +1916,21 @@ function ScrobbleSection() {
 function useUiPatch(): ((patch: Partial<UiSettings>) => void) | null {
   const { data: ui } = useUiSettings()
   const save = useSaveUiSettings()
+  const queryClient = useQueryClient()
   if (!ui) return null
-  return (patch) => save.mutate({ ...ui, ...patch })
+  // Merge over the freshest cache, not `ui`: that's a render snapshot, and two patches fired
+  // before the first refetch lands would otherwise have the second undo the first.
+  return (patch) => {
+    const current = queryClient.getQueryData<UiSettings>(['settings', 'ui']) ?? ui
+    save.mutate({ ...current, ...patch })
+  }
 }
 
 /**
  * Which page "/" opens on. Server-stored (unlike Appearance, which is per-browser), so it follows
- * the user across devices.
+ * the user across devices. Lives on the Home card because turning Home off is what changes it most.
  */
-function StartPageSection() {
+function StartPageSelect() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
   const patch = useUiPatch()
@@ -1988,28 +1939,23 @@ function StartPageSection() {
   const homeEnabled = ui?.homeLayout.enabled ?? true
 
   return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb={4}>
-        <Trans>Start page</Trans>
-      </Title>
-      <Text size="sm" c="dimmed" mb="sm">
-        <Trans>Which page Maki opens on. Stored on the server, so it applies on every device.</Trans>
-      </Text>
-      <Select
-        data={[
-          // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
-          // choice that silently degrades to somewhere else is worse than saying why it's out.
-          { value: 'home', label: t`Home`, disabled: !homeEnabled },
-          { value: 'library', label: t`Library` },
-          { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
-        ]}
-        value={ui?.startPage ?? 'home'}
-        onChange={(value) => value && patch?.({ startPage: value as UiSettings['startPage'] })}
-        disabled={!patch}
-        allowDeselect={false}
-        maw={260}
-      />
-    </Card>
+    <Select
+      label={t`Start page`}
+      description={t`Which page Maki opens on, on every device.`}
+      data={[
+        // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
+        // choice that silently degrades to somewhere else is worse than saying why it's out.
+        { value: 'home', label: t`Home`, disabled: !homeEnabled },
+        { value: 'library', label: t`Library` },
+        { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
+      ]}
+      value={ui?.startPage ?? 'home'}
+      onChange={(value) => value && patch?.({ startPage: value as UiSettings['startPage'] })}
+      disabled={!patch}
+      allowDeselect={false}
+      maw={260}
+      mb="md"
+    />
   )
 }
 
@@ -2034,17 +1980,16 @@ function LanguageSection() {
   const currentLocaleLabel = locales.find((l) => l.code === locale)?.label ?? locale
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Language</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <SettingsHelp mb="sm">
         <Trans>
-          Which language Maki's interface is in. Stored on the server, so it applies on every
-          device. This is separate from Title language below, which is about the metadata rather
-          than the app.
+          The language of Maki's interface, on every device. Title language below is separate:
+          it sets the language of series titles.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Select
         data={options}
         value={ui?.language ?? ''}
@@ -2053,13 +1998,13 @@ function LanguageSection() {
         allowDeselect={false}
         maw={260}
       />
-      <Text size="xs" c="dimmed" mt="sm">
+      <Text size="xs" c="var(--ink-3)" mt="sm">
         <Trans>
-          Showing {currentLocaleLabel}. Translations other than English are machine-made and being
-          corrected over time; anything still untranslated falls back to English.
+          Showing {currentLocaleLabel}. Non-English translations are machine-made and improving;
+          anything untranslated shows in English.
         </Trans>
       </Text>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2097,16 +2042,16 @@ function TitleLanguageSection() {
   const primary = stored.split(',')[0] ?? ''
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Title language</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <SettingsHelp mb="sm">
         <Trans>
           Which language series titles are shown in, where the metadata provider has one. Display
           only: folders and file names keep the English title, and so does sorting.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Select
         data={options}
         value={primary}
@@ -2117,7 +2062,7 @@ function TitleLanguageSection() {
         allowDeselect={false}
         maw={260}
       />
-    </Card>
+    </Panel>
   )
 }
 
@@ -2137,15 +2082,15 @@ function SeriesPageSection() {
     patch?.({ seriesSections: { related, similar, ...next } })
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Series page</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <SettingsHelp mb="sm">
         <Trans>
           Which rails appear below the chapter list. Turning one off also stops it being fetched.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Stack gap="sm">
         <Switch
           checked={related}
@@ -2162,173 +2107,71 @@ function SeriesPageSection() {
           description={t`Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index.`}
         />
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
 /**
- * Which Home sections appear, in what order, and whether Home exists at all.
- *
- * Reorder is drag-and-drop, same mechanism as SourcePrioritySection: the real order only
- * changes on drop, rows shift purely visually (transform) while dragging. Up/down buttons
- * stay alongside as the keyboard-reachable equivalent.
+ * Whether Home exists at all, and the way into the page layout editors. The sections themselves are
+ * arranged on Home and Discover, in their edit mode, rather than from a list here.
  */
 function HomeSectionsSection() {
   const { t } = useLingui()
-  const renderLabel = useLabel()
   const { data: ui } = useUiSettings()
+  const { data: metadata } = useMetadataSettings()
   const patch = useUiPatch()
-  const sections = ui?.homeLayout.sections ?? []
   const homeEnabled = ui?.homeLayout.enabled ?? true
-
-  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null)
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
-  const [rowHeight, setRowHeight] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const write = (next: HomeSection[]) =>
-    patch?.({ homeLayout: { enabled: homeEnabled, sections: next } })
-
-  const move = (index: number, delta: number) => {
-    const target = index + delta
-    if (target < 0 || target >= sections.length) return
-    const next = [...sections]
-    ;[next[index], next[target]] = [next[target], next[index]]
-    write(next)
-  }
-
-  const toggle = (index: number, enabled: boolean) =>
-    write(sections.map((s, i) => (i === index ? { ...s, enabled } : s)))
-
-  function handleContainerDragOver(e: DragEvent) {
-    e.preventDefault()
-    if (dragFromIndex === null || !containerRef.current || rowHeight === 0) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const rawIndex = Math.floor((e.clientY - rect.top) / rowHeight)
-    const clamped = Math.min(Math.max(rawIndex, 0), sections.length - 1)
-    setHoverIndex(clamped)
-  }
-
-  function commitDrag() {
-    if (dragFromIndex !== null && hoverIndex !== null && dragFromIndex !== hoverIndex) {
-      const next = [...sections]
-      const [moved] = next.splice(dragFromIndex, 1)
-      next.splice(hoverIndex, 0, moved)
-      write(next)
-    }
-    setDragFromIndex(null)
-    setHoverIndex(null)
-  }
+  const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <div>
           <Title order={4} mb={4}>
-            <Trans>Home screen</Trans>
+            <Trans>Home &amp; start page</Trans>
           </Title>
-          <Text size="sm" c="dimmed">
+          <SettingsHelp>
             <Trans>
-              Pick which sections appear and what order they run in. Turn Home off entirely if you
-              don&apos;t read in Maki: the tab disappears and the library takes over as the start
-              page.
+              Arrange Home and Discover on the pages themselves: pick which sections show, drag them
+              into order and add your own rails. Turn Home off if you don&apos;t read in Maki: the
+              tab disappears and Library becomes the start page.
             </Trans>
-          </Text>
+          </SettingsHelp>
         </div>
         <Switch
           checked={homeEnabled}
-          disabled={!patch}
+          disabled={!patch || !ui}
           onChange={(e) =>
-            patch?.({ homeLayout: { enabled: e.currentTarget.checked, sections } })
+            ui && patch?.({ homeLayout: { ...ui.homeLayout, enabled: e.currentTarget.checked } })
           }
           aria-label={t`Enable the Home screen`}
         />
       </Group>
 
-      {homeEnabled && (
-        <Stack gap={6} ref={containerRef} onDragOver={handleContainerDragOver}>
-          {sections.map((section, index) => {
-            let shift = 0
-            if (dragFromIndex !== null && hoverIndex !== null && index !== dragFromIndex) {
-              if (dragFromIndex < hoverIndex && index > dragFromIndex && index <= hoverIndex)
-                shift = -1
-              else if (dragFromIndex > hoverIndex && index >= hoverIndex && index < dragFromIndex)
-                shift = 1
-            }
-            const label = renderLabel(HOME_SECTION_LABELS[section.key])
-            return (
-              <Group
-                key={section.key}
-                gap="xs"
-                wrap="nowrap"
-                px="xs"
-                py={6}
-                draggable={!!patch}
-                onDragStart={(e) => {
-                  const original = e.currentTarget
-                  const clone = original.cloneNode(true) as HTMLElement
-                  clone.style.position = 'fixed'
-                  clone.style.top = '-9999px'
-                  clone.style.left = '-9999px'
-                  clone.style.width = `${original.offsetWidth}px`
-                  clone.style.pointerEvents = 'none'
-                  document.body.appendChild(clone)
-                  e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-                  setTimeout(() => document.body.removeChild(clone), 0)
-                  setDragFromIndex(index)
-                  setHoverIndex(index)
-                  setRowHeight(original.getBoundingClientRect().height)
-                }}
-                onDragEnd={commitDrag}
-                style={{
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--mantine-radius-md)',
-                  opacity: dragFromIndex === index ? 0 : section.enabled ? 1 : 0.55,
-                  cursor: patch ? 'grab' : undefined,
-                  transform: shift ? `translateY(${shift * rowHeight}px)` : undefined,
-                  transition: 'transform 150ms ease',
-                  pointerEvents: dragFromIndex !== null && index !== dragFromIndex ? 'none' : undefined,
-                }}
-              >
-                <IconGripVertical size={14} opacity={0.5} />
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
-                  disabled={index === 0 || !patch}
-                  aria-label={t`Move ${label} up`}
-                  onClick={() => move(index, -1)}
-                >
-                  <IconChevronUp size={15} />
-                </ActionIcon>
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
-                  disabled={index === sections.length - 1 || !patch}
-                  aria-label={t`Move ${label} down`}
-                  onClick={() => move(index, 1)}
-                >
-                  <IconChevronDown size={15} />
-                </ActionIcon>
-                <Text size="sm" fw={550} style={{ flex: 1 }}>
-                  {label}
-                </Text>
-                <Switch
-                  size="sm"
-                  checked={section.enabled}
-                  disabled={!patch}
-                  onChange={(e) => toggle(index, e.currentTarget.checked)}
-                  aria-label={t`Show ${label}`}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  draggable={false}
-                />
-              </Group>
-            )
-          })}
-        </Stack>
-      )}
-    </Card>
+      <StartPageSelect />
+
+      <Group gap="xs" mt="md">
+        <Button
+          component={Link}
+          to="/home?edit=1"
+          variant="default"
+          leftSection={<IconLayoutDashboard size={16} />}
+          disabled={!homeEnabled}
+        >
+          <Trans>Edit Home layout</Trans>
+        </Button>
+        {discoverAvailable && (
+          <Button
+            component={Link}
+            to="/discover?edit=1"
+            variant="default"
+            leftSection={<IconLayoutDashboard size={16} />}
+          >
+            <Trans>Edit Discover layout</Trans>
+          </Button>
+        )}
+      </Group>
+    </Panel>
   )
 }
 
@@ -2337,16 +2180,16 @@ function AppearanceSection() {
   const { themeId, setThemeId, presets } = useThemeChoice()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb={4}>
         <Trans>Appearance</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+      <SettingsHelp mb="sm">
         <Trans>
-          Pick an accent colour, or switch to the light theme. Applies instantly and is remembered
-          on this device.
+          Pick an accent colour, the light theme, or match your system's light or dark mode.
+          Remembered on this device.
         </Trans>
-      </Text>
+      </SettingsHelp>
       <Group gap="sm">
         {presets.map((p) => {
           const active = p.id === themeId
@@ -2360,7 +2203,7 @@ function AppearanceSection() {
                 alignItems: 'center',
                 gap: 8,
                 padding: '8px 12px',
-                borderRadius: 10,
+                borderRadius: 'var(--radius-surface)',
                 border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
                 background: active ? 'var(--surface-hover)' : 'transparent',
                 boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
@@ -2384,44 +2227,7 @@ function AppearanceSection() {
           )
         })}
       </Group>
-    </Card>
-  )
-}
-
-function GeneralSection() {
-  const { data: general } = useGeneralSettings()
-  const completeSetup = useCompleteSetup()
-
-  return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        <Trans>General</Trans>
-      </Title>
-      <Stack gap="xs">
-        <Group>
-          <Text size="sm" w={80}>
-            <Trans>Port</Trans>
-          </Text>
-          <Code>{general?.port ?? '...'}</Code>
-        </Group>
-        {/* The instance API key used to live here, with a regenerate button. There is no instance
-            key any more: credentials belong to accounts and are created under My account, where
-            each one can be revoked without affecting anything else. */}
-        <Group justify="space-between" mt="xs">
-          <Text size="sm" c="dimmed">
-            <Trans>Re-open the first-time setup guide.</Trans>
-          </Text>
-          <Button
-            variant="default"
-            size="xs"
-            loading={completeSetup.isPending}
-            onClick={() => completeSetup.mutate(false)}
-          >
-            <Trans>Run setup guide</Trans>
-          </Button>
-        </Group>
-      </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2432,27 +2238,24 @@ function UpdatesSection() {
   const { data: status } = useUpdateStatus()
   const checkNow = useCheckForUpdatesNow()
   const latestVersion = status?.latestVersion
+  const skippedVersion = useSyncExternalStore(subscribeSkippedVersion, getSkippedVersion)
+  const isSkipped = !!status?.updateAvailable && !!latestVersion && skippedVersion === latestVersion
   const checkedAtLabel = status?.checkedAt ? formatDateTime(status.checkedAt) : undefined
+  const howToUpdate = status?.isDocker
+    ? t`pull the new image and recreate the container`
+    : t`pull the latest code and rebuild`
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Updates</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        {status?.isDocker ? (
-          <Trans>
-            Checks GitHub daily for a newer release and raises a banner and a Notifications event
-            when one is found. Docker installs are notify-only, pull the new image and recreate
-            the container.
-          </Trans>
-        ) : (
-          <Trans>
-            Checks GitHub daily for a newer release and raises a banner and a Notifications event
-            when one is found. Bare installs are notify-only, pull the latest code and rebuild.
-          </Trans>
-        )}
-      </Text>
+      <SettingsHelp mb="md">
+        <Trans>
+          Checks GitHub daily for a new release and shows a card in the sidebar and a notification
+          when there is one. Updating is manual: {howToUpdate}.
+        </Trans>
+      </SettingsHelp>
       <Stack gap="sm">
         <Switch
           label={t`Check for updates`}
@@ -2460,7 +2263,7 @@ function UpdatesSection() {
           onChange={(e) => save.mutate(e.currentTarget.checked)}
         />
         <Group justify="space-between">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {status?.isDevBuild ? (
               <Trans>Unofficial build, update checks are skipped.</Trans>
             ) : status?.updateAvailable ? (
@@ -2484,7 +2287,7 @@ function UpdatesSection() {
                     message: r.updateAvailable
                       ? now`Maki ${checkedVersion} is available`
                       : now`Already up to date`,
-                    color: r.updateAvailable ? 'yellow' : 'green',
+                    color: r.updateAvailable ? 'var(--warn)' : 'var(--ok)',
                   })
                 },
               })
@@ -2493,8 +2296,23 @@ function UpdatesSection() {
             <Trans>Check now</Trans>
           </Button>
         </Group>
+        {isSkipped && (
+          <Group gap={6}>
+            <Text size="xs" c="dimmed">
+              <Trans>Skipped {latestVersion}</Trans>
+            </Text>
+            <UnstyledButton
+              fz="xs"
+              c="var(--brand-fg)"
+              td="underline"
+              onClick={() => setSkippedVersion(null)}
+            >
+              <Trans>Show again</Trans>
+            </UnstyledButton>
+          </Group>
+        )}
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -2555,29 +2373,27 @@ function ImageCacheSection() {
         setAwaitingStart(r.started)
         notifications.show({
           message: r.started ? now`Rebuilding image cache` : (r.message ?? now`Already running`),
-          color: r.started ? 'green' : 'yellow',
+          color: r.started ? 'var(--ok)' : 'var(--warn)',
         })
       },
-      onError: (e) => notifications.show({ message: String(e), color: 'red' }),
+      onError: (e) => notifications.show({ message: String(e), color: 'var(--danger)' }),
     })
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4} mb="sm">
         <Trans>Image cache</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
-          Clears the reader&apos;s page thumbnails and the source-comparison samples, drops poster
-          folders for series that no longer exist, and re-downloads series posters from the
-          metadata provider. Thumbnails come back on their own the next time a chapter is opened,
-          so nothing is lost by clearing them.
+          Clears reader thumbnails and source-comparison samples, removes posters of deleted
+          series, and re-downloads posters. Thumbnails regenerate the next time a chapter opens.
         </Trans>
-      </Text>
+      </SettingsHelp>
 
       {usage && (
         <Stack gap={4} mb="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {usage.coversMissing > 0 ? (
               <Trans>
                 Posters: {coverFilesLabel} files, {coverBytesLabel} - {coversMissingLabel} of{' '}
@@ -2589,7 +2405,7 @@ function ImageCacheSection() {
               </Trans>
             )}
           </Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               Reader thumbnails: {thumbnailFilesLabel} files, {thumbnailBytesLabel}
             </Trans>
@@ -2603,7 +2419,7 @@ function ImageCacheSection() {
           value={pct ?? 100}
           animated={running}
           striped={running}
-          color={status?.lastError ? 'red' : 'brand'}
+          color={status?.lastError ? 'var(--danger)' : 'brand'}
         />
       )}
 
@@ -2678,18 +2494,18 @@ function ImageCacheSection() {
           </Group>
         </Stack>
       </Modal>
-    </Card>
+    </Panel>
   )
 }
 
 /**
- * Which Maki account Kavita's reading belongs to. Instance-wide on purpose: Kavita is one server
+ * Which Maki account Kavita's reading belongs to, shown inside the Kavita card. Instance-wide on purpose: Kavita is one server
  * reached with one API key, so everything it reports is a single person's reading and there is no way
  * to tell two Kavita users apart from here. Naming the owner is what keeps the adopt/merge/zero-delta
  * chain intact: the recurring pass, the read-status import, the per-chapter sync and the push-back
  * all act as the same user, so a chapter read in Maki and re-reported by Kavita counts once.
  */
-function KavitaUserSection() {
+function KavitaOwnerField() {
   const { t } = useLingui()
   const { data: bound } = useKavitaUser()
   const { data: users } = useUsers()
@@ -2700,30 +2516,21 @@ function KavitaUserSection() {
     .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))
 
   return (
-    <Card withBorder radius="md" padding="md">
-      <Title order={4} mb="sm">
-        <Trans>Kavita reading</Trans>
-      </Title>
-      <Text size="sm" c="dimmed" mb="md">
-        <Trans>
-          Whose reading history Kavita's progress is recorded as. Unset means the lowest-numbered
-          admin, which is what a single-user instance wants. Only this account can import read
-          status from Kavita or push its reads back.
-        </Trans>
-      </Text>
-      <Select
-        label={t`Attribute Kavita's reading to`}
-        placeholder={t`Lowest-numbered admin`}
-        clearable
-        data={options}
-        value={bound?.userId != null ? String(bound.userId) : null}
-        onChange={(value) =>
-          save.mutate(value === null ? null : Number(value), {
-            onSuccess: () => notifications.show({ message: now`Saved`, color: 'green' }),
-          })
-        }
-      />
-    </Card>
+    <Select
+      mt="md"
+      maw={420}
+      label={t`Attribute Kavita's reading to`}
+      description={t`Unset means the lowest-numbered admin, which suits a single-user instance. Only this account can import from Kavita or push reads back.`}
+      placeholder={t`Lowest-numbered admin`}
+      clearable
+      data={options}
+      value={bound?.userId != null ? String(bound.userId) : null}
+      onChange={(value) =>
+        save.mutate(value === null ? null : Number(value), {
+          onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+        })
+      }
+    />
   )
 }
 
@@ -2731,7 +2538,7 @@ function KavitaUserSection() {
  * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
  * only says how each id is built, so adding a setting is one entry there plus one line here.
  *
- * A hook rather than a module-scope table: the Prowlarr/qBittorrent/Kavita cards below carry
+ * A hook rather than a module-scope table: the connection cards below carry
  * translated `title`/`description`/`fields` props, and a plain object literal would freeze those
  * in whatever language was active when the module first loaded.
  */
@@ -2747,20 +2554,20 @@ function useSectionNodes(): Record<string, ReactNode> {
       'notification-prefs': <NotificationPrefsSection />,
       appearance: <AppearanceSection />,
       language: <LanguageSection />,
-      'start-page': <StartPageSection />,
       'title-language': <TitleLanguageSection />,
       'home-screen': <HomeSectionsSection />,
       'series-page': <SeriesPageSection />,
 
-      reader: <ReaderSection />,
-      'reading-profiles': <ReadingProfilesSection />,
+      reader: <ReadingProfilesSection />,
+      'kavita-sync': <KavitaSyncSection />,
       progress: <ProgressSection />,
       opds: <OpdsSection />,
       'discover-rating': <DiscoverSection />,
 
       'root-folders': <RootFoldersSection />,
-      'library-files': <LibrarySection />,
-      monitoring: <MonitoringSection />,
+      'library-files': <LibraryFilesSection />,
+      naming: <NamingSection />,
+      monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
       recommendations: <RecommendationIndexSection />,
 
@@ -2771,12 +2578,19 @@ function useSectionNodes(): Record<string, ReactNode> {
           <SourcePrioritySection />
         </Stack>
       ),
-      flaresolverr: <FlareSolverrSection />,
+      flaresolverr: (
+        <ConnectionSettingsCard
+          name="flaresolverr"
+          title="FlareSolverr"
+          description={t`Needed for Cloudflare-protected sources like MangaFire. Point this at a running FlareSolverr instance.`}
+          fields={[{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }]}
+        />
+      ),
       prowlarr: (
         <ConnectionSettingsCard
           name="prowlarr"
           title="Prowlarr"
-          description={t`Search manga releases on your indexers. Uses Prowlarr's aggregated search API, no app sync needed.`}
+          description={t`Searches your indexers for manga releases through Prowlarr's search API. No app sync needed.`}
           fields={[
             { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
             { key: 'apiKey', label: t`API key`, secret: true },
@@ -2789,7 +2603,7 @@ function useSectionNodes(): Record<string, ReactNode> {
         <ConnectionSettingsCard
           name="qbittorrent"
           title="qBittorrent"
-          description={t`Download client for grabbed releases. Completed torrents are imported into the library automatically (category defaults to 'maki'). If qBittorrent reports download paths Maki can't reach (e.g. it runs in Docker and reports /downloads while Maki sees Z:\\downloads), fill the optional path mapping to translate them.`}
+          description={t`Download client for grabbed releases. Finished torrents import into the library automatically. Fill the path mapping only if qBittorrent reports paths Maki can't reach, e.g. /downloads in Docker where Maki sees Z:\\downloads.`}
           fields={[
             { key: 'url', label: t`URL`, placeholder: 'http://localhost:8080' },
             { key: 'username', label: t`Username` },
@@ -2801,21 +2615,23 @@ function useSectionNodes(): Record<string, ReactNode> {
         />
       ),
 
-      'kavita-user': <KavitaUserSection />,
       kavita: (
         <ConnectionSettingsCard
           name="kavita"
           title="Kavita"
-          description={t`When configured, Maki asks Kavita to scan the series folder right after new chapters download or imported files change, then pushes the series poster, web links and publication status into Kavita (covers you've set yourself in Kavita are never overwritten). Get the API key from Kavita under User Settings → 3rd Party Clients. If Kavita sees the library under a different path (e.g. it runs in Docker), fill the optional path mapping so Maki translates folder paths.`}
+          description={t`Maki asks Kavita to scan a series after its files change, then pushes its poster, links and status. Covers you set in Kavita are kept. The API key is under User Settings → 3rd Party Clients in Kavita. Fill the path mapping only if Kavita sees the library under a different path, e.g. in Docker.`}
           fields={[
             { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
             { key: 'apiKey', label: t`API key`, secret: true },
             { key: 'pathMapFrom', label: t`Path mapping - Maki side`, placeholder: t`C:\\Manga (optional)` },
             { key: 'pathMapTo', label: t`Path mapping - Kavita side`, placeholder: t`/manga (optional)` },
           ]}
-        />
+        >
+          <KavitaOwnerField />
+        </ConnectionSettingsCard>
       ),
       scrobbling: <ScrobbleSection />,
+      'import-lists': <ImportListSettingsSection />,
       notifications: <NotificationsSection />,
 
       users: <UsersSection />,
@@ -2825,7 +2641,6 @@ function useSectionNodes(): Record<string, ReactNode> {
       backup: <BackupSection />,
       'image-cache': <ImageCacheSection />,
       updates: <UpdatesSection />,
-      general: <GeneralSection />,
     }),
     [t, i18n.locale],
   )
@@ -2838,6 +2653,7 @@ export default function SettingsPage() {
   const isAdmin = me?.isAdmin ?? false
   const [searchParams, setSearchParams] = useSearchParams()
   const sectionNodes = useSectionNodes()
+  const completeSetup = useCompleteSetup()
 
   // Which cards this account may see at all. Everything an admin-only card writes is rejected by
   // the server for anyone else, so rendering one would just fill the page with failed requests.
@@ -2855,6 +2671,26 @@ export default function SettingsPage() {
   // below runs.
   const requested = searchParams.get('tab')
   const activeTab = tabs.some((t) => t.key === requested) ? requested! : (tabs[0]?.key ?? 'account')
+  const tabEntries = useMemo(() => visible.filter((e) => e.tab === activeTab), [visible, activeTab])
+
+  // Panels unmount on a tab change (`keepMounted={false}`), which used to drop half-typed edits
+  // without a word. Cards report through SaveButton; a switch away from unsaved edits asks first.
+  const unsaved = useRef(new Set<string>())
+  const [unsavedCount, setUnsavedCount] = useState(0)
+  const reportUnsaved = useCallback((id: string, dirty: boolean) => {
+    if (dirty) unsaved.current.add(id)
+    else unsaved.current.delete(id)
+    setUnsavedCount(unsaved.current.size)
+  }, [])
+  const [pendingTab, setPendingTab] = useState<string | null>(null)
+  const switchTab = (value: string) => setSearchParams({ tab: value })
+
+  useEffect(() => {
+    if (unsavedCount === 0) return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [unsavedCount])
 
   const target = searchParams.get('s')
   useEffect(() => {
@@ -2885,21 +2721,40 @@ export default function SettingsPage() {
   }, [target, setSearchParams])
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="settings-surface">
       <PageHeader
+        compact
         title={t`Settings`}
         description={
           isAdmin
             ? t`Storage, metadata, download clients and integrations for your Maki instance.`
             : t`Your account and how Maki looks.`
         }
+        actions={
+          isAdmin && (
+            <Button
+              variant="default"
+              size="xs"
+              loading={completeSetup.isPending}
+              onClick={() => completeSetup.mutate(false)}
+            >
+              <Trans>Run setup guide</Trans>
+            </Button>
+          )
+        }
       />
       <Tabs
         value={activeTab}
-        onChange={(value) => value && setSearchParams({ tab: value })}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
+        onChange={(value) => {
+          if (!value || value === activeTab) return
+          if (unsaved.current.size > 0) setPendingTab(value)
+          else switchTab(value)
+        }}
         keepMounted={false}
       >
-        <Tabs.List mb="md">
+        <Tabs.List>
           {tabs.map((tab) => (
             <Tabs.Tab key={tab.key} value={tab.key}>
               {renderLabel(tab.label)}
@@ -2907,23 +2762,57 @@ export default function SettingsPage() {
           ))}
         </Tabs.List>
 
-        {tabs.map((tab) => (
-          <Tabs.Panel key={tab.key} value={tab.key}>
-            <Stack maw={820}>
-              <Text size="sm" c="dimmed">
-                {renderLabel(tab.description)}
-              </Text>
-              {visible
-                .filter((entry) => entry.tab === tab.key)
-                .map((entry) => (
-                  <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
-                    {sectionNodes[entry.id]}
-                  </div>
-                ))}
-            </Stack>
-          </Tabs.Panel>
-        ))}
+        <UnsavedSettingsContext value={reportUnsaved}>
+          {tabs.map((tab) => (
+            <Tabs.Panel key={tab.key} value={tab.key}>
+              <div className="settings-layout">
+                <Stack className="settings-content">
+                  <Text size="sm" c="var(--ink-3)">
+                    {renderLabel(tab.description)}
+                  </Text>
+                  {tabEntries.map((entry) => (
+                    <div key={entry.id} id={`setting-${entry.id}`} style={{ scrollMarginTop: 80 }}>
+                      {sectionNodes[entry.id]}
+                    </div>
+                  ))}
+                </Stack>
+                <SettingsIndex entries={tabEntries} />
+              </div>
+            </Tabs.Panel>
+          ))}
+        </UnsavedSettingsContext>
       </Tabs>
-    </>
+
+      <Modal
+        opened={pendingTab !== null}
+        onClose={() => setPendingTab(null)}
+        title={t`Discard unsaved changes?`}
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            <Plural
+              value={unsavedCount}
+              one="A card on this tab has changes that are not saved. Leaving the tab drops them."
+              other="# cards on this tab have changes that are not saved. Leaving the tab drops them."
+            />
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setPendingTab(null)}>
+              <Trans>Keep editing</Trans>
+            </Button>
+            <Button
+              color="var(--danger-fill)"
+              onClick={() => {
+                if (pendingTab) switchTab(pendingTab)
+                setPendingTab(null)
+              }}
+            >
+              <Trans>Discard changes</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </SurfaceFrame>
   )
 }

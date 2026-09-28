@@ -40,6 +40,7 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
     public string DisplayName => "Baozi Manhua";
     public string BaseUrl => "https://cn.baozimh.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceContent Content => SourceContent.Manhua;
     public IReadOnlyList<string> SupportedLanguages => ["zh-Hans"];
 
     /// <summary>Covers and page images are served off sibling CDN hosts, not this one.</summary>
@@ -49,6 +50,9 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
 
     [GeneratedRegex(@"section_slot=(\d+).*chapter_slot=(\d+)")]
     private static partial Regex SlotRegex();
+
+    [GeneratedRegex(@"第(\d+(?:\.\d+)?)[话話]")]
+    private static partial Regex ChapterLabelNumberRegex();
 
     public string? ResolveSeriesIdFromUrl(Uri url) =>
         SourceUrl.PathTail(url, BaseUrl, "/comic/", firstSegmentOnly: true);
@@ -122,11 +126,11 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
             var slot = match.Groups[2].Value;
             var label = link.TextContent.Trim();
 
-            // Chapter labels are Chinese ("第1186话 ..."), which ChapterNumberParser's English
-            // "ch"/"chapter" patterns don't recognize — chapter_slot is the site's own chapter
-            // number and is authoritative anyway.
-            decimal? number = decimal.TryParse(slot, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
-                ? n
+            // chapter_slot is zero-based and one lower than the site's own displayed chapter
+            // number, so the number has to come from the label ("第1186话 ...") instead.
+            var labelMatch = ChapterLabelNumberRegex().Match(label);
+            decimal? number = labelMatch.Success
+                ? decimal.Parse(labelMatch.Groups[1].Value, CultureInfo.InvariantCulture)
                 : null;
 
             chapters.Add(new SourceChapter(
@@ -136,7 +140,7 @@ public partial class BaoziManhuaSource(IHttpClientFactory httpClientFactory) : I
                 label,
                 number,
                 Volume: null,
-                Title: null,
+                Title: number is null ? label : null,
                 Language: "zh-Hans",
                 ReleaseDate: null,
                 Url: $"{BaseUrl}/user/page_direct?comic_id={canonicalId}&section_slot={section}&chapter_slot={slot}"));

@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.Extensions.Caching.Memory;
@@ -18,8 +19,11 @@ public sealed class LibraryCompositionTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private LibraryCompositionService Service(MakiDbContext db, int userId = Owner) =>
-        new(db, new TestCurrentUser(userId), new MemoryCache(new MemoryCacheOptions()));
+    private static readonly DateTime T0 = new(2026, 9, 24, 0, 0, 0, DateTimeKind.Utc);
+
+    private LibraryCompositionService Service(
+        MakiDbContext db, int userId = Owner, MakiPermission permissions = MakiPermission.Admin) =>
+        new(db, new TestCurrentUser(userId, permissions: permissions), new MemoryCache(new MemoryCacheOptions()));
 
     /// <summary>Adds a downloaded chapter with a backing file, and returns the file's series.</summary>
     private void SeedFile(int seriesId, string source, long size, DateTime? added = null)
@@ -186,5 +190,219 @@ public sealed class LibraryCompositionTests : IDisposable
         Assert.Single(stats.BySource, s => s.Name == "MangaDex");
         Assert.DoesNotContain(stats.TopGenres, g => g.Name == "Horror");
         Assert.DoesNotContain(stats.Largest, s => s.Title == "Hidden");
+    }
+
+    [Fact]
+    public async Task ContentRatingGroupsWithUnknownNamedForNullOrBlank()
+    {
+        _db.SeedSeries("A", configure: s => s.ContentRating = "safe");
+        _db.SeedSeries("B", configure: s => s.ContentRating = "safe");
+        _db.SeedSeries("C", configure: s => s.ContentRating = null);
+        _db.SeedSeries("D", configure: s => s.ContentRating = "");
+
+        using var db = _db.NewContext(Owner);
+        var stats = await Service(db).GetAsync(CancellationToken.None);
+
+        Assert.Equal(2, stats.ByContentRating.Single(r => r.Name == "safe").Count);
+        Assert.Equal(2, stats.ByContentRating.Single(r => r.Name == "unknown").Count);
+    }
+
+    private void SeedQueueItem(
+        int seriesId, QueueStatus status, DateTime queuedAt, DateTime? completedAt = null,
+        int? sourceMappingId = null, AcquisitionProtocol protocol = AcquisitionProtocol.Scraper,
+        DownloadOrigin origin = DownloadOrigin.Manual)
+    {
+        using var db = _db.NewContext();
+        db.DownloadQueue.Add(new DownloadQueueItem
+        {
+            SeriesId = seriesId,
+            Status = status,
+            QueuedAt = queuedAt,
+            CompletedAt = completedAt,
+            SourceMappingId = sourceMappingId,
+            Protocol = protocol,
+            Origin = origin
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task SourceReliabilityCountsCompletedAndFailedWithMedianDuration()
+    {
+        var series = _db.SeedSeries("A", mappings:
+        [
+            new SourceMapping { SourceName = "MangaDex", SourceSeriesId = "s", Url = "u" }
+        ]);
+        int mappingId;
+        using (var db = _db.NewContext())
+        {
+            mappingId = db.SourceMappings.Single().Id;
+        }
+
+        // Completed after 10, 20, 30 minutes -> median 20 minutes = 1200s.
+        SeedQueueItem(series, QueueStatus.Completed, T0, T0.AddMinutes(10), mappingId);
+        SeedQueueItem(series, QueueStatus.Completed, T0, T0.AddMinutes(20), mappingId);
+        SeedQueueItem(series, QueueStatus.Completed, T0, T0.AddMinutes(30), mappingId);
+        SeedQueueItem(series, QueueStatus.Failed, T0, sourceMappingId: mappingId);
+
+        using var check = _db.NewContext(Owner);
+        var stats = await Service(check).GetAsync(CancellationToken.None);
+
+        var reliability = stats.SourceReliability.Single(r => r.Name == "MangaDex");
+        Assert.Equal(3, reliability.Completed);
+        Assert.Equal(1, reliability.Failed);
+        Assert.Equal(1200, reliability.MedianSecondsToComplete);
+    }
+
+    [Fact]
+    public async Task SourceReliabilityExcludesRowsOlderThan30Days()
+    {
+        var series = _db.SeedSeries("A");
+        // The service windows against DateTime.UtcNow, so seed relative to "now".
+        var now = DateTime.UtcNow;
+        SeedQueueItem(series, QueueStatus.Completed, now.AddDays(-31), now.AddDays(-31).AddMinutes(5));
+        SeedQueueItem(series, QueueStatus.Completed, now.AddDays(-1), now.AddDays(-1).AddMinutes(5));
+
+        using var check = _db.NewContext(Owner);
+        var stats = await Service(check).GetAsync(CancellationToken.None);
+
+        var reliability = stats.SourceReliability.Single();
+        Assert.Equal(1, reliability.Completed);
+    }
+
+    [Fact]
+    public async Task SourceReliabilityFallsBackToProtocolNameWithNoMapping()
+    {
+        var series = _db.SeedSeries("A");
+        var now = DateTime.UtcNow;
+        SeedQueueItem(series, QueueStatus.Completed, now, now.AddMinutes(1), protocol: AcquisitionProtocol.Torrent);
+
+        using var check = _db.NewContext(Owner);
+        var stats = await Service(check).GetAsync(CancellationToken.None);
+
+        Assert.Equal("torrent", stats.SourceReliability.Single().Name);
+    }
+
+    [Fact]
+    public async Task MonitorCatchesCountsOnlyCompletedMonitorRefreshWithin30Days()
+    {
+        var series = _db.SeedSeries("A");
+        var now = DateTime.UtcNow;
+
+        SeedQueueItem(series, QueueStatus.Completed, now, now, origin: DownloadOrigin.MonitorRefresh);
+        // Manual completion in the window: should not count.
+        SeedQueueItem(series, QueueStatus.Completed, now, now, origin: DownloadOrigin.Manual);
+        // Monitor refresh but failed: should not count.
+        SeedQueueItem(series, QueueStatus.Failed, now, origin: DownloadOrigin.MonitorRefresh);
+        // Monitor refresh completed, but outside the window: should not count.
+        SeedQueueItem(series, QueueStatus.Completed, now.AddDays(-40), now.AddDays(-40), origin: DownloadOrigin.MonitorRefresh);
+        // Queued before the window, finished inside it: windowed on QueuedAt like housekeeping, so out.
+        SeedQueueItem(series, QueueStatus.Completed, now.AddDays(-31), now.AddDays(-29), origin: DownloadOrigin.MonitorRefresh);
+
+        using var check = _db.NewContext(Owner);
+        var stats = await Service(check).GetAsync(CancellationToken.None);
+
+        Assert.Equal(1, stats.MonitorCatches);
+    }
+
+    [Fact]
+    public async Task RequestsScopeToOwnerForNonAdminAndEveryoneForAdmin()
+    {
+        var reader = _db.SeedUser("reader", MakiPermission.None);
+        var admin = _db.SeedUser("admin", MakiPermission.Admin);
+
+        using (var db = _db.NewContext())
+        {
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = reader, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "1",
+                Title = "Mine", Status = SeriesRequestStatus.Pending, Created = T0
+            });
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = admin, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "2",
+                Title = "Somebody else's", Status = SeriesRequestStatus.Pending, Created = T0
+            });
+            db.SaveChanges();
+        }
+
+        using var asReader = _db.NewContext(reader);
+        var readerStats = await Service(asReader, reader, MakiPermission.None).GetAsync(CancellationToken.None);
+        Assert.False(readerStats.Requests.AllUsers);
+        Assert.Equal(1, readerStats.Requests.Open);
+
+        using var asAdmin = _db.NewContext(admin);
+        var adminStats = await Service(asAdmin, admin, MakiPermission.Admin).GetAsync(CancellationToken.None);
+        Assert.True(adminStats.Requests.AllUsers);
+        Assert.Equal(2, adminStats.Requests.Open);
+    }
+
+    [Fact]
+    public async Task RequestsOpenCountsPendingAndProcessingOnly()
+    {
+        var admin = _db.SeedUser("admin", MakiPermission.Admin);
+        using (var db = _db.NewContext())
+        {
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = admin, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "1",
+                Title = "Pending", Status = SeriesRequestStatus.Pending, Created = T0
+            });
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = admin, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "2",
+                Title = "Processing", Status = SeriesRequestStatus.Processing, Created = T0
+            });
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = admin, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "3",
+                Title = "Rejected", Status = SeriesRequestStatus.Rejected, Created = T0
+            });
+            db.SaveChanges();
+        }
+
+        using var check = _db.NewContext(admin);
+        var stats = await Service(check, admin, MakiPermission.Admin).GetAsync(CancellationToken.None);
+
+        Assert.Equal(2, stats.Requests.Open);
+    }
+
+    [Fact]
+    public async Task RequestsMedianResolveHoursOverLast90DaysOnly()
+    {
+        var admin = _db.SeedUser("admin", MakiPermission.Admin);
+        var now = DateTime.UtcNow;
+
+        using (var db = _db.NewContext())
+        {
+            // Resolved in 10h and 20h within the window -> median 15h.
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = admin, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "1",
+                Title = "Fast", Status = SeriesRequestStatus.Approved,
+                Created = now.AddDays(-10), ResolvedAt = now.AddDays(-10).AddHours(10)
+            });
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = admin, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "2",
+                Title = "Slow", Status = SeriesRequestStatus.Approved,
+                Created = now.AddDays(-10), ResolvedAt = now.AddDays(-10).AddHours(20)
+            });
+            // Resolved outside the 90-day window: excluded.
+            db.SeriesRequests.Add(new SeriesRequest
+            {
+                UserId = admin, Kind = SeriesRequestKind.NewSeries, MetadataProviderId = "3",
+                Title = "Old", Status = SeriesRequestStatus.Approved,
+                Created = now.AddDays(-100), ResolvedAt = now.AddDays(-91)
+            });
+            db.SaveChanges();
+        }
+
+        using var check = _db.NewContext(admin);
+        var stats = await Service(check, admin, MakiPermission.Admin).GetAsync(CancellationToken.None);
+
+        Assert.Equal(2, stats.Requests.Resolved90d);
+        Assert.NotNull(stats.Requests.MedianResolveHours);
+        Assert.Equal(15, stats.Requests.MedianResolveHours!.Value, 3);
     }
 }

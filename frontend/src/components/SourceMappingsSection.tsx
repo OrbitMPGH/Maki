@@ -23,6 +23,7 @@ import {
   TextInput,
   Title,
   Tooltip,
+  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconCheck,
@@ -30,6 +31,7 @@ import {
   IconExternalLink,
   IconLink,
   IconPlugConnected,
+  IconPower,
   IconRefresh,
   IconTrash,
   IconWand,
@@ -58,6 +60,8 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../i18n-context'
+import { SOURCE_ICONS } from '../sourceIcons'
+import { useSourceLabel } from '../sourceLabels'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -66,26 +70,10 @@ const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
 }
 
 const ORIGIN_COLORS: Record<string, string> = {
-  TitleSearch: 'blue',
-  CrossId: 'grape',
-  Manual: 'teal',
-  Unknown: 'gray'
-}
-
-const SOURCE_ICONS: Record<string, string> = {
-  asura: '/source-icons/asura.webp',
-  atsumaru: '/source-icons/atsumaru.ico',
-  flamecomics: '/source-icons/flamecomics.png',
-  mangadex: '/source-icons/mangadex.ico',
-  mangafire: '/source-icons/mangafire.svg',
-  mangakakalot: '/source-icons/mangakakalot.ico',
-  mangakatana: '/source-icons/mangakatana.png',
-  mangapill: '/source-icons/mangapill.png',
-  mangaplus: '/source-icons/mangaplus.ico',
-  tcbscans: '/source-icons/tcbscans.png',
-  topmanhua: '/source-icons/topmanhua.png',
-  webtoons: '/source-icons/webtoons.ico',
-  weebcentral: '/source-icons/weebcentral.ico',
+  TitleSearch: 'var(--info)',
+  CrossId: 'var(--watched)',
+  Manual: 'var(--ok)',
+  Unknown: 'var(--neutral)'
 }
 
 export function SourceMappingsSection({
@@ -115,12 +103,13 @@ export function SourceMappingsSection({
 
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const sourceLabel = useSourceLabel()
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
   const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
-  const removingSourceName = removing?.sourceName
+  const removingSourceName = removing ? sourceLabel(removing.sourceName) : undefined
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [fallbackOpen, setFallbackOpen] = useState(false)
   const [debounced] = useDebouncedValue(query, 400)
@@ -181,14 +170,15 @@ export function SourceMappingsSection({
         !sourceDisabled(m.sourceName) &&
         !m.chapterSnapshotAt,
     ) ?? []
-  const missingSnapshotNames = missingSnapshots.map((m) => m.sourceName).join(', ')
+  const missingSnapshotNames = missingSnapshots.map((m) => sourceLabel(m.sourceName)).join(', ')
 
-  const link = (name: string, sourceSeriesId: string, url: string) =>
+  const link = (mappingName: string, sourceSeriesId: string, url: string) =>
     createMapping.mutate(
-      { seriesId, sourceName: name, sourceSeriesId, url },
+      { seriesId, sourceName: mappingName, sourceSeriesId, url },
       {
         onSuccess: () => {
-          notifications.show({ message: now`Linked ${name}`, color: 'green' })
+          const name = sourceLabel(mappingName)
+          notifications.show({ message: now`Linked ${name}`, color: 'var(--ok)' })
           setModalOpen(false)
         },
       },
@@ -287,7 +277,7 @@ export function SourceMappingsSection({
       {matching && (
         <Group gap="xs">
           <Loader size="xs" />
-          <Text c="dimmed" size="sm">
+          <Text c="var(--ink-3)" size="sm">
             {mappings && mappings.length > 0 ? (
               <Trans>Matching the remaining sources…</Trans>
             ) : (
@@ -299,27 +289,36 @@ export function SourceMappingsSection({
 
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
         !matching && (
-          <Text c="dimmed" size="sm">
+          <Text c="var(--ink-3)" size="sm">
             <Trans>No sources linked. Chapters cannot be synced or downloaded.</Trans>
           </Text>
         )
       ) : (
-        <Table.ScrollContainer minWidth={720}>
-          <Table>
+        // A persistent scrollbar, since a hover-to-reveal one gave no hint that Enabled/Refreshed were off the visible edge.
+        <Table.ScrollContainer
+          minWidth={720}
+          scrollAreaProps={{ type: 'always', scrollbars: 'x', offsetScrollbars: 'present' }}
+        >
+          <Table className="ops-table">
             <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Source</Trans></Table.Th>
               <Table.Th><Trans>Series</Trans></Table.Th>
               <Table.Th><Trans>Languages</Trans></Table.Th>
-              <Table.Th><Trans>Priority</Trans></Table.Th>
-              <Table.Th><Trans>Enabled</Trans></Table.Th>
-              <Table.Th><Trans>Last refresh</Trans></Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Priority</Trans></Table.Th>
+              {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
+              <Table.Th w={44}>
+                <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
+                <IconPower size={14} style={{ opacity: 0.7 }} aria-hidden />
+              </Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Refreshed</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {(mappings ?? []).map((m) => {
-              const { sourceName } = m
+              const { sourceName: sourceKey } = m
+              const sourceName = sourceLabel(sourceKey)
               return (
               <Table.Tr key={m.id}>
                 <Table.Td>
@@ -337,23 +336,23 @@ export function SourceMappingsSection({
                             }}
                         />
                     )}
-                    <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'dimmed' : undefined}>
-                      {m.sourceName}
+                    <Text fw={600} size="sm" c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}>
+                      {sourceName}
                     </Text>
                     {sourceDisabled(m.sourceName) && (
-                      <Badge size="xs" color="gray" variant="light">
+                      <Badge size="xs" color="var(--neutral)" variant="light">
                         <Trans>Source off</Trans>
                       </Badge>
                     )}
                     {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
-                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'gray'} variant="light">
+                      <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light">
                         {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                       </Badge>
                     </Tooltip>}
                   </Group>
                 </Table.Td>
                 <Table.Td>
-                  <Anchor href={m.url} target="_blank" size="sm">
+                  <Anchor href={m.url} target="_blank" size="sm" ff="monospace" className="mono-id" title={m.sourceSeriesId}>
                     {m.sourceSeriesId}
                   </Anchor>
                 </Table.Td>
@@ -385,7 +384,7 @@ export function SourceMappingsSection({
                 </Table.Td>
                 <Table.Td>
                   <Tooltip
-                    label={t`${sourceName} is switched off in Settings → Source priority. This series' setting is kept and applies again once it's back on.`}
+                    label={t`${sourceName} is switched off in Settings → Sources. This series' setting is kept and applies again once it's back on.`}
                     withArrow
                     multiline
                     w={260}
@@ -396,6 +395,7 @@ export function SourceMappingsSection({
                     <Box component="span" display="inline-flex">
                       <Switch
                         size="xs"
+                        aria-label={t`${sourceName} enabled`}
                         checked={m.enabled}
                         disabled={sourceDisabled(m.sourceName)}
                         onChange={(e) =>
@@ -408,12 +408,12 @@ export function SourceMappingsSection({
                 <Table.Td>
                   {m.lastError ? (
                     <Tooltip label={m.lastError} withArrow>
-                      <Badge size="sm" color="red" variant="light">
+                      <Badge size="sm" color="var(--danger)" variant="light">
                         <Trans>Error</Trans>
                       </Badge>
                     </Tooltip>
                   ) : (
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="var(--ink-3)">
                       {m.lastRefresh ? formatDateTime(m.lastRefresh) : <Trans>never</Trans>}
                     </Text>
                   )}
@@ -421,7 +421,7 @@ export function SourceMappingsSection({
                 <Table.Td>
                   <ActionIcon
                     variant="subtle"
-                    color="red"
+                    color="var(--danger)"
                     onClick={() => {
                       setRemoving(m)
                       setDeleteFiles(false)
@@ -470,19 +470,19 @@ export function SourceMappingsSection({
                         />
                       )}
                       <Text fw={600} size="sm">
-                        {name}
+                        {sourceLabel(name)}
                       </Text>
                       {state === 'Matched' ? (
                         <Badge
                           size="xs"
-                          color="green"
+                          color="var(--ok)"
                           variant="light"
                           leftSection={<IconCheck size={10} />}
                         >
                           <Trans>Found</Trans>
                         </Badge>
                       ) : state === 'NoMatch' ? (
-                        <Badge size="xs" color="gray" variant="light">
+                        <Badge size="xs" color="var(--neutral)" variant="light">
                           <Trans>No match</Trans>
                         </Badge>
                       ) : (
@@ -517,18 +517,18 @@ export function SourceMappingsSection({
         centered
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               Chapters not listed by another enabled source will be removed. Files downloaded from
               this source will be detached so they cannot be read as the correct chapter.
             </Trans>
           </Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Detached CBZs stay in the Files section unless you choose to delete them.</Trans>
           </Text>
 
           {missingSnapshots.length > 0 && (
-            <Alert color="orange" title={t`One refresh required`}>
+            <Alert color="var(--warn)" title={t`One refresh required`}>
               <Stack gap="xs">
                 <Text size="sm">
                   <Trans>
@@ -548,7 +548,7 @@ export function SourceMappingsSection({
                       onSuccess: () =>
                         notifications.show({
                           message: now`Chapter snapshots refreshed`,
-                          color: 'green',
+                          color: 'var(--ok)',
                         }),
                     })
                   }}
@@ -567,13 +567,13 @@ export function SourceMappingsSection({
             />
           )}
 
-          <Text size="sm" c="red">
+          <Text size="sm" c="var(--danger)">
             <Trans>Reading progress and bookmarks for removed chapter rows will also be deleted.</Trans>
           </Text>
           <Group justify="space-between">
             <Button
               variant="subtle"
-              color="red"
+              color="var(--danger)"
               onClick={() => setFallbackOpen(true)}
             >
               <Trans>Remove without cleanup</Trans>
@@ -583,7 +583,7 @@ export function SourceMappingsSection({
                 <Trans>Cancel</Trans>
               </Button>
               <Button
-                color="red"
+                color="var(--danger-fill)"
                 leftSection={<IconTrash size={16} />}
                 disabled={missingSnapshots.length > 0 || !removing}
                 loading={removeMapping.isPending}
@@ -614,7 +614,7 @@ export function SourceMappingsSection({
                           message: failuresMsg
                             ? `${chaptersMsg}; ${filesMsg}; ${failuresMsg}`
                             : `${chaptersMsg}; ${filesMsg}`,
-                          color: failedCount > 0 ? 'orange' : 'green',
+                          color: failedCount > 0 ? 'var(--warn)' : 'var(--ok)',
                         })
                         setRemoving(null)
                       },
@@ -636,13 +636,13 @@ export function SourceMappingsSection({
         centered
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>
               This removes only the source mapping. Existing chapter rows and files will stay
               exactly as they are and may need manual cleanup later.
             </Trans>
           </Text>
-          <Text size="sm" c="red">
+          <Text size="sm" c="var(--danger)">
             <Trans>This action cannot be undone.</Trans>
           </Text>
           <Group justify="flex-end">
@@ -650,7 +650,7 @@ export function SourceMappingsSection({
               <Trans>Cancel</Trans>
             </Button>
             <Button
-              color="red"
+              color="var(--danger-fill)"
               loading={deleteMapping.isPending}
               onClick={() =>
                 removing &&
@@ -660,7 +660,7 @@ export function SourceMappingsSection({
                     onSuccess: () => {
                       notifications.show({
                         message: now`Source removed without cleanup`,
-                        color: 'orange',
+                        color: 'var(--warn)',
                       })
                       setFallbackOpen(false)
                       setRemoving(null)
@@ -719,7 +719,7 @@ export function SourceMappingsSection({
                         {resolved.displayName}
                       </Badge>
                     </Group>
-                    <Text size="xs" c="dimmed" lineClamp={1}>
+                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
                       {resolved.url}
                     </Text>
                   </div>
@@ -727,7 +727,7 @@ export function SourceMappingsSection({
               </Card>
             )}
             {pastedUrl && resolveError && (
-              <Text c="red" size="sm">
+              <Text c="var(--danger)" size="sm">
                 {String(resolveError)}
               </Text>
             )}
@@ -747,7 +747,7 @@ export function SourceMappingsSection({
                     <Text fw={600} size="sm">
                       {r.title}
                     </Text>
-                    <Text size="xs" c="dimmed" lineClamp={1}>
+                    <Text size="xs" c="var(--ink-3)" lineClamp={1}>
                       {r.url}
                     </Text>
                   </div>
@@ -768,7 +768,7 @@ export function SourceMappingsSection({
               </Card>
             ))}
             {sourceName && debounced.trim().length > 1 && results?.length === 0 && !isFetching && (
-              <Text c="dimmed" size="sm">
+              <Text c="var(--ink-3)" size="sm">
                 <Trans>No results.</Trans>
               </Text>
             )}
@@ -804,7 +804,9 @@ function MappingLanguages({
 }) {
   const { t } = useLingui()
   const languageOptions = useLanguageOptions()
-  const { sourceName } = mapping
+  const sourceLabel = useSourceLabel()
+  const { sourceName: sourceKey } = mapping
+  const sourceName = sourceLabel(sourceKey)
   // Null means the source default, which is English — not "every language". An untouched mapping
   // has to keep listing what it listed before.
   const selected = (mapping.languageFilter ?? 'en')
@@ -820,7 +822,7 @@ function MappingLanguages({
         multiline
         w={240}
       >
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           {selected.join(', ') || 'en'}
         </Text>
       </Tooltip>
@@ -830,7 +832,7 @@ function MappingLanguages({
   return (
     <MultiSelect
       size="xs"
-      w={170}
+      w={150}
       data={languageOptions}
       value={selected}
       searchable

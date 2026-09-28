@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using Maki.Core.Recommendations;
 using Maki.Metadata.MangaBaka;
 
 namespace Maki.Metadata.Embedding;
@@ -21,15 +22,28 @@ public sealed record FilterPlan(
     int[][]? Tags,
     byte[]? ContentRatings,
     bool Impossible,
-    bool[]? CreditMask = null)
+    bool[]? CreditMask = null,
+    PlannedRule[]? Rules = null,
+    PlannedRule? Hidden = null,
+    bool[]? Exclude = null)
 {
     public static readonly FilterPlan None = new(null, null, null, null, null, null, null, null, null, null, false);
 
     public bool IsEmpty =>
         !Impossible && YearMin is null && YearMax is null && MinRating is null &&
         MinChapters is null && MaxChapters is null && Types is null && Statuses is null &&
-        Genres is null && Tags is null && ContentRatings is null && CreditMask is null;
+        Genres is null && Tags is null && ContentRatings is null && CreditMask is null &&
+        Rules is null && Hidden is null && Exclude is null;
 }
+
+/// <summary>A <see cref="CatalogueRule"/> resolved to this index's ids.</summary>
+public sealed record PlannedRule(string Mode, PlannedTerm[] Terms);
+
+/// <summary>
+/// One resolved term: a genre id, or a sorted set of tag ids (the name's casing variants, plus its
+/// subtree when asked) that count only at <paramref name="MinClass"/> or above.
+/// </summary>
+public readonly record struct PlannedTerm(int GenreId, int[]? TagIds, byte MinClass);
 
 /// <summary>
 /// The per-row dump columns the filters and the hybrid scorer need, each array parallel to the
@@ -55,6 +69,11 @@ public sealed record FilterPlan(
 /// <c>popularity_global_current</c> — a global rank where 1 is the most popular, or
 /// <see cref="VectorIndex.Unknown"/>. Feeds the obscurity term.
 /// </param>
+/// <param name="StartDays">
+/// <c>published_start_date</c> as a <see cref="DateOnly.DayNumber"/>, or <see cref="VectorIndex.Unknown"/>.
+/// Optional so fixtures built without it still sort, through <see cref="VectorIndex.StartDayAt"/>'s
+/// year fallback.
+/// </param>
 public sealed record VectorIndexColumns(
     int[] Years,
     float[] Ratings,
@@ -67,7 +86,8 @@ public sealed record VectorIndexColumns(
     int[] Popularity,
     byte[]?[] TagBlobs,
     byte[] ContentRatings,
-    int[] Franchise);
+    int[] Franchise,
+    int[]? StartDays = null);
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
@@ -84,7 +104,8 @@ public sealed record VectorIndexVocabularies(
     IReadOnlyDictionary<string, int> Genres,
     IReadOnlyDictionary<string, int> Authors,
     IReadOnlyDictionary<string, int[]> Tags,
-    IReadOnlyDictionary<string, byte> ContentRatings);
+    IReadOnlyDictionary<string, byte> ContentRatings,
+    IReadOnlyDictionary<string, int[]>? TagSubtrees = null);
 
 /// <summary>
 /// The behavioural vectors, quantized and row-aligned to a <see cref="VectorIndex"/>. Its own type
@@ -192,6 +213,22 @@ public sealed class VectorIndex(
 
     /// <summary>The row's release year, or <see cref="Unknown"/>. Feeds the browse orderings.</summary>
     public int YearAt(int row) => columns.Years[row];
+
+    /// <summary>
+    /// The row's first publication date as a <see cref="DateOnly.DayNumber"/>, falling back to
+    /// January 1st of <see cref="YearAt"/> when the dump has no date, or <see cref="Unknown"/>.
+    /// May be in the future: the dump lists announced titles.
+    /// </summary>
+    public int StartDayAt(int row)
+    {
+        if (columns.StartDays is { } days && days[row] != Unknown)
+        {
+            return days[row];
+        }
+
+        var year = columns.Years[row];
+        return year is >= 1 and <= 9999 ? new DateOnly(year, 1, 1).DayNumber : Unknown;
+    }
 
     /// <summary>The row's interned genre ids — resolve names through <see cref="TryGetGenreId"/>.</summary>
     public ReadOnlySpan<int> GenresAt(int row) => columns.Genres[row];
@@ -393,6 +430,19 @@ public sealed class VectorIndex(
             }
         }
 
+        List<PlannedRule>? rules = null;
+        foreach (var rule in filters.Rules ?? [])
+        {
+            if (PlanRule(rule.Mode, rule.Terms, ref impossible) is { } planned)
+            {
+                (rules ??= []).Add(planned);
+            }
+        }
+
+        var hidden = filters.Hidden is { Count: > 0 } hiddenTerms
+            ? PlanRule(CatalogueRules.None, hiddenTerms, ref impossible)
+            : null;
+
         int[][]? resolvedTags = null;
         if (filters.Tags is { Count: > 0 } wantedTags)
         {
@@ -422,7 +472,86 @@ public sealed class VectorIndex(
             resolvedGenres,
             resolvedTags,
             ResolveBytes(filters.ContentRatings, vocabularies.ContentRatings),
-            impossible);
+            impossible,
+            Rules: rules?.ToArray(),
+            Hidden: hidden);
+    }
+
+    /// <summary>
+    /// Resolves one rule. A name the index does not know cannot be carried by any row, so it sinks
+    /// an "all" rule, drops out of "any" and "none", and an "any" left with nothing is impossible.
+    /// Null means the rule constrains nothing.
+    /// </summary>
+    private PlannedRule? PlanRule(string mode, IReadOnlyList<CatalogueTerm> terms, ref bool impossible)
+    {
+        var planned = new List<PlannedTerm>(terms.Count);
+        foreach (var term in terms)
+        {
+            if (ResolveTerm(term) is { } resolved)
+            {
+                planned.Add(resolved);
+            }
+            else if (mode == CatalogueRules.All)
+            {
+                impossible = true;
+                return null;
+            }
+        }
+
+        if (planned.Count == 0)
+        {
+            impossible |= mode == CatalogueRules.Any;
+            return null;
+        }
+
+        return new PlannedRule(mode, planned.ToArray());
+    }
+
+    private PlannedTerm? ResolveTerm(CatalogueTerm term)
+    {
+        if (term.Kind == CatalogueRules.Genre)
+        {
+            return vocabularies.Genres.TryGetValue(term.Name, out var genre)
+                ? new PlannedTerm(genre, null, 0)
+                : null;
+        }
+
+        int[]? ids = null;
+        if (term.Subtags && vocabularies.TagSubtrees?.TryGetValue(term.Name, out var subtree) == true)
+        {
+            ids = subtree;
+        }
+        else if (vocabularies.Tags.TryGetValue(term.Name, out var named))
+        {
+            ids = [.. named];
+            Array.Sort(ids);
+        }
+
+        return ids is { Length: > 0 }
+            ? new PlannedTerm(-1, ids, term.Central ? TagMath.Defining : (byte)0)
+            : null;
+    }
+
+    private bool Passes(int row, PlannedRule rule)
+    {
+        var genres = columns.Genres[row];
+        var blob = columns.TagBlobs[row];
+        foreach (var term in rule.Terms)
+        {
+            var held = term.TagIds is { } tagIds
+                ? TagMath.ContainsAny(blob, tagIds, term.MinClass)
+                : genres.IndexOf(term.GenreId) >= 0;
+            switch (rule.Mode)
+            {
+                case CatalogueRules.All when !held:
+                case CatalogueRules.None when held:
+                    return false;
+                case CatalogueRules.Any when held:
+                    return true;
+            }
+        }
+
+        return rule.Mode != CatalogueRules.Any;
     }
 
     /// <summary>
@@ -455,6 +584,11 @@ public sealed class VectorIndex(
         // First, and an array index rather than a set probe: this runs inside the parallel scan
         // over every row, twice per search, so it is the one filter test worth making branch-cheap.
         if (plan.CreditMask is { } credits && !credits[row])
+        {
+            return false;
+        }
+
+        if (plan.Exclude is { } excluded && excluded[row])
         {
             return false;
         }
@@ -516,7 +650,18 @@ public sealed class VectorIndex(
             return false;
         }
 
-        return true;
+        if (plan.Rules is { } rules)
+        {
+            foreach (var rule in rules)
+            {
+                if (!Passes(row, rule))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return plan.Hidden is not { } hidden || Passes(row, hidden);
     }
 
     /// <summary>

@@ -70,11 +70,12 @@ public static class HttpRequestLogPolicy
             // of 401s on its way to the login page, and any missing favicon or bookmarked URL is a
             // 404; logging those as warnings trains the reader to ignore warnings. The rest (400,
             // 409, 422, 429) mean a client sent something the server refused, which is worth seeing.
+            // 499 is a client that hung up before the answer was ready.
             //
             // The ordinary ones take the same demotion a successful read would: a series with no
             // poster answers 404 once per visible tile, so treating a bulk read's 404 as more
             // interesting than its 200 gets the wall of lines back at Debug.
-            if (status is 401 or 403 or 404)
+            if (status is 401 or 403 or 404 or 499)
                 return IsBulkRead(path) ? LogEventLevel.Verbose : LogEventLevel.Debug;
 
             return LogEventLevel.Warning;

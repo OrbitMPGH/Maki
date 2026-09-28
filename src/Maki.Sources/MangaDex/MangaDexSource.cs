@@ -18,6 +18,8 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public string DisplayName => "MangaDex";
     public string BaseUrl => "https://mangadex.org";
     public SourceCapabilities Capabilities => SourceCapabilities.SupportsLanguageFilter;
+    public SourceContent Content =>
+        SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua | SourceContent.Doujinshi;
     // Every scanlation group posts in whatever language it works in; there's no fixed catalogue,
     // so this stands in for "essentially all of them" against Maki's own 14-language UI set.
     public IReadOnlyList<string> SupportedLanguages => Core.Localization.SupportedLanguages.All;
@@ -158,6 +160,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
         string sourceSeriesId, CancellationToken ct = default)
     {
         var map = new Dictionary<decimal, int>();
+        var conflicted = new HashSet<decimal>();
         var offset = 0;
 
         while (true)
@@ -177,7 +180,17 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
                 var parsed = ChapterNumberParser.Parse(c.Attributes.Chapter, c.Attributes.Volume);
                 if (parsed is { Number: { } number, Volume: { } volume })
                 {
-                    map.TryAdd(number, volume);
+                    if (map.TryGetValue(number, out var existing))
+                    {
+                        if (existing != volume)
+                        {
+                            conflicted.Add(number);
+                        }
+                    }
+                    else
+                    {
+                        map[number] = volume;
+                    }
                 }
             }
 
@@ -186,6 +199,11 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             {
                 break;
             }
+        }
+
+        foreach (var number in conflicted)
+        {
+            map.Remove(number);
         }
 
         return map;

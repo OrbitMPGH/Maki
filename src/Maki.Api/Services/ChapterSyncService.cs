@@ -1,3 +1,4 @@
+using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -92,6 +93,18 @@ public class ChapterSyncService(
                 foreach (var sc in sourceChapters)
                 {
                     var match = existing.FirstOrDefault(c => ChapterIdentity.Matches(c, sc));
+                    if (match is null && PromotableOneShot(existing, sc) is { } unnumbered)
+                    {
+                        // Stored as a one-shot titled by its label back when the parser could not
+                        // read that label ("Episode 12"). Numbering it in place keeps its file and
+                        // stops a second row being created, and downloaded, beside it.
+                        unnumbered.Number = sc.Number;
+                        unnumbered.NumberRaw = sc.NumberRaw;
+                        unnumbered.IsOneShot = false;
+                        unnumbered.Title = sc.Title;
+                        match = unnumbered;
+                    }
+
                     if (match is not null)
                     {
                         // Enrich rather than duplicate: a volume-aware source fills in
@@ -142,7 +155,11 @@ public class ChapterSyncService(
                     "Rate limited by {Source} during chapter sync of series {SeriesId}; " +
                     "pausing its downloads until {Until:o}",
                     mapping.SourceName, seriesId, until);
-                mapping.LastError = $"Rate limited — downloads paused until {until.ToLocalTime():HH:mm:ss}";
+                // Not yet keyed, like the rest of LastError; see the property's doc comment. Just
+                // the wording (no em dash) and an explicit culture for the time, consistent with
+                // every other formatted time/number in the app.
+                mapping.LastError =
+                    $"Rate limited, downloads paused until {until.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)}";
             }
             catch (Exception ex)
             {
@@ -213,6 +230,15 @@ public class ChapterSyncService(
     /// the same chapter synced once with a volume ("Vol.4 Ch.27") and once
     /// without ("Ch.27"). Keeps the richest copy and deletes the rest.
     /// </summary>
+    internal static Chapter? PromotableOneShot(List<Chapter> existing, SourceChapter sc) =>
+        sc.Number is null || string.IsNullOrWhiteSpace(sc.NumberRaw)
+            ? null
+            : existing.FirstOrDefault(c =>
+                c.Number is null &&
+                c.IsOneShot &&
+                c.Language == sc.Language &&
+                string.Equals(c.Title?.Trim(), sc.NumberRaw.Trim(), StringComparison.OrdinalIgnoreCase));
+
     private void MergeDuplicates(List<Chapter> existing)
     {
         var groups = existing

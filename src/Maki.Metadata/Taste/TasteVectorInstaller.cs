@@ -37,7 +37,13 @@ public record TasteVectorManifest
     [JsonPropertyName("url")] public string? Url { get; init; }
 }
 
-public record TasteVectorResult(bool Installed, string Reason, long? ItemCount = null);
+/// <summary>
+/// <see cref="Reason"/> is a server message catalogue key, not display text; this project has no
+/// <c>ILocalizer</c> (see <c>CLAUDE.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
+/// renders it. <c>Install failed: {ex.Message}</c> is the one exception: it embeds a raw exception
+/// message and stays unconverted, same as every other site in this codebase that does that.
+/// </summary>
+public record TasteVectorResult(bool Installed, string Reason, long? ItemCount = null, object? ReasonArgs = null);
 
 /// <summary>
 /// Downloads and installs the behavioural item vectors published alongside Maki. Shaped like
@@ -105,7 +111,7 @@ public class TasteVectorInstaller(
     {
         if (!await IsEnabledAsync(ct))
         {
-            return new TasteVectorResult(false, "The behavioural channel is turned off.");
+            return new TasteVectorResult(false, "install.tasteVectors.disabled");
         }
 
         var manifestUrl = await settings.GetAsync(SettingKeys.RecommendationsTasteVectorsUrl, ct);
@@ -125,12 +131,12 @@ public class TasteVectorInstaller(
             // Debug, not warning: until an artifact is published this is the normal state of every
             // install, and it must not fill logs with something nobody can act on.
             logger.LogDebug(ex, "Taste vector manifest unavailable at {Url}", manifestUrl);
-            return new TasteVectorResult(false, "Could not read the behavioural vector manifest.");
+            return new TasteVectorResult(false, "install.tasteVectors.manifestUnavailable");
         }
 
         if (manifest is null || string.IsNullOrWhiteSpace(manifest.Url))
         {
-            return new TasteVectorResult(false, "The behavioural vector manifest is malformed.");
+            return new TasteVectorResult(false, "install.tasteVectors.manifestMalformed");
         }
 
         if (manifest.SchemaVersion > SupportedSchemaVersion)
@@ -138,12 +144,12 @@ public class TasteVectorInstaller(
             logger.LogInformation(
                 "Ignoring the published taste vectors: schema {Theirs}, this build reads {Ours}",
                 manifest.SchemaVersion, SupportedSchemaVersion);
-            return new TasteVectorResult(false, "The published vectors use a newer schema than this build reads.");
+            return new TasteVectorResult(false, "install.tasteVectors.schemaNewer");
         }
 
         if (manifest.ItemCount < MinItems)
         {
-            return new TasteVectorResult(false, "The published vectors look truncated; ignoring them.");
+            return new TasteVectorResult(false, "install.tasteVectors.truncated");
         }
 
         // Checked from the manifest as well as from the file, so an evaluation build is not even
@@ -154,12 +160,12 @@ public class TasteVectorInstaller(
             logger.LogWarning(
                 "Refusing the published taste vectors: trained on folds '{Folds}', not the whole population",
                 manifest.TrainingFold);
-            return new TasteVectorResult(false, "The published vectors are an evaluation build.");
+            return new TasteVectorResult(false, "install.tasteVectors.evaluationBuild");
         }
 
         if (!force && !await IsNewerThanLocalAsync(manifest, ct))
         {
-            return new TasteVectorResult(false, "The local behavioural vectors are already current.");
+            return new TasteVectorResult(false, "install.tasteVectors.current");
         }
 
         Directory.CreateDirectory(options.StagingDirectory);
@@ -181,7 +187,7 @@ public class TasteVectorInstaller(
                 ct);
 
             logger.LogInformation("Installed behavioural vectors ({Items} series)", items);
-            return new TasteVectorResult(true, $"Installed {items} behavioural vectors.", items);
+            return new TasteVectorResult(true, "install.tasteVectors.installed", items, new { items });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

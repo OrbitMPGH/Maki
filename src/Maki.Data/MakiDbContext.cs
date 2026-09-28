@@ -67,8 +67,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<ReadingState> ReadingStates => Set<ReadingState>();
     public DbSet<ChapterProgress> ChapterProgress => Set<ChapterProgress>();
     public DbSet<ReaderBookmark> ReaderBookmarks => Set<ReaderBookmark>();
+    public DbSet<ReadingSession> ReadingSessions => Set<ReadingSession>();
     public DbSet<ReadingProfile> ReadingProfiles => Set<ReadingProfile>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationTag> NotificationTags => Set<NotificationTag>();
 
     /// <summary>
     /// The per-user in-app notification inbox. Not to be confused with <see cref="Notifications"/>,
@@ -82,6 +84,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
+    public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
 
     public override int SaveChanges()
     {
@@ -333,9 +336,18 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(t => t.Label).IsUnique();
         });
 
+        modelBuilder.Entity<NotificationTag>(e =>
+        {
+            e.ToTable("NotificationTags");
+            e.HasKey(j => new { j.NotificationId, j.TagId });
+            e.HasOne<Notification>().WithMany(n => n.Tags).HasForeignKey(j => j.NotificationId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<SavedFilter>(e =>
         {
             e.HasIndex(f => new { f.UserId, f.SortOrder });
+            e.Property(f => f.Scope).HasDefaultValue(SavedFilter.LibraryScope);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(f => _scope.Unrestricted || f.UserId == _scope.UserId);
         });
@@ -432,6 +444,17 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(q => _scope.Unrestricted || Series.Any(s => s.Id == q.SeriesId));
 
             e.HasIndex(q => q.Status);
+
+            // Covers ClaimNextAsync's filter and sort (Protocol, Status, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
+            e.HasIndex(q => new { q.Protocol, q.Status, q.SortOrder, q.QueuedAt });
+
+            // One active row per chapter. SQLite allows any number of NULLs in a unique index, so
+            // settled rows never collide.
+            e.Property(q => q.ActiveChapterId).HasComputedColumnSql(
+                $"CASE WHEN \"Status\" IN ({(int)QueueStatus.Completed}, {(int)QueueStatus.Failed}, {(int)QueueStatus.Cancelled}) THEN NULL ELSE \"ChapterId\" END",
+                stored: false);
+            e.HasIndex(q => q.ActiveChapterId).IsUnique();
+
             e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.SourceMapping).WithMany().HasForeignKey(q => q.SourceMappingId).OnDelete(DeleteBehavior.SetNull);
@@ -464,6 +487,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(s => s.SyncedAt);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ImportListSkip>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.Service, x.RemoteId }).IsUnique();
+            e.HasIndex(x => x.MangaBakaId);
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });
 
         modelBuilder.Entity<ScrobbleUnmatched>(e =>
@@ -581,6 +612,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<MakiUser>().WithMany().HasForeignKey(b => b.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(b => _scope.Unrestricted || b.UserId == _scope.UserId);
+        });
+
+        modelBuilder.Entity<ReadingSession>(e =>
+        {
+            e.HasIndex(s => new { s.UserId, s.EndedAt });
+            e.HasIndex(s => new { s.UserId, s.StartedAt });
+            e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(s => _scope.Unrestricted || s.UserId == _scope.UserId);
         });
     }
 }

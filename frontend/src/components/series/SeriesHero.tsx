@@ -8,6 +8,7 @@ import {
     Paper,
     Progress,
     Rating,
+    Skeleton,
     Stack,
     Text,
     Title,
@@ -15,7 +16,7 @@ import {
 } from '@mantine/core'
 import {IconAlertTriangle, IconArrowLeft, IconBook, IconDownload, IconX} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
-import { otherTitles } from '../../api/titles'
+import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
 import {
     contentRatingToken,
@@ -62,7 +63,7 @@ export function SeriesHero({
     actions: ReactNode
     tabs: ReactNode
 }) {
-    const { t } = useLingui()
+    const { t, i18n } = useLingui()
     const readTracking = useReadTracking()
     const status = seriesStatusVisual(series.status)
     const contentRating = contentRatingVisual(series.contentRating)
@@ -140,7 +141,7 @@ export function SeriesHero({
     // otherwise picking "Japanese" makes the name everything else in Maki uses (the folder on disk,
     // the file names, search) disappear from the page entirely.
     const altTitles = otherTitles(
-        series.altTitles,
+        readableTitles(series.altTitles, i18n.locale),
         series.originalTitle,
         series.displayTitle,
     ).concat(series.displayTitle === series.title ? [] : [{ title: series.title, language: null }])
@@ -332,10 +333,8 @@ export function SeriesHero({
                             <Progress
                                 mt={12}
                                 value={progress.pct}
-                                // Never green while the sources are short of the full run: "all downloaded" and
-                                // "you have the whole series" are different claims, and the green tick is exactly
-                                // what makes someone unmonitor a series that's still missing its tail.
-                                color={sourceGap ? 'yellow' : progress.complete ? 'teal' : 'blue'}
+                                // Warn wins while a source gap exists, a separate claim the alert below already spells out.
+                                color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--brand)'}
                                 radius="xl"
                             />
                             <Group justify="space-between" mt={9}>
@@ -374,7 +373,7 @@ export function SeriesHero({
                         {sourceGap && (
                             <Alert
                                 mt="md"
-                                color="yellow"
+                                color="var(--warn)"
                                 variant="light"
                                 radius="md"
                                 icon={<IconAlertTriangle size={16} />}
@@ -401,5 +400,74 @@ export function SeriesHero({
                 </Group>
             </div>
         </Box>
+    )
+}
+
+/** The band's own shape while the series loads, so the page lands in place instead of jumping from a spinner. */
+export function SeriesHeroSkeleton() {
+    return (
+        <div aria-hidden>
+        <Box className="series-hero" data-loading>
+            <div className="series-hero-body">
+                <Skeleton h={14} w={84} mb="md" />
+                <Group className="series-hero-content">
+                    <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
+                        <Skeleton className="series-hero-poster" radius="var(--radius-hero)" />
+                        <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                            <Skeleton h={58} w="62%" />
+                            <Skeleton h={14} w="38%" mt="md" />
+                            <Skeleton h={18} w="24%" mt={12} />
+                            <Group gap={8} mt={18}>
+                                <Skeleton h={28} w={92} radius="md" />
+                                <Skeleton h={28} w={76} radius="md" />
+                                <Skeleton h={18} w={110} ml="xs" />
+                            </Group>
+                            <Skeleton h={12} w="32%" mt={14} />
+                            <Group gap="xs" mt="lg">
+                                <Skeleton h={42} w={168} radius="md" />
+                                <Skeleton h={42} w={196} radius="md" />
+                                <Skeleton h={42} w={132} radius="md" />
+                            </Group>
+                            <Group gap={28} mt="xl" pb={12}>
+                                {[72, 86, 64, 58, 70].map((w) => (
+                                    <Skeleton key={w} h={12} w={w} />
+                                ))}
+                            </Group>
+                        </Stack>
+                    </Group>
+                    <Paper withBorder radius="lg" p="lg" className="series-hero-glass-panel">
+                        <Skeleton h={16} w={80} />
+                        <Skeleton h={12} w="46%" mt="lg" />
+                        <Skeleton h={8} radius="xl" mt={14} />
+                        <Skeleton h={12} w="30%" mt={12} />
+                        <Skeleton h={12} w="52%" mt="xl" />
+                        <Skeleton h={8} radius="xl" mt={14} />
+                        <Skeleton h={12} w="30%" mt={12} />
+                    </Paper>
+                </Group>
+            </div>
+        </Box>
+        <div className="series-body">
+            <div className="series-split">
+                <Paper withBorder radius="lg" p="lg">
+                    <Skeleton h={16} w={96} mb="lg" />
+                    {['96%', '88%', '92%', '80%', '90%', '54%'].map((w, i) => (
+                        <Skeleton key={i} h={10} w={w} mb={12} />
+                    ))}
+                </Paper>
+                <Paper withBorder radius="lg" p="lg">
+                    <Skeleton h={16} w={84} mb="lg" />
+                    {[0, 1, 2].map((i) => (
+                        <Group key={i} justify="space-between" py="sm" wrap="nowrap">
+                            <Skeleton h={10} w="22%" />
+                            <Skeleton h={10} w="26%" />
+                            <Skeleton h={10} w="8%" />
+                            <Skeleton h={18} w={32} radius="xl" />
+                        </Group>
+                    ))}
+                </Paper>
+            </div>
+        </div>
+        </div>
     )
 }

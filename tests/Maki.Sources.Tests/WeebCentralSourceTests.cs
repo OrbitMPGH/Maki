@@ -49,6 +49,41 @@ public class WeebCentralSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_keeps_distinct_unnumbered_specials()
+    {
+        var source = SourceFor(new()
+        {
+            ["full-chapter-list"] = FakeHttpClientFactory.Fixture("weebcentral-chapters-unnumbered.html")
+        });
+
+        var chapters = await source.ListChaptersAsync("01J76XY7EF75DJNQCV04HTPDZK/Berserk");
+
+        Assert.Equal(2, chapters.Count);
+        Assert.Contains(chapters, c => c.Title == "Oneshot");
+        Assert.Contains(chapters, c => c.Title == "Extra");
+        Assert.All(chapters, c => Assert.Null(c.Number));
+    }
+
+    [Theory]
+    [InlineData("Chapter 12", 12)]
+    [InlineData("Episode 124", 124)]
+    [InlineData("Plot 49", 49)]
+    [InlineData("Mischief 225", 225)]
+    [InlineData("Mischief 10.5", 10.5)]
+    public void ParseLabel_takes_the_number_whatever_the_series_calls_its_chapters(string label, double expected)
+    {
+        Assert.Equal((decimal)expected, WeebCentralSource.ParseLabel(label).Number);
+    }
+
+    [Theory]
+    [InlineData("Oneshot")]
+    [InlineData("Extra")]
+    public void ParseLabel_leaves_unnumbered_labels_unnumbered(string label)
+    {
+        Assert.Null(WeebCentralSource.ParseLabel(label).Number);
+    }
+
+    [Fact]
     public async Task GetPages_returns_urls_with_referer()
     {
         var source = SourceFor(new() { ["/images"] = FakeHttpClientFactory.Fixture("weebcentral-images.html") });

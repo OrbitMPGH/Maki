@@ -43,11 +43,34 @@ msgstr "Ese código no es válido"
 msgid "error.account.invalidContentRating"
 msgstr "La clasificación debe ser una de: {ratings}"
 
+#. JsonStringEnumConverter accepts the underlying numeric value of an enum as well as its name, so
+#. an undefined integer (e.g. "7") deserializes without error into a UserApiKeyScope value nothing
+#. names. Caught with Enum.IsDefined rather than a bigger allowed-scope list, since Opds already has
+#. its own dedicated refusal above.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That key scope is not valid
+#, fuzzy
+msgid "error.account.invalidScope"
+msgstr "El ámbito de esa clave no es válido"
+
+#. The signed-in user typed their current password wrong too many times.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Too many incorrect password attempts. Try again later.
+#, fuzzy
+msgid "error.account.lockedOut"
+msgstr "Demasiados intentos de contraseña incorrectos. Inténtalo de nuevo más tarde."
+
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Name is required
 #, fuzzy
 msgid "error.account.nameRequired"
 msgstr "El nombre es obligatorio"
+
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: OPDS feed URLs are created on the OPDS card in Settings
+#, fuzzy
+msgid "error.account.opdsKeyOnOpdsCard"
+msgstr "Las URL del feed OPDS se crean en la tarjeta OPDS de Ajustes"
 
 #. Shared by both SetupTwoFactor and EnableTwoFactor: an account with no working password login
 #. (SSO-provisioned, or refused by auth.oidconly) has nothing for a second factor to protect.
@@ -68,6 +91,34 @@ msgstr "Se necesitan la contraseña actual y la nueva"
 #, fuzzy
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "La autenticación de dos factores ya está activada"
+
+#. Owner decision on #16: SSO delegates the second factor to the identity provider, so an
+#. OIDC-linked account cannot also enrol a local authenticator.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: This account signs in through single sign-on, which handles two-factor itself
+#, fuzzy
+msgid "error.account.twoFactorDelegatedToSso"
+msgstr "Esta cuenta usa el inicio de sesión único, que se encarga de la autenticación en dos pasos"
+
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+#. English: Turn on anime taste signals to use this
+#, fuzzy
+msgid "error.animeResume.notEnabled"
+msgstr "Activa las señales de gustos de anime para usar esta función"
+
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+#. English: Series not found
+#, fuzzy
+msgid "error.animeResume.seriesNotFound"
+msgstr "No se encontró la serie"
+
+#. The reader's anime list no longer says where this series' anime ends, usually because a sync
+#. changed it after the page loaded.
+#: src/Maki.Api/Controllers/AnimeResumeController.cs
+#. English: Could not work out where the anime ends for this series
+#, fuzzy
+msgid "error.animeResume.unavailable"
+msgstr "No se pudo determinar dónde termina el anime de esta serie"
 
 #: src/Maki.Api/Controllers/AnimeSignalsController.cs
 #. English: Anime taste signals are switched off on this server
@@ -124,6 +175,85 @@ msgstr "La configuración inicial ya se completó"
 msgid "error.auth.signInFailed"
 msgstr "Nombre de usuario o contraseña no válidos"
 
+#: src/Maki.Api/Auth/OidcSignInService.cs
+#. English: That account is disabled
+#, fuzzy
+msgid "error.auth.ssoAccountDisabled"
+msgstr "Esa cuenta está desactivada"
+
+#. The unclaimed placeholder account: only POST auth/setup may claim it.
+#: src/Maki.Api/Auth/OidcSignInService.cs
+#. English: That account has not been set up yet
+#, fuzzy
+msgid "error.auth.ssoAccountNotSetUp"
+msgstr "Esa cuenta todavía no está configurada"
+
+#. Self-service linking (settings page), not the automatic linking a verified email does at
+#. sign-in: this subject is already linked to a different Maki account.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: That single sign-on account is already linked to a different user
+#, fuzzy
+msgid "error.auth.ssoAlreadyLinkedOther"
+msgstr "Esa cuenta de inicio de sesión único ya está vinculada a otro usuario"
+
+#. The provider's own authorize endpoint refused the request outright (e.g. a bad client id) before
+#. any redirect happened.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: The identity provider rejected the sign-in request. Check the OIDC client configuration.
+#, fuzzy
+msgid "error.auth.ssoChallengeRejected"
+msgstr "El proveedor de identidad rechazó la solicitud de inicio de sesión. Comprueba la configuración del cliente OIDC."
+
+#. The external cookie the OIDC handler deposits was missing or unauthenticated when the callback
+#. ran: an expired correlation, a second reload of the callback URL.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: The sign-in did not complete. Please try again.
+#, fuzzy
+msgid "error.auth.ssoIncomplete"
+msgstr "No se completó el inicio de sesión. Inténtalo de nuevo."
+
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Could not link that single sign-on account
+#, fuzzy
+msgid "error.auth.ssoLinkFailed"
+msgstr "No se pudo vincular esa cuenta de inicio de sesión único"
+
+#: src/Maki.Api/Auth/OidcSignInService.cs
+#. English: Could not link that login to a new account
+#, fuzzy
+msgid "error.auth.ssoLinkNewAccountFailed"
+msgstr "No se pudo vincular ese inicio de sesión a una cuenta nueva"
+
+#: src/Maki.Api/Auth/OidcSignInService.cs
+#. English: No Maki account is linked to that login
+#, fuzzy
+msgid "error.auth.ssoNoAccountLinked"
+msgstr "No hay ninguna cuenta de Maki vinculada a ese inicio de sesión"
+
+#. Shared by AuthController (the sign-in and link callbacks) and OidcSignInService: the provider's
+#. token carried no "sub" claim to identify the account by.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: The identity provider returned no subject
+#, fuzzy
+msgid "error.auth.ssoNoSubject"
+msgstr "El proveedor de identidad no devolvió un identificador de sujeto"
+
+#. The generic fallback when a single sign-on failure has neither a catalogue key
+#. (OidcSignInResult.ErrorKey) nor text the identity provider library worded itself
+#. (OidcSignInResult.RawError, RemoteFailureContext.Failure.Message in AuthServiceCollectionExtensions).
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Sign-in failed
+#, fuzzy
+msgid "error.auth.ssoSignInFailed"
+msgstr "Error al iniciar sesión"
+
+#. A provisioned account collides with an existing local username.
+#: src/Maki.Api/Auth/OidcSignInService.cs
+#. English: An account with that username already exists
+#, fuzzy
+msgid "error.auth.ssoUsernameExists"
+msgstr "Ya existe una cuenta con ese nombre de usuario"
+
 #. Shown by GET auth/me when the session's own user id no longer resolves to a usable account
 #. (e.g. it was deleted or disabled in the moment between the request arriving and this check).
 #: src/Maki.Api/Controllers/AuthController.cs
@@ -137,6 +267,12 @@ msgstr "No autorizado"
 #, fuzzy
 msgid "error.auth.usernameRequired"
 msgstr "El nombre de usuario es obligatorio"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Chapter is already downloading, try again once it finishes
+#, fuzzy
+msgid "error.chapter.alreadyDownloading"
+msgstr "El capítulo ya se está descargando. Vuelve a intentarlo cuando termine."
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already queued
@@ -157,6 +293,24 @@ msgid "error.chapter.fileNotFound"
 msgstr "No se encontró el archivo en el disco"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping is disabled
+#, fuzzy
+msgid "error.chapter.mappingDisabled"
+msgstr "La asignación de la fuente está desactivada."
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping not found
+#, fuzzy
+msgid "error.chapter.mappingNotFound"
+msgstr "No se encontró la asignación de la fuente."
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Source mapping does not belong to this series
+#, fuzzy
+msgid "error.chapter.mappingWrongSeries"
+msgstr "La asignación de la fuente no pertenece a esta serie."
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: No chapters selected
 #, fuzzy
 msgid "error.chapter.noChaptersSelected"
@@ -167,6 +321,12 @@ msgstr "No se seleccionaron capítulos"
 #, fuzzy
 msgid "error.chapter.noRootFolder"
 msgstr "La serie no tiene carpeta raíz"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Path belongs to another series' folder
+#, fuzzy
+msgid "error.chapter.pathInOtherSeries"
+msgstr "La ruta pertenece a la carpeta de otra serie"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
@@ -279,17 +439,135 @@ msgstr "Orden de valoración no admitido"
 msgid "error.feedback.unsupportedState"
 msgstr "Estado de valoración no admitido"
 
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Unknown tracker
+#, fuzzy
+msgid "error.importLists.unknownService"
+msgstr "Servicio de seguimiento desconocido"
+
+#. The root folder picked for an import list is not one this user has been granted.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: That root folder is not available to you
+#, fuzzy
+msgid "error.importLists.rootFolderNotVisible"
+msgstr "Esa carpeta raíz no está disponible para ti"
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Pick at least one list status: Reading, Plan to read or Completed
+#, fuzzy
+msgid "error.importLists.statusesInvalid"
+msgstr "Elige al menos un estado de lista: Leyendo, Pendiente de lectura o Completada"
+
+#. {max} is the upper limit, currently 100.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Series per run must be between 1 and {max}
+#, fuzzy
+msgid "error.importLists.maxPerRunInvalid"
+msgstr "El número de series por ejecución debe estar entre 1 y {max}"
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Unknown monitoring mode
+#, fuzzy
+msgid "error.importLists.monitorModeInvalid"
+msgstr "Modo de monitorización desconocido"
+
+#. An admin switched import lists off for the whole instance.
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: Import lists are turned off on this server
+#, fuzzy
+msgid "error.importLists.disabled"
+msgstr "Las listas de importación están desactivadas en este servidor"
+
+#: src/Maki.Api/Controllers/ImportListsController.cs
+#. English: An import list run is already in progress
+#, fuzzy
+msgid "error.importLists.running"
+msgstr "Ya hay una importación de listas en curso"
+
+#. {allowed} is a comma-separated list of the accepted values, which are code and never translated.
+#: src/Maki.Api/Controllers/InboxController.cs
+#. English: seriesDefault must be one of: {allowed}
+#, fuzzy
+msgid "error.inbox.unknownSeriesDefault"
+msgstr "seriesDefault debe ser uno de estos valores: {allowed}"
+
 #: src/Maki.Api/Controllers/LibraryFiltersController.cs
 #. English: Name is required
 #, fuzzy
 msgid "error.libraryFilters.nameRequired"
 msgstr "El nombre es obligatorio"
 
+#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
+#. {max} is how many saved filters one person may keep.
+#. English: You can keep at most {max} saved filters
+#, fuzzy
+msgid "error.discoverFilters.tooMany"
+msgstr "Puedes guardar como máximo {max} filtros"
+
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: Name is required
+#, fuzzy
+msgid "error.customRails.nameRequired"
+msgstr "El nombre es obligatorio"
+
+#. A custom rail was saved for a page other than Home or Discover.
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: A rail goes on Home or Discover
+#, fuzzy
+msgid "error.customRails.unknownPlacement"
+msgstr "Las filas solo se pueden colocar en Inicio o Descubrir"
+
+#. A rail showing the reader's own library was placed on Discover, which only shows titles from the catalogue.
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: Library rails can only go on Home
+#, fuzzy
+msgid "error.customRails.libraryHomeOnly"
+msgstr "Las filas de la biblioteca solo pueden estar en Inicio"
+
+#. {max} is how many custom rails one person may keep across Home and Discover.
+#: src/Maki.Api/Controllers/CustomRailsController.cs
+#. English: You can keep at most {max} rails
+#, fuzzy
+msgid "error.customRails.tooMany"
+msgstr "Puedes guardar como máximo {max} filas"
+
+#. {title} is the metadata provider's title for the series, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: "{title}" is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
+#, fuzzy
+msgid "error.libraryImport.alreadyInLibrary"
+msgstr "\"{title}\" ya está en la biblioteca y tiene archivos descargados. Elimínala primero si quieres volver a importarla desde cero."
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Folder no longer exists
+#, fuzzy
+msgid "error.libraryImport.folderGone"
+msgstr "La carpeta ya no existe"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Invalid folder name
+#, fuzzy
+msgid "error.libraryImport.invalidFolderName"
+msgstr "El nombre de la carpeta no es válido"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Metadata lookup failed
+#, fuzzy
+msgid "error.libraryImport.metadataLookupFailed"
+msgstr "No se pudieron obtener los metadatos"
+
 #: src/Maki.Api/Controllers/LibraryImportController.cs
 #. English: No items to import
 #, fuzzy
 msgid "error.libraryImport.noItemsToImport"
 msgstr "No hay elementos que importar"
+
+#. {name} is the standardized folder name Maki would rename to, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Cannot rename: "{name}" already exists in the root folder
+#, fuzzy
+msgid "error.libraryImport.renameTargetExists"
+msgstr "No se puede cambiar el nombre: \"{name}\" ya existe en la carpeta raíz"
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -298,11 +576,25 @@ msgstr "No hay elementos que importar"
 msgid "error.libraryImport.tooManyItems"
 msgstr "Demasiados elementos en una solicitud ({count}); importa en lotes de {max} o menos"
 
+#: src/Maki.Core/Notifications/AppriseNotificationProvider.cs
+#. English: Set a config key or at least one notification URL.
+#, fuzzy
+msgid "error.notifications.appriseTarget"
+msgstr "Define una clave de configuración o al menos una URL de notificación."
+
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Notification delivery failed (check URL and any token)
 #, fuzzy
 msgid "error.notifications.deliveryFailed"
 msgstr "Falló la entrega de la notificación (comprueba la URL y cualquier token)"
+
+#. {provider} is the service name (Telegram, ntfy, ...), {status} its HTTP status code.
+#. {hasDetail} is "yes" or "no"; {detail} is the service's own error text, untranslated.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+#. English: {provider} returned {status}{hasDetail, select, yes {: {detail}} other {}}
+#, fuzzy
+msgid "error.notifications.deliveryRejected"
+msgstr "{provider} devolvió {status}{hasDetail, select, yes {: {detail}} other {}}"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Discord webhook URL is required
@@ -310,17 +602,57 @@ msgstr "Falló la entrega de la notificación (comprueba la URL y cualquier toke
 msgid "error.notifications.discordWebhookUrlRequired"
 msgstr "La URL del webhook de Discord es obligatoria"
 
+#. {field} is the config field's key, e.g. botToken.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+#. English: {field} must be true or false
+#, fuzzy
+msgid "error.notifications.fieldMustBeBoolean"
+msgstr "{field} debe ser verdadero o falso"
+
+#. {field} is the config field's key, e.g. priority.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+#. English: {field} must be a whole number
+#, fuzzy
+msgid "error.notifications.fieldMustBeNumber"
+msgstr "{field} debe ser un número entero"
+
+#. {field} is the config field's key, e.g. priority.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+#. English: {field} must be between {min} and {max}
+#, fuzzy
+msgid "error.notifications.fieldOutOfRange"
+msgstr "{field} debe estar entre {min} y {max}"
+
+#. {field} is the config field's key, e.g. botToken.
+#: src/Maki.Api/Controllers/NotificationsController.cs
+#. English: {field} is required
+#, fuzzy
+msgid "error.notifications.fieldRequired"
+msgstr "El campo {field} es obligatorio"
+
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Name is required
 #, fuzzy
 msgid "error.notifications.nameRequired"
 msgstr "El nombre es obligatorio"
 
+#: src/Maki.Core/Notifications/NotifiarrNotificationProvider.cs
+#. English: Channel ID must be a number
+#, fuzzy
+msgid "error.notifications.notifiarrChannelId"
+msgstr "El ID del canal debe ser un número"
+
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: Unknown notification type
 #, fuzzy
 msgid "error.notifications.unknownType"
 msgstr "Tipo de notificación desconocido"
+
+#: src/Maki.Api/Controllers/NotificationsController.cs
+#. English: One of the selected tags no longer exists
+#, fuzzy
+msgid "error.notifications.unknownTag"
+msgstr "Una de las etiquetas seleccionadas ya no existe"
 
 #: src/Maki.Api/Controllers/NotificationsController.cs
 #. English: URL must be a full http:// or https:// address
@@ -389,6 +721,31 @@ msgid "error.reader.invalidState"
 msgstr "El estado debe ser uno de leído, visto o no leído"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
+#. English: The Kavita import failed. An administrator can see the details.
+#, fuzzy
+msgid "error.reader.kavitaImportFailed"
+msgstr "Falló la importación de Kavita. Un administrador puede consultar los detalles."
+
+#: src/Maki.Api/Controllers/ReaderController.cs
+#. English: Only the user bound to Kavita or an administrator can run the Kavita import
+#, fuzzy
+msgid "error.reader.kavitaImportForbidden"
+msgstr "Solo el usuario vinculado a Kavita o un administrador puede ejecutar la importación de Kavita"
+
+#. The Kavita read-status import found no user bound in Settings → Reader → Kavita user.
+#: src/Maki.Api/Services/KavitaReadImportService.cs
+#. English: No Maki user is bound to Kavita (Settings → Reader → Kavita user)
+#, fuzzy
+msgid "error.reader.kavitaNoBoundUser"
+msgstr "No hay ningún usuario de Maki vinculado a Kavita (Ajustes → Lector → Usuario de Kavita)"
+
+#: src/Maki.Api/Services/KavitaReadImportService.cs
+#. English: Kavita is not configured (Settings → Kavita)
+#, fuzzy
+msgid "error.reader.kavitaNotConfigured"
+msgstr "Kavita no está configurado (Ajustes → Kavita)"
+
+#: src/Maki.Api/Controllers/ReaderController.cs
 #. English: Nothing left to read
 #, fuzzy
 msgid "error.reader.nothingToRead"
@@ -443,6 +800,14 @@ msgstr "\"{type}\" no es un tipo de serie. Tipos conocidos: {knownTypes}"
 msgid "error.recommendation.creatorNotFound"
 msgstr "No existe ese creador"
 
+#. Thrown by DiscoverService.EnsureAvailableAsync, a singleton with no request locale of its own;
+#. see LocalCatalogueUnavailableException.
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Discover needs the local MangaBaka database (Settings → Metadata → local DB)
+#, fuzzy
+msgid "error.recommendation.discoverNeedsLocalDb"
+msgstr "Descubrir necesita la base de datos local de MangaBaka (Ajustes → Metadatos → Base de datos local)"
+
 #: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: The local MangaBaka database is not available.
 #, fuzzy
@@ -455,11 +820,36 @@ msgstr "La base de datos local de MangaBaka no está disponible."
 msgid "error.recommendation.nameRequired"
 msgstr "El nombre es obligatorio"
 
+#. Thrown by RecommendationService.GetAsync, a singleton with no request locale of its own; see
+#. LocalCatalogueUnavailableException.
+#: src/Maki.Api/Services/RecommendationService.cs
+#. English: Recommendations need the local MangaBaka database (Settings → Metadata → local DB)
+#, fuzzy
+msgid "error.recommendation.needsLocalDb"
+msgstr "Las recomendaciones necesitan la base de datos local de MangaBaka (Ajustes → Metadatos → Base de datos local)"
+
+#. A 200 response's own "nothing to show" field, not a Fail(); the taste-insights page has other
+#. sections that still work with no local database.
+#: src/Maki.Api/Controllers/RecommendationController.cs
+#. English: Needs the local MangaBaka database (Settings → Metadata → local DB)
+#, fuzzy
+msgid "error.recommendation.tasteInsightsNeedsLocalDb"
+msgstr "Necesita la base de datos local de MangaBaka (Ajustes → Metadatos → Base de datos local)"
+
 #: src/Maki.Api/Controllers/RecommendationController.cs
 #. English: Your taste profile needs the local MangaBaka database (Settings → Metadata → local DB)
 #, fuzzy
 msgid "error.recommendation.tasteProfileNeedsLocalDb"
 msgstr "Tu perfil de gustos necesita la base de datos local de MangaBaka (Ajustes → Metadatos → base de datos local)"
+
+#. Auto-resolution note when an admin approves a request but somebody else already added the
+#. series first: stored on SeriesRequest.ResolutionNote and shown verbatim next to the admin's own
+#. free-text rejection notes, so it is rendered once, in the requester's language, at write time.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: Already in the library.
+#, fuzzy
+msgid "error.requests.alreadyInLibrary"
+msgstr "Ya está en la biblioteca."
 
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 #. English: You already have that request pending
@@ -649,6 +1039,12 @@ msgstr "Fuente desconocida: {sourceName}"
 msgid "error.series.activeDownloadMove"
 msgstr "La serie tiene una descarga activa, espera a que termine antes de moverla"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series has an active download. Wait for it to finish before relinking files.
+#, fuzzy
+msgid "error.series.activeDownloadRelink"
+msgstr "La serie tiene una descarga activa. Espera a que termine antes de volver a vincular los archivos."
+
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
@@ -682,6 +1078,20 @@ msgstr "La carpeta de destino ya existe: {folder}"
 msgid "error.series.filesNotMoved"
 msgstr "Archivos no movidos: {folder} no existe. Mueve primero los archivos allí o deja que Maki los mueva."
 
+#. {folder} is a folder name inside the root folder and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself.
+#, fuzzy
+msgid "error.series.folderContainsLinks"
+msgstr "{folder} es un enlace simbólico o una unión, o contiene uno. Sustitúyelo por los archivos reales o mueve la carpeta tú mismo."
+
+#. Not an error: a plain confirmation carried in the move response's Warnings list.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series folder moved from {from} to {to}
+#, fuzzy
+msgid "error.series.folderMoved"
+msgstr "La carpeta de la serie se movió de {from} a {to}"
+
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Count must be at least 1.
 #, fuzzy
@@ -705,6 +1115,14 @@ msgstr "No se encontró la serie en el proveedor de metadatos"
 #, fuzzy
 msgid "error.series.metadataRefreshFailed"
 msgstr "Falló la búsqueda de metadatos: la serie no tiene ID de proveedor o el proveedor no devolvió nada"
+
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not save the series move: {message}
+#, fuzzy
+msgid "error.series.moveSaveFailed"
+msgstr "No se pudo guardar el traslado de la serie: {message}"
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
@@ -779,12 +1197,71 @@ msgstr "Origen de adición no admitido"
 msgid "error.series.unknownTagIds"
 msgstr "Uno o más ID de etiquetas no existen"
 
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: Series has an active download, wait for it to finish before renaming
+#, fuzzy
+msgid "error.seriesRename.activeDownload"
+msgstr "La serie tiene una descarga activa. Espera a que termine antes de renombrarla."
+
+#. {file} is a filesystem path relative to the root folder, never translated.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: {file} was missing from disk; its entry was updated anyway
+#, fuzzy
+msgid "error.seriesRename.fileMissingUpdated"
+msgstr "{file} no estaba en el disco; de todos modos, se actualizó su registro"
+
+#. {from}/{to} are file names, never translated.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: Skipped {from}: {to} already exists
+#, fuzzy
+msgid "error.seriesRename.fileSkippedExists"
+msgstr "Se omitió {from}: {to} ya existe"
+
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: The current chapter format gives two chapters the same file name
+#, fuzzy
+msgid "error.seriesRename.formatCollision"
+msgstr "El formato de capítulo actual asigna el mismo nombre de archivo a dos capítulos"
+
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: Series not found
+#, fuzzy
+msgid "error.seriesRename.notFound"
+msgstr "No se encontró la serie"
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+#, fuzzy
+msgid "error.seriesRename.planChanged"
+msgstr "El plan de cambio de nombre ha cambiado desde que se cargó la vista previa. Revisa el nuevo plan e inténtalo de nuevo."
+
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown start page: {page}
 #, fuzzy
 msgid "error.settings.unknownStartPage"
 msgstr "Página inicial desconocida: {page}"
+
+#. English: Unknown folder naming mode: {mode}
+#, fuzzy
+msgid "error.settings.unknownFolderNamingMode"
+msgstr "Modo de nomenclatura de carpetas desconocido: {mode}"
+
+#. English: Unknown content rating: {rating}
+#, fuzzy
+msgid "error.settings.unknownContentRating"
+msgstr "Clasificación de contenido desconocida: {rating}"
+
+#. English: Unknown incognito mode: {mode}
+#, fuzzy
+msgid "error.settings.unknownIncognitoMode"
+msgstr "Modo incógnito desconocido: {mode}"
+
+#. English: Unknown source(s): {sources}
+#, fuzzy
+msgid "error.settings.unknownSources"
+msgstr "Fuentes desconocidas: {sources}"
 
 #. Shown when a client asks for an interface language Maki ships no translation for.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -800,11 +1277,60 @@ msgstr "Idioma no compatible: {language}"
 msgid "error.settings.urlInvalid"
 msgstr "La URL de {service} debe ser una dirección http:// o https:// completa, por ejemplo http://localhost:8080, o estar en blanco para borrarla"
 
+#. {entry} is the value the admin typed into the trusted proxies list.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: "{entry}" is not an IP address or CIDR network
+#, fuzzy
+msgid "error.settings.trustedProxyInvalid"
+msgstr "\"{entry}\" no es una dirección IP ni una red CIDR"
+
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Series already has a mapping for this source
 #, fuzzy
 msgid "error.sourceMapping.alreadyMapped"
 msgstr "La serie ya tiene una asignación para esta fuente"
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
+#. English: Another source comparison is already running. Wait for it to finish and try again.
+#, fuzzy
+msgid "error.sourceMapping.compareAlreadyRunning"
+msgstr "Ya hay otra comparación de fuentes en curso. Espera a que termine e inténtalo de nuevo."
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+#. English: Chapter not listed by this source
+#, fuzzy
+msgid "error.sourceMapping.compareChapterNotListed"
+msgstr "Esta fuente no incluye el capítulo"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+#. English: Source lists no chapters for this series
+#, fuzzy
+msgid "error.sourceMapping.compareNoChaptersListed"
+msgstr "La fuente no incluye capítulos para esta serie"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+#. English: Source returned no pages
+#, fuzzy
+msgid "error.sourceMapping.compareNoPages"
+msgstr "La fuente no devolvió páginas"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+#. English: Rate limited, try again shortly
+#, fuzzy
+msgid "error.sourceMapping.compareRateLimited"
+msgstr "Se alcanzó el límite de solicitudes. Inténtalo de nuevo en breve."
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+#. English: Source is no longer registered
+#, fuzzy
+msgid "error.sourceMapping.compareSourceUnregistered"
+msgstr "La fuente ya no está registrada"
+
+#: src/Maki.Api/Services/SourceComparePreviewService.cs
+#. English: Timed out
+#, fuzzy
+msgid "error.sourceMapping.compareTimedOut"
+msgstr "Se agotó el tiempo de espera"
 
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: Mapping list does not match this series
@@ -863,6 +1389,12 @@ msgid "error.stats.invalidDateRange"
 msgstr "'to' no puede ser anterior a 'from'"
 
 #: src/Maki.Api/Controllers/StatsController.cs
+#. English: Dates must be between 1900 and 9998
+#, fuzzy
+msgid "error.stats.dateOutOfRange"
+msgstr "Las fechas deben estar entre 1900 y 9998"
+
+#: src/Maki.Api/Controllers/StatsController.cs
 #. English: utcOffsetMinutes out of range
 #, fuzzy
 msgid "error.stats.utcOffsetOutOfRange"
@@ -886,6 +1418,31 @@ msgstr "La etiqueta es obligatoria"
 #, fuzzy
 msgid "error.tags.unknownTagIds"
 msgstr "Uno o más ID de etiquetas no existen"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: No comics found in the completed download ({detail})
+#, fuzzy
+msgid "error.torrentImport.noComicsFound"
+msgstr "No se encontraron cómics en la descarga completada ({detail})"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: Series has no root folder
+#, fuzzy
+msgid "error.torrentImport.noRootFolder"
+msgstr "La serie no tiene una carpeta raíz"
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: The download is no longer in qBittorrent
+#, fuzzy
+msgid "error.torrentImport.notInQbittorrent"
+msgstr "La descarga ya no está en qBittorrent"
+
+#. {path} is a filesystem path and is never translated.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: Download path not accessible from Maki: {path}
+#, fuzzy
+msgid "error.torrentImport.pathNotAccessible"
+msgstr "Maki no puede acceder a la ruta de descarga: {path}"
 
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
@@ -970,6 +1527,12 @@ msgid "error.settings.downloadTimeoutRange"
 msgstr "El tiempo de espera de descarga debe ser 0, sin límite, o estar entre {min} y {max} minutos"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
+msgid "error.settings.bulkHoldRange"
+msgstr "El umbral de retención debe estar entre 0 (desactivado) y {max} capítulos"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Backups to keep must be between {min} and {max}
 #, fuzzy
 msgid "error.settings.backupsToKeepRange"
@@ -1043,6 +1606,273 @@ msgstr "No hay ninguna URL de FlareSolverr configurada"
 #, fuzzy
 msgid "error.settings.flaresolverrNoResponse"
 msgstr "FlareSolverr no respondió"
+
+#. {token} is the offending {Token Name} as the caller wrote it, braces included.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Format has a "{" inside a token
+#, fuzzy
+msgid "error.naming.braceInsideToken"
+msgstr "El formato contiene una «{» dentro de un token"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Format cannot contain ".."
+#, fuzzy
+msgid "error.naming.doubleDot"
+msgstr "El formato no puede contener «..»"
+
+#. The library settings save's field label for a bad chapter format, used as {field} in
+#. error.naming.formatInvalid.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Chapter format
+#, fuzzy
+msgid "error.naming.fieldChapterFormat"
+msgstr "Formato de capítulo"
+
+#. Same, for the series folder format.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Series folder format
+#, fuzzy
+msgid "error.naming.fieldSeriesFolder"
+msgstr "Formato de carpeta de serie"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Format cannot be empty
+#, fuzzy
+msgid "error.naming.formatEmpty"
+msgstr "El formato no puede estar vacío"
+
+#. {field} is a rendered error.naming.field* label; {reason} is one or more rendered
+#. NamingValidationError entries joined with "; ". Maki.Core.Naming has no ILocalizer, so
+#. NamingFormatter.Validate returns keys and this is where they get rendered and combined.
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: {field}: {reason}
+#, fuzzy
+msgid "error.naming.formatInvalid"
+msgstr "{field}: {reason}"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: {token} does not take a padding pattern
+#, fuzzy
+msgid "error.naming.noPadding"
+msgstr "{token} no admite un patrón de relleno"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Format must contain at least one token, or every series would get the same name
+#, fuzzy
+msgid "error.naming.noTokens"
+msgstr "El formato debe contener al menos un token; si no, todas las series tendrían el mismo nombre"
+
+#. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
+#. caller wrote the token name.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Padding for {token} must be zeroes, e.g. {example}
+#, fuzzy
+msgid "error.naming.paddingNotZero"
+msgstr "El relleno de {token} debe ser de ceros, por ejemplo, {example}"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Format cannot contain path separators. Names are a single folder or file deep.
+#, fuzzy
+msgid "error.naming.pathSeparators"
+msgstr "El formato no puede contener separadores de ruta. Los nombres solo pueden tener un nivel de carpeta o archivo."
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Unknown token: {token}
+#, fuzzy
+msgid "error.naming.unknownToken"
+msgstr "Token desconocido: {token}"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Format has a "}" with no matching "{"
+#, fuzzy
+msgid "error.naming.unmatchedCloseBrace"
+msgstr "El formato contiene «}» sin una «{» correspondiente"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+#. English: Format has a "{" with no matching "}"
+#, fuzzy
+msgid "error.naming.unmatchedOpenBrace"
+msgstr "El formato contiene «{» sin una «}» correspondiente"
+
+#. Not an error: a group heading in the naming token picker (GET settings/naming/tokens).
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Chapter
+#, fuzzy
+msgid "naming.category.chapter"
+msgstr "Capítulo"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Series
+#, fuzzy
+msgid "naming.category.series"
+msgstr "Serie"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Series ID
+#, fuzzy
+msgid "naming.category.seriesId"
+msgstr "ID de serie"
+
+#. Every naming.token.*.description entry below is a token's explanation in the token picker
+#. (GET settings/naming/tokens), shown as SettingsController.NamingTokenDto.Description. The key
+#. is derived from the token's own normalized name (NamingTokens.Token), so it is expanded rather
+#. than matched literally in LocalizationCatalogTests; see the comment on Expand() there.
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: AniList id; blank when unmatched
+#, fuzzy
+msgid "naming.token.anilistid.description"
+msgstr "ID de AniList; en blanco si no hay coincidencia"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: BCP-47 language tag, e.g. en
+#, fuzzy
+msgid "naming.token.chapterlanguage.description"
+msgstr "Etiqueta de idioma BCP-47, por ejemplo, en"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: 24, or 10.5 for a sub-chapter. Blank when the chapter has no number
+#, fuzzy
+msgid "naming.token.chapternumber.description"
+msgstr "24 o 10.5 para un subcapítulo; en blanco si el capítulo no tiene número"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: " - " plus the chapter title, for a one-shot titled differently to its series. Blank otherwise
+#, fuzzy
+msgid "naming.token.chapteroneshotsuffix.description"
+msgstr "« - » seguido del título del capítulo, para un one-shot con un título distinto al de la serie; en blanco en los demás casos"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: The chapter's own title; blank when it just repeats the series title
+#, fuzzy
+msgid "naming.token.chaptertitle.description"
+msgstr "Título propio del capítulo; en blanco si repite el título de la serie"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Vol.3 Ch.24, or Ch.24 when the source has no volumes. Blank for a one-shot
+#, fuzzy
+msgid "naming.token.chaptervolchap.description"
+msgstr "Vol.3 Cap.24, o Cap.24 si la fuente no tiene volúmenes; en blanco para un one-shot"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: 3; blank when the source doesn't group into volumes
+#, fuzzy
+msgid "naming.token.chaptervolume.description"
+msgstr "3; en blanco si la fuente no agrupa los capítulos en volúmenes"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Kitsu id; blank when unmatched
+#, fuzzy
+msgid "naming.token.kitsuid.description"
+msgstr "ID de Kitsu; en blanco si no hay coincidencia"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: MyAnimeList id; blank when unmatched
+#, fuzzy
+msgid "naming.token.malid.description"
+msgstr "ID de MyAnimeList; en blanco si no hay coincidencia"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: MangaBaka id; blank when unmatched
+#, fuzzy
+msgid "naming.token.mangabakaid.description"
+msgstr "ID de MangaBaka; en blanco si no hay coincidencia"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: MangaDex UUID; blank when unmatched
+#, fuzzy
+msgid "naming.token.mangadexid.description"
+msgstr "UUID de MangaDex; en blanco si no hay coincidencia"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: MangaUpdates id; blank when unmatched
+#, fuzzy
+msgid "naming.token.mangaupdatesid.description"
+msgstr "ID de MangaUpdates; en blanco si no hay coincidencia"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Title with punctuation removed: letters, digits and spaces only
+#, fuzzy
+msgid "naming.token.seriescleantitle.description"
+msgstr "Título sin signos de puntuación: solo letras, números y espacios"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: The native-language title; blank when the provider has none
+#, fuzzy
+msgid "naming.token.seriesoriginaltitle.description"
+msgstr "Título en idioma original; en blanco si el proveedor no lo tiene"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: The sort title, e.g. leading article moved to the end
+#, fuzzy
+msgid "naming.token.seriessorttitle.description"
+msgstr "Título para ordenar, por ejemplo, con el artículo inicial al final"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: The series title as Maki has it
+#, fuzzy
+msgid "naming.token.seriestitle.description"
+msgstr "El título de la serie tal como aparece en Maki"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Title with the release year in brackets; just the title when the year is unknown
+#, fuzzy
+msgid "naming.token.seriestitleyear.description"
+msgstr "Título con el año de publicación entre corchetes; solo el título si se desconoce el año"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: manga, manhwa, manhua and so on; blank when unknown
+#, fuzzy
+msgid "naming.token.seriestype.description"
+msgstr "Manga, manhwa, manhua y demás; en blanco si se desconoce"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+#. English: Release year; blank when unknown
+#, fuzzy
+msgid "naming.token.seriesyear.description"
+msgstr "Año de publicación; en blanco si se desconoce"
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is missing maki.db. This is not a Maki backup.
+#, fuzzy
+msgid "error.system.backupMissingDb"
+msgstr "Falta maki.db en la copia de seguridad. No es una copia de Maki."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database in this backup is damaged or is not a Maki database. Nothing was changed.
+#, fuzzy
+msgid "error.system.backupInvalidDb"
+msgstr "La base de datos de esta copia de seguridad está dañada o no pertenece a Maki. No se cambió nada."
+
+#. {migration} is the unrecognised EF migration name the backup's manifest carries.
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
+#, fuzzy
+msgid "error.system.backupTooNew"
+msgstr "La copia de seguridad procede de una versión más reciente (esta compilación no conoce la migración \"{migration}\"). Actualiza Maki antes de restaurarla."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
+#, fuzzy
+msgid "error.system.backupUnreadable"
+msgstr "Este archivo no es una copia de seguridad de Maki legible. El archivo ZIP o su manifiesto está dañado. No se cambió nada."
+
+#: src/Maki.Api/Controllers/SystemController.cs
+#. English: No file uploaded.
+#, fuzzy
+msgid "error.system.noFileUploaded"
+msgstr "No se ha subido ningún archivo."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Another backup is being created right now. Try again in a moment.
+#, fuzzy
+msgid "error.system.backupInProgress"
+msgstr "Ya se está creando otra copia de seguridad. Inténtalo de nuevo dentro de un momento."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Could not create the backup. Check the server logs for details.
+#, fuzzy
+msgid "error.system.backupFailed"
+msgstr "No se pudo crear la copia de seguridad. Consulta los registros del servidor para ver los detalles."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -1163,6 +1993,19 @@ msgstr "Nuevos capítulos disponibles"
 #, fuzzy
 msgid "inbox.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# capítulo nuevo puesto en cola para descargar} many {# capítulos nuevos puestos en cola para descargar} other {# capítulos nuevos puestos en cola para descargar}}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: New chapters held back
+#, fuzzy
+msgid "inbox.chapters.held.title"
+msgstr "Capítulos nuevos retenidos"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
+msgid "inbox.chapters.held.body"
+msgstr "{series}: {count, plural, one {# capítulo nuevo encontrado de golpe y no descargado automáticamente} many {# capítulos nuevos encontrados de golpe y no descargados automáticamente} other {# capítulos nuevos encontrados de golpe y no descargados automáticamente}}. Descárgalos desde la página de la serie si son reales."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -1306,6 +2149,20 @@ msgstr "No hubo coincidencias de fuentes"
 #, fuzzy
 msgid "inbox.sourceMatch.none.body"
 msgstr "{series}: ninguna fuente coincidió, vincula una manualmente para descargar"
+
+#: src/Maki.Api/Services/ImportListService.cs
+#. English: Import list finished
+#, fuzzy
+msgid "inbox.importList.finished.title"
+msgstr "Lista de importación completada"
+
+#. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
+#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#: src/Maki.Api/Services/ImportListService.cs
+#. English: {tracker}: {added, plural, other {# added}}{requested, plural, =0 {} other {, # requested}}{skipped, plural, =0 {} other {, # skipped}}{errors, plural, =0 {} one {, # error} other {, # errors}}
+#, fuzzy
+msgid "inbox.importList.finished.body"
+msgstr "{tracker}: {added, plural, one {# añadida} many {# añadidas} other {# añadidas}}{requested, plural, =0 {} one {, # solicitada} many {, # solicitadas} other {, # solicitadas}}{skipped, plural, =0 {} one {, # omitida} many {, # omitidas} other {, # omitidas}}{errors, plural, =0 {} one {, # error} many {, # errores} other {, # errores}}"
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
@@ -1602,6 +2459,13 @@ msgstr "La fuente aprobada ya no tiene estas páginas"
 msgid "error.download.noMoreSources"
 msgstr "Todas las fuentes fallaron para este capítulo"
 
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: The source you picked could not provide this chapter
+#, fuzzy
+msgid "error.download.pickedSourceUnavailable"
+msgstr "La fuente que elegiste no pudo proporcionar este capítulo."
+
 #. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
 #. the person looking at their queue, where it is noise and can leak a path or a host name.
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -1663,6 +2527,20 @@ msgstr "Importación rechazada, la biblioteca se dejó tal como estaba"
 #, fuzzy
 msgid "error.download.torrentMissing"
 msgstr "El torrent nunca apareció en qBittorrent"
+
+#. Label before a series title in an outbound notification, e.g. "Series: Naruto".
+#: src/Maki.Api/Services/NotificationService.cs
+#. English: Series
+#, fuzzy
+msgid "notify.label.series"
+msgstr "Serie"
+
+#. Label before a chapter number in an outbound notification, e.g. "Chapter: 12".
+#: src/Maki.Api/Services/NotificationService.cs
+#. English: Chapter
+#, fuzzy
+msgid "notify.label.chapter"
+msgstr "Capítulo"
 
 #. Sent outward to Discord or a webhook, whose recipient is a channel rather than a person, so it
 #. renders in the instance's own language rather than anyone's preference.
@@ -1754,6 +2632,13 @@ msgstr "{series}: {count, plural, one {# capítulo nuevo} many {# capítulos nue
 msgid "notify.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# capítulo nuevo} many {# capítulos nuevos} other {# capítulos nuevos}} en cola para descargar"
 
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
+msgid "notify.chapters.held.body"
+msgstr "{series}: {count, plural, one {# capítulo nuevo encontrado de golpe y no descargado automáticamente} many {# capítulos nuevos encontrados de golpe y no descargados automáticamente} other {# capítulos nuevos encontrados de golpe y no descargados automáticamente}}. Descárgalos desde la página de la serie si son reales."
+
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded
 #, fuzzy
@@ -1780,6 +2665,80 @@ msgstr "Importación completada"
 #, fuzzy
 msgid "notify.import.completed.body"
 msgstr "Se importó {folder} a la biblioteca"
+
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: Series added
+#, fuzzy
+msgid "notify.series.added.title"
+msgstr "Serie añadida"
+
+#. {hasRequester} is "yes" when the add came from approving somebody's request, and {user} is their
+#. display name.
+#: src/Maki.Api/Services/SeriesCreationService.cs
+#. English: {series} was added to the library{hasRequester, select, yes {. Requested by {user}} other {}}
+#, fuzzy
+msgid "notify.series.added.body"
+msgstr "{series} se añadió a la biblioteca{hasRequester, select, yes {. Solicitada por {user}} other {}}"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series removed
+#, fuzzy
+msgid "notify.series.removed.title"
+msgstr "Serie eliminada"
+
+#. {filesDeleted} is "yes" when the series folder was deleted from disk along with it.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: {series} was removed from the library{filesDeleted, select, yes {, files deleted} other {, files kept on disk}}
+#, fuzzy
+msgid "notify.series.removed.body"
+msgstr "{series} se quitó de la biblioteca{filesDeleted, select, yes {, archivos eliminados} other {, archivos conservados en disco}}"
+
+#. Stored as the Note of a series request an import list files for a user who cannot add series.
+#. Rendered once in the instance default language, since admins read it on the Requests page.
+#. {tracker} is a site name and is not translated.
+#: src/Maki.Api/Services/ImportListService.cs
+#. English: Imported from {tracker} list
+#, fuzzy
+msgid "notify.importList.requestNote"
+msgstr "Importada desde la lista de {tracker}"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: New request
+#, fuzzy
+msgid "notify.request.submitted.title"
+msgstr "Nueva solicitud"
+
+#. {range} is "all", "from", "upTo" or "between"; {start} and {end} are chapter numbers.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: {user} requested {series}{range, select, from {, chapter {start} onwards} upTo {, up to chapter {end}} between {, chapters {start} to {end}} other {}}
+#, fuzzy
+msgid "notify.request.submitted.body"
+msgstr "{user} solicitó {series}{range, select, from {, a partir del capítulo {start}} upTo {, hasta el capítulo {end}} between {, capítulos {start} a {end}} other {}}"
+
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: Request resolved
+#, fuzzy
+msgid "notify.request.resolved.title"
+msgstr "Solicitud resuelta"
+
+#. {outcome} is "approved" or "rejected". {user} is who made the request.
+#: src/Maki.Api/Controllers/SeriesRequestsController.cs
+#. English: {outcome, select, approved {Approved} other {Declined}}: {series}, requested by {user}
+#, fuzzy
+msgid "notify.request.resolved.body"
+msgstr "{outcome, select, approved {Aprobada} other {Rechazada}}: {series}, solicitada por {user}"
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: No source matched
+#, fuzzy
+msgid "notify.sourceMatch.none.title"
+msgstr "No se encontró ninguna fuente"
+
+#: src/Maki.Api/Services/SourceMatchWorkerHostedService.cs
+#. English: No source matched {series}. Link one by hand from the series page.
+#, fuzzy
+msgid "notify.sourceMatch.none.body"
+msgstr "No se encontró ninguna fuente para {series}. Vincula una manualmente desde la página de la serie."
 
 #. The one outbound message with a person behind it: an admin pressed Test and is watching for it,
 #. so it renders in their language rather than the instance's. {name} is what they called the
@@ -1965,6 +2924,93 @@ msgstr "pendiente de lectura"
 msgid "scrobble.status.other"
 msgstr "otro"
 
+#. Confirmations shown after a tracker action on the series page.
+#. English: A sync is already running
+#, fuzzy
+msgid "scrobble.action.syncRunning"
+msgstr "Ya hay una sincronización en curso"
+
+#. English: Sync started
+#, fuzzy
+msgid "scrobble.action.syncStarted"
+msgstr "Sincronización iniciada"
+
+#. English: Matched to {remoteId}. It will sync on the next run.
+#, fuzzy
+msgid "scrobble.action.mapped"
+msgstr "Vinculado a {remoteId}. Se sincronizará en la próxima ejecución."
+
+#. English: Ignored
+#, fuzzy
+msgid "scrobble.action.ignored"
+msgstr "Ignorado"
+
+#. English: Disconnected
+#, fuzzy
+msgid "scrobble.action.disconnected"
+msgstr "Desconectado"
+
+#. The health workspace's own request failures. Admin-only.
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Invalid health thresholds or schedule
+#, fuzzy
+msgid "error.health.invalidThresholds"
+msgstr "Los umbrales o el horario de estado no son válidos"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Unknown timezone
+#, fuzzy
+msgid "error.health.unknownTimezone"
+msgstr "Zona horaria desconocida"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Preview is stale
+#, fuzzy
+msgid "error.health.previewStale"
+msgstr "La vista previa está desactualizada"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Preview is unavailable; rescan
+#, fuzzy
+msgid "error.health.previewUnavailable"
+msgstr "La vista previa no está disponible; vuelve a analizar"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Preview content changed
+#, fuzzy
+msgid "error.health.previewContentChanged"
+msgstr "El contenido de la vista previa ha cambiado"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Candidate preview is unavailable
+#, fuzzy
+msgid "error.health.candidatePreviewUnavailable"
+msgstr "La vista previa del candidato no está disponible"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Unknown finding state
+#, fuzzy
+msgid "error.health.unknownFindingState"
+msgstr "Estado del hallazgo desconocido"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Select between 1 and 500 files
+#, fuzzy
+msgid "error.health.selectUpTo500"
+msgstr "Selecciona entre 1 y 500 archivos"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Select between 1 and 100 files
+#, fuzzy
+msgid "error.health.selectUpTo100"
+msgstr "Selecciona entre 1 y 100 archivos"
+
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: Explicit confirmation is required
+#, fuzzy
+msgid "error.health.confirmationRequired"
+msgstr "Se requiere confirmación explícita"
+
 #. The health page's own checks. Admin-only. Each ran on a timer with nobody attached, so nothing
 #. here was worded at the moment it was found: the row stores a key and its values and is rendered
 #. when somebody opens the page.
@@ -2133,6 +3179,14 @@ msgstr "{job}: la última ejecución falló, consulta los registros"
 msgid "health.issue.mappingFailing"
 msgstr "{series}: falla la actualización desde {source}. {detail}"
 
+#. Replaces the per-series line above once several series fail on the same source, which usually
+#. means the site itself is down. {source} is the site's name.
+#: src/Maki.Api/Services/HealthCheckService.cs
+#. English: {source} looks unstable or unavailable: {count, plural, one {# series is} other {# series are}} failing to refresh from it
+#, fuzzy
+msgid "health.issue.sourceUnstable"
+msgstr "Parece que {source} está inestable o no disponible: no se pudo actualizar {count, plural, one {# serie} many {# series} other {# series}} desde esa fuente"
+
 #: src/Maki.Api/Services/HealthCheckService.cs
 #. English: Root folder is not reachable: {path}
 #, fuzzy
@@ -2171,6 +3225,12 @@ msgstr "{check} cambió a {status}"
 msgid "health.history.recovered"
 msgstr "{check} se recuperó"
 
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: PDFs are read in place and can't be repaired by replacement
+#, fuzzy
+msgid "health.repair.pdfUnsupported"
+msgstr "Los PDF se leen directamente y no se pueden reparar sustituyéndolos."
+
 #: src/Maki.Api/Services/HealthOperationService.cs
 #. English: Replacement requested for {count, plural, one {# chapter} other {# chapters}}
 #, fuzzy
@@ -2182,6 +3242,18 @@ msgstr "Se solicitó un reemplazo para {count, plural, one {# capítulo} many {#
 #, fuzzy
 msgid "health.history.operationCompleted"
 msgstr "{kind} completado: {path}"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Permanently deleted {path}; chapter records and Wanted flags preserved
+#, fuzzy
+msgid "health.history.deletedFile"
+msgstr "Se eliminó permanentemente {path}; se conservaron los registros de capítulos y las marcas de capítulos solicitados"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Cleared the record for missing {path}; chapter records and Wanted flags preserved
+#, fuzzy
+msgid "health.history.deletedMissing"
+msgstr "Se borró el registro del archivo ausente {path}; se conservaron los registros de capítulos y las marcas de capítulos solicitados"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}
@@ -2207,13 +3279,176 @@ msgstr "Importados {files, plural, one {# archivo} many {# archivos} other {# ar
 msgid "health.history.bulkDelete"
 msgstr "Eliminación masiva: {deleted, plural, one {# archivo eliminado} many {# archivos eliminados} other {# archivos eliminados}}, {refused} rechazados"
 
-#. What a scan found in a file. Most findings are worded by the analyzer itself and are not
-#. translated; this one is Maki's own.
+#. What a scan found in a file. ArchiveHealthAnalyzer is Maki's own code, so its problems are
+#. Maki-worded like everything else here, not third-party text.
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Byte-identical archives exist in the library
 #, fuzzy
 msgid "health.finding.duplicate"
 msgstr "En la biblioteca existen archivos idénticos byte por byte"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Archive is empty
+#, fuzzy
+msgid "health.finding.empty"
+msgstr "El archivo está vacío"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Archive exceeds analysis limits
+#, fuzzy
+msgid "health.finding.analysisLimits"
+msgstr "El archivo supera los límites de análisis"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Archive contains no reader pages
+#, fuzzy
+msgid "health.finding.noPages"
+msgstr "El archivo no contiene páginas para el lector"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Archive exceeds page limit
+#, fuzzy
+msgid "health.finding.pageLimit"
+msgstr "El archivo supera el límite de páginas"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Archive contains duplicate page names
+#, fuzzy
+msgid "health.finding.ambiguousNames"
+msgstr "El archivo contiene nombres de página duplicados"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: An entry exceeds the analysis limit
+#, fuzzy
+msgid "health.finding.entryTooLarge"
+msgstr "Una entrada supera el límite de análisis"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Expanded archive exceeds analysis limits
+#, fuzzy
+msgid "health.finding.expandedTooLarge"
+msgstr "El contenido extraído del archivo supera los límites de análisis"
+
+#. {entry} is a page's name inside the archive and is never translated.
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Entry size does not match the archive index: {entry}
+#, fuzzy
+msgid "health.finding.entrySizeMismatch"
+msgstr "El tamaño de la entrada no coincide con el índice del archivo: {entry}"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Entry checksum failed: {entry}
+#, fuzzy
+msgid "health.finding.entryChecksumFailed"
+msgstr "Falló la suma de comprobación de la entrada: {entry}"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: An image exceeds the pixel limit
+#, fuzzy
+msgid "health.finding.pixelLimit"
+msgstr "Una imagen supera el límite de píxeles"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Some pages use an unsupported image decoder
+#, fuzzy
+msgid "health.finding.unsupportedDecoder"
+msgstr "Algunas páginas usan un decodificador de imagen no compatible"
+
+#. {name} is a page's name inside the archive and is never translated.
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Cannot read {name}
+#, fuzzy
+msgid "health.finding.cannotRead"
+msgstr "No se puede leer {name}"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: File is missing
+#, fuzzy
+msgid "health.finding.missing"
+msgstr "Falta el archivo"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Analysis time limit reached
+#, fuzzy
+msgid "health.finding.timeLimit"
+msgstr "Se alcanzó el límite de tiempo del análisis"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Archive structure or entry data is corrupt
+#, fuzzy
+msgid "health.finding.corrupt"
+msgstr "La estructura del archivo o los datos de una entrada están dañados"
+
+#. A PDF has no zip index to disagree with itself; PDFium refused to open it or read its page count.
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: Document structure or page data is corrupt
+#, fuzzy
+msgid "health.finding.pdfCorrupt"
+msgstr "La estructura del documento o los datos de página están dañados"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: File could not be read; rescan when available
+#, fuzzy
+msgid "health.finding.unreadable"
+msgstr "No se pudo leer el archivo; vuelve a analizarlo cuando esté disponible"
+
+#: src/Maki.Core/Reading/ArchiveHealthAnalyzer.cs
+#. English: File cannot be accessed
+#, fuzzy
+msgid "health.finding.accessDenied"
+msgstr "No se puede acceder al archivo"
+
+#: src/Maki.Api/Services/HealthScanService.cs
+#. English: Archive is not linked to any chapter
+#, fuzzy
+msgid "health.finding.unlinked"
+msgstr "El archivo no está vinculado a ningún capítulo"
+
+#: src/Maki.Api/Services/HealthScanService.cs
+#. English: Stored size differs from the file on disk
+#, fuzzy
+msgid "health.finding.sizeMismatch"
+msgstr "El tamaño guardado no coincide con el del archivo en el disco"
+
+#. Several problems can share one finding (several bad entries in the same archive); {detail} is
+#. already rendered, each fragment joined with "; " at read time so a multi-problem finding still
+#. renders in the reader's own language.
+#: src/Maki.Api/Controllers/HealthController.cs
+#. English: {detail}
+#, fuzzy
+msgid "health.finding.joined"
+msgstr "{detail}"
+
+#. A file operation (replace or delete) that failed. Admin-only.
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: File deletion failed; file links retained
+#, fuzzy
+msgid "health.operation.error.deleteFailed"
+msgstr "Falló la eliminación del archivo; se conservaron los vínculos"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Deletion was interrupted before file removal; links retained
+#, fuzzy
+msgid "health.operation.error.deleteInterrupted"
+msgstr "La eliminación se interrumpió antes de borrar el archivo; se conservaron los vínculos"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Interrupted application rolled back; rescan before retrying
+#, fuzzy
+msgid "health.operation.error.applyInterrupted"
+msgstr "La aplicación se interrumpió y revirtió los cambios; vuelve a analizar antes de reintentar"
+
+#: src/Maki.Api/Services/HealthWorker.cs
+#. English: A replacement download failed. Request a new repair after reviewing Activity.
+#, fuzzy
+msgid "health.operation.error.downloadFailed"
+msgstr "Falló la descarga de reemplazo. Solicita una reparación nueva después de revisar Actividad."
+
+#: src/Maki.Api/Services/HealthWorker.cs
+#. English: Root folder no longer exists
+#, fuzzy
+msgid "health.operation.error.rootMissing"
+msgstr "La carpeta raíz ya no existe"
 
 #. Sent outward to Discord or a webhook when a check changes state.
 #: src/Maki.Api/Services/HealthMonitor.cs
@@ -2234,8 +3469,8 @@ msgstr "Estado recuperado"
 msgid "notify.health.recovered.body"
 msgstr "Resuelto: {detail}"
 
-#. The admin inbox copy of the same event. {check} is a check's id; {detail} is either its message
-#. key or, on a row from before the checks were keyed, its English.
+#. The admin inbox copy of the same event. {detail} is the check's own message, already rendered in
+#. the reader's language, or on a row from before the checks were keyed, its English.
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Health issue
 #, fuzzy
@@ -2243,10 +3478,10 @@ msgid "inbox.health.issue.title"
 msgstr "Problema de estado"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {check} needs attention
+#. English: {detail}
 #, fuzzy
 msgid "inbox.health.issue.body"
-msgstr "{check} necesita atención"
+msgstr "{detail}"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
 #. English: Health recovered
@@ -2255,10 +3490,10 @@ msgid "inbox.health.recovered.title"
 msgstr "Estado recuperado"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
-#. English: {check} is healthy again
+#. English: Resolved: {detail}
 #, fuzzy
 msgid "inbox.health.recovered.body"
-msgstr "{check} vuelve a estar correcto"
+msgstr "Resuelto: {detail}"
 
 #. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
@@ -2367,3 +3602,443 @@ msgstr "Hace bajar los títulos cercanos a este"
 #, fuzzy
 msgid "feedback.taste.unchanged"
 msgstr "Gustos sin cambios"
+
+#. {list} is titles joined in English regardless of locale (see RecentActivityRailService.Because);
+#. a title is a proper noun a translation would not touch, and there is no list-format primitive in
+#. this catalogue's ICU subset. Same key used for the single-seed grouped rail, where {list} is one
+#. title.
+#: src/Maki.Api/Services/RecentActivityRailService.cs
+#. English: Because you read {list}
+#, fuzzy
+msgid "discover.rail.becauseYouRead"
+msgstr "Porque leíste {list}"
+
+#. {list} as above; {count} is how many further seeds were not named.
+#: src/Maki.Api/Services/RecentActivityRailService.cs
+#. English: Because you read {list} and {count, plural, one {# more} other {# more}}
+#, fuzzy
+msgid "discover.rail.becauseYouReadMore"
+msgstr "Porque leíste {list} y {count, plural, one {# más} many {# más} other {# más}}"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Newly released
+#, fuzzy
+msgid "discover.rail.new"
+msgstr "Nuevos lanzamientos"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Most popular
+#, fuzzy
+msgid "discover.rail.popular"
+msgstr "Más populares"
+
+#. {genre} is a MangaBaka genre name, provider data, not translated.
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Popular in {genre}
+#, fuzzy
+msgid "discover.rail.popularInGenre"
+msgstr "Popular en {genre}"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Popular manhua
+#, fuzzy
+msgid "discover.rail.popularManhua"
+msgstr "Manhua populares"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Popular manhwa
+#, fuzzy
+msgid "discover.rail.popularManhwa"
+msgstr "Manhwa populares"
+
+#: src/Maki.Api/Services/ReaderCohortRailService.cs
+#. English: Readers like you also finished
+#, fuzzy
+msgid "discover.rail.readerCohorts"
+msgstr "Quienes leen como tú también terminaron"
+
+#: src/Maki.Api/Services/ReaderCohortRailService.cs
+#. English: From readers whose finished series look like yours.
+#, fuzzy
+msgid "discover.rail.readerCohortsSubtitle"
+msgstr "De lectores cuyas series terminadas se parecen a las tuyas."
+
+#: src/Maki.Api/Services/RecentActivityRailService.cs
+#. English: Based on your recent activity
+#, fuzzy
+msgid "discover.rail.recentActivity"
+msgstr "Según tu actividad reciente"
+
+#. {name} is a MangaBaka tag or genre name, provider data, not translated.
+#: src/Maki.Api/Services/SideInterestRailService.cs
+#. English: Another side of your library: {name}
+#, fuzzy
+msgid "discover.rail.sideInterest"
+msgstr "Otro lado de tu biblioteca: {name}"
+
+#. {titles} is up to two series titles joined in English, same trade as {list} above. {count} is
+#. how many titles in total share the interest.
+#: src/Maki.Api/Services/SideInterestRailService.cs
+#. English: A smaller thread shared by {count, plural, one {# title} other {# titles}}, including {titles}
+#, fuzzy
+msgid "discover.rail.sideInterestSubtitle"
+msgstr "Un tema más concreto que comparten {count, plural, one {# título} many {# títulos} other {# títulos}}, incluidos {titles}"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Top rated
+#, fuzzy
+msgid "discover.rail.topRated"
+msgstr "Mejor valorados"
+
+#: src/Maki.Api/Services/DiscoverService.cs
+#. English: Trending now
+#, fuzzy
+msgid "discover.rail.trending"
+msgstr "Tendencias actuales"
+
+#. MalReviewClient's fallback when MAL's page names no reviewer.
+#: src/Maki.Api/Services/MalReviewClient.cs
+#. English: Anonymous
+#, fuzzy
+msgid "discover.review.anonymousAuthor"
+msgstr "Anónimo"
+
+#. MAL's own sentiment classes, reworded for display; not MAL's own visible label text.
+#: src/Maki.Api/Services/MalReviewClient.cs
+#. English: Mixed Feelings
+#, fuzzy
+msgid "discover.review.mixedFeelings"
+msgstr "Opiniones encontradas"
+
+#: src/Maki.Api/Services/MalReviewClient.cs
+#. English: Not Recommended
+#, fuzzy
+msgid "discover.review.notRecommended"
+msgstr "No recomendado"
+
+#: src/Maki.Api/Services/MalReviewClient.cs
+#. English: Preliminary
+#, fuzzy
+msgid "discover.review.preliminary"
+msgstr "Preliminar"
+
+#: src/Maki.Api/Services/MalReviewClient.cs
+#. English: Recommended
+#, fuzzy
+msgid "discover.review.recommended"
+msgstr "Recomendado"
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+#. English: Needs more dated reading history. Kavita imports do not count, since they all carry one date.
+#, fuzzy
+msgid "discover.tasteInsights.driftNeedsHistory"
+msgstr "Necesita un historial de lectura más antiguo. Las importaciones de Kavita no cuentan, porque todas tienen la misma fecha."
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+#. English: Needs reading spread across at least two quarters.
+#, fuzzy
+msgid "discover.tasteInsights.driftNeedsSpread"
+msgstr "Necesita un historial de lectura que abarque al menos dos trimestres."
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+#. English: The recommendation index has not been built yet.
+#, fuzzy
+msgid "discover.tasteInsights.indexNotBuilt"
+msgstr "Aún no se ha creado el índice de recomendaciones."
+
+#: src/Maki.Api/Services/TasteInsightsService.cs
+#. English: Nothing recurs across enough of your reading to name a group yet.
+#, fuzzy
+msgid "discover.tasteInsights.noRecurringGroups"
+msgstr "Aún no hay suficientes patrones recurrentes en tus lecturas para formar un grupo."
+
+#. {min} is TasteGroupMining.MinPoints; {count} is how many series this view found.
+#: src/Maki.Api/Services/TasteInsightsService.cs
+#. English: Needs at least {min} series the catalogue knows about. So far this view has {count}.
+#, fuzzy
+msgid "discover.tasteInsights.notEnoughSeries"
+msgstr "Necesita al menos {min} series que estén en el catálogo. Esta vista tiene {count} por ahora."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: Already using this model.
+#, fuzzy
+msgid "install.embeddingModel.alreadyOn"
+msgstr "Este modelo ya está en uso."
+
+#: src/Maki.Metadata/Embedding/SeriesEmbeddingIndexer.cs
+#. English: Cancelled
+#, fuzzy
+msgid "install.embeddingModel.cancelled"
+msgstr "Cancelada"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: The embedding model failed to download.
+#, fuzzy
+msgid "install.embeddingModel.downloadFailed"
+msgstr "No se pudo descargar el modelo de incrustación."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: An indexing pass is running; try again once it finishes.
+#, fuzzy
+msgid "install.embeddingModel.indexingRunning"
+msgstr "Hay una tarea de indexación en curso; inténtalo de nuevo cuando termine."
+
+#: src/Maki.Metadata/Embedding/SeriesEmbeddingIndexer.cs
+#. English: Embedding model not available
+#, fuzzy
+msgid "install.embeddingModel.notAvailable"
+msgstr "El modelo de incrustación no está disponible"
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: A model switch is already in progress.
+#, fuzzy
+msgid "install.embeddingModel.switchInProgress"
+msgstr "Ya hay un cambio de modelo en curso."
+
+#: src/Maki.Metadata/Embedding/EmbeddingModelSwitcher.cs
+#. English: Switching…
+#, fuzzy
+msgid "install.embeddingModel.switching"
+msgstr "Cambiando…"
+
+#. Identical wording in CoReadInstaller and RecoGraphInstaller, so one key covers both.
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+#. English: The published graph uses a newer schema than this build reads.
+#, fuzzy
+msgid "install.graph.schemaNewer"
+msgstr "El grafo publicado usa un esquema más reciente que el que puede leer esta compilación."
+
+#. Identical wording in CoReadInstaller and RecoGraphInstaller, so one key covers both.
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+#. English: The published graph looks truncated; ignoring it.
+#, fuzzy
+msgid "install.graph.truncated"
+msgstr "El grafo publicado parece estar truncado; se ignora."
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+#. English: The local co-read graph is already current.
+#, fuzzy
+msgid "install.coread.current"
+msgstr "El grafo local de lecturas compartidas ya está actualizado."
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+#. English: The co-read channel is turned off.
+#, fuzzy
+msgid "install.coread.disabled"
+msgstr "El canal de lecturas compartidas está desactivado."
+
+#. {pairs} is the raw install count.
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+#. English: Installed {pairs, plural, one {# co-read pair} other {# co-read pairs}}
+#, fuzzy
+msgid "install.coread.installed"
+msgstr "Se instalaron {pairs, plural, one {# par de lecturas compartidas} many {# pares de lecturas compartidas} other {# pares de lecturas compartidas}}"
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+#. English: The co-read graph manifest is malformed.
+#, fuzzy
+msgid "install.coread.manifestMalformed"
+msgstr "El manifiesto del grafo de lecturas compartidas no tiene un formato válido."
+
+#: src/Maki.Metadata/CoRead/CoReadInstaller.cs
+#. English: Could not read the co-read graph manifest.
+#, fuzzy
+msgid "install.coread.manifestUnavailable"
+msgstr "No se pudo leer el manifiesto del grafo de lecturas compartidas."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: The local index is already current.
+#, fuzzy
+msgid "install.prebuiltIndex.current"
+msgstr "El índice local ya está actualizado."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: Prebuilt index downloads are turned off.
+#, fuzzy
+msgid "install.prebuiltIndex.disabled"
+msgstr "Las descargas del índice precompilado están desactivadas."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: Embeddings are turned off.
+#, fuzzy
+msgid "install.prebuiltIndex.embeddingsDisabled"
+msgstr "Las incrustaciones están desactivadas."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An indexing pass is running; will retry later.
+#, fuzzy
+msgid "install.prebuiltIndex.indexingRunning"
+msgstr "Hay una tarea de indexación en curso; se volverá a intentar más tarde."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: An indexing pass started mid-download; discarded.
+#, fuzzy
+msgid "install.prebuiltIndex.indexingStartedMidDownload"
+msgstr "Se inició una tarea de indexación mientras se descargaba; se descartó."
+
+#. {rows} is the raw install count.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: Installed {rows, plural, one {# embedded series} other {# embedded series}}
+#, fuzzy
+msgid "install.prebuiltIndex.installed"
+msgstr "Se instalaron {rows, plural, one {# serie con vectores} many {# series con vectores} other {# series con vectores}}"
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: The prebuilt index manifest is malformed.
+#, fuzzy
+msgid "install.prebuiltIndex.manifestMalformed"
+msgstr "El manifiesto del índice precompilado no tiene un formato válido."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: Could not read the prebuilt index manifest.
+#, fuzzy
+msgid "install.prebuiltIndex.manifestUnavailable"
+msgstr "No se pudo leer el manifiesto del índice precompilado."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: The published index looks truncated; ignoring it.
+#, fuzzy
+msgid "install.prebuiltIndex.truncated"
+msgstr "El índice publicado parece estar truncado; se ignora."
+
+#. {published} and {needed} are both plain vector widths (integers), not translated.
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: The published index is {published}-dimensional; this build needs {needed}.
+#, fuzzy
+msgid "install.prebuiltIndex.wrongDimensions"
+msgstr "El índice publicado tiene {published} dimensiones; esta compilación necesita {needed}."
+
+#: src/Maki.Metadata/Embedding/PrebuiltIndexInstaller.cs
+#. English: The published index was built for a different embedding model.
+#, fuzzy
+msgid "install.prebuiltIndex.wrongModel"
+msgstr "El índice publicado se creó con otro modelo de incrustación."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: The local reader cohorts are already current.
+#, fuzzy
+msgid "install.readerCohorts.current"
+msgstr "Los grupos locales de lectores ya están actualizados."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: Reader cohorts are turned off.
+#, fuzzy
+msgid "install.readerCohorts.disabled"
+msgstr "Los grupos de lectores están desactivados."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: The published cohorts are an evaluation build, not a full one.
+#, fuzzy
+msgid "install.readerCohorts.evaluationBuild"
+msgstr "Los grupos publicados son una versión de evaluación, no una versión completa."
+
+#. {rows} is the raw install count.
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: Installed {rows, plural, one {# cohort row} other {# cohort rows}}
+#, fuzzy
+msgid "install.readerCohorts.installed"
+msgstr "Se instalaron {rows, plural, one {# fila de grupo de lectores} many {# filas de grupo de lectores} other {# filas de grupo de lectores}}"
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: The reader cohort manifest is malformed.
+#, fuzzy
+msgid "install.readerCohorts.manifestMalformed"
+msgstr "El manifiesto de grupos de lectores no tiene un formato válido."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: Could not read the reader cohort manifest.
+#, fuzzy
+msgid "install.readerCohorts.manifestUnavailable"
+msgstr "No se pudo leer el manifiesto de grupos de lectores."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: The published cohorts use a newer schema than this build reads.
+#, fuzzy
+msgid "install.readerCohorts.schemaNewer"
+msgstr "Los grupos publicados usan un esquema más reciente que el que puede leer esta compilación."
+
+#: src/Maki.Metadata/ReaderCohorts/ReaderCohortInstaller.cs
+#. English: The published cohorts look truncated; ignoring them.
+#, fuzzy
+msgid "install.readerCohorts.truncated"
+msgstr "Los grupos publicados parecen estar truncados; se ignoran."
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+#. English: The local co-recommendation graph is already current.
+#, fuzzy
+msgid "install.recoGraph.current"
+msgstr "El grafo local de recomendaciones compartidas ya está actualizado."
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+#. English: The co-recommendation channel is turned off.
+#, fuzzy
+msgid "install.recoGraph.disabled"
+msgstr "El canal de recomendaciones compartidas está desactivado."
+
+#. {pairs} is the raw install count.
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+#. English: Installed {pairs, plural, one {# co-recommendation pair} other {# co-recommendation pairs}}
+#, fuzzy
+msgid "install.recoGraph.installed"
+msgstr "Se instalaron {pairs, plural, one {# par de recomendaciones compartidas} many {# pares de recomendaciones compartidas} other {# pares de recomendaciones compartidas}}"
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+#. English: The co-recommendation graph manifest is malformed.
+#, fuzzy
+msgid "install.recoGraph.manifestMalformed"
+msgstr "El manifiesto del grafo de recomendaciones compartidas no tiene un formato válido."
+
+#: src/Maki.Metadata/RecoGraph/RecoGraphInstaller.cs
+#. English: Could not read the co-recommendation graph manifest.
+#, fuzzy
+msgid "install.recoGraph.manifestUnavailable"
+msgstr "No se pudo leer el manifiesto del grafo de recomendaciones compartidas."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: The local behavioural vectors are already current.
+#, fuzzy
+msgid "install.tasteVectors.current"
+msgstr "Los vectores de comportamiento locales ya están actualizados."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: The behavioural channel is turned off.
+#, fuzzy
+msgid "install.tasteVectors.disabled"
+msgstr "El canal de comportamiento está desactivado."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: The published vectors are an evaluation build.
+#, fuzzy
+msgid "install.tasteVectors.evaluationBuild"
+msgstr "Los vectores publicados son una versión de evaluación."
+
+#. {items} is the raw install count.
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: Installed {items, plural, one {# behavioural vector} other {# behavioural vectors}}
+#, fuzzy
+msgid "install.tasteVectors.installed"
+msgstr "Se instalaron {items, plural, one {# vector de comportamiento} many {# vectores de comportamiento} other {# vectores de comportamiento}}"
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: The behavioural vector manifest is malformed.
+#, fuzzy
+msgid "install.tasteVectors.manifestMalformed"
+msgstr "El manifiesto de vectores de comportamiento no tiene un formato válido."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: Could not read the behavioural vector manifest.
+#, fuzzy
+msgid "install.tasteVectors.manifestUnavailable"
+msgstr "No se pudo leer el manifiesto de vectores de comportamiento."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: The published vectors use a newer schema than this build reads.
+#, fuzzy
+msgid "install.tasteVectors.schemaNewer"
+msgstr "Los vectores publicados usan un esquema más reciente que el que puede leer esta compilación."
+
+#: src/Maki.Metadata/Taste/TasteVectorInstaller.cs
+#. English: The published vectors look truncated; ignoring them.
+#, fuzzy
+msgid "install.tasteVectors.truncated"
+msgstr "Los vectores publicados parecen estar truncados; se ignoran."

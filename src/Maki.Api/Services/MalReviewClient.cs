@@ -3,9 +3,18 @@ using System.Text.RegularExpressions;
 
 namespace Maki.Api.Services;
 
-/// <summary>A single reader review, surfaced on the Discover detail card.</summary>
+/// <summary>
+/// A single reader review, surfaced on the Discover detail card.
+/// <para>
+/// A null <see cref="Author"/> means "anonymous", and each of <see cref="Tags"/> is a catalogue
+/// key rather than display text: this client is a singleton caching reviews per MAL id across
+/// every caller for twelve hours (<see cref="CacheFor"/>), so it cannot render "Anonymous" or a
+/// sentiment label without freezing one language into the cache for everyone who hits it before it
+/// expires. The controller renders them with the caller's own <c>ILocalizer</c>.
+/// </para>
+/// </summary>
 public record MangaReview(
-    string Author,
+    string? Author,
     int? Score,
     string Text,
     string? Url,
@@ -122,7 +131,7 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
                 body = body[..MaxTextLength].TrimEnd() + "…";
             }
 
-            var author = FirstGroup(AuthorRegex().Match(block)) ?? "Anonymous";
+            var author = FirstGroup(AuthorRegex().Match(block));
             var date = FirstGroup(DateRegex().Match(block));
             var url = UrlRegex().Match(block) is { Success: true } u
                 ? "https://myanimelist.net/" + WebUtility.HtmlDecode(u.Groups[1].Value)
@@ -138,16 +147,16 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
             {
                 tags.Add(sent.Groups[1].Value switch
                 {
-                    "recommended" => "Recommended",
-                    "mixed-feelings" => "Mixed Feelings",
-                    "not-recommended" => "Not Recommended",
+                    "recommended" => "discover.review.recommended",
+                    "mixed-feelings" => "discover.review.mixedFeelings",
+                    "not-recommended" => "discover.review.notRecommended",
                     _ => sent.Groups[1].Value,
                 });
             }
 
             if (block.Contains("tag preliminary", StringComparison.Ordinal))
             {
-                tags.Add("Preliminary");
+                tags.Add("discover.review.preliminary");
             }
 
             reviews.Add(new MangaReview(author, score, body, url, date, tags));

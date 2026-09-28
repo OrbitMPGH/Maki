@@ -12,10 +12,9 @@ import {
   Modal,
   NumberInput,
   Pagination,
-  Paper,
-  ScrollArea,
   Select,
   SimpleGrid,
+  Skeleton,
   Stack,
   Switch,
   Table,
@@ -25,14 +24,11 @@ import {
   Title,
 } from '@mantine/core'
 import {
-  IconAlertTriangle,
-  IconArchive,
   IconBooks,
   IconChevronDown,
   IconClockPlay,
   IconDatabase,
   IconDownload,
-  IconFileAlert,
   IconFileImport,
   IconPlugConnected,
   IconPhotoScan,
@@ -57,13 +53,20 @@ import {
   type HealthOverview,
   type MatchCounterpart,
   type OperationDetail,
+  type SourceFailures,
   type UnlinkedMatch,
 } from '../api/health'
 import { PageHeader } from '../components/ui/PageHeader'
-import { StatTile } from '../components/ui/StatTile'
+import { Panel } from '../components/ui/Panel'
+import { TableSkeleton } from '../components/ui/TableSkeleton'
+import { FigureStrip } from '../components/ui/FigureStrip'
+import { StatusDot } from '../components/ui/StatusDot'
 import { formatDateTime, formatNumber } from '../format'
+import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -85,28 +88,83 @@ const CATEGORY_ICON: Record<string, Icon> = {
   job: IconClockPlay,
 }
 
-const color = (status: string) =>
-  status === 'error' || status === 'failed'
-    ? 'red'
-    : ['warning', 'partial', 'open'].includes(status)
-      ? 'yellow'
-      : ['healthy', 'complete', 'completed'].includes(status)
-        ? 'green'
-        : 'gray'
+const tone = (status: string) =>
+  status === 'error' || status === 'failed' || status === 'corrupt'
+    ? 'danger'
+    : ['warning', 'partial', 'open', 'review'].includes(status)
+      ? 'warn'
+      : ['healthy', 'complete', 'completed', 'resolved', 'ok'].includes(status)
+        ? 'ok'
+        : ['running', 'applying', 'deleting', 'downloading'].includes(status)
+          ? 'info'
+          : 'neutral'
+
+const color = (status: string) => `var(--${tone(status)})`
+
+/** The wire values HealthMonitor and the scan/operation services send. Anything else shows as sent. */
+const STATUS_LABEL: Record<string, MessageDescriptor> = {
+  healthy: msg`Healthy`,
+  ok: msg`OK`,
+  warning: msg`Warning`,
+  error: msg`Error`,
+  failed: msg`Failed`,
+  corrupt: msg`Corrupt`,
+  partial: msg`Partial`,
+  open: msg`Open`,
+  review: msg`Needs review`,
+  resolved: msg`Resolved`,
+  ignored: msg`Ignored`,
+  acknowledged: msg`Acknowledged`,
+  pending: msg`Pending`,
+  running: msg`Running`,
+  applying: msg`Applying`,
+  deleting: msg`Deleting`,
+  downloading: msg`Downloading`,
+  complete: msg`Complete`,
+  completed: msg`Completed`,
+  cancelled: msg`Cancelled`,
+}
 
 const bytes = (size: number, missing: string) =>
   size < 0 ? missing : `${(size / 1024 / 1024).toFixed(1)} MiB`
 
+/** HealthScanService's finding kinds, in the order the filter lists them. */
+const FINDING_LABEL: Record<string, MessageDescriptor> = {
+  missing: msg`Missing`,
+  empty: msg`Empty`,
+  corrupt: msg`Corrupt`,
+  noPages: msg`No pages`,
+  damagedImage: msg`Damaged image`,
+  duplicate: msg`Duplicate`,
+  unlinked: msg`Not linked`,
+  sizeMismatch: msg`Size mismatch`,
+  incomplete: msg`Incomplete`,
+  ambiguousNames: msg`Ambiguous names`,
+}
+
+const FINDING_STATES = ['open', 'acknowledged', 'ignored', 'resolved']
+
+/** What a history entry records, as HealthScanService/HealthOperationService/HealthMonitor tag it. */
+const HISTORY_KIND_LABEL: Record<string, MessageDescriptor> = {
+  scan: msg`Scan`,
+  repair: msg`Repair`,
+  delete: msg`Delete`,
+  job: msg`Job`,
+  transition: msg`Status change`,
+}
+
 function Status({ value }: { value: string }) {
+  const renderLabel = useLabel()
   return (
-    <Badge color={color(value)} variant="light">
-      {value}
-    </Badge>
+    <StatusDot tone={tone(value)} live={value === 'running'}>
+      {renderLabel(STATUS_LABEL[value] ?? value)}
+    </StatusDot>
   )
 }
 
 export default function HealthPage() {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') ?? 'overview'
   const overview = useHealthData<HealthOverview>()
@@ -117,7 +175,9 @@ export default function HealthPage() {
   const [kind, setKind] = useState<string | null>(null)
   const [state, setState] = useState<string | null>('open')
   const [page, setPage] = useState(1)
-  const [selected, setSelected] = useState<Set<number>>(new Set())
+  // Value is the file's displayed version at the moment it was selected, so a bulk delete can
+  // tell the server what the reviewer actually saw rather than trusting whatever is current now.
+  const [selected, setSelected] = useState<Map<number, string>>(new Map())
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteReport, setDeleteReport] = useState<DeleteReport | null>(null)
   const [historyPage, setHistoryPage] = useState(1)
@@ -145,11 +205,11 @@ export default function HealthPage() {
   const refilter = (apply: () => void) => {
     apply()
     setPage(1)
-    setSelected(new Set())
+    setSelected(new Map())
   }
   const bulk = (path: string, body: object) =>
-    action.mutate({ path, body }, { onSuccess: () => setSelected(new Set()) })
-  const ids = [...selected]
+    action.mutate({ path, body }, { onSuccess: () => setSelected(new Map()) })
+  const ids = [...selected.keys()]
   const pageIds = files.data?.items.map((f) => f.id) ?? []
   const error = overview.error ?? files.error ?? operations.error ?? history.error ?? action.error
   // Acknowledged checks are still issues, but they are issues someone has already decided about,
@@ -161,8 +221,9 @@ export default function HealthPage() {
   const failedCount = deleteReport?.failures.length ?? 0
 
   return (
-    <>
+    <SurfaceFrame pageStyle="operational" className="health-surface">
       <PageHeader
+        compact
         title={t`Health`}
         description={t`System checks and reviewed library maintenance.`}
         actions={
@@ -214,27 +275,18 @@ export default function HealthPage() {
       />
 
       {error && (
-        <Alert color="red" mb="lg">
+        <Alert color="var(--danger)" mb="lg">
           {error.message}
         </Alert>
       )}
-      {overview.isPending && <Loader mb="lg" />}
-
-      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" mb="lg">
-        <StatTile
-          label={t`System issues`}
-          value={issues}
-          icon={IconAlertTriangle}
-          accent={issues > 0 ? 'danger' : 'ok'}
-        />
-        <StatTile
-          label={t`Open file findings`}
-          value={overview.data?.openFindings ?? 0}
-          icon={IconFileAlert}
-          accent={(overview.data?.openFindings ?? 0) > 0 ? 'warn' : 'ok'}
-        />
-        <StatTile label={t`Archives inventoried`} value={overview.data?.files ?? 0} icon={IconArchive} accent="info" />
-      </SimpleGrid>
+      <FigureStrip
+        loading={overview.isPending}
+        figures={[
+          { label: t`System issues`, value: issues, tone: 'danger' },
+          { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
+          { label: t`Archives inventoried`, value: overview.data?.files ?? 0 },
+        ]}
+      />
 
       {overview.data?.scans
         .filter((s) => ['pending', 'running'].includes(s.status))
@@ -259,12 +311,17 @@ export default function HealthPage() {
           )
         })}
       {partialScanError && (
-        <Alert color="yellow" mb="lg">
+        <Alert color="var(--warn)" mb="lg">
           <Trans>Last partial scan: {partialScanError}</Trans>
         </Alert>
       )}
 
-      <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? 'overview' })}>
+      <Tabs
+        value={tab}
+        onChange={(value) => setParams({ tab: value ?? 'overview' })}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
+      >
         <Tabs.List>
           <Tabs.Tab value="overview">
             <Trans>Overview</Trans>
@@ -280,17 +337,17 @@ export default function HealthPage() {
           </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="overview" pt="lg">
+        <Tabs.Panel value="overview">
           <div className="health-overview">
-            <ChecksPanel checks={overview.data?.checks ?? []} run={run} />
+            <ChecksPanel checks={overview.data?.checks ?? []} loading={overview.isPending} run={run} />
             <CachePanel />
             <OptionsPanel />
           </div>
         </Tabs.Panel>
 
-        <Tabs.Panel value="files" pt="lg">
+        <Tabs.Panel value="files">
           <Stack>
-            <Group>
+            <Group className="health-filter-rail">
               <TextInput
                 placeholder={t`Search file paths`}
                 aria-label={t`Search file paths`}
@@ -309,29 +366,21 @@ export default function HealthPage() {
                 clearable
                 value={kind}
                 onChange={(v) => refilter(() => setKind(v))}
-                data={[
-                  'missing',
-                  'empty',
-                  'corrupt',
-                  'noPages',
-                  'damagedImage',
-                  'duplicate',
-                  'unlinked',
-                  'sizeMismatch',
-                  'incomplete',
-                ]}
+                data={Object.entries(FINDING_LABEL)
+                  .filter(([value]) => value !== 'ambiguousNames')
+                  .map(([value, label]) => ({ value, label: renderLabel(label) }))}
               />
               <Select
                 placeholder={t`All states`}
                 clearable
                 value={state}
                 onChange={(v) => refilter(() => setState(v))}
-                data={['open', 'acknowledged', 'ignored', 'resolved']}
+                data={FINDING_STATES.map((value) => ({ value, label: renderLabel(STATUS_LABEL[value]) }))}
               />
             </Group>
 
             {selectedCount > 0 && (
-              <Paper withBorder radius="md" p="xs" className="health-bulk-bar">
+              <Panel p="xs" className="health-bulk-bar">
                 <Text size="sm" fw={600} className="tnum">
                   <Trans>{selectedCount} selected</Trans>
                 </Text>
@@ -379,22 +428,22 @@ export default function HealthPage() {
                   ))}
                   <Button
                     size="xs"
-                    color="red"
+                    color="var(--danger)"
                     variant="light"
                     leftSection={<IconTrash size={14} />}
                     onClick={() => setDeleteOpen(true)}
                   >
                     <Trans>Delete</Trans>
                   </Button>
-                  <Button size="xs" variant="subtle" onClick={() => setSelected(new Set())}>
+                  <Button size="xs" variant="subtle" onClick={() => setSelected(new Map())}>
                     <Trans>Clear</Trans>
                   </Button>
                 </Group>
-              </Paper>
+              </Panel>
             )}
 
             {deleteReport && failedCount > 0 && (
-              <Alert color="red" withCloseButton onClose={() => setDeleteReport(null)}>
+              <Alert color="var(--danger)" withCloseButton onClose={() => setDeleteReport(null)}>
                 <Text size="sm" mb="xs">
                   <Trans>
                     {deletedCount} deleted, {failedCount} refused:
@@ -409,98 +458,100 @@ export default function HealthPage() {
             )}
 
             {files.isPending ? (
-              <Loader />
+              <TableSkeleton columns={5} />
             ) : (
               <>
-                <Table.ScrollContainer minWidth={720}>
-                  <Table striped highlightOnHover className="panel-table">
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th w={40}>
-                          <Checkbox
-                            aria-label={t`Select every file on this page`}
-                            checked={pageIds.length > 0 && pageIds.every((i) => selected.has(i))}
-                            indeterminate={
-                              pageIds.some((i) => selected.has(i)) && !pageIds.every((i) => selected.has(i))
-                            }
-                            onChange={(e) => {
-                              const checked = e.currentTarget.checked
-                              const next = new Set(selected)
-                              for (const i of pageIds) {
-                                if (checked) next.add(i)
-                                else next.delete(i)
-                              }
-                              setSelected(next)
-                            }}
-                          />
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Archive</Trans>
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Size</Trans>
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Analysis</Trans>
-                        </Table.Th>
-                        <Table.Th>
-                          <Trans>Findings</Trans>
-                        </Table.Th>
-                        <Table.Th />
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {files.data?.items.map((file) => {
-                        const { relativePath } = file
-                        return (
-                        <Table.Tr key={file.id} data-selected={selected.has(file.id) || undefined}>
-                          <Table.Td>
+                <Panel p={0} className="table-panel">
+                  <Table.ScrollContainer minWidth={720}>
+                    <Table highlightOnHover className="panel-table">
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th w={40}>
                             <Checkbox
-                              aria-label={t`Select ${relativePath}`}
-                              checked={selected.has(file.id)}
+                              aria-label={t`Select every file on this page`}
+                              checked={pageIds.length > 0 && pageIds.every((i) => selected.has(i))}
+                              indeterminate={
+                                pageIds.some((i) => selected.has(i)) && !pageIds.every((i) => selected.has(i))
+                              }
                               onChange={(e) => {
                                 const checked = e.currentTarget.checked
-                                const next = new Set(selected)
-                                if (checked) next.add(file.id)
-                                else next.delete(file.id)
+                                const next = new Map(selected)
+                                for (const file of files.data?.items ?? []) {
+                                  if (checked) next.set(file.id, file.version)
+                                  else next.delete(file.id)
+                                }
                                 setSelected(next)
                               }}
                             />
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" style={{ overflowWrap: 'anywhere' }}>
-                              {file.relativePath}
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                              {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>{bytes(file.size, t`Missing`)}</Table.Td>
-                          <Table.Td>
-                            <Status value={file.status} />
-                          </Table.Td>
-                          <Table.Td>
-                            <Group gap={4}>
-                              {file.findings.map((f) => (
-                                <Badge key={f.id} color={color(f.severity)} variant="light">
-                                  {f.kind}
-                                </Badge>
-                              ))}
-                            </Group>
-                          </Table.Td>
-                          <Table.Td>
-                            <Button size="xs" variant="default" onClick={() => setFileId(file.id)}>
-                              <Trans>Review</Trans>
-                            </Button>
-                          </Table.Td>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Archive</Trans>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Size</Trans>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Analysis</Trans>
+                          </Table.Th>
+                          <Table.Th>
+                            <Trans>Findings</Trans>
+                          </Table.Th>
+                          <Table.Th />
                         </Table.Tr>
-                        )
-                      })}
-                    </Table.Tbody>
-                  </Table>
-                </Table.ScrollContainer>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {files.data?.items.map((file) => {
+                          const { relativePath } = file
+                          return (
+                          <Table.Tr key={file.id} data-selected={selected.has(file.id) || undefined}>
+                            <Table.Td>
+                              <Checkbox
+                                aria-label={t`Select ${relativePath}`}
+                                checked={selected.has(file.id)}
+                                onChange={(e) => {
+                                  const checked = e.currentTarget.checked
+                                  const next = new Map(selected)
+                                  if (checked) next.set(file.id, file.version)
+                                  else next.delete(file.id)
+                                  setSelected(next)
+                                }}
+                              />
+                            </Table.Td>
+                            <Table.Td>
+                              <Text fz="var(--type-meta)" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
+                                {file.relativePath}
+                              </Text>
+                              <Text size="xs" c="var(--ink-3)">
+                                {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>{bytes(file.size, t`Missing`)}</Table.Td>
+                            <Table.Td>
+                              <Status value={file.status} />
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap={4}>
+                                {file.findings.map((f) => (
+                                  <Badge key={f.id} color={color(f.severity)} variant="light">
+                                    {renderLabel(FINDING_LABEL[f.kind] ?? f.kind)}
+                                  </Badge>
+                                ))}
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Button size="xs" variant="default" onClick={() => setFileId(file.id)}>
+                                <Trans>Review</Trans>
+                              </Button>
+                            </Table.Td>
+                          </Table.Tr>
+                          )
+                        })}
+                      </Table.Tbody>
+                    </Table>
+                  </Table.ScrollContainer>
+                </Panel>
                 {files.data?.items.length === 0 && (
-                  <Text c="dimmed">
+                  <Text c="var(--ink-3)">
                     <Trans>No files match these filters. Run a scan to inventory the library.</Trans>
                   </Text>
                 )}
@@ -514,12 +565,12 @@ export default function HealthPage() {
           </Stack>
         </Tabs.Panel>
 
-        <Tabs.Panel value="repairs" pt="lg">
+        <Tabs.Panel value="repairs">
           <Stack>
             {operations.data?.items.map((op) => {
               const { id: opId, kind: opKind } = op
               return (
-                <Paper withBorder radius="lg" p="md" key={op.id}>
+                <Panel p="md" key={op.id}>
                   <Group justify="space-between">
                     <div>
                       <Group>
@@ -532,7 +583,7 @@ export default function HealthPage() {
                         </Text>
                         <Status value={op.status} />
                       </Group>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" c="var(--ink-3)">
                         {op.error ?? formatDateTime(op.createdAt)}
                       </Text>
                     </div>
@@ -540,11 +591,11 @@ export default function HealthPage() {
                       <Trans>Review</Trans>
                     </Button>
                   </Group>
-                </Paper>
+                </Panel>
               )
             })}
             {operations.data?.items.length === 0 && (
-              <Text c="dimmed">
+              <Text c="var(--ink-3)">
                 <Trans>No repairs or deletions requested.</Trans>
               </Text>
             )}
@@ -556,14 +607,14 @@ export default function HealthPage() {
           </Stack>
         </Tabs.Panel>
 
-        <Tabs.Panel value="history" pt="lg">
+        <Tabs.Panel value="history">
           <Stack>
             {history.data?.items.map((entry) => (
               <Group key={entry.id} align="flex-start">
-                <Badge variant="light">{entry.kind}</Badge>
+                <Badge variant="light">{renderLabel(HISTORY_KIND_LABEL[entry.kind] ?? entry.kind)}</Badge>
                 <div>
                   <Text size="sm">{entry.message}</Text>
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" c="var(--ink-3)">
                     {formatDateTime(entry.createdAt)}
                   </Text>
                 </div>
@@ -604,10 +655,16 @@ export default function HealthPage() {
         pending={action.isPending}
         onConfirm={() =>
           action.mutate(
-            { path: '/deletions/bulk', body: { fileIds: ids, confirmed: true } },
+            {
+              path: '/deletions/bulk',
+              body: {
+                files: [...selected].map(([fileId, version]) => ({ fileId, version })),
+                confirmed: true,
+              },
+            },
             {
               onSuccess: (result) => {
-                setSelected(new Set())
+                setSelected(new Map())
                 setDeleteOpen(false)
                 setDeleteReport(result as unknown as DeleteReport)
               },
@@ -615,7 +672,7 @@ export default function HealthPage() {
           )
         }
       />
-    </>
+    </SurfaceFrame>
   )
 }
 
@@ -671,10 +728,10 @@ function BulkDeleteModal({
       title={title}
       centered
       size="lg"
-      scrollAreaComponent={ScrollArea.Autosize}
+      attributes={{ content: { 'data-edge': 'danger' } }}
     >
       <Stack gap="md">
-        <Alert color="red">
+        <Alert color="var(--danger)">
           <Trans>
             This permanently deletes <Plural value={count} one="the file" other="these files" /> from disk.
             Chapter records, Wanted flags and reading history are kept, so anything still wanted can be
@@ -682,7 +739,7 @@ function BulkDeleteModal({
             clears the record that still says their chapters are downloaded.
           </Trans>
         </Alert>
-        <Paper withBorder radius="md" p="sm">
+        <Panel p="sm">
           <Stack gap={4}>
             {named.map((path) => (
               <Text key={path} size="xs" c="var(--ink-3)" style={{ overflowWrap: 'anywhere' }}>
@@ -695,7 +752,7 @@ function BulkDeleteModal({
               </Text>
             )}
           </Stack>
-        </Paper>
+        </Panel>
         <Checkbox
           checked={confirmed}
           onChange={(e) => setConfirmed(e.currentTarget.checked)}
@@ -705,7 +762,7 @@ function BulkDeleteModal({
           <Button variant="default" onClick={close}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="red" disabled={!confirmed} loading={pending} onClick={onConfirm}>
+          <Button color="var(--danger-fill)" disabled={!confirmed} loading={pending} onClick={onConfirm}>
             <Trans>Delete permanently</Trans>
           </Button>
         </Group>
@@ -721,15 +778,30 @@ function BulkDeleteModal({
  * source cooldown and one per root folder, so a healthy instance shows around thirty green rows
  * and the two that matter are lost in them.
  */
-function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: string, body?: object) => void }) {
+function ChecksPanel({
+  checks,
+  loading,
+  run,
+}: {
+  checks: HealthCheck[]
+  loading: boolean
+  run: (path: string, body?: object) => void
+}) {
   const { t } = useLingui()
   const [showPassing, setShowPassing] = useState(false)
   const visible = showPassing ? checks : checks.filter((c) => ISSUE.includes(c.status))
   const categories = Array.from(new Set(visible.map((c) => c.category)))
   const totalChecks = checks.length
+  // Coloured only while something needs attention; a healthy system is the plain panel.
+  const unresolved = checks.filter((c) => ISSUE.includes(c.status) && !c.acknowledged)
+  const edge = unresolved.some((c) => tone(c.status) === 'danger')
+    ? 'danger'
+    : unresolved.length > 0
+      ? 'warn'
+      : undefined
 
   return (
-    <Paper className="health-area-checks" withBorder radius="lg" p="lg">
+    <Panel edge={edge} className="health-area-checks" p="lg">
       <Group justify="space-between" align="center" wrap="nowrap" mb="md">
         <Title order={3} fz={17}>
           <Trans>System checks</Trans>
@@ -742,13 +814,27 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
         />
       </Group>
 
-      {checks.length === 0 && (
+      {loading && (
+        <Stack gap="md" aria-hidden>
+          <Skeleton h={8} w={96} />
+          {[0, 1, 2].map((i) => (
+            <Group key={i} gap="lg" wrap="nowrap" align="flex-start">
+              <Skeleton h={10} w={64} />
+              <Stack gap={8} style={{ flex: 1 }}>
+                <Skeleton h={10} w={`${78 - i * 14}%`} />
+                <Skeleton h={8} w="36%" />
+              </Stack>
+            </Group>
+          ))}
+        </Stack>
+      )}
+      {!loading && checks.length === 0 && (
         <Alert>
           <Trans>No checks have run yet. Use Check now.</Trans>
         </Alert>
       )}
       {checks.length > 0 && visible.length === 0 && (
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>
             Everything is passing. Turn on Show passing to see all{' '}
             <Plural value={totalChecks} one="# check" other="# checks" />.
@@ -773,39 +859,108 @@ function ChecksPanel({ checks, run }: { checks: HealthCheck[]; run: (path: strin
               </Text>
             </Group>
             {rows.map((check) => (
-              <div className="health-check" key={check.id} data-acknowledged={check.acknowledged || undefined}>
-                <Status value={check.status} />
-                <div style={{ minWidth: 0 }}>
-                  <Text size="sm" c="var(--ink-2)">
-                    {check.message}
-                  </Text>
-                  <Text size="xs" c="var(--ink-4)" mt={2}>
-                    {formatDateTime(check.checkedAt)}
-                    {check.acknowledged && <Trans> · Acknowledged, hidden from the header badge</Trans>}
-                  </Text>
-                </div>
-                <div className="health-check-actions">
-                  {check.url && (
-                    <Button component={Link} to={check.url} size="xs" variant="subtle">
-                      <Trans>Open</Trans>
-                    </Button>
-                  )}
-                  {ISSUE.includes(check.status) && (
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
-                    >
-                      {check.acknowledged ? <Trans>Reopen</Trans> : <Trans>Acknowledge</Trans>}
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <CheckRow key={check.id} check={check} run={run} />
             ))}
           </div>
         )
       })}
-    </Paper>
+    </Panel>
+  )
+}
+
+/** Id prefix of HealthCheckService's grouped warning for a source failing on several series at once. */
+const SOURCE_CHECK = 'legacy:source:'
+
+function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body?: object) => void }) {
+  const [open, setOpen] = useState(false)
+  const source =
+    check.id.startsWith(SOURCE_CHECK) && ISSUE.includes(check.status) ? check.id.slice(SOURCE_CHECK.length) : null
+  const failures = useHealthData<SourceFailures>(`/sources/${source}`, source !== null)
+  const affected = failures.data?.series ?? []
+  const count = affected.length
+  const done = failures.data?.done ?? 0
+  const total = failures.data?.total ?? 0
+
+  return (
+    <div className="health-check" data-acknowledged={check.acknowledged || undefined}>
+      <Status value={check.status} />
+      <div style={{ minWidth: 0 }}>
+        <Text size="sm" c="var(--ink-2)">
+          {check.message}
+        </Text>
+        <Text size="xs" c="var(--ink-4)" mt={2}>
+          {formatDateTime(check.checkedAt)}
+          {check.acknowledged && <Trans> · Acknowledged, hidden from the header badge</Trans>}
+        </Text>
+        {source !== null && count > 0 && (
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            mt={4}
+            px={0}
+            rightSection={
+              <IconChevronDown size={12} style={{ transform: open ? 'rotate(180deg)' : undefined }} />
+            }
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? (
+              <Trans>Hide affected series</Trans>
+            ) : (
+              <Plural value={count} one="Show # affected series" other="Show # affected series" />
+            )}
+          </Button>
+        )}
+      </div>
+      <div className="health-check-actions">
+        {source !== null && (
+          <Button
+            size="xs"
+            variant="light"
+            leftSection={<IconRefresh size={14} />}
+            disabled={failures.data?.refreshing || count === 0}
+            onClick={() => run(`/sources/${source}/refresh`)}
+          >
+            {!failures.data?.refreshing ? (
+              <Trans>Refresh all</Trans>
+            ) : total > 0 ? (
+              <Trans>
+                Refreshing {done} of {total}
+              </Trans>
+            ) : (
+              <Trans>Refreshing</Trans>
+            )}
+          </Button>
+        )}
+        {check.url && (
+          <Button component={Link} to={check.url} size="xs" variant="subtle">
+            <Trans>Open</Trans>
+          </Button>
+        )}
+        {ISSUE.includes(check.status) && (
+          <Button
+            size="xs"
+            variant="subtle"
+            onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
+          >
+            {check.acknowledged ? <Trans>Reopen</Trans> : <Trans>Acknowledge</Trans>}
+          </Button>
+        )}
+      </div>
+      {source !== null && open && (
+        <div className="health-source-series">
+          {affected.map((m) => (
+            <div key={m.id}>
+              <Anchor component={Link} to={`/series/${m.seriesId}`} size="sm">
+                {m.title}
+              </Anchor>
+              <Text size="xs" c="var(--ink-4)" lineClamp={2}>
+                {m.error}
+              </Text>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -821,6 +976,7 @@ function FileReview({
   openOperation: (id: number) => void
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data, error } = useHealthData<FileDetail>(`/files/${id}`)
   const action = useHealthAction()
   // Automatic by default: the reviewer usually wants "get me a good copy", and picking a source by
@@ -838,10 +994,9 @@ function FileReview({
       title={t`Review archive`}
       size="min(1060px, 94vw)"
       centered
-      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Alert color="red">{(error ?? action.error)?.message}</Alert>}
+        {(error ?? action.error) && <Alert color="var(--danger)">{(error ?? action.error)?.message}</Alert>}
         {!data ? (
           <Loader />
         ) : (
@@ -857,8 +1012,8 @@ function FileReview({
           )}
           <div className="health-review">
             <div className="health-review-column">
-              <Paper withBorder radius="md" p="md">
-                <Text fw={600} style={{ overflowWrap: 'anywhere' }}>
+              <Panel p="md">
+                <Text fw={600} ff="monospace" style={{ overflowWrap: 'anywhere' }}>
                   {data.file.relativePath}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
@@ -905,17 +1060,17 @@ function FileReview({
                     </Button>
                   )}
                 </Group>
-              </Paper>
+              </Panel>
 
               {data.findings.map((f) => (
-                <Paper key={f.id} withBorder radius="md" p="md">
+                <Panel key={f.id} p="md">
                   <Group gap="sm" align="flex-start" wrap="nowrap">
                     <Status value={f.severity} />
                     <Text size="sm">{f.message}</Text>
                   </Group>
                   <Group mt="sm" gap="xs">
                     <Text size="xs" c="var(--ink-4)">
-                      {f.state}
+                      {renderLabel(STATUS_LABEL[f.state] ?? f.state)}
                     </Text>
                     {['acknowledged', 'ignored', 'open']
                       .filter((s) => s !== f.state)
@@ -938,11 +1093,11 @@ function FileReview({
                         </Button>
                       ))}
                   </Group>
-                </Paper>
+                </Panel>
               ))}
 
               {!data.analysis.verified && (
-                <Alert color="gray">
+                <Alert color="var(--neutral)">
                   <Trans>
                     This archive has only been indexed: what it says it holds is known, whether it still holds
                     it is not. Verifying reads every byte and checks it against the archive's own checksums. It
@@ -954,7 +1109,7 @@ function FileReview({
             </div>
 
             <div className="health-review-column">
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Title order={4} fz={15} mb="sm">
                   <Trans>Request replacement</Trans>
                 </Title>
@@ -1011,9 +1166,9 @@ function FileReview({
                     you approve application.
                   </Trans>
                 </Text>
-              </Paper>
+              </Panel>
 
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Title order={4} fz={15} mb="sm">
                   {gone ? <Trans>Clear the record</Trans> : <Trans>Remove archive</Trans>}
                 </Title>
@@ -1028,7 +1183,7 @@ function FileReview({
                   )}
                 </Text>
                 <Button
-                  color="red"
+                  color="var(--danger)"
                   variant="light"
                   fullWidth
                   leftSection={<IconTrash size={16} />}
@@ -1041,7 +1196,7 @@ function FileReview({
                 >
                   {gone ? <Trans>Review record removal</Trans> : <Trans>Review permanent deletion</Trans>}
                 </Button>
-              </Paper>
+              </Panel>
             </div>
           </div>
           </>
@@ -1072,18 +1227,37 @@ function UnlinkedPanel({
   action: ReturnType<typeof useHealthAction>
   openFile: (id: number) => void
 }) {
-  const { seriesId, seriesTitle, chapters, counterparts, label, recognized } = match
+  const { t } = useLingui()
+  const { seriesId, seriesTitle, chapters, counterparts, labelKind, number, volumeEnd, recognized } = match
   const chapterCount = chapters.length
-  const lowerLabel = label.toLowerCase()
+  // Its own inline wording rather than `label.toLowerCase()`: case is not a transformation that
+  // survives translation, and a language that capitalizes the noun regardless of position needs its
+  // own lower-case message.
+  const label =
+    labelKind === 'chapter'
+      ? t`Chapter ${number}`
+      : labelKind === 'volumes'
+        ? t`Volumes ${number}-${volumeEnd}`
+        : labelKind === 'volume'
+          ? t`Volume ${number}`
+          : t`Unrecognized name`
+  const lowerLabel =
+    labelKind === 'chapter'
+      ? t`chapter ${number}`
+      : labelKind === 'volumes'
+        ? t`volumes ${number}-${volumeEnd}`
+        : labelKind === 'volume'
+          ? t`volume ${number}`
+          : t`unrecognized name`
   const importable = seriesId != null && chapterCount > 0 && counterparts.length === 0
 
   return (
-    <Paper withBorder radius="md" p="md">
+    <Panel p="md">
       <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
         <Title order={4} fz={15}>
           <Trans>Not linked to any chapter</Trans>
         </Title>
-        <Badge variant="light" color="gray">
+        <Badge variant="light" color="var(--neutral)">
           {label}
         </Badge>
       </Group>
@@ -1111,7 +1285,7 @@ function UnlinkedPanel({
       )}
 
       {!recognized && (
-        <Alert color="yellow">
+        <Alert color="var(--warn)">
           <Trans>
             The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to
             the library's naming format and rescan, or link it by hand from the series' Files tab.
@@ -1120,7 +1294,7 @@ function UnlinkedPanel({
       )}
 
       {recognized && seriesId == null && (
-        <Alert color="yellow">
+        <Alert color="var(--warn)">
           <Trans>
             This archive is not inside any series folder in its root, so there is no series to import it into.
             Move it into the right folder and rescan, or use the Import page to bring in the folder it lives in.
@@ -1129,7 +1303,7 @@ function UnlinkedPanel({
       )}
 
       {recognized && seriesId != null && chapterCount === 0 && (
-        <Alert color="yellow">
+        <Alert color="var(--warn)">
           <Trans>
             {seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this
             archive.
@@ -1139,7 +1313,7 @@ function UnlinkedPanel({
 
       {importable && (
         <Stack gap="sm">
-          <Alert color="blue">
+          <Alert color="var(--info)">
             <Trans>
               No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and
               links it to the chapter.
@@ -1168,7 +1342,7 @@ function UnlinkedPanel({
 
       {counterparts.length > 0 && (
         <Stack gap="md">
-          <Alert color="yellow">
+          <Alert color="var(--warn)">
             <Trans>
               {label} already has a file. Compare the two before deciding: importing this archive links it
               alongside the existing one, it does not replace it. To swap them, delete the file you do not want
@@ -1186,7 +1360,7 @@ function UnlinkedPanel({
           ))}
         </Stack>
       )}
-    </Paper>
+    </Panel>
   )
 }
 
@@ -1250,7 +1424,7 @@ function CompareArchives({
   ]
 
   return (
-    <Paper withBorder radius="md" p="md">
+    <Panel p="md">
       <div className="health-compare">
         <div />
         <Text size="xs" fw={700} tt="uppercase" c="var(--ink-4)" style={{ letterSpacing: '0.05em' }}>
@@ -1275,13 +1449,13 @@ function CompareArchives({
       </div>
 
       {counterpart.contentHash != null && counterpart.contentHash === file.contentHash && (
-        <Alert color="yellow" mt="md">
+        <Alert color="var(--warn)" mt="md">
           <Trans>Byte-identical to the linked file. Importing gains nothing; delete one of them.</Trans>
         </Alert>
       )}
 
       {strip && analysis.pages.length !== counterpart.pages && (
-        <Alert color="gray" mt="md">
+        <Alert color="var(--neutral)" mt="md">
           {heights ? (
             drift <= 0.02 ? (
               <Trans>
@@ -1346,14 +1520,14 @@ function CompareArchives({
           </Group>
         </>
       ) : (
-        <Alert color="gray" mt="md">
+        <Alert color="var(--neutral)" mt="md">
           <Trans>
             The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then
             come back to compare them.
           </Trans>
         </Alert>
       )}
-    </Paper>
+    </Panel>
   )
 }
 
@@ -1373,18 +1547,17 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
       title={t`Operation #${id}`}
       size="min(1060px, 94vw)"
       centered
-      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Alert color="red">{(error ?? action.error)?.message}</Alert>}
+        {(error ?? action.error) && <Alert color="var(--danger)">{(error ?? action.error)?.message}</Alert>}
         {!data ? (
           <Loader />
         ) : (
           <div className="health-review">
             <div className="health-review-column">
-              {data.operation.error && <Alert color="red">{data.operation.error}</Alert>}
+              {data.operation.error && <Alert color="var(--danger)">{data.operation.error}</Alert>}
               {data.operation.kind === 'delete' ? (
-                <Alert color={data.file.size < 0 ? 'yellow' : 'red'}>
+                <Alert color={data.file.size < 0 ? 'var(--warn)' : 'var(--danger)'}>
                   {data.file.size < 0 ? (
                     <Trans>
                       This file is already gone from disk, so nothing is deleted. It drops the record that
@@ -1406,7 +1579,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                     const { chapterId } = candidate
                     const pageCount = candidate.analysis.pages.length
                     return (
-                      <Paper key={candidate.chapterId} withBorder radius="md" p="md">
+                      <Panel key={candidate.chapterId} p="md">
                         <Group justify="space-between" wrap="nowrap" mb="sm">
                           <Text fw={600}>
                             <Trans>
@@ -1421,17 +1594,20 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                           </Text>
                         ))}
                         <SimpleGrid cols={2}>
-                          {candidate.analysis.pages.slice(0, 4).map((p, index) => (
-                            <Image
-                              key={p.name}
-                              h={200}
-                              fit="contain"
-                              src={`/api/v1/health/operations/${id}/candidates/${candidate.chapterId}/pages/${index}`}
-                              alt={`Candidate page ${index + 1}`}
-                            />
-                          ))}
+                          {candidate.analysis.pages.slice(0, 4).map((p, index) => {
+                            const pageNumber = index + 1
+                            return (
+                              <Image
+                                key={p.name}
+                                h={200}
+                                fit="contain"
+                                src={`/api/v1/health/operations/${id}/candidates/${candidate.chapterId}/pages/${index}`}
+                                alt={t`Candidate page ${pageNumber}`}
+                              />
+                            )
+                          })}
                         </SimpleGrid>
-                      </Paper>
+                      </Panel>
                     )
                   })}
                 </>
@@ -1439,18 +1615,18 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
             </div>
 
             <div className="health-review-column">
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Status value={data.operation.status} />
-                <Text fw={600} mt="sm" style={{ overflowWrap: 'anywhere' }}>
+                <Text fw={600} mt="sm" ff="monospace" style={{ overflowWrap: 'anywhere' }}>
                   {data.file.relativePath}
                 </Text>
                 <Text size="sm" c="var(--ink-3)" mt={4}>
                   {bytes(data.file.size, t`Missing`)} ·{' '}
                   <Plural value={chaptersCount} one="# affected chapter" other="# affected chapters" />
                 </Text>
-              </Paper>
+              </Panel>
 
-              <Paper withBorder radius="md" p="md">
+              <Panel p="md">
                 <Stack gap="sm">
                   {data.operation.kind === 'repair' && data.requiresReset && (
                     <Checkbox
@@ -1473,7 +1649,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                         }
                       />
                       <Button
-                        color={data.operation.kind === 'delete' ? 'red' : 'brand'}
+                        color={data.operation.kind === 'delete' ? 'var(--danger)' : 'brand'}
                         loading={action.isPending}
                         disabled={!confirm || (data.operation.kind === 'repair' && data.requiresReset && !reset)}
                         onClick={() =>
@@ -1511,7 +1687,7 @@ function OperationReview({ id, close }: { id: number; close: () => void }) {
                       </Text>
                     )}
                 </Stack>
-              </Paper>
+              </Panel>
             </div>
           </div>
         )}
@@ -1530,12 +1706,12 @@ function OptionsPanel() {
   const update = (patch: Partial<HealthOptions>) => setDraft({ ...value, ...patch })
 
   return (
-    <Paper className="health-area-options" withBorder radius="lg" p="lg">
+    <Panel edge="strong" className="health-area-options" p="lg">
       <Stack>
         <Title order={3} fz={17}>
           <Trans>Health settings</Trans>
         </Title>
-        {action.error && <Alert color="red">{action.error.message}</Alert>}
+        {action.error && <Alert color="var(--danger)">{action.error.message}</Alert>}
         <Switch
           label={t`Analyze new files and run daily reconciliation`}
           checked={value.automaticScanning}
@@ -1590,7 +1766,7 @@ function OptionsPanel() {
           <Trans>Save health settings</Trans>
         </Button>
       </Stack>
-    </Paper>
+    </Panel>
   )
 }
 
@@ -1600,7 +1776,7 @@ function CachePanel() {
   const rebuild = useRebuildImageCache()
 
   return (
-    <Paper className="health-area-cache" withBorder radius="lg" p="lg">
+    <Panel className="health-area-cache" p="lg">
       <Stack>
         <Title order={3} fz={17}>
           <Trans>Image cache and backups</Trans>
@@ -1625,7 +1801,7 @@ function CachePanel() {
             ))}
           </div>
         )}
-        {(cache.error ?? rebuild.error) && <Alert color="red">{(cache.error ?? rebuild.error)?.message}</Alert>}
+        {(cache.error ?? rebuild.error) && <Alert color="var(--danger)">{(cache.error ?? rebuild.error)?.message}</Alert>}
         <Group gap="xs">
           <Button
             variant="default"
@@ -1639,6 +1815,6 @@ function CachePanel() {
           </Button>
         </Group>
       </Stack>
-    </Paper>
+    </Panel>
   )
 }

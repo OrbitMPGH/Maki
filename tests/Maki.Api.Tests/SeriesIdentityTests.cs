@@ -25,8 +25,18 @@ public sealed class SeriesIdentityTests : IDisposable
         new(_db.NewContext(), NullLogger<SeriesIdentityService>.Instance);
 
     private ActivityStatsService Activity() =>
-        new(_db.NewContext(), new FakeAppSettings(),
+        new(_db.NewContext(), new FakeAppSettings(), new NoStoredTimeZones(),
             new StoppedClock(new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)));
+
+    /// <summary>Nobody has a stored time zone here; callers fall back to their offset argument.</summary>
+    private sealed class NoStoredTimeZones : Maki.Core.Configuration.IUserSettingsStore
+    {
+        public Task<string?> GetAsync(int userId, string key, CancellationToken ct = default) =>
+            Task.FromResult<string?>(null);
+
+        public Task SetAsync(int userId, string key, string? value, CancellationToken ct = default) =>
+            Task.CompletedTask;
+    }
 
     private static readonly DateOnly Y26Start = new(2026, 1, 1);
     private static readonly DateOnly Y26End = new(2026, 12, 31);

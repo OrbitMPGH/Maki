@@ -1,7 +1,9 @@
-import { Card, Divider, Group, SegmentedControl, Stack, Switch, Text, Title } from '@mantine/core'
+import { Divider, Group, SegmentedControl, Stack, Switch, Text, Title } from '@mantine/core'
+import { Panel } from '../ui/Panel'
 import {
   INBOX_ADMIN_ONLY,
   INBOX_CATEGORIES,
+  INBOX_TYPE_DESCRIPTIONS,
   INBOX_TYPE_LABELS,
   useInboxPrefs,
   useSaveInboxPrefs,
@@ -15,7 +17,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 /**
  * Per-event switches for the in-app notification inbox.
  * <p>
- * Not to be confused with the Notifications card on the Integrations tab, which manages the
+ * Not to be confused with the Discord & webhooks card on the Integrations tab, which manages the
  * instance-wide Discord and webhook connections. Those are admin-only and unaffected by anything
  * here — the two systems are deliberately separate so a chat channel isn't flooded with one
  * person's achievements.
@@ -42,15 +44,12 @@ export function NotificationPrefsSection() {
   }
 
   return (
-    <Card withBorder radius="md" padding="lg">
+    <Panel>
       <Title order={4}>
         <Trans>Notifications</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mt={4}>
-        <Trans>
-          What lands in your bell. These are yours alone, they don't affect the Discord and webhook
-          connections on the Integrations tab.
-        </Trans>
+      <Text size="sm" c="var(--ink-3)" mt={4}>
+        <Trans>What lands in your bell. These settings only affect you.</Trans>
       </Text>
 
       <Switch
@@ -66,7 +65,7 @@ export function NotificationPrefsSection() {
       <Text size="sm" fw={500}>
         <Trans>Tell me about new chapters for</Trans>
       </Text>
-      <Text size="xs" c="dimmed" mb="xs">
+      <Text size="xs" c="var(--ink-3)" mb="xs">
         <Trans>
           The starting point for every series. Any series can be set to something else from its own
           page, or for a whole selection at once from the Library's Select mode.
@@ -84,7 +83,7 @@ export function NotificationPrefsSection() {
       {categories.map((category) => (
         <div key={category.id}>
           <Divider my="md" />
-          <Text size="xs" fw={700} tt="uppercase" c="dimmed" mb="xs" style={{ letterSpacing: '0.08em' }}>
+          <Text size="xs" fw={700} tt="uppercase" c="var(--ink-3)" mb="xs" style={{ letterSpacing: '0.08em' }}>
             {renderLabel(category.label)}
           </Text>
           <Stack gap="xs">
@@ -92,18 +91,28 @@ export function NotificationPrefsSection() {
               // Belt and braces: the category flag already hides the System block from a reader,
               // but a type could be marked admin-only inside a mixed category later.
               .filter((type) => isAdmin || !INBOX_ADMIN_ONLY.includes(type))
-              .map((type) => (
-                <Group key={type} justify="space-between" wrap="nowrap" gap="md">
-                  <Text size="sm">{renderLabel(INBOX_TYPE_LABELS[type])}</Text>
-                  <Switch
-                    checked={prefs.types[type] ?? true}
-                    onChange={(e) => setType(type, e.currentTarget.checked)}
-                  />
-                </Group>
-              ))}
+              .map((type) => {
+                const description = INBOX_TYPE_DESCRIPTIONS[type]
+                return (
+                  <Group key={type} justify="space-between" wrap="nowrap" gap="md">
+                    <div>
+                      <Text size="sm">{renderLabel(INBOX_TYPE_LABELS[type])}</Text>
+                      {description && (
+                        <Text size="xs" c="var(--ink-3)">
+                          {renderLabel(description)}
+                        </Text>
+                      )}
+                    </div>
+                    <Switch
+                      checked={prefs.types[type] ?? true}
+                      onChange={(e) => setType(type, e.currentTarget.checked)}
+                    />
+                  </Group>
+                )
+              })}
           </Stack>
         </div>
       ))}
-    </Card>
+    </Panel>
   )
 }

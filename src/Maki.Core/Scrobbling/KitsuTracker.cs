@@ -313,51 +313,58 @@ public class KitsuTracker(
                 throw new TrackerException($"Kitsu request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 401 && auth && attempt == 0)
+            try
             {
-                var token = await tokens.GetAsync(userId, Name, ct);
-                if (token?.RefreshToken is not null)
+                if ((int)response.StatusCode == 401 && auth && attempt == 0)
                 {
-                    await RefreshAsync(userId, token.RefreshToken, ct);
+                    var token = await tokens.GetAsync(userId, Name, ct);
+                    if (token?.RefreshToken is not null)
+                    {
+                        await RefreshAsync(userId, token.RefreshToken, ct);
+                        continue;
+                    }
+
+                    await LoginAsync(userId, ct);
                     continue;
                 }
 
-                await LoginAsync(userId, ct);
-                continue;
-            }
-
-            if ((int)response.StatusCode == 429)
-            {
-                var wait = RetryAfter(response) ?? TimeSpan.FromSeconds(5);
-
-                // A second 429, or one asking for a wait long enough that sitting on it would stall
-                // the whole scrobble tick, becomes a tracker-wide cooldown instead of a sleep.
-                if (attempt > 0 || wait > MaxInlineWait)
+                if ((int)response.StatusCode == 429)
                 {
-                    throw Block($"Kitsu rate-limited {method} {path} (429)", wait);
+                    var wait = RetryAfter(response) ?? TimeSpan.FromSeconds(5);
+
+                    // A second 429, or one asking for a wait long enough that sitting on it would stall
+                    // the whole scrobble tick, becomes a tracker-wide cooldown instead of a sleep.
+                    if (attempt > 0 || wait > MaxInlineWait)
+                    {
+                        throw Block($"Kitsu rate-limited {method} {path} (429)", wait);
+                    }
+
+                    await Task.Delay(wait, ct);
+                    continue;
                 }
 
-                await Task.Delay(wait, ct);
-                continue;
-            }
+                var responseBody = await response.Content.ReadAsStringAsync(ct);
+                if (IsCloudflareChallenge(response, responseBody))
+                {
+                    throw Block($"Kitsu {method} {path} was Cloudflare-challenged");
+                }
 
-            var responseBody = await response.Content.ReadAsStringAsync(ct);
-            if (IsCloudflareChallenge(response, responseBody))
+                if ((int)response.StatusCode == 404)
+                {
+                    throw new TrackerEntryNotFoundException($"Kitsu {method} {path} not found (404)");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new TrackerException($"Kitsu API {method} {path} failed ({(int)response.StatusCode}): {Truncate(responseBody)}");
+                }
+
+                return responseBody.Length == 0 ? default : JsonDocument.Parse(responseBody).RootElement.Clone();
+            }
+            finally
             {
-                throw Block($"Kitsu {method} {path} was Cloudflare-challenged");
+                response.Dispose();
             }
-
-            if ((int)response.StatusCode == 404)
-            {
-                throw new TrackerEntryNotFoundException($"Kitsu {method} {path} not found (404)");
-            }
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new TrackerException($"Kitsu API {method} {path} failed ({(int)response.StatusCode}): {Truncate(responseBody)}");
-            }
-
-            return responseBody.Length == 0 ? default : JsonDocument.Parse(responseBody).RootElement.Clone();
         }
 
         throw new TrackerException($"Kitsu API {method} {path} failed after retry");
@@ -568,6 +575,138 @@ public class KitsuTracker(
         }
 
         return results;
+    }
+
+    private static IEnumerable<string> RemoteStatusesFor(ScrobbleStatus status) => status switch
+    {
+        ScrobbleStatus.Reading => ["current"],
+        ScrobbleStatus.Completed => ["completed"],
+        ScrobbleStatus.PlanToRead => ["planned"],
+        _ => ["on_hold", "dropped"],
+    };
+
+    /// <summary>
+    /// Paged by <c>page[offset]</c> until <c>links.next</c> disappears, rather than following that
+    /// link: it is an absolute URL and <see cref="RequestAsync"/> takes a path. The manga and its
+    /// mappings ride along in <c>included</c>, which is where the MAL and AniList ids come from.
+    /// </summary>
+    public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
+    {
+        if (statuses.Count == 0)
+        {
+            return [];
+        }
+
+        var remoteUserId = await RemoteUserIdAsync(userId, ct);
+        var statusFilter = string.Join(",", statuses.SelectMany(RemoteStatusesFor).Distinct());
+        const int pageSize = 500;
+        var entries = new List<RemoteListEntry>();
+        var seen = new HashSet<long>();
+        const int maxOffset = 100_000;
+        var truncated = false;
+        for (var offset = 0; offset < maxOffset; offset += pageSize)
+        {
+            var data = await RequestAsync(userId, HttpMethod.Get,
+                $"/library-entries?filter[userId]={remoteUserId}&filter[kind]=manga&filter[status]={statusFilter}" +
+                "&include=manga,manga.mappings&fields[libraryEntries]=status,manga" +
+                "&fields[manga]=canonicalTitle,mappings&fields[mappings]=externalSite,externalId" +
+                $"&page[limit]={pageSize}&page[offset]={offset}", auth: true, ct: ct);
+            if (!data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array ||
+                rows.GetArrayLength() == 0)
+            {
+                break;
+            }
+
+            var included = new Dictionary<(string Type, string Id), JsonElement>();
+            if (data.TryGetProperty("included", out var inc) && inc.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in inc.EnumerateArray())
+                {
+                    if (GetString(item, "type") is { } type && GetString(item, "id") is { } id)
+                    {
+                        included[(type, id)] = item;
+                    }
+                }
+            }
+
+            foreach (var row in rows.EnumerateArray())
+            {
+                var attrs = row.TryGetProperty("attributes", out var a) ? a : default;
+                var status = StatusToInternal.GetValueOrDefault(GetString(attrs, "status") ?? "", ScrobbleStatus.Other);
+                var mangaId = RelationshipIds(row, "manga").FirstOrDefault();
+                if (mangaId is null || !long.TryParse(mangaId, out var kitsuId) ||
+                    !statuses.Contains(status) || !seen.Add(kitsuId))
+                {
+                    continue;
+                }
+
+                long? malId = null, aniListId = null;
+                var title = "";
+                if (included.TryGetValue(("manga", mangaId), out var manga))
+                {
+                    title = manga.TryGetProperty("attributes", out var ma) ? GetString(ma, "canonicalTitle") ?? "" : "";
+                    foreach (var mappingId in RelationshipIds(manga, "mappings"))
+                    {
+                        if (!included.TryGetValue(("mappings", mappingId), out var mapping) ||
+                            !mapping.TryGetProperty("attributes", out var mapAttrs) ||
+                            !long.TryParse(GetString(mapAttrs, "externalId"), out var externalId))
+                        {
+                            continue;
+                        }
+
+                        switch (GetString(mapAttrs, "externalSite"))
+                        {
+                            case "myanimelist/manga":
+                                malId ??= externalId;
+                                break;
+                            case "anilist/manga":
+                                aniListId ??= externalId;
+                                break;
+                        }
+                    }
+                }
+
+                entries.Add(new RemoteListEntry(
+                    mangaId, status, title, AniListId: aniListId, MalId: malId, KitsuId: kitsuId));
+            }
+
+            var hasNext = data.TryGetProperty("links", out var links) && GetString(links, "next") is not null;
+            truncated = hasNext && offset + pageSize >= maxOffset;
+            if (!hasNext)
+            {
+                break;
+            }
+        }
+
+        if (truncated)
+        {
+            logger.LogWarning(
+                "Kitsu list for user {UserId} stopped at the {Max}-entry cap ({Count} entries); " +
+                "the rest of the list was not read",
+                userId, maxOffset, entries.Count);
+        }
+
+        return entries;
+    }
+
+    /// <summary>The ids in a JSON:API relationship's <c>data</c>, whether it is to-one or to-many.</summary>
+    private static IEnumerable<string> RelationshipIds(JsonElement resource, string relationship)
+    {
+        if (resource.ValueKind != JsonValueKind.Object ||
+            !resource.TryGetProperty("relationships", out var rels) || rels.ValueKind != JsonValueKind.Object ||
+            !rels.TryGetProperty(relationship, out var rel) || rel.ValueKind != JsonValueKind.Object ||
+            !rel.TryGetProperty("data", out var data))
+        {
+            return [];
+        }
+
+        return data.ValueKind switch
+        {
+            JsonValueKind.Object => GetString(data, "id") is { } id ? [id] : [],
+            JsonValueKind.Array => data.EnumerateArray().Select(d => GetString(d, "id")).OfType<string>().ToList(),
+            _ => [],
+        };
     }
 
     public string EntryUrl(string remoteId) => $"https://kitsu.app/manga/{remoteId}";

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
 using Maki.Core.Scrobbling;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
@@ -116,8 +117,14 @@ public class AnimeSignalSyncService(
             {
                 try
                 {
-                    await SyncUserAsync(userId, ct);
-                    completed++;
+                    var summary = await SyncUserAsync(userId, ct);
+                    // RunAsync reports a tracker failure in summary.Error rather than throwing, so a
+                    // non-throwing call is not the same as a completed sync - counting it here would
+                    // advance the 24-hour gate on the strength of an outage.
+                    if (summary.Error is null)
+                    {
+                        completed++;
+                    }
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
@@ -229,10 +236,10 @@ public class AnimeSignalSyncService(
         foreach (var source in sources)
         {
             var service = AnimeSignalSources.NameOf(source);
-            IReadOnlyList<AnimeListEntry> entries;
+            AnimeListResult result;
             try
             {
-                entries = await source.ListAnimeAsync(userId, ct);
+                result = await source.ListAnimeAsync(userId, ct);
             }
             catch (TrackerException ex)
             {
@@ -249,18 +256,35 @@ public class AnimeSignalSyncService(
             }
 
             fetchedAny = true;
+            var entries = result.Entries;
             fetched += entries.Count;
+
+            // The fetch above can take a while, and the reader can switch this tracker off while it
+            // is in flight. Re-checking here, right before anything is written, is what keeps a
+            // disabled tracker from being re-added for up to a day (ScrobbleController.SetPreferences
+            // deletes its rows the moment the reader flips the switch).
+            if (!await animeSources.EnabledForAsync(userId, service, ct))
+            {
+                var stale = await db.AnimeSignals
+                    .Where(x => x.UserId == userId && x.Service == service)
+                    .ToListAsync(ct);
+                if (stale.Count > 0)
+                {
+                    db.AnimeSignals.RemoveRange(stale);
+                    await db.SaveChangesAsync(ct);
+                    removed += stale.Count;
+                }
+
+                continue;
+            }
+
             var existing = await db.AnimeSignals
                 .Where(x => x.UserId == userId && x.Service == service)
                 .ToDictionaryAsync(x => x.AnimeId, ct);
 
             foreach (var entry in entries)
             {
-                // An unscored entry carries no opinion: it neither seeds (unscored Completed) nor
-                // avoids (unscored Dropped), so it is not worth storing at all. Dropping it here
-                // rather than in AnimeSignalPolicy means a reader who later scores it just gets
-                // picked up on the next sync like any other new entry.
-                if (entry.Score is null)
+                if (!Worth(entry))
                 {
                     continue;
                 }
@@ -280,6 +304,11 @@ public class AnimeSignalSyncService(
                 // not a manga relation, and an existing row from before the column existed has to
                 // pick it up on an ordinary refresh or it never dedupes against the other tracker.
                 row.MalAnimeId = entry.MalAnimeId ?? row.MalAnimeId;
+                row.Format = entry.Format;
+                row.StartDate = entry.StartDate;
+                row.EndDate = entry.EndDate;
+                row.Episodes = entry.Episodes;
+                row.Progress = entry.Progress;
                 if (entry.RelationsResolved)
                 {
                     row.AniListMangaId = entry.AniListMangaId;
@@ -288,15 +317,21 @@ public class AnimeSignalSyncService(
                 }
             }
 
-            // A row the tracker no longer lists, or now lists unscored, is treated the same way: not
-            // stored. An empty or failed fetch threw above rather than reaching this.
-            var listed = entries.Where(e => e.Score is not null).Select(e => e.AnimeId).ToHashSet();
-            foreach (var row in existing.Where(x => !listed.Contains(x.Key)).Select(x => x.Value))
+            // A row the tracker no longer lists, or now lists in a way Worth rejects, is treated the
+            // same way: not stored. An empty or failed fetch threw above rather than reaching this.
+            // Skipped entirely when the read was truncated: a row missing from a page that stopped
+            // short of the provider's own cap is not evidence the reader removed it, and pruning on
+            // that would delete rows that just sort past the cut.
+            if (!result.Truncated)
             {
-                if (row.Id != 0)
+                var listed = entries.Where(Worth).Select(e => e.AnimeId).ToHashSet();
+                foreach (var row in existing.Where(x => !listed.Contains(x.Key)).Select(x => x.Value))
                 {
-                    db.AnimeSignals.Remove(row);
-                    removed++;
+                    if (row.Id != 0)
+                    {
+                        db.AnimeSignals.Remove(row);
+                        removed++;
+                    }
                 }
             }
 
@@ -404,6 +439,16 @@ public class AnimeSignalSyncService(
         return new AnimeSignalSyncSummary(fetched, matched, removed, looked,
             failed ? "one or more lists could not be read" : null, lookupFailures);
     }
+
+    /// <summary>
+    /// Which entries are stored. A score carries an opinion for the recommender, and an unscored
+    /// Completed or Watching entry still says how far the reader got, which the anime resume
+    /// callout needs. An unscored Planning, OnHold or Dropped entry says neither, so it is skipped.
+    /// <see cref="AnimeSignalGrouping.Group"/> drops unscored rows, so storing them does not seed.
+    /// </summary>
+    private static bool Worth(AnimeListEntry entry) =>
+        entry.Score is not null ||
+        entry.Status is AnimeWatchStatus.Completed or AnimeWatchStatus.Watching;
 
     /// <summary>
     /// A slow or unreachable provider, not a real failure of this pass: one MAL relation lookup can

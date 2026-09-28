@@ -33,6 +33,7 @@ public enum InboxEventType
     ImportFinished = 13,
     BackupFinished = 14,
     SourceMatchFinished = 15,
+    ImportListFinished = 16,
 }
 
 /// <summary>

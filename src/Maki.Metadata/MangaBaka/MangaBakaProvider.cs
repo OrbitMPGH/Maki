@@ -127,7 +127,7 @@ public class MangaBakaProvider(
         };
     }
 
-    internal static SeriesStatus MapStatus(string? status) => status?.ToLowerInvariant() switch
+    public static SeriesStatus MapStatus(string? status) => status?.ToLowerInvariant() switch
     {
         "releasing" => SeriesStatus.Ongoing,
         "completed" => SeriesStatus.Completed,

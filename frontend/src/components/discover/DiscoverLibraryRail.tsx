@@ -14,7 +14,7 @@ import { useCreateSeriesRequest } from '../../api/requests'
 import { useAuth } from '../../auth/AuthProvider'
 import type { RootFolder } from '../../api/types'
 import { RequestForm } from '../RequestForm'
-import { useLingui } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 
 /**
@@ -127,12 +127,12 @@ export function DiscoverLibraryRail({
           // warnings — it runs in the background now, and the series page reports on it.
           const warnings = series.warnings ?? []
           notifications.show({
-            title: `Added ${title}`,
+            title: t`Added ${title}`,
             message:
               warnings.length > 0
                 ? warnings.join(' ')
-                : 'Now in your library. Matching sources in the background.',
-            color: warnings.length > 0 ? 'yellow' : 'green',
+                : t`Now in your library. Matching sources in the background.`,
+            color: warnings.length > 0 ? 'var(--warn)' : 'var(--ok)',
             autoClose: warnings.length > 0 ? false : undefined,
           })
         },
@@ -159,9 +159,9 @@ export function DiscoverLibraryRail({
         onSuccess: () => {
           setRequested(true)
           notifications.show({
-            title: `Requested ${title}`,
-            message: 'An admin will see it on the Requests page.',
-            color: 'green',
+            title: t`Requested ${title}`,
+            message: t`An admin will see it on the Requests page.`,
+            color: 'var(--ok)',
           })
         },
       },
@@ -178,17 +178,17 @@ export function DiscoverLibraryRail({
       {seriesId != null ? (
         <>
           <Title order={3} fz={16}>
-            In your library
+            <Trans>In your library</Trans>
           </Title>
           <Button
             mt="md"
             fullWidth
-            color="teal"
+            color="var(--ok)"
             variant="light"
             rightSection={<IconArrowRight size={16} />}
             onClick={goToLibrary}
           >
-            {addedSeriesId != null ? 'Go to series' : 'View in library'}
+            {addedSeriesId != null ? <Trans>Go to series</Trans> : <Trans>View in library</Trans>}
           </Button>
         </>
       ) : canAdd && !can('Admin') && (rootFolders?.length ?? 0) === 0 ? (
@@ -197,11 +197,13 @@ export function DiscoverLibraryRail({
         // Say so rather than leaving a dead Select and a disabled button.
         <>
           <Title order={3} fz={16}>
-            Add to library
+            <Trans>Add to library</Trans>
           </Title>
-          <Alert color="yellow" variant="light" mt="md">
-            You can add series, but only an admin can choose a root folder. Ask one to add this
-            title, or to grant you admin.
+          <Alert color="var(--warn)" variant="light" mt="md">
+            <Trans>
+              You can add series, but only an admin can choose a root folder. Ask one to add this
+              title, or to grant you admin.
+            </Trans>
           </Alert>
         </>
       ) : canAdd ? (
@@ -266,26 +268,28 @@ export function DiscoverLibraryRail({
             loading={addSeries.isPending}
             disabled={!rootFolderId}
           >
-            Add
+            <Trans>Add</Trans>
           </Button>
         </Stack>
       ) : requested ? (
         <>
           <Title order={3} fz={16}>
-            Requested
+            <Trans>Requested</Trans>
           </Title>
-          <Alert color="green" variant="light" icon={<IconCheck size={16} />} mt="md">
-            An admin decides where it lands and what gets downloaded.
+          <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
+            <Trans>An admin decides where it lands and what gets downloaded.</Trans>
           </Alert>
         </>
       ) : (
         <>
           <Title order={3} fz={16}>
-            Ask for this
+            <Trans>Ask for this</Trans>
           </Title>
           <Text size="xs" c="var(--ink-4)" mt={6} style={{ lineHeight: 1.55 }}>
-            You can't add series yourself. An admin decides where it lands and what gets
-            downloaded.
+            <Trans>
+              You can't add series yourself. An admin decides where it lands and what gets
+              downloaded.
+            </Trans>
           </Text>
           <RequestForm
             dense
@@ -302,12 +306,12 @@ export function DiscoverLibraryRail({
       )}
 
       {addSeries.isError && (
-        <Alert color="red" variant="light" mt="sm">
+        <Alert color="var(--danger)" variant="light" mt="sm">
           {String(addSeries.error)}
         </Alert>
       )}
       {createRequest.isError && (
-        <Alert color="red" variant="light" mt="sm">
+        <Alert color="var(--danger)" variant="light" mt="sm">
           {String(createRequest.error)}
         </Alert>
       )}

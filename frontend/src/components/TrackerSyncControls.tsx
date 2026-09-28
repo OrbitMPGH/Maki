@@ -81,7 +81,7 @@ export function TrackerSyncControls({
           <Trans>Import ratings</Trans>
         </Button>
         {!connected && (
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Connect on the Scrobble page to import.</Trans>
           </Text>
         )}

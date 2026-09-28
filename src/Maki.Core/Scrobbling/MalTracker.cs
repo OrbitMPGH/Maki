@@ -1,8 +1,10 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace Maki.Core.Scrobbling;
 
@@ -14,7 +16,8 @@ public class MalTracker(
     IHttpClientFactory httpClientFactory,
     IAppSettings settings,
     IScrobbleTokenStore tokens,
-    ScrobbleTrackerOptions options) : IScrobbleTracker, IAnimeListSource
+    ScrobbleTrackerOptions options,
+    ILogger<MalTracker> logger) : IScrobbleTracker, IAnimeListSource
 {
     public const string HttpClientName = "scrobble";
 
@@ -200,27 +203,46 @@ public class MalTracker(
                 throw new TrackerException($"MAL request failed: {e.Message}", e);
             }
 
-            if ((int)response.StatusCode == 401 && attempt == 0)
+            try
             {
-                await RefreshAsync(userId, ct);
-                token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
-                continue;
-            }
+                if ((int)response.StatusCode == 401 && attempt == 0)
+                {
+                    await RefreshAsync(userId, ct);
+                    token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
+                    continue;
+                }
 
-            if ((int)response.StatusCode == 429)
+                if ((int)response.StatusCode == 429)
+                {
+                    var retryAfter = RetryAfterOf(response) ?? TimeSpan.FromSeconds(5);
+                    if (retryAfter > TimeSpan.FromSeconds(30))
+                    {
+                        throw new TrackerException(
+                            $"MAL API {method} {path} rate limited: Retry-After {retryAfter.TotalSeconds:F0}s exceeds the 30s cap");
+                    }
+
+                    await Task.Delay(retryAfter < TimeSpan.Zero ? TimeSpan.Zero : retryAfter, ct);
+                    continue;
+                }
+
+                var body = await response.Content.ReadAsStringAsync(ct);
+                if ((int)response.StatusCode == 404)
+                {
+                    throw new TrackerEntryNotFoundException($"MAL {method} {path} not found (404)");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new TrackerException(
+                        $"MAL API {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
+                }
+
+                return JsonDocument.Parse(body).RootElement.Clone();
+            }
+            finally
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), ct);
-                continue;
+                response.Dispose();
             }
-
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new TrackerException(
-                    $"MAL API {method} {path} failed ({(int)response.StatusCode}): {Truncate(body)}");
-            }
-
-            return JsonDocument.Parse(body).RootElement.Clone();
         }
 
         throw new TrackerException($"MAL API {method} {path} failed after retry");
@@ -306,7 +328,7 @@ public class MalTracker(
                     }
                 }
 
-                var id = node.GetProperty("id").GetInt32().ToString();
+                var id = node.GetProperty("id").GetInt32().ToString(CultureInfo.InvariantCulture);
                 results.Add(new ScrobbleCandidate(
                     id, GetString(node, "title") ?? "",
                     names.Where(n => !string.IsNullOrEmpty(n)).Cast<string>().ToList(),
@@ -315,6 +337,78 @@ public class MalTracker(
         }
 
         return results;
+    }
+
+    private static IEnumerable<string> RemoteStatusesFor(ScrobbleStatus status) => status switch
+    {
+        ScrobbleStatus.Reading => ["reading"],
+        ScrobbleStatus.Completed => ["completed"],
+        ScrobbleStatus.PlanToRead => ["plan_to_read"],
+        _ => ["on_hold", "dropped"],
+    };
+
+    /// <summary>
+    /// One pass per MAL status, since the list endpoint filters on a single status. Paged by offset
+    /// for the same reason as <see cref="ListAnimeAsync"/>: <c>paging.next</c> is an absolute URL.
+    /// </summary>
+    public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
+        int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
+    {
+        const int pageSize = 1000;
+        var entries = new List<RemoteListEntry>();
+        var seen = new HashSet<long>();
+        const int maxOffset = 50_000;
+        foreach (var remoteStatus in statuses.SelectMany(RemoteStatusesFor).Distinct())
+        {
+            var truncated = false;
+            for (var offset = 0; offset < maxOffset; offset += pageSize)
+            {
+                var data = await RequestAsync(userId, HttpMethod.Get,
+                    $"/users/@me/mangalist?status={remoteStatus}&fields=list_status&nsfw=true" +
+                    $"&limit={pageSize}&offset={offset}", null, ct);
+                if (data.TryGetProperty("data", out var rows) && rows.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var row in rows.EnumerateArray())
+                    {
+                        if (!row.TryGetProperty("node", out var node) || node.ValueKind != JsonValueKind.Object ||
+                            GetInt(node, "id") is not { } mangaId || !seen.Add(mangaId))
+                        {
+                            continue;
+                        }
+
+                        var listStatus = row.TryGetProperty("list_status", out var ls) && ls.ValueKind == JsonValueKind.Object
+                            ? GetString(ls, "status")
+                            : null;
+                        var status = StatusToInternal.GetValueOrDefault(listStatus ?? remoteStatus, ScrobbleStatus.Other);
+                        if (!statuses.Contains(status))
+                        {
+                            continue;
+                        }
+
+                        entries.Add(new RemoteListEntry(
+                            mangaId.ToString(CultureInfo.InvariantCulture), status, GetString(node, "title") ?? "", MalId: mangaId));
+                    }
+                }
+
+                var hasNext = data.TryGetProperty("paging", out var paging) && paging.ValueKind == JsonValueKind.Object &&
+                              GetString(paging, "next") is not null;
+                truncated = hasNext && offset + pageSize >= maxOffset;
+                if (!hasNext)
+                {
+                    break;
+                }
+            }
+
+            if (truncated)
+            {
+                logger.LogWarning(
+                    "MAL {Status} list for user {UserId} stopped at the {Max}-entry cap ({Count} entries); " +
+                    "the rest of the list was not read",
+                    remoteStatus, userId, maxOffset, entries.Count);
+            }
+        }
+
+        return entries;
     }
 
     public string EntryUrl(string remoteId) => $"https://myanimelist.net/manga/{remoteId}";
@@ -344,15 +438,17 @@ public class MalTracker(
     /// takes a path. Carries no relation data, so every entry comes back unresolved and the sync
     /// asks <see cref="RelatedMangaAsync"/> once per anime it has not asked about before.
     /// </summary>
-    public async Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default)
+    public async Task<AnimeListResult> ListAnimeAsync(int userId, CancellationToken ct = default)
     {
         const int pageSize = 1000;
         var entries = new List<AnimeListEntry>();
         var seen = new HashSet<long>();
-        for (var offset = 0; offset < 20_000; offset += pageSize)
+        const int maxOffset = 20_000;
+        var truncated = false;
+        for (var offset = 0; offset < maxOffset; offset += pageSize)
         {
             var data = await RequestAsync(userId, HttpMethod.Get,
-                $"/users/@me/animelist?fields=list_status&nsfw=true&limit={pageSize}&offset={offset}", null, ct);
+                $"/users/@me/animelist?fields=list_status,media_type,num_episodes,start_date,end_date&nsfw=true&limit={pageSize}&offset={offset}", null, ct);
             if (!data.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
             {
                 break;
@@ -378,16 +474,30 @@ public class MalTracker(
                         ? AnimeStatusToInternal.GetValueOrDefault(
                             GetString(ls, "status") ?? string.Empty, AnimeWatchStatus.Planning)
                         : AnimeWatchStatus.Planning,
-                    MalAnimeId: animeId));
+                    MalAnimeId: animeId,
+                    Format: AnimeListFields.NormalizeFormat(GetString(node, "media_type")),
+                    StartDate: AnimeListFields.ParseFullDate(GetString(node, "start_date")),
+                    EndDate: AnimeListFields.ParseFullDate(GetString(node, "end_date")),
+                    Episodes: PositiveOrNull(GetInt(node, "num_episodes")),
+                    Progress: hasStatus ? GetInt(ls, "num_episodes_watched") : null));
             }
 
+            truncated = count >= pageSize && offset + pageSize >= maxOffset;
             if (count < pageSize)
             {
                 break;
             }
         }
 
-        return entries;
+        if (truncated)
+        {
+            logger.LogWarning(
+                "MAL anime list for user {UserId} stopped at the {Max}-entry cap ({Count} entries); " +
+                "the rest of the list was not read",
+                userId, maxOffset, entries.Count);
+        }
+
+        return new AnimeListResult(entries, truncated);
     }
 
     /// <summary>
@@ -501,4 +611,21 @@ public class MalTracker(
     }
 
     private static string Truncate(string s) => s.Length > 300 ? s[..300] : s;
+
+    /// <summary>The wait a 429's <c>Retry-After</c> asks for, as either a delta or an absolute date. Null when absent.</summary>
+    private static TimeSpan? RetryAfterOf(HttpResponseMessage response)
+    {
+        var header = response.Headers.RetryAfter;
+        if (header is null)
+        {
+            return null;
+        }
+
+        if (header.Delta is { } delta)
+        {
+            return delta;
+        }
+
+        return header.Date is { } date ? date - DateTimeOffset.UtcNow : null;
+    }
 }

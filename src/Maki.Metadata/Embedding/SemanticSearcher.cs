@@ -240,8 +240,8 @@ public class SemanticSearcher(
     }
 
     /// <summary>
-    /// Exact titles lead and bypass catalogue preference filters. Content-rating and explicit
-    /// credit scopes still apply; other candidates retain their fused score and rating order.
+    /// Exact titles lead and bypass catalogue preference filters. Content-rating, the viewer's
+    /// never-show list and explicit credit scopes still apply; other candidates retain their fused score and rating order.
     /// </summary>
     internal static IReadOnlyList<long> RankCandidates(
         VectorIndex index, FilterPlan plan, Dictionary<int, double> fused,
@@ -258,6 +258,7 @@ public class SemanticSearcher(
             Statuses = null,
             Genres = null,
             Tags = null,
+            Rules = null,
             Impossible = false,
         };
         var titleDistances = new Dictionary<int, int>();

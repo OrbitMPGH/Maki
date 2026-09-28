@@ -18,6 +18,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconEyeOff,
+  IconKeyboard,
   IconLayoutGrid,
   IconMaximize,
   IconMinimize,
@@ -54,12 +55,14 @@ export default function ReaderToolbar({
   onToggleFullscreen,
   incognito,
   onIncognito,
+  readingCounted,
   bookmarked,
   onToggleBookmark,
   stripOpen,
   onToggleStrip,
   visible,
   onHold,
+  onShortcuts,
 }: {
   manifest: ReaderManifest
   page: number
@@ -77,6 +80,8 @@ export default function ReaderToolbar({
   onToggleFullscreen: () => void
   incognito: boolean
   onIncognito: (value: boolean) => void
+  /** Whether this chapter is being counted as read on screen; ReaderPage owns the rule. */
+  readingCounted: boolean
   bookmarked: boolean
   onToggleBookmark: () => void
   stripOpen: boolean
@@ -84,6 +89,7 @@ export default function ReaderToolbar({
   visible: boolean
   /** Keeps the auto-hide from pulling the chrome out from under an open menu or the cursor. */
   onHold: (held: boolean) => void
+  onShortcuts: () => void
 }) {
   const { t } = useLingui()
   const { scale } = prefs
@@ -131,16 +137,11 @@ export default function ReaderToolbar({
   }, [settingsOpen])
 
   // How much of the series is left, on the same footing as the series page: downloaded chapters as
-  // the denominator, completed ones as the numerator. The manifest's counts are a snapshot from
-  // when the chapter opened, so finishing this one on screen is added here rather than waited for —
-  // the condition mirrors the server's ("the last page means read"), so the optimistic number is
-  // the one the next manifest fetch comes back with. Incognito writes nothing, so it adds nothing.
-  const readingCounted = !incognito && !manifest.completed && page >= manifest.pageCount - 1
+  // the denominator, completed ones as the numerator.
   const chaptersRead = Math.min(
     manifest.seriesChapterCount,
     manifest.seriesReadCount + (readingCounted ? 1 : 0),
   )
-  const chaptersLeft = Math.max(0, manifest.seriesChapterCount - chaptersRead)
   // Only worth saying when the series is longer than what's on disk; otherwise it just repeats the
   // denominator next to it.
   const moreInSeries = manifest.seriesWantedCount > manifest.seriesChapterCount
@@ -176,26 +177,28 @@ export default function ReaderToolbar({
               {manifest.seriesTitle}
             </Text>
             <Group gap={8} wrap="nowrap" align="center">
-              <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+              <Text fz="xs" c="var(--ink-3)" style={{ whiteSpace: 'nowrap' }}>
                 {manifest.label}
               </Text>
               {manifest.seriesChapterCount > 0 && (
                 <Tooltip label={seriesProgressTooltip} withArrow zIndex={OVERLAY_Z}>
                   {/* The series meter, not the page one: the bottom bar's slider is this chapter. */}
-                  <Group gap={6} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
+                  <Group gap={6} wrap="nowrap" align="center" style={{ minWidth: 0 }}>
                     <Progress
                       value={(chaptersRead / manifest.seriesChapterCount) * 100}
                       color="var(--info)"
                       radius="xl"
                       size="xs"
                       w={64}
+                      style={{ flexShrink: 0 }}
                       aria-label={t`Chapters read in this series`}
                     />
-                    <Text fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }} className="tnum">
-                      {chaptersRead}/{seriesChapterCount}
-                      {' · '}
-                      {chaptersLeft > 0 ? (
-                        <Plural value={chaptersLeft} one="# left" other="# left" />
+                    <Text fz="xs" c="var(--ink-3)" truncate className="tnum">
+                      {/* Named, since the bottom bar's bare page count sits right under it. */}
+                      {chaptersRead < seriesChapterCount ? (
+                        <Trans>
+                          {chaptersRead}/{seriesChapterCount} chapters read
+                        </Trans>
                       ) : (
                         <Trans>all read</Trans>
                       )}
@@ -223,7 +226,7 @@ export default function ReaderToolbar({
           >
             <ActionIcon
               variant="subtle"
-              color={bookmarked ? 'yellow' : 'gray'}
+              color={bookmarked ? 'var(--warn)' : 'gray'}
               onClick={onToggleBookmark}
               aria-label={t`Toggle bookmark`}
             >
@@ -277,7 +280,7 @@ export default function ReaderToolbar({
           <Text
             visibleFrom="xs"
             fz="xs"
-            c="dimmed"
+            c="var(--ink-3)"
             style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
           >
             {page + 1} / {manifest.pageCount}
@@ -328,7 +331,7 @@ export default function ReaderToolbar({
             <Popover.Dropdown>
               <Stack gap="sm">
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Layout</Trans>
                   </Text>
                   <SegmentedControl
@@ -344,7 +347,7 @@ export default function ReaderToolbar({
                   />
                 </div>
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Direction</Trans>
                   </Text>
                   <SegmentedControl
@@ -359,7 +362,7 @@ export default function ReaderToolbar({
                   />
                 </div>
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Fit</Trans>
                   </Text>
                   <SegmentedControl
@@ -377,7 +380,7 @@ export default function ReaderToolbar({
                 </div>
                 {prefs.fit === 'original' && (
                   <div>
-                    <Text fz="xs" c="dimmed" mb={4}>
+                    <Text fz="xs" c="var(--ink-3)" mb={4}>
                       <Trans>Scale ({scale}%)</Trans>
                     </Text>
                     <Slider
@@ -391,7 +394,7 @@ export default function ReaderToolbar({
                   </div>
                 )}
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Background</Trans>
                   </Text>
                   <SegmentedControl
@@ -439,7 +442,7 @@ export default function ReaderToolbar({
                 />
 
                 <div>
-                  <Text fz="xs" c="dimmed" mb={4}>
+                  <Text fz="xs" c="var(--ink-3)" mb={4}>
                     <Trans>Reading profile</Trans>
                   </Text>
                   <Select
@@ -457,13 +460,26 @@ export default function ReaderToolbar({
                       { label: t`Just this series`, value: 'series' },
                     ]}
                   />
-                  <Text fz="xs" c="dimmed" mt={4}>
+                  <Text fz="xs" c="var(--ink-3)" mt={4}>
                     {editsAffect}
                   </Text>
                 </div>
               </Stack>
             </Popover.Dropdown>
           </Popover>
+
+          {/* No keyboard on a touch screen, so nothing for this to list there. */}
+          <Tooltip label={t`Keyboard shortcuts (?)`} withArrow zIndex={OVERLAY_Z}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              className="reader-shortcuts-button"
+              onClick={onShortcuts}
+              aria-label={t`Keyboard shortcuts`}
+            >
+              <IconKeyboard size={18} />
+            </ActionIcon>
+          </Tooltip>
 
           <Tooltip label={fullscreen ? t`Exit full screen` : t`Full screen`} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon

@@ -5,15 +5,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace Maki.Api.Controllers;
 
 /// <summary>
-/// Everything the Stats page reports on: a window of one reader's activity, and the composition of
-/// the library itself. Progression (levels, achievements, goals) is <c>ProgressController</c>,
-/// which is a resource controller with writes rather than a report.
+/// Everything the Stats page reports on: a window of one reader's activity and insights, where that
+/// reader stands over all time, and the composition of the library itself. Progression (levels,
+/// achievements, goals) is <c>ProgressController</c>, which is a resource controller with writes
+/// rather than a report.
 /// <para>
 /// No <c>[Authorize]</c>, so the fail-closed fallback policy applies and any signed-in user reaches
-/// their own numbers. The two halves scope differently on purpose: activity is per-user and reads
-/// another account only through <see cref="UserViewResolver"/> (Admin), while library composition
-/// has no user at all and leans on the root-folder query filters. Keep them apart — one handler
-/// holding both rules is how a scoping bug gets in.
+/// their own numbers. The two halves scope differently on purpose: activity, insights and standing
+/// are per-user and read another account only through <see cref="UserViewResolver"/> (Admin), while
+/// library composition has no user at all and leans on the root-folder query filters. Keep them
+/// apart: one handler holding both rules is how a scoping bug gets in.
+/// </para>
+/// <para>
+/// Insights and standing are separate calls from activity because activity is fetched up to three
+/// times per view (current window, previous window, Rewind year), and standing does not depend on
+/// the window at all.
 /// </para>
 /// </summary>
 [ApiController]
@@ -21,19 +27,58 @@ namespace Maki.Api.Controllers;
 public class StatsController(
     ILocalizer localizer,
     ActivityStatsService activity,
+    StatsInsightsService insights,
+    StatsStandingService standing,
     LibraryCompositionService library,
     UserViewResolver userView) : ControllerBase
 {
-    /// <summary>Distinct years with recorded activity, newest first — for the year picker.</summary>
+    // Keeps the day arithmetic (to + 1 day, shifted by the offset) inside DateTime's range.
+    private static readonly DateOnly EarliestDate = new(1900, 1, 1);
+    private static readonly DateOnly LatestDate = new(9998, 12, 31);
+
+    // 14 hours either side, the widest real UTC offset. int.MinValue would overflow Math.Abs.
+    private static bool InvalidOffset(int utcOffsetMinutes) =>
+        utcOffsetMinutes < -14 * 60 || utcOffsetMinutes > 14 * 60;
+
+    private IActionResult? InvalidWindow(DateOnly from, DateOnly to, int utcOffsetMinutes)
+    {
+        if (to < from)
+        {
+            return this.Fail(localizer, "error.stats.invalidDateRange");
+        }
+
+        if (from < EarliestDate || to > LatestDate)
+        {
+            return this.Fail(localizer, "error.stats.dateOutOfRange");
+        }
+
+        if (InvalidOffset(utcOffsetMinutes))
+        {
+            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Distinct years with recorded activity, newest first, bucketed in the reader's stored time
+    /// zone (or utcOffsetMinutes without one), for the year picker.
+    /// </summary>
     [HttpGet("years")]
-    public async Task<IActionResult> Years([FromQuery] int? userId, CancellationToken ct)
+    public async Task<IActionResult> Years(
+        [FromQuery] int utcOffsetMinutes, [FromQuery] int? userId, CancellationToken ct)
     {
         if (!userView.TryResolve(userId, out var target))
         {
             return Forbid();
         }
 
-        return Ok(await activity.YearsAsync(target, ct));
+        if (InvalidOffset(utcOffsetMinutes))
+        {
+            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
+        }
+
+        return Ok(await activity.YearsAsync(target, utcOffsetMinutes, ct));
     }
 
     /// <summary>
@@ -51,17 +96,50 @@ public class StatsController(
             return Forbid();
         }
 
-        if (to < from)
+        if (InvalidWindow(from, to, utcOffsetMinutes) is { } invalid)
         {
-            return this.Fail(localizer, "error.stats.invalidDateRange");
-        }
-
-        if (Math.Abs(utcOffsetMinutes) > 14 * 60)
-        {
-            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
+            return invalid;
         }
 
         return Ok(await activity.StatsAsync(target, from, to, utcOffsetMinutes, ct));
+    }
+
+    /// <summary>
+    /// When and how a reader reads over an inclusive local-date range: the weekday-by-hour rhythm,
+    /// sittings, the genre/type/era mix and bookmarks. Buckets in the reader's stored time zone when
+    /// they have one, else in utcOffsetMinutes (same semantics as <see cref="Activity"/>).
+    /// </summary>
+    [HttpGet("insights")]
+    public async Task<IActionResult> Insights(
+        [FromQuery] DateOnly from, [FromQuery] DateOnly to,
+        [FromQuery] int utcOffsetMinutes, [FromQuery] int? userId, CancellationToken ct)
+    {
+        if (!userView.TryResolve(userId, out var target))
+        {
+            return Forbid();
+        }
+
+        if (InvalidWindow(from, to, utcOffsetMinutes) is { } invalid)
+        {
+            return invalid;
+        }
+
+        return Ok(await insights.GetAsync(target, from, to, utcOffsetMinutes, ct));
+    }
+
+    /// <summary>
+    /// Where a reader stands over all time: behaviour, backlog, series in progress, returning
+    /// creators, ratings against the community's and series fully read. No window.
+    /// </summary>
+    [HttpGet("standing")]
+    public async Task<IActionResult> Standing([FromQuery] int? userId, CancellationToken ct)
+    {
+        if (!userView.TryResolve(userId, out var target))
+        {
+            return Forbid();
+        }
+
+        return Ok(await standing.GetAsync(target, ct));
     }
 
     /// <summary>

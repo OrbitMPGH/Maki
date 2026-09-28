@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { SettingsHelp } from './SettingsHelp'
 import {
   ActionIcon,
   Button,
-  Card,
   Group,
   NumberInput,
   Select,
@@ -24,6 +24,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { Panel } from '../ui/Panel'
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -100,16 +101,16 @@ export function ProgressSection() {
   const zone = browserTimeZone()
 
   return (
-    <Card withBorder radius="md" padding="md">
+    <Panel>
       <Title order={4}>
         <Trans>Progress & achievements</Trans>
       </Title>
-      <Text size="sm" c="dimmed" mb="md">
+      <SettingsHelp mb="md">
         <Trans>
           Levels, badges and streaks worked out from your reading history. All of it is derived, so
           switching this off stores nothing and switching it back on brings everything back.
         </Trans>
-      </Text>
+      </SettingsHelp>
 
       <Stack gap="md">
         <Switch
@@ -117,7 +118,6 @@ export function ProgressSection() {
           onChange={(e) => patch({ enabled: e.currentTarget.checked })}
           label={t`Track progress and achievements`}
           description={t`Off hides the Home section, the all-time tab on Stats, and unlock notifications.`}
-          aria-label={t`Track progress and achievements`}
         />
 
         <Switch
@@ -126,7 +126,6 @@ export function ProgressSection() {
           disabled={!settings.enabled}
           label={t`Show reading streaks`}
           description={t`One missed day a week is forgiven, and today never breaks a streak.`}
-          aria-label={t`Show reading streaks`}
         />
 
         <Switch
@@ -135,7 +134,6 @@ export function ProgressSection() {
           disabled={!settings.enabled}
           label={t`Compare with other users on this instance`}
           description={t`Shows your name, level, chapters read and streak to everyone who also opted in. Never anything about which series you read.`}
-          aria-label={t`Compare with other users on this instance`}
         />
 
         <Select
@@ -157,7 +155,7 @@ export function ProgressSection() {
           <Text fw={500} size="sm">
             <Trans>Reading goals</Trans>
           </Text>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Optional, and yours to set. Maki never adds one for you.</Trans>
           </Text>
 
@@ -169,7 +167,7 @@ export function ProgressSection() {
               </Text>
               <ActionIcon
                 variant="subtle"
-                color="red"
+                color="var(--danger)"
                 onClick={() => deleteGoal.mutate(goal.id)}
                 aria-label={t`Remove goal`}
               >
@@ -213,6 +211,6 @@ export function ProgressSection() {
           </Group>
         </Stack>
       </Stack>
-    </Card>
+    </Panel>
   )
 }

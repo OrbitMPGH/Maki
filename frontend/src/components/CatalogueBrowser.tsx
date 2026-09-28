@@ -3,13 +3,10 @@ import { useLocation } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
-import { Link } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
-  Badge,
   Button,
-  Card,
   Collapse,
   Group,
   SegmentedControl,
@@ -25,8 +22,9 @@ import {
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/icons-react'
+import { Panel } from './ui/Panel'
+import { TagChip } from './ui/TagChip'
 import {
-  BROWSE_SORTS,
   useDiscoverFeed,
   useDiscoverSearch,
   useDiscoverSearchDefaults,
@@ -42,11 +40,15 @@ import {
   CatalogueFilterActions,
   CatalogueFilters,
   filtersFromSpec,
+  useBrowseSortOptions,
   useCatalogueFilters,
 } from './CatalogueFilters'
+import { FilterMatchCount } from './CatalogueRules'
+import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
 import { RecommendationCard, RecommendationRow } from './ui/DiscoverRail'
+import { useWindowedRows, WINDOW_MIN_ITEMS } from './ui/useWindowedRows'
 import {
   POSTER_COLS_BY_DENSITY,
   ViewPrefsControls,
@@ -115,6 +117,7 @@ export function CatalogueBrowser({
   const { pathname } = useLocation()
   const memory = (field: string) => `catalogue@${pathname}:${field}`
   const { t } = useLingui()
+  const sortOptions = useBrowseSortOptions()
 
   const [query, setQuery] = usePageState(memory('query'), seededQuery ?? '')
   const [debounced] = useDebouncedValue(query, 400)
@@ -238,11 +241,13 @@ export function CatalogueBrowser({
     saveDefaults.mutate(catalogue.build(), {
       onSuccess: () =>
         notifications.show({
-          color: 'green',
+          color: 'var(--ok)',
           message: catalogue.isCustomized ? now`Saved as your default` : now`Default cleared`,
         }),
-      onError: (err) =>
-        notifications.show({ color: 'red', message: `Failed to save default: ${String(err)}` }),
+      onError: (err) => {
+        const detail = err instanceof Error ? err.message : String(err)
+        notifications.show({ color: 'var(--danger)', message: now`Failed to save default: ${detail}` })
+      },
     })
   }
 
@@ -270,7 +275,7 @@ export function CatalogueBrowser({
                 query ? (
                   <ActionIcon
                     variant="subtle"
-                    color="gray"
+                    color="var(--neutral)"
                     aria-label={t`Clear search`}
                     onClick={() => setQuery('')}
                   >
@@ -330,7 +335,7 @@ export function CatalogueBrowser({
           </Group>
 
           <Collapse expanded={filtersOpen}>
-            <Card withBorder radius="md" padding="md" mb="md">
+            <Panel edge="strong" p="md" mb="md">
               <Stack gap="md">
                 <CatalogueFilters controls={catalogue.controls} />
                 <CatalogueFilterActions
@@ -342,9 +347,22 @@ export function CatalogueBrowser({
                   onApply={() => setApplied(catalogue.build())}
                   saving={saveDefaults.isPending}
                   onSaveAsDefault={showSaveDefault ? saveAsDefault : undefined}
+                  extra={
+                    <>
+                      <PresetMenu
+                        current={catalogue.build}
+                        onLoad={(f) => {
+                          catalogue.hydrate(f)
+                          setApplied(f)
+                        }}
+                      />
+                      <HiddenContentButton />
+                      <FilterMatchCount filters={catalogue.build()} />
+                    </>
+                  }
                 />
               </Stack>
-            </Card>
+            </Panel>
           </Collapse>
         </>
       )}
@@ -356,16 +374,16 @@ export function CatalogueBrowser({
           <Group gap="xs" mb="sm" justify="space-between" wrap="wrap">
             <Group gap="xs">
               {searching ? (
-                <Text c="dimmed" size="sm">
+                <Text c="var(--ink-3)" size="sm">
                   <Plural value={items.length} one="# match" other="# matches" />
                 </Text>
               ) : (
-                <Text c="dimmed" size="sm">
+                <Text c="var(--ink-3)" size="sm">
                   <Trans>Browsing the catalogue</Trans>
                 </Text>
               )}
               {corrected && (
-                <Text size="sm" c="dimmed">
+                <Text size="sm" c="var(--ink-3)">
                   <Trans>
                     showing results for <strong>{corrected}</strong>
                   </Trans>
@@ -375,9 +393,9 @@ export function CatalogueBrowser({
                 <CreditChip key={`${credit.name}-${credit.roles.join()}`} credit={credit} />
               ))}
               {search.data?.mode === 'title' && mode === 'smart' && (
-                <Badge variant="light" color="gray" size="sm">
+                <TagChip size="sm" dot="var(--warn)">
                   <Trans>title match only, build the recommendation index for search by meaning</Trans>
-                </Badge>
+                </TagChip>
               )}
             </Group>
             <Group gap="xs">
@@ -387,7 +405,7 @@ export function CatalogueBrowser({
                   w={150}
                   value={sort}
                   onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-                  data={BROWSE_SORTS}
+                  data={sortOptions}
                   allowDeselect={false}
                   aria-label={t`Sort`}
                 />
@@ -397,7 +415,7 @@ export function CatalogueBrowser({
           </Group>
 
           {error && (
-            <Alert color="yellow" variant="light" mb="md">
+            <Alert color="var(--warn)" variant="light" mb="md">
               {String(error)}
             </Alert>
           )}
@@ -408,7 +426,6 @@ export function CatalogueBrowser({
 
           {!loading && items.length === 0 && (
             <EmptyState
-              icon={IconSearch}
               title={searching ? t`No matches` : t`Nothing here`}
               description={
                 appliedCount > 0
@@ -449,16 +466,10 @@ export function CatalogueBrowser({
 /** A creator the query resolved to, linking through to everything they made. */
 function CreditChip({ credit }: { credit: ResolvedCredit }) {
   return (
-    <Badge
-      variant="light"
-      size="sm"
-      leftSection={<IconUser size={11} />}
-      component={Link}
-      to={`/creator/${encodeURIComponent(credit.name)}`}
-      style={{ cursor: 'pointer' }}
-    >
+    <TagChip href={`/creator/${encodeURIComponent(credit.name)}`} size="sm">
+      <IconUser size={11} />
       {credit.name} ({credit.workCount})
-    </Badge>
+    </TagChip>
   )
 }
 
@@ -473,31 +484,39 @@ export function Results({
   seriesIdFor: (item: RecommendationItem) => number | null
   onOpen: (item: RecommendationItem) => void
 }) {
+  // Same windowing as Library; all three callers page up to the 600-item ceiling in the window scroll.
+  const windowed = useWindowedRows(items.length, items.length >= WINDOW_MIN_ITEMS)
+  const slice = items.slice(windowed.start, windowed.end)
+
   return prefs.viewMode === 'grid' ? (
-    <SimpleGrid cols={prefs.cols} spacing="md">
-      {items.map((item) => (
-        <RecommendationCard
-          key={item.providerId}
-          item={item}
-          inLibrarySeriesId={seriesIdFor(item)}
-          onOpen={onOpen}
-          reasonOverride={null}
-        />
-      ))}
-    </SimpleGrid>
+    <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
+      <SimpleGrid ref={windowed.innerRef} cols={prefs.cols} spacing="md">
+        {slice.map((item) => (
+          <RecommendationCard
+            key={item.providerId}
+            item={item}
+            inLibrarySeriesId={seriesIdFor(item)}
+            onOpen={onOpen}
+            reasonOverride={null}
+          />
+        ))}
+      </SimpleGrid>
+    </div>
   ) : (
-    <Stack gap="xs">
-      {items.map((item) => (
-        <RecommendationRow
-          key={item.providerId}
-          item={item}
-          inLibrarySeriesId={seriesIdFor(item)}
-          density={prefs.density}
-          onOpen={onOpen}
-          reasonOverride={null}
-        />
-      ))}
-    </Stack>
+    <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
+      <Stack ref={windowed.innerRef} gap="xs">
+        {slice.map((item) => (
+          <RecommendationRow
+            key={item.providerId}
+            item={item}
+            inLibrarySeriesId={seriesIdFor(item)}
+            density={prefs.density}
+            onOpen={onOpen}
+            reasonOverride={null}
+          />
+        ))}
+      </Stack>
+    </div>
   )
 }
 

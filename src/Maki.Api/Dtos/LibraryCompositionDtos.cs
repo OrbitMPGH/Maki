@@ -18,6 +18,12 @@ public record LibraryGrowthDto(string Bucket, int SeriesAdded, int Cumulative);
 
 public record SeriesSizeDto(int SeriesId, string Title, string? CoverUrl, int Files, long Bytes);
 
+/// <summary>Download queue health for one source over the trailing 30 days. See <see cref="LibraryCompositionDto.SourceReliability"/>.</summary>
+public record SourceReliabilityDto(string Name, int Completed, int Failed, int? MedianSecondsToComplete);
+
+/// <summary>Series request backlog. See <see cref="LibraryCompositionDto.Requests"/>.</summary>
+public record RequestSummaryDto(bool AllUsers, int Open, int Resolved90d, double? MedianResolveHours);
+
 /// <summary>
 /// What the collection is made of, as opposed to what anyone read. Not per-user: the library is
 /// shared. Per-user visibility still applies, through the root-folder query filter on
@@ -30,4 +36,8 @@ public record LibraryCompositionDto(
     IReadOnlyList<SourceUsageDto> BySource,
     IReadOnlyList<NamedCountDto> TopGenres,
     IReadOnlyList<LibraryGrowthDto> Growth,
-    IReadOnlyList<SeriesSizeDto> Largest);
+    IReadOnlyList<SeriesSizeDto> Largest,
+    IReadOnlyList<NamedCountDto> ByContentRating,
+    IReadOnlyList<SourceReliabilityDto> SourceReliability,
+    RequestSummaryDto Requests,
+    int MonitorCatches);

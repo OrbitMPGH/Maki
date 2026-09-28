@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using Maki.Core.Reading;
 
 namespace Maki.Core.Opds;
 
@@ -32,6 +33,11 @@ public static class OpdsXml
 
     /// <summary>The CBZ media type. Readers use it to decide they can open an acquisition link.</summary>
     public const string ComicBookType = "application/vnd.comicbook+zip";
+
+    public const string PdfType = "application/pdf";
+
+    /// <summary>The acquisition media type for a chapter's backing file, PDF or CBZ.</summary>
+    public static string MimeType(string path) => ComicFile.IsPdf(path) ? PdfType : ComicBookType;
 
     public const string AcquisitionRel = "http://opds-spec.org/acquisition";
     public const string OpenAccessRel = "http://opds-spec.org/acquisition/open-access";

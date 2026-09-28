@@ -3,14 +3,12 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Code,
   CopyButton,
   Divider,
   Group,
   Modal,
   PasswordInput,
-  Select,
   Stack,
   Table,
   Text,
@@ -32,12 +30,14 @@ import {
   useRevokeSessions,
   useStartTwoFactorSetup,
   useTwoFactorStatus,
-  type ApiKeyScope,
+  type ApiKey,
   type CreatedApiKey,
 } from '../../api/auth'
 import { useAuth } from '../../auth/AuthProvider'
 import { getInitialize } from '../../api/client'
 import { formatDateTime } from '../../format'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { Panel } from '../ui/Panel'
 
 /**
  * Self-service account management: password, two-factor, API keys, sessions.
@@ -49,12 +49,12 @@ export function AccountSection() {
   const { me } = useAuth()
 
   return (
-    <Card withBorder radius="md" padding="md" id="account">
+    <Panel id="account">
       <Title order={4} mb="sm">
         <Trans>My account</Trans>
       </Title>
       <Group gap="xs" mb="md">
-        <Text size="sm" c="dimmed">
+        <Text size="sm" c="var(--ink-3)">
           <Trans>Signed in as</Trans>
         </Text>
         <Code>{me?.userName}</Code>
@@ -76,11 +76,12 @@ export function AccountSection() {
         <Divider />
         <SessionsCard />
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
 function SsoCard() {
+  const { t } = useLingui()
   const { me } = useAuth()
   const [sso, setSso] = useState<{ enabled: boolean; displayName: string } | null>(null)
 
@@ -102,9 +103,9 @@ function SsoCard() {
 
   useEffect(() => {
     if (linkResult.linked) {
-      notifications.show({ message: now`Single sign-on linked to your account`, color: 'green' })
+      notifications.show({ message: now`Single sign-on linked to your account`, color: 'var(--ok)' })
     } else if (linkResult.error) {
-      notifications.show({ message: linkResult.error, color: 'red' })
+      notifications.show({ message: linkResult.error, color: 'var(--danger)' })
     }
   }, [linkResult])
 
@@ -112,7 +113,9 @@ function SsoCard() {
     return null
   }
 
-  const { displayName } = sso
+  // Empty when no admin has typed a button label; the client supplies its own translated copy of
+  // the English default rather than showing the server's raw literal.
+  const displayName = sso.displayName || t`Single sign-on`
   const oidcUserName = me?.oidcUserName
 
   return (
@@ -122,10 +125,10 @@ function SsoCard() {
       </Text>
       {me?.oidcLinked ? (
         <Group gap="xs">
-          <Badge color="green" variant="light">
+          <Badge color="var(--ok)" variant="light">
             <Trans>Linked</Trans>
           </Badge>
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>
               Signed in as <Code>{oidcUserName}</Code> on {displayName}.
             </Trans>
@@ -133,7 +136,7 @@ function SsoCard() {
         </Group>
       ) : (
         <Group align="center">
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="var(--ink-3)">
             <Trans>Not linked yet. Sign in with {displayName} once to enable it for this account.</Trans>
           </Text>
           <Button component="a" href="/api/v1/auth/oidc/link" size="xs" variant="default">
@@ -186,10 +189,10 @@ function PasswordCard() {
                     // Worth stating plainly: changing the password rotates the security stamp, which
                     // is what invalidates every other issued cookie.
                     message: now`Password changed. Other devices have been signed out.`,
-                    color: 'green',
+                    color: 'var(--ok)',
                   })
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               },
             )
           }
@@ -239,8 +242,13 @@ function TwoFactorCard() {
           <Text fw={600} size="sm">
             <Trans>Two-factor authentication</Trans>
           </Text>
-          <Text size="xs" c="dimmed">
-            {status && !status.available ? (
+          <Text size="xs" c="var(--ink-3)">
+            {status?.ssoDelegated && !status.enabled ? (
+              <Trans>
+                Sign-in relies on your identity provider. A code, once set up, protects password
+                sign-in only.
+              </Trans>
+            ) : status && !status.available ? (
               <Trans>This account has no password login for two-factor to protect.</Trans>
             ) : (
               <Trans>The single biggest improvement if Maki is reachable from the internet.</Trans>
@@ -248,11 +256,11 @@ function TwoFactorCard() {
           </Text>
         </div>
         {status?.enabled ? (
-          <Badge color="green" variant="light">
+          <Badge color="var(--ok)" variant="light">
             <Trans>On</Trans>
           </Badge>
         ) : (
-          status && status.available && (
+          status && status.available && !status.ssoDelegated && (
             <Button
               size="xs"
               variant="default"
@@ -260,7 +268,7 @@ function TwoFactorCard() {
               onClick={() =>
                 start.mutate(undefined, {
                   onSuccess: setEnrolling,
-                  onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                  onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
                 })
               }
             >
@@ -279,7 +287,7 @@ function TwoFactorCard() {
             w={260}
           />
           <Button
-            color="red"
+            color="var(--danger)"
             variant="light"
             loading={disable.isPending}
             disabled={!disablePassword}
@@ -287,9 +295,9 @@ function TwoFactorCard() {
               disable.mutate(disablePassword, {
                 onSuccess: () => {
                   setDisablePassword('')
-                  notifications.show({ message: now`Two-factor authentication disabled`, color: 'yellow' })
+                  notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           >
@@ -346,7 +354,7 @@ function TwoFactorCard() {
                   setCode('')
                   setRecoveryCodes(result.recoveryCodes)
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               })
             }
           >
@@ -362,7 +370,7 @@ function TwoFactorCard() {
         centered
       >
         <Stack>
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
               These are shown once. They are stored hashed, so nobody (including you) can read them
               back. Keep them somewhere you can reach without your authenticator.
@@ -387,25 +395,24 @@ function ApiKeysCard() {
   const { data: keys } = useApiKeys()
   const create = useCreateApiKey()
   const revoke = useRevokeApiKey()
-  const { can } = useAuth()
 
   const [name, setName] = useState('')
-  const [scope, setScope] = useState<ApiKeyScope>('Full')
   const [created, setCreated] = useState<CreatedApiKey | null>(null)
+  const [revoking, setRevoking] = useState<ApiKey | null>(null)
+  const revokingName = revoking?.name ?? ''
 
-  const secretUrl =
-    created?.key.scope === 'Opds' ? `/api/v1/opds/${created.secret}` : created?.secret
+  // The OPDS feed token is a key row too, but it is minted, shown and rotated on the OPDS card.
+  const fullKeys = keys?.filter((key) => key.scope === 'Full')
 
   return (
     <Stack gap="xs">
       <Text fw={600} size="sm">
         <Trans>API keys</Trans>
       </Text>
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="var(--ink-3)">
         <Trans>
-          For scripts and third-party clients. A <Code>Full</Code> key acts as you through the{' '}
-          <Code>X-Api-Key</Code> header. An <Code>OPDS</Code> key is only a feed URL, it cannot reach
-          the management API, which is why the URL you paste into a reading app is safe to paste.
+          For scripts and third-party clients. A key acts as you through the{' '}
+          <Code>X-Api-Key</Code> header. Your OPDS feed URL is managed on the OPDS card.
         </Trans>
       </Text>
 
@@ -417,29 +424,18 @@ function ApiKeysCard() {
           onChange={(e) => setName(e.currentTarget.value)}
           w={200}
         />
-        <Select
-          label={t`Scope`}
-          data={[
-            { value: 'Full', label: t`Full API` },
-            { value: 'Opds', label: t`OPDS feed only`, disabled: !can('UseOpds') },
-          ]}
-          value={scope}
-          onChange={(v) => setScope((v as ApiKeyScope) ?? 'Full')}
-          w={170}
-          allowDeselect={false}
-        />
         <Button
           loading={create.isPending}
           disabled={!name.trim()}
           onClick={() =>
             create.mutate(
-              { name: name.trim(), scope },
+              { name: name.trim() },
               {
                 onSuccess: (result) => {
                   setCreated(result)
                   setName('')
                 },
-                onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               },
             )
           }
@@ -448,43 +444,37 @@ function ApiKeysCard() {
         </Button>
       </Group>
 
-      {keys && keys.length > 0 && (
-        <Table striped withTableBorder mt="xs" fz="sm">
+      {fullKeys && fullKeys.length > 0 && (
+        <Table className="panel-table ops-table" mt="xs">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Name</Trans></Table.Th>
-              <Table.Th><Trans>Scope</Trans></Table.Th>
               <Table.Th><Trans>Prefix</Trans></Table.Th>
               <Table.Th><Trans>Last used</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {keys.map((key) => (
+            {fullKeys.map((key) => (
               <Table.Tr key={key.id} opacity={key.revokedAt ? 0.5 : 1}>
                 <Table.Td>{key.name}</Table.Td>
                 <Table.Td>
-                  <Badge size="xs" variant="light">
-                    {key.scope}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
                   <Code>{key.prefix}…</Code>
                 </Table.Td>
-                <Table.Td c="dimmed">
+                <Table.Td c="var(--ink-3)">
                   {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : <Trans>never</Trans>}
                 </Table.Td>
                 <Table.Td ta="right">
                   {key.revokedAt ? (
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="var(--ink-3)">
                       <Trans>revoked</Trans>
                     </Text>
                   ) : (
                     <Button
                       size="compact-xs"
                       variant="subtle"
-                      color="red"
-                      onClick={() => revoke.mutate(key.id)}
+                      color="var(--danger)"
+                      onClick={() => setRevoking(key)}
                     >
                       <Trans>Revoke</Trans>
                     </Button>
@@ -499,21 +489,21 @@ function ApiKeysCard() {
       <Modal
         opened={created !== null}
         onClose={() => setCreated(null)}
-        title={created?.key.scope === 'Opds' ? t`Your OPDS feed URL` : t`Your new API key`}
+        title={t`Your new API key`}
         centered
         size="lg"
       >
         <Stack>
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>
               Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose
               it, revoke this one and create another.
             </Trans>
           </Alert>
           <Code block style={{ wordBreak: 'break-all' }}>
-            {secretUrl}
+            {created?.secret}
           </Code>
-          <CopyButton value={secretUrl ?? ''}>
+          <CopyButton value={created?.secret ?? ''}>
             {({ copied, copy }) => (
               <Button variant="default" onClick={copy}>
                 {copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
@@ -522,6 +512,17 @@ function ApiKeysCard() {
           </CopyButton>
         </Stack>
       </Modal>
+
+      <ConfirmDialog
+        opened={revoking !== null}
+        onClose={() => setRevoking(null)}
+        title={<Trans>Revoke {revokingName}?</Trans>}
+        confirmLabel={<Trans>Revoke</Trans>}
+        loading={revoke.isPending}
+        onConfirm={() => revoking && revoke.mutate(revoking.id, { onSuccess: () => setRevoking(null) })}
+      >
+        <Trans>Anything still using this key stops working straight away. This can't be undone.</Trans>
+      </ConfirmDialog>
     </Stack>
   )
 }
@@ -535,20 +536,20 @@ function SessionsCard() {
         <Text fw={600} size="sm">
           <Trans>Sessions</Trans>
         </Text>
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>Signs out every other browser and device. This one stays signed in.</Trans>
         </Text>
       </div>
       <Button
         variant="light"
-        color="red"
+        color="var(--danger)"
         size="xs"
         loading={revoke.isPending}
         onClick={() =>
           revoke.mutate(undefined, {
             onSuccess: () =>
-              notifications.show({ message: now`Other sessions signed out`, color: 'green' }),
-            onError: (e) => notifications.show({ message: e.message, color: 'red' }),
+              notifications.show({ message: now`Other sessions signed out`, color: 'var(--ok)' }),
+            onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
           })
         }
       >

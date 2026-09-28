@@ -32,11 +32,22 @@
   the merge is a fast-forward-shaped real merge of dev into main, that is the same tree - but if
   main has commits dev doesn't, re-run after merging to be sure.
 
+.PARAMETER Pr
+  Number of an already open dev -> main pull request. Step 4 then merges that PR on GitHub
+  (`gh pr merge --merge`, still a real merge commit) instead of merging locally, and step 5 tags
+  the resulting origin/main without pushing main itself. The PR must be open, base main, head dev,
+  and its head must be exactly origin/dev.
+
 .EXAMPLE
   ./distribution/release.ps1
+
+.EXAMPLE
+  ./distribution/release.ps1 -Pr 101
 #>
 [CmdletBinding()]
-param()
+param(
+  [int]$Pr = 0
+)
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -175,25 +186,66 @@ if (-not $pending) {
   Write-Host $pending
 }
 
-if (-not (Confirm-Step "Proceed with merging dev into main?")) { Write-Host "Aborted."; exit 1 }
+if ($Pr) {
+  $prInfo = gh pr view $Pr --json state,baseRefName,headRefName,headRefOid,url | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0 -or -not $prInfo) {
+    throw "Could not read PR #$Pr with gh."
+  }
+  if ($prInfo.state -ne "OPEN") {
+    throw "PR #$Pr is $($prInfo.state), not open."
+  }
+  if ($prInfo.baseRefName -ne "main" -or $prInfo.headRefName -ne "dev") {
+    throw "PR #$Pr is $($prInfo.headRefName) -> $($prInfo.baseRefName), expected dev -> main."
+  }
+  # The tests above ran against origin/dev; a PR head that moved since would ship untested commits.
+  if ($prInfo.headRefOid -ne $remoteDev) {
+    throw "PR #$Pr head ($($prInfo.headRefOid.Substring(0,7))) doesn't match origin/dev ($($remoteDev.Substring(0,7))). Re-fetch and re-run."
+  }
+  Write-Host "Using PR #$Pr ($($prInfo.url))" -ForegroundColor Green
+  if (-not (Confirm-Step "Proceed with merging PR #$Pr into main?")) { Write-Host "Aborted."; exit 1 }
+} else {
+  if (-not (Confirm-Step "Proceed with merging dev into main?")) { Write-Host "Aborted."; exit 1 }
+}
 
 Write-Host "`n== Step 4: merging dev -> main ==" -ForegroundColor Cyan
-git checkout main --quiet
-git pull --ff-only origin main
-git merge dev --no-ff -m "Merge dev into main: $newTag"
-if ($LASTEXITCODE -ne 0) {
-  git merge --abort
-  throw "Merge conflict. Resolve manually (git checkout main; git merge dev), commit, then re-run this script."
+if ($Pr) {
+  # --merge, never --squash: git-cliff needs the granular history (see step 4 in the header).
+  # --match-head-commit makes GitHub refuse the merge if dev moved after the check above.
+  gh pr merge $Pr --merge --subject "Merge dev into main: $newTag" --match-head-commit $remoteDev
+  if ($LASTEXITCODE -ne 0) {
+    throw "gh pr merge failed (exit $LASTEXITCODE). Check the PR's required checks and mergeability, then re-run."
+  }
+  git fetch origin main --quiet
+  git checkout main --quiet
+  git merge --ff-only origin/main
+  if ($LASTEXITCODE -ne 0) {
+    throw "Local main can't fast-forward to origin/main. Reset it (git checkout main; git reset --hard origin/main), then tag $newTag manually."
+  }
+} else {
+  git checkout main --quiet
+  git pull --ff-only origin main
+  git merge dev --no-ff -m "Merge dev into main: $newTag"
+  if ($LASTEXITCODE -ne 0) {
+    git merge --abort
+    throw "Merge conflict. Resolve manually (git checkout main; git merge dev), commit, then re-run this script."
+  }
 }
 
 Write-Host "`n== Step 5: check before tagging ==" -ForegroundColor Cyan
 Write-Host (git log --oneline -8 | Out-String)
-if (-not (Confirm-Step "Push main and create tag $newTag on this commit?")) {
-  Write-Host "Merge is committed locally on main but not pushed. Push/tag manually when ready, or re-run this script." -ForegroundColor Yellow
+$tagPrompt = if ($Pr) { "Create tag $newTag on this commit?" } else { "Push main and create tag $newTag on this commit?" }
+if (-not (Confirm-Step $tagPrompt)) {
+  if ($Pr) {
+    Write-Host "PR #$Pr is merged on GitHub but no tag was created. Tag manually when ready." -ForegroundColor Yellow
+  } else {
+    Write-Host "Merge is committed locally on main but not pushed. Push/tag manually when ready, or re-run this script." -ForegroundColor Yellow
+  }
   exit 1
 }
 
-git push origin main
+if (-not $Pr) {
+  git push origin main
+}
 git tag -a $newTag -m $newTag
 git push origin $newTag
 Write-Host "Tagged and pushed $newTag." -ForegroundColor Green

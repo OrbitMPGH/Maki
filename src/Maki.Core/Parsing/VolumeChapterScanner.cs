@@ -28,6 +28,8 @@ public static partial class VolumeChapterScanner
     /// </summary>
     public static IReadOnlyList<decimal> ScanCbz(string cbzPath)
     {
+        // A PDF has no page filenames to read markers out of.
+        if (ComicFile.IsPdf(cbzPath)) return [];
         try
         {
             using var archive = ZipFile.OpenRead(cbzPath);
@@ -67,6 +69,7 @@ public static partial class VolumeChapterScanner
     public static (int TotalPages, IReadOnlyList<(decimal Chapter, int PageIndex)> Boundaries) ScanCbzBoundaries(
         string cbzPath)
     {
+        if (ComicFile.IsPdf(cbzPath)) return (CbzReader.PageNames(cbzPath).Count, []);
         try
         {
             using var archive = ZipFile.OpenRead(cbzPath);

@@ -43,6 +43,15 @@ public class OidcRuntimeOptions
     public IReadOnlyList<string> Scopes { get; private set; } = [];
 
     public string DisplayName { get; private set; } = DefaultDisplayName;
+
+    /// <summary>
+    /// Whether an admin actually typed a button label, as opposed to <see cref="DisplayName"/>
+    /// holding <see cref="DefaultDisplayName"/> for lack of one. This is a singleton with no
+    /// <c>ILocalizer</c>, so it cannot decide on its own whether the shown label needs translating;
+    /// a caller with a localizer renders its own copy of the default when this is false, and uses
+    /// <see cref="DisplayName"/> verbatim, unrendered, when it is true.
+    /// </summary>
+    public bool DisplayNameIsCustom { get; private set; }
     public string UsernameClaim { get; private set; } = DefaultUsernameClaim;
 
     public bool AutoProvision { get; private set; }
@@ -169,7 +178,9 @@ public class OidcRuntimeOptions
 
         Scopes = ParseScopes(rows.GetValueOrDefault(SettingKeys.AuthOidcScopes));
 
-        DisplayName = Blank(rows.GetValueOrDefault(SettingKeys.AuthOidcDisplayName)) ?? DefaultDisplayName;
+        var customDisplayName = Blank(rows.GetValueOrDefault(SettingKeys.AuthOidcDisplayName));
+        DisplayName = customDisplayName ?? DefaultDisplayName;
+        DisplayNameIsCustom = customDisplayName is not null;
         UsernameClaim = Blank(rows.GetValueOrDefault(SettingKeys.AuthOidcUsernameClaim)) ?? DefaultUsernameClaim;
 
         AutoProvision = rows.GetValueOrDefault(SettingKeys.AuthOidcAutoProvision) == "true";

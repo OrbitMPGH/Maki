@@ -9,16 +9,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Auth;
 
-/// <param name="User">The account to sign in, or null when <paramref name="Error"/> says why not.</param>
-/// <param name="Error">
-/// Shown to the user on the login page. Deliberately vague about *which* account is involved — this
-/// endpoint is reachable by anyone who can reach the identity provider.
+/// <param name="User">The account to sign in, or null when <paramref name="ErrorKey"/>/<paramref name="RawError"/> says why not.</param>
+/// <param name="ErrorKey">
+/// A server message catalogue key naming why sign-in failed, shown to the user on the login page.
+/// This service has no <c>ILocalizer</c>; the caller renders it. Deliberately vague about *which*
+/// account is involved; this endpoint is reachable by anyone who can reach the identity provider.
+/// </param>
+/// <param name="ErrorArgs">Values for <paramref name="ErrorKey"/>'s ICU placeholders.</param>
+/// <param name="RawError">
+/// Text ASP.NET Identity worded itself (a password/username validation failure), used instead of
+/// <paramref name="ErrorKey"/> when set. Not run through the catalogue: it is not Maki's own
+/// wording, the same reason <c>Describe(IdentityResult)</c> in <c>AuthController</c> stays English.
 /// </param>
 /// <param name="Linked">An existing local account gained this provider login on this request.</param>
 /// <param name="Provisioned">The account was created on this request.</param>
-public sealed record OidcSignInResult(MakiUser? User, string? Error, bool Linked = false, bool Provisioned = false)
+public sealed record OidcSignInResult(
+    MakiUser? User, string? ErrorKey, object? ErrorArgs = null, string? RawError = null,
+    bool Linked = false, bool Provisioned = false)
 {
-    public static OidcSignInResult Fail(string error) => new(null, error);
+    public static OidcSignInResult Fail(string key, object? args = null) => new(null, key, args);
+
+    public static OidcSignInResult FailRaw(string message) => new(null, null, RawError: message);
 }
 
 /// <summary>
@@ -46,15 +57,17 @@ public class OidcSignInService(
     {
         if (string.IsNullOrWhiteSpace(subject))
         {
-            return OidcSignInResult.Fail("The identity provider returned no subject");
+            return OidcSignInResult.Fail("error.auth.ssoNoSubject");
         }
 
-        var user = await userManager.FindByLoginAsync(provider, subject);
+        // Scoped by the configured authority, not the bare subject: see OidcClaimMapper.ScopedProviderKey.
+        var providerKey = OidcClaimMapper.ScopedProviderKey(options, subject);
+        var user = await userManager.FindByLoginAsync(provider, providerKey);
         var linked = false;
 
         if (user is null)
         {
-            (user, linked) = await MatchByEmailAsync(provider, subject, claims, ct);
+            (user, linked) = await MatchByEmailAsync(provider, providerKey, subject, claims, ct);
         }
 
         if (user is null)
@@ -62,15 +75,15 @@ public class OidcSignInService(
             if (!options.AutoProvision)
             {
                 logger.LogWarning("Rejected single sign-on for an unknown subject; auto-provisioning is off");
-                return OidcSignInResult.Fail("No Maki account is linked to that login");
+                return OidcSignInResult.Fail("error.auth.ssoNoAccountLinked");
             }
 
-            return await ProvisionAsync(provider, subject, claims, ct);
+            return await ProvisionAsync(provider, providerKey, subject, claims, ct);
         }
 
         if (user.Disabled)
         {
-            return OidcSignInResult.Fail("That account is disabled");
+            return OidcSignInResult.Fail("error.auth.ssoAccountDisabled");
         }
 
         // The placeholder the multi-user migration inserts owns the entire pre-upgrade library. Only
@@ -79,10 +92,10 @@ public class OidcSignInService(
         // library as an admin.
         if (user.PendingSetup)
         {
-            return OidcSignInResult.Fail("That account has not been set up yet");
+            return OidcSignInResult.Fail("error.auth.ssoAccountNotSetUp");
         }
 
-        await ApplyClaimsAsync(user, provider, subject, claims, ct);
+        await ApplyClaimsAsync(user, provider, providerKey, subject, claims, ct);
         return new OidcSignInResult(user, null, Linked: linked);
     }
 
@@ -96,7 +109,7 @@ public class OidcSignInService(
     /// </para>
     /// </summary>
     private async Task<(MakiUser? User, bool Linked)> MatchByEmailAsync(
-        string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
     {
         var email = OidcClaimMapper.Email(claims);
         if (email is null || !OidcClaimMapper.EmailVerified(claims))
@@ -122,7 +135,7 @@ public class OidcSignInService(
         }
 
         var displayName = OidcClaimMapper.UserName(options, claims, subject);
-        var result = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, displayName));
+        var result = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, displayName));
         if (!result.Succeeded)
         {
             logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",
@@ -136,7 +149,7 @@ public class OidcSignInService(
     }
 
     private async Task<OidcSignInResult> ProvisionAsync(
-        string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
     {
         var userName = OidcClaimMapper.UserName(options, claims, subject);
 
@@ -146,7 +159,7 @@ public class OidcSignInService(
         if (await db.Users.AnyAsync(u => u.NormalizedUserName == userManager.NormalizeName(userName), ct))
         {
             logger.LogWarning("Refused to provision {UserName} — an account with that name already exists", userName);
-            return OidcSignInResult.Fail("An account with that username already exists");
+            return OidcSignInResult.Fail("error.auth.ssoUsernameExists");
         }
 
         var user = new MakiUser
@@ -170,16 +183,16 @@ public class OidcSignInService(
         {
             var detail = string.Join("; ", created.Errors.Select(e => e.Description));
             logger.LogWarning("Could not provision {UserName}: {Errors}", userName, detail);
-            return OidcSignInResult.Fail(detail);
+            return OidcSignInResult.FailRaw(detail);
         }
 
-        var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, subject, userName));
+        var linked = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, userName));
         if (!linked.Succeeded)
         {
             // Without the link the account could never be signed into again and would block the name
             // forever, so it does not get to exist half-made.
             await userManager.DeleteAsync(user);
-            return OidcSignInResult.Fail("Could not link that login to a new account");
+            return OidcSignInResult.Fail("error.auth.ssoLinkNewAccountFailed");
         }
 
         // Nobody is signed in yet, so the id is passed explicitly rather than read off the scope.
@@ -195,13 +208,28 @@ public class OidcSignInService(
     /// said the provider is the authority. See <see cref="OidcRuntimeOptions.MapsPermissions"/>.
     /// </summary>
     private async Task ApplyClaimsAsync(
-        MakiUser user, string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        MakiUser user, string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims,
+        CancellationToken ct)
     {
         var changed = false;
+        using var adminLock = options.MapsPermissions && user.Permissions.Grants(MakiPermission.Admin)
+            ? await AdminGuard.LockAsync(ct)
+            : null;
 
         if (options.MapsPermissions)
         {
             var mapped = OidcClaimMapper.Map(options, claims, user.Permissions);
+            if (user.Permissions.Grants(MakiPermission.Admin) && !mapped.Grants(MakiPermission.Admin) &&
+                await new AdminGuard(db).IsLastAdminAsync(user.Id, ct))
+            {
+                // Same rule as the Users page: dropping the last usable admin cannot be undone from
+                // the UI, so a claim mapping does not get to do it either.
+                logger.LogWarning(
+                    "Single sign-on claims would remove Admin from {UserName}, the last administrator; keeping it",
+                    user.UserName);
+                mapped |= MakiPermission.Admin;
+            }
+
             if (mapped != user.Permissions)
             {
                 logger.LogInformation("Single sign-on changed {UserName} from {Before} to {After}",
@@ -225,7 +253,7 @@ public class OidcSignInService(
             await db.SaveChangesAsync(ct);
         }
 
-        await RefreshLoginDisplayNameAsync(user, provider, subject, claims, ct);
+        await RefreshLoginDisplayNameAsync(user, provider, providerKey, subject, claims, ct);
     }
 
     /// <summary>
@@ -244,14 +272,15 @@ public class OidcSignInService(
     /// </para>
     /// </summary>
     private async Task RefreshLoginDisplayNameAsync(
-        MakiUser user, string provider, string subject, IReadOnlyCollection<Claim> claims, CancellationToken ct)
+        MakiUser user, string provider, string providerKey, string subject, IReadOnlyCollection<Claim> claims,
+        CancellationToken ct)
     {
         var freshName = OidcClaimMapper.UserName(options, claims, subject);
 
         try
         {
             var login = await db.UserLogins.FirstOrDefaultAsync(
-                l => l.LoginProvider == provider && l.ProviderKey == subject && l.UserId == user.Id, ct);
+                l => l.LoginProvider == provider && l.ProviderKey == providerKey && l.UserId == user.Id, ct);
 
             if (login is null || string.Equals(login.ProviderDisplayName, freshName, StringComparison.Ordinal))
             {

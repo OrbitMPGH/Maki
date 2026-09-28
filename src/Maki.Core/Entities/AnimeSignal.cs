@@ -44,6 +44,21 @@ public class AnimeSignal : IUserOwned
 
     public AnimeWatchStatus Status { get; set; }
 
+    /// <summary>Media format, upper-cased: TV, TV_SHORT, ONA, MOVIE, OVA, SPECIAL, MUSIC. Null when unknown.</summary>
+    public string? Format { get; set; }
+
+    /// <summary>First air date. Null unless the tracker knows the full day.</summary>
+    public DateOnly? StartDate { get; set; }
+
+    /// <summary>Last air date. Null unless the tracker knows the full day.</summary>
+    public DateOnly? EndDate { get; set; }
+
+    /// <summary>Total episode count, null when the tracker does not know it.</summary>
+    public int? Episodes { get; set; }
+
+    /// <summary>Episodes the watcher has seen.</summary>
+    public int? Progress { get; set; }
+
     /// <summary>The catalogue series this anime's source manga resolved to, when it resolved.</summary>
     public long? MangaBakaId { get; set; }
 

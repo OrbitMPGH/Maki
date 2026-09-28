@@ -56,5 +56,18 @@ public class UserSeriesState : IUserOwned
     /// </summary>
     public SeriesNotificationMode NotificationMode { get; set; }
 
+    /// <summary>
+    /// When this reader removed the series from Home's reading rails. It stays off them only until
+    /// a <c>ChapterProgress</c> row for it is touched after this moment, so reading it again brings
+    /// it back without a separate "unhide" anywhere.
+    /// </summary>
+    public DateTime? HiddenFromHomeAt { get; set; }
+
+    /// <summary>
+    /// The chapter number the "start where the anime ended" callout covered to when this reader
+    /// dismissed it. The callout stays hidden only while it would say the same number.
+    /// </summary>
+    public double? AnimeResumeDismissedAt { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }

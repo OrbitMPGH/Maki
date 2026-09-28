@@ -40,14 +40,15 @@ export function DiscoverCatalogue({
 
   return (
     <>
-      <div className="discover-cat-tabs" role="tablist" aria-label={t`Catalogue feeds`}>
+      <div className="series-tabs sub-tabs" role="tablist" aria-label={t`Catalogue feeds`}>
         {rails.map((rail) => (
           <button
             key={rail.key}
             type="button"
             role="tab"
             aria-selected={rail.key === active.key}
-            className="discover-cat-tab"
+            data-active={rail.key === active.key || undefined}
+            className="series-tab"
             onClick={() => setActiveKey(rail.key)}
           >
             {rail.title}
@@ -56,7 +57,7 @@ export function DiscoverCatalogue({
       </div>
 
       <Group justify="space-between" mt="md" mb="sm">
-        <Text c="dimmed" size="sm">
+        <Text c="var(--ink-3)" size="sm">
           <Plural value={active.items.length} one="# title" other="# titles" />
         </Text>
         <Button

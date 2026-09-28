@@ -360,6 +360,52 @@ public class VectorIndexTests
         Assert.Empty(index.Search(Axis(0), plan, take: 10));
     }
 
+    [Fact]
+    public void StartDayAt_FallsBackToJanuaryFirstOfTheYear_WhenNoStartDaysColumn()
+    {
+        var index = Build([Axis(0)], years: [1999]);
+
+        Assert.Equal(new DateOnly(1999, 1, 1).DayNumber, index.StartDayAt(0));
+    }
+
+    [Fact]
+    public void StartDayAt_PrefersTheExplicitStartDayOverTheYear()
+    {
+        var index = Build([Axis(0)], years: [1999], startDays: [new DateOnly(1999, 7, 4).DayNumber]);
+
+        Assert.Equal(new DateOnly(1999, 7, 4).DayNumber, index.StartDayAt(0));
+    }
+
+    [Fact]
+    public void StartDayAt_IsUnknown_WhenNeitherStartDayNorYearIsKnown()
+    {
+        var index = Build([Axis(0)], years: [VectorIndex.Unknown]);
+
+        Assert.Equal(VectorIndex.Unknown, index.StartDayAt(0));
+    }
+
+    [Fact]
+    public void Matches_RejectsRowsInTheExcludeMask()
+    {
+        var index = Build([Axis(0), Axis(1), Axis(2)]);
+        var plan = FilterPlan.None with { Exclude = index.BuildRowMask([101L]) };
+
+        Assert.False(index.Matches(1, plan));
+        Assert.True(index.Matches(0, plan));
+        Assert.True(index.Matches(2, plan));
+    }
+
+    [Fact]
+    public void Search_SkipsRowsInTheExcludeMask()
+    {
+        var index = Build([Axis(0), Axis(0)]);
+        var plan = FilterPlan.None with { Exclude = index.BuildRowMask([100L]) };
+
+        var hits = index.Search(Axis(0), plan, take: 10);
+
+        Assert.Equal([101L], hits.Select(h => index.IdAt(h.Row)));
+    }
+
     /// <summary>Builds an index over the given unit vectors; ids are 100, 101, … by row.</summary>
     private static VectorIndex Build(
         float[][] vectors,
@@ -372,7 +418,8 @@ public class VectorIndexTests
         string[][]? artists = null,
         int[]? popularity = null,
         string[][]? tags = null,
-        int[]? franchise = null)
+        int[]? franchise = null,
+        int[]? startDays = null)
     {
         var count = vectors.Length;
         var data = new sbyte[count * Dim];
@@ -436,7 +483,8 @@ public class VectorIndexTests
                 popularity ?? Enumerable.Repeat(1000, count).ToArray(),
                 tagBlobs,
                 new byte[count],
-                franchise ?? Enumerable.Repeat(VectorIndex.Unknown, count).ToArray()),
+                franchise ?? Enumerable.Repeat(VectorIndex.Unknown, count).ToArray(),
+                startDays),
             new VectorIndexVocabularies(typeIds, statusIds, genreIds, authorIds, tagVocab, contentRatingIds));
     }
 

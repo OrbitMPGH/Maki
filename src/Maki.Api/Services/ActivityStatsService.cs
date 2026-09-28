@@ -16,10 +16,11 @@ namespace Maki.Api.Services;
 /// genre/tag step needs an in-memory join against Series' JSON list columns anyway.
 /// </para>
 /// </summary>
-public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, TimeProvider clock)
+public class ActivityStatsService(
+    MakiDbContext db, IAppSettings appSettings, IUserSettingsStore userSettings, TimeProvider clock)
 {
     /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
-    private static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
+    internal static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
 
     private const int TimelineDayBucketMaxDays = 62;
 
@@ -35,31 +36,102 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
         db.StatsEvents.AsNoTracking().IgnoreQueryFilters()
             .Where(e => e.UserId == null || e.UserId == userId);
 
-    public async Task<List<int>> YearsAsync(int userId, CancellationToken ct)
+    /// <summary>
+    /// Same resolution as <see cref="StatsInsightsService.GetAsync"/>: the reader's stored zone
+    /// when they have one (correct across DST), else a fixed offset built from the browser's
+    /// current one.
+    /// </summary>
+    private async Task<TimeZoneInfo> ResolveZoneAsync(int userId, int utcOffsetMinutes, CancellationToken ct) =>
+        await UserTimeZone.TryResolveAsync(userSettings, userId, ct) ?? StatsInsightsService.FixedOffset(utcOffsetMinutes);
+
+    /// <summary>
+    /// No real-world zone shifts a timestamp across a year boundary by more than this; used to keep
+    /// the boundary checks in <see cref="YearsAsync"/> to a handful of rows either side of Jan 1
+    /// rather than a full-table scan.
+    /// </summary>
+    private static readonly TimeSpan MaxZoneShift = TimeSpan.FromHours(14);
+
+    /// <param name="utcOffsetMinutes">JS getTimezoneOffset() semantics, used only when the reader
+    /// has no stored time zone.</param>
+    /// <remarks>
+    /// Distinct UTC years come straight out of SQL (translated to <c>strftime('%Y', ...)</c>), which
+    /// is exact for every event except one within <see cref="MaxZoneShift"/> of a year boundary, the
+    /// only place a zone conversion can move a timestamp into the neighboring year. Those few rows,
+    /// and only those, are pulled into memory and converted for real.
+    /// </remarks>
+    public async Task<List<int>> YearsAsync(int userId, int utcOffsetMinutes, CancellationToken ct)
     {
-        return await EventsFor(userId)
-            .Select(e => e.Timestamp.Year)
-            .Distinct()
-            .OrderByDescending(y => y)
-            .ToListAsync(ct);
+        var zone = await ResolveZoneAsync(userId, utcOffsetMinutes, ct);
+        var utcYears = await EventsFor(userId).Select(e => e.Timestamp.Year).Distinct().ToListAsync(ct);
+
+        var years = new HashSet<int>();
+        var checkedBoundaries = new HashSet<DateTime>();
+
+        int LocalYear(DateTime utc) =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone).Year;
+
+        async Task CheckBoundaryAsync(DateTime boundaryUtc)
+        {
+            if (!checkedBoundaries.Add(boundaryUtc))
+            {
+                return;
+            }
+
+            var windowStart = boundaryUtc - MaxZoneShift;
+            var windowEnd = boundaryUtc + MaxZoneShift;
+            var nearBoundary = EventsFor(userId).Where(e => e.Timestamp >= windowStart && e.Timestamp < windowEnd);
+            if (!await nearBoundary.AnyAsync(ct))
+            {
+                return;
+            }
+
+            var timestamps = await nearBoundary.Select(e => e.Timestamp).ToListAsync(ct);
+            foreach (var t in timestamps)
+            {
+                years.Add(LocalYear(t));
+            }
+        }
+
+        foreach (var y in utcYears)
+        {
+            var yearStart = new DateTime(y, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var yearEnd = new DateTime(y + 1, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            // Any event far enough from both boundaries can't have shifted out of this UTC year, so
+            // its presence alone guarantees the year survives locally.
+            var hasDeepEvent = await EventsFor(userId).AnyAsync(
+                e => e.Timestamp >= yearStart + MaxZoneShift && e.Timestamp < yearEnd - MaxZoneShift, ct);
+            if (hasDeepEvent)
+            {
+                years.Add(y);
+            }
+
+            await CheckBoundaryAsync(yearStart);
+            await CheckBoundaryAsync(yearEnd);
+        }
+
+        return years.OrderByDescending(y => y).ToList();
     }
 
     /// <param name="userId">Whose year this is. Callers must have resolved it through
     /// <see cref="UserViewResolver"/> — this service does no permission checking of its own.</param>
-    /// <param name="utcOffsetMinutes">JS getTimezoneOffset() semantics: UTC − local, so
-    /// UTC+2 sends −120. Local time = UTC − offset.</param>
+    /// <param name="utcOffsetMinutes">JS getTimezoneOffset() semantics, used only when the reader
+    /// has no stored time zone.</param>
     public async Task<ActivityStatsDto> StatsAsync(
         int userId, DateOnly from, DateOnly to, int utcOffsetMinutes, CancellationToken ct)
     {
+        var zone = await ResolveZoneAsync(userId, utcOffsetMinutes, ct);
+
         // [from, to] are inclusive local dates; convert the window edges to UTC.
-        var utcStart = from.ToDateTime(TimeOnly.MinValue).AddMinutes(utcOffsetMinutes);
-        var utcEnd = to.AddDays(1).ToDateTime(TimeOnly.MinValue).AddMinutes(utcOffsetMinutes);
+        var utcStart = StatsInsightsService.ToUtc(from.ToDateTime(TimeOnly.MinValue), zone);
+        var utcEnd = StatsInsightsService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue), zone);
 
         var events = await EventsFor(userId)
             .Where(e => e.Timestamp >= utcStart && e.Timestamp < utcEnd)
             .ToListAsync(ct);
 
-        DateTime Local(DateTime utc) => utc.AddMinutes(-utcOffsetMinutes);
+        DateTime Local(DateTime utc) =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone);
 
         // Loaded up front because every list below wants a cover for it. One query either way —
         // the projection just carries three columns instead of two.
@@ -283,6 +355,8 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
             await db.ReadingStates.AsNoTracking().IgnoreQueryFilters()
                 .AnyAsync(r => r.UserId == userId, ct);
 
+        var (pagesRead, seriesStarted) = await PagesAndStartsAsync(userId, utcStart, utcEnd, ct);
+
         return new ActivityStatsDto(
             from, to, readTrackingAvailable,
             new ActivityTotalsDto(
@@ -294,7 +368,9 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
                 Count(StatsEventType.SeriesFinished),
                 dropped.Count,
                 Sum(StatsEventType.ReadingTime),
-                daysActive),
+                daysActive,
+                pagesRead,
+                seriesStarted),
             timeline,
             topRead,
             leastRead,
@@ -305,6 +381,44 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
             EventList(StatsEventType.SeriesRemoved),
             dropped,
             topByTime);
+    }
+
+    /// <summary>
+    /// Pages and series starts come off <c>ChapterProgress</c> rather than the event log, which has
+    /// no page numbers. Progress rows are written even for fully incognito series (only their events
+    /// are dropped), so those are excluded here by hand, along with anything outside the caller's
+    /// root folders. Imports (<c>PageCount == 0</c>) and watched marks are not reading.
+    /// </summary>
+    private async Task<(int PagesRead, int SeriesStarted)> PagesAndStartsAsync(
+        int userId, DateTime utcStart, DateTime utcEnd, CancellationToken ct)
+    {
+        var visible = (await db.Series.AsNoTracking()
+                .Where(s => s.Incognito != IncognitoMode.Full)
+                .Select(s => s.Id)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        var own = db.ChapterProgress.AsNoTracking().IgnoreQueryFilters()
+            .Where(p => p.UserId == userId && !p.Watched && p.PageCount > 0);
+
+        // Windowed on UpdatedAt, so re-reading an old chapter moves its pages into the current window.
+        var pageRows = await own
+            .Where(p => p.UnreadAt == null && p.ReadSeconds > 0
+                && p.UpdatedAt >= utcStart && p.UpdatedAt < utcEnd)
+            .Select(p => new { p.SeriesId, p.Completed, p.PageCount, p.PageIndex })
+            .ToListAsync(ct);
+        var pages = pageRows
+            .Where(p => visible.Contains(p.SeriesId))
+            .Sum(p => p.Completed ? p.PageCount : Math.Min(p.PageIndex + 1, p.PageCount));
+
+        var firstReads = await own
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, First = g.Min(p => p.StartedAt) })
+            .ToListAsync(ct);
+        var started = firstReads.Count(f =>
+            f.First >= utcStart && f.First < utcEnd && visible.Contains(f.SeriesId));
+
+        return (pages, started);
     }
 
     private sealed record RemovedSeriesSnapshot(

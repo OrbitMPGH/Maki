@@ -37,6 +37,8 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "Flame Comics";
     public string BaseUrl => "https://flamecomics.xyz";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Scanlator;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua | SourceContent.Manga;
 
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
 
@@ -72,7 +74,8 @@ public class FlameComicsSource(IHttpClientFactory httpClientFactory) : ISource
         var props = await GetPagePropsAsync($"series/{sourceSeriesId}", ct);
         if (!props.TryGetProperty("chapters", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"Flame Comics series/{sourceSeriesId} has a missing or non-array 'chapters'");
         }
 
         var chapters = new List<SourceChapter>();

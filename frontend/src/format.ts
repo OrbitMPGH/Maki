@@ -38,6 +38,11 @@ const longMonth = cached((l) => new Intl.DateTimeFormat(l, { month: 'long' }))
 const dateOnly = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium' }))
 const dateAndTime = cached((l) => new Intl.DateTimeFormat(l, { dateStyle: 'medium', timeStyle: 'short' }))
 const timeOnly = cached((l) => new Intl.DateTimeFormat(l, { timeStyle: 'short' }))
+const shortWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'short' }))
+const longWeekday = cached((l) => new Intl.DateTimeFormat(l, { weekday: 'long' }))
+const hourOnly = cached((l) => new Intl.DateTimeFormat(l, { hour: 'numeric', minute: '2-digit' }))
+const percents = cached(() => new Map<number, Intl.NumberFormat>())
+const signedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
 
 /** "1 234" / "1,234", whichever the language groups with. */
 export function formatNumber(value: number): string {
@@ -96,6 +101,50 @@ export function monthName(month: number, style: 'short' | 'long' = 'long'): stri
   // Any non-leap year works; only the month is read back out.
   const date = new Date(2001, month - 1, 1)
   return (style === 'short' ? shortMonth() : longMonth()).format(date)
+}
+
+/** Weekday name with Monday as 0, the order the stats endpoints send weekdays in. */
+export function weekdayName(index: number, style: 'short' | 'long' = 'long'): string {
+  if (!Number.isInteger(index) || index < 0 || index > 6) return ''
+  // 1 January 2001 was a Monday.
+  const date = new Date(2001, 0, 1 + index)
+  return (style === 'short' ? shortWeekday() : longWeekday()).format(date)
+}
+
+/** An hour of the day, 0-23, as a clock time: "22:00", or "10:00 PM" where that is the convention. */
+export function formatHour(hour: number): string {
+  const h = ((Math.trunc(hour) % 24) + 24) % 24
+  return hourOnly().format(new Date(2001, 0, 1, h, 0))
+}
+
+/** A 0..1 fraction as a percentage in the active language: "62%", "62 %", "%62". */
+export function formatPercent(fraction: number, digits = 0): string {
+  const formats = percents()
+  let format = formats.get(digits)
+  if (!format) {
+    format = new Intl.NumberFormat(locale(), {
+      style: 'percent',
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    })
+    formats.set(digits, format)
+  }
+  return format.format(fraction)
+}
+
+/** A signed one-decimal number: "+4.2", "-1.0", "0.0". The sign is whatever `Intl` produces. */
+export function formatSignedDecimal(value: number, digits = 1): string {
+  const formats = signedDecimals()
+  let format = formats.get(digits)
+  if (!format) {
+    format = new Intl.NumberFormat(locale(), {
+      signDisplay: 'exceptZero',
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    })
+    formats.set(digits, format)
+  }
+  return format.format(value)
 }
 
 /** "2026-03" as the stats buckets carry it, rendered "Mar 26". */

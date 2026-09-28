@@ -1,0 +1,67 @@
+[
+  {
+    "result": {
+      "data": {
+        "json": {
+          "chapters": [
+            {
+              "id": "11111111-1111-1111-1111-111111111110",
+              "createdAt": "2025-03-31T02:50:52.920Z",
+              "title": "Oneshot part 1",
+              "number": 1,
+              "volume": null,
+              "completed": null,
+              "uploader": {
+                "id": "3d929ab3-1767-4cef-b028-f117fc3858ab",
+                "name": "Ju"
+              },
+              "scans": [
+                {
+                  "id": "65f39a59-01fc-4475-bc90-90cb234e2c16",
+                  "name": "Kakusei Project"
+                }
+              ]
+            },
+            {
+              "id": "11111111-1111-1111-1111-111111111111",
+              "createdAt": "2025-03-31T02:50:50.346Z",
+              "title": "Oneshot part 2",
+              "number": 2,
+              "volume": null,
+              "completed": null,
+              "uploader": {
+                "id": "3d929ab3-1767-4cef-b028-f117fc3858ab",
+                "name": "Ju"
+              },
+              "scans": [
+                {
+                  "id": "65f39a59-01fc-4475-bc90-90cb234e2c16",
+                  "name": "Kakusei Project"
+                }
+              ]
+            },
+            {
+              "id": "11111111-1111-1111-1111-111111111112",
+              "createdAt": "2025-03-31T02:50:45.782Z",
+              "title": "Oneshot part 3",
+              "number": 3,
+              "volume": null,
+              "completed": null,
+              "uploader": {
+                "id": "3d929ab3-1767-4cef-b028-f117fc3858ab",
+                "name": "Ju"
+              },
+              "scans": [
+                {
+                  "id": "65f39a59-01fc-4475-bc90-90cb234e2c16",
+                  "name": "Kakusei Project"
+                }
+              ]
+            }
+          ],
+          "totalPages": 1
+        }
+      }
+    }
+  }
+]

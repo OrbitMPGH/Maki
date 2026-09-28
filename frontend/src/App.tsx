@@ -23,7 +23,6 @@ import {
 import { lazy, Suspense, useEffect } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
-  useAppVersion,
   useHealth,
   useMetadataSettings,
   useQueue,
@@ -41,15 +40,17 @@ import { NotificationBell } from './components/NotificationBell'
 import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
-import UpdateBanner from './components/UpdateBanner'
+import SidebarFooter from './components/layout/SidebarFooter'
 import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
 import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
+import { EmptyState } from './components/ui/EmptyState'
 import { useLanguageSync } from './i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
-import { navSections, isActive, pageTitle, type NavItem } from './nav'
+import { navSections, isActive, type NavItem } from './nav'
+import { ShellTitleProvider, useShellTitleValue } from './lib/shellTitle'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
 // (StartPageRedirect), so splitting them would only add a round trip to the first paint.
 import HomePage from './pages/HomePage'
@@ -71,6 +72,28 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const HealthPage = lazy(() => import('./pages/HealthPage'))
 const ReaderPage = lazy(() => import('./pages/reader/ReaderPage'))
+
+function ShellTitle() {
+  const title = useShellTitleValue()
+  if (!title) return null
+  return (
+    <Text fw={650} fz="md" visibleFrom="sm" truncate className="app-header-title">
+      {title}
+    </Text>
+  )
+}
+
+function NotFoundPage() {
+  const { t } = useLingui()
+  return (
+    <EmptyState
+      title={t`Page not found`}
+      description={t`Nothing lives at this address. The link may be old or mistyped.`}
+      actionLabel={t`Go to start page`}
+      actionTo="/"
+    />
+  )
+}
 
 /** Shared placeholder while a route chunk is in flight. Matches StartPageRedirect's loader. */
 function RouteFallback() {
@@ -134,10 +157,15 @@ function HealthButton() {
   return (
     <Popover width={340} position="bottom-end" withArrow shadow="md">
       <Popover.Target>
-        <Indicator size={16} color={hasError ? 'red' : 'yellow'} label={health.length} withBorder>
+        <Indicator
+          size={16}
+          color={hasError ? 'var(--danger)' : 'var(--warn)'}
+          label={health.length}
+          withBorder
+        >
           <ActionIcon
             variant="subtle"
-            color={hasError ? 'red' : 'yellow'}
+            color={hasError ? 'var(--danger)' : 'var(--warn)'}
             aria-label={t`Health issues`}
           >
             <IconAlertTriangle size={19} />
@@ -148,22 +176,24 @@ function HealthButton() {
         <Group gap={6} mb="xs">
           <IconHeartbeat size={16} />
           <Text fw={650} size="sm">
-            Health
+            <Trans>Health</Trans>
           </Text>
-          <Text component={Link} to="/health" size="sm">Open Health</Text>
+          <Text component={Link} to="/health" size="sm">
+            <Trans>Open Health</Trans>
+          </Text>
         </Group>
         <Stack gap="xs">
           {health.map((issue, i) => (
             <Group key={i} gap="xs" wrap="nowrap" align="flex-start">
               <Badge
                 size="xs"
-                color={issue.severity === 'error' ? 'red' : 'yellow'}
+                color={issue.severity === 'error' ? 'var(--danger)' : 'var(--warn)'}
                 variant="light"
                 mt={2}
               >
                 {issue.severity}
               </Badge>
-              <Text size="xs" c="dimmed">
+              <Text size="xs" c="var(--ink-3)">
                 {issue.message}
               </Text>
             </Group>
@@ -210,7 +240,7 @@ function ActivityButton() {
           <Badge
             size="xs"
             variant="filled"
-            color={review > 0 ? 'yellow' : 'brand'}
+            color={review > 0 ? 'var(--warn)' : 'brand'}
             // A `circle` badge clips 2+ digit counts against its radius; a pill that grows
             // horizontally (with a floor width so single digits still read as a dot) doesn't.
             style={{
@@ -227,28 +257,6 @@ function ActivityButton() {
           </Badge>
         )}
       </ActionIcon>
-    </Tooltip>
-  )
-}
-
-function VersionFooter() {
-  const { data: version } = useAppVersion()
-  if (!version) return null
-  // A -dev / -nightly suffix means the build was not cut from a release tag; flag it so a local or
-  // CI-of-main image is never mistaken for a published version.
-  const unofficial = /-(dev|nightly)/.test(version)
-  return (
-    <Tooltip label={unofficial ? 'Unofficial build (not a tagged release)' : `Maki ${version}`} withArrow>
-      <Text
-        fz={10}
-        c="dimmed"
-        fw={600}
-        px={4}
-        tt="uppercase"
-        style={{ letterSpacing: '0.08em' }}
-      >
-        v{version}
-      </Text>
     </Tooltip>
   )
 }
@@ -312,7 +320,6 @@ function AppShellRoutes() {
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
-  const { _ } = useLinguiReact()
   useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
@@ -323,8 +330,6 @@ function AppShellRoutes() {
   const homeEnabled = ui ? ui.homeLayout.enabled : true
   const isAdmin = can('Admin')
   const canAdd = can('AddSeries')
-  // "Maki" when nothing here names the page. The product name is never translated.
-  const title = pageTitle(location.pathname)
   const sections = navSections({
     isAdmin,
     discoverAvailable,
@@ -349,6 +354,7 @@ function AppShellRoutes() {
   }, [discoverAvailable, homeEnabled, location.pathname, navigate])
 
   return (
+    <ShellTitleProvider>
     <AppShell
       header={{ height: 58 }}
       navbar={{ width: 232, breakpoint: 'sm', collapsed: { mobile: !opened } }}
@@ -363,9 +369,7 @@ function AppShellRoutes() {
                 <IconBrandMark />
               </span>
             </Group>
-            <Text fw={700} fz="lg" visibleFrom="sm" style={{ letterSpacing: '-0.01em' }}>
-              {title ? _(title) : 'Maki'}
-            </Text>
+            <ShellTitle />
           </Group>
           <Group gap="xs" wrap="nowrap">
             <CommandPalette navItems={allItems} />
@@ -389,11 +393,11 @@ function AppShellRoutes() {
             <IconBrandMark />
           </span>
           <div>
-            <Text fw={800} fz="lg" lh={1} style={{ letterSpacing: '-0.02em' }}>
+            <Text fz="lg" lh={1} className="brand-wordmark">
               Maki
             </Text>
-            <Text fz={10} c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
-              Manga manager
+            <Text fz={10} c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
+              <Trans>Manga manager</Trans>
             </Text>
           </div>
         </Group>
@@ -405,12 +409,12 @@ function AppShellRoutes() {
           />
         </AppShell.Section>
         <AppShell.Section>
-          <VersionFooter />
+          <SidebarFooter />
         </AppShell.Section>
       </AppShell.Navbar>
 
       {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
-          series page, and Discover's browse tab. Written as "Discover, but not its other two tabs"
+          series page, Home, and Discover's browse tab. Written as "Discover, but not its other two tabs"
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
           unrecognised :tab — a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
@@ -422,7 +426,6 @@ function AppShellRoutes() {
             : undefined
         }
       >
-        <UpdateBanner />
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere. */}
         <Suspense fallback={<RouteFallback />}>
@@ -458,11 +461,13 @@ function AppShellRoutes() {
             <Route path="/rewind" element={<Navigate replace to="/stats" />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/health" element={isAdmin ? <HealthPage /> : <Navigate to="/" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </AppShell.Main>
 
-      {setup && !setup.completed && <SetupWizard />}
+      {/* Opens itself off the setup flag, latched so a language pick's cache clear can't close it. */}
+      {isAdmin && <SetupWizard />}
       {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
           nobody being handed a brand-new Maki needs to be told what changed in it. */}
       {setup?.completed && <LanguageAnnouncementModal />}
@@ -470,6 +475,7 @@ function AppShellRoutes() {
       {isAdmin && <MetadataDumpProgress />}
       <TipLayer />
     </AppShell>
+    </ShellTitleProvider>
   )
 }
 

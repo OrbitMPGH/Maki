@@ -3,7 +3,6 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Checkbox,
   Group,
   Modal,
@@ -36,6 +35,8 @@ import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { Panel } from '../ui/Panel'
 
 /**
  * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
@@ -89,10 +90,12 @@ export function UsersSection() {
   const { data: users } = useUsers()
   const { me } = useAuth()
   const [editing, setEditing] = useState<UserSummary | 'new' | null>(null)
+  const [deleting, setDeleting] = useState<UserSummary | null>(null)
   const remove = useDeleteUser()
+  const deletingName = deleting ? deleting.displayName?.trim() || deleting.userName : ''
 
   return (
-    <Card withBorder radius="md" padding="md" id="users">
+    <Panel id="users" p="md">
       <Group justify="space-between" mb="sm">
         <Title order={4}>
           <Trans>Users</Trans>
@@ -101,93 +104,107 @@ export function UsersSection() {
           <Trans>Add user</Trans>
         </Button>
       </Group>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="var(--ink-3)" mb="md">
         <Trans>
-          Each account has its own login, permissions and content rating. Reading progress is shared
-          across accounts for now; per-user history arrives with the next release.
+          Each account has its own login, permissions, content rating and reading history.
         </Trans>
       </Text>
 
-      <Table striped withTableBorder fz="sm">
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th><Trans>User</Trans></Table.Th>
-            <Table.Th><Trans>Permissions</Trans></Table.Th>
-            <Table.Th><Trans>Rating</Trans></Table.Th>
-            <Table.Th><Trans>Last sign-in</Trans></Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {users?.map((user) => {
-            const granted = user.permissionNames.length
-            return (
-              <Table.Tr key={user.id} opacity={user.disabled ? 0.5 : 1}>
-                <Table.Td>
-                  <Group gap={6}>
-                    <Text fz="sm">{user.displayName?.trim() || user.userName}</Text>
-                    {user.id === me?.id && (
-                      <Badge size="xs" variant="outline">
-                        <Trans>you</Trans>
+      <Table.ScrollContainer minWidth={576}>
+        <Table className="panel-table ops-table">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th><Trans>User</Trans></Table.Th>
+              <Table.Th><Trans>Permissions</Trans></Table.Th>
+              <Table.Th><Trans>Rating</Trans></Table.Th>
+              <Table.Th><Trans>Last sign-in</Trans></Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {users?.map((user) => {
+              const granted = user.permissionNames.length
+              return (
+                <Table.Tr key={user.id} opacity={user.disabled ? 0.5 : 1}>
+                  <Table.Td>
+                    <Group gap={6}>
+                      <Text fz="sm">{user.displayName?.trim() || user.userName}</Text>
+                      {user.id === me?.id && (
+                        <Badge size="xs" variant="outline">
+                          <Trans>you</Trans>
+                        </Badge>
+                      )}
+                      {user.disabled && (
+                        <Badge size="xs" color="var(--danger)" variant="light">
+                          <Trans>disabled</Trans>
+                        </Badge>
+                      )}
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    {user.isAdmin ? (
+                      <Badge size="xs" variant="light">
+                        <Trans>Administrator</Trans>
                       </Badge>
+                    ) : (
+                      <Text fz="xs" c="var(--ink-3)">
+                        <Plural value={granted} one="# granted" other="# granted" />
+                      </Text>
                     )}
-                    {user.disabled && (
-                      <Badge size="xs" color="red" variant="light">
-                        <Trans>disabled</Trans>
-                      </Badge>
-                    )}
-                  </Group>
-                </Table.Td>
-                <Table.Td>
-                  {user.isAdmin ? (
-                    <Badge size="xs" variant="light">
-                      <Trans>Administrator</Trans>
-                    </Badge>
-                  ) : (
-                    <Text fz="xs" c="dimmed">
-                      <Plural value={granted} one="# granted" other="# granted" />
+                  </Table.Td>
+                  <Table.Td>
+                    <Text fz="xs" c="var(--ink-3)">
+                      {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
                     </Text>
-                  )}
-                </Table.Td>
-                <Table.Td>
-                  <Text fz="xs" c="dimmed">
-                    {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
-                  </Text>
-                </Table.Td>
-                <Table.Td c="dimmed">
-                  {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <Trans>never</Trans>}
-                </Table.Td>
-                <Table.Td ta="right">
-                  <Group gap={4} justify="flex-end">
-                    <Button size="compact-xs" variant="subtle" onClick={() => setEditing(user)}>
-                      <Trans>Edit</Trans>
-                    </Button>
-                    {/* Hidden for your own row: the server refuses it anyway, so offering it would
-                        only produce an error message. */}
-                    {user.id !== me?.id && (
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        color="red"
-                        onClick={() =>
-                          remove.mutate(user.id, {
-                            onError: (e) => notifications.show({ message: e.message, color: 'red' }),
-                          })
-                        }
-                      >
-                        <Trans>Delete</Trans>
+                  </Table.Td>
+                  <Table.Td c="var(--ink-3)">
+                    {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <Trans>never</Trans>}
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Group gap={4} justify="flex-end">
+                      <Button size="compact-xs" variant="subtle" onClick={() => setEditing(user)}>
+                        <Trans>Edit</Trans>
                       </Button>
-                    )}
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            )
-          })}
-        </Table.Tbody>
-      </Table>
+                      {/* Hidden for your own row: the server refuses it anyway, so offering it would
+                          only produce an error message. */}
+                      {user.id !== me?.id && (
+                        <Button
+                          size="compact-xs"
+                          variant="subtle"
+                          color="var(--danger)"
+                          onClick={() => setDeleting(user)}
+                        >
+                          <Trans>Delete</Trans>
+                        </Button>
+                      )}
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              )
+            })}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
 
       {editing && <UserModal target={editing} onClose={() => setEditing(null)} />}
-    </Card>
+
+      <ConfirmDialog
+        opened={deleting !== null}
+        onClose={() => setDeleting(null)}
+        title={<Trans>Delete {deletingName}?</Trans>}
+        confirmLabel={<Trans>Delete user</Trans>}
+        loading={remove.isPending}
+        onConfirm={() =>
+          deleting &&
+          remove.mutate(deleting.id, {
+            onSuccess: () => setDeleting(null),
+            onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+          })
+        }
+      >
+        <Trans>They will no longer be able to sign in. This can't be undone.</Trans>
+      </ConfirmDialog>
+    </Panel>
   )
 }
 
@@ -238,9 +255,9 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
     }
     if (password) body.password = password
 
-    const onError = (e: Error) => notifications.show({ message: e.message, color: 'red' })
+    const onError = (e: Error) => notifications.show({ message: e.message, color: 'var(--danger)' })
     const onSuccess = () => {
-      notifications.show({ message: isNew ? now`User created` : now`User updated`, color: 'green' })
+      notifications.show({ message: isNew ? now`User created` : now`User updated`, color: 'var(--ok)' })
       onClose()
     }
 
@@ -291,7 +308,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           onChange={(e) => setIsAdmin(e.currentTarget.checked)}
         />
         {editingSelf && existing?.isAdmin && (
-          <Alert variant="light" color="blue">
+          <Alert variant="light" color="var(--info)">
             <Trans>
               You cannot remove your own administrator permission. Promote another account first, then
               edit this one from there.
@@ -323,7 +340,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
 
         <Select
           label={t`Maximum content rating`}
-          description={t`Caps what Discover will show this account.`}
+          description={t`Caps what search, Discover and recommendations show this account.`}
           data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
           value={rating}
           onChange={(v) => setRating(v ?? 'safe')}

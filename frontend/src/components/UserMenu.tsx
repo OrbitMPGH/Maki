@@ -27,7 +27,7 @@ export function UserMenu() {
     <Menu position="bottom-end" width={220} withinPortal>
       <Menu.Target>
         <UnstyledButton aria-label={t`Account`}>
-          <Avatar radius="xl" size={30} color="blue">
+          <Avatar radius="xl" size={30} color="brand">
             {initials(name)}
           </Avatar>
         </UnstyledButton>
@@ -51,7 +51,7 @@ export function UserMenu() {
           <Trans>My account</Trans>
         </Menu.Item>
         <Menu.Item
-          color="red"
+          color="var(--danger)"
           leftSection={<IconLogout size={16} />}
           // No navigation afterwards: clearing the cached identity re-renders AuthGate into the
           // login screen on its own, and the query cache is dropped so nothing of this user's

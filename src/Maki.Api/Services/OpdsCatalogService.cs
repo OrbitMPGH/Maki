@@ -208,12 +208,7 @@ public class OpdsCatalogService(
 
         // Ordered in memory, not in SQL: Chapter.Number is a decimal stored as REAL, and one-shots
         // carry no number and must sort last rather than first on a null.
-        var ordered = all
-            .OrderBy(c => c.Number is null ? 1 : 0)
-            .ThenBy(c => c.Number)
-            .ThenBy(c => c.Volume)
-            .ThenBy(c => c.Id)
-            .ToList();
+        var ordered = ChapterOrder.Sort(all, c => c.Number, c => c.Volume, c => c.Id);
 
         var slice = ordered.Skip(page * ChapterPageSize).Take(ChapterPageSize).ToList();
         var entries = await ChapterEntriesAsync(
@@ -394,15 +389,16 @@ public class OpdsCatalogService(
                 lastReadDate = saved.UpdatedAt;
             }
 
+            var mimeType = OpdsXml.MimeType(slice.ArchivePath);
             var links = new List<OpdsLink>
             {
                 // open-access as well as plain acquisition: readers that only look for the
                 // open-access relation (there is no purchase model here) otherwise show no
                 // download button at all.
                 new(OpdsXml.AcquisitionRel, $"{ctx.Base}/chapter/{row.Id}/file",
-                    OpdsXml.ComicBookType, Length: slice.ArchiveSize),
+                    mimeType, Length: slice.ArchiveSize),
                 new(OpdsXml.OpenAccessRel, $"{ctx.Base}/chapter/{row.Id}/file",
-                    OpdsXml.ComicBookType, Length: slice.ArchiveSize),
+                    mimeType, Length: slice.ArchiveSize),
                 new(OpdsXml.ThumbnailRel, ctx.Cover(row.SeriesId), "image/jpeg"),
             };
 

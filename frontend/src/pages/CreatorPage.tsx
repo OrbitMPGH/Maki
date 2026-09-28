@@ -2,21 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
-  Badge,
   Button,
-  Card,
   Collapse,
   Group,
   Select,
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconUser } from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 import { msg } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import {
-  BROWSE_SORTS,
   useCreator,
   useRootFolders,
   useSeriesIdLookup,
@@ -24,15 +21,21 @@ import {
   type RecommendationFilters,
   type RecommendationItem,
 } from '../api/hooks'
+import { ApiError } from '../api/client'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
+  useBrowseSortOptions,
   useCatalogueFilters,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
+import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Panel } from '../components/ui/Panel'
+import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { TagChip } from '../components/ui/TagChip'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
@@ -62,13 +65,16 @@ const ROLE_LABELS: Record<string, MessageDescriptor> = {
 export default function CreatorPage() {
   const { t } = useLingui()
   const renderLabel = useLabel()
+  const sortOptions = useBrowseSortOptions()
   const { name = '' } = useParams()
   const [searchParams] = useSearchParams()
   const role = searchParams.get('role')
   // React Router already decodes path params, so this is the name as typed. Decoding it again
   // throws URIError on a name carrying a literal '%' ("100% Orange"), which blanks the page, and
   // silently rewrites one where the '%' happens to be followed by two hex digits.
-  const decoded = name
+  // Trimmed once here: a whitespace-only name (`/creator/%20`) is not a real creator and every
+  // other use below (scope key, request, page title) reads this same trimmed value.
+  const decoded = name.trim()
 
   // Named for the back link on any series opened from this page.
   usePageLabel(decoded)
@@ -95,10 +101,12 @@ export default function CreatorPage() {
     if (sameCreator) return
     setDetailItem(null)
     setApplied({})
+    setSort('popular')
     setPages(1)
+    setFiltersOpen(false)
     catalogue.reset()
     // catalogue.reset is stable by design; see useCatalogueFilters.
-  }, [sameCreator, decoded, role, catalogue.reset, setApplied, setPages])
+  }, [sameCreator, decoded, role, catalogue.reset, setApplied, setSort, setPages, setFiltersOpen])
 
   const appliedCount = Object.keys(applied).length
 
@@ -113,41 +121,70 @@ export default function CreatorPage() {
     [decoded, role, applied, appliedCount, sort, pages],
   )
 
-  const { data, isFetching, error } = useCreator(decoded.length > 0 ? request : null)
+  const { data, isFetching, error, refetch } = useCreator(decoded.length > 0 ? request : null)
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
 
   const items = data?.items ?? []
   const canLoadMore = items.length >= PAGE_SIZE * pages && items.length < MAX_WORKS
 
-  if (error) {
+  if (decoded.length === 0) {
     return (
-      <>
-        <PageHeader title={decoded} />
+      <SurfaceFrame width="full" pageStyle="editorial">
+        <PageHeader title={t`Creator`} />
         <EmptyState
-          icon={IconUser}
-          title={t`No such creator`}
-          description={t`Nobody by that name is credited in the local MangaBaka database.`}
+          title={t`Not a valid creator name`}
+          description={t`This link is missing the creator's name.`}
           actionLabel={t`Back to Discover`}
           actionTo="/discover"
         />
-      </>
+      </SurfaceFrame>
     )
   }
 
+  if (error) {
+    const notFound = error instanceof ApiError && error.status === 404
+    return (
+      <SurfaceFrame width="full" pageStyle="editorial">
+        <PageHeader title={decoded} />
+        {notFound ? (
+          <EmptyState
+            title={t`No such creator`}
+            description={t`Nobody by that name is credited in the local MangaBaka database.`}
+            actionLabel={t`Back to Discover`}
+            actionTo="/discover"
+          />
+        ) : (
+          <EmptyState
+            title={t`Failed to load this creator`}
+            description={error instanceof Error ? error.message : String(error)}
+            actionLabel={t`Retry`}
+            onAction={() => void refetch()}
+          />
+        )}
+      </SurfaceFrame>
+    )
+  }
+
+  // Named for Lingui: a member access would extract as an unlabelled {0}.
+  const workCount = data?.workCount ?? 0
+  const shownCount = items.length
+
   return (
-    <>
+    <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
         title={data?.name ?? decoded}
         description={
-          data ? `${data.workCount} title${data.workCount === 1 ? '' : 's'} in the catalogue` : undefined
+          data ? (
+            <Plural value={workCount} one="# title in the catalogue" other="# titles in the catalogue" />
+          ) : undefined
         }
         actions={
           <Group gap="xs">
             {(data?.roles ?? []).map((r) => (
-              <Badge key={r} variant="light" size="sm">
+              <TagChip key={r} size="sm">
                 {renderLabel(ROLE_LABELS[r] ?? r)}
-              </Badge>
+              </TagChip>
             ))}
           </Group>
         }
@@ -159,7 +196,7 @@ export default function CreatorPage() {
           leftSection={<IconAdjustmentsHorizontal size={16} />}
           onClick={() => setFiltersOpen((o) => !o)}
         >
-          {appliedCount > 0 ? `Filters (${appliedCount})` : 'Filters'}
+          {appliedCount > 0 ? t`Filters (${appliedCount})` : t`Filters`}
         </Button>
         <Group gap="xs">
           <Select
@@ -167,7 +204,7 @@ export default function CreatorPage() {
             w={150}
             value={sort}
             onChange={(v) => setSort((v as BrowseSort) ?? 'popular')}
-            data={BROWSE_SORTS}
+            data={sortOptions}
             allowDeselect={false}
             aria-label={t`Sort`}
           />
@@ -176,7 +213,7 @@ export default function CreatorPage() {
       </Group>
 
       <Collapse expanded={filtersOpen}>
-        <Card withBorder radius="md" padding="md" mb="md">
+        <Panel edge="strong" p="md" mb="md">
           <Stack gap="md">
             <CatalogueFilters controls={catalogue.controls} />
             <CatalogueFilterActions
@@ -189,9 +226,22 @@ export default function CreatorPage() {
                 setApplied(catalogue.build())
                 setPages(1)
               }}
+              extra={
+                <>
+                  <PresetMenu
+                    current={catalogue.build}
+                    onLoad={(f) => {
+                      catalogue.hydrate(f)
+                      setApplied(f)
+                      setPages(1)
+                    }}
+                  />
+                  <HiddenContentButton />
+                </>
+              }
             />
           </Stack>
-        </Card>
+        </Panel>
       </Collapse>
 
       {isFetching && !data && (
@@ -200,7 +250,6 @@ export default function CreatorPage() {
 
       {data && items.length === 0 && (
         <EmptyState
-          icon={IconUser}
           title={t`Nothing to show`}
           description={
             appliedCount > 0
@@ -216,18 +265,20 @@ export default function CreatorPage() {
           {canLoadMore && (
             <Group justify="center" mt="lg">
               <Button variant="default" loading={isFetching} onClick={() => setPages((p) => p + 1)}>
-                Load more
+                <Trans>Load more</Trans>
               </Button>
             </Group>
           )}
         </>
       )}
 
-      {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && (
-        <Alert variant="light" color="gray" mt="md">
+      {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && !canLoadMore && (
+        <Alert variant="light" color="var(--neutral)" mt="md">
           <Text size="sm">
-            Showing {items.length} of {data.workCount} titles. Filters and the catalogue's own
-            coverage both narrow this: only rated, non-novel entries are searchable.
+            <Trans>
+              Showing {shownCount} of {workCount} titles. Filters and the catalogue's own coverage
+              both narrow this: only rated, non-novel entries are searchable.
+            </Trans>
           </Text>
         </Alert>
       )}
@@ -238,6 +289,6 @@ export default function CreatorPage() {
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
       />
-    </>
+    </SurfaceFrame>
   )
 }

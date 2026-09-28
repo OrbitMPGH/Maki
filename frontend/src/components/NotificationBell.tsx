@@ -98,13 +98,13 @@ export function NotificationBell() {
         </Group>
 
         {isLoading ? (
-          <Text size="xs" c="dimmed" px="sm" pb="sm">
+          <Text size="xs" c="var(--ink-3)" px="sm" pb="sm">
             <Trans>Loading…</Trans>
           </Text>
         ) : items.length === 0 ? (
           <Stack align="center" gap={6} px="sm" py="lg">
             <IconBellOff size={22} opacity={0.4} />
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="var(--ink-3)">
               <Trans>Nothing yet</Trans>
             </Text>
           </Stack>
@@ -163,12 +163,12 @@ function NotificationRow({
           <Text size="xs" fw={item.read ? 500 : 650} lineClamp={1}>
             {item.title}
           </Text>
-          <Text size="xs" c="dimmed" lineClamp={2}>
+          <Text size="xs" c="var(--ink-3)" lineClamp={2}>
             {item.body}
           </Text>
           {/* fz, not size: `size` takes a token ("xs"), and a raw number there resolves against
               --mantine-line-height-{n}, which does not exist and lands as line-height: 100px. */}
-          <Text fz={10} lh={1.5} c="dimmed">
+          <Text fz={10} lh={1.5} c="var(--ink-3)">
             {relativeTime(item.createdAt)}
           </Text>
         </Stack>
@@ -178,8 +178,8 @@ function NotificationRow({
 }
 
 export function LevelIcon({ level }: { level: InboxItem['level'] }) {
-  if (level === 'error') return <IconAlertTriangle size={15} color="var(--mantine-color-red-6)" />
-  if (level === 'warning') return <IconAlertTriangle size={15} color="var(--mantine-color-yellow-6)" />
+  if (level === 'error') return <IconAlertTriangle size={15} color="var(--danger)" />
+  if (level === 'warning') return <IconAlertTriangle size={15} color="var(--warn)" />
   return <IconCircleCheck size={15} color="var(--mantine-color-brand-6)" />
 }
 
@@ -203,7 +203,7 @@ export function NotificationVisual({ item, size }: { item: InboxItem; size: numb
         <span className="inbox-cover-badge">
           <IconAlertTriangle
             size={11}
-            color={item.level === 'error' ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-yellow-6)'}
+            color={item.level === 'error' ? 'var(--danger)' : 'var(--warn)'}
           />
         </span>
       )}

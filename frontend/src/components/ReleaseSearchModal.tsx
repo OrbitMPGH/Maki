@@ -54,7 +54,7 @@ export function ReleaseSearchModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Search releases (Prowlarr)`} size="90%">
+    <Modal opened={opened} onClose={onClose} title={t`Search releases (Prowlarr)`} size="min(1180px, calc(100vw - 3rem))">
       <Group gap="xs" mb="md" wrap="nowrap">
         <TextInput
           style={{ flex: 1 }}
@@ -75,23 +75,23 @@ export function ReleaseSearchModal({
       {isFetching && (
         <Center py="lg">
           <Loader />
-          <Text ml="sm" c="dimmed" size="sm">
+          <Text ml="sm" c="var(--ink-3)" size="sm">
             <Trans>Searching indexers…</Trans>
           </Text>
         </Center>
       )}
       {error && (
-        <Alert color="red" variant="light">
+        <Alert color="var(--danger)" variant="light">
           {String(error)}
         </Alert>
       )}
       {releases && releases.length === 0 && !isFetching && (
-        <Text c="dimmed">
+        <Text c="var(--ink-3)">
           <Trans>No releases found.</Trans> <Trans>Try a shorter or alternative query.</Trans>
         </Text>
       )}
       {releases && releases.length > 0 && (
-        <Table striped highlightOnHover>
+        <Table highlightOnHover>
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Title</Trans></Table.Th>
@@ -126,7 +126,7 @@ export function ReleaseSearchModal({
                     <Text size="sm">{formatSize(size)}</Text>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="sm" c={(seeders ?? 0) > 0 ? 'green' : 'red'}>
+                    <Text size="sm" c={(seeders ?? 0) > 0 ? 'var(--ok)' : 'var(--danger)'}>
                       {seeders ?? '?'}
                     </Text>
                   </Table.Td>
@@ -134,7 +134,7 @@ export function ReleaseSearchModal({
                     <Button
                       size="compact-xs"
                       variant="light"
-                      loading={grab.isPending}
+                      loading={grab.isPending && grab.variables?.release.guid === r.guid}
                       onClick={() =>
                         grab.mutate(
                           { seriesId, release: r },
@@ -142,7 +142,7 @@ export function ReleaseSearchModal({
                             onSuccess: () => {
                               notifications.show({
                                 message: now`Sent to qBittorrent: ${title}`,
-                                color: 'green',
+                                color: 'var(--ok)',
                               })
                               onClose()
                             },

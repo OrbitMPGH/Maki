@@ -26,6 +26,10 @@ export interface ReaderManifest {
   completed: boolean
   previousChapterId: number | null
   nextChapterId: number | null
+  /** The next chapter's label and number, for the end-of-chapter screen. Null with no next chapter. */
+  nextChapterLabel: string | null
+  nextChapterNumber: number | null
+  seriesCoverUrl: string | null
   /** Whatever won: the series override, a reading profile, or the global defaults. */
   prefs: ReaderPrefs
   prefsSource: PrefsSource
@@ -38,6 +42,8 @@ export interface ReaderManifest {
   autoProfileId: number | null
   /** manga | manhwa | manhua | oel | other, or null when the series has no type yet. */
   seriesType: string | null
+  /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
+  pageVersion: string
 }
 
 /** Which layer answered "what does this series look like". Mirrors `ReaderPrefsSource`. */
@@ -80,10 +86,11 @@ export interface ChapterProgressDto {
  * This used to append the instance API key, which put it into browser history and into the access log
  * of every proxy the image request passed through.
  */
-export async function pageUrl(chapterId: number, page: number, thumb = false): Promise<string> {
+export async function pageUrl(chapterId: number, page: number, thumb = false, version?: string): Promise<string> {
   const init = await getInitialize()
   const kind = thumb ? 'thumb' : 'page'
-  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}`
+  const query = version ? `?v=${encodeURIComponent(version)}` : ''
+  return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}${query}`
 }
 
 export function useReaderManifest(chapterId: number) {
@@ -94,8 +101,11 @@ export function useReaderManifest(chapterId: number) {
     // The page list of a stored archive doesn't change while the reader is open, so nothing
     // refetches mid-chapter, but `resumePage` and `completed` do change, and a cached snapshot of
     // them is poison: reopening a chapter would resume off the position it had when first opened,
-    // then persist that stale page over the real one. Always refetch on mount, and see ReaderPage
-    // for why the resume waits for that fetch instead of applying the cached value first.
+    // then persist that stale page over the real one. `refetchOnMount: 'always'` only forces a
+    // refetch on a real mount, though: with ReaderPage staying mounted across /read/:chapterId
+    // changes, a chapter revisited without an unmount in between is served this cached manifest as-is.
+    // ReaderPage's `goToChapter` covers that by dropping the target's cache entry before navigating,
+    // and see ReaderPage for why the resume waits for a fetch instead of applying a cached value first.
     staleTime: Infinity,
     refetchOnMount: 'always',
   })
@@ -201,15 +211,18 @@ export async function flushProgress(
   pageIndex: number,
   completed?: boolean,
   seconds?: number,
-) {
+): Promise<UnlockedAchievement[]> {
   const init = await getInitialize()
-  await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
+  const response = await fetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
     body: JSON.stringify({ pageIndex, completed, seconds, final: true }),
   })
+  if (!response.ok) return []
+  const result = (await response.json()) as SaveProgressResult
+  return result?.unlocked ?? []
 }
 
 export interface ReaderSettings {
@@ -244,7 +257,13 @@ export function useSaveReaderSettings() {
 export interface KavitaImportStatus {
   running: boolean
   finishedAt: string | null
-  result: { seriesMatched: number; chaptersMarked: number; seriesUnmatched: number } | null
+  result: {
+    seriesMatched: number
+    chaptersMarked: number
+    seriesUnmatched: number
+    seriesFailed: number
+    failedTitles: string[]
+  } | null
   error: string | null
 }
 
@@ -329,6 +348,9 @@ export function useSetChaptersState(seriesId: number) {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['home'] })
+      // Ticking a season off (or back on) can change whether the anime-resume callout has
+      // anything left to offer.
+      void queryClient.invalidateQueries({ queryKey: ['anime-resume', 'series', seriesId] })
     },
   })
 }

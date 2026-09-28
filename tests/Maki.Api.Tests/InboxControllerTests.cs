@@ -199,7 +199,8 @@ public class InboxControllerTests : IDisposable
         var user = new TestCurrentUser(_bob, "bob", MakiPermission.None);
         var controller = new InboxController(
             db, new UserSettingsService(db, user), user,
-            new InboxRenderer(new TestLocalizer()), new TestRequestLocale(), new StoppedClock(T0));
+            new InboxRenderer(new TestLocalizer()), new TestRequestLocale(), new StoppedClock(T0),
+            new TestLocalizer());
 
         var page = Ok<InboxPageDto>(await controller.List());
 
@@ -287,7 +288,8 @@ public class InboxControllerTests : IDisposable
 
         return new InboxController(
             db, new UserSettingsService(db, user), user,
-            new InboxRenderer(new TestLocalizer()), new TestRequestLocale(), new StoppedClock(T0));
+            new InboxRenderer(new TestLocalizer()), new TestRequestLocale(), new StoppedClock(T0),
+            new TestLocalizer());
     }
 
     private int Seed(

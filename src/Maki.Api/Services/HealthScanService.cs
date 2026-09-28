@@ -38,6 +38,7 @@ public class HealthScanService(MakiDbContext db)
         var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         var trackedLocations = await db.ChapterFiles.Join(db.Series, f => f.SeriesId, s => s.Id, (f, s) => new { s.RootFolderId, f.RelativePath }).ToListAsync(ct);
         var files = new List<HealthFile>();
+        var retired = new List<int>();
         foreach (var root in roots)
         {
             if (scan.RootFolderId != null && root.Id != scan.RootFolderId) continue;
@@ -62,6 +63,14 @@ public class HealthScanService(MakiDbContext db)
                     if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
                     var file = knownFiles.FirstOrDefault(f => seen.Comparer.Equals(f.RelativePath, relative));
                     if (selected.Length > 0 && (file == null || !selected.Contains(file.Id))) continue;
+                    // Gone from disk with no record pointing at it: Maki deleted it itself (relink,
+                    // chapter delete, rename) or the owner did. There is nothing left to report on.
+                    if (trackedFile == null && file != null && !File.Exists(absolute))
+                    {
+                        file.Removed = true;
+                        retired.Add(file.Id);
+                        continue;
+                    }
                     if (file == null)
                     {
                         file = new HealthFile { RootFolderId = root.Id, RelativePath = relative };
@@ -85,6 +94,9 @@ public class HealthScanService(MakiDbContext db)
             if (!files.Contains(file)) files.Add(file);
         scan.Total = files.Count;
         await db.SaveChangesAsync(ct);
+        if (retired.Count > 0)
+            await db.HealthFindings.Where(f => retired.Contains(f.FileId) && f.State != "resolved")
+                .ExecuteUpdateAsync(u => u.SetProperty(f => f.State, "resolved"), ct);
 
         // From here the scan works by id and lets every entity go after each file. Keeping them
         // tracked is what a scan naturally does and it does not survive a real library: each
@@ -206,16 +218,16 @@ public class HealthScanService(MakiDbContext db)
         if (analysis.Hash != null && analysis.Status == "complete" && !await db.HealthAnalyses.AnyAsync(a => a.Id == cacheId, ct))
             db.HealthAnalyses.Add(new() { Id = cacheId, ContentHash = analysis.Hash, AnalyzerVersion = ArchiveHealthAnalyzer.VerifyVersion, AnalysisJson = file.AnalysisJson });
         var problems = analysis.Problems.ToList();
-        if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "Archive is not linked to any chapter"));
+        if (file.ChapterFileId == null) problems.Add(new("unlinked", "warning", "health.finding.unlinked"));
         else if (await db.ChapterFiles.AnyAsync(f => f.Id == file.ChapterFileId && f.Size != size, ct))
-            problems.Add(new("sizeMismatch", "warning", "Stored size differs from the file on disk"));
+            problems.Add(new("sizeMismatch", "warning", "health.finding.sizeMismatch"));
         // Byte-identical archives can only be spotted by files that have both been read.
         if (analysis.Hash != null)
         {
             var duplicates = await db.HealthFiles.Where(f => f.Id != file.Id && !f.Removed && f.ContentHash == analysis.Hash).ToListAsync(ct);
             if (duplicates.Count > 0)
             {
-                problems.Add(new("duplicate", "warning", "Byte-identical archives exist in the library"));
+                problems.Add(new("duplicate", "warning", "health.finding.duplicate"));
                 foreach (var other in duplicates)
                     if (!await db.HealthFindings.AnyAsync(f => f.FileId == other.Id && f.Version == other.Version && f.Kind == "duplicate", ct))
                         db.HealthFindings.Add(new()
@@ -239,17 +251,24 @@ public class HealthScanService(MakiDbContext db)
             old.State = "resolved";
         foreach (var group in problems.GroupBy(p => p.Kind))
         {
-            var first = group.First();
+            var items = group.Take(5).ToList();
+            var first = items[0];
             var finding = existing.FirstOrDefault(x => x.Version == file.Version && x.Kind == first.Kind);
             if (finding == null)
-                // The analyzer's own wording, not Maki's, so this one keeps the plain column.
                 db.HealthFindings.Add(new()
                 {
                     FileId = file.Id,
                     Version = file.Version,
                     Kind = first.Kind,
                     Severity = first.Severity,
-                    Message = string.Join("; ", group.Select(p => p.Message).Take(5)),
+                    // Several problems can share one finding (several bad entries in one archive).
+                    // Rendering has to wait for a reader's own language, so the single-problem case
+                    // carries that problem's own key straight through and only the multi-problem
+                    // case needs the join sentinel.
+                    MessageKey = items.Count == 1 ? first.MessageKey : "health.finding.joined",
+                    ParamsJson = items.Count == 1
+                        ? first.ParamsJson
+                        : JsonSerializer.Serialize(items.Select(p => new JoinedProblem(p.MessageKey, p.ParamsJson)), Json),
                     CreatedAt = DateTime.UtcNow,
                 });
             else if (finding.State == "resolved") finding.State = "open";
@@ -257,3 +276,10 @@ public class HealthScanService(MakiDbContext db)
         await db.SaveChangesAsync(ct);
     }
 }
+
+/// <summary>
+/// One problem inside a <c>health.finding.joined</c> finding's <c>ParamsJson</c>. Rendered by
+/// <c>HealthController</c> at read time and joined with "; ", the same way the raw problems used
+/// to be joined as English before findings were keyed.
+/// </summary>
+public record JoinedProblem(string Key, string? ParamsJson);

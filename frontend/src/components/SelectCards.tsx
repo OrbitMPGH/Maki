@@ -15,14 +15,15 @@ export function SelectCards<T extends string>({
   value,
   onChange,
   disabled,
-  cols = options.length,
+  // Two-up below `xs`, otherwise a phone-width column squeezes every tile below its min-content width.
+  cols = { base: 2, xs: options.length },
   fillLeft = false,
 }: {
   options: SelectCardOption<T>[]
   value: T
   onChange: (value: T) => void
   disabled?: boolean
-  cols?: number
+  cols?: number | Partial<Record<'base' | 'xs' | 'sm' | 'md' | 'lg' | 'xl', number>>
   fillLeft: boolean
 })
 {
@@ -41,7 +42,7 @@ export function SelectCards<T extends string>({
             aria-pressed={active}
             style={{
               padding: '12px 14px',
-              borderRadius: 10,
+              borderRadius: 'var(--radius-surface)',
               border: `1px ${(fillLeft && index < selectedIndex) ? 'dashed' : 'solid'} ${active || (fillLeft && index < selectedIndex) ? 'var(--brand)' : 'var(--border)'}`,
               background: active || (fillLeft && index < selectedIndex) ? 'var(--surface-hover)' : 'transparent',
               boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
@@ -52,7 +53,7 @@ export function SelectCards<T extends string>({
             <Text size="sm" fw={active ? 700 : 600}>
               {o.title}
             </Text>
-            <Text size="xs" c="dimmed" mt={2}>
+            <Text size="xs" c="var(--ink-3)" mt={2}>
               {o.subtitle}
             </Text>
           </UnstyledButton>

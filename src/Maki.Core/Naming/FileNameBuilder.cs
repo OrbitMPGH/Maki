@@ -31,9 +31,18 @@ public static class FileNameBuilder
     /// <param name="wholeVolumes">Whether the span is every known chapter of the volumes it covers.</param>
     public static string BuildChapterFileName(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string format) =>
+        BuildChapterFileName(series, chapter, through, wholeVolumes, format, NamingDefaults.ChapterExtension);
+
+    /// <summary>
+    /// Same as the four-argument overload, but with the extension an existing file already has
+    /// (e.g. renaming a placed PDF), rather than the default <c>.cbz</c> every format assumes.
+    /// </summary>
+    public static string BuildChapterFileName(
+        Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string format,
+        string extension) =>
         NamingFormatter.Format(format, new NamingContext(series, chapter, through, wholeVolumes))
         + LanguageSuffix(chapter, format)
-        + NamingDefaults.ChapterExtension;
+        + extension;
 
     /// <summary>
     /// The language code Maki names files under when the format doesn't say otherwise. Chapter

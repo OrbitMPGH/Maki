@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using Maki.Api.Auth;
+using Maki.Api.Dtos;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -260,7 +262,7 @@ public class OidcTests
         var result = await service.SignInAsync("oidc", "sub-1", Claims(), default);
 
         Assert.Null(result.User);
-        Assert.NotNull(result.Error);
+        Assert.NotNull(result.ErrorKey);
     }
 
     [Fact]
@@ -436,7 +438,7 @@ public class OidcTests
         // Linking would hand a new subject an existing person's library; a silent "ada2" is a support
         // question nobody can answer six months later.
         Assert.Null(result.User);
-        Assert.Contains("already exists", result.Error);
+        Assert.Equal("error.auth.ssoUsernameExists", result.ErrorKey);
     }
 
     [Fact]
@@ -491,6 +493,216 @@ public class OidcTests
         Assert.True(result.User.Permissions.Grants(MakiPermission.DownloadChapters));
     }
 
+    [Fact]
+    public async Task ClaimsCannotStripAdminFromTheLastAdministrator()
+    {
+        using var fixture = new TestDb();
+        (string, string)[] settings =
+        [
+            (SettingKeys.AuthOidcAutoProvision, "true"),
+            (SettingKeys.AuthOidcAdminClaim, "groups=maki-admins"),
+        ];
+        var first = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1",
+            Claims(("preferred_username", "ada"), ("groups", "maki-admins")), default);
+        Assert.NotNull(first.User);
+        Assert.True(first.User.Permissions.Grants(MakiPermission.Admin));
+
+        var again = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1",
+            Claims(("preferred_username", "ada")), default);
+
+        Assert.NotNull(again.User);
+        Assert.True(again.User.Permissions.Grants(MakiPermission.Admin));
+        using var db = fixture.NewContext();
+        Assert.True(db.Users.Single(u => u.Id == again.User.Id).Permissions.Grants(MakiPermission.Admin));
+    }
+
+    // ---- issuer scoping (#15) ----
+
+    [Fact]
+    public async Task ChangingTheAuthorityDoesNotResolveAnOldSubjectToTheOldAccount()
+    {
+        using var fixture = new TestDb();
+
+        var originalIdp = await ServiceAsync(fixture, "https://old-idp.example.com",
+            (SettingKeys.AuthOidcAutoProvision, "true"));
+        var created = await originalIdp.SignInAsync(
+            "oidc", "1", Claims(("preferred_username", "ada")), default);
+        Assert.NotNull(created.User);
+
+        // Same bare subject "1", but the operator repointed auth.oidcauthority at a different IdP,
+        // exactly the scenario a small sequential subject id makes realistic. A lookup keyed on the
+        // bare subject alone would resolve this straight to ada's account.
+        var repointedIdp = await ServiceAsync(fixture, "https://new-idp.example.com",
+            (SettingKeys.AuthOidcAutoProvision, "true"));
+        var result = await repointedIdp.SignInAsync(
+            "oidc", "1", Claims(("preferred_username", "mallory")), default);
+
+        Assert.NotNull(result.User);
+        Assert.NotEqual(created.User.Id, result.User.Id);
+        Assert.True(result.Provisioned);
+
+        using var db = fixture.NewContext();
+        var keys = db.UserLogins.Where(l => l.LoginProvider == "oidc").Select(l => l.ProviderKey).ToList();
+        Assert.Contains("https://old-idp.example.com|1", keys);
+        Assert.Contains("https://new-idp.example.com|1", keys);
+    }
+
+    [Fact]
+    public async Task TheOneTimeRewriteScopesEveryOidcLoginRowUnconditionallyAndOnlyOnce()
+    {
+        using var fixture = new TestDb();
+        fixture.SetConfig(
+            (SettingKeys.AuthOidcEnabled, "true"),
+            (SettingKeys.AuthOidcAuthority, "https://auth.example.com"),
+            (SettingKeys.AuthOidcClientId, "maki"));
+
+        var bareUserId = fixture.SeedUser("ada");
+        // A subject that itself contains '|' (Auth0, Google), the case a bare-key check used to get
+        // wrong: the marker gate means no scoped row can exist before this first run, so every oidc
+        // row at this point is guaranteed to still be a bare subject, whatever it looks like.
+        var pipeSubjectUserId = fixture.SeedUser("mallory");
+
+        using (var seedDb = fixture.NewContext())
+        {
+            seedDb.UserLogins.Add(new IdentityUserLogin<int>
+            {
+                LoginProvider = AuthSchemes.Oidc, ProviderKey = "sub-1", ProviderDisplayName = "ada",
+                UserId = bareUserId
+            });
+            seedDb.UserLogins.Add(new IdentityUserLogin<int>
+            {
+                LoginProvider = AuthSchemes.Oidc, ProviderKey = "auth0|abc123",
+                ProviderDisplayName = "mallory", UserId = pipeSubjectUserId
+            });
+            seedDb.SaveChanges();
+        }
+
+        using (var db = fixture.NewContext())
+        {
+            var options = new OidcRuntimeOptions();
+            await options.LoadAsync(db);
+            var repair = new OidcLoginIssuerRepairService(db, options, NullLogger<OidcLoginIssuerRepairService>.Instance);
+            await repair.RunOnceAsync();
+        }
+
+        using (var db = fixture.NewContext())
+        {
+            Assert.Equal("https://auth.example.com|sub-1",
+                db.UserLogins.Single(l => l.UserId == bareUserId).ProviderKey);
+            Assert.Equal("https://auth.example.com|auth0|abc123",
+                db.UserLogins.Single(l => l.UserId == pipeSubjectUserId).ProviderKey);
+            Assert.True(db.AppConfig.Any(c => c.Key == OidcLoginIssuerRepairService.MarkerKey));
+        }
+
+        // Marker-gated: a row added after the repair ran must not be touched by a second run.
+        using (var seedDb = fixture.NewContext())
+        {
+            seedDb.UserLogins.Add(new IdentityUserLogin<int>
+            {
+                LoginProvider = AuthSchemes.Oidc, ProviderKey = "sub-3", ProviderDisplayName = "later",
+                UserId = fixture.SeedUser("later")
+            });
+            seedDb.SaveChanges();
+        }
+
+        using (var db = fixture.NewContext())
+        {
+            var options = new OidcRuntimeOptions();
+            await options.LoadAsync(db);
+            var repair = new OidcLoginIssuerRepairService(db, options, NullLogger<OidcLoginIssuerRepairService>.Instance);
+            await repair.RunOnceAsync();
+        }
+
+        using (var db = fixture.NewContext())
+        {
+            Assert.Equal("sub-3", db.UserLogins.Single(l => l.ProviderKey.Contains("sub-3")).ProviderKey);
+        }
+    }
+
+    // ---- SSO delegates two-factor (#16) ----
+
+    [Fact]
+    public async Task EnablingTotpIsRefusedForAnOidcLinkedAccount()
+    {
+        using var fixture = new TestDb();
+        fixture.SetConfig(
+            (SettingKeys.AuthOidcEnabled, "true"),
+            (SettingKeys.AuthOidcAuthority, "https://auth.example.com"),
+            (SettingKeys.AuthOidcClientId, "maki"));
+        var userId = fixture.SeedUser("ada");
+
+        using (var seedDb = fixture.NewContext())
+        {
+            seedDb.UserLogins.Add(new IdentityUserLogin<int>
+            {
+                LoginProvider = AuthSchemes.Oidc, ProviderKey = "https://auth.example.com|sub-1",
+                ProviderDisplayName = "ada", UserId = userId
+            });
+            seedDb.SaveChanges();
+        }
+
+        using var db = fixture.NewContext();
+        var clock = new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero));
+        var options = new OidcRuntimeOptions();
+        await options.LoadAsync(db);
+        var controller = new Maki.Api.Controllers.AccountController(
+            new TestLocalizer(), db, BuildUserManager(db), null!, new TestCurrentUser(userId),
+            new AuthEventLogger(db, clock), options, clock);
+
+        // No password on this account (SeedUser never sets one), so enrolment is refused either
+        // way; this asserts the SSO-specific message is still surfaced when the account is linked.
+        var setup = await controller.SetupTwoFactor();
+        var setupConflict = Assert.IsType<ConflictObjectResult>(setup);
+        Assert.Equal("error.account.twoFactorDelegatedToSso",
+            setupConflict.Value!.GetType().GetProperty("code")!.GetValue(setupConflict.Value));
+
+        var enable = await controller.EnableTwoFactor(new EnableTwoFactorRequest("123456"), default);
+        var enableConflict = Assert.IsType<ConflictObjectResult>(enable);
+        Assert.Equal("error.account.twoFactorDelegatedToSso",
+            enableConflict.Value!.GetType().GetProperty("code")!.GetValue(enableConflict.Value));
+    }
+
+    [Fact]
+    public async Task EnablingTotpIsAllowedForAnOidcLinkedAccountWithAWorkingPasswordLogin()
+    {
+        using var fixture = new TestDb();
+        fixture.SetConfig(
+            (SettingKeys.AuthOidcEnabled, "true"),
+            (SettingKeys.AuthOidcAuthority, "https://auth.example.com"),
+            (SettingKeys.AuthOidcClientId, "maki"));
+        var userId = fixture.SeedUser("ada");
+
+        using (var seedDb = fixture.NewContext())
+        {
+            seedDb.UserLogins.Add(new IdentityUserLogin<int>
+            {
+                LoginProvider = AuthSchemes.Oidc, ProviderKey = "https://auth.example.com|sub-1",
+                ProviderDisplayName = "ada", UserId = userId
+            });
+            seedDb.SaveChanges();
+        }
+
+        using (var setupDb = fixture.NewContext())
+        {
+            var user = await BuildUserManager(setupDb).FindByIdAsync(userId.ToString());
+            var added = await BuildUserManager(setupDb).AddPasswordAsync(user!, "correct horse battery staple 1");
+            Assert.True(added.Succeeded);
+        }
+
+        using var db = fixture.NewContext();
+        var clock = new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero));
+        var options = new OidcRuntimeOptions();
+        await options.LoadAsync(db);
+        var controller = new Maki.Api.Controllers.AccountController(
+            new TestLocalizer(), db, BuildUserManager(db), null!, new TestCurrentUser(userId),
+            new AuthEventLogger(db, clock), options, clock);
+
+        // Linked to SSO, but the password path still works and auth.oidconly is off: refusing
+        // enrolment here would be a security downgrade, not a consequence of SSO delegating anything.
+        var setup = await controller.SetupTwoFactor();
+        Assert.IsType<TwoFactorSetupDto>(Assert.IsType<OkObjectResult>(setup).Value);
+    }
+
     // ---- fixture plumbing ----
 
     private static Claim[] Claims(params (string Type, string Value)[] claims) =>
@@ -523,16 +735,21 @@ public class OidcTests
     /// self-consistent.
     /// </summary>
     private static async Task<OidcSignInService> ServiceAsync(
-        TestDb fixture, params (string Key, string Value)[] settings)
+        TestDb fixture, params (string Key, string Value)[] settings) =>
+        await ServiceAsync(fixture, "https://auth.example.com", settings);
+
+    /// <summary>Overload that lets a test pick the authority explicitly (repointing #15's scoping).</summary>
+    private static async Task<OidcSignInService> ServiceAsync(
+        TestDb fixture, string authority, params (string Key, string Value)[] settings)
     {
         var options = new OidcRuntimeOptions();
         var db = fixture.NewContext();
 
-        if (settings.Length > 0)
+        if (settings.Length > 0 || authority != "https://auth.example.com")
         {
             fixture.SetConfig([
                 (SettingKeys.AuthOidcEnabled, "true"),
-                (SettingKeys.AuthOidcAuthority, "https://auth.example.com"),
+                (SettingKeys.AuthOidcAuthority, authority),
                 (SettingKeys.AuthOidcClientId, "maki"),
                 .. settings
             ]);
@@ -540,8 +757,16 @@ public class OidcTests
 
         await options.LoadAsync(db);
 
+        return new OidcSignInService(
+            db, BuildUserManager(db), options,
+            new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)),
+            NullLogger<OidcSignInService>.Instance);
+    }
+
+    private static UserManager<MakiUser> BuildUserManager(MakiDbContext db)
+    {
         var store = new UserStore<MakiUser, IdentityRole<int>, MakiDbContext, int>(db);
-        var userManager = new UserManager<MakiUser>(
+        return new UserManager<MakiUser>(
             store,
             Options.Create(new IdentityOptions()),
             new PasswordHasher<MakiUser>(),
@@ -551,10 +776,5 @@ public class OidcTests
             new IdentityErrorDescriber(),
             null!,
             NullLogger<UserManager<MakiUser>>.Instance);
-
-        return new OidcSignInService(
-            db, userManager, options,
-            new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)),
-            NullLogger<OidcSignInService>.Instance);
     }
 }

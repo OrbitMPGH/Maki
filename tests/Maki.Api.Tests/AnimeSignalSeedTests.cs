@@ -104,7 +104,7 @@ public class AnimeSignalSeedTests : IDisposable
     public async Task A_dropped_or_low_scored_anime_joins_the_avoided_set_instead()
     {
         OptIn();
-        Signal(600, AnimeWatchStatus.Dropped, null, animeId: 1);
+        Signal(600, AnimeWatchStatus.Dropped, 6, animeId: 1);
         Signal(601, AnimeWatchStatus.Completed, 2, animeId: 2);
 
         using var db = _fixture.NewContext(1);
@@ -237,6 +237,26 @@ public class AnimeSignalSeedTests : IDisposable
         var atDefault = await FingerprintAsync();
         SetStrength(AnimeSignalStrength.Full);
         Assert.NotEqual(atDefault, await FingerprintAsync());
+    }
+
+    /// <summary>
+    /// The sync stores unscored Completed and Watching rows for the anime resume callout. Those
+    /// carry no opinion, so they must reach neither the seeds nor the avoided set.
+    /// </summary>
+    [Fact]
+    public async Task An_unscored_completed_or_dropped_row_reaches_nothing()
+    {
+        OptIn();
+        Signal(710, AnimeWatchStatus.Completed, null, animeId: 1);
+        Signal(711, AnimeWatchStatus.Watching, null, animeId: 2);
+        Signal(712, AnimeWatchStatus.Dropped, null, animeId: 3);
+
+        using var db = _fixture.NewContext(1);
+        var snapshot = await Service().SnapshotAsync(db, new TestCurrentUser(1));
+
+        Assert.DoesNotContain(710L, snapshot.Effective.EligibleIds);
+        Assert.DoesNotContain(711L, snapshot.Effective.EligibleIds);
+        Assert.Empty(snapshot.Avoided);
     }
 
     [Fact]
@@ -433,7 +453,7 @@ public class AnimeSignalSeedTests : IDisposable
     {
         OptIn();
         Signal(920, AnimeWatchStatus.Completed, 10, animeId: 1);
-        Signal(921, AnimeWatchStatus.Dropped, null, animeId: 2);
+        Signal(921, AnimeWatchStatus.Dropped, 6, animeId: 2);
 
         using (var db = _fixture.NewContext(1))
         {

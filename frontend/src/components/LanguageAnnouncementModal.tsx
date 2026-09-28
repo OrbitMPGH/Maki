@@ -53,7 +53,7 @@ export default function LanguageAnnouncementModal() {
       // Mantine zeroes the body's top padding whenever the modal has a header, which leaves the
       // first paragraph reading as part of the title. Put it back. The dialog is one short
       // message; it can afford the room.
-      styles={{ body: { paddingTop: 'var(--mantine-spacing-md)' } }}
+      styles={{ body: { paddingTop: 'var(--mantine-spacing-lg)' } }}
     >
       <Stack gap="lg">
         <Group gap="sm" wrap="nowrap" align="flex-start">
@@ -82,7 +82,7 @@ export default function LanguageAnnouncementModal() {
           comboboxProps={{ withinPortal: true }}
         />
 
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <Trans>
             Translations other than English are machine-made and being corrected over time; anything
             still untranslated falls back to English.

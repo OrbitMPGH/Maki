@@ -115,6 +115,25 @@ public class MangakakalotSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_keeps_distinct_unnumbered_specials()
+    {
+        const string page =
+            """{"success":true,"data":{"chapters":[{"chapter_name":"Oneshot","chapter_slug":"oneshot"},{"chapter_name":"Extra","chapter_slug":"extra"}],"pagination":{"total":2,"limit":100,"offset":0,"has_more":false}}}""";
+
+        var source = new MangakakalotSource(new FakeHtmlFetcher(new()
+        {
+            ["offset=0&"] = page
+        }));
+
+        var chapters = await source.ListChaptersAsync("tower-of-god");
+
+        Assert.Equal(2, chapters.Count);
+        Assert.Contains(chapters, c => c.Title == "Oneshot");
+        Assert.Contains(chapters, c => c.Title == "Extra");
+        Assert.All(chapters, c => Assert.Null(c.Number));
+    }
+
+    [Fact]
     public async Task GetPages_returns_urls_with_referer()
     {
         var source = new MangakakalotSource(new FakeHtmlFetcher(new()

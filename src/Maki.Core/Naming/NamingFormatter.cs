@@ -3,6 +3,13 @@ using System.Text.RegularExpressions;
 namespace Maki.Core.Naming;
 
 /// <summary>
+/// One reason a format failed <see cref="NamingFormatter.Validate"/>. Core has no <c>ILocalizer</c>
+/// <see cref="Key"/> is a server message catalogue key and <see cref="Args"/> fills its ICU
+/// placeholders; the caller in Maki.Api renders both with the request's own localizer.
+/// </summary>
+public sealed record NamingValidationError(string Key, object? Args = null);
+
+/// <summary>
 /// Renders a user-configured naming format. Pure: everything it needs arrives in the
 /// <see cref="NamingContext"/>, so the same code runs for the settings preview and for the real
 /// file on disk.
@@ -56,23 +63,23 @@ public static class NamingFormatter
     /// <summary>
     /// Every reason this format can't be saved, in the order they were found. Empty means good.
     /// </summary>
-    public static IReadOnlyList<string> Validate(string? template)
+    public static IReadOnlyList<NamingValidationError> Validate(string? template)
     {
-        var errors = new List<string>();
+        var errors = new List<NamingValidationError>();
         if (string.IsNullOrWhiteSpace(template))
         {
-            errors.Add("Format cannot be empty");
+            errors.Add(new NamingValidationError("error.naming.formatEmpty"));
             return errors;
         }
 
         if (template.Contains('/') || template.Contains('\\'))
         {
-            errors.Add("Format cannot contain path separators — names are a single folder or file deep");
+            errors.Add(new NamingValidationError("error.naming.pathSeparators"));
         }
 
         if (template.Contains(".."))
         {
-            errors.Add("Format cannot contain \"..\"");
+            errors.Add(new NamingValidationError("error.naming.doubleDot"));
         }
 
         errors.AddRange(BraceErrors(template));
@@ -80,7 +87,7 @@ public static class NamingFormatter
         var matches = TokenPattern.Matches(template);
         if (matches.Count == 0)
         {
-            errors.Add("Format must contain at least one token, or every series would get the same name");
+            errors.Add(new NamingValidationError("error.naming.noTokens"));
         }
 
         foreach (Match match in matches)
@@ -89,7 +96,8 @@ public static class NamingFormatter
             var token = NamingTokens.Find(name);
             if (token is null)
             {
-                errors.Add($"Unknown token: {{{match.Groups[1].Value}}}");
+                errors.Add(new NamingValidationError(
+                    "error.naming.unknownToken", new { token = $"{{{match.Groups[1].Value}}}" }));
                 continue;
             }
 
@@ -100,11 +108,12 @@ public static class NamingFormatter
 
             if (!token.SupportsPadding)
             {
-                errors.Add($"{token.Display} does not take a padding pattern");
+                errors.Add(new NamingValidationError("error.naming.noPadding", new { token = token.Display }));
             }
             else if (padding.Length == 0 || padding.Any(c => c != '0'))
             {
-                errors.Add($"Padding for {token.Display} must be zeroes, e.g. {{{name}:000}}");
+                errors.Add(new NamingValidationError(
+                    "error.naming.paddingNotZero", new { token = token.Display, example = $"{{{name}:000}}" }));
             }
         }
 
@@ -143,7 +152,7 @@ public static class NamingFormatter
         return letters.All(char.IsUpper) ? value.ToUpperInvariant() : value;
     }
 
-    private static IEnumerable<string> BraceErrors(string template)
+    private static IEnumerable<NamingValidationError> BraceErrors(string template)
     {
         var open = false;
         foreach (var c in template)
@@ -151,13 +160,13 @@ public static class NamingFormatter
             switch (c)
             {
                 case '{' when open:
-                    yield return "Format has a \"{\" inside a token";
+                    yield return new NamingValidationError("error.naming.braceInsideToken");
                     yield break;
                 case '{':
                     open = true;
                     break;
                 case '}' when !open:
-                    yield return "Format has a \"}\" with no matching \"{\"";
+                    yield return new NamingValidationError("error.naming.unmatchedCloseBrace");
                     yield break;
                 case '}':
                     open = false;
@@ -167,7 +176,7 @@ public static class NamingFormatter
 
         if (open)
         {
-            yield return "Format has a \"{\" with no matching \"}\"";
+            yield return new NamingValidationError("error.naming.unmatchedOpenBrace");
         }
     }
 

@@ -63,7 +63,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
   const [filter, setFilter] = useState<Filter>('all')
   const [sort, setSort] = useState<'recent' | 'title'>('recent')
   const [actionError, setActionError] = useState('')
-  const [pending, setPending] = useState<number | null>(null)
+  const [pending, setPending] = useState<Set<number>>(new Set())
 
   const { data: lab } = useFeedbackLab()
   useEffect(() => {
@@ -158,8 +158,18 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
 
   async function run(id: number, work: () => Promise<unknown>) {
     setActionError('')
-    setPending(id)
-    try { await work() } catch (cause) { setActionError(String(cause)) } finally { setPending(null) }
+    setPending((prev) => new Set(prev).add(id))
+    try {
+      await work()
+    } catch (cause) {
+      setActionError(String(cause))
+    } finally {
+      setPending((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
   }
 
   const clear = (row: Row, action: 'clear-suppression' | 'clear-exposure' | 'clear-sentiment') =>
@@ -194,14 +204,19 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
       title={
         <div>
           <Text fw={600}><Trans>Manage signals</Trans></Text>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             <Trans>Change how individual titles affect recommendations.</Trans>
           </Text>
         </div>
       }
     >
-      <Tabs value={tab} onChange={(value) => setTab(value === 'anime' ? 'anime' : 'titles')}>
-        <Tabs.List mb="sm">
+      <Tabs
+        value={tab}
+        onChange={(value) => setTab(value === 'anime' ? 'anime' : 'titles')}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs sub-tabs', tab: 'series-tab' }}
+      >
+        <Tabs.List>
           <Tabs.Tab value="titles"><Trans>Titles</Trans></Tabs.Tab>
           {lab?.capabilities.animeSignals && (
             <Tabs.Tab value="anime"><Trans>Anime</Trans></Tabs.Tab>
@@ -236,26 +251,26 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
             </Chip.Group>
 
             {actionError && (
-              <Alert color="red">
+              <Alert color="var(--danger)">
                 <Trans>{actionError} Refresh the page and try again.</Trans>
               </Alert>
             )}
 
             {visible.length === 0 && (
-              <Text size="sm" c="dimmed" py="md"><Trans>No titles match.</Trans></Text>
+              <Text size="sm" c="var(--ink-3)" py="md"><Trans>No titles match.</Trans></Text>
             )}
 
             <Stack gap={0}>
               {visible.map((row) => (
                 <SignalRow
-                  key={row.id} row={row} busy={pending === row.id}
+                  key={row.id} row={row} busy={pending.has(row.id)}
                   onClear={clear} onExclude={setExcluded}
                 />
               ))}
             </Stack>
 
             <Group justify="space-between">
-              <Text size="xs" c="dimmed"><Trans>Showing {shown} of {total}</Trans></Text>
+              <Text size="xs" c="var(--ink-3)"><Trans>Showing {shown} of {total}</Trans></Text>
               {states?.nextCursor && (
                 <Button size="xs" variant="subtle" onClick={() => setCursor(states.nextCursor!)}>
                   <Trans>Load more</Trans>
@@ -325,14 +340,14 @@ function AnimeSignalsPanel() {
 
   if (isLoading || !data) {
     return error ? (
-      <Alert color="red"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
+      <Alert color="var(--danger)"><Trans>Could not load anime signals: {String(error)}</Trans></Alert>
     ) : null
   }
 
   const noTracker = data.services.length === 0
   if (!data.enabled || noTracker) {
     return (
-      <Text size="sm" c="dimmed" py="md">
+      <Text size="sm" c="var(--ink-3)" py="md">
         {noTracker
           ? <Trans>Connect an AniList or MyAnimeList tracker to use this.</Trans>
           : <Trans>Turn on anime signals on the Taste tab to use this.</Trans>}
@@ -343,7 +358,7 @@ function AnimeSignalsPanel() {
   return (
     <Stack gap="sm">
       <Group justify="space-between" align="center" wrap="wrap">
-        <Text size="xs" c="dimmed">
+        <Text size="xs" c="var(--ink-3)">
           <AnimeSignalsStatusLine data={data} />
         </Text>
         <Button
@@ -354,7 +369,7 @@ function AnimeSignalsPanel() {
         </Button>
       </Group>
 
-      {syncError && <Alert color="red">{syncError}</Alert>}
+      {syncError && <Alert color="var(--danger)">{syncError}</Alert>}
 
       <TextInput
         value={search} onChange={(event) => setSearch(event.currentTarget.value)}
@@ -373,7 +388,7 @@ function AnimeSignalsPanel() {
       </Chip.Group>
 
       {filtered.length === 0 && (
-        <Text size="sm" c="dimmed" py="md"><Trans>No shows match.</Trans></Text>
+        <Text size="sm" c="var(--ink-3)" py="md"><Trans>No shows match.</Trans></Text>
       )}
 
       <div style={{ overflowX: 'hidden' }}>
@@ -384,7 +399,7 @@ function AnimeSignalsPanel() {
         </Stack>
       </div>
 
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="var(--ink-3)">
         <Trans>Showing {shown} of {total}</Trans>
       </Text>
     </Stack>
@@ -426,7 +441,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const action = row.excluded
     ? { label: t`Use for taste`, color: undefined, variant: 'outline', run: () => onExclude(row, false) }
     : suppression !== 'none'
-      ? { label: t`Restore`, color: 'yellow', variant: 'outline', run: () => onClear(row, 'clear-suppression') }
+      ? { label: t`Restore`, color: 'var(--warn)', variant: 'outline', run: () => onClear(row, 'clear-suppression') }
       : exposure.length > 0
         ? { label: t`Clear seen`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-exposure') }
         : sentiment !== 'none'
@@ -439,53 +454,53 @@ function SignalRow({ row, busy, onClear, onExclude }: {
     exposure.length === 0 && rating === null
 
   return (
-    <Group gap="sm" wrap="nowrap" align="flex-start" py={10} className="signals-row">
+    <div className="signals-row">
       <SeriesThumb url={row.coverUrl} alt={title} large />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="signals-row-main">
         <Text size="sm" fw={500} truncate>{title}</Text>
         {row.genres.length > 0 && (
-          <Text size="xs" c="dimmed" truncate>{row.genres.join(', ')}</Text>
+          <Text size="xs" c="var(--ink-3)" truncate>{row.genres.join(', ')}</Text>
         )}
       </div>
-      <div style={{ width: 300, flex: 'none' }}>
+      <div className="signals-col signals-col-state">
         <Group gap={6} wrap="wrap">
           {rating !== null && (
-            <Badge size="sm" variant="light" color={rating <= 4 ? 'red' : 'teal'}>
+            <Badge size="sm" variant="light" color={rating <= 4 ? 'var(--danger)' : 'var(--ok)'}>
               {t`★ ${rating} rated`}
             </Badge>
           )}
           {sentiment === 'liked' && (
-            <Pill color="teal" label={t`👍 Liked`} clear={t`Clear the thumbs up`}
+            <Pill color="var(--ok)" label={t`👍 Liked`} clear={t`Clear the thumbs up`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {sentiment === 'disliked' && (
-            <Pill color="red" label={t`👎 Disliked`} clear={t`Clear the thumbs down`}
+            <Pill color="var(--danger)" label={t`👎 Disliked`} clear={t`Clear the thumbs down`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {suppression === 'hidden' && (
-            <Pill color="yellow" label={t`Hidden`} clear={t`Restore this title`}
+            <Pill color="var(--warn)" label={t`Hidden`} clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {suppression === 'dismissed' && (
-            <Pill color="yellow" label={t`Dismissed until ${until}`} clear={t`Restore this title`}
+            <Pill color="var(--warn)" label={t`Dismissed until ${until}`} clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {exposure.length > 0 && (
-            <Pill color="blue" label={t`Seen: ${media}`} clear={t`Clear read or seen`}
+            <Pill color="var(--info)" label={t`Seen: ${media}`} clear={t`Clear read or seen`}
               onClear={() => onClear(row, 'clear-exposure')} />
           )}
           {row.excluded && (
-            <Pill color="gray" label={t`Excluded from taste`} clear={t`Use this title for taste`}
+            <Pill color="var(--neutral)" label={t`Excluded from taste`} clear={t`Use this title for taste`}
               onClear={() => onExclude(row, false)} />
           )}
-          {plain && row.isRead && <Badge size="sm" variant="light" color="gray">{t`Read`}</Badge>}
+          {plain && row.isRead && <Badge size="sm" variant="light" color="var(--neutral)">{t`Read`}</Badge>}
           {plain && !row.isRead && row.onShelf && (
-            <Badge size="sm" variant="light" color="gray">{t`On shelf`}</Badge>
+            <Badge size="sm" variant="light" color="var(--neutral)">{t`On shelf`}</Badge>
           )}
         </Group>
-        <Text size="xs" c="dimmed" mt={4}>{why}</Text>
+        <Text size="xs" c="var(--ink-3)" mt={4}>{why}</Text>
       </div>
-      <div style={{ width: 140, flex: 'none', textAlign: 'right' }}>
+      <div className="signals-col signals-col-action">
         {action && (
           <Button
             size="xs" variant={action.variant} color={action.color} loading={busy}
@@ -495,7 +510,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
           </Button>
         )}
       </div>
-    </Group>
+    </div>
   )
 }
 

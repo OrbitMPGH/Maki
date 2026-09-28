@@ -40,6 +40,13 @@ public class DiscordNotificationProvider(
 
     public NotificationType Type => NotificationType.Discord;
 
+    public NotificationProviderDescriptor Descriptor { get; } = new(
+        NotificationType.Discord,
+        [
+            new NotificationField("webhookUrl", NotificationFieldKind.Url, Required: true, Placeholder: "https://discord.com/api/webhooks/...")
+        ],
+        SupportsPoster: true);
+
     public async Task SendAsync(Notification connection, NotificationMessage message, CancellationToken ct = default)
     {
         var config = NotificationConfig.Discord(connection.ConfigJson);
@@ -48,7 +55,7 @@ public class DiscordNotificationProvider(
             throw new InvalidOperationException("Discord webhook URL is not configured");
         }
 
-        var poster = ReadPoster(message);
+        var poster = NotificationPoster.Read(covers, message);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, config.WebhookUrl)
         {
@@ -58,30 +65,8 @@ public class DiscordNotificationProvider(
         };
 
         var client = httpClientFactory.CreateClient(HttpClientName);
-        var response = await client.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
-    }
-
-    /// <summary>
-    /// Loads the series poster, or null when there is none. Failures are swallowed: an unreadable
-    /// cover must cost the message its image, never its delivery.
-    /// </summary>
-    private byte[]? ReadPoster(NotificationMessage message)
-    {
-        if (covers is null || message.SeriesId is not { } seriesId)
-        {
-            return null;
-        }
-
-        try
-        {
-            var path = covers.PosterPathFor(seriesId);
-            return path is null ? null : File.ReadAllBytes(path);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
+        using var response = await client.SendAsync(request, ct);
+        NotificationDeliveryException.ThrowIfFailed("Discord", response);
     }
 
     private static MultipartFormDataContent MultipartWithPoster(NotificationMessage message, byte[] poster)
@@ -160,7 +145,7 @@ public class DiscordNotificationProvider(
     /// </summary>
     private static object[]? Fields(NotificationMessage message) =>
         NullIfBlank(message.ChapterNumber) is { } chapter
-            ? [new { name = "Chapter", value = Truncate(chapter, FieldValueLimit), inline = true }]
+            ? [new { name = message.ChapterLabel, value = Truncate(chapter, FieldValueLimit), inline = true }]
             : null;
 
     /// <summary>

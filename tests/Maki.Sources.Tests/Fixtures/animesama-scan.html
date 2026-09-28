@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="fr">
+
+	<head>
+
+		
+
+<!-- Meta Tags -->
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="index, nofollow">
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QK64GJ58E9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-QK64GJ58E9');
+</script>
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="/img/icon.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="/img/icone_AS.png?v=4">
+<link rel="icon" href="/img/favicon.ico?v=4">
+
+<!-- CSS -->
+<link rel="stylesheet" href="/css/tailwind.css?v=1783185405">
+<link rel="stylesheet" href="/css/defaut.css?v=1786138192">
+<!-- jQuery & JS -->
+<script src="/node_modules/jquery/dist/jquery.min.js"></script>
+<script defer src="/js/defaut/defaut.js?v=1785754575"></script>
+
+<!-- Adcash -->
+<script id="aclib" type="text/javascript" async src="//acscdn.com/script/aclib.js"></script>
+
+<!-- NAV BAR -->
+<nav class="asn-navbar">
+    <!-- Menu burger mobile -->
+    <button class="asn-burger">
+        <svg class="w-6 h-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"></path>
+        </svg>
+    </button>
+
+    <!-- Searchbar mobile -->
+    <div class="asn-mobile-search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z" />
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd" />
+        </svg>
+        <input name="search_text" type="search" placeholder="Rechercher..." autocomplete="off" spellcheck="false"/>
+    </div>
+    <!-- Mobile Results (outside search box) -->
+    <div id="asn-result-mobile"></div>
+
+    <!-- Logo -->
+    <a href="/" class="asn-logo">
+        <img class="asn-logo-desktop" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo_banniere.png" alt="Logo" style="display: none;"/>
+        <img class="asn-logo-mobile" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/logo.png" alt="Logo"/>
+    </a>
+
+    <!-- Donate -->
+    <a href="https://www.paypal.com/donate/?hosted_button_id=3FBNLMGT3JAJ2" class="asn-donate-btn">
+        <img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/flag_pal.png" alt="PayPal"/>
+    </a>
+
+    <!-- Social Discord -->
+    <a href="https://discord.gg/mKbYYbmxY8" class="asn-social-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+            <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+        </svg>
+    </a>
+
+    <!-- Social X -->
+    <a href="https://x.com/anime_samafr" class="asn-social-link">
+        <svg viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="currentColor"/>
+        </svg>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <div class="asn-nav-desktop">
+        <!-- Search -->
+        <div class="asn-desktop-search">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9 9a2 2 0 114 0 2 2 0 01-4 0z" />
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-3.446 6.032l-2.261 2.26a1 1 0 101.414 1.415l2.261-2.261A4 4 0 1011 5z" clip-rule="evenodd" />
+            </svg>
+            <input name="search_text" type="search" placeholder="Rechercher..." autocomplete="off" spellcheck="false"/>
+            <div id="asn-result-desktop"></div>
+        </div>
+
+        <!-- Catalogue -->
+        <a href="/catalogue" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+            </svg>
+            <span>Catalogue</span>
+        </a>
+
+        <!-- Planning -->
+        <a href="/planning" class="asn-nav-link">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+				<path d="M12.75 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM8.25 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM9.75 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM10.5 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM14.25 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 13.5a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+				<path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd" />
+			</svg>
+            <span>Planning</span>
+        </a>
+
+        <!-- Aide -->
+        <a href="/aide" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 0 1-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 0 1-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584ZM12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+            </svg>
+            <span>Aide</span>
+        </a>
+
+        <!-- Profil -->
+        <a href="/profil" class="asn-nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+            </svg>
+            <span>Profil (Déconnecté)</span>        </a>
+    </div>
+</nav>
+
+<!-- MOBILE MENU DRAWER -->
+<div class="asn-mobile-menu">
+    <div class="asn-menu-backdrop"></div>
+    
+    <nav class="asn-menu-panel">
+        <div class="asn-menu-nav">
+            <a href="/catalogue">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                </svg>
+                <span>Catalogue</span>
+            </a>
+            <a href="/planning">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M12.75 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM8.25 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM9.75 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM10.5 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM14.25 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 13.5a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+					<path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd" />
+				</svg>
+                <span>Planning</span>
+            </a>
+            <a href="/aide">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 0 1-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 0 1-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 0 1-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584ZM12 18a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                </svg>
+                <span>Aide</span>
+            </a>
+
+            <a href="https://discord.gg/mKbYYbmxY8">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+                    <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+                </svg>
+                <span>Discord</span>
+            </a>
+
+            <a href="https://x.com/anime_samafr">
+                <svg viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill="currentColor"/>
+                </svg>
+                <span>X</span>
+            </a>
+
+            <a href="/profil">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                </svg>
+                <span>Profil (Déconnecté)</span>            </a>
+        </div>
+    </nav>
+</div>
+
+<!-- Scroll to Top Button -->
+<div style="z-index:300;" id="scrollProgressWrapper">
+    <svg id="scrollProgressSvg" width="60" height="60" viewBox="0 0 60 60" class="absolute top-0 left-0 z-10" style="opacity: 1; transition: opacity 0.3s ease; pointer-events: none;">
+        <circle cx="30" cy="30" r="26" stroke="#0c4a6e" stroke-width="4" fill="none" stroke-linecap="round" />
+    </svg>
+
+	<button onclick="topFunction()" id="topBtn" style="background: rgba(39, 56, 70, 0.3);" class="pointer-events-auto rounded-full p-2 w-12 h-12 flex items-center justify-center hover:opacity-80 transition-all duration-200 z-20 relative">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-black" viewBox="0 0 20 20" fill="currentColor">
+		<path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+		</svg>
+	</button>
+</div>
+		<meta name="keywords" content="One Piece, Wan Pisu, ONE PIECE FAN LETTER, One Piece Log: Fish-Man Island Saga, One Piece: Pirate King, Saison 1, Saison 2, Saison 3, Saison 4, Saison 5, Saison 6, Saison 7, Saison 8, Saison 9, Saison 10, Film, OAV, VOSTFR, VF, Scans, anime-sama, anime, scan, anime sama, vostfr, vf, streaming, streaming vostfr, streaming vf, sans pubs, streaming sans pubs, streaming scan">
+		<meta property="og:image" content="https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/one-piece.jpg"/>
+		<meta property="og:image:width" content="800">
+		<meta property="og:image:height" content="450">
+		<meta property="og:image:type" content="image/jpeg"/>
+		<meta name="description" content="One Piece - Scans | Anime-Sama - Streaming et catalogage d'animes et scans.">
+		<title>One Piece - Scans | Anime-Sama - Streaming et catalogage d'animes et scans.</title>
+		<script>$(document).ready(function(){$("#avOeuvre").html("Scans");});</script>
+		<link rel="canonical" href="https://anime-sama.fr/"/>
+
+	</head>
+
+	<body>
+
+		<div id="blocEntier" class="grid grid-cols-8 pb-16">
+
+	<div id="sousBlocLeft" style="margin-top: 600px; margin-left: 20px;" class="hidden lg:block">
+		<div id="bannLeft" class="ad-container">
+		<span class="ad-label">Publicité</span>
+			
+			<div class="ad-content"><script type="text/javascript">aclib.runBanner({zoneId: '8653010',});</script></div>
+			<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_skyscraper.jpg" alt="Eneba - Jeux moins chers" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+		
+		</div>
+	</div>
+
+	<div id="sousBlocMiddle" class="col-span-8 mx-3 lg:col-span-6 lg:mx-0 mt-6 z-20"><div>
+	<!-- infos -->
+	<div class="flex flex-wrap justify-start bg-opacity-70 rounded">
+		<a href="../../" class="hover:opacity-60 text-white hover:text-gray-400 hover:text-opacity-100 w-full transition-all duration-200">
+			<img id="imgOeuvre" class="h-20 grayscale w-full object-cover opacity-80 border-opacity-50 rounded" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/contenu/one-piece.jpg" alt="One Piece">
+			<h3 id="titreOeuvre" class="text-2xl md:text-4xl uppercase font-bold ">One Piece</h3>
+		</a>
+		<h2 id="avOeuvre" class="text-xl md:text-2xl uppercase text-gray-600 font-bold"></h2>
+		<div class="flex w-full justify-start">
+			<!-- boutton VF -->
+			<a href="../vf" id="switchVF" class="flex undefined bg-white rounded uppercase font-bold text-base items-center justify-center outline outline-gray-500 outline-1 mr-2 my-2 sm:ml-2 transition-all duration-200 opacity-100">
+				<img class="object-cover rounded h-8 w-11" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/flag_fr.png" alt="Drapeau Français"/>
+				<p class="absolute">VF</p>
+			</a>
+			<!-- boutton VA -->
+			<a href="../va" id="switchVA" class="flex undefined bg-white rounded uppercase font-bold text-base items-center justify-center outline outline-gray-500 outline-1 mr-2 my-2 sm:ml-2 transition-all duration-200">
+				<img class="object-cover rounded h-8 w-11" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/flag_en.png" alt="Drapeau Anglais"/>
+				<p class="absolute">VA</p>
+			</a>
+		</div>
+	</div>
+
+	<p id="messagePage" class="text-gray-300 text-sm md:text-base font-medium mt-5 sm:ml-2"></p>
+
+</div>
+
+<!-- GAP IMAGES POUR MANGAS -->
+<script>window.scanGap = true;</script>
+
+<!-- script scans -->
+<script defer src="/js/contenu/scans.js?v=1789650501"></script>
+
+
+<!-- Navigation haut -->
+<div class="flex flex-wrap justify-start bg-zinc-900 bg-opacity-70 rounded">
+
+	<div class="flex flex-wrap w-full">
+		<!-- select chapitres -->
+		<select ontouchstart="handleTouchStart(event);" ondblclick="createInputField();" onchange="selectChapitre();" id="selectChapitres" class="scrollBarStyled bg-black outline outline-sky-700 outline-1 hover:opacity-80 rounded uppercase font-semibold text-xs sm:text-base text-white items-center cursor-pointer py-1 pl-3 pr-7 sm:pr-10 my-2 mx-1 sm:m-2 transition-all duration-200"></select>
+	</div>
+
+	<div class="flex w-full ml-2 mb-2 ">
+		<!-- message dernier chapitre vu -->
+		<a id="printLastChapitre" class="text-white text-xs lg:text-sm uppercase opacity-80"><b>Dernière sélection : </b><i id="savedChapitreId"></i></a>
+
+		<!-- boutton plein écran -->
+		<button onclick="toggleFullScreen();" id="pleinEcran" class="flex bg-black outline outline-1 outline-sky-700 hover:opacity-80 rounded cursor-pointer uppercase font-semibold text-white justify-center items-center ml-auto mr-2 py-1 p-3 transition-all duration-200">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 lg:mr-3" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+			</svg>	
+			<p class="hidden lg:block">Plein ecran</p>	
+		</button>
+	</div>
+
+	<!-- changer couleur background -->
+	<div class="flex w-full ml-2 mb-2">
+		<p class="text-white text-xs lg:text-sm uppercase opacity-80">Arrière-plan :</p> 
+		<button onclick="changeBgColor('#020D18');" id="changeBgColorBlue" class="flex bg-sky-900 outline outline-1 outline-white hover:opacity-80 rounded cursor-pointer text-white mx-2 py-1 p-3 transition-all duration-200"></button>
+		<button onclick="changeBgColor('white');" id="changeBgColorWhite" class="flex bg-white outline outline-1 outline-sky-700 hover:opacity-80 rounded cursor-pointer text-black mr-2 py-1 p-3 transition-all duration-200">	</button>
+		<button onclick="changeBgColor('black');" id="changeBgColorBlack" class="flex bg-black outline outline-1 outline-white hover:opacity-80 rounded cursor-pointer text-white mr-2 py-1 p-3 transition-all duration-200"></button>
+	</div>
+
+	<!-- toggle mode de lecture -->
+	<div class="flex flex-wrap w-full ml-2 mb-2 mt-2 items-center">
+		<p class="text-white text-xs lg:text-sm uppercase opacity-80">Lecture :</p>
+		<button onclick="toggleReadingMode('scroll');" id="modeScroll" class="flex bg-sky-800 outline outline-1 hover:opacity-80 rounded cursor-pointer text-white mx-3 my-1 py-1 px-2 pr-3 transition-all duration-200 items-center gap-2 text-xs sm:text-sm font-semibold uppercase" title="Mode défilement">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+			</svg>
+			Scroll
+		</button>
+		<button onclick="toggleReadingMode('page');" id="modePage" class="flex bg-sky-800 outline outline-1 hover:opacity-80 rounded cursor-pointer text-white mr-3 my-1 py-1 px-2 pr-3 transition-all duration-200 items-center gap-2 text-xs sm:text-sm font-semibold uppercase" title="Mode page par page">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+			</svg>
+			Page par page
+		</button>
+
+		<!-- défilement automatique -->
+		<button onclick="toggleAutoScroll();" id="modeAutoScroll" class="flex bg-sky-800 outline outline-1 outline-sky-700 hover:opacity-80 rounded cursor-pointer text-white my-1 mr-3 py-1 px-2 pr-3 transition-all duration-200 items-center gap-2 text-xs sm:text-sm font-semibold uppercase" title="Défilement automatique (mode scroll uniquement)">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M13 5v8m0 0l-3-3m3 3l3-3M5 19h14" />
+			</svg>
+			<span id="autoScrollLabel">Auto : OFF</span>
+		</button>
+
+		<!-- vitesse du défilement automatique -->
+		<select onchange="changeAutoScrollSpeed(this.value);" id="autoScrollSpeed" class="bg-black outline outline-1 outline-sky-700 hover:opacity-80 rounded cursor-pointer text-white my-1 mr-3 py-1 pl-2 pr-6 transition-all duration-200 text-xs sm:text-sm font-semibold uppercase" title="Vitesse du défilement automatique">
+			<option value="0.25">Vitesse ×0.25</option>
+			<option value="0.5">Vitesse ×0.5</option>
+			<option value="0.75">Vitesse ×0.75</option>
+			<option value="1" selected>Vitesse ×1</option>
+			<option value="1.25">Vitesse ×1.25</option>
+			<option value="1.5">Vitesse ×1.5</option>
+			<option value="2">Vitesse ×2</option>
+		</select>
+	</div>
+
+</div>
+
+<div class="flex w-full my-2 justify-center items-center bg-slate-900 bg-opacity-70 rounded">
+	<!-- boutton chapitre précédent -->
+	<button onclick="prevChap();" id="prevChapitre" class="nav-episode-btn">
+		<svg xmlns="http://www.w3.org/2000/svg" class="nav-episode-icon" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clip-rule="evenodd" />
+		</svg>
+		<p class="hidden lg:block">Chapitre précédent</p>
+	</button>
+
+	<!-- boutton dernier chapitre -->
+	<button onclick="lastChap();" id="lastChapitre" class="nav-episode-btn nav-episode-btn-last">
+		<svg xmlns="http://www.w3.org/2000/svg" class="nav-episode-icon" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd" />
+		</svg>
+		<p class="hidden lg:block">Dernier chapitre</p>
+	</button>
+
+	<!-- boutton chapitre suivant -->
+	<button onclick="nextChap();" id="nextChapitre" class="nav-episode-btn">
+		<p class="hidden lg:block">Chapitre suivant</p>
+		<svg xmlns="http://www.w3.org/2000/svg" class="nav-episode-icon" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" />
+		</svg>
+	</button>
+</div>
+
+
+<!------------------------------------------------->
+
+<!-- Navigation page par page (haut) -->
+<div class="page-nav-bar" style="display:none;">
+	<button onclick="prevPage();" class="page-nav-btn">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+		</svg>
+		Page préc.
+	</button>
+	<span class="page-indicator text-white text-sm font-semibold">Page 1 / 1</span>
+	<button onclick="nextPage();" class="page-nav-btn">
+		Page suiv.
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+		</svg>
+	</button>
+</div>
+
+<!-- EMPLACEMENT DES IMAGES DE SCANS -->
+<div id="scansPlacement" class="grid place-items-center content-center justify-center items-center align-center"></div>
+<!-- loading scans -->
+<img id="loadingSpinner" src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/loading_scans.gif" alt="Chargement..." style="display: none; margin: 1rem auto;" />
+
+<!-- Navigation page par page (bas) -->
+<div class="page-nav-bar" style="display:none;">
+	<button onclick="prevPage();" class="page-nav-btn">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+		</svg>
+		Page préc.
+	</button>
+	<span class="page-indicator text-white text-sm font-semibold">Page 1 / 1</span>
+	<button onclick="nextPage();" class="page-nav-btn">
+		Page suiv.
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+		</svg>
+	</button>
+</div>
+
+<!------------------------------------------------->
+
+
+<!-- Navigation bas -->
+<div class="flex w-full justify-center items-center mt-3">
+	<!-- boutton chapitre précédent -->
+	<button onclick="prevChap();" id="prevChapitre" class="nav-episode-btn">
+		<svg xmlns="http://www.w3.org/2000/svg" class="nav-episode-icon" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clip-rule="evenodd" />
+		</svg>
+		<p class="hidden lg:block">Chapitre précédent</p>
+	</button>
+
+	<!-- boutton dernier chapitre -->
+	<button onclick="lastChap();" id="lastChapitre" class="nav-episode-btn nav-episode-btn-last">
+		<svg xmlns="http://www.w3.org/2000/svg" class="nav-episode-icon" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd" />
+		</svg>
+		<p class="hidden lg:block">Dernier chapitre</p>
+	</button>
+
+	<!-- boutton chapitre suivant -->
+	<button onclick="nextChap();" id="nextChapitre" class="nav-episode-btn">
+		<p class="hidden lg:block">Chapitre suivant</p>
+		<svg xmlns="http://www.w3.org/2000/svg" class="nav-episode-icon" viewBox="0 0 20 20" fill="currentColor">
+			<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" />
+		</svg>
+	</button>
+</div>
+
+<style>
+.nav-episode-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.2rem;
+    margin: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid rgba(100, 120, 150, 0.3);
+    background: linear-gradient(135deg, rgba(12, 74, 110, 0.5), rgba(7, 89, 133, 0.4));
+    color: #e0f2fe;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.nav-episode-btn:hover {
+    background: linear-gradient(135deg, rgba(14, 116, 144, 0.6), rgba(8, 145, 178, 0.5));
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+}
+
+.nav-episode-btn-last {
+    background: linear-gradient(135deg, rgba(41, 37, 36, 0.5), rgba(28, 25, 23, 0.4));
+    border-color: rgba(120, 113, 108, 0.3);
+}
+
+.nav-episode-btn-last:hover {
+    background: linear-gradient(135deg, rgba(87, 83, 78, 0.6), rgba(68, 64, 60, 0.5));
+    border-color: rgba(168, 162, 158, 0.5);
+    box-shadow: 0 6px 16px rgba(120, 113, 108, 0.3);
+}
+
+.nav-episode-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentColor;
+}
+
+@media (max-width: 768px) {
+    .nav-episode-btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    .nav-episode-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}
+
+/* Navigation page par page */
+.page-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    margin: 0.5rem 0;
+}
+
+.page-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.6);
+    color: #e0f2fe;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.page-nav-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.page-indicator {
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Contrôles du défilement auto désactivés (mode page par page) :
+   le hover:opacity-80 de Tailwind reste actif sur un élément disabled et
+   écrase le opacity-30, d'où la transparence qui sautait au survol */
+#modeAutoScroll:disabled,
+#autoScrollSpeed:disabled,
+#modeAutoScroll:disabled:hover,
+#autoScrollSpeed:disabled:hover {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(80%);
+}
+
+/* Bouton de navigation désactivé (première/dernière extrémité atteinte) */
+.nav-btn-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: grayscale(80%);
+}
+
+.nav-btn-disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .page-nav-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.7rem;
+    }
+
+    .page-indicator {
+        font-size: 0.75rem;
+        min-width: 80px;
+    }
+
+    /* Sélecteur de vitesse plus compact sur mobile */
+    #autoScrollSpeed {
+        font-size: 0.7rem;
+        padding-left: 0.4rem;
+        padding-right: 1.2rem;
+    }
+}
+</style><div id="blocBottom" class="flex flex-col items-center justify-center gap-4 mt-10">
+			<p class="text-sm text-white text-center font-medium opacity-50 pb-2">Cliquer sur une pub est le meilleur moyen de nous soutenir.</p>
+			<div id="bannBot" class="ad-container">
+				<span class="ad-label">Publicité</span>
+				<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_leaderboard.jpg" alt="Eneba - Jeux moins chers" width="728" height="90" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+				
+				<span class="ad-label mt-2">Publicité</span>
+
+				<div class="ad-content flex items-center justify-center mt-2"><script type="text/javascript">aclib.runBanner({zoneId: '8653014',});</script></div>
+
+			</div>
+			<div id="squBot" style="margin-top:5px;" class="ad-container">
+				<span class="ad-label">Publicité</span>
+				<div class="ad-content sm:inline-flex items-center justify-center pt-1">
+
+					<script async data-cfasync="false" data-size="300x250" data-category="common" data-id="dl-banner-300x250" data-zone="7809940" src="//a-zzz.com/btag.min.js"></script>
+					<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_square.jpg" alt="Eneba - Jeux moins chers" loading="lazy" width="300" height="300" style="max-width:100%; height:auto; border-radius:6px;"></a>
+					<div><script type="text/javascript">aclib.runBanner({zoneId: '8653002',});</script></div>
+
+				</div>
+			</div>
+		</div>
+
+	</div>
+	
+	<div id="sousBlocRight" style="margin-top: 600px; margin-left: 30px;" class="hidden lg:block">
+		<div id="bannRight" class="ad-container">
+			<span class="ad-label">Publicité</span>
+
+			<div class="ad-content"><script type="text/javascript">aclib.runBanner({zoneId: '8653006',});</script></div>
+			<a href="https://www.eneba.com/fr/?af_id=Leynoor&currency=EUR&region=global" target="_blank"><img src="https://cdn.jsdelivr.net/gh/Anime-Sama/IMG@img/autres/eneba_skyscraper.jpg" alt="Eneba - Jeux moins chers" loading="lazy" style="max-width:100%; height:auto; border-radius:6px;"></a>
+			
+		</div>
+	</div>
+
+	<div id="bandeau-pubs-nuit" role="status" hidden>
+		<div class="bpn-contenu">
+			<span class="bpn-icone" aria-hidden="true">🌙</span>
+			<p>
+				<strong>Période creuse nocturne (3h–6h)</strong><br>
+				Nous affichons pendant ce créneau quelques publicités intrusives pour financer le site.
+				Vous pouvez utiliser un bloqueur de pubs pour les retirer.
+			</p>
+			<span class="bpn-compteur" aria-hidden="true"></span>
+			<button type="button" class="bpn-fermer" aria-label="Fermer">&times;</button>
+		</div>
+	</div>
+
+	<style>
+	#bandeau-pubs-nuit {
+		position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
+		background: #1c2333; color: #e8ecf4;
+		border-top: 2px solid #f0b429;
+		font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.5;
+		box-shadow: 0 -2px 12px rgba(0,0,0,.35);
+		transition: opacity .4s ease, transform .4s ease;
+	}
+	#bandeau-pubs-nuit[hidden] { display: none; }
+	#bandeau-pubs-nuit.bpn-sortie {
+		opacity: 0;
+		transform: translateY(100%);
+	}
+	#bandeau-pubs-nuit .bpn-contenu {
+		max-width: 900px; margin: 0 auto; padding: 14px 18px;
+		display: flex; align-items: center; gap: 14px;
+	}
+	#bandeau-pubs-nuit p { margin: 0; flex: 1; }
+	#bandeau-pubs-nuit strong { color: #f0b429; }
+	#bandeau-pubs-nuit .bpn-icone { font-size: 24px; }
+
+	/* Compteur discret */
+	#bandeau-pubs-nuit .bpn-compteur {
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		color: #5c6678;
+		min-width: 18px;
+		text-align: right;
+		user-select: none;
+	}
+
+	#bandeau-pubs-nuit .bpn-fermer {
+		background: none; border: 0; color: #8a94a6;
+		font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px;
+	}
+	#bandeau-pubs-nuit .bpn-fermer:hover { color: #e8ecf4; }
+	@media (max-width: 600px) {
+		#bandeau-pubs-nuit .bpn-contenu { padding: 12px 14px; gap: 10px; }
+		#bandeau-pubs-nuit { font-size: 13px; }
+		#bandeau-pubs-nuit .bpn-compteur { font-size: 11px; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		#bandeau-pubs-nuit { transition: none; }
+	}
+	</style>
+
+	<script>
+	(function () {
+		var HEURE_DEBUT = 3;
+		var HEURE_FIN   = 6;
+		var DUREE       = 10;   // secondes avant fermeture automatique
+
+		// Heure LOCALE du visiteur, selon les réglages de son appareil
+		var h = new Date().getHours();
+		if (h < HEURE_DEBUT || h >= HEURE_FIN) return;
+
+		// --- Bandeau ---
+		var b = document.getElementById('bandeau-pubs-nuit');
+		if (b && !sessionStorage.getItem('bpn-ferme')) {
+			b.hidden = false;
+
+			var compteur = b.querySelector('.bpn-compteur');
+			var restant  = DUREE;
+			var tic;
+
+			function fermer(memoriser) {
+				clearInterval(tic);
+				if (memoriser) sessionStorage.setItem('bpn-ferme', '1');
+				b.classList.add('bpn-sortie');
+				setTimeout(function () { b.remove(); }, 400);
+			}
+
+			function tick() {
+				restant--;
+				if (restant <= 0) { fermer(true); return; }
+				compteur.textContent = restant + 's';
+			}
+
+			compteur.textContent = restant + 's';
+			tic = setInterval(tick, 1000);
+
+			// Fermeture manuelle : mémorisée pour toute la session
+			b.querySelector('.bpn-fermer').addEventListener('click', function () {
+				fermer(true);
+			});
+
+			// On met en pause si le visiteur survole ou touche le bandeau
+			b.addEventListener('mouseenter', function () { clearInterval(tic); });
+			b.addEventListener('mouseleave', function () {
+				clearInterval(tic);
+				tic = setInterval(tick, 1000);
+			});
+		}
+
+		// --- Scripts pop, une seule fois, après le chargement complet ---
+		if (window.__popsCharges) return;
+		window.__popsCharges = true;
+
+		window.addEventListener('load', function () {
+			setTimeout(function () {
+				var s1 = document.createElement('script');
+				s1.dataset.zone = '11435645';
+				s1.src = 'https://llvpn.com/tag.min.js';
+				document.body.appendChild(s1);
+
+				/*var s1 = document.createElement('script');
+				s1.src = 'https://kingdomparlor.com/da/e2/6d/dae26dc95137e78aa26c2df53aeab9c2.js';
+				document.body.appendChild(s1);*/
+				
+			}, 1500);
+		});
+	})();
+	</script>
+
+</div>
+		<script>
+		$(document).ready(function(){
+			/*
+			resetListe(); toujours au debut en premier
+			creerListe(debut, fin);newSP(special); on en met autant qu'on veut
+			finirListe(debut de la fin);
+			*/
+			resetListe();
+			creerListe(1, 1045);newSP("One Shot");
+			finirListe(1046);
+			//$("#messagePage").html("Une page du chapitre 1180 est en anglais.");	
+		});
+		</script>
+	
+	<script>window.__CF$cv$params={r:'a40ebb64aebc7063',t:'MTc5MDM4ODYyNA==',u:'01a0db7a5b187033beed3286f3215970',ut:'kFFH.zMeLBTL1qJRk7IUq8u_86ysyGJ7qZ1axdVUMhY-1790388624-1.2.1.1-9DEBx0yfdTp68WowyvarXxDs59HkaJg9ZSpctVBWwAJirNByOv6O.CTomRoZaNONXAYHM2ehEQlS9KRkjkwotNVLRQyAtLTFN5UINdqXuL8',i:60};(function(){if(!document.body)return;var s=document.createElement('script');s.src='/cdn-cgi/challenge-platform/scripts/precursor/main.js';document.head.appendChild(s);})();</script></body>
+
+</html>

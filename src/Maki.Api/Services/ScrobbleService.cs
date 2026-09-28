@@ -309,7 +309,7 @@ public class ScrobbleService(
     /// Kavita only: series with pages read but no chapter finished, which is not an error and not a
     /// skip. Zero for the reader pass, where it cannot happen.
     /// </param>
-    private readonly record struct PassCounts(int Updated, int Skipped, int Errors, int NoProgress = 0)
+    internal readonly record struct PassCounts(int Updated, int Skipped, int Errors, int NoProgress = 0)
     {
         /// <summary>For the developer log line only. No user reads this.</summary>
         public override string ToString() =>
@@ -375,9 +375,10 @@ public class ScrobbleService(
             return new PassCounts(0, 0, 1);
         }
 
+        var allRootFolders = await AllRootFoldersAsync(userId, ct);
         var libraryFilter = ParseLibraryIds(await settings.GetAsync(SettingKeys.ScrobbleLibraryIds, ct));
         var planToRead = await userSettings.GetAsync(userId, SettingKeys.ScrobblePlanToRead, ct) == "true";
-        var libraryIndex = await BuildLibraryIndexAsync(ct);
+        var libraryIndex = await BuildLibraryIndexAsync(userId, allRootFolders, ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
 
@@ -429,7 +430,7 @@ public class ScrobbleService(
 
             if (localSeries is not null)
             {
-                var boundaries = await VolumeBoundariesAsync(localSeries.Id, ct);
+                var boundaries = await VolumeBoundariesAsync(userId, allRootFolders, localSeries.Id, ct);
                 if (boundaries.Count > 0)
                 {
                     maxChapter = VolumeChapterProgress.Refine(volumesRaw, boundaries, maxChapter);
@@ -626,8 +627,12 @@ public class ScrobbleService(
     /// pushed, and the user fixes that through the existing metadata match UI, which is where
     /// those ids come from in the first place.
     /// </para>
+    /// <para>
+    /// Internal rather than private so <c>ScrobbleServiceTests</c> can exercise the cross-user
+    /// <c>DataScope</c> narrowing directly, without wiring up every remote tracker.
+    /// </para>
     /// </summary>
-    private async Task<PassCounts> NativePassAsync(
+    internal async Task<PassCounts> NativePassAsync(
         int userId, List<IScrobbleTracker> trackers, bool ownsKavita, CancellationToken ct)
     {
         List<NativeProgress> rows;
@@ -635,8 +640,10 @@ public class ScrobbleService(
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            db.Scope.SetUser(userId, await AllRootFoldersAsync(userId, ct));
             rows = await db.ReadingStates
-                .Where(r => r.SeriesId != null && r.MaxChapter > 0 && (!ownsKavita || r.KavitaSeriesId == null))
+                .Where(r => r.UserId == userId && r.SeriesId != null && r.MaxChapter > 0 &&
+                    (!ownsKavita || r.KavitaSeriesId == null))
                 .Join(db.Series, r => r.SeriesId, s => s.Id, (r, s) => new { r, s })
                 .Where(x => x.s.Incognito == IncognitoMode.Off)
                 .Select(x => new NativeProgress(
@@ -652,7 +659,7 @@ public class ScrobbleService(
             var trackedSeriesIds = rows.Select(r => r.SeriesId).ToHashSet();
             var kavitaTrackedSeriesIds = ownsKavita
                 ? await db.ReadingStates
-                    .Where(r => r.SeriesId != null && r.KavitaSeriesId != null)
+                    .Where(r => r.UserId == userId && r.SeriesId != null && r.KavitaSeriesId != null)
                     .Select(r => r.SeriesId!.Value)
                     .ToListAsync(ct)
                 : [];
@@ -901,7 +908,14 @@ public class ScrobbleService(
     {
         public bool Running { get; set; }
         public DateTime? ComputedAt { get; set; }
-        public List<RatingImportItem> Items { get; set; } = [];
+
+        /// <summary>
+        /// Read by <c>GetRatingImport</c>/<c>ApplyRatingImportAsync</c> while the background preview
+        /// below may still be adding to it. Never appended to directly: the builder appends to a
+        /// private list and swaps this reference to a fresh snapshot, so a concurrent read always sees
+        /// a complete, un-mutating array instead of racing an in-progress <c>List&lt;T&gt;.Add</c>.
+        /// </summary>
+        public IReadOnlyList<RatingImportItem> Items { get; set; } = [];
         public string? Error { get; set; }
     }
 
@@ -922,7 +936,7 @@ public class ScrobbleService(
     /// collect the ones whose score differs from the local rating. Results land in
     /// <see cref="GetRatingImport"/> for the UI to poll, then apply.
     /// </summary>
-    public void QueueRatingImportPreview(int userId, string service)
+    public void QueueRatingImportPreview(int userId, bool allRootFolders, string service)
     {
         var tracker = FindTracker(service);
         if (tracker is null)
@@ -934,9 +948,10 @@ public class ScrobbleService(
         _ratingImports[(userId, service)] = state;
         _ = Task.Run(async () =>
         {
+            var local = new List<RatingImportItem>();
             try
             {
-                var targets = await LibraryRemoteIdsAsync(userId, service, CancellationToken.None);
+                var targets = await LibraryRemoteIdsAsync(userId, allRootFolders, service, CancellationToken.None);
                 foreach (var (seriesId, title, localRating, remoteId) in targets)
                 {
                     try
@@ -944,7 +959,8 @@ public class ScrobbleService(
                         var entry = await tracker.GetEntryAsync(userId, remoteId, CancellationToken.None);
                         if (entry.Score is { } score && score != localRating)
                         {
-                            state.Items.Add(new RatingImportItem(seriesId, title, localRating, score));
+                            local.Add(new RatingImportItem(seriesId, title, localRating, score));
+                            state.Items = local.ToArray();
                         }
                     }
                     catch (Exception e)
@@ -971,7 +987,7 @@ public class ScrobbleService(
 
     /// <summary>Writes the previewed remote scores for the chosen series to local ratings.</summary>
     public async Task<int> ApplyRatingImportAsync(
-        int userId, string service, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
+        int userId, bool allRootFolders, string service, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
     {
         var wanted = new HashSet<int>(seriesIds);
         var scores = GetRatingImport(userId, service).Items
@@ -984,6 +1000,7 @@ public class ScrobbleService(
 
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
 
         // Lands in this user's own state rows, creating them on demand — the import is "pull my scores
         // down from the tracker", not "overwrite the library's scores".
@@ -1010,10 +1027,11 @@ public class ScrobbleService(
 
     /// <summary>Library series carrying a remote id for the given tracker: (id, title, localRating, remoteId).</summary>
     private async Task<List<(int SeriesId, string Title, int? LocalRating, string RemoteId)>>
-        LibraryRemoteIdsAsync(int userId, string service, CancellationToken ct)
+        LibraryRemoteIdsAsync(int userId, bool allRootFolders, string service, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
         var rows = await db.Series.AsNoTracking()
             .Select(s => new
             {
@@ -1047,13 +1065,34 @@ public class ScrobbleService(
     // ---- matching ----
 
     /// <summary>Cross-ids of one Maki library series, keyed for Kavita-name lookup.</summary>
-    private sealed record LibraryIds(
+    internal sealed record LibraryIds(
         int Id, int? MangaBakaId, int? AniListId, int? MalId, int? KitsuId, IncognitoMode Incognito);
 
-    private async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(CancellationToken ct)
+    /// <summary>Looks up a user's root-folder grant, for callers that need <see cref="DataScope.SetUser"/>
+    /// outside a request (background tick, no <see cref="Maki.Core.Security.ICurrentUser"/> to read).</summary>
+    private async Task<bool> AllRootFoldersAsync(int userId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        return await db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.AllRootFolders)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Indexes library series by normalized title/folder name, for instant cross-id lookup by Kavita's
+    /// series name. A normalized key that more than one <c>Series.Id</c> maps to (e.g. "Overlord" and
+    /// "OVERLORD" as two distinct series) is dropped entirely rather than keeping whichever series was
+    /// seen first: silently picking one would save that series' cross-ids against a Kavita series that
+    /// may actually be the other one.
+    /// </summary>
+    internal async Task<Dictionary<string, LibraryIds>> BuildLibraryIndexAsync(
+        int userId, bool allRootFolders, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
         var rows = await db.Series.AsNoTracking()
             .Select(s => new
             {
@@ -1064,17 +1103,35 @@ public class ScrobbleService(
         // Kavita parses its series name from file names (filesystem-illegal chars
         // stripped), so index by punctuation-normalized title AND folder name.
         var index = new Dictionary<string, LibraryIds>();
+        var collisions = new HashSet<string>();
         foreach (var row in rows)
         {
             var ids = new LibraryIds(row.Id, row.MangaBakaId, row.AniListId, row.MalId, row.KitsuId, row.Incognito);
             foreach (var name in new[] { row.Title, row.FolderName })
             {
                 var key = ScrobbleMatching.NormalizeTitle(name ?? "");
-                if (key.Length > 0)
+                if (key.Length == 0)
                 {
-                    index.TryAdd(key, ids);
+                    continue;
+                }
+
+                if (index.TryGetValue(key, out var existing))
+                {
+                    if (existing.Id != ids.Id)
+                    {
+                        collisions.Add(key);
+                    }
+                }
+                else
+                {
+                    index[key] = ids;
                 }
             }
+        }
+
+        foreach (var key in collisions)
+        {
+            index.Remove(key);
         }
 
         return index;
@@ -1088,10 +1145,11 @@ public class ScrobbleService(
     /// ChapterFileId and re-scanned only when the file's size changes.
     /// </summary>
     private async Task<Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>> VolumeBoundariesAsync(
-        int seriesId, CancellationToken ct)
+        int userId, bool allRootFolders, int seriesId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
         var chapters = await db.Chapters.AsNoTracking()
             .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
             .ToListAsync(ct);
@@ -1160,7 +1218,7 @@ public class ScrobbleService(
     /// cross-ids → Kavita web links → cross-derivation → strict title search.
     /// Unresolvable services land on the needs-review list.
     /// </summary>
-    private async Task<Dictionary<string, string>> ResolveAsync(
+    internal async Task<Dictionary<string, string>> ResolveAsync(
         int userId, int kavitaSeriesId, string title, string? altTitle, List<string> webLinks,
         List<string> services, Dictionary<string, LibraryIds> libraryIndex, CancellationToken ct)
     {
@@ -1220,17 +1278,7 @@ public class ScrobbleService(
         }
 
         var webLinkIds = ScrobbleMatching.ParseWebLinks(webLinks);
-        var ids = new Dictionary<string, string>(libraryIds);
-        foreach (var (service, id) in webLinkIds)
-        {
-            ids.TryAdd(service, id);
-        }
-
-        foreach (var (service, id) in result) // known mappings help derivation
-        {
-            ids.TryAdd(service, id);
-        }
-
+        var ids = MergeIdsForDerivation(result, libraryIds, webLinkIds); // known mappings help derivation
         await DeriveIdsAsync(ids, ct);
 
         foreach (var service in missing.ToList())
@@ -1251,7 +1299,8 @@ public class ScrobbleService(
 
         foreach (var service in missing)
         {
-            var remoteId = await MatchByTitleAsync(userId, kavitaSeriesId, title, altTitle, service, ct);
+            var tracker = FindTracker(service)!;
+            var remoteId = await MatchByTitleAsync(userId, kavitaSeriesId, title, altTitle, tracker, ct);
             if (remoteId is not null)
             {
                 result[service] = remoteId;
@@ -1262,8 +1311,40 @@ public class ScrobbleService(
         return result;
     }
 
+    /// <summary>
+    /// Combines cross-ids for <see cref="DeriveIdsAsync"/>, in precedence order: a saved mapping is a
+    /// user's own correction (or a previous resolution already trusted), so it is assigned with the
+    /// indexer and wins any same-service conflict; library ids and web-link ids only fill gaps left by
+    /// services with no saved mapping. Getting this order backwards is how a stale library cross-id
+    /// (e.g. a wrong <c>Series.AniListId</c> from an earlier bad match) can overrule a mapping the user
+    /// explicitly fixed, and propagate that wrong identity into every other tracker derived from it.
+    /// </summary>
+    internal static Dictionary<string, string> MergeIdsForDerivation(
+        IReadOnlyDictionary<string, string> savedMappings,
+        IReadOnlyDictionary<string, string> libraryIds,
+        IReadOnlyDictionary<string, string> webLinkIds)
+    {
+        var ids = new Dictionary<string, string>();
+        foreach (var (service, id) in savedMappings)
+        {
+            ids[service] = id;
+        }
+
+        foreach (var (service, id) in libraryIds)
+        {
+            ids.TryAdd(service, id);
+        }
+
+        foreach (var (service, id) in webLinkIds)
+        {
+            ids.TryAdd(service, id);
+        }
+
+        return ids;
+    }
+
     /// <summary>Fills in missing service ids from the ones we have.</summary>
-    private async Task DeriveIdsAsync(Dictionary<string, string> ids, CancellationToken ct)
+    internal async Task DeriveIdsAsync(Dictionary<string, string> ids, CancellationToken ct)
     {
         // AniList or MAL id -> MangaBaka series (which lists all source ids)
         JsonElement? series = null;
@@ -1331,17 +1412,33 @@ public class ScrobbleService(
         }
     }
 
-    private async Task<string?> MatchByTitleAsync(
-        int userId, int kavitaSeriesId, string title, string? altTitle, string service, CancellationToken ct)
+    internal async Task<string?> MatchByTitleAsync(
+        int userId, int kavitaSeriesId, string title, string? altTitle, IScrobbleTracker tracker,
+        CancellationToken ct)
     {
-        var tracker = FindTracker(service)!;
+        var service = tracker.Name;
         IReadOnlyList<ScrobbleCandidate> candidates;
         try
         {
             candidates = await tracker.SearchAsync(userId, title, ct);
-            if (candidates.Count == 0 && !string.IsNullOrEmpty(altTitle))
+
+            // Also try the alternate title when the primary search found nothing, or found
+            // candidates but none confident enough to auto-accept - a series known abroad under a
+            // different title otherwise never matches even though its alt title is right there.
+            // The two result sets are merged (de-duplicated by remote id) and scored together, so
+            // an alt-title hit competes fairly against a weak primary-title candidate. Skipped when
+            // the alt title normalizes to the same key as the title (no real second title), which
+            // would just double the tracker call for the identical search.
+            if (!string.IsNullOrEmpty(altTitle) &&
+                !string.Equals(ScrobbleMatching.NormalizeTitle(altTitle), ScrobbleMatching.NormalizeTitle(title), StringComparison.Ordinal) &&
+                (candidates.Count == 0 || ScrobbleMatching.BestCandidate(title, altTitle, candidates) is null))
             {
-                candidates = await tracker.SearchAsync(userId, altTitle, ct);
+                var altCandidates = await tracker.SearchAsync(userId, altTitle, ct);
+                if (altCandidates.Count > 0)
+                {
+                    var seen = candidates.Select(c => c.Id).ToHashSet();
+                    candidates = [.. candidates, .. altCandidates.Where(c => seen.Add(c.Id))];
+                }
             }
         }
         catch (TrackerException e)

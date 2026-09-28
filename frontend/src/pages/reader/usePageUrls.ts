@@ -5,7 +5,7 @@ import { pageUrl } from '../../api/reader'
  * Resolves every page's URL once per chapter. The URLs need the API key, which arrives from an
  * async bootstrap fetch, so they can't be computed inline during render.
  */
-export function usePageUrls(chapterId: number, pageCount: number, thumb = false) {
+export function usePageUrls(chapterId: number, pageCount: number, version: string | undefined, thumb = false) {
   const [urls, setUrls] = useState<string[]>([])
 
   useEffect(() => {
@@ -16,7 +16,7 @@ export function usePageUrls(chapterId: number, pageCount: number, thumb = false)
     }
 
     void Promise.all(
-      Array.from({ length: pageCount }, (_, i) => pageUrl(chapterId, i, thumb)),
+      Array.from({ length: pageCount }, (_, i) => pageUrl(chapterId, i, thumb, version)),
     ).then((resolved) => {
       if (!cancelled) setUrls(resolved)
     })
@@ -24,7 +24,7 @@ export function usePageUrls(chapterId: number, pageCount: number, thumb = false)
     return () => {
       cancelled = true
     }
-  }, [chapterId, pageCount, thumb])
+  }, [chapterId, pageCount, version, thumb])
 
   return urls
 }

@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using AngleSharp.Html.Parser;
+using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 
@@ -15,13 +16,18 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
     // Page images (not search/chapter-list HTML) are fetched through TopManhuaImageBrowser, which
     // needs FlareSolverr to seed a real browser session against the Cloudflare-fronted image CDN.
     public SourceCapabilities Capabilities => SourceCapabilities.NeedsFlareSolverr;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua;
+    public SourceRating Rating => SourceRating.Mature;
     public IReadOnlyList<string> CoverHosts => ["2xstorage.com", "zinmanga1.com"];
     private HttpClient Client => httpClientFactory.CreateClient(HttpClientName);
     
-    public string? ResolveSeriesIdFromUrl(Uri url) =>
-    
-        // https://www.topmanhua.fan/manhua/{id}
-        SourceUrl.PathTail(url, BaseUrl, "/manhua/", firstSegmentOnly: true);
+    public string? ResolveSeriesIdFromUrl(Uri url)
+    {
+        // https://www.topmanhua.fan/manhua/{id}. A chapter URL adds a second segment
+        // (/manhua/{id}/{chapter}) and must not resolve as a series.
+        var tail = SourceUrl.PathTail(url, BaseUrl, "/manhua/", firstSegmentOnly: false);
+        return tail is not null && !tail.Contains('/') ? tail : null;
+    }
     
     
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
@@ -149,7 +155,32 @@ public class TopManhuaSource(IHttpClientFactory httpClientFactory, TopManhuaImag
         // .NET HttpClient can't spoof. Fetch through a real Chromium loading the chapter page
         // instead; any URL it doesn't capture in time falls back to the plain fetch as before.
         var chapterUrl = $"{BaseUrl}/manhua/{chapter.SourceSeriesId}/{chapter.SourceChapterId}";
-        var captured = await imageBrowser.FetchImagesAsync(chapterUrl, urls, ct);
+        // The browser can't take the connect-time guard, so only public hosts are captured here. The
+        // rest fall back to PageDownloader, whose client refuses them.
+        // Residual risk: this DNS lookup is separate from the one Chromium performs when it loads
+        // the chapter page, so a host that rebinds to a private address between the two is not caught.
+        var capturable = new List<string>(urls.Count);
+        var hostVerdicts = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        foreach (var url in urls)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                continue;
+            }
+
+            var key = uri.Scheme + "://" + uri.IdnHost;
+            if (!hostVerdicts.TryGetValue(key, out var allowed))
+            {
+                allowed = hostVerdicts[key] = await PublicAddressGuard.IsPublicHostAsync(uri, ct);
+            }
+
+            if (allowed)
+            {
+                capturable.Add(url);
+            }
+        }
+
+        var captured = await imageBrowser.FetchImagesAsync(chapterUrl, capturable, ct);
 
         var pages = urls
             .Select(url => captured.TryGetValue(url, out var data)

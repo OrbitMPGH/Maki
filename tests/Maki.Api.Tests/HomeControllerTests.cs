@@ -1,6 +1,8 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
+using Maki.Data.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Tests;
@@ -324,7 +326,9 @@ public class HomeControllerTests : IDisposable
                 null!, // user metrics
                 null!, // achievements
                 null!, // app paths
-                null!  // logger
+                null!, // logger
+                null!, // current user
+                null!  // kavita user resolver
             );
 
             var result = await controller.Continue(seriesId, CancellationToken.None);
@@ -334,5 +338,171 @@ public class HomeControllerTests : IDisposable
             Assert.Equal(ch2, data.chapterId);
             Assert.Equal(0, data.page);
         }
+    }
+
+    // Hiding writes a UserSeriesState row, which needs a user on the scope to stamp its owner.
+    private HomeController UserController()
+    {
+        var context = _db.NewContext(userId: 1);
+        return new HomeController(context, new ContinueReadingService(context));
+    }
+
+    [Fact]
+    public async Task Hidden_series_drop_out_of_both_rails()
+    {
+        var continued = _db.SeedSeries("Continued");
+        var finished = _db.SeedSeries("Finished");
+        var kept = _db.SeedSeries("Kept");
+        SeedProgress(continued, SeedChapter(continued, 1), 5, false, Base);
+        SeedProgress(finished, SeedChapter(finished, 1), 0, true, Base);
+        SeedChapter(finished, 2);
+        SeedProgress(kept, SeedChapter(kept, 1), 5, false, Base);
+
+        Assert.IsType<NoContentResult>(await UserController().HideFromReading(continued, CancellationToken.None));
+        Assert.IsType<NoContentResult>(await UserController().HideFromReading(finished, CancellationToken.None));
+
+        var response = Reading(await UserController().Reading(ct: CancellationToken.None));
+
+        Assert.Equal(["Kept"], response.ContinueReading.Select(i => i.SeriesTitle));
+        Assert.Empty(response.JumpBackIn);
+    }
+
+    [Fact]
+    public async Task Reading_a_hidden_series_again_brings_it_back()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var first = SeedChapter(seriesId, 1);
+        var second = SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, first, 5, false, Base);
+        await UserController().HideFromReading(seriesId, CancellationToken.None);
+
+        SeedProgress(seriesId, second, 3, false, DateTime.UtcNow.AddMinutes(1));
+
+        var response = Reading(await UserController().Reading(ct: CancellationToken.None));
+
+        Assert.Equal(second, Assert.Single(response.ContinueReading).ChapterId);
+    }
+
+    [Fact]
+    public async Task Unhiding_restores_the_series()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        SeedProgress(seriesId, SeedChapter(seriesId, 1), 5, false, Base);
+        await UserController().HideFromReading(seriesId, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(await UserController().UnhideFromReading(seriesId, CancellationToken.None));
+
+        var response = Reading(await UserController().Reading(ct: CancellationToken.None));
+        Assert.Single(response.ContinueReading);
+    }
+
+    [Fact]
+    public async Task Hiding_an_unknown_series_is_not_found()
+    {
+        Assert.IsType<NotFoundResult>(await UserController().HideFromReading(999, CancellationToken.None));
+    }
+
+    // ---- from-anime ----
+
+    private readonly ReadingProgressGate _gate = new();
+
+    private async Task<IReadOnlyList<HomeAnimeResumeItem>> FromAnime(int userId = 1, bool allRootFolders = true)
+    {
+        var context = _db.NewContext(userId, allRootFolders);
+        var controller = new HomeController(context, new ContinueReadingService(context));
+        var result = await controller.FromAnime(
+            AnimeResumeFixture.Service(_db, context, _gate), ct: CancellationToken.None);
+        return Assert.IsAssignableFrom<IReadOnlyList<HomeAnimeResumeItem>>(
+            Assert.IsType<OkObjectResult>(result).Value);
+    }
+
+    private int SeedFromAnime(string title, int mangaBakaId, int? score, int userId = 1)
+    {
+        var seriesId = AnimeResumeFixture.SeedAnimeSeries(_db, title, mangaBakaId);
+        AnimeResumeFixture.SeedSignal(_db, userId, animeId: mangaBakaId, mangaBakaId: mangaBakaId, score: score);
+        AnimeResumeFixture.SeedChapters(_db, seriesId, 1, 2, 3, 4, 5, 6);
+        return seriesId;
+    }
+
+    [Fact]
+    public async Task From_anime_orders_by_score_then_title_with_unscored_last()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        SeedFromAnime("Middling", 1, 7);
+        SeedFromAnime("Zeta", 2, 9);
+        SeedFromAnime("Unscored", 3, null);
+        SeedFromAnime("Alpha", 4, 9);
+
+        var items = await FromAnime();
+
+        Assert.Equal(["Alpha", "Zeta", "Middling", "Unscored"], items.Select(i => i.SeriesTitle));
+        var first = items[0];
+        Assert.Equal(5m, first.CoveredTo);
+        Assert.Equal("Ch.6", first.ResumeChapterLabel);
+    }
+
+    [Fact]
+    public async Task From_anime_drops_series_read_or_watched_up_to_the_frontier()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        var caughtUp = SeedFromAnime("Caught up", 1, 8);
+        var started = SeedFromAnime("Started", 2, 8);
+        using (var db = _db.NewContext())
+        {
+            var fifth = db.Chapters.Where(c => c.SeriesId == caughtUp).AsEnumerable().Single(c => c.Number == 5m).Id;
+            var third = db.Chapters.Where(c => c.SeriesId == started).AsEnumerable().Single(c => c.Number == 3m).Id;
+            AnimeResumeFixture.SeedProgress(_db, 1, caughtUp, fifth, watched: true);
+            AnimeResumeFixture.SeedProgress(_db, 1, started, third);
+        }
+
+        var items = await FromAnime();
+
+        Assert.Equal(started, Assert.Single(items).SeriesId);
+    }
+
+    [Fact]
+    public async Task From_anime_drops_series_with_nothing_to_mark_and_nothing_read()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        var onlyLater = AnimeResumeFixture.SeedAnimeSeries(_db, "Only later chapters", 1);
+        AnimeResumeFixture.SeedSignal(_db, 1, animeId: 1, mangaBakaId: 1);
+        AnimeResumeFixture.SeedChapters(_db, onlyLater, 6, 7, 8);
+        var shown = SeedFromAnime("Shown", 2, 8);
+
+        var items = await FromAnime();
+
+        Assert.Equal(shown, Assert.Single(items).SeriesId);
+    }
+
+    [Fact]
+    public async Task From_anime_respects_hide_from_home()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        var hidden = SeedFromAnime("Hidden", 1, 8);
+        var shown = SeedFromAnime("Shown", 2, 8);
+        await UserController().HideFromReading(hidden, CancellationToken.None);
+
+        var items = await FromAnime();
+
+        Assert.Equal(shown, Assert.Single(items).SeriesId);
+    }
+
+    [Fact]
+    public async Task From_anime_only_offers_series_in_granted_root_folders()
+    {
+        var reader = _db.SeedUser("reader", allRootFolders: false);
+        AnimeResumeFixture.OptIn(_db, reader);
+        var granted = SeedFromAnime("Granted", 1, 8, reader);
+        SeedFromAnime("Elsewhere", 2, 8, reader);
+        using (var db = _db.NewContext())
+        {
+            var folder = db.Series.Single(s => s.Id == granted).RootFolderId;
+            db.UserRootFolders.Add(new UserRootFolder { UserId = reader, RootFolderId = folder });
+            db.SaveChanges();
+        }
+
+        var items = await FromAnime(reader, allRootFolders: false);
+
+        Assert.Equal(granted, Assert.Single(items).SeriesId);
     }
 }

@@ -21,6 +21,8 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
     public string DisplayName => "Asura Scans";
     public string BaseUrl => "https://asurascans.com";
     public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceKind Kind => SourceKind.Scanlator;
+    public SourceContent Content => SourceContent.Manhwa | SourceContent.Manhua;
 
     /// <summary>The site rotates between asurascans.com and asuracomic.net; images sit on the latter.</summary>
     public IReadOnlyList<string> CoverHosts => ["asuracomic.net"];

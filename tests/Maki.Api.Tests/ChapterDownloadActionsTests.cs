@@ -89,6 +89,7 @@ public class ChapterDownloadActionsTests : IDisposable
         coverService: null!,
         chapterSyncService: null!,
         cbzLinkService: null!,
+        relinkPlanner: null!,
         seriesCreation: null!,
         seriesRename: null!,
         metadataRefresh: null!,
@@ -107,6 +108,8 @@ public class ChapterDownloadActionsTests : IDisposable
         sourceAvailability: null!,
         currentUser: new TestCurrentUser(1),
         userSettings: null!,
+        notifications: null!,
+        locales: null!,
         logger: NullLogger<SeriesController>.Instance);
 
     private ChapterController ChapterController(DownloadQueueService queue) => new(

@@ -1,0 +1,30 @@
+{
+  "data": {
+    "manga": {
+      "current_page": 1,
+      "last_page": 1,
+      "per_page": 15,
+      "total": 1,
+      "next_page_url": null,
+      "data": [
+        {
+          "id": 35,
+          "title": "Solo Leveling",
+          "slug": "solo-leveling",
+          "alternative_titles": [
+            "나 혼자만 레벨업"
+          ],
+          "description": "On yıl önce gerçek dünyayı canavarların dünyasına bağlayan \"geçit\" açıldıktan sonra, insanlar canavarları avlamaya başladılar. Canavarları avlayan insanlara \"Avcı\" dendi. Ancak tüm avcılar güçlü değildi. E-seviye bir avcı olan Sung Jin-Woo, en düşük seviyeli zindanlarda hayatını riske atarak geçimini sağlamaya çalışıyor. \"Dünyanın En Güçsüz Avcısı\" olarak görülen Sung Jin-Woo, D-seviye bir zindanın içinde en zorlu seviyeye sahip gizli bir zindana rastladıktan sonra tuhaf bir güç elde etti. Bu güç, sadece kendisinin görebildiği bir görev ekranı ve onun sayesinde seviye atlayabiliyor. En güçsüz avcıdan S-Seviye bir avcıya evrilme!",
+          "cover_url": "https://mangadenizi.net/storage/manga/solo-leveling/cover/cover.webp",
+          "cover_thumb_url": "https://mangadenizi.net/storage/manga/solo-leveling/cover/cover.webp",
+          "status": "completed",
+          "type": {
+            "name": "Manhwa"
+          },
+          "is_adult": false,
+          "chapters_count": "180"
+        }
+      ]
+    }
+  }
+}

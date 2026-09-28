@@ -37,8 +37,17 @@ public record ReaderCohortManifest
     [JsonPropertyName("url")] public string? Url { get; init; }
 }
 
-/// <summary>Outcome of one install attempt, for logs and the settings UI.</summary>
-public record ReaderCohortResult(bool Installed, string Reason, long? CohortItemCount = null);
+/// <summary>
+/// Outcome of one install attempt, for logs and the settings UI.
+/// <para>
+/// <see cref="Reason"/> is a server message catalogue key, not display text; this project has no
+/// <c>ILocalizer</c> (see <c>CLAUDE.md</c>'s directory ownership), so the caller in <c>Maki.Api</c>
+/// renders it. <c>Install failed: {ex.Message}</c> is the one exception: it embeds a raw exception
+/// message and stays unconverted, same as every other site in this codebase that does that.
+/// </para>
+/// </summary>
+public record ReaderCohortResult(
+    bool Installed, string Reason, long? CohortItemCount = null, object? ReasonArgs = null);
 
 /// <summary>
 /// Downloads and installs the reader cohorts published alongside Maki. Shaped like
@@ -101,7 +110,7 @@ public class ReaderCohortInstaller(
     {
         if (!await IsEnabledAsync(ct))
         {
-            return new ReaderCohortResult(false, "Reader cohorts are turned off.");
+            return new ReaderCohortResult(false, "install.readerCohorts.disabled");
         }
 
         var manifestUrl = await settings.GetAsync(SettingKeys.RecommendationsReaderCohortsUrl, ct);
@@ -121,12 +130,12 @@ public class ReaderCohortInstaller(
             // Debug, not warning: until an artifact is published this is the normal state of every
             // install, and it must not fill logs with something nobody can act on.
             logger.LogDebug(ex, "Reader cohort manifest unavailable at {Url}", manifestUrl);
-            return new ReaderCohortResult(false, "Could not read the reader cohort manifest.");
+            return new ReaderCohortResult(false, "install.readerCohorts.manifestUnavailable");
         }
 
         if (manifest is null || string.IsNullOrWhiteSpace(manifest.Url))
         {
-            return new ReaderCohortResult(false, "The reader cohort manifest is malformed.");
+            return new ReaderCohortResult(false, "install.readerCohorts.manifestMalformed");
         }
 
         if (manifest.SchemaVersion > SupportedSchemaVersion)
@@ -134,13 +143,12 @@ public class ReaderCohortInstaller(
             logger.LogInformation(
                 "Ignoring the published reader cohorts: schema {Theirs}, this build reads {Ours}",
                 manifest.SchemaVersion, SupportedSchemaVersion);
-            return new ReaderCohortResult(
-                false, "The published cohorts use a newer schema than this build reads.");
+            return new ReaderCohortResult(false, "install.readerCohorts.schemaNewer");
         }
 
         if (manifest.CohortItemCount < MinCohortItems)
         {
-            return new ReaderCohortResult(false, "The published cohorts look truncated; ignoring them.");
+            return new ReaderCohortResult(false, "install.readerCohorts.truncated");
         }
 
         // Checked here so an evaluation build is not even downloaded, and again from the file in
@@ -150,13 +158,12 @@ public class ReaderCohortInstaller(
             logger.LogInformation(
                 "Ignoring the published reader cohorts: trainingFold '{Fold}' is a fold-limited build",
                 manifest.TrainingFold);
-            return new ReaderCohortResult(
-                false, "The published cohorts are an evaluation build, not a full one.");
+            return new ReaderCohortResult(false, "install.readerCohorts.evaluationBuild");
         }
 
         if (!force && !await IsNewerThanLocalAsync(manifest, ct))
         {
-            return new ReaderCohortResult(false, "The local reader cohorts are already current.");
+            return new ReaderCohortResult(false, "install.readerCohorts.current");
         }
 
         Directory.CreateDirectory(options.StagingDirectory);
@@ -174,9 +181,7 @@ public class ReaderCohortInstaller(
 
             logger.LogInformation("Installed reader cohorts ({Rows} cohort rows)", rows);
 
-            // Unformatted on purpose: the UI has the raw count and localizes it itself, and
-            // server-side grouping picks up the host's locale (non-breaking spaces and all).
-            return new ReaderCohortResult(true, $"Installed {rows} cohort rows.", rows);
+            return new ReaderCohortResult(true, "install.readerCohorts.installed", rows, new { rows });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

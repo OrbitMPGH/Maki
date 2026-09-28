@@ -398,6 +398,8 @@ export interface ComparePanel {
   aligned: boolean
   /** One entry per grid row, null where this source has no page for that row. */
   pages: (ComparePage | null)[]
+  /** Pages in the whole chapter, not just the sampled rows. Null when the source didn't say. */
+  pageCount: number | null
 }
 
 /**
@@ -434,12 +436,35 @@ export interface AddSeriesRequest {
   clientMutationId?: string
 }
 
-export type NotificationType = 'Discord' | 'Webhook'
+export type NotificationType =
+  | 'Discord'
+  | 'Webhook'
+  | 'Telegram'
+  | 'Notifiarr'
+  | 'Ntfy'
+  | 'Gotify'
+  | 'Pushover'
+  | 'Apprise'
+  | 'SlackWebhook'
 
-export interface NotificationConfig {
-  webhookUrl: string | null
-  url: string | null
-  bearerToken: string | null
+/** Flat string map keyed by the provider descriptor's field keys. */
+export type NotificationConfig = Record<string, string>
+
+export type NotificationFieldKind = 'Text' | 'Secret' | 'Url' | 'Number' | 'Boolean'
+
+export interface NotificationFieldDescriptor {
+  key: string
+  kind: NotificationFieldKind
+  required: boolean
+  placeholder: string | null
+  min?: number | null
+  max?: number | null
+}
+
+export interface NotificationProviderDescriptor {
+  type: NotificationType
+  fields: NotificationFieldDescriptor[]
+  supportsPoster: boolean
 }
 
 export interface NotificationEvents {
@@ -449,6 +474,11 @@ export interface NotificationEvents {
   importCompleted: boolean
   healthIssue: boolean
   updateAvailable: boolean
+  seriesAdded: boolean
+  seriesRemoved: boolean
+  requestSubmitted: boolean
+  requestResolved: boolean
+  manualMatchNeeded: boolean
 }
 
 export interface UpdateStatusDto {
@@ -473,6 +503,8 @@ export interface NotificationDto {
   enabled: boolean
   config: NotificationConfig
   events: NotificationEvents
+  /** Series-scoped events only fire for series carrying one of these tags. Empty means every series. */
+  tagIds: number[]
 }
 
 export interface NotificationRequest {
@@ -481,4 +513,70 @@ export interface NotificationRequest {
   enabled: boolean
   config: NotificationConfig
   events: NotificationEvents
+  tagIds: number[]
 }
+
+/** Matches the server's `ScrobbleStatus` vocabulary for an import-list-eligible entry. */
+export type ImportListStatus = 'Reading' | 'PlanToRead' | 'Completed'
+
+export interface ImportListTrackerPrefs {
+  enabled: boolean
+  statuses: ImportListStatus[]
+  rootFolderId: number | null
+  monitored: boolean
+  monitorNewItems: string
+  maxPerRun: number
+}
+
+export interface ImportListRunSummary {
+  at: string
+  added: number
+  requested: number
+  skipped: number
+  errors: number
+  /** Nothing ran because the local MangaBaka database is not downloaded yet. */
+  dumpUnavailable: boolean
+}
+
+export interface ImportListTrackerDto {
+  service: string
+  label: string
+  connected: boolean
+  prefs: ImportListTrackerPrefs
+  lastRun: ImportListRunSummary | null
+}
+
+/** Unmatched | Removed | Ignored | Added. */
+export type ImportListSkipReason = 'Unmatched' | 'Removed' | 'Ignored' | 'Added'
+
+export interface ImportListSkipDto {
+  id: number
+  service: string
+  remoteId: string
+  title: string
+  reason: ImportListSkipReason
+  createdAt: string
+}
+
+export interface ImportListsStatusDto {
+  enabled: boolean
+  intervalMinutes: number
+  trackers: ImportListTrackerDto[]
+  skipped: ImportListSkipDto[]
+}
+
+export interface ImportListRunResult {
+  added: number
+  requested: number
+  skipped: number
+  alreadyPresent: number
+  errors: number
+  dumpUnavailable: boolean
+}
+
+/**
+ * `POST /importlists/run` reply. A `full` run kicks off in the background and answers 202 with
+ * `started: true`; the outcome arrives later via the inbox and `ImportListTrackerDto.lastRun`.
+ * A partial run still answers inline with the counts.
+ */
+export type ImportListRunResponse = ImportListRunResult | { started: true }

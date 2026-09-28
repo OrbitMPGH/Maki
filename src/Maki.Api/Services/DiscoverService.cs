@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Maki.Core.Metadata;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
@@ -10,10 +11,18 @@ namespace Maki.Api.Services;
 /// name) and <see cref="Genre"/> identify the rail's source so the "Show more" view can re-query it
 /// with filters and a higher limit.
 /// </summary>
+/// <param name="Title">
+/// A server message catalogue key, not display text. <see cref="DiscoverService"/> and its sibling
+/// rail services are singletons whose rails are cached instance-wide (see <see cref="CacheFor"/>),
+/// so they cannot render prose without freezing it in whichever locale built the cache. The
+/// controller renders it with the caller's own <c>ILocalizer</c> before the rail reaches the client.
+/// </param>
 /// <param name="Subtitle">
 /// A line under the heading explaining where the rail came from, or null for the catalogue rails,
-/// whose titles already say it.
+/// whose titles already say it. Also a catalogue key, rendered the same way as <see cref="Title"/>.
 /// </param>
+/// <param name="TitleArgs">ICU placeholder values for <see cref="Title"/>. Not sent to the client.</param>
+/// <param name="SubtitleArgs">ICU placeholder values for <see cref="Subtitle"/>. Not sent to the client.</param>
 /// <param name="SeedIds">
 /// Set on personalised rails: the MangaBaka seeds they were built from. Its presence is what tells
 /// the "Show more" view to re-query the recommender rather than
@@ -30,7 +39,20 @@ namespace Maki.Api.Services;
 public record DiscoverRail(
     string Key, string Title, string Feed, string? Genre, IReadOnlyList<MangaBakaRecommendation> Items,
     string? Subtitle = null, IReadOnlyList<long>? SeedIds = null, SeedState? Seed = null,
-    RecommendationFilters? Filters = null);
+    RecommendationFilters? Filters = null,
+    [property: JsonIgnore] object? TitleArgs = null,
+    [property: JsonIgnore] object? SubtitleArgs = null);
+
+/// <summary>
+/// A Discover/recommendation request that cannot be served because the local MangaBaka database is
+/// not installed. Carries the catalogue key rather than a sentence: <see cref="DiscoverService"/> and
+/// <see cref="RecommendationService"/> are singletons with no request locale of their own, so the
+/// controller renders it, the same shape as <c>RecommendationFeedbackService.FeedbackException</c>.
+/// </summary>
+public sealed class LocalCatalogueUnavailableException(string key) : InvalidOperationException(key)
+{
+    public string Key { get; } = key;
+}
 
 /// <summary>
 /// A seed series as the Discover page draws it: the title, how far the caller has read, and which
@@ -55,6 +77,7 @@ public static class BrowseSort
 }
 
 /// <summary>Request for the expanded (filtered, larger, pageable) view of a single rail.</summary>
+/// <param name="ExcludeOwned">Leave out series the caller already has, as a catalogue custom rail can.</param>
 /// <param name="Offset">
 /// Rows to skip. Honoured only on the in-memory path, which is the only one that can page
 /// coherently: <see cref="MangaBakaLocalStore.GetBrowseAsync"/> over-fetches and dedupes by title in
@@ -66,7 +89,8 @@ public record DiscoverFeedRequest(
     RecommendationFilters? Filters = null,
     int Limit = 120,
     int Offset = 0,
-    string Sort = BrowseSort.Popular);
+    string Sort = BrowseSort.Popular,
+    bool ExcludeOwned = false);
 
 /// <summary>One creator or publisher, and the works credited to them.</summary>
 public record CreatorRequest(
@@ -175,15 +199,16 @@ public class DiscoverService(
         return (allowed[^1], new RecommendationFilters(ContentRatings: allowed));
     }
 
-    // Order here is the order rails render on the browse tab.
+    // Order here is the order rails render on the browse tab. Title is a catalogue key, not display
+    // text; see the DiscoverRail.Title doc.
     private static readonly (BrowseFeed Feed, string Key, string Title)[] Rails =
     [
-        (BrowseFeed.Trending, "trending", "Trending now"),
-        (BrowseFeed.Popular, "popular", "Most popular"),
-        (BrowseFeed.New, "new", "Newly released"),
-        (BrowseFeed.TopRated, "top-rated", "Top rated"),
-        (BrowseFeed.PopularManhwa, "popular-manhwa", "Popular manhwa"),
-        (BrowseFeed.PopularManhua, "popular-manhua", "Popular manhua"),
+        (BrowseFeed.Trending, "trending", "discover.rail.trending"),
+        (BrowseFeed.Popular, "popular", "discover.rail.popular"),
+        (BrowseFeed.New, "new", "discover.rail.new"),
+        (BrowseFeed.TopRated, "top-rated", "discover.rail.topRated"),
+        (BrowseFeed.PopularManhwa, "popular-manhwa", "discover.rail.popularManhwa"),
+        (BrowseFeed.PopularManhua, "popular-manhua", "discover.rail.popularManhua"),
     ];
 
     // Genres from the MangaBaka vocabulary that reliably fill a popularity-ranked rail. Each gets
@@ -375,8 +400,9 @@ public class DiscoverService(
                         BrowseFeed.GenreSpotlight, depth, genre, filters, ct);
                     return items.Count > 0
                         ? new DiscoverRail(
-                            $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", $"Popular in {genre}",
-                            BrowseFeed.GenreSpotlight.ToString(), genre, items)
+                            $"genre-{genre.ToLowerInvariant().Replace(' ', '-')}", "discover.rail.popularInGenre",
+                            BrowseFeed.GenreSpotlight.ToString(), genre, items,
+                            TitleArgs: new { genre })
                         : null;
                 }
                 finally
@@ -417,14 +443,15 @@ public class DiscoverService(
     /// </para>
     ///
     /// <para>
-    /// Trending and New keep the SQL ordering when no tag filter is involved, because they rank on
-    /// popularity history and publication date, neither of which the index carries. Ask for a tag
-    /// alongside them and the in-memory path takes over with the nearest ordering it has, since a
-    /// filter that is quietly ignored is worse than one that is approximately ordered.
+    /// Trending and New keep the SQL ordering when no tag filter is involved: Trending ranks on
+    /// popularity history, which the index does not carry, and New on the dump's own date cutoff.
+    /// Ask for a tag alongside them and the in-memory path takes over with the nearest ordering it
+    /// has, since a filter that is quietly ignored is worse than one that is approximately ordered.
     /// </para>
     /// </summary>
+    /// <param name="exclude">MangaBaka ids never to return, such as the caller's own series.</param>
     public async Task<IReadOnlyList<MangaBakaRecommendation>> GetFeedAsync(
-        DiscoverFeedRequest request, CancellationToken ct = default)
+        DiscoverFeedRequest request, CancellationToken ct = default, IReadOnlyCollection<long>? exclude = null)
     {
         await EnsureAvailableAsync(ct);
 
@@ -438,13 +465,13 @@ public class DiscoverService(
         // filtered catalogue is exactly the case where people keep pressing Load more.
         var limit = Math.Clamp(request.Limit, 1, 600);
         var offset = Math.Max(0, request.Offset);
-        var wantsTags = request.Filters?.Tags is { Count: > 0 };
+        var wantsTags = request.Filters?.NeedsTags == true;
 
         if (OrderableInIndex(feed) || wantsTags || offset > 0)
         {
             if (await vectorIndex.GetAsync(ct) is { } index)
             {
-                var ids = SelectRows(index, feed, request, offset, limit);
+                var ids = SelectRows(index, feed, request, offset, limit, exclude);
                 return await store.GetByIdsAsync(ids, request.Filters?.ContentRatings, ct);
             }
 
@@ -454,7 +481,28 @@ public class DiscoverService(
             }
         }
 
-        return await store.GetBrowseAsync(feed, limit, request.Genre, request.Filters, ct);
+        // The dump has its own ordering per feed and no sort parameter, so a sorted Popular request
+        // borrows the feed that orders the same way. Oldest has no such feed.
+        var sqlFeed = feed != BrowseFeed.Popular ? feed : request.Sort switch
+        {
+            BrowseSort.Rating => BrowseFeed.TopRated,
+            BrowseSort.Newest => BrowseFeed.New,
+            _ => feed,
+        };
+
+        if (exclude is not { Count: > 0 })
+        {
+            return await store.GetBrowseAsync(sqlFeed, limit, request.Genre, request.Filters, ct);
+        }
+
+        // Each excluded id can remove at most one row, so this is enough to fill the page however
+        // many of the head rows the caller already owns. The scan costs the same at any LIMIT.
+        var fetched = await store.GetBrowseAsync(
+            sqlFeed, limit + exclude.Count, request.Genre, request.Filters, ct);
+        return fetched
+            .Where(r => !long.TryParse(r.ProviderId, out var id) || !exclude.Contains(id))
+            .Take(limit)
+            .ToList();
     }
 
     /// <summary>One creator or publisher and their works, for the creator page.</summary>
@@ -526,9 +574,81 @@ public class DiscoverService(
         BrowseFeed.Popular or BrowseFeed.TopRated or
         BrowseFeed.PopularManhwa or BrowseFeed.PopularManhua or BrowseFeed.GenreSpotlight;
 
+    /// <summary>
+    /// How many catalogue rows a feed and its filters allow, for the filter panel's live count.
+    /// One pass over the index with no ordering or hydration, so it is cheap enough to ask on
+    /// every edit. Null when the index is not built, since the dump has no answer for tags.
+    /// </summary>
+    public async Task<int?> CountAsync(
+        DiscoverFeedRequest request, CancellationToken ct = default, IReadOnlyCollection<long>? exclude = null)
+    {
+        if (!Enum.TryParse<BrowseFeed>(request.Feed, ignoreCase: true, out var feed) ||
+            await vectorIndex.GetAsync(ct) is not { } index)
+        {
+            return null;
+        }
+
+        if (ComposeFilters(feed, request) is not { } filters)
+        {
+            return 0;
+        }
+
+        var plan = WithExclusions(index, index.Plan(filters), exclude);
+        if (plan.Impossible)
+        {
+            return 0;
+        }
+
+        var count = 0;
+        for (var row = 0; row < index.Count; row++)
+        {
+            if (index.Matches(row, plan))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     /// <summary>Turns a feed plus the caller's filters into one page of series ids.</summary>
     private static IReadOnlyList<long> SelectRows(
-        VectorIndex index, BrowseFeed feed, DiscoverFeedRequest request, int offset, int limit)
+        VectorIndex index, BrowseFeed feed, DiscoverFeedRequest request, int offset, int limit,
+        IReadOnlyCollection<long>? exclude)
+    {
+        if (ComposeFilters(feed, request) is not { } filters)
+        {
+            return [];
+        }
+
+        var sort = request.Sort;
+        if (feed == BrowseFeed.TopRated)
+        {
+            sort = BrowseSort.Rating;
+        }
+        else if (feed == BrowseFeed.New)
+        {
+            sort = BrowseSort.Newest;
+        }
+
+        return OrderRows(index, WithExclusions(index, index.Plan(filters), exclude), sort, offset, limit);
+    }
+
+    private static FilterPlan WithExclusions(VectorIndex index, FilterPlan plan, IReadOnlyCollection<long>? exclude) =>
+        exclude is { Count: > 0 } ? plan with { Exclude = index.BuildRowMask(exclude.ToArray()) } : plan;
+
+    /// <summary>
+    /// The popularity rank a title needs for <see cref="BrowseSort.Rating"/> to trust its score,
+    /// the same gate the dump's TopRated feed applies. Titles outside it still list, after the
+    /// gated ones, so a one-vote 10/10 cannot lead the page.
+    /// </summary>
+    private const int RatingPopularityGate = 15000;
+
+    /// <summary>
+    /// The caller's filters with the rail's own constraint folded in, or null when the two cannot
+    /// both hold (a manhwa rail narrowed to manga).
+    /// </summary>
+    private static RecommendationFilters? ComposeFilters(BrowseFeed feed, DiscoverFeedRequest request)
     {
         var filters = request.Filters ?? RecommendationFilters.None;
 
@@ -557,26 +677,20 @@ public class DiscoverService(
 
             if (filters.Types.Count == 0)
             {
-                return [];
+                return null;
             }
         }
 
-        var sort = request.Sort;
-        if (feed == BrowseFeed.TopRated)
-        {
-            sort = BrowseSort.Rating;
-        }
-        else if (feed == BrowseFeed.New)
-        {
-            sort = BrowseSort.Newest;
-        }
-
-        return OrderRows(index, index.Plan(filters), sort, offset, limit);
+        return filters;
     }
 
     /// <summary>Every row a plan allows, ordered, then paged.</summary>
-    private static IReadOnlyList<long> OrderRows(
-        VectorIndex index, FilterPlan plan, string sort, int offset, int limit)
+    /// <param name="today">
+    /// The day a release has to have reached to count as released, as a day number. Taken per
+    /// query rather than when the index was built, since the index lives for hours.
+    /// </param>
+    internal static IReadOnlyList<long> OrderRows(
+        VectorIndex index, FilterPlan plan, string sort, int offset, int limit, int? today = null)
     {
         if (plan.Impossible)
         {
@@ -597,26 +711,36 @@ public class DiscoverService(
         int Rank(int row) => index.PopularityAt(row) == VectorIndex.Unknown
             ? int.MaxValue
             : index.PopularityAt(row);
-        int Year(int row) => index.YearAt(row);
+        // An announced title the dump dates in the future has not been released, so it sorts with
+        // the undated rows at the end rather than heading "newest".
+        var cutoff = today ?? DateOnly.FromDateTime(DateTime.UtcNow).DayNumber;
+        int? Released(int row) => index.StartDayAt(row) is var day && day != VectorIndex.Unknown && day <= cutoff
+            ? day
+            : null;
+        bool Gated(int row) => Rank(row) < RatingPopularityGate;
 
         Comparison<int> order = sort switch
         {
             BrowseSort.Rating => (a, b) =>
             {
+                var byGate = Gated(b).CompareTo(Gated(a));
+                if (byGate != 0)
+                {
+                    return byGate;
+                }
+
                 var byRating = index.RatingAt(b).CompareTo(index.RatingAt(a));
                 return byRating != 0 ? byRating : Rank(a).CompareTo(Rank(b));
             },
             BrowseSort.Newest => (a, b) =>
             {
-                var byYear = Year(b).CompareTo(Year(a));
-                return byYear != 0 ? byYear : Rank(a).CompareTo(Rank(b));
+                var byDate = (Released(b) ?? int.MinValue).CompareTo(Released(a) ?? int.MinValue);
+                return byDate != 0 ? byDate : Rank(a).CompareTo(Rank(b));
             },
             BrowseSort.Oldest => (a, b) =>
             {
-                var yearA = Year(a) == VectorIndex.Unknown ? int.MaxValue : Year(a);
-                var yearB = Year(b) == VectorIndex.Unknown ? int.MaxValue : Year(b);
-                var byYear = yearA.CompareTo(yearB);
-                return byYear != 0 ? byYear : Rank(a).CompareTo(Rank(b));
+                var byDate = (Released(a) ?? int.MaxValue).CompareTo(Released(b) ?? int.MaxValue);
+                return byDate != 0 ? byDate : Rank(a).CompareTo(Rank(b));
             },
             _ => (a, b) =>
             {
@@ -688,8 +812,7 @@ public class DiscoverService(
     {
         if (!await store.IsAvailableAsync(ct))
         {
-            throw new InvalidOperationException(
-                "Discover needs the local MangaBaka database (Settings → Metadata → local DB)");
+            throw new LocalCatalogueUnavailableException("error.recommendation.discoverNeedsLocalDb");
         }
     }
 }

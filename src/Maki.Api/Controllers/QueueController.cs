@@ -118,6 +118,13 @@ public class QueueController(
             return this.Conflict(localizer, "error.queue.onlyFailedCanRetry");
         }
 
+        // The chapter was queued again after this row failed, and only one row per chapter may be active.
+        if (item.ChapterId is { } retryChapterId &&
+            await db.DownloadQueue.AnyAsync(q => q.ActiveChapterId == retryChapterId, ct))
+        {
+            return this.Conflict(localizer, "error.chapter.alreadyQueued");
+        }
+
         // Scraper item that never had a mapping resolved (e.g. it failed before
         // ResolveAndActivateAsync could set one) — ClaimNextAsync requires every Queued/RateLimited
         // scraper item to have one, so send it back through resolution instead of straight to
@@ -182,7 +189,19 @@ public class QueueController(
         }
 
         var contentPath = await importer.ResolveContentPathAsync(item, ct);
-        return Ok(await importer.PlanAsync(item, item.Series, contentPath, ct));
+        var plan = await importer.PlanAsync(item, item.Series, contentPath, ct);
+        return Ok(new
+        {
+            plan.QueueItemId,
+            plan.SeriesId,
+            plan.SeriesTitle,
+            plan.ReleaseName,
+            plan.Files,
+            error = plan.ErrorKey is not null ? localizer.Get(plan.ErrorKey, plan.ErrorArgs) : null,
+            plan.HasConflicts,
+            plan.NewChapterCount,
+            plan.ReplacedFileCount
+        });
     }
 
     /// <summary>
@@ -249,10 +268,14 @@ public class QueueController(
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;
-            item.SetRawError(outcome.Error);
+            var rendered = outcome.ErrorKey is not null
+                ? localizer.Get(outcome.ErrorKey, outcome.ErrorArgs)
+                : outcome.Error;
+            if (outcome.ErrorKey is not null) item.SetError(outcome.ErrorKey, outcome.ErrorArgs);
+            else item.SetRawError(outcome.Error);
             await db.SaveChangesAsync(ct);
             await Broadcast(item);
-            return Conflict(new { error = outcome.Error });
+            return Conflict(new { error = rendered });
         }
 
         item.Status = QueueStatus.Completed;

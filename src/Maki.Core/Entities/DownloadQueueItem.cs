@@ -42,9 +42,27 @@ public class DownloadQueueItem
     public int? ChapterId { get; set; }
     public Chapter? Chapter { get; set; }
 
+    /// <summary>
+    /// <see cref="ChapterId"/> while the item is active, null once it is Completed, Failed or
+    /// Cancelled. Computed by the database from the status, so no write path can forget it; its
+    /// unique index is what keeps a chapter to one active row.
+    /// </summary>
+    public int? ActiveChapterId { get; private set; }
+
     /// <summary>Null for items acquired via indexer releases instead of a scraper.</summary>
     public int? SourceMappingId { get; set; }
     public SourceMapping? SourceMapping { get; set; }
+
+    /// <summary>
+    /// A mapping the user pinned this download to (e.g. "download this chapter from this specific
+    /// source"), passed through to <c>ChapterSourceResolver.ResolveAsync</c> whenever this item (re-)
+    /// resolves. Distinct from <see cref="SourceMappingId"/>, which is the mapping resolution actually
+    /// landed on — that gets overwritten if a re-resolve moves to a different source, this doesn't.
+    /// Persisted rather than passed only in memory because resolution can happen long after enqueue
+    /// (the item sits in <see cref="QueueStatus.Resolving"/> across a restart) and the preference has
+    /// to survive that.
+    /// </summary>
+    public int? PreferredMappingId { get; set; }
 
     /// <summary>
     /// The source's own chapter id, resolved once at enqueue time (<c>ChapterSourceResolver</c>)

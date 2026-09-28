@@ -36,7 +36,7 @@ namespace Maki.Api.Controllers;
 //
 // "reader", "ui", "discover", "opds" and the per-tracker halves of "scrobble" are per-user, stored in
 // UserSettings and read through the scoped IUserSettings — so their writes need no admin policy: a
-// caller can only ever change their own. Everything else here describes the deployment (ports, paths,
+// caller can only ever change their own. Everything else here describes the deployment (paths,
 // Prowlarr/qBittorrent/Kavita connections, source priority, updates) or an app registration shared by
 // everyone (a tracker's client id and secret), and stays admin-only.
 public class SettingsController(
@@ -48,7 +48,6 @@ public class SettingsController(
     Maki.Core.Indexers.ProwlarrClient prowlarr,
     Maki.Core.Download.QBittorrentClient qbittorrent,
     Maki.Core.Kavita.KavitaClient kavita,
-    ConfigFileProvider configFile,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
     MangaBakaDumpService mangaBakaDump,
@@ -56,7 +55,6 @@ public class SettingsController(
     EmbeddingStore embeddingStore,
     EmbeddingIndexStatus embeddingStatus,
     SeriesEmbeddingIndexer embeddingIndexer,
-    EmbeddingOptions embeddingOptions,
     PrebuiltIndexInstaller prebuiltIndex,
     RecoGraphInstaller recoGraph,
     RecoGraphCache recoGraphCache,
@@ -120,6 +118,9 @@ public class SettingsController(
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
     /// See <see cref="SettingKeys.DownloadItemTimeoutMinutes"/>.
     /// </param>
+    /// <param name="BulkHoldThreshold">
+    /// See <see cref="SettingKeys.MonitoringBulkHoldThreshold"/>. Null on a write leaves it alone.
+    /// </param>
     /// <param name="UseHardlinks">
     /// Hardlink completed torrents into the library instead of copying them, where the
     /// filesystem allows it. See <see cref="SettingKeys.DownloadUseHardlinks"/>.
@@ -127,7 +128,7 @@ public class SettingsController(
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -163,9 +164,14 @@ public class SettingsController(
     /// Japanese-titled manga in a Swedish interface is the ordinary case. Nullable for the same
     /// reason the two above it are.
     /// </param>
+    /// <param name="DiscoverLayout">
+    /// How Discover's Browse tab is arranged. Unlike <paramref name="SeriesSections"/>, null on write
+    /// means "leave what is stored": this field is saved from Discover's edit mode, and every other
+    /// caller that PUTs this record (Settings, an older cached bundle) would otherwise reset it.
+    /// </param>
     public record UiSettings(
         string StartPage, HomeLayoutSpec HomeLayout, SeriesSectionsSpec? SeriesSections = null,
-        string? TitleLanguage = null, string? Language = null);
+        string? TitleLanguage = null, string? Language = null, DiscoverLayoutSpec? DiscoverLayout = null);
 
     /// <param name="Language">
     /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
@@ -360,10 +366,21 @@ public class SettingsController(
     /// <summary>
     /// Revokes any live OPDS token for this user and issues one new one. Revoking rather than deleting
     /// keeps the rotation visible in the account UI and in the audit trail.
+    /// <para>
+    /// Revoke and insert run in one transaction: two rotations racing each other used to both read
+    /// "no live key yet" between the other's revoke and insert, and both would then insert a live row.
+    /// The <c>OpdsKeyOneLivePerScope</c> migration's filtered unique index is the backstop for
+    /// whatever this transaction doesn't already prevent on its own: if a second live row for this
+    /// user's OPDS scope reaches an insert, the index refuses it at the database rather than letting
+    /// it commit.
+    /// </para>
     /// </summary>
     private async Task<(string Prefix, string FeedUrl)> MintOpdsKeyAsync(CancellationToken ct)
     {
         var now = TimeProvider.System.GetUtcNow().UtcDateTime;
+        var secret = ApiKeyCrypto.Generate();
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         await db.UserApiKeys
             .Where(k => k.UserId == currentUser.UserId
@@ -371,7 +388,6 @@ public class SettingsController(
                         && k.RevokedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(k => k.RevokedAt, now), ct);
 
-        var secret = ApiKeyCrypto.Generate();
         db.UserApiKeys.Add(new UserApiKey
         {
             UserId = currentUser.UserId,
@@ -382,6 +398,7 @@ public class SettingsController(
             CreatedAt = now
         });
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
         // Root-relative on purpose. Building an absolute URL from Request.Scheme/Host hands out an
         // http:// link through any TLS-terminating proxy that doesn't rewrite it.
@@ -400,10 +417,12 @@ public class SettingsController(
         var rows = await userSettings.GetManyAsync(
             [
                 SettingKeys.UiStartPage, SettingKeys.UiHomeSections, SettingKeys.UiSeriesSections,
-                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage
+                SettingKeys.UiTitleLanguage, SettingKeys.UiLanguage, SettingKeys.UiDiscoverSections
             ], ct);
         var stored = rows.GetValueOrDefault(SettingKeys.UiStartPage);
-        var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections));
+        var (homeRails, discoverRails) = await RailIdsAsync(ct);
+        var layout = HomeLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiHomeSections), homeRails);
+        var discoverLayout = DiscoverLayoutSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiDiscoverSections), discoverRails);
         var seriesSections = SeriesSectionsSpec.Parse(rows.GetValueOrDefault(SettingKeys.UiSeriesSections));
         // An unsupported stored language reads as "no preference" rather than erroring, the same way
         // an unrecognised start page does: a row written by a build that shipped a catalogue this one
@@ -411,7 +430,8 @@ public class SettingsController(
         return Ok(new UiSettings(
             StartPage.IsValid(stored) ? stored! : StartPage.Default, layout, seriesSections,
             rows.GetValueOrDefault(SettingKeys.UiTitleLanguage),
-            SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage))));
+            SupportedLanguages.Match(rows.GetValueOrDefault(SettingKeys.UiLanguage)),
+            discoverLayout));
     }
 
     /// <summary>Which page this user lands on, and how their Home is laid out. Theirs alone.</summary>
@@ -426,7 +446,11 @@ public class SettingsController(
         // Turning Home off while it is the start page would leave "/" pointing at a page the client
         // then bounces away from. The client already falls back for exactly this, but storing the
         // contradiction means the setting silently disagrees with what the user sees; resolve it here.
-        var layout = (request.HomeLayout ?? HomeLayoutSpec.Default).Merge();
+        var (homeRails, discoverRails) = await RailIdsAsync(ct);
+        var layout = (request.HomeLayout ?? HomeLayoutSpec.Default).Merge(homeRails);
+        var discoverLayout = request.DiscoverLayout is { } requestedDiscover
+            ? requestedDiscover.Merge(discoverRails)
+            : DiscoverLayoutSpec.Parse(await userSettings.GetAsync(SettingKeys.UiDiscoverSections, ct), discoverRails);
         var startPage = !layout.Enabled && request.StartPage == StartPage.Home
             ? StartPage.Library
             : request.StartPage;
@@ -454,15 +478,39 @@ public class SettingsController(
         }
 
         await userSettings.SetAsync(SettingKeys.UiStartPage, startPage, ct);
-        await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout), ct);
+        await userSettings.SetAsync(SettingKeys.UiHomeSections, HomeLayoutSpec.Serialize(layout, homeRails), ct);
         await userSettings.SetAsync(
             SettingKeys.UiSeriesSections, SeriesSectionsSpec.Serialize(seriesSections), ct);
         await userSettings.SetAsync(SettingKeys.UiTitleLanguage, titleLanguage, ct);
         await userSettings.SetAsync(SettingKeys.UiLanguage, language, ct);
+        if (request.DiscoverLayout is not null)
+        {
+            await userSettings.SetAsync(
+                SettingKeys.UiDiscoverSections, DiscoverLayoutSpec.Serialize(discoverLayout, discoverRails), ct);
+        }
+
         // Anything rendered outside a request (a webhook, a pushed notification) reads this through a
         // short cache, so without this a language change would not reach it for up to five minutes.
         userLocales.Forget(currentUser.UserId);
-        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language));
+        return Ok(new UiSettings(startPage, layout, seriesSections, titleLanguage, language, discoverLayout));
+    }
+
+    /// <summary>
+    /// The caller's custom rails per page, in creation order: what a <c>rail:{id}</c> key in each
+    /// layout may name, and the order new ones are placed in. The only place the layouts are merged
+    /// against rails, so every read and write passes these.
+    /// </summary>
+    private async Task<(List<int> Home, List<int> Discover)> RailIdsAsync(CancellationToken ct)
+    {
+        var rails = await db.SavedFilters
+            .Where(f => f.Scope == SavedFilter.HomeRailScope || f.Scope == SavedFilter.DiscoverRailScope)
+            .OrderBy(f => f.SortOrder)
+            .ThenBy(f => f.Id)
+            .Select(f => new { f.Id, f.Scope })
+            .ToListAsync(ct);
+        return (
+            rails.Where(r => r.Scope == SavedFilter.HomeRailScope).Select(r => r.Id).ToList(),
+            rails.Where(r => r.Scope == SavedFilter.DiscoverRailScope).Select(r => r.Id).ToList());
     }
 
     /// <summary>
@@ -510,7 +558,7 @@ public class SettingsController(
     {
         if (!Maki.Core.Naming.FolderNamingMode.IsValid(request.FolderNamingMode))
         {
-            return BadRequest(new { error = $"Unknown folder naming mode: {request.FolderNamingMode}" });
+            return this.Fail(localizer, "error.settings.unknownFolderNamingMode", new { mode = request.FolderNamingMode });
         }
 
         if (request.IncognitoByRating is { } rules)
@@ -520,12 +568,12 @@ public class SettingsController(
             {
                 if (!ContentRating.IsValid(rating))
                 {
-                    return BadRequest(new { error = $"Unknown content rating: {rating}" });
+                    return this.Fail(localizer, "error.settings.unknownContentRating", new { rating });
                 }
 
                 if (!Enum.TryParse<IncognitoMode>(mode, true, out var parsedMode))
                 {
-                    return BadRequest(new { error = $"Unknown incognito mode: {mode}" });
+                    return this.Fail(localizer, "error.settings.unknownIncognitoMode", new { mode });
                 }
 
                 parsed[rating] = parsedMode;
@@ -537,10 +585,10 @@ public class SettingsController(
 
         // Both formats validate before anything is written: a format that only fails at download
         // time fails inside a worker, hours later, with a half-named file already on disk.
-        foreach (var (format, field) in new[]
+        foreach (var (format, fieldKey) in new[]
                  {
-                     (request.SeriesFolderFormat, "Series folder format"),
-                     (request.ChapterFormat, "Chapter format")
+                     (request.SeriesFolderFormat, "error.naming.fieldSeriesFolder"),
+                     (request.ChapterFormat, "error.naming.fieldChapterFormat")
                  })
         {
             if (format is null)
@@ -550,7 +598,9 @@ public class SettingsController(
 
             if (Maki.Core.Naming.NamingFormatter.Validate(format) is { Count: > 0 } errors)
             {
-                return BadRequest(new { error = $"{field}: {string.Join("; ", errors)}" });
+                var reason = string.Join("; ", errors.Select(e => localizer.Get(e.Key, e.Args)));
+                return this.Fail(localizer, "error.naming.formatInvalid",
+                    new { field = localizer.Get(fieldKey), reason });
             }
         }
 
@@ -621,8 +671,8 @@ public class SettingsController(
         var sample = Maki.Core.Naming.NamingDefaults.SampleContext();
         return Ok(Maki.Core.Naming.NamingTokens.All.Select(t => new NamingTokenDto(
             t.Display,
-            t.Category,
-            t.Description,
+            localizer.Get(t.Category),
+            localizer.Get(t.DescriptionKey),
             Maki.Core.Naming.NamingFormatter.ExampleFor(t, sample))));
     }
 
@@ -640,9 +690,11 @@ public class SettingsController(
         var chapterFormat = request.ChapterFormat ?? await naming.ChapterFormatAsync(ct);
 
         var errors = Maki.Core.Naming.NamingFormatter.Validate(folderFormat)
-            .Select(e => $"Series folder format: {e}")
+            .Select(e => localizer.Get("error.naming.formatInvalid",
+                new { field = localizer.Get("error.naming.fieldSeriesFolder"), reason = localizer.Get(e.Key, e.Args) }))
             .Concat(Maki.Core.Naming.NamingFormatter.Validate(chapterFormat)
-                .Select(e => $"Chapter format: {e}"))
+                .Select(e => localizer.Get("error.naming.formatInvalid",
+                    new { field = localizer.Get("error.naming.fieldChapterFormat"), reason = localizer.Get(e.Key, e.Args) })))
             .ToList();
 
         return Ok(new NamingPreviewResponse(
@@ -719,7 +771,7 @@ public class SettingsController(
     {
         if (!ContentRating.IsValid(request.MaxContentRating))
         {
-            return BadRequest(new { error = $"Unknown content rating: {request.MaxContentRating}" });
+            return this.Fail(localizer, "error.settings.unknownContentRating", new { rating = request.MaxContentRating });
         }
 
         await db.Users
@@ -737,7 +789,8 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
-        await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false"));
+        await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
+        await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct)));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -761,6 +814,11 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.downloadTimeoutRange", new { min = 10, max = 1440 });
         }
 
+        if (request.BulkHoldThreshold is < 0 or > 1000)
+        {
+            return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -777,7 +835,13 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
-        return Ok(request);
+        if (request.BulkHoldThreshold is { } bulkHold)
+        {
+            await settings.SetAsync(SettingKeys.MonitoringBulkHoldThreshold,
+                bulkHold.ToString(CultureInfo.InvariantCulture), ct);
+        }
+
+        return Ok(request with { BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct) });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -833,7 +897,7 @@ public class SettingsController(
             .ToList();
         if (unknown.Count > 0)
         {
-            return BadRequest(new { error = $"Unknown source(s): {string.Join(", ", unknown)}" });
+            return this.Fail(localizer, "error.settings.unknownSources", new { sources = string.Join(", ", unknown) });
         }
 
         // Switching a source off writes one setting and nothing else — per-series
@@ -1106,6 +1170,35 @@ public class SettingsController(
         return Ok(new KavitaUserSetting(await kavitaUser.ResolveAsync(ct)));
     }
 
+    /// <summary>
+    /// Proxies Kavita's library list so the scrobble library filter can be picked by name instead of
+    /// typed as raw ids.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("kavita/libraries")]
+    public async Task<IActionResult> GetKavitaLibraries(CancellationToken ct)
+    {
+        var url = await settings.GetAsync(SettingKeys.KavitaUrl, ct);
+        var apiKey = await settings.GetAsync(SettingKeys.KavitaApiKey, ct);
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
+        }
+
+        try
+        {
+            var libraries = await kavita.GetLibrariesAsync(url, apiKey, ct);
+            return Ok(libraries.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase).Select(l => new { l.Id, l.Name }));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException
+                                   && !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Could not list Kavita libraries");
+            return StatusCode(StatusCodes.Status502BadGateway,
+                new { code = "error.settings.kavitaNoResponse", error = localizer.Get("error.settings.kavitaNoResponse") });
+        }
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpPost("kavita/test")]
     public async Task<IActionResult> TestKavita([FromBody] KavitaSettings request, CancellationToken ct)
@@ -1256,11 +1349,11 @@ public class SettingsController(
         return Ok(new RecommendationIndexResponse(
             embeddingModel.IsPresent(), dumpPresent, embeddingStore.Count(), total,
             snap.Running, snap.Phase, snap.Embedded, snap.Scanned,
-            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, snap.LastError, 
+            snap.StartedAt, snap.FinishedAt, snap.LastEmbedded, InstallReason(snap.LastError),
             snap.EstimatedSecondsRemaining, prebuiltEnabled, prebuiltInstalledAt,
             modelSwitcher.CurrentModel,
             string.Equals(await settings.GetAsync(SettingKeys.MangaBakaUseFullDump, ct), "true", StringComparison.OrdinalIgnoreCase),
-            modelSwitcher.Switching, modelSwitcher.LastError));
+            modelSwitcher.Switching, InstallReason(modelSwitcher.LastError, modelSwitcher.LastErrorArgs)));
     }
 
     public record PrebuiltIndexRequest(bool Enabled);
@@ -1394,7 +1487,7 @@ public class SettingsController(
     public async Task<IActionResult> DownloadCoRead(CancellationToken ct)
     {
         var result = await coReadInstaller.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), pairCount = result.PairCount });
     }
 
     public record ReaderCohortStatus(
@@ -1457,7 +1550,7 @@ public class SettingsController(
         var result = await readerCohortInstaller.InstallAsync(force: true, ct);
         return Ok(new
         {
-            installed = result.Installed, reason = result.Reason, cohortItemCount = result.CohortItemCount,
+            installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), cohortItemCount = result.CohortItemCount,
         });
     }
 
@@ -1523,7 +1616,7 @@ public class SettingsController(
     public async Task<IActionResult> DownloadTasteVectors(CancellationToken ct)
     {
         var result = await tasteVectorInstaller.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, itemCount = result.ItemCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), itemCount = result.ItemCount });
     }
 
     /// <summary>
@@ -1537,7 +1630,7 @@ public class SettingsController(
     public async Task<IActionResult> DownloadCoGraph(CancellationToken ct)
     {
         var result = await recoGraph.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, pairCount = result.PairCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), pairCount = result.PairCount });
     }
 
     /// <summary>
@@ -1568,11 +1661,11 @@ public class SettingsController(
     {
         if (embeddingStatus.Running)
         {
-            return Ok(new { installed = false, reason = "An indexing pass is running." });
+            return Ok(new { installed = false, reason = localizer.Get("install.embeddingModel.indexingRunning") });
         }
 
         var result = await prebuiltIndex.InstallAsync(force: true, ct);
-        return Ok(new { installed = result.Installed, reason = result.Reason, rowCount = result.RowCount });
+        return Ok(new { installed = result.Installed, reason = InstallReason(result.Reason, result.ReasonArgs), rowCount = result.RowCount });
     }
 
     public record EmbeddingModelRequest(string Model);
@@ -1589,8 +1682,15 @@ public class SettingsController(
     public IActionResult SetEmbeddingModel([FromBody] EmbeddingModelRequest request)
     {
         var result = modelSwitcher.Start(request.Model);
-        return Ok(new { model = result.Model, switching = result.Started, reason = result.Reason });
+        return Ok(new { model = result.Model, switching = result.Started, reason = InstallReason(result.Reason) });
     }
+
+    // Maki.Metadata reports install outcomes as `install.*` keys, but a failure can also carry a raw
+    // exception message, which passes through as-is.
+    private string? InstallReason(string? reason, object? args = null) =>
+        reason is not null && reason.StartsWith("install.", StringComparison.Ordinal)
+            ? localizer.Get(reason, args)
+            : reason;
 
     public record FullDumpRequest(bool UseFullDump);
 
@@ -1612,7 +1712,7 @@ public class SettingsController(
     {
         if (embeddingStatus.Running)
         {
-            return Ok(new { started = false, message = "Indexing is already running" });
+            return Ok(new { started = false, message = localizer.Get("install.embeddingModel.indexingRunning") });
         }
 
         var scheduler = await schedulerFactory.GetScheduler(ct);
@@ -1710,16 +1810,30 @@ public class SettingsController(
         return await GetScrobble(ct);
     }
 
+    public record ImportListSettings(bool Enabled, int IntervalMinutes);
+
     /// <summary>
-    /// No longer returns an API key. There is no instance-wide key: credentials belong to users, are
-    /// created under Account, and only their SHA-256 digest is ever stored — so there is nothing here
-    /// to hand back, and the rotate endpoint that used to sit beside this is gone with it.
+    /// The instance half of import lists: the scheduled pass's switch and interval. Each user's own
+    /// list settings live under <c>api/v1/importlists</c>.
     /// </summary>
     [Authorize(Policy = Policies.Admin)]
-    [HttpGet("general")]
-    public IActionResult GetGeneral()
+    [HttpGet("importlists")]
+    public async Task<IActionResult> GetImportLists(CancellationToken ct) => Ok(new ImportListSettings(
+        await settings.GetAsync(SettingKeys.ImportListEnabled, ct) != "false",
+        int.TryParse(await settings.GetAsync(SettingKeys.ImportListIntervalMinutes, ct), out var m)
+            && m >= ImportListService.MinIntervalMinutes
+            ? m
+            : ImportListService.DefaultIntervalMinutes));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("importlists")]
+    public async Task<IActionResult> SetImportLists([FromBody] ImportListSettings request, CancellationToken ct)
     {
-        return Ok(new { port = configFile.Config.Port });
+        await settings.SetAsync(SettingKeys.ImportListEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.ImportListIntervalMinutes,
+            Math.Max(request.IntervalMinutes, ImportListService.MinIntervalMinutes)
+                .ToString(CultureInfo.InvariantCulture), ct);
+        return await GetImportLists(ct);
     }
 
     /// <summary>
@@ -1752,7 +1866,7 @@ public class SettingsController(
             var address = entry.Contains('/') ? entry.Split('/', 2)[0] : entry;
             if (!System.Net.IPAddress.TryParse(address, out _))
             {
-                return BadRequest(new { error = $"\"{entry}\" is not an IP address or CIDR network" });
+                return this.Fail(localizer, "error.settings.trustedProxyInvalid", new { entry });
             }
         }
 
@@ -1793,7 +1907,10 @@ public class SettingsController(
             values.GetValueOrDefault(SettingKeys.AuthOidcClientId) ?? string.Empty,
             values.GetValueOrDefault(SettingKeys.AuthOidcClientSecret) ?? string.Empty,
             values.GetValueOrDefault(SettingKeys.AuthOidcScopes) ?? OidcRuntimeOptions.DefaultScopes,
-            values.GetValueOrDefault(SettingKeys.AuthOidcDisplayName) ?? OidcRuntimeOptions.DefaultDisplayName,
+            // Blank rather than the English default when nothing is configured: the "Button label"
+            // field's own placeholder already carries a translated copy of it, the same way the
+            // runtime's DisplayNameIsCustom/DisplayName split treats an unset value as blank.
+            values.GetValueOrDefault(SettingKeys.AuthOidcDisplayName) ?? string.Empty,
             values.GetValueOrDefault(SettingKeys.AuthOidcOnly) == "true",
             values.GetValueOrDefault(SettingKeys.AuthOidcAutoProvision) == "true",
             values.GetValueOrDefault(SettingKeys.AuthOidcUsernameClaim) ?? OidcRuntimeOptions.DefaultUsernameClaim,
