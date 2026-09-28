@@ -94,6 +94,36 @@ public class HostStartupTests : IDisposable
     }
 
     /// <summary>
+    /// First boot against an empty config dir. The pre-migration backup used to run here too and
+    /// query AppConfig before any migration had created it, and replaying every migration printed
+    /// a wall of EF authoring warnings.
+    /// </summary>
+    [Fact]
+    public void Host_FirstBootOnAnEmptyConfigDir_LogsNoErrorsOrWarnings_AndTakesNoBackup()
+    {
+        using (var factory = new WebApplicationFactory<Program>())
+        {
+            _ = factory.Services;
+        }
+
+        var backupDir = Path.Combine(_configDir, "backups");
+        Assert.Empty(Directory.Exists(backupDir) ? Directory.GetFiles(backupDir, "*-auto.zip") : []);
+
+        var noisy = Directory.GetFiles(Path.Combine(_configDir, "logs"), "*.log")
+            .SelectMany(ReadShared)
+            .Where(line => line.Contains("[ERR]") || line.Contains("[WRN]"))
+            .ToList();
+        Assert.Empty(noisy);
+    }
+
+    private static IEnumerable<string> ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd().Split('\n');
+    }
+
+    /// <summary>
     /// The two tuning records whose names differ by one word and whose meanings do not overlap at
     /// all: <c>TasteTuning</c> weights a reader's own series as recommendation seeds,
     /// <c>TasteVectorTuning</c> is the behavioural channel. Both are registered; asserting on the

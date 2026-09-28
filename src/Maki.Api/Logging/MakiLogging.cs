@@ -81,8 +81,19 @@ public static class MakiLogging
             //                                  OutboundHttpLoggingHandler, which logs one line.
             //   Quartz                  scheduler and thread pool boilerplate at every start. The
             //                           jobs themselves log under Maki.Api.Jobs.* and are unaffected.
+            //
+            // Microsoft.EntityFrameworkCore.Migrations sits one step higher, at Error. Its warnings
+            // are about how a migration was written (a PRAGMA outside a transaction, SQL after a
+            // SQLite table rebuild), not about the database being migrated, so an operator can do
+            // nothing with them. A fresh install replays every migration and printed dozens.
+            //
+            // XmlKeyManager is at Error for the same reason: it warns "no XML encryptor configured"
+            // each time it writes a data protection key. Those keys sit unencrypted in ConfigDir on
+            // purpose (see AuthServiceCollectionExtensions), so the warning only ever says that.
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager", LogEventLevel.Error)
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Migrations", LogEventLevel.Error)
             .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
             .MinimumLevel.Override("Quartz", LogEventLevel.Warning)
             .Enrich.With<ComponentEnricher>()

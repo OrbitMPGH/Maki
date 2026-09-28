@@ -1174,7 +1174,11 @@ try
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var pending = db.Database.GetPendingMigrations().ToList();
         BackupInfo? preMigrationBackup = null;
-        if (pending.Count > 0)
+
+        // A fresh install has nothing to protect yet, and the backup would query tables that no
+        // migration has created, logging an error on every first boot.
+        var freshDatabase = !db.Database.GetAppliedMigrations().Any();
+        if (pending.Count > 0 && !freshDatabase)
         {
             startupLog.LogInformation("{Count} pending migration(s); taking pre-migration backup", pending.Count);
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
