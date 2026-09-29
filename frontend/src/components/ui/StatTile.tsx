@@ -1,13 +1,9 @@
 import type { ReactNode } from 'react'
 import { Card, Skeleton, Text } from '@mantine/core'
-import type { Icon } from '@tabler/icons-react'
-
-type Accent = 'brand' | 'ok' | 'warn' | 'info' | 'danger' | 'gray'
 
 /**
  * Compact metric tile: label, a big value and an optional delta. Values use tabular figures so a
- * row of tiles stays aligned. `icon` and `accent` are accepted so call sites compile but are no
- * longer drawn.
+ * row of tiles stays aligned.
  *
  * `delta` is the fractional change against a comparison period (0.12 for +12%). Optional, and
  * omitted everywhere the tile has nothing to compare against: Home and the achievements panel
@@ -24,8 +20,6 @@ export function StatTile({
 }: {
   label: string
   value: ReactNode
-  icon?: Icon
-  accent?: Accent
   /** Fractional change vs the previous period. Null means "compared, but the baseline was zero". */
   delta?: number | null
   /** What the comparison is against, e.g. "vs previous 30 days". Shown as a tooltip title. */

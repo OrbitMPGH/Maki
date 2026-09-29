@@ -3,8 +3,7 @@ Maki is a self-hosted manga collection manager: add a series once and it keeps i
 ## Voice and copy
 
 - Write plain, direct sentences, the way a developer explains something to a teammate. Say what happens: "Add series", "Refresh the catalogue", "Browse the catalogue", never "Submit" or "OK".
-- Sentence case everywhere: buttons, titles, menu items. Uppercase only through the `label` style (figure labels, stat labels, cover badges), and let CSS do it. Badges in Settings read as words and stay sentence case.
-- Address the reader as "you" and the product as "Maki": "Maki finds its chapters and keeps it complete." No "we".
+- Sentence case everywhere: buttons, titles, menu items. Uppercase only through the `label` style (figure labels, stat labels, cover badges), and let CSS do it.- Address the reader as "you" and the product as "Maki": "Maki finds its chapters and keeps it complete." No "we".
 - Empty states are statements, not apologies: "No series yet", "No chapters read in this period.", "Queue is empty". Follow with one line on what would fill it and at most one action.
 - Explain a consequence in a short clause after a colon: "Sliding: a failed sign-in resets the timer." "No change: this title was already in that state."
 - No em dashes. No emoji in UI copy. No filler words ("seamless", "robust", "leverage") and no "it's not just X, it's Y".

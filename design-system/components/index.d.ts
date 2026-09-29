@@ -39,10 +39,6 @@ export declare function SectionHeader(props: {
 export declare function StatTile(props: {
   label: string
   value: ReactNode
-  /** Accepted for older call sites; no longer drawn. */
-  icon?: Icon
-  /** Accepted for older call sites; no longer drawn. */
-  accent?: 'brand' | 'ok' | 'warn' | 'info' | 'danger' | 'gray'
   /** Fractional change vs the previous period. null means the baseline was zero. */
   delta?: number | null
   deltaLabel?: string

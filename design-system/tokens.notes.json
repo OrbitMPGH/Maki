@@ -9,7 +9,7 @@
     "border-strong": "Emphasised border: hovered cards, chip outlines, scrollbar thumb.",
     "hairline": "Row dividers inside tables and lists. An alias of border.",
     "line-soft": "Softer divider: border at 76%.",
-    "surface-raised": "Overlays (modals, drawers, menus, popovers) and .layer-raised. Dark lightens, light stays white and casts shadow-raised.",
+    "surface-raised": "Overlays (modals, drawers, menus, popovers) and .layer-raised. Dark lightens, light stays near-white and casts shadow-raised.",
     "surface-sunken": "Recessed wells (.layer-sunken): inset lists, code, empty tracks. app-bg in dark, a warm grey in light.",
     "border-raised": "Border on the raised layer.",
     "ink-hi": "Titles, figures and the active nav item, on every surface.",
