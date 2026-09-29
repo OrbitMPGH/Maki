@@ -3483,8 +3483,9 @@ msgid "Check now"
 msgstr "지금 확인"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
-msgstr ""
+msgstr "매일 밤 카탈로그가 업데이트될 때마다 확인합니다. 창작자 페이지에서 팔로우할 수 있습니다."
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -4056,8 +4057,9 @@ msgid "Could not build a plan for this series."
 msgstr "이 시리즈의 계획을 만들지 못했습니다."
 
 #: src/components/ui/useCopyText.ts
+#, fuzzy
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
-msgstr ""
+msgstr "클립보드에 복사하지 못했습니다. 텍스트를 선택해서 직접 복사하세요."
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -4235,12 +4237,14 @@ msgid "Creators"
 msgstr "제작자"
 
 #: src/components/CreditPicker.tsx
+#, fuzzy
 msgid "Creators and studios"
-msgstr ""
+msgstr "창작자 및 스튜디오"
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Creators you follow"
-msgstr ""
+msgstr "팔로우 중인 창작자"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -5243,8 +5247,9 @@ msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plur
 msgstr "모든 항목이 정상입니다. 통과 항목 표시를 켜면 전체 {totalChecks, plural, other {#개 검사}}를 볼 수 있습니다."
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Everything they have in the catalogue is already in your library."
-msgstr ""
+msgstr "카탈로그에 있는 이들의 작품이 모두 라이브러리에 있습니다."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5696,12 +5701,14 @@ msgid "Folders are renamed to the English title and their comic files are linked
 msgstr "폴더 이름은 영어 제목으로 변경되고 만화 파일은 챕터에 연결됩니다."
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Follow"
-msgstr ""
+msgstr "팔로우"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Following"
-msgstr ""
+msgstr "팔로우 중"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -7439,8 +7446,9 @@ msgid "Maki's interface is now translated into {languageCount} languages. Pick y
 msgstr "Maki 인터페이스가 이제 {languageCount}개 언어로 번역되었습니다. 여기서 선택하거나 설정, 언어에서 언제든지 변경할 수 있습니다."
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Manage"
-msgstr ""
+msgstr "관리"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8143,8 +8151,9 @@ msgstr "새 챕터, 완료된 다운로드 및 달성한 업적이 여기에 표
 
 #: src/api/hooks.ts
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "New from creators you follow"
-msgstr ""
+msgstr "팔로우 중인 창작자의 신작"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8178,8 +8187,9 @@ msgid "New series defaults"
 msgstr "새 시리즈 기본값"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "New series from creators you follow"
-msgstr ""
+msgstr "팔로우 중인 창작자의 새 시리즈"
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -8199,8 +8209,9 @@ msgid "Newest"
 msgstr "최신순"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Newest first"
-msgstr ""
+msgstr "최신순"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9064,8 +9075,9 @@ msgid "Oldest"
 msgstr "오래된 순"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Oldest first"
-msgstr ""
+msgstr "오래된 순"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -11351,8 +11363,9 @@ msgid "Search by chapter number or title"
 msgstr "챕터 번호 또는 제목으로 검색"
 
 #: src/components/CreditPicker.tsx
+#, fuzzy
 msgid "Search by name"
-msgstr ""
+msgstr "이름으로 검색"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -11983,8 +11996,9 @@ msgid "Show source text"
 msgstr "소스 텍스트 표시"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Show their newest titles in a rail on Home and Discover"
-msgstr ""
+msgstr "홈과 탐색의 레일에 이들의 최신 작품 표시"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -12254,12 +12268,14 @@ msgid "Sort by"
 msgstr "정렬 기준"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Sort newest first"
-msgstr ""
+msgstr "최신순으로 정렬"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Sort oldest first"
-msgstr ""
+msgstr "오래된 순으로 정렬"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -12532,8 +12548,9 @@ msgid "Still going"
 msgstr "계속 읽는 중"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Stop showing their new titles on Home and Discover"
-msgstr ""
+msgstr "홈과 탐색에서 이들의 신작 표시 중지"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -12937,8 +12954,9 @@ msgstr "MangaBaka 카탈로그에서 가장 인기 있는 작품입니다."
 
 #: src/components/discover/discoverSectionDefs.ts
 #: src/components/home/homeSectionDefs.ts
+#, fuzzy
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
-msgstr ""
+msgstr "팔로우 중인 창작자와 스튜디오의 최신 작품입니다. 누군가를 팔로우하기 전에는 비어 있습니다."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13305,8 +13323,9 @@ msgid "Tick every chapter contained in this file. An omnibus or compilation usua
 msgstr "이 파일에 포함된 챕터를 모두 선택하세요. 옴니버스나 합본은 보통 여러 챕터를 포함합니다. 첫 챕터를 클릭한 다음 Shift를 누른 채 마지막 챕터를 클릭하세요."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
 msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
-msgstr ""
+msgstr "챕터 목록을 받아오는 즉시 시청 완료로 표시합니다. 시청한 챕터는 읽기 통계에 포함되지 않습니다."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -13384,8 +13403,9 @@ msgid "Titles"
 msgstr "작품"
 
 #: src/components/CreditPicker.tsx
+#, fuzzy
 msgid "Titles credited to any of them."
-msgstr ""
+msgstr "이들 중 누구든 크레딧에 오른 작품입니다."
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -13721,12 +13741,14 @@ msgid "Undone"
 msgstr "취소됨"
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Unfollow"
-msgstr ""
+msgstr "팔로우 취소"
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Unfollow {name}"
-msgstr ""
+msgstr "{name} 팔로우 취소"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -14633,8 +14655,9 @@ msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start 
 msgstr "{animeTitle}을(를) 완결했습니다. 애니메이션은 {coveredTo}화까지 다룹니다. {resumeAt}화부터 읽으세요."
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
-msgstr ""
+msgstr "아직 팔로우한 사람이 없습니다. 창작자나 스튜디오 페이지를 열고 팔로우를 누르세요."
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

@@ -3483,8 +3483,9 @@ msgid "Check now"
 msgstr "Şimdi kontrol et"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
-msgstr ""
+msgstr "Her gece katalog güncellendikten sonra kontrol edilir. Birini yaratıcı sayfasından takip edin."
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -4056,8 +4057,9 @@ msgid "Could not build a plan for this series."
 msgstr "Bu seri için bir plan oluşturulamadı."
 
 #: src/components/ui/useCopyText.ts
+#, fuzzy
 msgid "Could not copy to the clipboard. Select the text and copy it by hand."
-msgstr ""
+msgstr "Panoya kopyalanamadı. Metni seçip elle kopyalayın."
 
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -4235,12 +4237,14 @@ msgid "Creators"
 msgstr "Yaratıcılar"
 
 #: src/components/CreditPicker.tsx
+#, fuzzy
 msgid "Creators and studios"
-msgstr ""
+msgstr "Yaratıcılar ve stüdyolar"
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Creators you follow"
-msgstr ""
+msgstr "Takip ettiğiniz yaratıcılar"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -5243,8 +5247,9 @@ msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plur
 msgstr "Her şey başarılı. Tüm {totalChecks, plural, one {# kontrolü} other {# kontrolü}} görmek için Başarılıları göster'i açın."
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Everything they have in the catalogue is already in your library."
-msgstr ""
+msgstr "Katalogdaki tüm başlıkları zaten kitaplığınızda."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5696,12 +5701,14 @@ msgid "Folders are renamed to the English title and their comic files are linked
 msgstr "Klasörler İngilizce başlıkla yeniden adlandırılır ve çizgi roman dosyaları bölümlere bağlanır."
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Follow"
-msgstr ""
+msgstr "Takip et"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Following"
-msgstr ""
+msgstr "Takip ediliyor"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -7439,8 +7446,9 @@ msgid "Maki's interface is now translated into {languageCount} languages. Pick y
 msgstr "Maki'nin arayüzü artık {languageCount} dile çevrildi. Dilinizi buradan seçin veya istediğiniz zaman Ayarlar, Dil altından değiştirin."
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Manage"
-msgstr ""
+msgstr "Yönet"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -8143,8 +8151,9 @@ msgstr "Yeni bölümler, tamamlanan indirmeler ve kazanılan başarımlar buraya
 
 #: src/api/hooks.ts
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "New from creators you follow"
-msgstr ""
+msgstr "Takip ettiğiniz yaratıcılardan yeni"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8178,8 +8187,9 @@ msgid "New series defaults"
 msgstr "Yeni seri varsayılanları"
 
 #: src/api/inbox.ts
+#, fuzzy
 msgid "New series from creators you follow"
-msgstr ""
+msgstr "Takip ettiğiniz yaratıcılardan yeni seriler"
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -8199,8 +8209,9 @@ msgid "Newest"
 msgstr "En yeni"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Newest first"
-msgstr ""
+msgstr "Önce en yeni"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -9064,8 +9075,9 @@ msgid "Oldest"
 msgstr "En eski"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Oldest first"
-msgstr ""
+msgstr "Önce en eski"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -11351,8 +11363,9 @@ msgid "Search by chapter number or title"
 msgstr "Bölüm numarasına veya başlığa göre ara"
 
 #: src/components/CreditPicker.tsx
+#, fuzzy
 msgid "Search by name"
-msgstr ""
+msgstr "Ada göre ara"
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -11983,8 +11996,9 @@ msgid "Show source text"
 msgstr "Kaynak metnini göster"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Show their newest titles in a rail on Home and Discover"
-msgstr ""
+msgstr "En yeni başlıklarını Ana Sayfa ve Keşfet'te bir bölümde göster"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -12254,12 +12268,14 @@ msgid "Sort by"
 msgstr "Sıralama ölçütü"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Sort newest first"
-msgstr ""
+msgstr "En yeniden eskiye sırala"
 
 #: src/pages/SeriesDetailPage.tsx
+#, fuzzy
 msgid "Sort oldest first"
-msgstr ""
+msgstr "En eskiden yeniye sırala"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -12532,8 +12548,9 @@ msgid "Still going"
 msgstr "Devam ediyor"
 
 #: src/pages/CreatorPage.tsx
+#, fuzzy
 msgid "Stop showing their new titles on Home and Discover"
-msgstr ""
+msgstr "Yeni başlıklarını Ana Sayfa ve Keşfet'te göstermeyi bırak"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -12937,8 +12954,9 @@ msgstr "MangaBaka kataloğundaki en popüler başlıklar."
 
 #: src/components/discover/discoverSectionDefs.ts
 #: src/components/home/homeSectionDefs.ts
+#, fuzzy
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
-msgstr ""
+msgstr "Takip ettiğiniz yaratıcı ve stüdyoların en yeni başlıkları. Birini takip edene kadar boş kalır."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -13305,8 +13323,9 @@ msgid "Tick every chapter contained in this file. An omnibus or compilation usua
 msgstr "Bu dosyanın içerdiği tüm bölümleri işaretleyin. Omnibus veya derleme genellikle bir aralığı kapsar: ilk bölüme tıklayın, ardından Shift tuşuna basılı tutarak son bölüme tıklayın."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
 msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
-msgstr ""
+msgstr "Bölüm listesi gelir gelmez bunları işaretler. İzlendi olarak işaretlenen bölümler okuma istatistiklerinize sayılmaz."
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -13384,8 +13403,9 @@ msgid "Titles"
 msgstr "Başlıklar"
 
 #: src/components/CreditPicker.tsx
+#, fuzzy
 msgid "Titles credited to any of them."
-msgstr ""
+msgstr "Bunlardan herhangi birine ait başlıklar."
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -13721,12 +13741,14 @@ msgid "Undone"
 msgstr "Geri alındı"
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Unfollow"
-msgstr ""
+msgstr "Takibi bırak"
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "Unfollow {name}"
-msgstr ""
+msgstr "{name} takibini bırak"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -14633,8 +14655,9 @@ msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start 
 msgstr "{animeTitle} animesini bitirdin. Anime {coveredTo}. bölüme kadarını kapsıyor. {resumeAt}. bölümden okumaya başla."
 
 #: src/components/discover/FollowingRail.tsx
+#, fuzzy
 msgid "You follow nobody yet. Open a creator or studio and press Follow."
-msgstr ""
+msgstr "Henüz kimseyi takip etmiyorsunuz. Bir yaratıcı veya stüdyo sayfasını açıp Takip et'e basın."
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

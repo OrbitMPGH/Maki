@@ -2167,24 +2167,28 @@ msgstr "{tracker}: {added, plural, one {# adicionada} many {# adicionadas} other
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: New from {creator}
+#, fuzzy
 msgid "inbox.followedRelease.title"
-msgstr ""
+msgstr "Novidade de {creator}"
 
 #. {title} is a catalogue title and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: {title} is new in the catalogue.
+#, fuzzy
 msgid "inbox.followedRelease.body"
-msgstr ""
+msgstr "{title} é novo no catálogo."
 
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: New from creators you follow
+#, fuzzy
 msgid "inbox.followedReleases.title"
-msgstr ""
+msgstr "Novidades de criadores que você segue"
 
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
 msgid "inbox.followedReleases.body"
-msgstr ""
+msgstr "{count, plural, one {# novo título} many {# novos títulos} other {# novos títulos}} no catálogo."
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available

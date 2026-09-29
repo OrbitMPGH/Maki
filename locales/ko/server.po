@@ -2167,24 +2167,28 @@ msgstr "{tracker}: {added, plural, other {#개 추가}}{requested, plural, =0 {}
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: New from {creator}
+#, fuzzy
 msgid "inbox.followedRelease.title"
-msgstr ""
+msgstr "{creator}의 신작"
 
 #. {title} is a catalogue title and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: {title} is new in the catalogue.
+#, fuzzy
 msgid "inbox.followedRelease.body"
-msgstr ""
+msgstr "{title}이(가) 카탈로그에 새로 올라왔습니다."
 
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: New from creators you follow
+#, fuzzy
 msgid "inbox.followedReleases.title"
-msgstr ""
+msgstr "팔로우 중인 창작자의 신작"
 
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
 msgid "inbox.followedReleases.body"
-msgstr ""
+msgstr "카탈로그에 {count, plural, other {새 작품 #개}}가 올라왔습니다."
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available

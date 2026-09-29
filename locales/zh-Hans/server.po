@@ -2167,24 +2167,28 @@ msgstr "{tracker}：{added, plural, other {已添加 # 个}}{requested, plural, 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: New from {creator}
+#, fuzzy
 msgid "inbox.followedRelease.title"
-msgstr ""
+msgstr "来自 {creator} 的新作"
 
 #. {title} is a catalogue title and is not translated.
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: {title} is new in the catalogue.
+#, fuzzy
 msgid "inbox.followedRelease.body"
-msgstr ""
+msgstr "{title} 已加入目录。"
 
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: New from creators you follow
+#, fuzzy
 msgid "inbox.followedReleases.title"
-msgstr ""
+msgstr "关注创作者的新作"
 
 #: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
 #. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
 msgid "inbox.followedReleases.body"
-msgstr ""
+msgstr "目录中新增 {count, plural, other {# 部作品}}。"
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
