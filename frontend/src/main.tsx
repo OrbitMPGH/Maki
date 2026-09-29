@@ -15,6 +15,9 @@ import { AppI18nProvider } from './i18n-context'
 import { loadLocale, resolveInitialLocale } from './i18n'
 import App from './App.tsx'
 import { ApiError } from './api/client'
+import { syncSkeletonPulses } from './lib/skeletonSync'
+
+syncSkeletonPulses()
 
 /**
  * One place that reports failures, so no call site can swallow one by forgetting a handler,
