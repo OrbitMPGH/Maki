@@ -606,8 +606,9 @@ public class ReaderService(
     /// <summary>
     /// Bulk "mark read" from the chapter table. Silent, the same way <see cref="MarkWatchedAsync"/>
     /// is: ticking chapters off a table is not reading them today, so there is no
-    /// <c>ChaptersRead</c> event, no reading time and no Kavita push, and the mark rises through
+    /// <c>ChaptersRead</c> event and no reading time, and the mark rises through
     /// <see cref="ReadingProgressService.ImportSilentAsync"/> so the next genuine read counts one.
+    /// Kavita still hears about it: one push per series, for the highest chapter marked.
     /// <para>
     /// Page counts come from the file's measured count when the file backs only this chapter, and
     /// from the archive slice otherwise. A chapter with neither is skipped, like the reader would.
@@ -626,6 +627,7 @@ public class ReaderService(
             {
                 c.Id,
                 c.SeriesId,
+                c.Number,
                 MeasuredPages = c.ChapterFile!.PageCount,
                 SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
             })
@@ -643,6 +645,7 @@ public class ReaderService(
         var now = DateTime.UtcNow;
         var read = 0;
         var changed = new HashSet<int>();
+        var pushTo = new Dictionary<int, decimal>();
         foreach (var chapter in chapters)
         {
             existing.TryGetValue(chapter.Id, out var row);
@@ -679,6 +682,11 @@ public class ReaderService(
             row.UnreadAt = null;
             row.UpdatedAt = now;
             changed.Add(chapter.SeriesId);
+            if (chapter.Number is { } number && (!pushTo.TryGetValue(chapter.SeriesId, out var top) || number > top))
+            {
+                pushTo[chapter.SeriesId] = number;
+            }
+
             read++;
         }
 
@@ -688,6 +696,11 @@ public class ReaderService(
         }
 
         await db.SaveChangesAsync(ct);
+
+        foreach (var (seriesId, number) in pushTo)
+        {
+            kavitaPush.QueuePush(UserId, seriesId, number);
+        }
 
         var titles = await db.Series
             .Where(s => changed.Contains(s.Id))

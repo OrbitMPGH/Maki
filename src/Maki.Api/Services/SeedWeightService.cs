@@ -105,7 +105,8 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
     /// <summary>
     /// How long a built snapshot is reused. A Discover load asks for it from several rails at once,
     /// each a full library read. Feedback and ignore-as-seed writes are in the key through the
-    /// revision counters; a rating, a read or a library change waits out this window.
+    /// revision counters, and adds and deletes through the library's count and highest id; a rating
+    /// or a read waits out this window.
     /// </summary>
     private static readonly TimeSpan SnapshotCacheFor = TimeSpan.FromSeconds(60);
 
@@ -141,9 +142,14 @@ public class SeedWeightService(BehavioralTasteService taste, TasteTuning tuning,
         }
 
         var versions = await RecommendationFeedbackService.VersionsAsync(db, scope.UserId, ct);
+        var library = await db.Series
+            .Where(s => s.MangaBakaId != null)
+            .GroupBy(_ => 1)
+            .Select(g => new { Count = g.Count(), MaxId = g.Max(s => s.Id) })
+            .FirstOrDefaultAsync(ct);
         var key = (Kind: "seed-snapshot", scope.UserId, scope.AllRootFolders,
             Folders: string.Join(',', scope.RootFolderIds.Order()), scope.MaxContentRating,
-            versions.FeedbackRevision, versions.SignalRevision);
+            versions.FeedbackRevision, versions.SignalRevision, library?.Count, library?.MaxId);
         if (cache.TryGetValue(key, out SeedSnapshot? hit) && hit is not null)
         {
             return hit;

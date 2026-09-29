@@ -179,10 +179,19 @@ public class AuthController(
         }
 
         var isAuthenticatorCode = code.Length == 6 && code.All(char.IsAsciiDigit);
+        // Identity neither checks lockout nor counts a miss on the recovery-code path, so both happen
+        // here, and a redeemed code is re-issued as the same persistent session the authenticator gives.
         var result = isAuthenticatorCode
             ? await signInManager.TwoFactorAuthenticatorSignInAsync(
                 code, isPersistent: true, rememberClient: request.RememberMachine)
-            : await signInManager.TwoFactorRecoveryCodeSignInAsync(RecoveryCodeForm(code));
+            : await userManager.IsLockedOutAsync(user)
+                ? Microsoft.AspNetCore.Identity.SignInResult.LockedOut
+                : await signInManager.TwoFactorRecoveryCodeSignInAsync(RecoveryCodeForm(code));
+
+        if (!isAuthenticatorCode && !result.Succeeded && !result.IsLockedOut)
+        {
+            await userManager.AccessFailedAsync(user);
+        }
 
         if (!result.Succeeded)
         {
@@ -194,6 +203,8 @@ public class AuthController(
 
         if (!isAuthenticatorCode)
         {
+            await signInManager.SignInWithClaimsAsync(user, isPersistent: true, [new Claim("amr", "mfa")]);
+
             // Worth its own row: each code works once, and a use the owner does not recognise is
             // the sign that their saved codes leaked.
             await auditLog.LogAsync(AuthEventType.UserUpdated, user.UserName ?? string.Empty, user.Id,

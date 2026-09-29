@@ -39,6 +39,27 @@ public class ScrobblePlannerTests
     }
 
     [Fact]
+    public void ATrueOneShotCompletesWhenTheTrackerCountsOneChapter()
+    {
+        var entry = new RemoteEntry(Status: ScrobbleStatus.Reading, TotalChapters: 1);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, finished: true);
+
+        Assert.True(plan.Write);
+        Assert.Equal(1, plan.Chapter);
+        Assert.Equal(ScrobbleStatus.Completed, plan.PushStatus);
+    }
+
+    [Fact]
+    public void UnnumberedChaptersOfAnOngoingSeriesDoNotComplete()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 3, Status: ScrobbleStatus.Reading, TotalChapters: 120);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, finished: true);
+
+        Assert.False(plan.Write);
+        Assert.Equal(ScrobbleStatus.Reading, plan.RecordStatus);
+    }
+
+    [Fact]
     public void AnUnfinishedOneShotStillOnlyListsWhenNotOnTheList()
     {
         var entry = new RemoteEntry(Status: ScrobbleStatus.Reading);

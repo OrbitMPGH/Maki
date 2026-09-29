@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Text.Json.Serialization;
 using Maki.Core.Metadata;
+using Maki.Core.Recommendations;
 using Maki.Metadata.Catalogue;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -776,7 +778,10 @@ public class DiscoverService(
         // SQL, so one request could pull the whole catalogue through memory and JSON.
         var limit = Math.Clamp(request.Limit, 1, MaxSearchLimit);
 
-        if (!request.WantsTitleOnly && searcher.IsReady())
+        // The title index honours only the content-rating ceiling, so a query that narrows further
+        // waits for the semantic engine to warm rather than answering with titles the filters exclude.
+        var narrowed = Narrows(request.Filters);
+        if (!request.WantsTitleOnly && (searcher.IsReady() || (narrowed && searcher.IsAvailable())))
         {
             var outcome = await searcher.SearchAsync(query, request.Filters, limit, ct);
             if (outcome.Items.Count > 0)
@@ -811,11 +816,42 @@ public class DiscoverService(
             ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Safe
             : ContentRating.Safe;
         var titleHits = await store.SearchWithCorrectionAsync(query, maxAllowed, limit: limit, ct: ct);
+        var items = await WithoutHiddenAsync(titleHits.Items, request.Filters?.Hidden, ct);
         return new DiscoverSearchResponse(
             "title",
-            titleHits.Items.Select(ToRecommendation).ToList(),
+            items.Select(ToRecommendation).ToList(),
             titleHits.CorrectedQuery,
             titleHits.Credits);
+    }
+
+    private static bool Narrows(RecommendationFilters? f) =>
+        f is not null && (
+            f.YearMin is not null || f.YearMax is not null || f.MinRating is not null ||
+            f.MinChapters is not null || f.MaxChapters is not null ||
+            f.Types is { Count: > 0 } || f.Statuses is { Count: > 0 } || f.Genres is { Count: > 0 } ||
+            f.Tags is { Count: > 0 } || f.Rules is { Count: > 0 } || f.Hidden is { Count: > 0 } ||
+            f.Credits is { Count: > 0 } || f.CreditIds is not null);
+
+    /// <summary>The never-show list applied to title hits, which the title index cannot test itself.</summary>
+    private async Task<IReadOnlyList<MetadataSearchResult>> WithoutHiddenAsync(
+        IReadOnlyList<MetadataSearchResult> hits, IReadOnlyList<CatalogueTerm>? hidden, CancellationToken ct)
+    {
+        if (hidden is not { Count: > 0 } || hits.Count == 0)
+        {
+            return hits;
+        }
+
+        var ids = hits
+            .Select(h => long.TryParse(h.ProviderId, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
+            .Where(id => id > 0)
+            .ToList();
+        var rows = await store.GetProfileRowsAsync(ids, ct);
+        var test = new RecommendationFilters(Hidden: hidden);
+        return hits
+            .Where(h => !long.TryParse(h.ProviderId, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ||
+                        !rows.TryGetValue(id, out var row) ||
+                        test.MatchesNames(row.Genres, row.Tags.Select(t => t.Name).ToList()))
+            .ToList();
     }
 
     /// <summary>Shapes a title-index hit like a semantic one so the UI renders one card type.</summary>

@@ -30,10 +30,12 @@ public static class ScrobblePlanner
     /// <param name="finished">
     /// Every chapter of a one-shot is read. A one-shot has no number to raise the chapter mark to,
     /// so without this it could never reach Completed; it pushes Completed with at least chapter 1.
+    /// Ignored when the tracker lists more than one chapter: the series is not a one-shot there.
     /// </param>
     public static ScrobblePlan Decide(
         RemoteEntry entry, int chapter, int volume, ScrobbleStatus? fallbackStatus = null, bool finished = false)
     {
+        finished = finished && entry.TotalChapters is null or <= 1;
         if (finished)
         {
             chapter = Math.Max(chapter, 1);

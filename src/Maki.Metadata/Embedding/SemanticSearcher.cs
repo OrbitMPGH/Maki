@@ -83,7 +83,7 @@ public class SemanticSearcher(
     /// </summary>
     public bool IsReady()
     {
-        if (!options.Enabled || store.Count() < MinIndexed)
+        if (!IsAvailable())
         {
             return false;
         }
@@ -103,6 +103,12 @@ public class SemanticSearcher(
 
         return warm;
     }
+
+    /// <summary>
+    /// True when embeddings are on and the index holds enough vectors, loaded or not. A caller that
+    /// cannot accept the title fallback searches anyway and waits out the warm-up.
+    /// </summary>
+    public bool IsAvailable() => options.Enabled && store.Count() >= MinIndexed;
 
     private void WarmEmbedder()
     {

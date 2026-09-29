@@ -99,9 +99,12 @@ public sealed class TextEmbedder(
             {
                 _session = new InferenceSession(options.ModelPath, sessionOptions);
             }
-            catch
+            catch (OnnxRuntimeException ex) when (IsCorruptModel(ex) &&
+                                                  Interlocked.Exchange(ref _deletedCorruptModel, 1) == 0)
             {
                 // The store only checks sizes, so a corrupt file would fail here on every attempt.
+                // Provider and allocation failures are not the file's fault and must not cost a
+                // re-download, and a file that parses badly twice will not be fixed by a third.
                 modelStore.DeleteModelFiles();
                 throw;
             }
@@ -143,6 +146,15 @@ public sealed class TextEmbedder(
     private static readonly TimeSpan FailureBackoff = TimeSpan.FromMinutes(5);
 
     private long _failedUntilTicks;
+
+    private static int _deletedCorruptModel;
+
+    private static bool IsCorruptModel(OnnxRuntimeException ex) =>
+        ex.Message.Contains("InvalidProtobuf", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("InvalidGraph", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("NoModel", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("Protobuf parsing failed", StringComparison.OrdinalIgnoreCase) ||
+        ex.Message.Contains("external data", StringComparison.OrdinalIgnoreCase);
 
     private bool InFailureBackoff() => DateTime.UtcNow.Ticks < Interlocked.Read(ref _failedUntilTicks);
 
