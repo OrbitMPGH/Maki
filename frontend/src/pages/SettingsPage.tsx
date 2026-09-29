@@ -1834,16 +1834,11 @@ function useProwlarrOptionsForm() {
     dirty,
     saving: save.isPending,
     reset: discard,
-    save: () =>
-      save.mutate(
-        {
-          indexerIds: [...selectedIndexers].sort((a, b) => a - b).join(',') || null,
-          categories: categories.join(',') || null,
-        },
-        {
-          onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
-        },
-      ),
+    commit: () =>
+      save.mutateAsync({
+        indexerIds: [...selectedIndexers].sort((a, b) => a - b).join(',') || null,
+        categories: categories.join(',') || null,
+      }),
   }
 }
 

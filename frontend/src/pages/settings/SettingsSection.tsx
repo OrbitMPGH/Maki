@@ -23,7 +23,9 @@ export interface SettingsSectionProps {
 
 /**
  * One settings group: the title and its explanation above the card, the fields inside it. A group
- * that saves together shows Save and Discard in the heading row only while it holds unsaved edits.
+ * that saves together shows Save and Discard in the heading row only while it holds unsaved edits,
+ * and that row sticks under the app header until the section scrolls past, so a field at the
+ * bottom of a long group is never a screen away from its Save.
  */
 export function SettingsSection({
   id,
@@ -49,7 +51,7 @@ export function SettingsSection({
   }, [report, reportId, unsaved])
 
   return (
-    <section className="settings-section" aria-labelledby={titleId}>
+    <section className="settings-section" aria-labelledby={titleId} data-dirty={unsaved || undefined}>
       <div className="settings-section-head">
         <h2 id={titleId} className="settings-section-title">
           {title}

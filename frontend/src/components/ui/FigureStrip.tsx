@@ -34,37 +34,28 @@ export function FigureStrip({
   middle?: ReactNode
   middleAfter?: number
 }) {
-  const split = middle ? Math.min(Math.max(middleAfter ?? Math.ceil(figures.length / 2), 0), figures.length) : -1
-  const cells: ReactNode[] = []
-
-  figures.forEach((f, i) => {
-    if (i === split) {
-      cells.push(
-        <div className="figure-strip-middle" key="middle">
-          {middle}
-        </div>,
-      )
-    }
-    cells.push(
-      <div className="figure-strip-item" key={f.label} data-zero={(!loading && f.value === 0) || undefined}>
-        {loading ? (
-          <div className="figure-strip-n figure">
-            <Skeleton h="0.8em" w="2.4em" my="0.125em" />
-          </div>
-        ) : (
-          <span
-            className="figure-strip-n figure"
-            style={f.tone && f.value > 0 ? { color: `var(--${f.tone})` } : undefined}
-          >
-            {formatNumber(f.value)}
-          </span>
-        )}
-        <span className="figure-strip-l">{f.label}</span>
-      </div>,
-    )
-  })
-  if (split === figures.length) {
-    cells.push(
+  const cells: ReactNode[] = figures.map((f) => (
+    <div className="figure-strip-item" key={f.label} data-zero={(!loading && f.value === 0) || undefined}>
+      {loading ? (
+        <div className="figure-strip-n figure">
+          <Skeleton h="0.8em" w="2.4em" my="0.125em" />
+        </div>
+      ) : (
+        <span
+          className="figure-strip-n figure"
+          style={f.tone && f.value > 0 ? { color: `var(--${f.tone})` } : undefined}
+        >
+          {formatNumber(f.value)}
+        </span>
+      )}
+      <span className="figure-strip-l">{f.label}</span>
+    </div>
+  ))
+  if (middle) {
+    const split = Math.min(Math.max(middleAfter ?? Math.ceil(figures.length / 2), 0), figures.length)
+    cells.splice(
+      split,
+      0,
       <div className="figure-strip-middle" key="middle">
         {middle}
       </div>,

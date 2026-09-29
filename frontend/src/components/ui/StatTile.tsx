@@ -59,7 +59,7 @@ export function StatTile({
         {hasDelta && (
           <Text size="xs" fw={600} mt={4} className="tnum" style={{ color: deltaColor }} title={deltaLabel}>
             {delta === null
-              ? '—'
+              ? '-'
               : `${delta > 0 ? '+' : ''}${Math.round(delta * 100)}%`}
           </Text>
         )}

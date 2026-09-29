@@ -275,19 +275,19 @@ export default function HomePage() {
   const glanceFigures: Figure[] = []
   let glanceMiddle: React.ReactNode = null
   let glanceMiddleAfter = 0
-  for (const p of sectionOf('glance')?.panels ?? []) {
+  for (const p of on('glance') ? (sectionOf('glance')?.panels ?? []) : []) {
     if (!p.enabled) continue
-    if (p.key === 'stats' && panelOn('stats')) {
+    if (p.key === 'stats') {
       glanceFigures.push(
         { label: t`Series`, value: stats.total },
         { label: t`Monitored`, value: stats.monitored },
         { label: t`On disk`, value: stats.downloaded, tone: 'ok' },
         { label: t`Missing`, value: stats.missing, tone: 'warn' },
       )
-    } else if (p.key === 'progress' && panelOn('progress') && progress?.enabled) {
+    } else if (p.key === 'progress' && progress?.enabled) {
       glanceMiddle = <ProgressCard summary={progress} />
       glanceMiddleAfter = glanceFigures.length
-    } else if (p.key === 'toread' && panelOn('toread') && readTracking) {
+    } else if (p.key === 'toread' && readTracking) {
       glanceFigures.push(
         { label: t`Unread`, value: waiting.unread },
         { label: t`Started`, value: waiting.started },

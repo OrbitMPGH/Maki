@@ -68,7 +68,6 @@ export function NotificationBell() {
         >
           <Indicator
             size={16}
-            color="var(--brand)"
             label={count > 99 ? '99+' : count}
             disabled={count === 0}
             withBorder

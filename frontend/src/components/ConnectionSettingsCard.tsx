@@ -23,9 +23,12 @@ export interface ConnectionField {
 export interface SaveGroup {
   dirty: boolean
   saving: boolean
-  save: () => void
+  /** Saves without a toast of its own; rejects on failure (the global mutation handler reports it). */
+  commit: () => Promise<unknown>
   reset: () => void
 }
+
+const savedToast = () => notifications.show({ message: now`Saved`, color: 'var(--ok)' })
 
 /** Generic URL+credentials settings card with Test/Save, used for every external service connection. */
 export function ConnectionSettingsCard({
@@ -55,8 +58,8 @@ export function ConnectionSettingsCard({
       dirty={form.dirty || extraDirty}
       saving={form.saving || (extra?.saving ?? false)}
       onSave={() => {
-        if (form.dirty) form.save()
-        if (extraDirty) extra?.save()
+        const jobs = [form.dirty && form.commit(), extraDirty && extra?.commit()].filter((j) => j instanceof Promise)
+        Promise.all(jobs).then(savedToast, () => {})
       }}
       onDiscard={() => {
         form.reset()
@@ -113,10 +116,8 @@ function useConnectionForm(name: ConnectionName, title: string, fields: Connecti
     setValue: (key: string, value: string) => setValues((v) => ({ ...v, [key]: value })),
     dirty,
     saving: save.isPending,
-    save: () =>
-      save.mutate(payload(), {
-        onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
-      }),
+    save: () => save.mutate(payload(), { onSuccess: savedToast }),
+    commit: () => save.mutateAsync(payload()),
     reset: discard,
     testing: test.isPending,
     test: () =>

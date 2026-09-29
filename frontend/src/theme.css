@@ -802,8 +802,8 @@ body::before {
   font-variant-numeric: tabular-nums;
 }
 .count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
+  background: var(--brand);
+  color: var(--brand-on);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
@@ -1664,9 +1664,6 @@ body::before {
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(18px) saturate(0.85);
-}
-.series-hero-glass-panel {
-  border-left: 3px solid var(--brand);
 }
 .discover-hero-strip-label {
   font-size: var(--type-label);
@@ -6451,7 +6448,14 @@ body.reader-open {
   justify-content: space-between;
   gap: 6px 12px;
   min-height: 30px;
-  margin-bottom: 6px;
+  padding-block: 6px;
+  margin-top: -6px;
+}
+.settings-section[data-dirty] .settings-section-head {
+  position: sticky;
+  top: var(--app-shell-header-height, 58px);
+  z-index: 3;
+  background: var(--app-bg);
 }
 .settings-section-title {
   margin: 0;
@@ -6884,13 +6888,13 @@ body.reader-open {
 }
 /* The bell's row has no record around it, so it carries the edge itself. The dropdown skips the
    unread wash: on a short list, colour on most rows reads as an error state. */
-.inbox-record[data-read='true'],
-.inbox-row[data-read='true'] {
+.inbox-record,
+.inbox-row[data-read] {
   border-left: 2px solid transparent;
 }
 .inbox-record[data-read='false'],
 .inbox-row[data-read='false'] {
-  border-left: 2px solid var(--brand);
+  border-left-color: var(--brand);
 }
 .inbox-row:focus-visible {
   position: relative;

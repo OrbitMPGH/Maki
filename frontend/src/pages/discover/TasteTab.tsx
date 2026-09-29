@@ -251,19 +251,14 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
         <StatTile
           label={t`You finish`}
           value={behaviour.finishRate === null ? '-' : percent(behaviour.finishRate)}
-         
         />
         <StatTile
           label={t`Typical chapter`}
           value={pace === null ? '-' : formatReadingTime(pace)}
-         
-         
         />
         <StatTile
           label={t`You bail around`}
           value={stopPercent === null ? '-' : t`${stopPercent} in`}
-         
-         
         />
         <StatTile
           label={t`Biggest day`}
@@ -272,8 +267,6 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
               ? '-'
               : plural(biggestDayCount, { one: '# chapter', other: '# chapters' })
           }
-         
-         
         />
       </SimpleGrid>
 

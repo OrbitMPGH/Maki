@@ -195,21 +195,16 @@ export function SignalsCard() {
           <>
             <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm">
               <StatTile
-               
                 label={t`titles on the shelf`}
                 value={summary.visibleShelf}
                 hint={t`${adds} added by you, ${excluded} excluded from taste`}
               />
               <StatTile
-               
-               
                 label={t`read`}
                 value={summary.readSources}
                 hint={t`${rated} rated`}
               />
               <StatTile
-               
-               
                 label={t`thumbs up / down`}
                 hint={t`${pushingDown} kept out of your taste`}
                 value={
@@ -221,8 +216,6 @@ export function SignalsCard() {
                 }
               />
               <StatTile
-               
-               
                 label={t`hidden or dismissed`}
                 value={suppressed}
                 hint={t`${exposed} seen elsewhere`}

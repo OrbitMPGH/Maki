@@ -33,30 +33,22 @@ function TotalsTiles({ totals }: { totals?: LibraryCompositionTotals }) {
       <StatTile
         label={t`Chapters`}
         value={count(totals?.chapterCount)}
-       
-       
         loading={loading}
       />
       <StatTile
         label={t`Downloaded`}
         value={count(totals?.downloadedChapterCount)}
-       
-       
         loading={loading}
       />
       <StatTile
         label={t`Disk used`}
         value={formatBytes(totals?.totalBytes ?? 0)}
-       
-       
         loading={loading}
       />
       <StatTile label={t`Monitored`} value={count(totals?.monitoredCount)} loading={loading} />
       <StatTile
         label={t`Completed`}
         value={count(totals?.completedCount)}
-       
-       
         loading={loading}
       />
     </SimpleGrid>
