@@ -5,6 +5,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -244,7 +245,10 @@ public class SourceMappingController(
             [.. order.Ordered.Concat(rest).Select(m => m.Id)],
             [.. estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now))],
             scout.Snapshot(seriesId),
-            [.. qualityOrder.Ordered.Select(m => m.Id)]));
+            [.. qualityOrder.Ordered.Select(m => m.Id)],
+            mappings.ToDictionary(m => m.Id, m => QualityNames.Tier(
+                qualityOrder.Scores.GetValueOrDefault(m.Id)?.Tier
+                ?? QualityTierResolver.Resolve(sourceRegistry.Find(m.SourceName)?.Kind, null, string.Empty, false)))));
     }
 
     public record ScoutRequest(int SeriesId);

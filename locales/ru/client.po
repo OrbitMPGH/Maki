@@ -3066,6 +3066,10 @@ msgstr ""
 msgid "Best quality first"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "best streak"
