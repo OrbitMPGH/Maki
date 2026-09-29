@@ -171,7 +171,7 @@ public sealed class AnimeResumeServiceTests : IDisposable
 
         Assert.Null(await service.ForSeriesAsync(seriesId, CancellationToken.None));
         Assert.Null(await service.ForCatalogueAsync(77, "Chap 1 (S1)", AnimeResumeFixture.CoversToFive, 10, CancellationToken.None));
-        Assert.Empty(await service.RailAsync(12, CancellationToken.None));
+        Assert.Empty(await service.RailAsync(CancellationToken.None));
         var (error, _) = await service.ApplyAsync(seriesId, markWatched: true, null, CancellationToken.None);
         Assert.Equal(AnimeResumeError.NotEnabled, error);
     }
@@ -476,7 +476,7 @@ public sealed class AnimeResumeServiceTests : IDisposable
 
         var context = _db.NewContext(User);
         var items = await AnimeResumeFixture.Service(_db, context, _gate, dump.Path)
-            .RailAsync(12, CancellationToken.None);
+            .RailAsync(CancellationToken.None);
 
         Assert.Equal(2, items.Count);
         Assert.Equal(seriesId, items[0].SeriesId);

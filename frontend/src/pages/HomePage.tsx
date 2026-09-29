@@ -131,7 +131,7 @@ export default function HomePage() {
     refetch: refetchReading,
   } = useHomeReading(12, needsReading)
   const { data: recent, isLoading: recentLoading } = useHomeRecentlyAdded(12, on('recent'))
-  const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(12, on('fromanime'))
+  const { data: fromAnime, isLoading: fromAnimeLoading } = useHomeFromAnime(on('fromanime'))
   const { data: queue } = useQueue()
   const { data: rails, isLoading: railsLoading } = useDiscover(0, needsDiscover && on('popular'))
   // An empty request object is deliberate: it hits the same server-side cache slot as Discover's

@@ -152,7 +152,7 @@ public class AnimeResumeService(
     /// series first, then manga nobody has added yet. Once they have read or watched past the
     /// frontier, Jump back in covers the series instead.
     /// </summary>
-    public async Task<IReadOnlyList<HomeAnimeResumeItem>> RailAsync(int limit, CancellationToken ct)
+    public async Task<IReadOnlyList<HomeAnimeResumeItem>> RailAsync(CancellationToken ct)
     {
         if (!await signals.EnabledForAsync(UserId, ct)) return [];
 
@@ -168,7 +168,6 @@ public class AnimeResumeService(
         if (candidates.Count == 0) return [];
 
         var library = await LibraryRailAsync(rows, candidates, ct);
-        if (library.Count >= limit) return library.Take(limit).ToList();
 
         // Every root folder, not just the reader's: a copy they cannot see still makes an add fail.
         var owned = (await db.Series.IgnoreQueryFilters().AsNoTracking()
@@ -178,7 +177,7 @@ public class AnimeResumeService(
         var unowned = candidates.Where(id => !owned.Contains(id)).Select(id => (long)id).ToList();
         var fromCatalogue = await CatalogueRailAsync(rows, unowned, ct);
 
-        return library.Concat(fromCatalogue).Take(limit).ToList();
+        return library.Concat(fromCatalogue).ToList();
     }
 
     private async Task<List<HomeAnimeResumeItem>> LibraryRailAsync(
