@@ -2535,6 +2535,10 @@ msgstr "Below the series' upgrade cutoff"
 msgid "Best quality first"
 msgstr "Best quality first"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
+msgstr "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
+
 #: src/components/home/ProgressCard.tsx
 msgid "best streak"
 msgstr "best streak"

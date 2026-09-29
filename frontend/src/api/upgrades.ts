@@ -572,6 +572,8 @@ export interface SourceOrderDto {
   scout: ScoutSnapshot | null
   /** Enabled mapping ids as best quality first would order them, whatever the mode. */
   qualityOrder: number[]
+  /** Per mapping id, the tier its copies count as. Best quality first compares it before the score. */
+  tiers: Record<number, QualityTierName>
 }
 
 export interface ScoutSnapshot {

@@ -56,7 +56,15 @@ import {
 } from '../api/hooks'
 import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
 import type { SourceMappingDto } from '../api/types'
-import { useMeasureSources, useSetSourceOrderMode, useSourceOrder, type SourceQualityDto } from '../api/upgrades'
+import {
+  QUALITY_TIER_COLOR,
+  QUALITY_TIER_LABELS,
+  useMeasureSources,
+  useSetSourceOrderMode,
+  useSourceOrder,
+  type QualityTierName,
+  type SourceQualityDto,
+} from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
@@ -516,7 +524,10 @@ export function SourceMappingsSection({
                         needsFlareSolverr={sources?.find((s) => s.name === m.sourceName)?.needsFlareSolverr ?? false}
                       />
                     ) : (
-                      <MappingQuality quality={qualities?.find((q) => q.mappingId === m.id)} />
+                      <MappingQuality
+                        quality={qualities?.find((q) => q.mappingId === m.id)}
+                        tier={sourceOrder?.tiers[m.id]}
+                      />
                     )
                   })()}
                 </Table.Td>
@@ -924,14 +935,32 @@ export function SourceMappingsSection({
 }
 
 /**
- * The languages one mapping lists chapters in.
- *
- * Adding a language is not just "more chapters": chapter identity is (number, language), so each
- * one adds its own row per chapter number and its own wanted/missing count, and each downloads to
- * its own file. Hence the warning rather than a bare picker.
+ * The source's tier, then the median width and compression of its recently measured chapters of
+ * the series. The tier is shown because best quality first compares it before the score.
  */
-/** Median width and compression of this source's recently measured chapters of the series. */
-function MappingQuality({ quality }: { quality: SourceQualityDto | undefined }) {
+function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefined; tier: QualityTierName | undefined }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  return (
+    <Group gap={8} wrap="nowrap">
+      {tier && (
+        <Tooltip
+          label={t`Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers.`}
+          withArrow
+          multiline
+          w={260}
+        >
+          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]}>
+            {renderLabel(QUALITY_TIER_LABELS[tier])}
+          </Badge>
+        </Tooltip>
+      )}
+      <MappingMeasurement quality={quality} />
+    </Group>
+  )
+}
+
+function MappingMeasurement({ quality }: { quality: SourceQualityDto | undefined }) {
   const { t, i18n } = useLingui()
   if (!quality) {
     return (
@@ -978,6 +1007,13 @@ function signedNumber(i18n: { number: (n: number) => string }, n: number) {
   return n > 0 ? `+${i18n.number(n)}` : i18n.number(n)
 }
 
+/**
+ * The languages one mapping lists chapters in.
+ *
+ * Adding a language is not just "more chapters": chapter identity is (number, language), so each
+ * one adds its own row per chapter number and its own wanted/missing count, and each downloads to
+ * its own file. Hence the warning rather than a bare picker.
+ */
 function MappingLanguages({
   mapping,
   supported,

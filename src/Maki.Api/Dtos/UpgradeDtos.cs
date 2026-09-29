@@ -129,9 +129,10 @@ public record QualitySnapshotDto(
 /// <param name="Order">Mapping ids in the order a download tries them; disabled mappings last.</param>
 /// <param name="Scout">The latest source measurement run for the series since startup, or null.</param>
 /// <param name="QualityOrder">Enabled mapping ids as best quality first would order them, whatever the mode.</param>
+/// <param name="Tiers">Per mapping id, the tier its copies count as. Best quality first compares it before the score.</param>
 public record SourceOrderDto(
     string? SeriesMode, string DefaultMode, string Mode, IReadOnlyList<int> Order, IReadOnlyList<SourceQualityDto> Sources,
-    ScoutSnapshot? Scout, IReadOnlyList<int> QualityOrder);
+    ScoutSnapshot? Scout, IReadOnlyList<int> QualityOrder, IReadOnlyDictionary<int, string> Tiers);
 
 /// <summary>One source mapping's measured track record for a series.</summary>
 /// <param name="BitsPerPixel">JPG-equivalent median, see <see cref="MeasuredQuality"/>.</param>
