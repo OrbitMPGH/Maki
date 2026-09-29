@@ -138,6 +138,7 @@ import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
+import { SeriesReviews } from '../components/series/SeriesReviews'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
@@ -1795,7 +1796,10 @@ export default function SeriesDetailPage() {
                         <Title order={4} fz={14} mb={10}>
                           <Trans>Open on</Trans>
                         </Title>
-                        <MetadataLinks links={series.links} />
+                        <Group gap="xs" wrap="wrap">
+                          <MetadataLinks links={series.links} />
+                          {series.malId != null && <SeriesReviews malId={series.malId} />}
+                        </Group>
                       </div>
                   )}
                 </Stack>

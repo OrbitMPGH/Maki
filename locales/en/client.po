@@ -3189,6 +3189,7 @@ msgstr "Client secret"
 #: src/components/ImportReviewModal.tsx
 #: src/components/LuckyButton.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/series/SeriesReviews.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -5037,6 +5038,7 @@ msgid "From metadata"
 msgstr "From metadata"
 
 #: src/components/discover/DiscoverReviews.tsx
+#: src/components/series/SeriesReviews.tsx
 msgid "From MyAnimeList"
 msgstr "From MyAnimeList"
 
@@ -7403,6 +7405,10 @@ msgstr "No repeat creators yet"
 msgid "No results."
 msgstr "No results."
 
+#: src/components/series/SeriesReviews.tsx
+msgid "No reviews on MyAnimeList yet."
+msgstr "No reviews on MyAnimeList yet."
+
 #: src/components/CatalogueRules.tsx
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
 msgstr "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
@@ -8828,6 +8834,10 @@ msgstr "Read in Maki"
 msgid "Read manga elsewhere"
 msgstr "Read manga elsewhere"
 
+#: src/components/series/SeriesReviews.tsx
+msgid "Read more on MyAnimeList"
+msgstr "Read more on MyAnimeList"
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Read more than you own"
 msgstr "Read more than you own"
@@ -9631,6 +9641,7 @@ msgid "Review record removal"
 msgstr "Review record removal"
 
 #: src/components/discover/DiscoverReviews.tsx
+#: src/components/series/SeriesReviews.tsx
 msgid "Reviews"
 msgstr "Reviews"
 
