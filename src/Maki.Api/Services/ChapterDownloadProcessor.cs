@@ -111,6 +111,12 @@ public class ChapterDownloadProcessor(
             // persisted resolution, or its mapping was disabled/removed since it was queued.
             await SetStatusAsync(item, QueueStatus.FetchingPages, ct);
 
+            if (!await RootFolderAvailableAsync(rootFolder, ct))
+            {
+                await RootFolderUnavailableAsync(item, rootFolder, ct);
+                return DownloadOutcome.Settled;
+            }
+
             var disabledSources = await sourceAvailability.DisabledAsync(ct);
             SourceMapping mapping;
             ISource source;
@@ -158,6 +164,12 @@ public class ChapterDownloadProcessor(
             item.PagesTotal = pages.Pages.Count;
             await SetStatusAsync(item, QueueStatus.Downloading, ct);
 
+            if (PageCacheManifest.Prepare(workingDir, PageCacheManifest.Key(mapping.Id, sourceChapterId, pages.Pages.Count)))
+            {
+                logger.LogInformation("Discarded cached pages of queue item {Id}: they came from another source chapter",
+                    item.Id);
+            }
+
             // 2. Download pages (resumable — existing files are kept).
             var lastBroadcast = DateTime.MinValue;
             var pageFiles = await pageDownloader.DownloadAsync(pages, mapping.SourceName, workingDir, async (done, _) =>
@@ -190,6 +202,12 @@ public class ChapterDownloadProcessor(
 
             // 4–5. ComicInfo + CBZ into a temp dir on the same volume as the library.
             await SetStatusAsync(item, QueueStatus.Packaging, ct);
+            if (!await RootFolderAvailableAsync(rootFolder, ct))
+            {
+                await RootFolderUnavailableAsync(item, rootFolder, ct);
+                return DownloadOutcome.Settled;
+            }
+
             var comicInfo = ComicInfoBuilder.Serialize(ComicInfoBuilder.Build(series, chapter, pageFiles.Count));
             var tmpDir = Path.Combine(rootFolder.Path, ".maki", "tmp");
             var tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
@@ -224,17 +242,21 @@ public class ChapterDownloadProcessor(
                     tmpCbz, workingDir, ct);
             }
 
-            var relativePath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
+            var relativePath = await UnclaimedRelativePathAsync(
+                series.Id, chapter.Id, await naming.BuildChapterRelativePathAsync(series, chapter, ct), ct);
             var finalPath = Path.Combine(rootFolder.Path, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
             File.Move(tmpCbz, finalPath, overwrite: true);
+
+            // The archive is in the library now, so nothing from here to the save below is cancellable:
+            // a cancel in between left the file on disk with no row, or a row no chapter pointed at.
 
             // The move above overwrote whatever was at this path, so a re-download (switching a
             // series to a better source, or retrying a bad rip) must update that file's row rather
             // than insert a second one for the same path — the old row would keep pointing at bytes
             // that now belong to the new one, and nothing would ever clean it up.
             var chapterFile = await db.ChapterFiles
-                .FirstOrDefaultAsync(f => f.SeriesId == series.Id && f.RelativePath == relativePath, ct);
+                .FirstOrDefaultAsync(f => f.SeriesId == series.Id && f.RelativePath == relativePath, CancellationToken.None);
 
             var isNewFile = chapterFile is null;
 
@@ -271,7 +293,7 @@ public class ChapterDownloadProcessor(
             var linkGroup = await db.ChapterSourceLinks
                 .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
                 .Select(l => l.Group)
-                .FirstOrDefaultAsync(ct);
+                .FirstOrDefaultAsync(CancellationToken.None);
             // Not cancellable: the archive is already in the library. Sampled like the backfill, since the
             // pages were validated moments ago and a full second read would only repeat that work.
             quality.Stamp(chapterFile, finalPath, source.Kind, linkGroup ?? ChapterFileQualityService.SiteGroup(source),
@@ -289,14 +311,13 @@ public class ChapterDownloadProcessor(
                 stats.Record(StatsEventType.ChapterDownloaded, series.Id, series.Title);
             }
 
-            await db.SaveChangesAsync(ct);
-
-            chapter.ChapterFileId = chapterFile.Id;
+            // One save for the file row, the chapter's link and Completed, so none lands without the others.
+            chapter.ChapterFile = chapterFile;
             item.Status = QueueStatus.Completed;
             item.CompletedAt = DateTime.UtcNow;
             item.NextAttempt = null;
             item.ClearError();
-            await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(CancellationToken.None);
 
             // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
             queue.ClearRateLimitBackoff(mapping.SourceName);
@@ -352,7 +373,8 @@ public class ChapterDownloadProcessor(
         catch (Exception ex) when (RateLimitDetector.IsRateLimit(ex, out var retryAfter))
         {
             // Don't fail the chapter — back this source off and let other trackers keep dispatching.
-            await CooldownAsync(item, chapter, series, usedMapping?.SourceName ?? "?", retryAfter, ct);
+            var limitedSource = (ex as SourceRateLimitedException)?.SourceName ?? usedMapping?.SourceName ?? "?";
+            await CooldownAsync(item, chapter, series, limitedSource, retryAfter, ct);
             return DownloadOutcome.RateLimited;
         }
         catch (ChapterLockedException ex)
@@ -397,11 +419,14 @@ public class ChapterDownloadProcessor(
             // ResolveAsync instead of short-circuiting back onto the sourceChapterId that just
             // 404'd (SourceChapterId is null already forces that path regardless of the now-stale
             // SourceMapping navigation, which EF won't refresh just from the FK write below).
+            // The row stays in flight: this worker carries on with it, and a Queued row here could be
+            // claimed by a second worker onto the same working dir and temp archive.
             item.SourceMappingId = mappings[0].Id;
             item.SourceChapterId = null;
-            item.Status = QueueStatus.Queued;
+            item.Status = QueueStatus.FetchingPages;
             item.PagesDone = 0;
             await db.SaveChangesAsync(ct);
+            TryDeleteDirectory(workingDir);
             return await ProcessAsync(item.Id, triedMappingIds, ct);
         }
         catch (Exception ex)
@@ -682,6 +707,71 @@ public class ChapterDownloadProcessor(
             series.Title, chapter.Number, mapping.SourceName, info.Reason);
         return DownloadOutcome.Settled;
     }
+
+    /// <summary>
+    /// A share that is not mounted is often still a directory (an empty mount point), and creating
+    /// folders under it writes the download to the local disk instead. So beyond existing, a root
+    /// folder the library already has files in must not be empty. A new, empty root with no files on
+    /// record is fine.
+    /// </summary>
+    private async Task<bool> RootFolderAvailableAsync(RootFolder rootFolder, CancellationToken ct)
+    {
+        if (!Directory.Exists(rootFolder.Path))
+        {
+            return false;
+        }
+
+        if (Directory.EnumerateFileSystemEntries(rootFolder.Path).Any())
+        {
+            return true;
+        }
+
+        return !await db.ChapterFiles.AnyAsync(
+            f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == rootFolder.Id), ct);
+    }
+
+    /// <summary>
+    /// Parks the item until the root folder is back, without counting an attempt or sending a
+    /// failure notification: nothing is wrong with the chapter, and every queued item would otherwise
+    /// burn its retries and send a failure each while the share is down.
+    /// </summary>
+    private async Task RootFolderUnavailableAsync(DownloadQueueItem item, RootFolder rootFolder, CancellationToken ct)
+    {
+        logger.LogWarning("Root folder {Path} is not available; queue item {Id} will try again later",
+            rootFolder.Path, item.Id);
+        item.Status = QueueStatus.Failed;
+        item.SetError("error.download.rootFolderUnavailable");
+        item.NextAttempt = queue.NextRetryAttempt(1);
+        await db.SaveChangesAsync(ct);
+        if (item.Series != null)
+        {
+            await BroadcastAsync(item, item.Chapter, item.Series, item.SourceMapping?.SourceName ?? "?");
+        }
+
+        await batches.FailedAsync(item.SeriesId, item.Id, "error.download.rootFolderUnavailable");
+    }
+
+    /// <summary>
+    /// <paramref name="relativePath"/>, or a numbered variant of it when the file there already backs
+    /// another chapter. Two one-shots with no distinct title render the same name, and moving over
+    /// it would replace the other chapter's pages while both rows point at one file.
+    /// </summary>
+    private async Task<string> UnclaimedRelativePathAsync(int seriesId, int chapterId, string relativePath, CancellationToken ct)
+    {
+        var extension = Path.GetExtension(relativePath);
+        var stem = relativePath[..^extension.Length];
+        var candidate = relativePath;
+        for (var n = 2; n < 1000 && await HeldByOtherChapterAsync(seriesId, chapterId, candidate, ct); n++)
+        {
+            candidate = $"{stem} ({n}){extension}";
+        }
+
+        return candidate;
+    }
+
+    private Task<bool> HeldByOtherChapterAsync(int seriesId, int chapterId, string relativePath, CancellationToken ct) =>
+        db.ChapterFiles.AnyAsync(f => f.SeriesId == seriesId && f.RelativePath == relativePath &&
+                                      db.Chapters.Any(c => c.ChapterFileId == f.Id && c.Id != chapterId), ct);
 
     private void TryDeleteFile(string path)
     {

@@ -202,39 +202,19 @@ public class ChapterController(
             .Select(c => new { c.Id, c.SeriesId, c.Number, SeriesTitle = c.Series!.Title })
             .ToListAsync(ct);
 
-        var queuedBySeries = new Dictionary<int, (string Title, List<int> ItemIds)>();
-        string? error = null;
-        foreach (var chapter in chapters.OrderBy(c => c.Number ?? decimal.MaxValue).ThenBy(c => c.Id))
-        {
-            if (!queuedBySeries.TryGetValue(chapter.SeriesId, out var batch))
-            {
-                batch = (chapter.SeriesTitle, []);
-                queuedBySeries[chapter.SeriesId] = batch;
-            }
+        // A selection can span series, and one unmapped series must not throw away the rest; the
+        // bulk enqueue skips that series and reports why.
+        var ordered = chapters.OrderBy(c => c.Number ?? decimal.MaxValue).ThenBy(c => c.Id).ToList();
+        var result = await queue.EnqueueChaptersAsync(
+            ordered.Select(c => c.Id).ToList(), DownloadOrigin.Manual, currentUser.UserId, ct);
 
-            try
-            {
-                if (await queue.EnqueueChapterAsync(
-                        chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId) is { } item)
-                {
-                    batch.ItemIds.Add(item.Id);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                // A selection can span series, and one unmapped series must not throw away the rest.
-                error = ex.Message;
-            }
+        var titles = ordered.GroupBy(c => c.SeriesId).ToDictionary(g => g.Key, g => g.First().SeriesTitle);
+        foreach (var batch in result.Queued.GroupBy(item => item.SeriesId))
+        {
+            await downloadBatches.QueuedAsync(batch.Key, titles[batch.Key], batch.Select(item => item.Id).ToList());
         }
 
-        var queued = 0;
-        foreach (var (seriesId, batch) in queuedBySeries)
-        {
-            await downloadBatches.QueuedAsync(seriesId, batch.Title, batch.ItemIds);
-            queued += batch.ItemIds.Count;
-        }
-
-        return Ok(new { queued, error });
+        return Ok(new { queued = result.Queued.Count, error = result.Error });
     }
 
     /// <summary>

@@ -2890,6 +2890,20 @@ msgstr "İçe aktarma reddedildi, kitaplık olduğu gibi bırakıldı"
 msgid "error.download.torrentMissing"
 msgstr "Torrent hiçbir zaman qBittorrent'te görünmedi"
 
+#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
+#. another category, or dropped.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+#. English: The torrent is no longer in qBittorrent
+msgid "error.download.torrentRemoved"
+msgstr ""
+
+#. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
+#. on its own and does not count it as a failed attempt.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: The library folder is not available, check that its drive or share is mounted
+msgid "error.download.rootFolderUnavailable"
+msgstr ""
+
 #. Label before a series title in an outbound notification, e.g. "Series: Naruto".
 #: src/Maki.Api/Services/NotificationService.cs
 #. English: Series

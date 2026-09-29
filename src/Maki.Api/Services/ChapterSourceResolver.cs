@@ -1,4 +1,5 @@
 using Maki.Core.Entities;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, string SourceChapterId);
+
+/// <summary>No mapping resolved and at least one was skipped because its source rate-limited the listing.</summary>
+public sealed class SourceRateLimitedException(string sourceName, TimeSpan? retryAfter)
+    : RateLimitException($"Rate limited by {sourceName} while finding the chapter", retryAfter)
+{
+    public string SourceName { get; } = sourceName;
+}
 
 /// <summary>
 /// Finds which of a chapter's enabled source mappings actually has it, by listing each source's
@@ -35,6 +43,19 @@ public class ChapterSourceResolver(
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
         return await db.SourceMappings
             .AnyAsync(m => m.SeriesId == seriesId && m.Enabled && !disabledSources.Contains(m.SourceName), ct);
+    }
+
+    /// <summary>Set form of <see cref="HasEnabledMappingAsync"/>: which of these series have an enabled mapping.</summary>
+    public async Task<HashSet<int>> SeriesWithEnabledMappingAsync(
+        MakiDbContext db, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
+    {
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+        var mapped = await db.SourceMappings
+            .Where(m => seriesIds.Contains(m.SeriesId) && m.Enabled && !disabledSources.Contains(m.SourceName))
+            .Select(m => m.SeriesId)
+            .Distinct()
+            .ToListAsync(ct);
+        return [.. mapped];
     }
 
     /// <summary>
@@ -76,6 +97,7 @@ public class ChapterSourceResolver(
         }
 
         var errors = new List<string>();
+        SourceRateLimitedException? rateLimited = null;
         foreach (var mapping in mappings)
         {
             var source = sourceRegistry.Find(mapping.SourceName);
@@ -94,10 +116,26 @@ public class ChapterSourceResolver(
 
                 errors.Add($"{source.Name}: chapter not listed");
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (RateLimitDetector.IsRateLimit(ex, out var retryAfter))
+            {
+                // Another mapping may still have it; only when none does is the rate limit the answer,
+                // so the caller backs the source off instead of spending a retry attempt on it.
+                rateLimited ??= new SourceRateLimitedException(mapping.SourceName, retryAfter);
+                errors.Add($"{source.Name}: {ex.Message}");
+            }
             catch (Exception ex)
             {
                 errors.Add($"{source.Name}: {ex.Message}");
             }
+        }
+
+        if (rateLimited is not null)
+        {
+            throw rateLimited;
         }
 
         throw new InvalidOperationException(
@@ -124,10 +162,13 @@ public class ChapterSourceResolver(
             return exact.Count == 1 ? exact[0].SourceChapterId : null;
         }
 
+        // A mapping listing two languages carries both under one number, so language is part of every
+        // match; a same-number hit in another language is "not listed", never a stand-in.
+        var sameLanguage = chapters.Where(c => c.Language == chapter.Language).ToList();
         var match = chapter.Number is not null
-            ? chapters.FirstOrDefault(c => c.Number == chapter.Number && c.Volume == chapter.Volume)
-              ?? chapters.FirstOrDefault(c => c.Number == chapter.Number)
-            : chapters.FirstOrDefault(c => c.Number is null &&
+            ? sameLanguage.FirstOrDefault(c => c.Number == chapter.Number && c.Volume == chapter.Volume)
+              ?? sameLanguage.FirstOrDefault(c => c.Number == chapter.Number)
+            : sameLanguage.FirstOrDefault(c => c.Number is null &&
                 string.Equals(c.Title, chapter.Title, StringComparison.OrdinalIgnoreCase));
 
         return match?.SourceChapterId;

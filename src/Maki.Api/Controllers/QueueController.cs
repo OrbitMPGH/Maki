@@ -244,11 +244,38 @@ public class QueueController(
             return NotFound();
         }
 
-        if (item.Status != QueueStatus.AwaitingImport)
+        if (item.Status != QueueStatus.AwaitingImport || !TorrentImportService.TryBeginManualImport(item.Id))
         {
             return this.Conflict(localizer, "error.queue.notAwaitingImport");
         }
 
+        try
+        {
+            // Conditional, so a second click or the poll job cannot take the same parked row: only
+            // one caller moves it out of AwaitingImport.
+            var claimed = await db.DownloadQueue
+                .Where(q => q.Id == id && q.Status == QueueStatus.AwaitingImport)
+                .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Importing), ct);
+            if (claimed == 0)
+            {
+                return this.Conflict(localizer, "error.queue.notAwaitingImport");
+            }
+
+            // The tracked copy has to agree with the row, or restoring AwaitingImport below would read
+            // as no change and never be written.
+            db.Entry(item).Property(q => q.Status).OriginalValue = QueueStatus.Importing;
+            item.Status = QueueStatus.Importing;
+            return await SettleImportAsync(item, request, ct);
+        }
+        finally
+        {
+            TorrentImportService.EndManualImport(item.Id);
+        }
+    }
+
+    private async Task<IActionResult> SettleImportAsync(
+        DownloadQueueItem item, ImportDecisionDto request, CancellationToken ct)
+    {
         if (request.Mode == ImportDecision.Reject)
         {
             item.Status = QueueStatus.Cancelled;
@@ -270,8 +297,6 @@ public class QueueController(
             ? TorrentImportMode.Replace
             : TorrentImportMode.SkipExisting;
 
-        item.Status = QueueStatus.Importing;
-        await db.SaveChangesAsync(ct);
         await Broadcast(item);
 
         TorrentImportOutcome outcome;
@@ -279,17 +304,18 @@ public class QueueController(
         {
             var contentPath = await importer.ResolveContentPathAsync(item, ct);
             var skipFiles = request.SkipFiles is { Count: > 0 } skip ? skip.ToHashSet(StringComparer.Ordinal) : null;
-            outcome = await importer.ImportAsync(item, item.Series, contentPath, mode, ct, skipFiles: skipFiles);
+            outcome = await importer.ImportAsync(item, item.Series!, contentPath, mode, ct, skipFiles: skipFiles);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
         {
             // Back to AwaitingImport, not Failed. The guard at the top of this method is the only
             // way in, so a row left reading Importing could never be retried from here, and the
             // poll job skips it too, since parked items are the user's to settle. Restoring the
-            // state it arrived in is what keeps a failed attempt retryable.
+            // state it arrived in is what keeps a failed attempt retryable. That holds for a dropped
+            // request too, whose token is already cancelled, hence the uncancellable save.
             item.Status = QueueStatus.AwaitingImport;
             item.SetRawError(ex.Message);
-            await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(CancellationToken.None);
             await Broadcast(item);
             throw;
         }
@@ -315,7 +341,7 @@ public class QueueController(
         // Saved before the rename: its active-download check re-queries this row, and an item still
         // reading as in-flight makes it refuse to name the files it just imported.
         await db.SaveChangesAsync(ct);
-        await importer.ApplyNamingAsync(item.Series, outcome.ImportedPaths, ct);
+        await importer.ApplyNamingAsync(item.Series!, outcome.ImportedPaths, ct);
         await Broadcast(item);
         if (outcome.Imported > 0)
         {

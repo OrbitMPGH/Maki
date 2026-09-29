@@ -16,6 +16,11 @@ public class PageDownloader(
 {
     public const string HttpClientName = "pages";
     private const int MaxParallelPerChapter = 4;
+    private const int CopyBufferSize = 81920;
+
+    // HttpClient.Timeout stops applying once the headers are in, so a body that stops arriving would
+    // otherwise hold the page, and the worker, until the per-item deadline.
+    private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
     /// <returns>Ordered list of downloaded page file paths.</returns>
     public async Task<List<string>> DownloadAsync(
@@ -95,7 +100,7 @@ public class PageDownloader(
 
             await using (var file = File.Create(temp))
             {
-                await response.Content.CopyToAsync(file, ct);
+                await CopyWithStallTimeoutAsync(response.Content, file, page.Url, StallTimeout, ct);
             }
         }
 
@@ -114,6 +119,34 @@ public class PageDownloader(
 
         File.Move(temp, target, overwrite: true);
         logger.LogDebug("Downloaded page {Target}", Path.GetFileName(target));
+    }
+
+    /// <summary>Copies the body, failing when no bytes arrive for <paramref name="stallTimeout"/>.</summary>
+    internal static async Task CopyWithStallTimeoutAsync(
+        HttpContent content, Stream destination, string url, TimeSpan stallTimeout, CancellationToken ct)
+    {
+        await using var body = await content.ReadAsStreamAsync(ct);
+        using var stall = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var buffer = new byte[CopyBufferSize];
+        try
+        {
+            while (true)
+            {
+                stall.CancelAfter(stallTimeout);
+                var read = await body.ReadAsync(buffer, stall.Token);
+                if (read == 0)
+                {
+                    return;
+                }
+
+                await destination.WriteAsync(buffer.AsMemory(0, read), ct);
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"No data from {new Uri(url).Host} for {stallTimeout.TotalSeconds:0}s while downloading a page");
+        }
     }
 
     /// <summary>

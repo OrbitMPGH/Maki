@@ -433,6 +433,7 @@ public class ChapterDownloadQualityTests : IDisposable
         using (var db = _db.NewContext())
         {
             var root = new RootFolder { Path = Path.Combine(_root, "library") };
+            Directory.CreateDirectory(root.Path); // the processor refuses to write into a missing root
             db.RootFolders.Add(root);
             db.SaveChanges();
             var series = new Series

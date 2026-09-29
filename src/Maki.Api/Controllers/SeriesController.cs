@@ -179,26 +179,12 @@ public class SeriesController(
     private async Task<IActionResult> QueueChaptersAsync(
         int seriesId, string title, IReadOnlyList<int> chapterIds, CancellationToken ct)
     {
-        var queuedItemIds = new List<int>();
-        foreach (var chapterId in chapterIds)
-        {
-            try
-            {
-                if (await downloadQueue.EnqueueChapterAsync(
-                        chapterId, ct, DownloadOrigin.Manual, currentUser.UserId) is { } item)
-                {
-                    queuedItemIds.Add(item.Id);
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
-                return BadRequest(new { error = ex.Message, queued = queuedItemIds.Count });
-            }
-        }
-
+        var result = await downloadQueue.EnqueueChaptersAsync(chapterIds, DownloadOrigin.Manual, currentUser.UserId, ct);
+        var queuedItemIds = result.Queued.Select(item => item.Id).ToList();
         await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
-        return Ok(new { queued = queuedItemIds.Count });
+        return result.Error is not null
+            ? BadRequest(new { error = result.Error, queued = queuedItemIds.Count })
+            : Ok(new { queued = queuedItemIds.Count });
     }
 
     [Authorize(Policy = Policies.EditMetadata)]

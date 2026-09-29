@@ -168,6 +168,16 @@ public class TorrentImportService(
 {
     public const int GuardSamplePages = 6;
 
+    // Queue ids a request is importing right now (QueueController.Import). The poll job skips those,
+    // and treats any other row reading Importing as one whose request died with the process.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, byte> ManualImports = new();
+
+    public static bool TryBeginManualImport(int queueItemId) => ManualImports.TryAdd(queueItemId, 0);
+
+    public static void EndManualImport(int queueItemId) => ManualImports.TryRemove(queueItemId, out _);
+
+    public static bool IsManualImportRunning(int queueItemId) => ManualImports.ContainsKey(queueItemId);
+
     /// <summary>
     /// Where qBittorrent put this item's data, as Maki sees it. Null when the torrent is gone, or
     /// its path isn't reachable from here (qBittorrent in a container with a different mount).

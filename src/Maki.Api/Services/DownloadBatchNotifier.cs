@@ -86,8 +86,19 @@ public sealed class DownloadBatchNotifier : IDisposable
         }
 
         bool opened;
+        Batch? rotated = null;
         lock (_lock)
         {
+            // Joining refreshes LastActivity, so a series that keeps queueing (Smart, every few
+            // minutes) would keep a batch whose pending ids stopped reporting open forever, its summary
+            // never sent. Once nothing in it has reported for StaleAfter, close it and start over.
+            if (_batches.TryGetValue(seriesId, out var existing) &&
+                existing.LastReport <= _time.GetUtcNow() - StaleAfter)
+            {
+                _batches.Remove(seriesId);
+                rotated = existing;
+            }
+
             if (!_batches.TryGetValue(seriesId, out var batch))
             {
                 if (queueItemIds.Count < MinBatchSize)
@@ -95,7 +106,7 @@ public sealed class DownloadBatchNotifier : IDisposable
                     return;
                 }
 
-                batch = new Batch { Title = seriesTitle, Origin = origin };
+                batch = new Batch { Title = seriesTitle, Origin = origin, LastReport = _time.GetUtcNow() };
                 _batches[seriesId] = batch;
                 opened = true;
             }
@@ -107,6 +118,14 @@ public sealed class DownloadBatchNotifier : IDisposable
             batch.Pending.UnionWith(queueItemIds);
             batch.Queued += queueItemIds.Count;
             batch.LastActivity = _time.GetUtcNow();
+        }
+
+        if (rotated is not null)
+        {
+            _logger.LogWarning(
+                "Download batch for series {SeriesId} went quiet with {Pending} item(s) unfinished; closing it",
+                seriesId, rotated.Pending.Count);
+            await SummarizeAsync(seriesId, rotated);
         }
 
         if (!opened || !announce || origin == DownloadOrigin.Upgrade)
@@ -167,7 +186,7 @@ public sealed class DownloadBatchNotifier : IDisposable
             }
 
             batch.Cancelled++;
-            batch.LastActivity = _time.GetUtcNow();
+            batch.LastActivity = batch.LastReport = _time.GetUtcNow();
             finished = Close(seriesId, batch);
         }
 
@@ -197,7 +216,7 @@ public sealed class DownloadBatchNotifier : IDisposable
                 batch.FirstError ??= errorKey;
             }
 
-            batch.LastActivity = _time.GetUtcNow();
+            batch.LastActivity = batch.LastReport = _time.GetUtcNow();
             finished = Close(seriesId, batch);
         }
 
@@ -398,5 +417,8 @@ public sealed class DownloadBatchNotifier : IDisposable
         public int Cancelled { get; set; }
         public string? FirstError { get; set; }
         public DateTimeOffset LastActivity { get; set; }
+
+        /// <summary>When an item last settled, or the batch opened. Joins do not move it.</summary>
+        public DateTimeOffset LastReport { get; set; }
     }
 }

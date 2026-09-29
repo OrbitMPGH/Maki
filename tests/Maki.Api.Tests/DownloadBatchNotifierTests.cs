@@ -237,4 +237,24 @@ public class DownloadBatchNotifierTests : IDisposable
         // The batch is gone, so the series notifies per chapter again rather than staying silent.
         Assert.False(await _batches.CompletedAsync(1, 11));
     }
+
+    [Fact]
+    public async Task Joining_a_batch_whose_items_went_quiet_closes_it_instead_of_keeping_it_alive()
+    {
+        await _batches.QueuedAsync(1, "Berserk", [10, 11]);
+
+        // Smart keeps joining every few minutes; without the rotation each join refreshed the batch
+        // and the sweep never saw it as stale.
+        _clock.Now = T0.AddMinutes(50);
+        await _batches.QueuedAsync(1, "Berserk", [12, 13]);
+        _clock.Now = T0.AddMinutes(100);
+        await _batches.SweepStaleAsync();
+        Sent.Clear();
+
+        await _batches.QueuedAsync(1, "Berserk", [14, 15]);
+
+        Assert.Contains(Sent, s => s.Message.Body.Contains("unfinished=4"));
+        Assert.False(await _batches.CompletedAsync(1, 10));
+        Assert.True(await _batches.CompletedAsync(1, 14));
+    }
 }

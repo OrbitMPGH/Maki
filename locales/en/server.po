@@ -2072,6 +2072,18 @@ msgstr "Import rejected, the library was left as it was"
 msgid "error.download.torrentMissing"
 msgstr "The torrent never appeared in qBittorrent"
 
+#. The torrent had been seen in qBittorrent before and has been gone for hours: deleted there, moved to
+#. another category, or dropped.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentRemoved"
+msgstr "The torrent is no longer in qBittorrent"
+
+#. The library folder is missing or empty, usually a network share that is not mounted. Maki retries
+#. on its own and does not count it as a failed attempt.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+msgid "error.download.rootFolderUnavailable"
+msgstr "The library folder is not available, check that its drive or share is mounted"
+
 #. Label before a series title in an outbound notification, e.g. "Series: Naruto".
 #: src/Maki.Api/Services/NotificationService.cs
 msgid "notify.label.series"
