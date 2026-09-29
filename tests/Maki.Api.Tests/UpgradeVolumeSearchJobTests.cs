@@ -28,13 +28,29 @@ public class UpgradeVolumeSearchJobTests : IDisposable
 
     public void Dispose() => _world.Dispose();
 
-    private async Task RunAsync(bool force = false)
+    private async Task RunAsync(bool force = false, CancellationToken ct = default)
     {
         using var db = _world.Db.NewContext();
         var torrents = new TorrentUpgradeService(db, new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)),
             _releases, _world.Inbox, _world.Settings, _clock, NullLogger<TorrentUpgradeService>.Instance);
         var job = new UpgradeVolumeSearchJob(torrents, _world.Settings, _clock, NullLogger<UpgradeVolumeSearchJob>.Instance);
-        await job.Execute(new TestJobContext(force ? new JobDataMap { [UpgradeVolumeSearchJob.ForceKey] = true } : null));
+        await job.Execute(new TestJobContext(force ? new JobDataMap { [UpgradeVolumeSearchJob.ForceKey] = true } : null, ct));
+    }
+
+    [Fact]
+    public async Task A_shutdown_mid_search_leaves_the_day_open()
+    {
+        using var cts = new CancellationTokenSource();
+        _releases.OnSearch = () =>
+        {
+            cts.Cancel();
+            cts.Token.ThrowIfCancellationRequested();
+        };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RunAsync(ct: cts.Token));
+
+        Assert.Null(await _world.Settings.GetAsync(SettingKeys.UpgradesLastVolumeSearchDate));
+        Assert.False(UpgradeVolumeSearchJob.IsRunning);
     }
 
     private void ForgetLastSearch()

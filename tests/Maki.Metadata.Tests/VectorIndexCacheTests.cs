@@ -294,6 +294,35 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_new_dump_file_rebuilds_the_index()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+
+        var first = await cache.GetAsync();
+        Assert.True(cache.IsCurrent);
+        Assert.True(first!.TryGetRow(1, out var row));
+        Assert.Equal(80.0, first.RatingAt(row), 1);
+
+        using (var conn = new SqliteConnection($"Data Source={_dumpPath};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE series SET rating = 20 WHERE id = 1";
+            cmd.ExecuteNonQuery();
+        }
+
+        File.SetLastWriteTimeUtc(_dumpPath, DateTime.UtcNow.AddMinutes(1));
+        Assert.False(cache.IsCurrent);
+
+        var second = await cache.GetAsync();
+        Assert.NotSame(first, second);
+        Assert.True(second!.TryGetRow(1, out row));
+        Assert.Equal(20.0, second.RatingAt(row), 1);
+        Assert.Same(second, await cache.GetAsync());
+    }
+
+    [Fact]
     public async Task NoVectorDb_IsNull() =>
         Assert.Null(await new VectorIndexCache(
             new EmbeddingOptions(_dir, Path.Combine(_dir, "missing.db"), _dir, EmbeddingModelProfile.Base),

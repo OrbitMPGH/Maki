@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -27,6 +28,7 @@ internal class MangaBakaSeries
     public string? State { get; set; }
 
     [JsonPropertyName("merged_with")]
+    [JsonConverter(typeof(LenientCountConverter))]
     public int? MergedWith { get; set; }
 
     [JsonPropertyName("title")]
@@ -54,9 +56,11 @@ internal class MangaBakaSeries
     public string? ContentRating { get; set; }
 
     [JsonPropertyName("final_volume")]
+    [JsonConverter(typeof(LenientCountConverter))]
     public int? FinalVolume { get; set; }
 
     [JsonPropertyName("total_chapters")]
+    [JsonConverter(typeof(LenientCountConverter))]
     public int? TotalChapters { get; set; }
 
     [JsonPropertyName("authors")]
@@ -119,4 +123,53 @@ internal class MangaBakaSourceRefString
 {
     [JsonPropertyName("id")]
     public string? Id { get; set; }
+}
+
+/// <summary>
+/// MangaBaka stores these counts as TEXT and sends them as strings, sometimes fractional ("112.5"),
+/// sometimes as numbers. Anything unreadable is null rather than a failed deserialization, which
+/// would lose the whole response over one field.
+/// </summary>
+internal sealed class LenientCountConverter : JsonConverter<int?>
+{
+    public override bool HandleNull => true;
+
+    public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.Number:
+                return reader.TryGetInt32(out var whole) ? whole : Truncate(reader.GetDouble());
+            case JsonTokenType.String:
+                var text = reader.GetString();
+                if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                {
+                    return parsed;
+                }
+
+                return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var fractional)
+                    ? Truncate(fractional)
+                    : null;
+            case JsonTokenType.StartObject or JsonTokenType.StartArray:
+                reader.Skip();
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
+    {
+        if (value is { } v)
+        {
+            writer.WriteNumberValue(v);
+        }
+        else
+        {
+            writer.WriteNullValue();
+        }
+    }
+
+    private static int? Truncate(double value) =>
+        double.IsFinite(value) && value is >= int.MinValue and <= int.MaxValue ? (int)value : null;
 }

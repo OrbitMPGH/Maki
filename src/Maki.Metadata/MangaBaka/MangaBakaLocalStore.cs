@@ -1523,10 +1523,10 @@ public class MangaBakaLocalStore(
     /// <summary>
     /// External manga id -> canonical MangaBaka id, for the ids that resolve.
     /// <para>
-    /// Chunked <c>IN (...)</c> rather than a temp table or a join, because the dump is opened
-    /// read-only and a nightly swap replaces the file: nothing here may write to it, index included.
-    /// Each chunk is one scan, so the chunk is large (500) and the callers are expected to ask once
-    /// per sync rather than once per entry.
+    /// Chunked <c>IN (...)</c> rather than a temp table or a join, because queries open the dump
+    /// read-only. Each column has a partial index (<c>ix_ext_*</c>), built by
+    /// <see cref="MangaBakaDumpService"/> on the staged file at install and backfilled on the live
+    /// one at startup, so a chunk is an index lookup rather than a scan.
     /// </para>
     /// Merged rows are followed to their canonical series the same way <see cref="GetAsync"/> does,
     /// and novels are dropped, so a light-novel relation picked up from a provider cannot enter the

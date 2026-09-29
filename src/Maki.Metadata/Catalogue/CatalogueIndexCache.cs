@@ -76,6 +76,49 @@ public sealed class CatalogueIndexCache(
         return true;
     }
 
+    private int _warming;
+
+    /// <summary>
+    /// The indexes when they are built and current, without waiting. Otherwise null, after starting
+    /// a build on the thread pool, for a caller that only uses them to improve an answer it can give
+    /// without them.
+    /// </summary>
+    public CatalogueIndexes? GetIfReady()
+    {
+        if (!File.Exists(dumpOptions.DatabasePath))
+        {
+            return null;
+        }
+
+        var info = new FileInfo(dumpOptions.DatabasePath);
+        if (_entry is { } cached && info.LastWriteTimeUtc.Ticks == cached.StampTicks && info.Length == cached.StampLength)
+        {
+            _idle.Touch();
+            return cached.Indexes;
+        }
+
+        if (_lock.CurrentCount > 0 && Interlocked.CompareExchange(ref _warming, 1, 0) == 0)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await GetAsync();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Background build of the catalogue indexes failed");
+                }
+                finally
+                {
+                    Volatile.Write(ref _warming, 0);
+                }
+            });
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// The indexes, building them if needed. Null when there is no dump to read, or when reading it
     /// failed: every caller treats that as "this feature is off", never as an error.

@@ -75,7 +75,11 @@ public class UpgradeVolumeSearchJob(
         finally
         {
             Gate.Release();
-            await settings.SetAsync(SettingKeys.UpgradesLastVolumeSearchDate, date, CancellationToken.None);
+            // Shutdown mid-search leaves the day open so the next boot runs it.
+            if (!ct.IsCancellationRequested)
+            {
+                await settings.SetAsync(SettingKeys.UpgradesLastVolumeSearchDate, date, CancellationToken.None);
+            }
         }
     }
 

@@ -192,6 +192,10 @@ if (await cache.GetAsync() is not { } index)
 Console.WriteLine($"index    : {index.Count} series, built in {warm.Elapsed.TotalSeconds:F1}s");
 Console.WriteLine();
 
+// The searcher only waits for these when a query names a credit; warm them so the credit channel
+// scores the first queries too.
+await catalogueCache.GetAsync();
+
 var items = EvalQueries.Load(queriesPath);
 var filtered = items.Count(i => i.Filters is not null);
 if (filtered > 0)

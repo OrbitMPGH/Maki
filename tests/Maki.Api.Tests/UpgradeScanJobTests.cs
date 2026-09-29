@@ -27,13 +27,26 @@ public class UpgradeScanJobTests : IDisposable
 
     private readonly UpgradeScanTracker _tracker = new();
 
-    private async Task RunJobAsync(JobDataMap? data, Maki.Data.MakiDbContext? db = null)
+    private async Task RunJobAsync(JobDataMap? data, Maki.Data.MakiDbContext? db = null, CancellationToken ct = default)
     {
         using var own = _world.Db.NewContext();
         using var batches = _world.Batches();
         var job = new UpgradeScanJob(_world.Scanner(db ?? own, batches), _world.Settings, TimeProvider.System,
             NullLogger<UpgradeScanJob>.Instance, _tracker);
-        await job.Execute(new TestJobContext(data));
+        await job.Execute(new TestJobContext(data, ct));
+    }
+
+    [Fact]
+    public async Task A_shutdown_mid_scan_leaves_the_day_open()
+    {
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "true");
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await RunJobAsync(null, ct: cts.Token);
+
+        Assert.Null(await _world.Settings.GetAsync(SettingKeys.UpgradesLastScanDate));
+        Assert.Equal(0, UpgradeRows());
     }
 
     private int UpgradeRows()

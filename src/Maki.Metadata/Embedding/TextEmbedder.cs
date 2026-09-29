@@ -72,6 +72,11 @@ public sealed class TextEmbedder(
             return true;
         }
 
+        if (InFailureBackoff())
+        {
+            return false;
+        }
+
         await _initLock.WaitAsync(ct);
         try
         {
@@ -81,10 +86,25 @@ public sealed class TextEmbedder(
                 return true;
             }
 
+            // Another caller may have failed while this one waited on the lock.
+            if (InFailureBackoff())
+            {
+                return false;
+            }
+
             await modelStore.EnsureAsync(ct);
             _tokenizer = await CreateTokenizerAsync();
             using var sessionOptions = CreateSessionOptions(out var provider);
-            _session = new InferenceSession(options.ModelPath, sessionOptions);
+            try
+            {
+                _session = new InferenceSession(options.ModelPath, sessionOptions);
+            }
+            catch
+            {
+                // The store only checks sizes, so a corrupt file would fail here on every attempt.
+                modelStore.DeleteModelFiles();
+                throw;
+            }
 
             // Read the graph rather than assume it. token_type_ids is a BERT-family input that the
             // Gemma export simply does not declare, and ONNX Runtime rejects a run that feeds an
@@ -99,7 +119,15 @@ public sealed class TextEmbedder(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to initialize the text embedder");
+            if (ct.IsCancellationRequested)
+            {
+                logger.LogDebug(ex, "Text embedder initialization cancelled");
+                return false;
+            }
+
+            Interlocked.Exchange(ref _failedUntilTicks, (DateTime.UtcNow + FailureBackoff).Ticks);
+            logger.LogError(ex, "Failed to initialize the text embedder; not retrying for {Minutes} minute(s)",
+                FailureBackoff.TotalMinutes);
             return false;
         }
         finally
@@ -107,6 +135,16 @@ public sealed class TextEmbedder(
             _initLock.Release();
         }
     }
+
+    /// <summary>
+    /// How long a failed init is remembered. Without it an offline instance retried the model download
+    /// on every search, each one queueing behind the last on the init lock and logging an error.
+    /// </summary>
+    private static readonly TimeSpan FailureBackoff = TimeSpan.FromMinutes(5);
+
+    private long _failedUntilTicks;
+
+    private bool InFailureBackoff() => DateTime.UtcNow.Ticks < Interlocked.Read(ref _failedUntilTicks);
 
     /// <summary>
     /// Drops the loaded session and tokenizer so the next <see cref="EnsureReadyAsync"/> reloads
@@ -127,6 +165,7 @@ public sealed class TextEmbedder(
                 _session?.Dispose();
                 _session = null;
                 _tokenizer = null;
+                Interlocked.Exchange(ref _failedUntilTicks, 0);
                 logger.LogInformation("Text embedder reset; will reload on next use");
             }
             finally

@@ -73,8 +73,60 @@ public class SemanticSearcher(
     private IReadOnlyDictionary<int, TagInfo>? _tagVocab;
     private int _tagCacheStamp = -1;
 
-    /// <summary>True once embeddings are on and the index holds enough vectors to search.</summary>
-    public bool IsReady() => options.Enabled && store.Count() >= MinIndexed;
+    private int _embedderWarming;
+
+    /// <summary>
+    /// True once embeddings are on, the index holds enough vectors to search, and the in-memory
+    /// index and query model are loaded. Either one cold after an idle unload would hold this
+    /// request for 10 to 20 s, so instead it starts loading in the background and answers false,
+    /// and the caller serves this query from the title index.
+    /// </summary>
+    public bool IsReady()
+    {
+        if (!options.Enabled || store.Count() < MinIndexed)
+        {
+            return false;
+        }
+
+        var warm = true;
+        if (!cache.IsCurrent)
+        {
+            cache.WarmInBackground();
+            warm = false;
+        }
+
+        if (!embedder.IsReady)
+        {
+            WarmEmbedder();
+            warm = false;
+        }
+
+        return warm;
+    }
+
+    private void WarmEmbedder()
+    {
+        if (Interlocked.CompareExchange(ref _embedderWarming, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await embedder.EnsureReadyAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Background load of the text embedder failed");
+            }
+            finally
+            {
+                Volatile.Write(ref _embedderWarming, 0);
+            }
+        });
+    }
 
     /// <summary>
     /// Ranked matches for a free-text query. Empty when the index isn't built — the caller falls
@@ -98,7 +150,9 @@ public class SemanticSearcher(
         }
 
         var parsed = CatalogueQuery.Parse(query);
-        var catalogue = await catalogueIndexes.GetAsync(ct);
+        // Stated credits cannot resolve without the indexes. Otherwise they only feed the credit
+        // channel, which is not worth a cold build of several seconds on this request.
+        var catalogue = parsed.HasCredits ? await catalogueIndexes.GetAsync(ct) : catalogueIndexes.GetIfReady();
         var credits = catalogue is null
             ? CreditResolution.None
             : CreditResolver.Resolve(parsed, catalogue.Credits, tuning.Catalogue);

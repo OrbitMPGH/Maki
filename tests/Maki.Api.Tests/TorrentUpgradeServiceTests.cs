@@ -18,10 +18,12 @@ internal sealed class FakeReleases() : ReleaseService(null!, null!, null!, null!
     public List<(int SeriesId, string Query)> Queries { get; } = [];
     public List<(int SeriesId, ReleaseDto Release, DownloadOrigin Origin, int? UserId, string? Info)> Grabs { get; } = [];
     public Exception? SearchError { get; set; }
+    public Action? OnSearch { get; set; }
 
     public override Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
         Queries.Add((seriesId, query ?? ""));
+        OnSearch?.Invoke();
         if (SearchError is not null)
         {
             throw SearchError;

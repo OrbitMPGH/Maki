@@ -66,6 +66,11 @@ public class UpgradeScanJob(
             logger.LogDebug("Upgrade scan skipped; one is already running");
             return;
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Shutdown mid-scan: leave the day open so the next boot runs it.
+            return;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Upgrade scan failed");

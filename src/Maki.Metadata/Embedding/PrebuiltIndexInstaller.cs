@@ -241,7 +241,7 @@ public class PrebuiltIndexInstaller(
         // Hash the compressed bytes as they stream past (same shape as the dump download), so a
         // truncated or tampered artifact is caught without buffering 70 MB twice.
         using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        await using (var network = await response.Content.ReadAsStreamAsync(ct))
+        await using (var network = new StallTimeoutStream(await response.Content.ReadAsStreamAsync(ct)))
         await using (var hashing = new HashingReadStream(network, sha256))
         await using (var decompressor = new DecompressionStream(hashing))
         await using (var output = File.Create(staging))

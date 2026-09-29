@@ -217,17 +217,50 @@ public class EmbeddingStore(EmbeddingOptions options)
         vacuum.ExecuteNonQuery();
     }
 
+    private sealed record FileStamp(string Path, long Ticks, long Length, long WalTicks, long WalLength);
+
+    private sealed record CachedCount(FileStamp Stamp, int Value);
+
+    private volatile CachedCount? _count;
+
+    /// <summary>
+    /// Rows in <c>series_vectors</c>. Every search and recommendation asks through <c>IsReady</c>,
+    /// and a fresh connection plus a count over the table cost 50 to 250 ms each time, so the answer
+    /// is kept until the file or its WAL changes, or this store writes.
+    /// </summary>
     public int Count()
     {
-        if (!File.Exists(DbPath))
+        var stamp = StampOf(DbPath);
+        if (stamp is null)
         {
             return 0;
+        }
+
+        if (_count is { } cached && cached.Stamp == stamp)
+        {
+            return cached.Value;
         }
 
         using var conn = OpenReadOnly();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT COUNT(*) FROM series_vectors";
-        return Convert.ToInt32(cmd.ExecuteScalar());
+        var value = Convert.ToInt32(cmd.ExecuteScalar());
+        _count = new CachedCount(stamp, value);
+        return value;
+    }
+
+    private static FileStamp? StampOf(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
+        var db = new FileInfo(path);
+        var wal = new FileInfo(path + "-wal");
+        return wal.Exists
+            ? new FileStamp(path, db.LastWriteTimeUtc.Ticks, db.Length, wal.LastWriteTimeUtc.Ticks, wal.Length)
+            : new FileStamp(path, db.LastWriteTimeUtc.Ticks, db.Length, 0, 0);
     }
 
     /// <summary>id → stored content hash, for skip-unchanged during indexing.</summary>
@@ -677,6 +710,7 @@ public class EmbeddingStore(EmbeddingOptions options)
 
     private SqliteConnection OpenWritable()
     {
+        _count = null;
         var conn = new SqliteConnection($"Data Source={DbPath};Pooling=False");
         conn.Open();
         return conn;

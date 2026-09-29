@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Maki.Core.Entities;
@@ -76,23 +78,53 @@ public class MangaBakaProvider(
         return await GetFromApiAsync(providerId, ct);
     }
 
+    /// <summary>Same cap as the local store's merge walk; two rows merged into each other would loop.</summary>
+    internal const int MaxMergeHops = 5;
+
     private async Task<SeriesMetadata?> GetFromApiAsync(string providerId, CancellationToken ct)
     {
-        var client = httpClientFactory.CreateClient(HttpClientName);
-        var response = await client.GetFromJsonAsync<MangaBakaGetResponse>($"v1/series/{providerId}", ct);
-        var s = response?.Data;
-        if (s is null)
+        // Spliced into the path, so anything but a plain id could change which endpoint is asked.
+        if (!long.TryParse(providerId, NumberStyles.None, CultureInfo.InvariantCulture, out var id))
         {
             return null;
         }
 
-        // Merged entries redirect to their canonical series.
-        if (s.State == "merged" && s.MergedWith is int canonical)
+        var client = httpClientFactory.CreateClient(HttpClientName);
+        for (var hop = 0; ; hop++)
         {
-            logger.LogInformation("MangaBaka series {Id} merged into {Canonical}; following", providerId, canonical);
-            return await GetFromApiAsync(canonical.ToString(), ct);
-        }
+            using var response = await client.GetAsync($"v1/series/{id.ToString(CultureInfo.InvariantCulture)}", ct);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
 
+            response.EnsureSuccessStatusCode();
+            var s = (await response.Content.ReadFromJsonAsync<MangaBakaGetResponse>(ct))?.Data;
+            if (s is null)
+            {
+                return null;
+            }
+
+            // Merged entries redirect to their canonical series.
+            if (s.State == "merged" && s.MergedWith is int canonical)
+            {
+                if (hop >= MaxMergeHops)
+                {
+                    logger.LogWarning("MangaBaka series {Id} is still merged after {Hops} hops; giving up", providerId, hop);
+                    return null;
+                }
+
+                logger.LogInformation("MangaBaka series {Id} merged into {Canonical}; following", id, canonical);
+                id = canonical;
+                continue;
+            }
+
+            return ToMetadata(s);
+        }
+    }
+
+    private static SeriesMetadata? ToMetadata(MangaBakaSeries s)
+    {
         if (s.Type == "novel")
         {
             return null;
@@ -123,7 +155,8 @@ public class MangaBakaProvider(
             AniListId = s.Source?.AniList?.Id,
             MalId = s.Source?.MyAnimeList?.Id,
             KitsuId = s.Source?.Kitsu?.Id,
-            MangaUpdatesId = s.Source?.MangaUpdates?.Id
+            MangaUpdatesId = s.Source?.MangaUpdates?.Id,
+            Partial = true
         };
     }
 

@@ -135,7 +135,7 @@ public class MangaBakaDumpService(
         status.BeginDownload(response.Content.Headers.ContentLength);
 
         using var sha1 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
-        await using var source = await response.Content.ReadAsStreamAsync(ct);
+        await using var source = new StallTimeoutStream(await response.Content.ReadAsStreamAsync(ct));
         await using var hashing = new HashingReadStream(source, sha1, status.ReportDownloaded);
         await using var decompressed = new DecompressionStream(hashing);
         await using (var output = File.Create(stagingPath))
@@ -165,14 +165,11 @@ public class MangaBakaDumpService(
         BuildBrowseIndexes(conn, logger);
     }
 
-    /// <summary>
-    /// The names of the indexes <see cref="BuildBrowseIndexes"/> creates. Presence of the last one
-    /// is what <see cref="EnsureBrowseIndexesAsync"/> tests, so keep it last in the build order.
-    /// </summary>
+    /// <summary>The names of the indexes <see cref="BuildBrowseIndexes"/> creates.</summary>
     private static readonly string[] BrowseIndexNames =
     [
         "ix_browse_pop", "ix_browse_trend", "ix_browse_new", "ix_browse_rating", "ix_browse_type",
-        "ix_title_nocase",
+        "ix_title_nocase", "ix_ext_anilist", "ix_ext_mal", "ix_ext_kitsu",
     ];
 
     /// <summary>
@@ -245,31 +242,31 @@ public class MangaBakaDumpService(
     [
         // Popular, and the shared prefix for anything ordering by global popularity.
         ("ix_browse_pop", ["popularity_global_current"], $"""
-            CREATE INDEX ix_browse_pop ON series (popularity_global_current)
+            CREATE INDEX IF NOT EXISTS ix_browse_pop ON series (popularity_global_current)
             WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
             """),
 
         // Trending sorts on (history - current), which no index can order directly; carrying both
         // columns still lets the planner walk the far smaller filtered set instead of the table.
         ("ix_browse_trend", ["popularity_global_current", "popularity_global_history_1mo"], $"""
-            CREATE INDEX ix_browse_trend ON series (popularity_global_current, popularity_global_history_1mo)
+            CREATE INDEX IF NOT EXISTS ix_browse_trend ON series (popularity_global_current, popularity_global_history_1mo)
             WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
               AND popularity_global_history_1mo IS NOT NULL
             """),
 
         ("ix_browse_new", ["published_start_date"], $"""
-            CREATE INDEX ix_browse_new ON series (published_start_date DESC)
+            CREATE INDEX IF NOT EXISTS ix_browse_new ON series (published_start_date DESC)
             WHERE {BrowseGate} AND published_start_date IS NOT NULL
             """),
 
         ("ix_browse_rating", ["rating", "popularity_global_current"], $"""
-            CREATE INDEX ix_browse_rating ON series (rating DESC)
+            CREATE INDEX IF NOT EXISTS ix_browse_rating ON series (rating DESC)
             WHERE {BrowseGate} AND popularity_global_current IS NOT NULL
             """),
 
         // Serves both PopularManhwa and PopularManhua.
         ("ix_browse_type", ["type", "popularity_type_current"], $"""
-            CREATE INDEX ix_browse_type ON series (type, popularity_type_current)
+            CREATE INDEX IF NOT EXISTS ix_browse_type ON series (type, popularity_type_current)
             WHERE {BrowseGate} AND popularity_type_current IS NOT NULL
             """),
 
@@ -280,8 +277,26 @@ public class MangaBakaDumpService(
         // single-seed "More like this" rail is a ~70ms request. Costs 1.8s to build. Restricted to
         // active rows because the exclusion only ever asks about those, which keeps it small.
         ("ix_title_nocase", ["title", "state"], """
-            CREATE INDEX ix_title_nocase ON series (title COLLATE NOCASE)
+            CREATE INDEX IF NOT EXISTS ix_title_nocase ON series (title COLLATE NOCASE)
             WHERE state = 'active'
+            """),
+
+        // Serve MangaBakaLocalStore.GetIdsByExternalIdsAsync (anime signals, import lists), whose
+        // chunked IN (...) lookups were a full scan per 500 ids without them: 1.1 s warm and 5.5 s
+        // cold per chunk. Partial because most rows carry none of these ids, which keeps each small.
+        ("ix_ext_anilist", ["source_anilist_id"], """
+            CREATE INDEX IF NOT EXISTS ix_ext_anilist ON series (source_anilist_id)
+            WHERE source_anilist_id IS NOT NULL
+            """),
+
+        ("ix_ext_mal", ["source_my_anime_list_id"], """
+            CREATE INDEX IF NOT EXISTS ix_ext_mal ON series (source_my_anime_list_id)
+            WHERE source_my_anime_list_id IS NOT NULL
+            """),
+
+        ("ix_ext_kitsu", ["source_kitsu_id"], """
+            CREATE INDEX IF NOT EXISTS ix_ext_kitsu ON series (source_kitsu_id)
+            WHERE source_kitsu_id IS NOT NULL
             """),
     ];
 
@@ -300,19 +315,34 @@ public class MangaBakaDumpService(
     /// A missing column skips that one index and logs, rather than throwing: these are an
     /// optimization, and failing here would fail the whole dump refresh and stop metadata updating.
     /// </para>
+    ///
+    /// <para>
+    /// <paramref name="onlyMissing"/> is for the installed file, which readers are querying while
+    /// this runs: it drops nothing and creates only what is absent, so the indexes already there
+    /// keep serving the rails. The staged file drops and rebuilds the whole set.
+    /// </para>
     /// </summary>
-    internal static void BuildBrowseIndexes(SqliteConnection conn, ILogger? logger = null)
+    internal static void BuildBrowseIndexes(SqliteConnection conn, ILogger? logger = null, bool onlyMissing = false)
     {
         var present = ColumnsOf(conn);
+        var existing = onlyMissing ? IndexesOf(conn) : [];
 
-        foreach (var name in BrowseIndexNames)
+        if (!onlyMissing)
         {
-            Execute(conn, $"DROP INDEX IF EXISTS {name}");
+            foreach (var name in BrowseIndexNames)
+            {
+                Execute(conn, $"DROP INDEX IF EXISTS {name}");
+            }
         }
 
-        var built = 0;
+        var builtNames = new List<string>();
         foreach (var (name, columns, sql) in IndexDefinitions())
         {
+            if (existing.Contains(name))
+            {
+                continue;
+            }
+
             var missing = GateColumns.Concat(columns).Where(c => !present.Contains(c)).ToList();
             if (missing.Count > 0)
             {
@@ -324,15 +354,37 @@ public class MangaBakaDumpService(
             }
 
             Execute(conn, sql);
-            built++;
+            builtNames.Add(name);
         }
 
         // Without stats the planner has been observed preferring a scan over a partial index on a
-        // table this size. Cheap here because the indexes are already built.
-        if (built > 0)
+        // table this size. Cheap here because the indexes are already built. On the live file only
+        // the new indexes are analyzed, so the ones already serving queries are left alone.
+        if (onlyMissing)
+        {
+            foreach (var name in builtNames)
+            {
+                Execute(conn, $"ANALYZE {name}");
+            }
+        }
+        else if (builtNames.Count > 0)
         {
             Execute(conn, "ANALYZE");
         }
+    }
+
+    private static HashSet<string> IndexesOf(SqliteConnection conn)
+    {
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index'";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            existing.Add(reader.GetString(0));
+        }
+
+        return existing;
     }
 
 
@@ -362,20 +414,10 @@ public class MangaBakaDumpService(
         // missing a column can never reach the full count, and testing for it would rebuild every
         // index on every job tick forever.
         var expected = BuildableIndexNames(conn);
-        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        using (var cmd = conn.CreateCommand())
-        {
-            // The managed set includes ix_title_nocase as well as ix_browse_* indexes. Omitting
-            // it makes every refresh rebuild an already complete set, changing the dump stamp
-            // and needlessly invalidating the in-memory catalogue indexes.
-            cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index'";
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                existing.Add(reader.GetString(0));
-            }
-        }
+        var existing = IndexesOf(conn);
 
+        // Any write changes the dump stamp and invalidates the in-memory catalogue indexes, so a
+        // complete set must leave the file untouched.
         if (expected.IsSubsetOf(existing))
         {
             return;
@@ -383,9 +425,9 @@ public class MangaBakaDumpService(
 
         logger.LogInformation(
             "Backfilling MangaBaka browse indexes ({Existing} of {Expected} present)…",
-            existing.Count, expected.Count);
+            expected.Count(existing.Contains), expected.Count);
         var started = DateTime.UtcNow;
-        BuildBrowseIndexes(conn, logger);
+        BuildBrowseIndexes(conn, logger, onlyMissing: true);
         logger.LogInformation(
             "MangaBaka browse indexes built in {Elapsed:F1}s", (DateTime.UtcNow - started).TotalSeconds);
     }
@@ -462,6 +504,67 @@ public class MangaBakaDumpService(
         catch (IOException)
         {
         }
+    }
+}
+
+/// <summary>
+/// Pass-through read stream that fails a read which delivers nothing for <paramref name="stall"/>.
+/// With <see cref="HttpCompletionOption.ResponseHeadersRead"/> the client timeout stops at the
+/// headers, so a connection that goes quiet mid-body would otherwise block the copy forever, and
+/// with it <c>ArtifactBuildGate</c> and every job queued behind it.
+/// </summary>
+internal sealed class StallTimeoutStream(Stream inner, TimeSpan? stall = null) : Stream
+{
+    public static readonly TimeSpan DefaultStall = TimeSpan.FromSeconds(60);
+
+    private readonly TimeSpan _stall = stall ?? DefaultStall;
+
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => throw new NotSupportedException();
+
+    public override long Position
+    {
+        get => throw new NotSupportedException();
+        set => throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+    {
+        using var quiet = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        quiet.CancelAfter(_stall);
+        try
+        {
+            return await inner.ReadAsync(buffer, quiet.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Download stalled: no data for {_stall.TotalSeconds:F0} s");
+        }
+    }
+
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) =>
+        ReadAsync(buffer.AsMemory(offset, count), ct).AsTask();
+
+    public override void Flush()
+    {
+    }
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            inner.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 }
 

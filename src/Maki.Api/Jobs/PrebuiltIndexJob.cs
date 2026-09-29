@@ -39,7 +39,7 @@ public class PrebuiltIndexJob(
                 logger.LogDebug("Prebuilt embedding index not installed: {Reason}", result.Reason);
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
             // Shutdown mid-download; the staged file is discarded and the next run starts over.
         }
