@@ -30,7 +30,7 @@ public class SourceMappingControllerTests : IDisposable
             new SourceRegistry(sources.Length > 0 ? sources : [new FakeSource { Name = "fake" }]),
             appSettings, availability ?? Sources.AllEnabled, _queue,
             // Every compare path exercised here is rejected before the preview service is reached.
-            null!, null!, null!, new TestCurrentUser(1));
+            null!, null!, null!, null!, new TestCurrentUser(1));
 
     /// <summary>Everything the worker was handed, in order.</summary>
     private List<int> Queued()
@@ -178,6 +178,7 @@ public class SourceMappingControllerTests : IDisposable
             null!,
             null!,
             null!,
+            null!,
             new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
 
         var result = await controller.RemoveWithCleanup(
@@ -217,6 +218,7 @@ public class SourceMappingControllerTests : IDisposable
             _queue,
             null!,
             sync,
+            null!,
             null!,
             new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
 
@@ -272,6 +274,7 @@ public class SourceMappingControllerTests : IDisposable
             _queue,
             null!,
             sync,
+            null!,
             null!,
             new TestCurrentUser(1, permissions: Maki.Core.Security.MakiPermission.ManageSources));
 

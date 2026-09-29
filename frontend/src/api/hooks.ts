@@ -1599,6 +1599,7 @@ export function useRefreshSeries() {
     onSuccess: (_data, seriesId) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1616,6 +1617,7 @@ export function useRefreshSourceSnapshots() {
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -2491,6 +2493,7 @@ export function useCreateMapping() {
     }) => api<SourceMappingDto>('/sourcemapping', { method: 'POST', body: JSON.stringify(mapping) }),
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
     },
   })
 }
@@ -2523,6 +2526,7 @@ export function useUpdateMapping() {
       }),
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
     },
   })
 }
@@ -2541,6 +2545,7 @@ export function useReorderMappings() {
       }),
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
     },
   })
 }
@@ -2604,6 +2609,7 @@ export function useDeleteMapping() {
       api<void>(`/sourcemapping/${id}`, { method: 'DELETE' }),
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
     },
   })
 }
@@ -2628,6 +2634,7 @@ export function useRemoveMapping() {
       }),
     onSuccess: (_data, value) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', value.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', value.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['chapters', value.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series-files', value.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['reader-progress', value.seriesId] })
@@ -3129,7 +3136,12 @@ export interface DownloadSettings {
   useHardlinks: boolean
   /** More new chapters than this in one refresh are held back instead of queued. 0 means never hold. */
   bulkHoldThreshold: number
+  /** Which source a series without its own setting downloads from first. */
+  sourceOrder: SourceOrderMode
 }
+
+/** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
+export type SourceOrderMode = 'manual' | 'quality'
 
 export function useDownloadSettings() {
   return useQuery({

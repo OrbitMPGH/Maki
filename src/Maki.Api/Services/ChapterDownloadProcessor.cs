@@ -383,11 +383,10 @@ public class ChapterDownloadProcessor(
             }
 
             var disabledSources = await sourceAvailability.DisabledAsync(ct);
-            var mappings = await db.SourceMappings
+            var mappings = await sourceResolver.OrderAsync(db, chapter.SeriesId, await db.SourceMappings
                 .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !triedMappingIds.Contains(m.Id) &&
                             !disabledSources.Contains(m.SourceName))
-                .OrderBy(m => m.Priority)
-                .ToListAsync(ct);
+                .ToListAsync(ct), ct);
             if (mappings.Count == 0)
             {
                 await FailAsync(item, "error.download.noMoreSources", ct);

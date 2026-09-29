@@ -965,6 +965,10 @@ msgid "error.sourceMapping.needsTwoSources"
 msgstr "Comparing needs at least two enabled sources for this series"
 
 #: src/Maki.Api/Controllers/SourceMappingController.cs
+msgid "error.sourceMapping.unknownOrderMode"
+msgstr "Unknown source order \"{mode}\". Use manual or quality."
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 msgid "error.sourceMapping.noMappingsGiven"
 msgstr "No mappings given"
 

@@ -17,8 +17,14 @@ public record ResolvedChapterSource(SourceMapping Mapping, ISource Source, strin
 public class ChapterSourceResolver(
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
-    SourceChapterListCache chapterLists)
+    SourceChapterListCache chapterLists,
+    SourceOrderService sourceOrder)
 {
+    /// <summary>Best first under the series' <see cref="SourceOrderMode"/>. See <see cref="SourceOrderService"/>.</summary>
+    public async Task<IReadOnlyList<SourceMapping>> OrderAsync(
+        MakiDbContext db, int seriesId, IReadOnlyCollection<SourceMapping> mappings, CancellationToken ct) =>
+        (await sourceOrder.OrderAsync(db, seriesId, mappings, ct)).Ordered;
+
     /// <summary>
     /// Cheap, DB-only precheck: does this series have any enabled mapping at all? Lets a caller reject
     /// the obviously-hopeless case synchronously, before <see cref="ResolveAsync"/>'s per-chapter,
@@ -60,9 +66,9 @@ public class ChapterSourceResolver(
             query = query.Where(m => !excludeMappingIds.Contains(m.Id));
         }
 
-        var mappings = await query
-            .OrderBy(m => m.Id == preferMappingId ? -1 : m.Priority)
-            .ToListAsync(ct);
+        var mappings = (await OrderAsync(db, chapter.SeriesId, await query.ToListAsync(ct), ct))
+            .OrderBy(m => m.Id == preferMappingId ? 0 : 1)
+            .ToList();
 
         if (mappings.Count == 0)
         {

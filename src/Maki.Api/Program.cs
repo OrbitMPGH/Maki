@@ -781,6 +781,7 @@ try
     // single chapter listing. A scoped one would be per-request and cache nothing across a batch.
     builder.Services.AddSingleton<SourceChapterListCache>();
     builder.Services.AddSingleton<SourceExternalIdCache>();
+    builder.Services.AddSingleton<SourceOrderService>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();

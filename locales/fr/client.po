@@ -3025,6 +3025,11 @@ msgstr "cloche, boîte de réception, alertes, toast, notifications dans l'appli
 msgid "Below the series' upgrade cutoff"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Best quality first"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "best streak"
@@ -4071,8 +4076,13 @@ msgstr "Téléchargements de chapitres simultanés"
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-msgstr "simultanés, workers, nouvelle tentative, nombre maximal de tentatives, délai progressif, Smart Download, déclencheur de chapitres non lus"
+#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
+#~ msgstr "simultanés, workers, nouvelle tentative, nombre maximal de tentatives, délai progressif, Smart Download, déclencheur de chapitres non lus"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Conditions"
@@ -4691,6 +4701,14 @@ msgstr "Les chapitres décimaux (10.5, x.1) restent affichés, mais ne sont ni t
 msgid "Default"
 msgstr "Par défaut"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (best quality first)"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (manual priority)"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Default Case"
@@ -5145,6 +5163,10 @@ msgstr "Échec du téléchargement"
 msgid "Download next chapters"
 msgstr "Télécharger les chapitres suivants"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Download order"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
@@ -5228,6 +5250,10 @@ msgstr "Téléchargements"
 #, fuzzy
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
 msgstr "Télécharge les prochains chapitres d'une série lorsqu'il ne vous en reste que quelques-uns à lire. Vérifie toutes les cinq minutes la progression dans Kavita ou dans le lecteur intégré. Activez cette option pour chaque série dans ses options de suivi."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads try the best-scoring source first. Priority only breaks ties."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8034,6 +8060,11 @@ msgstr "Manuel"
 #, fuzzy
 msgid "Manual match needed"
 msgstr "Association manuelle nécessaire"
+
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Manual priority"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -13270,6 +13301,10 @@ msgstr "Mise en correspondance de la source terminée"
 msgid "Source off"
 msgstr "Source désactivée"
 
+#: src/pages/SettingsPage.tsx
+msgid "Source order"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Source priority updated"
@@ -15655,6 +15690,14 @@ msgstr "La page affichée par Maki à l'ouverture, sur tous vos appareils."
 #, fuzzy
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "Détermine quels rails apparaissent sous la liste des chapitres. En désactiver un empêche aussi son chargement."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Which source a chapter is downloaded from first when several have it. Best quality ranks sources by the series' quality profile and what their recent chapters measured, and uses the priority you set to break ties. A series can override this on its Sources tab."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy

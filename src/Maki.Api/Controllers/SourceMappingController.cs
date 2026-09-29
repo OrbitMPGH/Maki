@@ -26,6 +26,7 @@ public class SourceMappingController(
     SourceComparePreviewService comparePreviews,
     ChapterSyncService chapterSync,
     SourceMappingRemovalService removalService,
+    SourceOrderService sourceOrder,
     ICurrentUser currentUser) : ControllerBase
 {
     public record CreateMappingRequest(
@@ -227,7 +228,40 @@ public class SourceMappingController(
         var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
         var profile = (await upgrades.ForSeriesAsync(seriesId, ct))?.Profile;
         var now = DateTime.UtcNow;
-        return Ok(estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now)).ToList());
+        var mappings = await db.SourceMappings.AsNoTracking().Where(m => m.SeriesId == seriesId).ToListAsync(ct);
+        var disabled = await sourceAvailability.DisabledAsync(ct);
+        var usable = mappings.Where(m => m.Enabled && !disabled.Contains(m.SourceName)).ToList();
+        var order = await sourceOrder.OrderAsync(db, seriesId, usable, ct);
+        var rest = mappings.Except(usable).OrderBy(m => m.Priority).ThenBy(m => m.Id);
+        return Ok(new SourceOrderDto(
+            order.SeriesMode is { } own ? SourceOrderService.Name(own) : null,
+            SourceOrderService.Name(order.DefaultMode),
+            SourceOrderService.Name(order.Mode),
+            [.. order.Ordered.Concat(rest).Select(m => m.Id)],
+            [.. estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now))]));
+    }
+
+    public record OrderModeRequest(int SeriesId, string? Mode);
+
+    /// <summary>Sets or clears (null) a series' own source order mode.</summary>
+    [HttpPut("ordermode")]
+    public async Task<IActionResult> SetOrderMode([FromBody] OrderModeRequest request, CancellationToken ct)
+    {
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == request.SeriesId, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        var mode = SourceOrderService.Parse(request.Mode);
+        if (request.Mode is not null && mode is null)
+        {
+            return this.Fail(localizer, "error.sourceMapping.unknownOrderMode", new { mode = request.Mode });
+        }
+
+        series.SourceOrderMode = mode;
+        await db.SaveChangesAsync(ct);
+        return NoContent();
     }
 
     [HttpGet("compare")]

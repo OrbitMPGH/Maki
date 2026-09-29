@@ -331,6 +331,12 @@ public static class SettingKeys
     /// </summary>
     public const string DownloadUseHardlinks = "download.usehardlinks";
 
+    /// <summary>
+    /// "quality" → series without their own <c>SourceOrderMode</c> try the best-scoring source first
+    /// (<c>SourceOrderService</c>); anything else, including unset, keeps the manual priority order.
+    /// </summary>
+    public const string DownloadSourceOrder = "download.sourceorder";
+
     /// <summary>"true" turns on the daily automatic upgrade scan. A per-series manual scan ignores it.</summary>
     public const string UpgradesEnabled = "upgrades.enabled";
 

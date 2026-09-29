@@ -296,7 +296,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Downloads`,
     admin: true,
     keywords: msg({
-      message: `concurrent, workers, retry, max attempts, backoff, smart download, unread trigger`,
+      message: `concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

@@ -3025,6 +3025,11 @@ msgstr "알림 벨, 받은 편지함, 경고, 토스트, 앱 내 알림, 새 챕
 msgid "Below the series' upgrade cutoff"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Best quality first"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "best streak"
@@ -4071,8 +4076,13 @@ msgstr "동시 챕터 다운로드 수"
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-msgstr "동시 실행, 작업자, 재시도, 최대 시도 횟수, 백오프, Smart Download, 읽지 않음 트리거"
+#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
+#~ msgstr "동시 실행, 작업자, 재시도, 최대 시도 횟수, 백오프, Smart Download, 읽지 않음 트리거"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Conditions"
@@ -4691,6 +4701,14 @@ msgstr "10.5, x.1처럼 소수점이 있는 챕터는 목록에 남지만 다운
 msgid "Default"
 msgstr "기본값"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (best quality first)"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (manual priority)"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Default Case"
@@ -5145,6 +5163,10 @@ msgstr "다운로드 실패"
 msgid "Download next chapters"
 msgstr "다음 챕터 다운로드"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Download order"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
@@ -5228,6 +5250,10 @@ msgstr "다운로드"
 #, fuzzy
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
 msgstr "읽지 않은 챕터가 몇 개 남지 않으면 다음 챕터를 다운로드합니다. Kavita 또는 내장 리더의 진행 상황을 5분마다 확인합니다. 각 시리즈의 모니터링 옵션에서 켜세요."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads try the best-scoring source first. Priority only breaks ties."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8034,6 +8060,11 @@ msgstr "수동"
 #, fuzzy
 msgid "Manual match needed"
 msgstr "수동 매칭 필요"
+
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Manual priority"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -13270,6 +13301,10 @@ msgstr "소스 일치 완료"
 msgid "Source off"
 msgstr "소스 끄기"
 
+#: src/pages/SettingsPage.tsx
+msgid "Source order"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Source priority updated"
@@ -15655,6 +15690,14 @@ msgstr "모든 기기에서 Maki를 열 때 표시할 페이지입니다."
 #, fuzzy
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "챕터 목록 아래에 표시할 레일입니다. 하나를 끄면 가져오기도 중단됩니다."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Which source a chapter is downloaded from first when several have it. Best quality ranks sources by the series' quality profile and what their recent chapters measured, and uses the priority you set to break ties. A series can override this on its Sources tab."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy

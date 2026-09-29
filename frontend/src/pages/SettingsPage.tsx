@@ -115,6 +115,7 @@ import {
   useSaveUiSettings,
   useUiSettings,
   type SeriesSections,
+  type SourceOrderMode,
   type UiSettings,
   useSetEmbeddingModel,
   useScrobbleSettings,
@@ -1145,6 +1146,7 @@ function DownloadSection() {
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
   const [useHardlinks, setUseHardlinks] = useState(true)
   const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number | string>(5)
+  const [sourceOrder, setSourceOrder] = useState<SourceOrderMode>('manual')
 
   useEffect(() => {
     if (settings) {
@@ -1155,6 +1157,7 @@ function DownloadSection() {
       setItemTimeoutMinutes(settings.itemTimeoutMinutes)
       setUseHardlinks(settings.useHardlinks)
       setBulkHoldThreshold(settings.bulkHoldThreshold)
+      setSourceOrder(settings.sourceOrder)
     }
   }, [settings])
 
@@ -1166,7 +1169,8 @@ function DownloadSection() {
       Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
       useHardlinks !== settings.useHardlinks ||
-      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold)
+      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold ||
+      sourceOrder !== settings.sourceOrder)
 
   return (
     <Panel>
@@ -1186,6 +1190,27 @@ function DownloadSection() {
         clampBehavior="strict"
         value={concurrentChapters}
         onChange={setConcurrentChapters}
+        w={220}
+        mb="md"
+      />
+      <Text fw={500} size="sm" mb={4}>
+        <Trans>Source order</Trans>
+      </Text>
+      <SettingsHelp mb="xs">
+        <Trans>
+          Which source a chapter is downloaded from first when several have it. Best quality ranks
+          sources by the series' quality profile and what their recent chapters measured, and uses
+          the priority you set to break ties. A series can override this on its Sources tab.
+        </Trans>
+      </SettingsHelp>
+      <Select
+        data={[
+          { value: 'manual', label: t`Manual priority` },
+          { value: 'quality', label: t`Best quality first` },
+        ]}
+        value={sourceOrder}
+        onChange={(value) => value && setSourceOrder(value as SourceOrderMode)}
+        allowDeselect={false}
         w={220}
         mb="md"
       />
@@ -1310,6 +1335,7 @@ function DownloadSection() {
                 itemTimeoutMinutes: Number(itemTimeoutMinutes),
                 useHardlinks,
                 bulkHoldThreshold: Number(bulkHoldThreshold),
+                sourceOrder,
               },
               {
                 onSuccess: () =>

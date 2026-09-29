@@ -120,6 +120,12 @@ public record QualitySnapshotDto(
         s.SourceName, s.Group, s.PageCount, s.MedianWidth, s.MedianHeight, s.ImageFormat, s.SizeBytes, s.Score);
 }
 
+/// <summary>How a series orders its sources for downloads, and each source's measured record.</summary>
+/// <param name="SeriesMode">"manual", "quality", or null to follow <paramref name="DefaultMode"/>.</param>
+/// <param name="Order">Mapping ids in the order a download tries them; disabled mappings last.</param>
+public record SourceOrderDto(
+    string? SeriesMode, string DefaultMode, string Mode, IReadOnlyList<int> Order, IReadOnlyList<SourceQualityDto> Sources);
+
 /// <summary>One source mapping's measured track record for a series.</summary>
 /// <param name="BitsPerPixel">JPG-equivalent median, see <see cref="MeasuredQuality"/>.</param>
 /// <param name="Reliable">Enough recent samples that the upgrade scan trusts them instead of probing.</param>

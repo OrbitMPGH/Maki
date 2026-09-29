@@ -50,9 +50,10 @@ import {
   useSources,
   useSourceSearch,
   useUpdateMapping,
+  type SourceOrderMode,
 } from '../api/hooks'
 import type { SourceMappingDto } from '../api/types'
-import { useSourceQuality, type SourceQualityDto } from '../api/upgrades'
+import { useSetSourceOrderMode, useSourceOrder, type SourceQualityDto } from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
@@ -92,7 +93,15 @@ export function SourceMappingsSection({
   matching?: boolean
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
-  const { data: qualities } = useSourceQuality(seriesId)
+  const { data: sourceOrder } = useSourceOrder(seriesId)
+  const setOrderMode = useSetSourceOrderMode(seriesId)
+  const qualities = sourceOrder?.sources
+  const byQuality = sourceOrder?.mode === 'quality'
+  const orderedMappings = useMemo(() => {
+    if (!mappings || !byQuality) return mappings
+    const rank = new Map(sourceOrder.order.map((id, i) => [id, i]))
+    return [...mappings].sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity))
+  }, [mappings, byQuality, sourceOrder])
   const { data: sources } = useSources()
   const { data: progress } = useSourceMatchProgress(seriesId)
   const updateMapping = useUpdateMapping()
@@ -196,6 +205,36 @@ export function SourceMappingsSection({
         {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}
         <Group gap="xs">
+          {sourceOrder && (
+            <Tooltip
+              label={t`Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties.`}
+              withArrow
+              multiline
+              w={280}
+            >
+              <Select
+                size="xs"
+                w={210}
+                aria-label={t`Download order`}
+                allowDeselect={false}
+                value={sourceOrder.seriesMode ?? 'default'}
+                onChange={(value) =>
+                  value && setOrderMode.mutate(value === 'default' ? null : (value as SourceOrderMode))
+                }
+                data={[
+                  {
+                    value: 'default',
+                    label:
+                      sourceOrder.defaultMode === 'quality'
+                        ? t`Default (best quality first)`
+                        : t`Default (manual priority)`,
+                  },
+                  { value: 'manual', label: t`Manual priority` },
+                  { value: 'quality', label: t`Best quality first` },
+                ]}
+              />
+            </Tooltip>
+          )}
           <Tooltip
             label={
               matching
@@ -319,7 +358,7 @@ export function SourceMappingsSection({
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {(mappings ?? []).map((m) => {
+              {(orderedMappings ?? []).map((m) => {
               const { sourceName: sourceKey } = m
               const sourceName = sourceLabel(sourceKey)
               return (
@@ -369,7 +408,14 @@ export function SourceMappingsSection({
                   />
                 </Table.Td>
                 <Table.Td>
-                  <Tooltip label={t`Lower number = tried first when downloading`} withArrow>
+                  <Tooltip
+                    label={
+                      byQuality
+                        ? t`Downloads try the best-scoring source first. Priority only breaks ties.`
+                        : t`Lower number = tried first when downloading`
+                    }
+                    withArrow
+                  >
                     <NumberInput
                       size="xs"
                       w={70}

@@ -1380,6 +1380,11 @@ msgid "error.sourceMapping.needsTwoSources"
 msgstr "Для сравнения нужны как минимум два включённых источника этой серии"
 
 #: src/Maki.Api/Controllers/SourceMappingController.cs
+#. English: Unknown source order "{mode}". Use manual or quality.
+msgid "error.sourceMapping.unknownOrderMode"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SourceMappingController.cs
 #. English: No mappings given
 #, fuzzy
 msgid "error.sourceMapping.noMappingsGiven"

@@ -61,6 +61,9 @@ public class Series
     public int? UpgradeProfileId { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
+    /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>
+    public SourceOrderMode? SourceOrderMode { get; set; }
+
     /// <summary>When the upgrade scanner last went over this series, from any entry point.</summary>
     public DateTime? LastUpgradeScanUtc { get; set; }
     public int? LastUpgradeScanProbed { get; set; }

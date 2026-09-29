@@ -125,10 +125,13 @@ public class SettingsController(
     /// Hardlink completed torrents into the library instead of copying them, where the
     /// filesystem allows it. See <see cref="SettingKeys.DownloadUseHardlinks"/>.
     /// </param>
+    /// <param name="SourceOrder">
+    /// "manual" or "quality"; see <see cref="SettingKeys.DownloadSourceOrder"/>. Null on a write leaves it alone.
+    /// </param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true, int? BulkHoldThreshold = null);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -808,7 +811,11 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
-        await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct)));
+        await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
+        await SourceOrderNameAsync(ct)));
+
+    private async Task<string> SourceOrderNameAsync(CancellationToken ct) => SourceOrderService.Name(
+        SourceOrderService.Parse(await settings.GetAsync(SettingKeys.DownloadSourceOrder, ct)) ?? SourceOrderMode.Manual);
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -837,6 +844,12 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
         }
 
+        var sourceOrder = SourceOrderService.Parse(request.SourceOrder);
+        if (request.SourceOrder is not null && sourceOrder is null)
+        {
+            return this.Fail(localizer, "error.sourceMapping.unknownOrderMode", new { mode = request.SourceOrder });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -859,7 +872,16 @@ public class SettingsController(
                 bulkHold.ToString(CultureInfo.InvariantCulture), ct);
         }
 
-        return Ok(request with { BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct) });
+        if (sourceOrder is { } order)
+        {
+            await settings.SetAsync(SettingKeys.DownloadSourceOrder, SourceOrderService.Name(order), ct);
+        }
+
+        return Ok(request with
+        {
+            BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
+            SourceOrder = await SourceOrderNameAsync(ct)
+        });
     }
 
     [Authorize(Policy = Policies.Admin)]

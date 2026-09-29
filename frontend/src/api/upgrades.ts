@@ -4,6 +4,7 @@ import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { api } from './client'
 import type { ChapterFileQualityDto } from './types'
+import type { SourceOrderMode } from './hooks'
 
 /** Mirrors `QualityTier` on the server, lowest first. */
 export type QualityTierName = 'unknown' | 'aggregator' | 'scanlator' | 'official' | 'volume'
@@ -542,10 +543,32 @@ export interface SourceQualityDto {
   compressionPoints: number | null
 }
 
-export function useSourceQuality(seriesId: number) {
+/** How a series orders its sources for downloads, from `GET /sourcemapping/quality`. */
+export interface SourceOrderDto {
+  /** The series' own setting; null follows `defaultMode`. */
+  seriesMode: SourceOrderMode | null
+  defaultMode: SourceOrderMode
+  mode: SourceOrderMode
+  /** Mapping ids in the order a download tries them; disabled mappings last. */
+  order: number[]
+  sources: SourceQualityDto[]
+}
+
+export function useSourceOrder(seriesId: number) {
   return useQuery({
-    queryKey: ['source-quality', seriesId],
-    queryFn: () => api<SourceQualityDto[]>(`/sourcemapping/quality?seriesId=${seriesId}`),
+    queryKey: ['source-order', seriesId],
+    queryFn: () => api<SourceOrderDto>(`/sourcemapping/quality?seriesId=${seriesId}`),
+  })
+}
+
+export function useSetSourceOrderMode(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (mode: SourceOrderMode | null) =>
+      api<void>('/sourcemapping/ordermode', { method: 'PUT', body: JSON.stringify({ seriesId, mode }) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['source-order', seriesId] })
+    },
   })
 }
 

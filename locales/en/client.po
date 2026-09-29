@@ -2494,6 +2494,11 @@ msgstr "bell, inbox, alerts, toast, in-app notifications, new chapters, achievem
 msgid "Below the series' upgrade cutoff"
 msgstr "Below the series' upgrade cutoff"
 
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Best quality first"
+msgstr "Best quality first"
+
 #: src/components/home/ProgressCard.tsx
 msgid "best streak"
 msgstr "best streak"
@@ -3352,8 +3357,13 @@ msgstr "Concurrent chapter downloads"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-msgstr "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
+#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
+#~ msgstr "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
+msgstr "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Conditions"
@@ -3870,6 +3880,14 @@ msgstr "Decimal chapters (10.5, x.1) stay listed but are never downloaded or cou
 msgid "Default"
 msgstr "Default"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (best quality first)"
+msgstr "Default (best quality first)"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (manual priority)"
+msgstr "Default (manual priority)"
+
 #: src/components/NamingTokenModal.tsx
 msgid "Default Case"
 msgstr "Default Case"
@@ -4242,6 +4260,10 @@ msgstr "Download failed"
 msgid "Download next chapters"
 msgstr "Download next chapters"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Download order"
+msgstr "Download order"
+
 #: src/pages/SettingsPage.tsx
 msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
 msgstr "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
@@ -4310,6 +4332,10 @@ msgstr "Downloads"
 #: src/pages/SettingsPage.tsx
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
 msgstr "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads try the best-scoring source first. Priority only breaks ties."
+msgstr "Downloads try the best-scoring source first. Priority only breaks ties."
 
 #: src/components/SetupWizard.tsx
 msgid "Downloads what Prowlarr finds. Finished torrents import into the library on their own. Fill the path mapping only if qBittorrent sees paths Maki can't, as in Docker."
@@ -6616,6 +6642,11 @@ msgstr "Manual"
 #: src/components/NotificationsSection.tsx
 msgid "Manual match needed"
 msgstr "Manual match needed"
+
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Manual priority"
+msgstr "Manual priority"
 
 #: src/components/SeriesFilesSection.tsx
 msgid "Mapped to"
@@ -10947,6 +10978,10 @@ msgstr "Source matching finished"
 msgid "Source off"
 msgstr "Source off"
 
+#: src/pages/SettingsPage.tsx
+msgid "Source order"
+msgstr "Source order"
+
 #: src/components/SourceCompareModal.tsx
 msgid "Source priority updated"
 msgstr "Source priority updated"
@@ -12912,6 +12947,14 @@ msgstr "Which page Maki opens on, on every device."
 #: src/pages/SettingsPage.tsx
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "Which rails appear below the chapter list. Turning one off also stops it being fetched."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties."
+msgstr "Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties."
+
+#: src/pages/SettingsPage.tsx
+msgid "Which source a chapter is downloaded from first when several have it. Best quality ranks sources by the series' quality profile and what their recent chapters measured, and uses the priority you set to break ties. A series can override this on its Sources tab."
+msgstr "Which source a chapter is downloaded from first when several have it. Best quality ranks sources by the series' quality profile and what their recent chapters measured, and uses the priority you set to break ties. A series can override this on its Sources tab."
 
 #: src/components/ui/seriesNotifications.ts
 msgid "While reading"

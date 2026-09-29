@@ -3025,6 +3025,11 @@ msgstr "campana, bandeja de entrada, alertas, aviso, notificaciones en la aplica
 msgid "Below the series' upgrade cutoff"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Best quality first"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "best streak"
@@ -4071,8 +4076,13 @@ msgstr "Descargas simultáneas de capítulos"
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-msgstr "simultáneas, trabajadores, reintento, intentos máximos, espera progresiva, Smart Download, activación por capítulos sin leer"
+#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
+#~ msgstr "simultáneas, trabajadores, reintento, intentos máximos, espera progresiva, Smart Download, activación por capítulos sin leer"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Conditions"
@@ -4691,6 +4701,14 @@ msgstr "Los capítulos decimales (10.5, x.1) siguen en la lista, pero nunca se d
 msgid "Default"
 msgstr "Predeterminado"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (best quality first)"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Default (manual priority)"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Default Case"
@@ -5145,6 +5163,10 @@ msgstr "Descarga fallida"
 msgid "Download next chapters"
 msgstr "Descargar capítulos siguientes"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Download order"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Download order when a series matches several sources, highest first. Language ranking above comes first. Applies to new auto-matches and manual Auto-match runs; other series keep their order. Switching a source off pauses it for every series without touching their own toggles."
@@ -5228,6 +5250,10 @@ msgstr "Descargas"
 #, fuzzy
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
 msgstr "Smart Download baja los próximos capítulos de una serie cuando te quedan pocos por leer. Comprueba cada cinco minutos el progreso de Kavita o del lector integrado. Actívalo por serie en las opciones de seguimiento."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Downloads try the best-scoring source first. Priority only breaks ties."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8034,6 +8060,11 @@ msgstr "Manual"
 #, fuzzy
 msgid "Manual match needed"
 msgstr "Se necesita una coincidencia manual"
+
+#: src/components/SourceMappingsSection.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Manual priority"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -13270,6 +13301,10 @@ msgstr "Coincidencia de fuentes completada"
 msgid "Source off"
 msgstr "Fuente desactivada"
 
+#: src/pages/SettingsPage.tsx
+msgid "Source order"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Source priority updated"
@@ -15655,6 +15690,14 @@ msgstr "Qué página abre Maki en todos los dispositivos."
 #, fuzzy
 msgid "Which rails appear below the chapter list. Turning one off also stops it being fetched."
 msgstr "Qué raíles aparecen debajo de la lista de capítulos. Desactivar uno también evita que se obtenga."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Which source a chapter downloads from first. Best quality ranks sources by this series' quality profile and what their recent chapters measured, with priority breaking ties."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Which source a chapter is downloaded from first when several have it. Best quality ranks sources by the series' quality profile and what their recent chapters measured, and uses the priority you set to break ties. A series can override this on its Sources tab."
+msgstr ""
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
