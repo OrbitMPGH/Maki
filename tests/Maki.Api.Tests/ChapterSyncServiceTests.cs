@@ -227,6 +227,77 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Duplicate_merge_keeps_the_scanlation_group_on_the_moved_link()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake", enabled: false));
+        using (var db = _db.NewContext())
+        {
+            var mappingId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+            var keeper = new Chapter { SeriesId = seriesId, Number = 5, Volume = 2, Language = "en" };
+            var duplicate = new Chapter { SeriesId = seriesId, Number = 5, Language = "en" };
+            db.Chapters.AddRange(keeper, duplicate);
+            db.SaveChanges();
+            db.ChapterSourceLinks.Add(new ChapterSourceLink
+            {
+                ChapterId = duplicate.Id,
+                SourceMappingId = mappingId,
+                SourceChapterId = "source-5",
+                Group = "Night Scans"
+            });
+            db.SaveChanges();
+        }
+
+        await BuildService(null, new FakeSource { Name = "fake" }).SyncSeriesAsync(seriesId);
+
+        Assert.Equal("Night Scans", Assert.Single(LinksOf(seriesId)).Group);
+    }
+
+    [Fact]
+    public async Task A_file_from_the_same_source_with_no_group_takes_the_links_group()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        int sameSource, otherSource, alreadyNamed;
+        using (var db = _db.NewContext())
+        {
+            ChapterFile NewFile(string name, string source, string? group = null) => new()
+            {
+                SeriesId = seriesId, RelativePath = name, SourceName = source, Group = group, DateAdded = DateTime.UtcNow
+            };
+
+            var same = NewFile("1.cbz", "fake");
+            var other = NewFile("2.cbz", "import");
+            var named = NewFile("3.cbz", "fake", "Old Group");
+            db.ChapterFiles.AddRange(same, other, named);
+            db.SaveChanges();
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = seriesId, Number = 1, Language = "en", ChapterFileId = same.Id },
+                new Chapter { SeriesId = seriesId, Number = 2, Language = "en", ChapterFileId = other.Id },
+                new Chapter { SeriesId = seriesId, Number = 3, Language = "en", ChapterFileId = named.Id });
+            db.SaveChanges();
+            (sameSource, otherSource, alreadyNamed) = (same.Id, other.Id, named.Id);
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ =>
+            [
+                fake.Chapter(1) with { Group = "Night Scans" },
+                fake.Chapter(2) with { Group = "Night Scans" },
+                fake.Chapter(3) with { Group = "Night Scans" }
+            ]
+        };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        using var check = _db.NewContext();
+        Assert.Equal("Night Scans", check.ChapterFiles.Single(f => f.Id == sameSource).Group);
+        Assert.Null(check.ChapterFiles.Single(f => f.Id == otherSource).Group);
+        Assert.Equal("Old Group", check.ChapterFiles.Single(f => f.Id == alreadyNamed).Group);
+    }
+
+    [Fact]
     public async Task Distinct_explicit_volumes_are_not_treated_as_duplicates()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));

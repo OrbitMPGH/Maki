@@ -48,11 +48,14 @@ export class UnauthorizedError extends Error {
 
 export class ApiError extends Error {
   readonly status: number
+  /** The stable dotted key behind `message` (`error.upgrades.trashGone`), or null when the body carried none. */
+  readonly code: string | null
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code: string | null = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -139,7 +142,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   }
   if (!res.ok) {
     const body = await res.text()
-    throw new ApiError(res.status, `API ${res.status}: ${errorMessage(body) ?? res.statusText}`)
+    throw new ApiError(res.status, `API ${res.status}: ${errorMessage(body) ?? res.statusText}`, errorCode(body))
   }
   // 204, and any 200 whose handler wrote no body, have nothing to parse.
   const body = await res.text()
@@ -150,8 +153,8 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 /**
  * Controllers answer failures as `{ "error": "...", "code": "..." }`; fall back to the raw body when
  * they don't. `error` is already localized by the server, so it is displayed as-is. `code` is the
- * stable dotted key behind it, for a caller that wants to branch on a specific failure rather than
- * show it; nothing reads it yet.
+ * stable dotted key behind it (see `errorCode`), for a caller that wants to branch on a specific
+ * failure rather than show it.
  */
 function errorMessage(body: string): string | null {
   if (!body) return null
@@ -161,5 +164,15 @@ function errorMessage(body: string): string | null {
     return parsed.error ?? parsed.message ?? parsed.detail ?? parsed.title ?? body
   } catch {
     return body
+  }
+}
+
+/** The `code` field from a `{ "error": "...", "code": "..." }` body, or null when there isn't one. */
+function errorCode(body: string): string | null {
+  if (!body) return null
+  try {
+    return (JSON.parse(body) as { code?: string }).code ?? null
+  } catch {
+    return null
   }
 }

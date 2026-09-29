@@ -14,6 +14,7 @@ import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
+import type { ReleaseParsedDto } from './upgrades'
 import type {
   AddSeriesRequest,
   ChapterDto,
@@ -1968,10 +1969,10 @@ export function useImportPlan(id: number | null) {
 export function useSettleImport() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, mode }: { id: number; mode: ImportDecision }) =>
+    mutationFn: ({ id, mode, skipFiles }: { id: number; mode: ImportDecision; skipFiles?: string[] }) =>
       api<ImportDecisionResultDto | void>(`/queue/${id}/import`, {
         method: 'POST',
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, skipFiles }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
@@ -2053,6 +2054,28 @@ export function useSetMonitorMode() {
       // No ['chapters'] invalidation: a mode change governs chapters released later and leaves
       // every existing row alone, so there is nothing there to refetch.
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export interface SetUpgradeProfileResult {
+  upgradeProfileId: number | null
+}
+
+/** Pins (or clears, with null) which upgrade profile a series resolves to instead of the instance default. */
+export function useSetUpgradeProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, upgradeProfileId }: { seriesId: number; upgradeProfileId: number | null }) =>
+      api<SetUpgradeProfileResult>(`/series/${seriesId}/upgradeprofile`, {
+        method: 'POST',
+        body: JSON.stringify({ upgradeProfileId }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+      void queryClient.invalidateQueries({ queryKey: ['series-files'] })
     },
   })
 }
@@ -2729,9 +2752,14 @@ export interface ReleaseDto {
   infoUrl: string | null
 }
 
+export interface ReleaseRowDto extends ReleaseDto {
+  /** Null when the series has no upgrade profile. */
+  parsed: ReleaseParsedDto | null
+}
+
 export interface ReleaseSearchResult {
   query: string
-  releases: ReleaseDto[]
+  releases: ReleaseRowDto[]
 }
 
 export function useReleaseSearch(seriesId: number, enabled: boolean, query?: string) {

@@ -1,4 +1,5 @@
 using Maki.Api.Configuration;
+using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,8 @@ namespace Maki.Api.Jobs;
 
 /// <summary>Daily cleanup: orphaned page caches, old finished queue rows, WAL checkpoint, SQLite pool.</summary>
 [DisallowConcurrentExecution]
-public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<HousekeepingJob> logger) : IJob
+public class HousekeepingJob(
+    MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, ILogger<HousekeepingJob> logger) : IJob
 {
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
@@ -36,6 +38,13 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
                     // Shutdown mid-sweep. Every section here is independent and idempotent,
                     // so the next run picks up whatever this one did not get to.
                     return;
+                }
+
+                // Upgrade probes scratch under here and clean up after themselves; one still running
+                // must not lose its folder mid-download.
+                if (Path.GetFileName(dir) == "probe" && Directory.GetLastWriteTimeUtc(dir) > DateTime.UtcNow.AddHours(-1))
+                {
+                    continue;
                 }
 
                 if (!activeIds.Contains(Path.GetFileName(dir)))
@@ -123,6 +132,19 @@ public class HousekeepingJob(MakiDbContext db, AppPaths paths, ILogger<Housekeep
                     logger.LogDebug(ex, "Could not clean source preview dir {Dir}", dir);
                 }
             }
+        }
+
+        try
+        {
+            var purged = await upgradeTrash.PurgeAsync(ct);
+            if (purged > 0)
+            {
+                logger.LogInformation("Purged {Count} replaced chapter file(s) from upgrade trash", purged);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Upgrade trash purge failed");
         }
 
         // Completed/cancelled queue rows older than 30 days.

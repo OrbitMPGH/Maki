@@ -108,6 +108,11 @@ msgstr "{0, plural, one {Nie udało się usunąć # plik (z powodu blokady lub b
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, one {Usunięto # plik} few {Usunięto # pliki} many {Usunięto # plików} other {Usunięto # pliku}}"
 
+#. placeholder {0}: upgradesSummary.trashFiles
+#: src/pages/ActivityPage.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr ""
+
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -348,6 +353,10 @@ msgstr "Dodano: {added}, zgłoszono próśb: {requested}, pominięto: {skipped},
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} dodanych przez Ciebie, {excluded} wykluczonych z profilu gustu"
 
+#: src/api/upgrades.ts
+msgid "{alreadyMetCount} already at cutoff"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt} has no page {page}"
@@ -362,6 +371,10 @@ msgstr "{alt}, strona {page}"
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgstr "{applied, plural, one {Zaimportowano # ocenę} few {Zaimportowano # oceny} many {Zaimportowano # ocen} other {Zaimportowano # oceny}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{beforeLabel} to {afterLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -448,6 +461,10 @@ msgstr "{completed} / {total} sprawdzonych plików"
 #, fuzzy
 msgid "{completeVolumes, plural, one {# volume already complete} other {# volumes already complete}}"
 msgstr "{completeVolumes, plural, one {# tom jest już kompletny} few {# tomy są już kompletne} many {# tomów jest już kompletnych} other {# tomu jest już kompletnego}}"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "{conditionCount, plural, one {# condition} other {# conditions}}"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -575,6 +592,7 @@ msgid "{failedCount, plural, one {# could not be deleted} other {# could not be 
 msgstr "{failedCount, plural, one {# nie udało się usunąć} few {# nie udało się usunąć} many {# nie udało się usunąć} other {# nie udało się usunąć}}"
 
 #: src/components/RenameSeriesModal.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileCount, plural, one {# file} other {# files}}"
 msgstr "{fileCount, plural, one {# plik} few {# pliki} many {# plików} other {# pliku}}"
@@ -583,6 +601,10 @@ msgstr "{fileCount, plural, one {# plik} few {# pliki} many {# plików} other {#
 #, fuzzy
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, one {# pojedynczy plik} few {# pojedyncze pliki} many {# pojedynczych plików} other {# pojedynczego pliku}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{fileName} replaced {filesText}"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -785,6 +807,11 @@ msgstr "{markerLabel} Tutaj zaczyna się adaptacja anime · kliknij, aby rozwin�
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} z {total} dopasowanych, {positive} pozytywnych, {avoided} unikanych, {superseded} już na Twojej półce"
 
+#: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "{medianWidth}px"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "{min} or more"
@@ -804,6 +831,10 @@ msgstr "{minutes, plural, one {pozostało około # min} few {pozostało około #
 #, fuzzy
 msgid "{minutesPerChapter} min / ch"
 msgstr "{minutesPerChapter} min / rozdz."
+
+#: src/api/upgrades.ts
+msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -886,6 +917,8 @@ msgstr "{newChapterCount, plural, one {Dodaje # rozdział, którego nie masz} fe
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# więcej} few {+# więcej} many {+# więcej} other {+# więcej}}"
 
+#: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/ChapterBanner.tsx
 #, fuzzy
@@ -921,6 +954,10 @@ msgstr "od {primeStart} do {primeEnd}"
 #, fuzzy
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, one {# wymaga uwagi} few {# wymagają uwagi} many {# wymaga uwagi} other {# wymaga uwagi}}"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "{profileCount, plural, one {Scored in # profile} other {Scored in # profiles}}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -988,6 +1025,10 @@ msgstr "{readValue, plural, one {przeczytany rozdział} few {przeczytane rozdzia
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, one {przeczytany tom} few {przeczytane tomy} many {przeczytanych tomów} other {przeczytanego tomu}}"
 
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "{reasonText} - {measurement}"
+msgstr ""
+
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
@@ -997,6 +1038,10 @@ msgstr "{remaining, plural, one {jeszcze # w kolejce} few {jeszcze # w kolejce} 
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, one {Zmieniono nazwę # serii} few {Zmieniono nazwę # serii} many {Zmieniono nazwę # serii} other {Zmieniono nazwę # serii}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -1017,6 +1062,10 @@ msgstr "{resolved, plural, one {# rozpatrzona} few {# rozpatrzone} many {# rozpa
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, one {# min} few {# min} many {# min} other {# min}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -1054,6 +1103,7 @@ msgstr "Zaznaczono {selectedCount}"
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {dodana seria} few {dodane serie} many {dodanych serii} other {dodanej serii}}"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "{seriesCount, plural, one {# series} other {# series}}"
@@ -1099,6 +1149,18 @@ msgstr "Wyświetlono {shownCount} z {totalSeriesShown} serii."
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, one {# seria, {shareLabel} tego widoku, {coherenceWord}} few {# serie, {shareLabel} tego widoku, {coherenceWord}} many {# serii, {shareLabel} tego widoku, {coherenceWord}} other {# serii, {shareLabel} tego widoku, {coherenceWord}}}"
 
+#: src/components/ImportReviewModal.tsx
+msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{source} {tierLabel} ({score})"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{source} {tierLabel} {medianWidth}px ({score})"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{sourceName} · priority {priority}"
@@ -1128,6 +1190,10 @@ msgstr "{speed}/s"
 #, fuzzy
 msgid "{staleChapters, plural, one {# downloaded chapter came from another source.} other {# downloaded chapters came from another source.}}"
 msgstr "{staleChapters, plural, one {# pobrany rozdział pochodzi z innego źródła.} few {# pobrane rozdziały pochodzą z innego źródła.} many {# pobranych rozdziałów pochodzi z innego źródła.} other {# pobranego rozdziału pochodzi z innego źródła.}}"
+
+#: src/api/upgrades.ts
+msgid "{start} to {end}"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -1168,6 +1234,22 @@ msgstr "{target, plural, one {# minuta} few {# minuty} many {# minut} other {# m
 #, fuzzy
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, one {# seria ukończona} few {# serie ukończone} many {# serii ukończonych} other {# serii ukończonej}}"
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "{tierLabel} · {medianWidth}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "{tierLabel} · {width}px"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{tierLabel} ({score})"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{tierLabel} {medianWidth}px ({score})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1332,6 +1414,10 @@ msgstr "{updated, plural, one {Zaktualizowano powiadomienia dla # serii} few {Za
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 msgstr "{updated, plural, one {Otagowano # serię} few {Otagowano # serie} many {Otagowano # serii} other {Otagowano # serii}}"
 
+#: src/api/upgrades.ts
+msgid "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{value, plural, one {chapter downloaded} other {chapters downloaded}}"
@@ -1376,6 +1462,10 @@ msgstr "Pasuje {visibleCount} z {totalCount} serii"
 #, fuzzy
 msgid "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
 msgstr "{volumesRead, plural, one {…plus # cały tom.} few {…plus # całe tomy.} many {…plus # całych tomów.} other {…plus # całego tomu.}}"
+
+#: src/api/upgrades.ts
+msgid "{volumesText} + {chaptersText}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1557,6 +1647,10 @@ msgstr "👍 Polubione"
 msgid "👎 Disliked"
 msgstr "👎 Odrzucone"
 
+#: src/pages/SettingsPage.tsx
+msgid "0 means no cap."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "1 (lowest) to 5 (highest)."
@@ -1622,6 +1716,14 @@ msgstr "90 dni"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "Anime ocenione na 10/10 zaczyna z wagą {topSeed}, a nieoceniona manga na Twojej półce z wagą 1,00."
 
+#: src/api/inbox.ts
+msgid "A better release replaced a downloaded chapter's file."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A candidate must beat the current file's score by at least this much."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A chapter download failed."
@@ -1652,10 +1754,22 @@ msgstr "Kilka ustawień, które pozwolą uruchomić bibliotekę. Wszystko zapisu
 msgid "A few large picks at the top, from your recent reading or what is trending."
 msgstr "Kilka większych propozycji u góry, na podstawie ostatnio czytanych serii lub obecnych trendów."
 
+#: src/pages/ActivityPage.tsx
+msgid "A file could not be moved back, nothing was changed"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "A file could not be put back after a failed upgrade and is waiting in the trash folder."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "A file move is blocked for any series with an active download."
 msgstr "Przeniesienie plików jest zablokowane dla każdej serii z aktywnym pobieraniem."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1682,10 +1796,26 @@ msgstr "Wykryto nowy problem z kondycją systemu."
 msgid "A newer Maki release was published."
 msgstr "Opublikowano nowszą wersję Maki."
 
+#: src/pages/ActivityPage.tsx
+msgid "A newer upgrade has replaced this file since"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A profile picks which release tier Maki prefers for a series, and how far it goes to replace what's already downloaded. Pin one to a series from its Quality profile menu, or set a default for every series below under Downloads."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
 msgstr "Proporcjonalne oszacowanie dla zakończonej serii, której wszystkie tomy są na dysku. Używane tylko wtedy, gdy rozdziału nie da się przypisać lepiej."
+
+#: src/api/upgrades.ts
+msgid "A proposal is already waiting for this series"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "A proposal nobody answers is dropped after this long."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1711,6 +1841,12 @@ msgstr "Osobny wiersz dla każdego mniejszego motywu w Twojej bibliotece."
 #, fuzzy
 msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
 msgstr "Rząd statystyk: zawartość biblioteki, postępy w czytaniu i to, co czeka na przeczytanie."
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "A scan is already running"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1753,6 +1889,10 @@ msgid "A token with no value for a given series renders as nothing, and the surr
 msgstr "Token bez wartości dla danej serii renderuje się jako nic, a otaczające go spacje i puste nawiasy są usuwane, więc {yearExampleToken} dla serii bez roku to po prostu jej tytuł."
 
 #: src/api/inbox.ts
+msgid "A torrent volume release could replace files in a series and is waiting for your decision."
+msgstr ""
+
+#: src/api/inbox.ts
 #, fuzzy
 msgid "A tracker list sync added or requested series."
 msgstr "Synchronizacja listy z serwisu dodała serie lub zgłosiła prośby o ich dodanie."
@@ -1761,6 +1901,10 @@ msgstr "Synchronizacja listy z serwisu dodała serie lub zgłosiła prośby o ic
 #, fuzzy
 msgid "A typical sitting runs <0>{sittingDuration}</0>."
 msgstr "Typowa sesja trwa <0>{sittingDuration}</0>."
+
+#: src/api/inbox.ts
+msgid "A volume release replaced several chapter files in a series."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -1917,6 +2061,10 @@ msgstr "Dodaj serię"
 msgid "Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
 msgstr "Dodaj serię, a Maki zacznie śledzić jej rozdziały. Ta strona zapełnia się w miarę czytania i pobierania."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Add condition"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Add connection"
@@ -2025,6 +2173,10 @@ msgstr "Dodaje przycisk do strony logowania. Lokalne hasła nadal działają, ch
 msgid "Adds and removes run in one pass over the selection."
 msgstr "Dodawanie i usuwanie odbywa się w jednym przebiegu po zaznaczeniu."
 
+#: src/api/upgrades.ts
+msgid "Adds chapters you don't have yet"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Adjusted by {editedBy}, asked for {askedFor}"
@@ -2062,6 +2214,8 @@ msgstr "Przygodowe"
 msgid "Affected chapters:"
 msgstr "Dotknięte rozdziały:"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Aggregator"
@@ -2189,10 +2343,47 @@ msgstr "cały czas"
 msgid "All time"
 msgstr "Cały czas"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Allow replacing unknown-tier files"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Allow upgrades"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Allow upgrades to {fileName}"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Allowed"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "already at cutoff"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Already checked recently"
+msgstr ""
+
+#: src/components/upgrades/TorrentProposalCard.tsx
+msgid "Already downloading"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Already meets the cutoff"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Already on your shelf, so your own reading counts instead"
 msgstr "Już na Twojej półce, więc liczy się Twoja historia czytania"
+
+#: src/api/upgrades.ts
+msgid "Already queued"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -2569,6 +2760,18 @@ msgstr "Auto (moje domyślne)"
 msgid "Auto-advance to next chapter"
 msgstr "Automatycznie przechodź do następnego rozdziału"
 
+#: src/api/upgrades.ts
+msgid "Auto-grab"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Auto-grab only when a volume adds this many chapters or fewer that you don't have."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Auto-grab size limit (MB)"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2609,6 +2812,10 @@ msgstr "Automatyczne pobieranie nie powiodło się"
 #, fuzzy
 msgid "Automatic source matching found nothing for a new series."
 msgstr "Automatyczne dopasowywanie źródeł nie znalazło niczego dla nowej serii."
+
+#: src/api/upgrades.ts
+msgid "Automatic upgrades are off, needs your call"
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
@@ -2794,6 +3001,10 @@ msgstr "W tyle (brakujące rozdziały)"
 msgid "bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up"
 msgstr "dzwonek, skrzynka odbiorcza, alerty, powiadomienie, powiadomienia w aplikacji, nowe rozdziały, osiągnięcia, awans poziomu"
 
+#: src/components/series/FileQualityBadge.tsx
+msgid "Below the series' upgrade cutoff"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "best streak"
@@ -2970,6 +3181,7 @@ msgstr "Nie można odczytać tego pobrania"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3216,10 +3428,15 @@ msgstr "R.{0}"
 msgid "Ch.{chapter}"
 msgstr "Rozdz.{chapter}"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Ch.{chapterNumber}"
 msgstr "Rozdz.{chapterNumber}"
+
+#: src/pages/ActivityPage.tsx
+msgid "Ch.{chapterNumber} - {chapterTitle}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3232,6 +3449,7 @@ msgid "Ch.{from}+"
 msgstr "Rozdz.{from}+"
 
 #: src/components/settings/AccountSection.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Change"
 msgstr "Zmień"
@@ -3322,6 +3540,10 @@ msgstr "rozdział {number}"
 msgid "Chapter {number}"
 msgstr "Rozdział {number}"
 
+#: src/api/upgrades.ts
+msgid "chapter {ranges}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter {resumeAt} is not downloaded yet"
@@ -3346,6 +3568,10 @@ msgstr "Numer rozdziału i tomu również obsługują zera wiodące: <0>{padding
 #, fuzzy
 msgid "Chapter snapshots refreshed"
 msgstr "Odświeżono migawki rozdziałów"
+
+#: src/api/inbox.ts
+msgid "Chapter upgraded"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -3384,6 +3610,10 @@ msgstr "Rozdziały od {gapFrom} do {gapTo} nie są pobrane, więc zostaną pomin
 #, fuzzy
 msgid "Chapters {range}"
 msgstr "Rozdziały {range}"
+
+#: src/api/upgrades.ts
+msgid "chapters {ranges}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -3700,6 +3930,7 @@ msgid "Code from your app"
 msgstr "Kod z Twojej aplikacji"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Collapse"
 msgstr "Zwiń"
@@ -3809,6 +4040,10 @@ msgstr "Równoczesne pobrania rozdziałów"
 #, fuzzy
 msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
 msgstr "równoczesne, procesy robocze, ponów, maksymalna liczba prób, opóźnienie, smart download, wyzwalacz nieprzeczytanych"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Conditions"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4093,6 +4328,10 @@ msgstr "Nie udało się wczytać Twojego postępu. Logi serwera wyjaśnią dlacz
 msgid "Could not load your signals: {loadError}"
 msgstr "Nie udało się wczytać Twoich sygnałów: {loadError}"
 
+#: src/api/upgrades.ts
+msgid "Could not queue the release"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
@@ -4113,10 +4352,18 @@ msgstr "Nie udało się odczytać Twojego profilu"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "Nie udało się usunąć {seriesTitle}: {reason}"
 
+#: src/pages/ActivityPage.tsx
+msgid "Could not revert this upgrade"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "Nie udało się zaktualizować opinii dla {surface}: {reason}"
+
+#: src/api/upgrades.ts
+msgid "Couldn't be measured"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4148,6 +4395,21 @@ msgstr "Nie udało się wczytać postępu czytania"
 msgid "Couldn't reach {label}."
 msgstr "Nie udało się połączyć z {label}."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Couldn't run the scan"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Couldn't start the scan"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Couldn't start the volume search"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "counts a little more than the rest"
@@ -4163,6 +4425,10 @@ msgstr "Liczy oba przełączniki: powiązanie dla serii i globalny przełącznik
 msgid "counts toward your taste"
 msgstr "wpływa na Twój gust"
 
+#: src/api/upgrades.ts
+msgid "Covers chapters Maki doesn't know about"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -4171,6 +4437,7 @@ msgstr "okładki, plakaty, grafika, miniatury, odbuduj pamięć podręczną obra
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Create"
@@ -4276,6 +4543,26 @@ msgstr "Bieżący"
 msgid "Current copy"
 msgstr "Bieżąca kopia"
 
+#: src/pages/ActivityPage.tsx
+msgid "Current file"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px, score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}, score {score}"
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -4297,10 +4584,31 @@ msgstr "Dostosuj"
 msgid "Customized"
 msgstr "Dostosowane"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Cutoff"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Cutoff unmet"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Cutoff unmet ({cutoffUnmetFilterCount})"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Cutoff: {cutoffLabel}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Daily scan hour (0-23)"
 msgstr "Godzina codziennego skanowania (0-23)"
+
+#: src/api/upgrades.ts
+msgid "Daily upgrade cap reached"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4361,6 +4669,10 @@ msgstr "Domyślna wielkość liter"
 msgid "Default cleared"
 msgstr "Usunięto ustawienie domyślne"
 
+#: src/pages/SettingsPage.tsx
+msgid "Default profile"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Default source order updated"
@@ -4398,6 +4710,7 @@ msgid "Delete {label}"
 msgstr "Usuń {label}"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Delete {name}?"
 msgstr "Usunąć {name}?"
@@ -4427,6 +4740,10 @@ msgstr "Usuń połączenie"
 msgid "Delete files from disk?"
 msgstr "Usunąć pliki z dysku?"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Delete format"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Delete from disk"
@@ -4438,6 +4755,7 @@ msgid "Delete permanently"
 msgstr "Usuń trwale"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Delete profile"
 msgstr "Usuń profil"
@@ -4501,14 +4819,10 @@ msgid "Delete user"
 msgstr "Usuń użytkownika"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "Usunięto „{name}”"
-
-#: src/components/ImportReviewModal.tsx
-#, fuzzy
-msgid "Deleted files are removed from disk and cannot be recovered from Maki."
-msgstr "Usunięte pliki są kasowane z dysku i nie można ich odzyskać z poziomu Maki."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4565,6 +4879,10 @@ msgstr "Urządzenie"
 #, fuzzy
 msgid "Devoured"
 msgstr "Pochłonięte"
+
+#: src/api/upgrades.ts
+msgid "Didn't score higher than the current file"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -4651,6 +4969,7 @@ msgid "Disk used"
 msgstr "Wykorzystany dysk"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/upgrades/TorrentProposalCard.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Dismiss"
@@ -4950,6 +5269,10 @@ msgstr "Edytuj połączenie"
 msgid "Edit Discover layout"
 msgstr "Edytuj układ Odkrywania"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Edit format"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Edit Home layout"
@@ -4967,6 +5290,7 @@ msgid "Edit metadata"
 msgstr "Edytuj metadane"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Edit profile"
 msgstr "Edytuj profil"
@@ -5051,6 +5375,7 @@ msgstr "Włącz katalog OPDS"
 #: src/components/NotificationsSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enabled"
 msgstr "Włączone"
@@ -5157,6 +5482,14 @@ msgstr "Codziennie"
 #, fuzzy
 msgid "Every enabled source is already linked."
 msgstr "Każde włączone źródło jest już połączone."
+
+#: src/api/upgrades.ts
+msgid "Every file already meets the cutoff"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Every file meets its cutoff"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5457,6 +5790,10 @@ msgstr "Pobieranie stron…"
 msgid "File"
 msgstr "Plik"
 
+#: src/pages/ActivityPage.tsx
+msgid "File name"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "File naming on import"
@@ -5479,6 +5816,10 @@ msgstr "plik na dysku, niepowiązany"
 #, fuzzy
 msgid "Files"
 msgstr "Pliki"
+
+#: src/pages/ActivityPage.tsx
+msgid "Files replaced by the automatic upgrader show up here."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -5530,11 +5871,9 @@ msgstr "Filtry"
 msgid "Filters ({appliedCount})"
 msgstr "Filtry ({appliedCount})"
 
-#. placeholder {0}: pick.label
 #: src/components/SourceCompareModal.tsx
-#, fuzzy
-msgid "Find a better copy of {0}"
-msgstr "Znajdź lepszą kopię {0}"
+msgid "Find a better copy of {pickLabel}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5729,6 +6068,18 @@ msgstr "Dla czytników takich jak Komga i Kavita, które pobierają plakat z fol
 #, fuzzy
 msgid "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
 msgstr "Do skryptów i klientów zewnętrznych. Klucz pozwala działać w Twoim imieniu przez nagłówek <0>X-Api-Key</0>. Adres kanału OPDS ustawisz na karcie OPDS."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Format created"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Format scores"
+msgstr ""
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "Format: {formatLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5947,6 +6298,7 @@ msgid "Goals"
 msgstr "Cele"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
 msgid "Grab"
 msgstr "Pobierz"
@@ -5966,6 +6318,10 @@ msgstr "Pobrano z {indexer}: {releaseName}"
 #, fuzzy
 msgid "Grid view"
 msgstr "Widok siatki"
+
+#: src/api/upgrades.ts
+msgid "Group matches (regex)"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -6022,6 +6378,10 @@ msgstr "Zawiera wszystkie"
 msgid "Has any of"
 msgstr "Zawiera dowolny z"
 
+#: src/api/upgrades.ts
+msgid "Has fewer pages than the current file"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Has none of"
@@ -6064,6 +6424,14 @@ msgstr "Sprawne"
 #, fuzzy
 msgid "Height"
 msgstr "Wysokość"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Held back before importing"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "Held back for review, {file}: {reason}"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -6139,6 +6507,10 @@ msgstr "Ukryj serie, których dotyczy problem"
 msgid "Hide everywhere on Discover"
 msgstr "Ukryj wszędzie w Odkrywaniu"
 
+#: src/pages/ActivityPage.tsx
+msgid "Hide replaced files"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Hide source names"
@@ -6168,6 +6540,10 @@ msgstr "Wyższa u czytelników podobnych do Ciebie"
 #, fuzzy
 msgid "Higher numbers are more intrusive."
 msgstr "Im wyższa liczba, tym bardziej natarczywe powiadomienie."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Highest priority first. Switch a tier off to never prefer or accept it."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6266,6 +6642,10 @@ msgstr "Jak Maki nazywa foldery serii i pobierane pliki rozdziałów. Przycisk �
 msgid "How many"
 msgstr "Ile"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "How much shorter a candidate's page count may be and still count as an upgrade."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "How much they count"
@@ -6343,6 +6723,14 @@ msgstr "Pamięć podręczna obrazów"
 msgid "Image cache and backups"
 msgstr "Pamięć podręczna obrazów i kopie zapasowe"
 
+#: src/api/upgrades.ts
+msgid "Image format is"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Image formats"
+msgstr ""
+
 #: src/nav.ts
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -6365,9 +6753,8 @@ msgid "Import entries with status"
 msgstr "Importuj wpisy o statusie"
 
 #: src/components/ImportReviewModal.tsx
-#, fuzzy
-msgid "Import everything, delete the {replacedFiles, plural, one {# file} other {# files}} it replaces"
-msgstr "Zaimportuj wszystko i usuń {replacedFiles, plural, one {# plik, który zastępuje} few {# pliki, które zastępuje} many {# plików, które zastępuje} other {# pliku, który zastępuje}}"
+msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -6556,6 +6943,10 @@ msgstr "Incognito według klasyfikacji treści"
 msgid "Incognito for {ratingLabel}"
 msgstr "Tryb incognito dla {ratingLabel}"
 
+#: src/api/upgrades.ts
+msgid "Incognito series are excluded"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Incognito, this session isn't being recorded"
@@ -6617,6 +7008,11 @@ msgstr "Indonezyjski"
 msgid "Installing metadata database"
 msgstr "Instalowanie bazy danych metadanych"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Instance default"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Integrations"
@@ -6652,6 +7048,10 @@ msgstr "Włoski"
 #, fuzzy
 msgid "Items {start}–{end}"
 msgstr "Elementy {start}–{end}"
+
+#: src/api/upgrades.ts
+msgid "Its volumes aren't mapped to your chapters yet"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -6762,6 +7162,10 @@ msgstr "Zachowaj nazwę folderu, ale pobieraj do nowego folderu w standardowym f
 msgid "Keep the name, download into it too"
 msgstr "Zachowaj nazwę i pobieraj do tego folderu"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely."
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
@@ -6793,6 +7197,10 @@ msgstr "Skróty klawiszowe (?)"
 msgid "Kind"
 msgstr "Rodzaj"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Kinds"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6808,10 +7216,18 @@ msgstr "Koreański"
 msgid "Language"
 msgstr "Język"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Language codes"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Language filter"
 msgstr "Filtr języka"
+
+#: src/api/upgrades.ts
+msgid "Language is"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6851,6 +7267,14 @@ msgstr "Duże kafelki"
 msgid "Large tiles for the first three"
 msgstr "Duże kafelki dla pierwszych trzech"
 
+#: src/pages/SettingsPage.tsx
+msgid "Larger releases become proposals you approve by hand."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Larger than the auto-grab size limit"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
@@ -6875,6 +7299,10 @@ msgstr "Ostatnie pobieranie nie powiodło się: {lastError}. Kolejne zaplanowane
 #, fuzzy
 msgid "Last error: {lastError}"
 msgstr "Ostatni błąd: {lastError}"
+
+#: src/pages/ActivityPage.tsx
+msgid "Last library scan: {lastScanText}"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -6926,10 +7354,18 @@ msgstr "Ostatnie logowanie"
 msgid "Last synced {synced}"
 msgstr "Ostatnia synchronizacja: {synced}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Last used"
 msgstr "Ostatnio użyty"
+
+#: src/pages/ActivityPage.tsx
+msgid "Last volume search: {lastVolumeSearchText}"
+msgstr ""
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -7291,6 +7727,10 @@ msgstr "Lokalna baza MangaBaka pobierze się po zakończeniu konfiguracji."
 msgid "Local MangaBaka database ready"
 msgstr "Lokalna baza MangaBaka jest gotowa"
 
+#: src/pages/SettingsPage.tsx
+msgid "Local time, 0-23."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Lockout duration (minutes)"
@@ -7310,6 +7750,10 @@ msgstr "Sprawdzanie {looked} z {total}"
 #, fuzzy
 msgid "Looking up chapters…"
 msgstr "Wyszukiwanie rozdziałów…"
+
+#: src/pages/SettingsPage.tsx
+msgid "Looks for volume packs that could replace single-chapter files when a series' profile aims for volumes. Needs Prowlarr."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7647,6 +8091,14 @@ msgstr "Maks."
 msgid "Max per run"
 msgstr "Maksymalnie na jedno uruchomienie"
 
+#: src/pages/SettingsPage.tsx
+msgid "Max probes per scan"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Max upgrades per day"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Maximum chapters"
@@ -7735,10 +8187,18 @@ msgstr "W połowie"
 msgid "Min"
 msgstr "Min."
 
+#: src/api/upgrades.ts
+msgid "Minimum bytes per page"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Minimum chapters"
 msgstr "Minimalna liczba rozdziałów"
+
+#: src/api/upgrades.ts
+msgid "Minimum pages"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7754,6 +8214,14 @@ msgstr "Minimalna ocena: ★ {minRatingDisplay}"
 #, fuzzy
 msgid "Minimum rating: any"
 msgstr "Minimalna ocena: dowolna"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Minimum score gain"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Minimum width (px)"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -7779,6 +8247,10 @@ msgstr "Brakujące"
 msgid "Missing ({missingFilterCount})"
 msgstr "Brakujące ({missingFilterCount})"
 
+#: src/pages/SettingsPage.tsx
+msgid "Missing chapters allowed per volume"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -7789,6 +8261,10 @@ msgstr "Brak na dysku"
 #, fuzzy
 msgid "Missing posters"
 msgstr "Brakujące plakaty"
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "Mixed"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -7937,6 +8413,7 @@ msgstr "Przenieś {label} wyżej"
 msgid "Move {selectedCount} series"
 msgstr "Przenieś {selectedCount} serii"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -7973,6 +8450,7 @@ msgstr "Przenieś na górę"
 msgid "Move to top of queue"
 msgstr "Przenieś na górę kolejki"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -8045,6 +8523,7 @@ msgstr "nd."
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Name"
@@ -8095,6 +8574,10 @@ msgstr "Wymaga sprawdzenia"
 msgid "Needs the local MangaBaka database"
 msgstr "Wymaga lokalnej bazy MangaBaka"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Negate"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Neutral"
@@ -8108,6 +8591,7 @@ msgstr "neutralne, zaczyna z wagą półki"
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "never"
 msgstr "nigdy"
@@ -8116,6 +8600,10 @@ msgstr "nigdy"
 #, fuzzy
 msgid "Never run."
 msgstr "Nigdy nie uruchomiono."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Never scanned for upgrades"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
@@ -8149,6 +8637,10 @@ msgstr "Nowe rozdziały pobrane automatycznie w ciągu ostatnich 30 dni."
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "Tutaj trafiają nowe rozdziały, ukończone pobrania i odblokowane osiągnięcia."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "New format"
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
@@ -8166,6 +8658,7 @@ msgid "New password"
 msgstr "Nowe hasło"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "New profile"
 msgstr "Nowy profil"
@@ -8253,6 +8746,10 @@ msgstr "Brak aktywności w okresie {windowLabel}."
 #, fuzzy
 msgid "no baseline"
 msgstr "brak danych bazowych"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No better copy found"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -8444,6 +8941,26 @@ msgstr "Brak stron"
 msgid "No pending requests"
 msgstr "Brak oczekujących próśb"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality formats defined yet. Add one below to score files by it."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality formats yet."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "No quality profile"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "No quality profile assigned yet"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality profiles yet. Series without one use whatever the instance default is set to."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No reading time recorded."
@@ -8453,6 +8970,10 @@ msgstr "Nie zarejestrowano czasu czytania."
 #, fuzzy
 msgid "No release-year data yet"
 msgstr "Brak jeszcze danych o roku wydania"
+
+#: src/api/upgrades.ts
+msgid "No releases found"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -8514,6 +9035,10 @@ msgstr "Brak połączonych źródeł. Rozdziały nie mogą być synchronizowane 
 msgid "No sources match. Clear a filter or try another name."
 msgstr "Brak pasujących źródeł. Wyczyść filtr lub wyszukaj inną nazwę."
 
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No sources to compare against."
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "No such creator"
@@ -8565,6 +9090,14 @@ msgstr "Żaden tracker nie jest połączony."
 msgid "No type data yet"
 msgstr "Brak jeszcze danych o typach"
 
+#: src/pages/ActivityPage.tsx
+msgid "No upgrades yet"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "No volume or chapter range in the title"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Nobody by that name is credited in the local MangaBaka database."
@@ -8578,6 +9111,7 @@ msgstr "brak"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "None"
 msgstr "Brak"
@@ -8616,6 +9150,14 @@ msgstr "bez {names}"
 #, fuzzy
 msgid "Not a valid creator name"
 msgstr "Nieprawidłowa nazwa twórcy"
+
+#: src/api/upgrades.ts
+msgid "Not an upgrade"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Not an upgrade: {reason}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8695,6 +9237,11 @@ msgstr "Nie wymieniono:"
 msgid "Not matched or ignored"
 msgstr "Niedopasowane lub zignorowane"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
+msgid "Not measured yet"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -8757,6 +9304,10 @@ msgstr "Notatka (opcjonalnie)"
 msgid "Nothing close enough. Try describing it differently, or use fewer words."
 msgstr "Nic wystarczająco pasującego. Spróbuj opisać to inaczej lub użyj mniej słów."
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing downloaded falls short of the quality profile assigned to it."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -8789,6 +9340,10 @@ msgstr "Nic z tej serii. Administratorzy nadal otrzymują informacje o nieudanyc
 msgid "Nothing here"
 msgstr "Nic tu nie ma"
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing here has a quality profile of its own or an instance default to fall back to, so nothing can be judged against a cutoff. Set one up in <0>Settings - Quality profiles</0>."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Nothing here is final. Every option is also in Settings."
@@ -8798,6 +9353,10 @@ msgstr "Nic nie jest ostateczne. Każdą opcję znajdziesz też w Ustawieniach."
 #, fuzzy
 msgid "Nothing imported: import lists need the local MangaBaka database."
 msgstr "Nic nie zaimportowano: listy importu wymagają lokalnej bazy danych MangaBaka."
+
+#: src/api/upgrades.ts
+msgid "Nothing in it beats what you have"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -8940,6 +9499,10 @@ msgstr "Nie ma nieukończonych serii do pokazania."
 msgid "Nothing unmatched."
 msgstr "Brak niedopasowanych wpisów."
 
+#: src/api/upgrades.ts
+msgid "Nothing worth grabbing in the results"
+msgstr ""
+
 #: src/components/NotificationBell.tsx
 #, fuzzy
 msgid "Nothing yet"
@@ -9052,6 +9615,12 @@ msgstr "Wyłączenie ukrywa sekcję Start, kartę „od zawsze” w Statystykach
 msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
 msgstr "Wyłączenie zachowuje oryginalną nazwę pliku wydania, która często zawiera więcej informacji niż sam format. Własne pobrania Maki zawsze używają ustawionego formatu, a zmiana nazwy serii na jej stronie nadal zmienia nazwy wszystkich plików w niej."
 
+#: src/pages/SettingsPage.tsx
+msgid "Off skips any series set to Scrobble-only or Full incognito; on scans them too."
+msgstr ""
+
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Official"
@@ -9117,6 +9686,10 @@ msgstr "Na półce"
 msgid "On your shelf, not used for ranking"
 msgstr "Na Twojej półce, nieużywane do rankingu"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "One missed day a week is forgiven, and today never breaks a streak."
@@ -9134,6 +9707,7 @@ msgstr "Kafelek dla każdego gatunku, który otwiera jego najpopularniejsze tytu
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
@@ -9419,6 +9993,10 @@ msgstr "Nie znaleziono strony"
 msgid "Page thumbnails"
 msgstr "Miniatury stron"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Page tolerance %"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -9658,6 +10236,10 @@ msgstr "Odtwórz Rewind"
 msgid "Play the {rewindYear} retrospective"
 msgstr "Odtwórz podsumowanie {rewindYear}"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Polish"
@@ -9772,7 +10354,12 @@ msgstr "Najlepsza pora"
 msgid "Priority"
 msgstr "Priorytet"
 
+#: src/pages/ActivityPage.tsx
+msgid "Profile"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Profile created"
 msgstr "Utworzono profil"
@@ -9798,10 +10385,48 @@ msgstr "Postęp i osiągnięcia"
 msgid "Progress tracking is switched off. Turn it back on under Settings to see levels, achievements and streaks. Nothing was lost while it was off: all of it is worked out from your reading history whenever it is asked for."
 msgstr "Śledzenie postępu jest wyłączone. Włącz je z powrotem w Ustawieniach, aby zobaczyć poziomy, osiągnięcia i serie. Nic nie zostało utracone, gdy było wyłączone: wszystko jest wyliczane na podstawie historii czytania na żądanie."
 
+#: src/api/upgrades.ts
+msgid "Proposal"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Proposal created"
+msgstr ""
+
+#: src/components/upgrades/TorrentProposalCard.tsx
+msgid "Proposal dismissed"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Proposal expiry (days)"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Protect {fileName} from upgrades"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Protect from upgrades"
+msgstr ""
+
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
+msgid "Protected from upgrades"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Prowlarr"
 msgstr "Prowlarr"
+
+#: src/api/upgrades.ts
+msgid "Prowlarr isn't configured"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Prowlarr search failed"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -9868,6 +10493,42 @@ msgstr "Umieszcza te źródła, w tej kolejności, na początku globalnej listy 
 msgid "qBittorrent"
 msgstr "qBittorrent"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "Quality"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "quality format, condition, high resolution, format score, regex, group matches, release name matches, image format, minimum width"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Quality formats"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Quality profile"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Quality profile: {profileName}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Quality profile: Instance default"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Quality profiles"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Queue"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Queue downloads and grab torrent releases"
@@ -9890,10 +10551,26 @@ msgstr "Dodano do kolejki {chapterLbl}"
 msgid "Queued {outstanding}"
 msgstr "W kolejce {outstanding}"
 
+#: src/api/upgrades.ts
+msgid "Queued a volume release"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
 msgstr "Tutaj pojawiają się rozdziały w kolejce i pobierane. Uruchom wyszukiwanie ze strony serii lub biblioteki."
+
+#: src/api/upgrades.ts
+msgid "Queued for download"
+msgstr ""
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "Queued upgrade from {winnerSource}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Quiet period (days)"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -9925,6 +10602,10 @@ msgstr "Sekcja została zapisana"
 #, fuzzy
 msgid "Raise or lower their own maximum rating"
 msgstr "Podnoś lub obniżaj własną maksymalną klasyfikację"
+
+#: src/api/upgrades.ts
+msgid "Ran out of probes for this run"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -10232,6 +10913,10 @@ msgstr "Najnowsze opinie"
 msgid "Recent syncs"
 msgstr "Ostatnie synchronizacje"
 
+#: src/pages/ActivityPage.tsx
+msgid "Recent upgrades"
+msgstr ""
+
 #: src/api/customRails.ts
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -10370,6 +11055,10 @@ msgstr "Wygeneruj ponownie"
 msgid "Regenerate OPDS token"
 msgstr "Wygeneruj ponownie token OPDS"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Regex"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Reject"
@@ -10384,6 +11073,10 @@ msgstr "Odrzuć prośbę"
 #, fuzzy
 msgid "Rejected"
 msgstr "Odrzucono"
+
+#: src/api/upgrades.ts
+msgid "Rejected after downloading the full chapter"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -10412,10 +11105,18 @@ msgstr "Powiązane z Twoją biblioteką"
 msgid "Related to your seeds"
 msgstr "Powiązane z Twoimi tytułami bazowymi"
 
+#: src/api/upgrades.ts
+msgid "Release name matches (regex)"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Release notes"
 msgstr "Informacje o wydaniu"
+
+#: src/api/upgrades.ts
+msgid "Release number may be a sequel, not a chapter"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -10472,6 +11173,10 @@ msgstr "Usuń archiwum"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "Usuń zakładkę"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Remove condition"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -10568,6 +11273,10 @@ msgstr "Usunięte"
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "Usunięto {seriesTitle}. Pojawi się ponownie, gdy znów zaczniesz ją czytać."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Removed from every profile that scores it. This can't be undone."
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Removed from recommendations. Only this title: its genres and author are unaffected."
@@ -10648,6 +11357,18 @@ msgstr "Napraw"
 #, fuzzy
 msgid "Repairs"
 msgstr "Naprawy"
+
+#: src/pages/ActivityPage.tsx
+msgid "Replace"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10739,6 +11460,10 @@ msgstr "Wymagaj HTTPS"
 #, fuzzy
 msgid "Require single sign-on"
 msgstr "Wymagaj logowania jednokrotnego"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Required"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/sourceLabels.ts
@@ -10917,6 +11642,18 @@ msgid "Reusing the name of the active preset overwrites it."
 msgstr "Ponowne użycie nazwy aktywnego presetu nadpisze go."
 
 #: src/pages/ActivityPage.tsx
+msgid "Revert this upgrade"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Reverted"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Reverted by a user"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -11058,6 +11795,10 @@ msgstr "Uruchom przewodnik konfiguracji"
 msgid "Running"
 msgstr "W trakcie"
 
+#: src/pages/SettingsPage.tsx
+msgid "Runs the daily scan and lets a series-level scan enqueue upgrades too."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -11085,6 +11826,7 @@ msgstr "Przykładowy rozdział"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -11166,6 +11908,7 @@ msgstr "Zapisz kody odzyskiwania"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/SettingsPage.tsx
@@ -11210,15 +11953,42 @@ msgstr "Skala ({scale}%)"
 msgid "Scan"
 msgstr "Skanuj"
 
+#: src/pages/SettingsPage.tsx
+msgid "Scan after hour"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Scan files"
 msgstr "Skanuj pliki"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scan for upgrades"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Scan incognito series"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Scan now"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Scan root folders and adopt existing series"
 msgstr "Skanuj foldery główne i przejmuj istniejące serie"
+
+#: src/pages/ActivityPage.tsx
+msgid "Scan running…"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Scan started"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -11231,6 +12001,8 @@ msgstr "Zeskanuj to aplikacją uwierzytelniającą lub wpisz klucz ręcznie, a n
 msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
 msgstr "skanuj, klucz api, mapowanie ścieżek, okładki, serwer biblioteki, przypisz czytanie, użytkownik kavita, właściciel postępu"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Scanlator"
@@ -11286,6 +12058,22 @@ msgstr "Scope"
 #, fuzzy
 msgid "Scopes"
 msgstr "Zakresy"
+
+#: src/pages/ActivityPage.tsx
+msgid "Score"
+msgstr ""
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Score {score}"
+msgstr ""
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "Score: {score}"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -11476,6 +12264,18 @@ msgstr "Przeszukaj ponownie pozostałe źródła w poszukiwaniu tego tytułu. Ju
 #, fuzzy
 msgid "Search titles"
 msgstr "Szukaj tytułów"
+
+#: src/pages/SettingsPage.tsx
+msgid "Search torrents for volume releases"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Search volume releases"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Search volumes now"
+msgstr ""
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
@@ -11673,6 +12473,7 @@ msgid "Send silently"
 msgstr "Wysyłaj bez dźwięku"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
 msgid "Sent to qBittorrent: {title}"
 msgstr "Wysłano do qBittorrent: {title}"
@@ -11744,6 +12545,7 @@ msgstr "Metadane serii pochodzą z MangaBaka. Lokalna baza przechowuje nocną ko
 msgid "Series moved"
 msgstr "Seria przeniesiona"
 
+#: src/api/upgrades.ts
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series not found"
@@ -11754,6 +12556,10 @@ msgstr "Nie znaleziono serii"
 #, fuzzy
 msgid "Series page"
 msgstr "Strona serii"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Series pinned to this profile fall back to the instance default. This can't be undone."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11902,6 +12708,10 @@ msgstr "Udział przeczytanych rozdziałów minus ich udział w bibliotece. Po pr
 msgid "Share of the series you've read."
 msgstr "Udział przeczytanej części serii."
 
+#: src/api/upgrades.ts
+msgid "Shares a file with another chapter"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Shift + Space"
@@ -11989,6 +12799,10 @@ msgstr "Pokaż zaliczone"
 #, fuzzy
 msgid "Show reading streaks"
 msgstr "Pokazuj serie czytania"
+
+#: src/pages/ActivityPage.tsx
+msgid "Show replaced files"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -12173,6 +12987,10 @@ msgstr "Niezgodny rozmiar"
 msgid "Skip {latestVersion}"
 msgstr "Pomiń {latestVersion}"
 
+#: src/pages/SettingsPage.tsx
+msgid "Skip a chapter this long after it was added or last upgraded."
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -12187,6 +13005,10 @@ msgstr "Pomiń konfigurację"
 #, fuzzy
 msgid "Skip specials on new series"
 msgstr "Pomijaj rozdziały specjalne w nowych seriach"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Skip this file"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -12291,6 +13113,14 @@ msgstr "Źródło"
 msgid "Source {letter}"
 msgstr "Źródło {letter}"
 
+#: src/api/upgrades.ts
+msgid "Source is"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Source kind is"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Source matching finished"
@@ -12316,6 +13146,7 @@ msgstr "Źródło usunięte bez czyszczenia"
 msgid "Source state"
 msgstr "Stan źródła"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
@@ -12812,6 +13643,14 @@ msgstr "Ten rozdział już nie istnieje"
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "Tak się dzieje w przypadku wydań zbiorczych i nazw, których dopasowywanie nie potrafi odczytać. Najpierw spróbuj opcji „Ponownie powiąż pliki”, która odczytuje każdy tom, aby znaleźć zawarte w nim rozdziały. Użyj przycisku powiązania w wierszu dla elementów, których nie uda się przypisać."
 
+#: src/api/upgrades.ts
+msgid "That source is rate-limited right now"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "That source's tier isn't allowed by the profile"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "That was your {label}"
@@ -12872,6 +13711,10 @@ msgstr "Numery rozdziałów znajdują się w nazwach plików stron archiwum. To 
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "Obecny adres kanału przestanie działać od razu. Każda aplikacja, która go używa, będzie potrzebować nowego."
 
+#: src/components/SourceCompareModal.tsx
+msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
@@ -12886,6 +13729,10 @@ msgstr "Nazwa pliku wskazuje jego rozdział."
 #, fuzzy
 msgid "The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to the library's naming format and rescan, or link it by hand from the series' Files tab."
 msgstr "Nazwa pliku nie zawiera numeru rozdziału ani tomu, więc nic nie można do niej dopasować. Zmień jej nazwę na format nazewnictwa biblioteki i przeskanuj ponownie albo połącz ją ręcznie z karty Pliki serii."
+
+#: src/api/queue.ts
+msgid "The file this upgrade was meant to replace is gone"
+msgstr ""
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -12963,6 +13810,10 @@ msgstr "Najnowsze tytuły od twórców i studiów, które obserwujesz. Puste, do
 msgid "The odd one out"
 msgstr "To, co odstaje"
 
+#: src/api/queue.ts
+msgid "The old file could not be moved aside for the upgrade"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "The profile and its reader settings are removed. This can't be undone."
@@ -12992,6 +13843,10 @@ msgstr "Ten sam rozdział tak, jak zeskanowało go każde źródło, od najwięk
 #, fuzzy
 msgid "The same counts the Stats page shows, kept here so the groups above have something to sit against."
 msgstr "Te same liczby, które pokazuje strona Statystyki, zachowane tutaj, aby grupy powyżej miały punkt odniesienia."
+
+#: src/api/upgrades.ts
+msgid "The sample download failed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13028,6 +13883,10 @@ msgstr "Konkretne rzeczy, które wciąż powracają w Twojej bibliotece, każda 
 msgid "The starting point for every series. Any series can be set to something else from its own page, or for a whole selection at once from the Library's Select mode."
 msgstr "Punkt wyjścia dla każdej serii. Dla dowolnej serii można to zmienić na jej własnej stronie lub dla całej grupy naraz w trybie zaznaczania Biblioteki."
 
+#: src/api/upgrades.ts
+msgid "The title might be a different series"
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "The titles climbing fastest in popularity right now."
@@ -13047,6 +13906,14 @@ msgstr "Torrent kontynuuje seedowanie niezależnie od wyboru."
 #, fuzzy
 msgid "The torrent never appeared in qBittorrent"
 msgstr "Torrent nigdy nie pojawił się w qBittorrent"
+
+#: src/pages/ActivityPage.tsx
+msgid "The trashed copy is gone"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "The trashed copy of this file is gone"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -13146,6 +14013,10 @@ msgstr "Kopie tego rozdziału z poszczególnych źródeł, zaczynając od najwi�
 msgid "This chapter has no readable file."
 msgstr "Ten rozdział nie ma czytelnego pliku."
 
+#: src/api/upgrades.ts
+msgid "This chapter was added or upgraded too recently"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
@@ -13232,6 +14103,22 @@ msgstr "Zastąpi obecną bibliotekę i ustawienia zawartością <0>{backupName}<
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
 msgstr "Ta seria nie ma jeszcze rozdziałów. Najpierw dodaj mapowanie źródła, aby Maki wiedziało, co powiązać."
 
+#: src/api/upgrades.ts
+msgid "This series has no quality profile"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "This series isn't eligible for a volume search"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "This series was searched in the last week"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "This series' profile doesn't aim for volume releases"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
@@ -13251,6 +14138,10 @@ msgstr "Zajmuje to minutę lub dwie i zdarza się tylko raz na migawkę."
 #, fuzzy
 msgid "this title only"
 msgstr "tylko ten tytuł"
+
+#: src/pages/ActivityPage.tsx
+msgid "This upgrade was already reverted"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -13327,6 +14218,10 @@ msgstr "Zaznacz każdy rozdział zawarty w tym pliku. Wydanie zbiorcze lub kompi
 msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
 msgstr "Zaznacza je od razu, gdy pojawi się lista rozdziałów. Obejrzane rozdziały nie liczą się do statystyk czytania."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Tier order"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -13396,6 +14291,10 @@ msgstr "tylko dopasowanie po tytule, zbuduj indeks rekomendacji, aby wyszukiwać
 #, fuzzy
 msgid "Title search"
 msgstr "Wyszukiwanie po tytule"
+
+#: src/api/upgrades.ts
+msgid "Title uncertain"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -13560,6 +14459,14 @@ msgstr "Tragedia"
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "Tłumaczenia inne niż angielskie są tworzone maszynowo i z czasem poprawiane; wszystko, co wciąż nieprzetłumaczone, wyświetla się po angielsku."
 
+#: src/pages/SettingsPage.tsx
+msgid "Trash retention (days)"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Trash: {trashSize} across {trashFilesText}"
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Trending now"
@@ -13669,6 +14576,7 @@ msgstr "Kod uwierzytelniania dwuskładnikowego"
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13750,6 +14658,8 @@ msgstr "Przestań obserwować"
 msgid "Unfollow {name}"
 msgstr "Przestań obserwować: {name}"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/stats/labels.ts
@@ -13855,6 +14765,10 @@ msgstr "nieokreślone"
 msgid "Unspecified"
 msgstr "Nie określono"
 
+#: src/api/upgrades.ts
+msgid "Unsupported file type"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Until it is built, the badges compare against your own library only."
@@ -13927,6 +14841,60 @@ msgstr "Aktualizacje"
 msgid "Updating ComicInfo"
 msgstr "Aktualizowanie ComicInfo"
 
+#: src/components/ReleaseSearchModal.tsx
+#: src/components/SourceCompareModal.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Upgrade"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Upgrade now"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Upgrade restore failed"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrade until score"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade, quality profile, default profile, automatic upgrades"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "Upgrades"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Upgrades are off for this profile"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Upgrades are turned off in this series' profile"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades enabled"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades off"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades on"
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Upload failed: {status}"
@@ -13994,6 +14962,10 @@ msgstr "Użyj tego, aby wyczyścić rozdziały wprowadzone przez błędne dopaso
 #, fuzzy
 msgid "Use trackers"
 msgstr "Korzystaj z trackerów"
+
+#: src/pages/SettingsPage.tsx
+msgid "Used by any series that hasn't been pinned to a profile of its own."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -14084,6 +15056,10 @@ msgstr "UTC"
 #, fuzzy
 msgid "Validating"
 msgstr "Walidacja"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Value"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -14201,6 +15177,11 @@ msgstr "T.{volNum} Rozdz.{chapterNumber}"
 msgid "Vol.{volume} Ch.{chapter}"
 msgstr "T.{volume} Rozdz.{chapter}"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
+msgid "Volume"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "volume {number}"
@@ -14210,6 +15191,35 @@ msgstr "tom {number}"
 #, fuzzy
 msgid "Volume {number}"
 msgstr "Tom {number}"
+
+#: src/api/upgrades.ts
+msgid "Volume {range}"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Volume release proposed"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Volume releases waiting for you"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Volume search is turned off"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Volume search started"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Volume searches per run"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Volume upgraded"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -14228,6 +15238,10 @@ msgstr "tomy {number}-{volumeEnd}"
 #, fuzzy
 msgid "Volumes {number}-{volumeEnd}"
 msgstr "Tomy {number}-{volumeEnd}"
+
+#: src/api/upgrades.ts
+msgid "Volumes {range}"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -14404,6 +15418,7 @@ msgstr "Przeczytane przez Ciebie"
 msgid "What's new in v{version}"
 msgstr "Co nowego w wersji {version}"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "When"
@@ -14418,6 +15433,10 @@ msgstr "Jeśli odświeżenie znajdzie dla serii więcej nowych rozdziałów niż
 #, fuzzy
 msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
 msgstr "Podczas importu istniejącej serii z dysku zmień nazwę folderu zgodnie z formatem folderu serii albo pozostaw ją bez zmian."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -14465,6 +15484,10 @@ msgid "Where your taste has moved"
 msgstr "Jak zmienił się Twój gust"
 
 #: src/pages/SettingsPage.tsx
+msgid "Whether an existing file should be replaced once a better release shows up, judged against a series' quality profile. The daily scan runs after the chosen hour and only replaces files a profile actually marks as upgradable."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "W jakim języku są wyświetlane tytuły serii, tam gdzie dostawca metadanych go posiada. Tylko do wyświetlania: foldery i nazwy plików zachowują angielski tytuł, tak samo jak sortowanie."
@@ -14505,10 +15528,18 @@ msgstr "Całe uniwersum"
 msgid "Whole library"
 msgstr "Cała biblioteka"
 
+#: src/api/upgrades.ts
+msgid "Whole series"
+msgstr ""
+
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
 msgid "Whole year"
 msgstr "Cały rok"
+
+#: src/api/upgrades.ts
+msgid "Whole-series pack, needs your call"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

@@ -26,6 +26,9 @@ public enum DownloadOrigin
     RequestApproval = 4,
     HealthRepair = 5,
 
+    /// <summary>Queued by the upgrade scan to replace an existing file with a better copy.</summary>
+    Upgrade = 6,
+
     // No "Retry" member: retrying reuses the original row rather than enqueueing a new one, so a
     // retried automatic download keeps its origin and still reports when it finally succeeds.
 }
@@ -128,7 +131,11 @@ public class DownloadQueueItem
 
     /// <summary>Whether an inbox notification is warranted when this item settles.</summary>
     public bool IsAutomatic => Origin is
-        DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval;
+        DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval or
+        DownloadOrigin.Upgrade;
+
+    /// <summary>Serialised <c>UpgradeInfo</c> for <see cref="DownloadOrigin.Upgrade"/> rows; null otherwise.</summary>
+    public string? UpgradeInfoJson { get; set; }
 
     /// <summary>
     /// Record why this item stopped, as a catalogue key plus the values its placeholders need.

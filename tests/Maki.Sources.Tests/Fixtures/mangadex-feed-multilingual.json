@@ -14,7 +14,10 @@
         "isUnavailable": false,
         "pages": 52,
         "publishAt": "2018-01-01T00:00:00+00:00"
-      }
+      },
+      "relationships": [
+        { "id": "aaaaaaaa-0000-0000-0000-000000000001", "type": "scanlation_group", "attributes": { "name": "Scanlation Corp" } }
+      ]
     },
     {
       "id": "22222222-2222-2222-2222-222222222222",
@@ -28,7 +31,11 @@
         "isUnavailable": false,
         "pages": 52,
         "publishAt": "2018-02-01T00:00:00+00:00"
-      }
+      },
+      "relationships": [
+        { "id": "aaaaaaaa-0000-0000-0000-000000000002", "type": "scanlation_group", "attributes": { "name": "Grupo A" } },
+        { "id": "aaaaaaaa-0000-0000-0000-000000000003", "type": "scanlation_group", "attributes": { "name": "Grupo B" } }
+      ]
     },
     {
       "id": "33333333-3333-3333-3333-333333333333",
@@ -42,7 +49,8 @@
         "isUnavailable": false,
         "pages": 20,
         "publishAt": "2018-01-02T00:00:00+00:00"
-      }
+      },
+      "relationships": []
     }
   ],
   "limit": 500,

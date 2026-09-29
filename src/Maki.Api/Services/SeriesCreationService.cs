@@ -116,10 +116,13 @@ public class SeriesCreationService(
         int? attributedUserId = null,
         string? addedFrom = null,
         Guid? clientMutationId = null,
-        SeriesRequest? originatingRequest = null)
+        SeriesRequest? originatingRequest = null,
+        int? upgradeProfileId = null)
     {
+        // The profile joins the hash only when set, so a receipt written before the field existed still matches its retry.
         var payloadHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-            $"{metadataProviderId}|{rootFolderId}|{monitored}|{monitorNewItems}|{incognito}|{addedFrom}")));
+            $"{metadataProviderId}|{rootFolderId}|{monitored}|{monitorNewItems}|{incognito}|{addedFrom}" +
+            (upgradeProfileId is { } profileId ? $"|{profileId}" : ""))));
         if (clientMutationId is { } priorId && attributedUserId is > 0)
         {
             var prior = await db.RecommendationMutationReceipts.IgnoreQueryFilters()
@@ -182,6 +185,7 @@ public class SeriesCreationService(
                     await appSettings.GetAsync(SettingKeys.LibraryIncognitoByRating, ct)),
                 series.ContentRating);
         series.RootFolderId = rootFolder.Id;
+        series.UpgradeProfileId = upgradeProfileId;
         series.FolderName = await naming.BuildSeriesFolderNameAsync(series, ct);
         series.SourceMatchPending = deferSourceMatching;
 

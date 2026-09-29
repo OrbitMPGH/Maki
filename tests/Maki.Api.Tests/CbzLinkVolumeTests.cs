@@ -42,6 +42,7 @@ public class CbzLinkVolumeTests : IDisposable
             new StatsEventService(db),
             new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             new SourceAvailability(_settings, registry),
+            TestQuality.Create(registry),
             NullLogger<CbzLinkService>.Instance);
     }
 

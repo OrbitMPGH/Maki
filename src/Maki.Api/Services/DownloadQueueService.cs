@@ -297,13 +297,19 @@ public class DownloadQueueService(
     /// returned unchanged instead.
     /// </para>
     /// </param>
+    /// <param name="replaceInfo">
+    /// The chapter's existing file is to be replaced through the upgrade gate rather than overwritten.
+    /// Stored on the new row, and on an existing row the pin is applied to.
+    /// </param>
     public async Task<DownloadQueueItem?> EnqueueChapterAsync(
         int chapterId,
         CancellationToken ct = default,
         DownloadOrigin origin = DownloadOrigin.Unknown,
         int? queuedByUserId = null,
-        int? preferMappingId = null)
+        int? preferMappingId = null,
+        Maki.Core.Quality.UpgradeInfo? replaceInfo = null)
     {
+        var replaceJson = replaceInfo?.Serialize();
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
@@ -336,7 +342,8 @@ public class DownloadQueueService(
             SortOrder = await NextSortOrderAsync(db, ct),
             Origin = origin,
             QueuedByUserId = queuedByUserId,
-            PreferredMappingId = preferMappingId
+            PreferredMappingId = preferMappingId,
+            UpgradeInfoJson = replaceJson
         };
         db.DownloadQueue.Add(item);
         try
@@ -372,7 +379,10 @@ public class DownloadQueueService(
             // Conditional, because a worker can claim the row between the read above and this write,
             // and a plain save would drag an active download back to Resolving. Already fetching or
             // downloading means the pin is not applied: the caller sees the row's own
-            // PreferredMappingId still differs from what it asked for.
+            // PreferredMappingId still differs from what it asked for. A replacement also makes the row the
+            // caller's own, so an automatic upgrade the user overrides stops being automatic.
+            var replacing = replaceJson is not null;
+            var replaced = replacing ? Maki.Core.Quality.UpgradeInfo.Parse(active.UpgradeInfoJson) : null;
             var repinned = await db.DownloadQueue
                 .Where(q => q.Id == active.Id &&
                             (q.Status == QueueStatus.Resolving || q.Status == QueueStatus.Queued ||
@@ -384,8 +394,18 @@ public class DownloadQueueService(
                     .SetProperty(q => q.Status, QueueStatus.Resolving)
                     .SetProperty(q => q.ErrorKey, (string?)null)
                     .SetProperty(q => q.ErrorParamsJson, (string?)null)
-                    .SetProperty(q => q.ErrorMessage, (string?)null), ct);
+                    .SetProperty(q => q.ErrorMessage, (string?)null)
+                    .SetProperty(q => q.UpgradeInfoJson, q => replaceJson ?? q.UpgradeInfoJson)
+                    .SetProperty(q => q.Origin, q => replacing ? origin : q.Origin)
+                    .SetProperty(q => q.QueuedByUserId, q => replacing ? queuedByUserId : q.QueuedByUserId), ct);
             await db.Entry(active).ReloadAsync(ct);
+
+            // The scan's `enqueued` memo would otherwise keep that candidate closed after the user
+            // dropped it for another source.
+            if (repinned > 0 && replaced is { Force: false, AttemptId: > 0 } automatic)
+            {
+                await db.UpgradeAttempts.Where(a => a.Id == automatic.AttemptId).ExecuteDeleteAsync(ct);
+            }
 
             if (repinned > 0)
             {
@@ -394,6 +414,58 @@ public class DownloadQueueService(
             }
             return active;
         }
+    }
+
+    /// <summary>
+    /// Queues a replacement for a chapter's existing file, pinned to the mapping and source chapter the
+    /// upgrade scan probed. Unlike <see cref="EnqueueChapterAsync"/> it never touches an existing row:
+    /// null when the chapter has any live queue row, no longer has the file the scan judged, or its
+    /// series is under a health review. Sorted after everything already queued, so an upgrade never
+    /// jumps ahead of a missing chapter.
+    /// </summary>
+    public async Task<DownloadQueueItem?> EnqueueUpgradeAsync(int chapterId, int mappingId, string sourceChapterId,
+        Maki.Core.Quality.UpgradeInfo info, int? queuedByUserId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+
+        var chapter = await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == chapterId, ct);
+        if (chapter?.ChapterFileId is not { } fileId || fileId != info.ChapterFileId)
+        {
+            return null;
+        }
+
+        if (await db.DownloadQueue.AnyAsync(q => q.ChapterId == chapterId &&
+                q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct))
+        {
+            return null;
+        }
+
+        if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
+            && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
+        {
+            return null;
+        }
+
+        var item = new DownloadQueueItem
+        {
+            SeriesId = chapter.SeriesId,
+            ChapterId = chapterId,
+            Protocol = AcquisitionProtocol.Scraper,
+            Status = QueueStatus.Queued,
+            QueuedAt = time.GetUtcNow().UtcDateTime,
+            SortOrder = await NextSortOrderAsync(db, ct),
+            Origin = DownloadOrigin.Upgrade,
+            QueuedByUserId = queuedByUserId,
+            SourceMappingId = mappingId,
+            PreferredMappingId = mappingId,
+            SourceChapterId = sourceChapterId,
+            UpgradeInfoJson = info.Serialize()
+        };
+        db.DownloadQueue.Add(item);
+        await db.SaveChangesAsync(ct);
+        await SignalAsync(item.Id, ct);
+        return item;
     }
 
     /// <summary>
@@ -898,6 +970,9 @@ public class DownloadQueueService(
         return time.GetUtcNow().UtcDateTime.AddSeconds(seconds);
     }
 
+    /// <summary>Failures no retry can change, which <see cref="RequeueEligibleFailuresAsync"/> never picks up.</summary>
+    public static readonly string[] PermanentErrorKeys = ["error.download.upgradeTargetGone"];
+
     /// <summary>
     /// Re-queues Failed scraper items whose backoff has elapsed and whose attempt count is still
     /// under <paramref name="maxAttempts"/>. Torrent items are excluded — they're tracked
@@ -919,6 +994,7 @@ public class DownloadQueueService(
                         q.Status == QueueStatus.Failed &&
                         q.HealthOperationId == null &&
                         q.RetryCount < maxAttempts &&
+                        (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
                         (q.NextAttempt == null || q.NextAttempt <= now) &&
                         (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)))
             .ToListAsync(ct);

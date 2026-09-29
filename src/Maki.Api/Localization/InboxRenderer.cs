@@ -78,6 +78,16 @@ public sealed class InboxRenderer(ILocalizer localizer)
             args["detail"] = localizer.GetFor(locale, detailKey, detailArgs);
         }
 
+        // A size is stored as bytes and worded here, in the reader's number format.
+        if (args.TryGetValue("sizeBytes", out var sizeBytes) && sizeBytes is long or double)
+        {
+            var bytes = Convert.ToDouble(sizeBytes, System.Globalization.CultureInfo.InvariantCulture);
+            var gigabytes = bytes >= 1024d * 1024 * 1024;
+            var value = gigabytes ? bytes / (1024d * 1024 * 1024) : bytes / (1024d * 1024);
+            args["size"] = localizer.GetFor(locale, gigabytes ? "inbox.size.gigabytes" : "inbox.size.megabytes",
+                new Dictionary<string, object?> { ["value"] = value.ToString(gigabytes ? "0.0" : "0", Culture(locale)) });
+        }
+
         var title = localizer.GetFor(locale, $"{messageKey}.title", args);
         var body = localizer.GetFor(locale, $"{messageKey}.body", args);
 
@@ -89,6 +99,18 @@ public sealed class InboxRenderer(ILocalizer localizer)
         }
 
         return (title, body);
+    }
+
+    private static System.Globalization.CultureInfo Culture(string locale)
+    {
+        try
+        {
+            return System.Globalization.CultureInfo.GetCultureInfo(locale);
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture;
+        }
     }
 
     private static Dictionary<string, object?> Parse(string? json)

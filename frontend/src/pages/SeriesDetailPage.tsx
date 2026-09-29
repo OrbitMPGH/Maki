@@ -15,6 +15,7 @@ import {
   Checkbox,
   Divider,
   Group,
+  Loader,
   Menu,
   NumberInput,
   Modal,
@@ -54,6 +55,9 @@ import {
   IconDotsVertical,
   IconPhotoSearch,
   IconEyeOff,
+  IconLock,
+  IconLockOpen,
+  IconSparkles,
   IconSortAscendingNumbers,
   IconSortDescendingNumbers,
 } from '@tabler/icons-react'
@@ -80,6 +84,7 @@ import {
   useSetIncognito,
   useSetSeriesNotificationMode,
   useSetMonitorMode,
+  useSetUpgradeProfile,
   useSetRating,
   useToggleChapterWanted,
   useUnlinkChapters,
@@ -100,6 +105,18 @@ import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from
 import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
+import {
+  isVolumeSearchStarted,
+  volumeSearchResultText,
+  useRunUpgradeScan,
+  useSetFileTrusted,
+  useTorrentProposals,
+  useUpgradeChapterNow,
+  useUpgradeProfiles,
+  useVolumeSearch,
+} from '../api/upgrades'
+import type { UpgradeScanResultDto } from '../api/upgrades'
+import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { queueErrorMessage } from '../api/queue'
 import { useLabel } from '../i18n-context'
@@ -112,10 +129,13 @@ import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { TagBuckets } from '../components/TagBuckets'
 import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
+import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
+import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
+import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
@@ -159,7 +179,16 @@ const CHAPTER_PAGE_SIZES = ['10', '25', '50', '75', '100', 'all'] as const
 type ChapterPageSize = (typeof CHAPTER_PAGE_SIZES)[number]
 
 const CHAPTER_FILTER_STORAGE_KEY = 'series-chapter-filter'
-const CHAPTER_FILTERS = ['all', 'wanted', 'missing', 'downloaded', 'unread', 'main', 'specials'] as const
+const CHAPTER_FILTERS = [
+  'all',
+  'wanted',
+  'missing',
+  'downloaded',
+  'unread',
+  'main',
+  'specials',
+  'cutoffUnmet',
+] as const
 type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 
 const CHAPTER_SORT_STORAGE_KEY = 'series-chapter-sort'
@@ -229,6 +258,8 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   specials: isSpecial,
   // A one-shot has no number and counts as main, matching NewChapterMonitorMode.MainOnly.
   main: (c) => !isSpecial(c),
+  // Matches `/upgrades/cutoff-unmet`, which excludes trusted files even when their cutoff isn't met.
+  cutoffUnmet: (c) => c.fileQuality?.cutoffMet === false && !c.fileQuality?.trusted,
 }
 
 interface ReadState {
@@ -402,6 +433,14 @@ export default function SeriesDetailPage() {
   const [nextCountOpen, setNextCountOpen] = useState(false)
   const [nextCount, setNextCount] = useState<number | string>(10)
   const setMonitorMode = useSetMonitorMode()
+  const setUpgradeProfile = useSetUpgradeProfile()
+  const { data: upgradeProfiles } = useUpgradeProfiles()
+  const setFileTrusted = useSetFileTrusted()
+  const upgradeChapterNow = useUpgradeChapterNow()
+  const runUpgradeScan = useRunUpgradeScan()
+  const runVolumeSearch = useVolumeSearch()
+  const [upgradeNowResult, setUpgradeNowResult] = useState<UpgradeScanResultDto | null>(null)
+  const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
   const setRating = useSetRating()
@@ -409,6 +448,13 @@ export default function SeriesDetailPage() {
   const setChaptersWanted = useSetChaptersWanted()
   const deleteChapters = useDeleteChapters()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
+  // A series with no upgrade profile (own or default) never gets a cutoffMet verdict at all, so the
+  // "Cutoff unmet" chip disappears rather than sitting at "(0)" forever. The effective filter below
+  // falls back to All when the chip is hidden, so a remembered or active cutoffUnmet never leaves
+  // the table stuck on a filter with no chip showing it.
+  const cutoffUnmetChipVisible =
+      (chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0) > 0 ||
+      (chapters?.some((c) => c.fileQuality?.cutoffMet != null) ?? false)
   // Remembered across series, so someone who never wants specials picks Main once rather than on
   // every series they open.
   const [chapterFilterPreference, setChapterFilterPreference] = useState<ChapterFilter>(() =>
@@ -452,6 +498,9 @@ export default function SeriesDetailPage() {
   const { can } = useAuth()
   const canDownload = can('DownloadChapters')
   const canLinkFiles = can('EditMetadata')
+  const pendingProposalId = series?.pendingProposalId ?? null
+  const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
+  const pendingProposal = seriesProposals?.find((p) => p.id === pendingProposalId) ?? null
   const createRequest = useCreateSeriesRequest()
   // Already in cache: the sources section below this page fetches the same query. Two enabled
   // mappings is the floor for "find better copy" having anything to show.
@@ -508,6 +557,7 @@ export default function SeriesDetailPage() {
   const chapterFilter: ChapterFilter =
       (chapterFilterPreference === 'main' && !hasSpecials) ||
       (chapterFilterPreference === 'unread' && !canFilterUnread) ||
+      (chapterFilterPreference === 'cutoffUnmet' && !cutoffUnmetChipVisible) ||
       rememberedFilterMatchesNothing
           ? 'all'
           : chapterFilterPreference
@@ -1220,7 +1270,35 @@ export default function SeriesDetailPage() {
   const notify = {
     ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
     info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
+    err: (message: string) => notifications.show({ message, color: 'var(--danger)' }),
   }
+
+  const scanSeriesForUpgrades = () =>
+    runUpgradeScan.mutate(seriesId, {
+      onSuccess: () => {
+        notify.ok(staticT`Scan started`)
+      },
+      onError: (error) => {
+        notify.err(
+            error instanceof ApiError && error.status === 409
+                ? staticT`A scan is already running`
+                : staticT`Couldn't start the scan`,
+        )
+      },
+    })
+  const searchSeriesVolumes = () =>
+    runVolumeSearch.mutate(seriesId, {
+      onSuccess: (result) => {
+        notify.ok(isVolumeSearchStarted(result) ? staticT`Volume search started` : volumeSearchResultText(renderLabel, result))
+      },
+      onError: (error) => {
+        notify.err(
+            error instanceof ApiError && error.status === 409
+                ? staticT`A scan is already running`
+                : staticT`Couldn't start the volume search`,
+        )
+      },
+    })
   const wantedFilterCount = chapters?.filter(chapterFilters.wanted).length ?? 0
   const missingFilterCount = chapters?.filter(chapterFilters.missing).length ?? 0
   const downloadedFilterCount = chapters?.filter(chapterFilters.downloaded).length ?? 0
@@ -1228,6 +1306,7 @@ export default function SeriesDetailPage() {
   const specialsFilterCount = chapters?.filter(chapterFilters.specials).length ?? 0
   const mainFilterCount = chapters?.filter(chapterFilters.main).length ?? 0
   const readFilterCount = chapters?.filter(filters.read).length ?? 0
+  const cutoffUnmetFilterCount = chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0
   const selectedCount = selected.size
   const visibleAllCount = visibleChapters.length
   const visibleMainCount = visibleMain.length
@@ -1245,6 +1324,9 @@ export default function SeriesDetailPage() {
         // Without a special to hide, "Main" is "All" under a second name.
         ...(hasSpecials ? [{ value: 'main', label: t`Main (${mainFilterCount})` }] : []),
         { value: 'specials', label: t`Specials (${specialsFilterCount})` },
+        ...(cutoffUnmetChipVisible
+            ? [{ value: 'cutoffUnmet', label: t`Cutoff unmet (${cutoffUnmetFilterCount})` }]
+            : []),
       ]
       : []
 
@@ -1502,6 +1584,10 @@ export default function SeriesDetailPage() {
                     monitorMode={series.monitorNewItems}
                     incognito={series.incognito}
                     notificationMode={series.notificationMode}
+                    upgradeProfileId={series.upgradeProfileId}
+                    upgradeProfiles={upgradeProfiles ?? []}
+                    canScanUpgrades={canDownload}
+                    scanningUpgrades={runUpgradeScan.isPending}
                     busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}
                     onRefreshChapters={() =>
                         refresh.mutate(seriesId, {
@@ -1544,6 +1630,21 @@ export default function SeriesDetailPage() {
                             },
                         )
                     }
+                    onSetUpgradeProfile={(upgradeProfileId) =>
+                        setUpgradeProfile.mutate(
+                            { seriesId, upgradeProfileId },
+                            {
+                              onSuccess: () => {
+                                const profileName = upgradeProfiles?.find((p) => p.id === upgradeProfileId)?.name
+                                notify.ok(
+                                    profileName
+                                        ? staticT`Quality profile: ${profileName}`
+                                        : staticT`Quality profile: Instance default`,
+                                )
+                              },
+                            },
+                        )
+                    }
                     onSetIncognito={(mode) =>
                         setIncognito.mutate(
                             { seriesId, mode },
@@ -1566,6 +1667,9 @@ export default function SeriesDetailPage() {
                             },
                         )
                     }
+                    onScanUpgrades={scanSeriesForUpgrades}
+                    searchingVolumes={runVolumeSearch.isPending}
+                    onSearchVolumes={searchSeriesVolumes}
                     canRemove={can('DeleteSeries')}
                     onRemove={() => setDeleteSeriesModalOpen(true)}
                 />
@@ -1722,6 +1826,24 @@ export default function SeriesDetailPage() {
                       seriesTitle={series.title}
                       matching={series.sourceMatchPending}
                   />
+                  <Divider my="md" color="var(--hairline)" />
+                  <Text size="xs" c="var(--ink-3)">
+                    {series.lastUpgradeScan ? (
+                        (() => {
+                          const at = formatDate(series.lastUpgradeScan.at)
+                          const { probed, queued } = series.lastUpgradeScan
+                          return (
+                              <Trans>
+                                Last upgrade scan: {at}, <Plural value={probed} one="# probed" other="# probed" />
+                                ,{' '}
+                                <Plural value={queued} one="# queued" other="# queued" />
+                              </Trans>
+                          )
+                        })()
+                    ) : (
+                        <Trans>Never scanned for upgrades</Trans>
+                    )}
+                  </Text>
                 </Paper>
                 <Paper className="series-detail-metadata-panel" withBorder radius="lg" p="lg">
                   <Title order={3} fz={17} mb="sm">
@@ -2036,6 +2158,10 @@ export default function SeriesDetailPage() {
                 </Paper>
             )}
 
+            {!selectMode && canDownload && pendingProposal && (
+                <TorrentProposalCard proposal={pendingProposal} banner />
+            )}
+
             {selectMode && (
                 <Paper className="series-detail-chapter-selection" withBorder p="xs" radius="lg">
                   <Group justify="space-between" wrap="wrap" gap="xs">
@@ -2300,7 +2426,7 @@ export default function SeriesDetailPage() {
                               <Table.Th w={170}><Trans>Chapter</Trans></Table.Th>
                               <Table.Th><Trans>Title</Trans></Table.Th>
                               <Table.Th w={120}><Trans>Released</Trans></Table.Th>
-                              <Table.Th w={110}><Trans>Source</Trans></Table.Th>
+                              <Table.Th w={190}><Trans>Source</Trans></Table.Th>
                               <Table.Th w={240}><Trans>Status</Trans></Table.Th>
                               <Table.Th w={124} />
                             </Table.Tr>
@@ -2448,11 +2574,14 @@ export default function SeriesDetailPage() {
                                           (() => {
                                             const origin = fileOrigin(c.fileSourceName, c.fileReleaseName)
                                             return (
-                                                <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                                                  <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">
-                                                    {origin.label}
-                                                  </Badge>
-                                                </Tooltip>
+                                                <Stack gap={4} align="flex-start">
+                                                  <Tooltip label={origin.hint} withArrow disabled={!origin.hint}>
+                                                    <Badge size="sm" variant={origin.scraped ? 'light' : 'outline'} color="gray">
+                                                      {origin.label}
+                                                    </Badge>
+                                                  </Tooltip>
+                                                  <FileQualityBadge quality={c.fileQuality} />
+                                                </Stack>
                                             )
                                           })()
                                       )}
@@ -2596,7 +2725,7 @@ export default function SeriesDetailPage() {
                                               </ActionIcon>
                                             </Tooltip>
                                         )}
-                                        {canDownload && c.hasFile && c.number !== null && enabledMappings > 1 && (
+                                        {canDownload && c.hasFile && (
                                             <Menu shadow="md" position="bottom-end" withinPortal>
                                               <Menu.Target>
                                                 <ActionIcon
@@ -2608,19 +2737,65 @@ export default function SeriesDetailPage() {
                                                 </ActionIcon>
                                               </Menu.Target>
                                               <Menu.Dropdown>
+                                                {c.number !== null && enabledMappings > 1 && (
+                                                    <Menu.Item
+                                                        leftSection={<IconPhotoSearch size={14} />}
+                                                        onClick={() =>
+                                                            setPickChapter({
+                                                              id: c.id,
+                                                              number: c.number!,
+                                                              label: chapterLbl,
+                                                              currentSourceName: c.fileSourceName,
+                                                            })
+                                                        }
+                                                    >
+                                                      <Trans>Find better copy</Trans>
+                                                    </Menu.Item>
+                                                )}
                                                 <Menu.Item
-                                                    leftSection={<IconPhotoSearch size={14} />}
+                                                    leftSection={
+                                                      upgradeChapterNow.isPending && upgradeChapterNow.variables === c.id
+                                                          ? <Loader size={14} />
+                                                          : <IconSparkles size={14} />
+                                                    }
+                                                    disabled={upgradeChapterNow.isPending}
                                                     onClick={() =>
-                                                        setPickChapter({
-                                                          id: c.id,
-                                                          number: c.number!,
-                                                          label: chapterLbl,
-                                                          currentSourceName: c.fileSourceName,
+                                                        upgradeChapterNow.mutate(c.id, {
+                                                          onSuccess: (result) => {
+                                                            setUpgradeNowResult(result)
+                                                            setUpgradeNowModalOpen(true)
+                                                          },
+                                                          onError: (error) => {
+                                                            notify.err(
+                                                                error instanceof ApiError && error.status === 409
+                                                                    ? staticT`A scan is already running`
+                                                                    : staticT`Couldn't run the scan`,
+                                                            )
+                                                          },
                                                         })
                                                     }
                                                 >
-                                                  <Trans>Find better copy</Trans>
+                                                  <Trans>Upgrade now</Trans>
                                                 </Menu.Item>
+                                                {c.fileQuality && (
+                                                    <Menu.Item
+                                                        leftSection={
+                                                          c.fileQuality.trusted
+                                                              ? <IconLockOpen size={14} />
+                                                              : <IconLock size={14} />
+                                                        }
+                                                        onClick={() =>
+                                                            setFileTrusted.mutate({
+                                                              fileId: c.fileQuality!.fileId,
+                                                              trusted: !c.fileQuality!.trusted,
+                                                            })
+                                                        }
+                                                    >
+                                                      {c.fileQuality.trusted
+                                                          ? <Trans>Allow upgrades</Trans>
+                                                          : <Trans>Protect from upgrades</Trans>}
+                                                    </Menu.Item>
+                                                )}
                                               </Menu.Dropdown>
                                             </Menu>
                                         )}
@@ -2780,6 +2955,12 @@ export default function SeriesDetailPage() {
                 onClose={() => setPickChapter(null)}
             />
         )}
+
+        <UpgradeNowResultModal
+            opened={upgradeNowModalOpen}
+            result={upgradeNowResult}
+            onClose={() => setUpgradeNowModalOpen(false)}
+        />
       </Tabs>
       {luckyPill}
     </SurfaceFrame>

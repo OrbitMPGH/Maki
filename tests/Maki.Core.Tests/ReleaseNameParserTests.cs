@@ -152,4 +152,67 @@ public class ReleaseNameParserTests
         Assert.False(ReleaseNameParser.ParseFileName("Arc049 Notes.cbz").IsChapter);
         Assert.False(ReleaseNameParser.ParseFileName("Comic 5 Extras.cbz").IsChapter);
     }
+
+    [Fact]
+    public void Tags_are_the_bracketed_groups_in_order_leading_group_included()
+    {
+        var parsed = ReleaseNameParser.ParseFileName(
+            "[1r0n] I Want to End This Love Game v01 (2023) (Digital) (1r0n).cbz");
+
+        Assert.Equal(["1r0n", "2023", "Digital", "1r0n"], parsed.Tags);
+    }
+
+    [Fact]
+    public void Tags_come_from_every_bracket_group_regardless_of_which_one_carries_the_number()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("Dandadan 148 (2024) (Digital) (1r0n).cbz");
+
+        Assert.Equal(["2024", "Digital", "1r0n"], parsed.Tags);
+        Assert.Equal(148m, parsed.Number);
+    }
+
+    // A name made of nothing but bracket groups: every one of them is a tag, and none is a number
+    // or volume marker, so the file stays unrecognized.
+    [Fact]
+    public void A_bracket_only_name_reads_every_group_as_a_tag_and_stays_unrecognized()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("(2024) (Digital) (Group).cbz");
+
+        Assert.Equal(["2024", "Digital", "Group"], parsed.Tags);
+        Assert.False(parsed.IsRecognized);
+    }
+
+    [Theory]
+    [InlineData("My Series c049.1-057 (Digital) (1r0n).cbz", 49.1, 57)]
+    [InlineData("My Series ch 1-100.cbz", 1, 100)]
+    [InlineData("My Series Ch. 001-010.cbz", 1, 10)]
+    [InlineData("My Series c001-c010.cbz", 1, 10)]
+    public void A_chapter_range_fills_number_end(string file, double number, double numberEnd)
+    {
+        var parsed = ReleaseNameParser.ParseFileName(file);
+        Assert.True(parsed.IsChapter);
+        Assert.Equal((decimal)number, parsed.Number);
+        Assert.Equal((decimal)numberEnd, parsed.NumberEnd);
+    }
+
+    // Maki's own names put " - " before the chapter title, and a title can start with a number.
+    [Theory]
+    [InlineData("Berserk Vol.3 Ch.24.cbz", 24)]
+    [InlineData("My Series Ch.10 - 15 Years Later.cbz", 10)]
+    [InlineData("My Series c010-005.cbz", 10)]
+    [InlineData("Dandadan 148 (2024) (Digital) (1r0n).cbz", 148)]
+    public void A_single_chapter_has_no_number_end(string file, double number)
+    {
+        var parsed = ReleaseNameParser.ParseFileName(file);
+        Assert.Equal((decimal)number, parsed.Number);
+        Assert.Null(parsed.NumberEnd);
+    }
+
+    [Fact]
+    public void A_name_with_no_brackets_has_no_tags()
+    {
+        var parsed = ReleaseNameParser.ParseFileName("A Prince of a Friend Chapter 0000.cbz");
+
+        Assert.Empty(parsed.Tags);
+    }
 }

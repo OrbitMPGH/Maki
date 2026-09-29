@@ -108,6 +108,11 @@ msgstr "{0, plural, other {잠겨 있거나 권한이 없어 삭제하지 못한
 msgid "{0, plural, one {# file deleted} other {# files deleted}}"
 msgstr "{0, plural, other {#개 파일 삭제됨}}"
 
+#. placeholder {0}: upgradesSummary.trashFiles
+#: src/pages/ActivityPage.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr ""
+
 #. placeholder {0}: result.unavailable
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -348,6 +353,10 @@ msgstr "{added}개 추가, {requested}개 요청, {skipped}개 건너뜀, 오류
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "직접 추가함 {adds}개, 취향에서 제외됨 {excluded}개"
 
+#: src/api/upgrades.ts
+msgid "{alreadyMetCount} already at cutoff"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{alt} has no page {page}"
@@ -362,6 +371,10 @@ msgstr "{alt}, 페이지 {page}"
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgstr "{applied, plural, other {평점 #개 가져옴}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{beforeLabel} to {afterLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -448,6 +461,10 @@ msgstr "{completed} / {total}개 파일 검사 완료"
 #, fuzzy
 msgid "{completeVolumes, plural, one {# volume already complete} other {# volumes already complete}}"
 msgstr "{completeVolumes, plural, other {이미 완성된 권 #개}}"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "{conditionCount, plural, one {# condition} other {# conditions}}"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -575,6 +592,7 @@ msgid "{failedCount, plural, one {# could not be deleted} other {# could not be 
 msgstr "{failedCount, plural, other {삭제할 수 없음 #개}}"
 
 #: src/components/RenameSeriesModal.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileCount, plural, one {# file} other {# files}}"
 msgstr "{fileCount, plural, other {파일 #개}}"
@@ -583,6 +601,10 @@ msgstr "{fileCount, plural, other {파일 #개}}"
 #, fuzzy
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, other {단일 챕터 파일 #개}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{fileName} replaced {filesText}"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -785,6 +807,11 @@ msgstr "{markerLabel} 애니메이션 적용 시작 지점 · 클릭하여 펼�
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{total}개 중 {matched}개 일치, 긍정 {positive}개, 회피 {avoided}개, 이미 보유 {superseded}개"
 
+#: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "{medianWidth}px"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "{min} or more"
@@ -804,6 +831,10 @@ msgstr "{minutes, plural, other {약 #분 남음}}"
 #, fuzzy
 msgid "{minutesPerChapter} min / ch"
 msgstr "챕터당 {minutesPerChapter}분"
+
+#: src/api/upgrades.ts
+msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -886,6 +917,8 @@ msgstr "{newChapterCount, plural, other {내게 없는 챕터 #개 추가}}"
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, other {+#개 더}}"
 
+#: src/components/series/FileQualityBadge.tsx
+#: src/components/series/UpgradeNowResultModal.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/ChapterBanner.tsx
 #, fuzzy
@@ -921,6 +954,10 @@ msgstr "{primeStart}~{primeEnd}"
 #, fuzzy
 msgid "{problems, plural, one {# needs attention} other {# need attention}}"
 msgstr "{problems, plural, other {주의가 필요한 항목 #개}}"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "{profileCount, plural, one {Scored in # profile} other {Scored in # profiles}}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -988,6 +1025,10 @@ msgstr "{readValue, plural, other {챕터 읽음}}"
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, other {볼륨 읽음}}"
 
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "{reasonText} - {measurement}"
+msgstr ""
+
 #: src/components/home/DownloadingStrip.tsx
 #, fuzzy
 msgid "{remaining, plural, one {# more in the queue} other {# more in the queue}}"
@@ -997,6 +1038,10 @@ msgstr "{remaining, plural, other {대기열에 #개 더 있음}}"
 #, fuzzy
 msgid "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 msgstr "{renamed, plural, other {시리즈 #개 이름 변경됨}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -1017,6 +1062,10 @@ msgstr "{resolved, plural, other {#개 해결}}"
 #, fuzzy
 msgid "{rest, plural, one {# min} other {# min}}"
 msgstr "{rest, plural, other {#분}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -1054,6 +1103,7 @@ msgstr "{selectedCount}개 선택됨"
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, other {시리즈 추가됨}}"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "{seriesCount, plural, one {# series} other {# series}}"
@@ -1099,6 +1149,18 @@ msgstr "{shownCount} / {totalSeriesShown}개 시리즈 표시됨."
 msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 msgstr "{size, plural, other {시리즈 #개, 이 보기의 {shareLabel}, {coherenceWord}}}"
 
+#: src/components/ImportReviewModal.tsx
+msgid "{skippedCount, plural, one {# file will be left out of the import} other {# files will be left out of the import}}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{source} {tierLabel} ({score})"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{source} {tierLabel} {medianWidth}px ({score})"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{sourceName} · priority {priority}"
@@ -1128,6 +1190,10 @@ msgstr "{speed}/초"
 #, fuzzy
 msgid "{staleChapters, plural, one {# downloaded chapter came from another source.} other {# downloaded chapters came from another source.}}"
 msgstr "{staleChapters, plural, other {다운로드한 챕터 #개가 다른 소스에서 가져왔습니다.}}"
+
+#: src/api/upgrades.ts
+msgid "{start} to {end}"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -1168,6 +1234,22 @@ msgstr "{target, plural, other {#분}}"
 #, fuzzy
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, other {완료한 시리즈 #개}}"
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "{tierLabel} · {medianWidth}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "{tierLabel} · {width}px"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{tierLabel} ({score})"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{tierLabel} {medianWidth}px ({score})"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -1332,6 +1414,10 @@ msgstr "{updated, plural, other {시리즈 #개에 대한 알림 업데이트됨
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 msgstr "{updated, plural, other {시리즈 #개에 태그 지정됨}}"
 
+#: src/api/upgrades.ts
+msgid "{upgradeCount, plural, one {Replaces # file} other {Replaces # files}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{value, plural, one {chapter downloaded} other {chapters downloaded}}"
@@ -1376,6 +1462,10 @@ msgstr "{visibleCount} / {totalCount}개 시리즈 일치"
 #, fuzzy
 msgid "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
 msgstr "{volumesRead, plural, other {…전체 볼륨 #개 추가}}"
+
+#: src/api/upgrades.ts
+msgid "{volumesText} + {chaptersText}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1557,6 +1647,10 @@ msgstr "👍 좋아요"
 msgid "👎 Disliked"
 msgstr "👎 싫어요"
 
+#: src/pages/SettingsPage.tsx
+msgid "0 means no cap."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "1 (lowest) to 5 (highest)."
@@ -1622,6 +1716,14 @@ msgstr "90일"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "10점 만점 애니메이션은 {topSeed}로 반영되며, 라이브러리의 평가하지 않은 책은 1.00로 반영됩니다."
 
+#: src/api/inbox.ts
+msgid "A better release replaced a downloaded chapter's file."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A candidate must beat the current file's score by at least this much."
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "A chapter download failed."
@@ -1652,10 +1754,22 @@ msgstr "라이브러리를 시작하기 위한 몇 가지 설정입니다. 변�
 msgid "A few large picks at the top, from your recent reading or what is trending."
 msgstr "상단에 크게 표시되는 추천 작품입니다. 최근 읽은 작품이나 인기 작품에서 선택합니다."
 
+#: src/pages/ActivityPage.tsx
+msgid "A file could not be moved back, nothing was changed"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "A file could not be put back after a failed upgrade and is waiting in the trash folder."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "A file move is blocked for any series with an active download."
 msgstr "활성 다운로드가 있는 시리즈는 파일을 이동할 수 없습니다."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -1682,10 +1796,26 @@ msgstr "새 시스템 상태 문제가 감지되었습니다."
 msgid "A newer Maki release was published."
 msgstr "더 최신 버전의 Maki가 게시되었습니다."
 
+#: src/pages/ActivityPage.tsx
+msgid "A newer upgrade has replaced this file since"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A profile picks which release tier Maki prefers for a series, and how far it goes to replace what's already downloaded. Pin one to a series from its Quality profile menu, or set a default for every series below under Downloads."
+msgstr ""
+
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
 msgid "A proportional guess for a finished series whose volumes are all on disk. Only used when nothing better covers the chapter."
 msgstr "완결된 시리즈의 모든 권 파일이 디스크에 있을 때 비례해 추정한 값입니다. 챕터를 더 잘 설명하는 근거가 없을 때만 사용됩니다."
+
+#: src/api/upgrades.ts
+msgid "A proposal is already waiting for this series"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "A proposal nobody answers is dropped after this long."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1711,6 +1841,12 @@ msgstr "서재의 세부 주제마다 한 행씩 표시합니다."
 #, fuzzy
 msgid "A row of figures: what is in your library, your reading progress and what is waiting to be read."
 msgstr "라이브러리의 작품, 읽기 진행률, 읽을 작품을 숫자로 보여주는 행입니다."
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "A scan is already running"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -1753,6 +1889,10 @@ msgid "A token with no value for a given series renders as nothing, and the surr
 msgstr "특정 시리즈에 값이 없는 토큰은 아무것도 표시하지 않습니다. 주변 공백과 빈 대괄호도 정리되므로, 연도가 없는 시리즈에서는 {yearExampleToken}이(가) 제목만 표시합니다."
 
 #: src/api/inbox.ts
+msgid "A torrent volume release could replace files in a series and is waiting for your decision."
+msgstr ""
+
+#: src/api/inbox.ts
 #, fuzzy
 msgid "A tracker list sync added or requested series."
 msgstr "트래커 목록 동기화로 시리즈가 추가되거나 요청되었습니다."
@@ -1761,6 +1901,10 @@ msgstr "트래커 목록 동기화로 시리즈가 추가되거나 요청되었�
 #, fuzzy
 msgid "A typical sitting runs <0>{sittingDuration}</0>."
 msgstr "일반적인 한 번의 독서는 <0>{sittingDuration}</0> 동안 이어집니다."
+
+#: src/api/inbox.ts
+msgid "A volume release replaced several chapter files in a series."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -1917,6 +2061,10 @@ msgstr "시리즈 추가"
 msgid "Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
 msgstr "시리즈를 추가하면 Maki가 해당 시리즈의 챕터 추적을 시작합니다. 읽고 다운로드할수록 이 페이지가 채워집니다."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Add condition"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Add connection"
@@ -2025,6 +2173,10 @@ msgstr "로그인 페이지에 버튼을 추가합니다. 아래에서 제한하
 msgid "Adds and removes run in one pass over the selection."
 msgstr "선택 항목을 한 번에 처리하면서 추가 및 제거를 실행합니다."
 
+#: src/api/upgrades.ts
+msgid "Adds chapters you don't have yet"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Adjusted by {editedBy}, asked for {askedFor}"
@@ -2062,6 +2214,8 @@ msgstr "모험"
 msgid "Affected chapters:"
 msgstr "영향받는 챕터:"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Aggregator"
@@ -2189,10 +2343,47 @@ msgstr "전체 기간"
 msgid "All time"
 msgstr "전체 기간"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Allow replacing unknown-tier files"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Allow upgrades"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Allow upgrades to {fileName}"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Allowed"
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "already at cutoff"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Already checked recently"
+msgstr ""
+
+#: src/components/upgrades/TorrentProposalCard.tsx
+msgid "Already downloading"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Already meets the cutoff"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Already on your shelf, so your own reading counts instead"
 msgstr "이미 라이브러리에 있어 내 독서 기록이 대신 반영됨"
+
+#: src/api/upgrades.ts
+msgid "Already queued"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -2569,6 +2760,18 @@ msgstr "자동 (내 기본값)"
 msgid "Auto-advance to next chapter"
 msgstr "다음 챕터 자동 이동"
 
+#: src/api/upgrades.ts
+msgid "Auto-grab"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Auto-grab only when a volume adds this many chapters or fewer that you don't have."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Auto-grab size limit (MB)"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -2609,6 +2812,10 @@ msgstr "자동 다운로드 실패"
 #, fuzzy
 msgid "Automatic source matching found nothing for a new series."
 msgstr "새 시리즈의 자동 소스 매칭 결과가 없습니다."
+
+#: src/api/upgrades.ts
+msgid "Automatic upgrades are off, needs your call"
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
@@ -2794,6 +3001,10 @@ msgstr "뒤처짐 (누락된 챕터)"
 msgid "bell, inbox, alerts, toast, in-app notifications, new chapters, achievements, level up"
 msgstr "알림 벨, 받은 편지함, 경고, 토스트, 앱 내 알림, 새 챕터, 업적, 레벨 상승"
 
+#: src/components/series/FileQualityBadge.tsx
+msgid "Below the series' upgrade cutoff"
+msgstr ""
+
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "best streak"
@@ -2970,6 +3181,7 @@ msgstr "이 다운로드를 읽을 수 없음"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3216,10 +3428,15 @@ msgstr "챕터 {0}"
 msgid "Ch.{chapter}"
 msgstr "챕터 {chapter}"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Ch.{chapterNumber}"
 msgstr "챕터 {chapterNumber}"
+
+#: src/pages/ActivityPage.tsx
+msgid "Ch.{chapterNumber} - {chapterTitle}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3232,6 +3449,7 @@ msgid "Ch.{from}+"
 msgstr "챕터 {from}+"
 
 #: src/components/settings/AccountSection.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Change"
 msgstr "변경"
@@ -3322,6 +3540,10 @@ msgstr "{number}화"
 msgid "Chapter {number}"
 msgstr "{number}화"
 
+#: src/api/upgrades.ts
+msgid "chapter {ranges}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Chapter {resumeAt} is not downloaded yet"
@@ -3346,6 +3568,10 @@ msgstr "챕터 번호와 볼륨에도 0 채우기를 사용할 수 있습니다:
 #, fuzzy
 msgid "Chapter snapshots refreshed"
 msgstr "챕터 스냅샷 새로 고침 완료"
+
+#: src/api/inbox.ts
+msgid "Chapter upgraded"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -3384,6 +3610,10 @@ msgstr "챕터 {gapFrom}~{gapTo}은(는) 다운로드되지 않았습니다. 건
 #, fuzzy
 msgid "Chapters {range}"
 msgstr "챕터 {range}"
+
+#: src/api/upgrades.ts
+msgid "chapters {ranges}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -3700,6 +3930,7 @@ msgid "Code from your app"
 msgstr "앱의 코드"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Collapse"
 msgstr "접기"
@@ -3809,6 +4040,10 @@ msgstr "동시 챕터 다운로드 수"
 #, fuzzy
 msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
 msgstr "동시 실행, 작업자, 재시도, 최대 시도 횟수, 백오프, Smart Download, 읽지 않음 트리거"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Conditions"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4093,6 +4328,10 @@ msgstr "진행 상황을 불러오지 못했습니다. 이유는 서버 로그�
 msgid "Could not load your signals: {loadError}"
 msgstr "신호를 불러오지 못했습니다: {loadError}"
 
+#: src/api/upgrades.ts
+msgid "Could not queue the release"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
@@ -4113,10 +4352,18 @@ msgstr "프로필을 읽을 수 없습니다"
 msgid "Could not remove {seriesTitle}: {reason}"
 msgstr "{seriesTitle}을(를) 삭제하지 못했습니다: {reason}"
 
+#: src/pages/ActivityPage.tsx
+msgid "Could not revert this upgrade"
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface} 피드백을 업데이트하지 못했습니다: {reason}"
+
+#: src/api/upgrades.ts
+msgid "Couldn't be measured"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4148,6 +4395,21 @@ msgstr "읽기 진행 상황을 불러오지 못했습니다"
 msgid "Couldn't reach {label}."
 msgstr "{label}에 연결하지 못했습니다."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Couldn't run the scan"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Couldn't start the scan"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Couldn't start the volume search"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "counts a little more than the rest"
@@ -4163,6 +4425,10 @@ msgstr "두 스위치 모두 집계합니다: 시리즈별 링크와 전역 소�
 msgid "counts toward your taste"
 msgstr "취향에 반영됨"
 
+#: src/api/upgrades.ts
+msgid "Covers chapters Maki doesn't know about"
+msgstr ""
+
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -4171,6 +4437,7 @@ msgstr "표지, 포스터, 아트워크, 썸네일, 이미지 캐시 재빌드, 
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Create"
@@ -4276,6 +4543,26 @@ msgstr "현재"
 msgid "Current copy"
 msgstr "현재 파일"
 
+#: src/pages/ActivityPage.tsx
+msgid "Current file"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel} {width}px, score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Current: {tierLabel}, score {score}"
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -4297,10 +4584,31 @@ msgstr "사용자 지정"
 msgid "Customized"
 msgstr "사용자 지정됨"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Cutoff"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Cutoff unmet"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Cutoff unmet ({cutoffUnmetFilterCount})"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Cutoff: {cutoffLabel}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Daily scan hour (0-23)"
 msgstr "일일 스캔 시간 (0-23)"
+
+#: src/api/upgrades.ts
+msgid "Daily upgrade cap reached"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4361,6 +4669,10 @@ msgstr "기본 대소문자"
 msgid "Default cleared"
 msgstr "기본값 지움"
 
+#: src/pages/SettingsPage.tsx
+msgid "Default profile"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Default source order updated"
@@ -4398,6 +4710,7 @@ msgid "Delete {label}"
 msgstr "{label} 삭제"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Delete {name}?"
 msgstr "{name}을(를) 삭제할까요?"
@@ -4427,6 +4740,10 @@ msgstr "연결 삭제"
 msgid "Delete files from disk?"
 msgstr "디스크에서 파일을 삭제할까요?"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Delete format"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
 msgid "Delete from disk"
@@ -4438,6 +4755,7 @@ msgid "Delete permanently"
 msgstr "영구 삭제"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Delete profile"
 msgstr "프로필 삭제"
@@ -4501,14 +4819,10 @@ msgid "Delete user"
 msgstr "사용자 삭제"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "\"{name}\" 삭제됨"
-
-#: src/components/ImportReviewModal.tsx
-#, fuzzy
-msgid "Deleted files are removed from disk and cannot be recovered from Maki."
-msgstr "삭제한 파일은 디스크에서 제거되며 Maki에서 복구할 수 없습니다."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4565,6 +4879,10 @@ msgstr "기기"
 #, fuzzy
 msgid "Devoured"
 msgstr "정주행 완료"
+
+#: src/api/upgrades.ts
+msgid "Didn't score higher than the current file"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -4651,6 +4969,7 @@ msgid "Disk used"
 msgstr "디스크 사용량"
 
 #: src/components/layout/SidebarFooter.tsx
+#: src/components/upgrades/TorrentProposalCard.tsx
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Dismiss"
@@ -4950,6 +5269,10 @@ msgstr "연결 편집"
 msgid "Edit Discover layout"
 msgstr "탐색 레이아웃 편집"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Edit format"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Edit Home layout"
@@ -4967,6 +5290,7 @@ msgid "Edit metadata"
 msgstr "메타데이터 편집"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Edit profile"
 msgstr "프로필 편집"
@@ -5051,6 +5375,7 @@ msgstr "OPDS 카탈로그 활성화"
 #: src/components/NotificationsSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Enabled"
 msgstr "활성화됨"
@@ -5157,6 +5482,14 @@ msgstr "매일"
 #, fuzzy
 msgid "Every enabled source is already linked."
 msgstr "이미 모든 활성화된 소스가 연결되었습니다."
+
+#: src/api/upgrades.ts
+msgid "Every file already meets the cutoff"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Every file meets its cutoff"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -5457,6 +5790,10 @@ msgstr "페이지 가져오는 중…"
 msgid "File"
 msgstr "파일"
 
+#: src/pages/ActivityPage.tsx
+msgid "File name"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "File naming on import"
@@ -5479,6 +5816,10 @@ msgstr "디스크에 있는 미연결 파일"
 #, fuzzy
 msgid "Files"
 msgstr "파일"
+
+#: src/pages/ActivityPage.tsx
+msgid "Files replaced by the automatic upgrader show up here."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -5530,11 +5871,9 @@ msgstr "필터"
 msgid "Filters ({appliedCount})"
 msgstr "필터 ({appliedCount})"
 
-#. placeholder {0}: pick.label
 #: src/components/SourceCompareModal.tsx
-#, fuzzy
-msgid "Find a better copy of {0}"
-msgstr "{0}의 더 나은 파일 찾기"
+msgid "Find a better copy of {pickLabel}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5729,6 +6068,18 @@ msgstr "폴더에서 포스터를 가져오는 Komga, Kavita 같은 리더 앱�
 #, fuzzy
 msgid "For scripts and third-party clients. A key acts as you through the <0>X-Api-Key</0> header. Your OPDS feed URL is managed on the OPDS card."
 msgstr "스크립트와 타사 클라이언트용입니다. 키는 <0>X-Api-Key</0> 헤더를 통해 사용자 대신 작동합니다. OPDS 피드 URL은 OPDS 카드에서 관리합니다."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Format created"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Format scores"
+msgstr ""
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "Format: {formatLabel}"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5947,6 +6298,7 @@ msgid "Goals"
 msgstr "목표"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
 msgid "Grab"
 msgstr "가져오기"
@@ -5966,6 +6318,10 @@ msgstr "{indexer}에서 가져옴: {releaseName}"
 #, fuzzy
 msgid "Grid view"
 msgstr "그리드 보기"
+
+#: src/api/upgrades.ts
+msgid "Group matches (regex)"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -6022,6 +6378,10 @@ msgstr "모두 포함"
 msgid "Has any of"
 msgstr "하나 이상 포함"
 
+#: src/api/upgrades.ts
+msgid "Has fewer pages than the current file"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Has none of"
@@ -6064,6 +6424,14 @@ msgstr "정상"
 #, fuzzy
 msgid "Height"
 msgstr "높이"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Held back before importing"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "Held back for review, {file}: {reason}"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -6139,6 +6507,10 @@ msgstr "영향을 받는 시리즈 숨기기"
 msgid "Hide everywhere on Discover"
 msgstr "탐색의 모든 곳에서 숨기기"
 
+#: src/pages/ActivityPage.tsx
+msgid "Hide replaced files"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Hide source names"
@@ -6168,6 +6540,10 @@ msgstr "나와 비슷한 독자를 위해 더 높은 항목"
 #, fuzzy
 msgid "Higher numbers are more intrusive."
 msgstr "숫자가 높을수록 더 눈에 띕니다."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Highest priority first. Switch a tier off to never prefer or accept it."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -6266,6 +6642,10 @@ msgstr "Maki에서 시리즈 폴더와 다운로드한 챕터 파일의 이름�
 msgid "How many"
 msgstr "개수"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "How much shorter a candidate's page count may be and still count as an upgrade."
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "How much they count"
@@ -6343,6 +6723,14 @@ msgstr "이미지 캐시"
 msgid "Image cache and backups"
 msgstr "이미지 캐시 및 백업"
 
+#: src/api/upgrades.ts
+msgid "Image format is"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Image formats"
+msgstr ""
+
 #: src/nav.ts
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -6365,9 +6753,8 @@ msgid "Import entries with status"
 msgstr "상태가 있는 항목 가져오기"
 
 #: src/components/ImportReviewModal.tsx
-#, fuzzy
-msgid "Import everything, delete the {replacedFiles, plural, one {# file} other {# files}} it replaces"
-msgstr "모두 가져오기, {replacedFiles, plural, other {대체되는 파일 #개}} 삭제"
+msgid "Import everything, replace the {replacedFiles, plural, one {# file} other {# files}} it covers"
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 #, fuzzy
@@ -6556,6 +6943,10 @@ msgstr "콘텐츠 등급별 Incognito"
 msgid "Incognito for {ratingLabel}"
 msgstr "{ratingLabel} 시크릿 모드"
 
+#: src/api/upgrades.ts
+msgid "Incognito series are excluded"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Incognito, this session isn't being recorded"
@@ -6617,6 +7008,11 @@ msgstr "인도네시아어"
 msgid "Installing metadata database"
 msgstr "메타데이터 데이터베이스 설치 중"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Instance default"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Integrations"
@@ -6652,6 +7048,10 @@ msgstr "이탈리아어"
 #, fuzzy
 msgid "Items {start}–{end}"
 msgstr "항목 {start}–{end}"
+
+#: src/api/upgrades.ts
+msgid "Its volumes aren't mapped to your chapters yet"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -6762,6 +7162,10 @@ msgstr "이름을 유지하고 새 표준 폴더에 다운로드"
 msgid "Keep the name, download into it too"
 msgstr "이름을 유지하고 해당 폴더에 다운로드"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely."
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
@@ -6793,6 +7197,10 @@ msgstr "키보드 단축키 (?)"
 msgid "Kind"
 msgstr "종류"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Kinds"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -6808,10 +7216,18 @@ msgstr "한국어"
 msgid "Language"
 msgstr "언어"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Language codes"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Language filter"
 msgstr "언어 필터"
+
+#: src/api/upgrades.ts
+msgid "Language is"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6851,6 +7267,14 @@ msgstr "큰 타일"
 msgid "Large tiles for the first three"
 msgstr "처음 세 개를 큰 타일로 표시"
 
+#: src/pages/SettingsPage.tsx
+msgid "Larger releases become proposals you approve by hand."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Larger than the auto-grab size limit"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "last {lastSync} · next {nextSync}"
@@ -6875,6 +7299,10 @@ msgstr "마지막 다운로드 실패: {lastError}. 다음 예약 실행에서 �
 #, fuzzy
 msgid "Last error: {lastError}"
 msgstr "마지막 오류: {lastError}"
+
+#: src/pages/ActivityPage.tsx
+msgid "Last library scan: {lastScanText}"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -6926,10 +7354,18 @@ msgstr "마지막 로그인"
 msgid "Last synced {synced}"
 msgstr "마지막 동기화 {synced}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Last used"
 msgstr "마지막 사용"
+
+#: src/pages/ActivityPage.tsx
+msgid "Last volume search: {lastVolumeSearchText}"
+msgstr ""
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -7291,6 +7727,10 @@ msgstr "설정이 끝나면 MangaBaka 로컬 데이터베이스를 다운로드�
 msgid "Local MangaBaka database ready"
 msgstr "MangaBaka 로컬 데이터베이스 준비됨"
 
+#: src/pages/SettingsPage.tsx
+msgid "Local time, 0-23."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Lockout duration (minutes)"
@@ -7310,6 +7750,10 @@ msgstr "{total}개 중 {looked}개 조회 중"
 #, fuzzy
 msgid "Looking up chapters…"
 msgstr "챕터 조회 중…"
+
+#: src/pages/SettingsPage.tsx
+msgid "Looks for volume packs that could replace single-chapter files when a series' profile aims for volumes. Needs Prowlarr."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7647,6 +8091,14 @@ msgstr "최대"
 msgid "Max per run"
 msgstr "실행당 최대"
 
+#: src/pages/SettingsPage.tsx
+msgid "Max probes per scan"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Max upgrades per day"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Maximum chapters"
@@ -7735,10 +8187,18 @@ msgstr "중간쯤"
 msgid "Min"
 msgstr "최소"
 
+#: src/api/upgrades.ts
+msgid "Minimum bytes per page"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Minimum chapters"
 msgstr "최소 챕터 수"
+
+#: src/api/upgrades.ts
+msgid "Minimum pages"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7754,6 +8214,14 @@ msgstr "최소 평점: ★ {minRatingDisplay}"
 #, fuzzy
 msgid "Minimum rating: any"
 msgstr "최소 평점: 모든 항목"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Minimum score gain"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Minimum width (px)"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -7779,6 +8247,10 @@ msgstr "누락"
 msgid "Missing ({missingFilterCount})"
 msgstr "누락 ({missingFilterCount})"
 
+#: src/pages/SettingsPage.tsx
+msgid "Missing chapters allowed per volume"
+msgstr ""
+
 #: src/components/SeriesFilesSection.tsx
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -7789,6 +8261,10 @@ msgstr "디스크에서 누락"
 #, fuzzy
 msgid "Missing posters"
 msgstr "포스터 누락"
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "Mixed"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -7937,6 +8413,7 @@ msgstr "{label} 위로 이동"
 msgid "Move {selectedCount} series"
 msgstr "{selectedCount}개 시리즈 이동"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -7973,6 +8450,7 @@ msgstr "맨 위로 이동"
 msgid "Move to top of queue"
 msgstr "대기열 맨 위로 이동"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -8045,6 +8523,7 @@ msgstr "해당 없음"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Name"
@@ -8095,6 +8574,10 @@ msgstr "검토 필요"
 msgid "Needs the local MangaBaka database"
 msgstr "MangaBaka 로컬 데이터베이스가 필요합니다"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Negate"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Neutral"
@@ -8108,6 +8591,7 @@ msgstr "중립, 라이브러리와 같은 비중으로 반영"
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "never"
 msgstr "절대 안 함"
@@ -8116,6 +8600,10 @@ msgstr "절대 안 함"
 #, fuzzy
 msgid "Never run."
 msgstr "실행된 적 없음."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Never scanned for upgrades"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
@@ -8149,6 +8637,10 @@ msgstr "지난 30일 동안 새 챕터를 자동으로 가져왔습니다."
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "새 챕터, 완료된 다운로드 및 달성한 업적이 여기에 표시됩니다."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "New format"
+msgstr ""
+
 #: src/api/hooks.ts
 #: src/components/discover/FollowingRail.tsx
 #, fuzzy
@@ -8166,6 +8658,7 @@ msgid "New password"
 msgstr "새 비밀번호"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "New profile"
 msgstr "새 프로필"
@@ -8253,6 +8746,10 @@ msgstr "{windowLabel}에 활동이 없습니다."
 #, fuzzy
 msgid "no baseline"
 msgstr "비교 기준 없음"
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No better copy found"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -8444,6 +8941,26 @@ msgstr "페이지 없음"
 msgid "No pending requests"
 msgstr "대기 중인 요청 없음"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality formats defined yet. Add one below to score files by it."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality formats yet."
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "No quality profile"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "No quality profile assigned yet"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "No quality profiles yet. Series without one use whatever the instance default is set to."
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No reading time recorded."
@@ -8453,6 +8970,10 @@ msgstr "읽기 시간이 기록되지 않음."
 #, fuzzy
 msgid "No release-year data yet"
 msgstr "아직 발행 연도 데이터가 없습니다"
+
+#: src/api/upgrades.ts
+msgid "No releases found"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -8514,6 +9035,10 @@ msgstr "연결된 소스가 없습니다. 챕터를 동기화하거나 다운로
 msgid "No sources match. Clear a filter or try another name."
 msgstr "일치하는 소스가 없습니다. 필터를 지우거나 다른 이름을 검색하세요."
 
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "No sources to compare against."
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "No such creator"
@@ -8565,6 +9090,14 @@ msgstr "연결된 트래커 없음."
 msgid "No type data yet"
 msgstr "아직 유형 데이터가 없습니다"
 
+#: src/pages/ActivityPage.tsx
+msgid "No upgrades yet"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "No volume or chapter range in the title"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Nobody by that name is credited in the local MangaBaka database."
@@ -8578,6 +9111,7 @@ msgstr "없음"
 #: src/components/RelinkFilesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "None"
 msgstr "없음"
@@ -8616,6 +9150,14 @@ msgstr "{names} 제외"
 #, fuzzy
 msgid "Not a valid creator name"
 msgstr "올바른 창작자 이름이 아닙니다"
+
+#: src/api/upgrades.ts
+msgid "Not an upgrade"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Not an upgrade: {reason}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8695,6 +9237,11 @@ msgstr "목록에 없음:"
 msgid "Not matched or ignored"
 msgstr "매칭되지 않았거나 무시됨"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
+msgid "Not measured yet"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -8757,6 +9304,10 @@ msgstr "메모 (선택 사항)"
 msgid "Nothing close enough. Try describing it differently, or use fewer words."
 msgstr "충분히 가까운 항목이 없습니다. 다르게 설명하거나 단어를 줄여 보세요."
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing downloaded falls short of the quality profile assigned to it."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -8789,6 +9340,10 @@ msgstr "이 시리즈의 항목이 없습니다. 관리자는 여전히 다운�
 msgid "Nothing here"
 msgstr "여기에 아무것도 없습니다"
 
+#: src/pages/ActivityPage.tsx
+msgid "Nothing here has a quality profile of its own or an instance default to fall back to, so nothing can be judged against a cutoff. Set one up in <0>Settings - Quality profiles</0>."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Nothing here is final. Every option is also in Settings."
@@ -8798,6 +9353,10 @@ msgstr "여기서 설정한 내용은 언제든 변경할 수 있습니다. 모�
 #, fuzzy
 msgid "Nothing imported: import lists need the local MangaBaka database."
 msgstr "가져온 항목이 없습니다. 가져오기 목록을 사용하려면 로컬 MangaBaka 데이터베이스가 필요합니다."
+
+#: src/api/upgrades.ts
+msgid "Nothing in it beats what you have"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -8940,6 +9499,10 @@ msgstr "아직 차트로 표시할 미완독 작품이 없습니다."
 msgid "Nothing unmatched."
 msgstr "매칭되지 않은 항목이 없습니다."
 
+#: src/api/upgrades.ts
+msgid "Nothing worth grabbing in the results"
+msgstr ""
+
 #: src/components/NotificationBell.tsx
 #, fuzzy
 msgid "Nothing yet"
@@ -9052,6 +9615,12 @@ msgstr "끄면 홈 섹션, 통계의 전체 기간 탭 및 업적 알림이 숨�
 msgid "Off keeps a release's own file name, which often says more than the format can. Maki's own downloads always follow the format, and renaming a series from its page still renames everything in it."
 msgstr "끄면 릴리스의 파일 이름을 그대로 유지합니다. 파일 이름이 형식보다 자세한 정보를 담는 경우가 많습니다. Maki에서 직접 다운로드한 파일은 항상 형식을 따르며 시리즈 페이지에서 이름을 바꾸면 포함된 항목의 이름도 모두 바뀝니다."
 
+#: src/pages/SettingsPage.tsx
+msgid "Off skips any series set to Scrobble-only or Full incognito; on scans them too."
+msgstr ""
+
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Official"
@@ -9117,6 +9686,10 @@ msgstr "라이브러리에 있음"
 msgid "On your shelf, not used for ranking"
 msgstr "라이브러리에 있음, 순위 산정에 사용되지 않음"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "One missed day a week is forgiven, and today never breaks a streak."
@@ -9134,6 +9707,7 @@ msgstr "장르별 타일을 표시하고, 타일을 선택하면 해당 장르�
 
 #: src/api/queue.ts
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "One-shot"
@@ -9419,6 +9993,10 @@ msgstr "페이지를 찾을 수 없습니다."
 msgid "Page thumbnails"
 msgstr "페이지 썸네일"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Page tolerance %"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -9658,6 +10236,10 @@ msgstr "Rewind 재생"
 msgid "Play the {rewindYear} retrospective"
 msgstr "{rewindYear} 회고 재생"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Polish"
@@ -9772,7 +10354,12 @@ msgstr "주요 시간대"
 msgid "Priority"
 msgstr "우선순위"
 
+#: src/pages/ActivityPage.tsx
+msgid "Profile"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Profile created"
 msgstr "프로필 생성됨"
@@ -9798,10 +10385,48 @@ msgstr "진행 상황 및 업적"
 msgid "Progress tracking is switched off. Turn it back on under Settings to see levels, achievements and streaks. Nothing was lost while it was off: all of it is worked out from your reading history whenever it is asked for."
 msgstr "진행 상황 추적이 꺼져 있습니다. 레벨, 업적 및 연속 기록을 보려면 설정에서 다시 켜세요. 꺼져 있는 동안에도 아무것도 손실되지 않습니다. 요청될 때마다 읽기 기록에서 모두 계산합니다."
 
+#: src/api/upgrades.ts
+msgid "Proposal"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Proposal created"
+msgstr ""
+
+#: src/components/upgrades/TorrentProposalCard.tsx
+msgid "Proposal dismissed"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Proposal expiry (days)"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "Protect {fileName} from upgrades"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Protect from upgrades"
+msgstr ""
+
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
+msgid "Protected from upgrades"
+msgstr ""
+
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Prowlarr"
 msgstr "Prowlarr"
+
+#: src/api/upgrades.ts
+msgid "Prowlarr isn't configured"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Prowlarr search failed"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -9868,6 +10493,42 @@ msgstr "이 소스를 이 순서대로 새 시리즈를 자동으로 일치시�
 msgid "qBittorrent"
 msgstr "qBittorrent"
 
+#: src/components/SeriesFilesSection.tsx
+msgid "Quality"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "quality format, condition, high resolution, format score, regex, group matches, release name matches, image format, minimum width"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Quality formats"
+msgstr ""
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Quality profile"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Quality profile: {profileName}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Quality profile: Instance default"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Quality profiles"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Queue"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Queue downloads and grab torrent releases"
@@ -9890,10 +10551,26 @@ msgstr "{chapterLbl} 대기열에 추가됨"
 msgid "Queued {outstanding}"
 msgstr "{outstanding} 대기열에 추가됨"
 
+#: src/api/upgrades.ts
+msgid "Queued a volume release"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
 msgstr "대기열에 추가되었거나 다운로드 중인 챕터가 여기에 표시됩니다. 시리즈 페이지나 라이브러리에서 검색을 시작하세요."
+
+#: src/api/upgrades.ts
+msgid "Queued for download"
+msgstr ""
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "Queued upgrade from {winnerSource}"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Quiet period (days)"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -9925,6 +10602,10 @@ msgstr "섹션 저장됨"
 #, fuzzy
 msgid "Raise or lower their own maximum rating"
 msgstr "자체 최대 평점을 올리거나 낮춤"
+
+#: src/api/upgrades.ts
+msgid "Ran out of probes for this run"
+msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -10232,6 +10913,10 @@ msgstr "최근 피드백"
 msgid "Recent syncs"
 msgstr "최근 동기화"
 
+#: src/pages/ActivityPage.tsx
+msgid "Recent upgrades"
+msgstr ""
+
 #: src/api/customRails.ts
 #: src/api/hooks.ts
 #: src/pages/HomePage.tsx
@@ -10370,6 +11055,10 @@ msgstr "재생성"
 msgid "Regenerate OPDS token"
 msgstr "OPDS 토큰 재생성"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Regex"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Reject"
@@ -10384,6 +11073,10 @@ msgstr "요청 거부"
 #, fuzzy
 msgid "Rejected"
 msgstr "거부됨"
+
+#: src/api/upgrades.ts
+msgid "Rejected after downloading the full chapter"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -10412,10 +11105,18 @@ msgstr "라이브러리와 관련됨"
 msgid "Related to your seeds"
 msgstr "내 시드와 관련됨"
 
+#: src/api/upgrades.ts
+msgid "Release name matches (regex)"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Release notes"
 msgstr "릴리스 노트"
+
+#: src/api/upgrades.ts
+msgid "Release number may be a sequel, not a chapter"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -10472,6 +11173,10 @@ msgstr "보관 파일 제거"
 #, fuzzy
 msgid "Remove bookmark"
 msgstr "북마크 제거"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Remove condition"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 #, fuzzy
@@ -10568,6 +11273,10 @@ msgstr "제거됨"
 msgid "Removed {seriesTitle}. It comes back when you read it again."
 msgstr "{seriesTitle}이(가) 삭제되었습니다. 다시 읽으면 표시됩니다."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Removed from every profile that scores it. This can't be undone."
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Removed from recommendations. Only this title: its genres and author are unaffected."
@@ -10648,6 +11357,18 @@ msgstr "복구"
 #, fuzzy
 msgid "Repairs"
 msgstr "수리"
+
+#: src/pages/ActivityPage.tsx
+msgid "Replace"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass."
+msgstr ""
+
+#: src/components/ImportReviewModal.tsx
+msgid "Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10739,6 +11460,10 @@ msgstr "HTTPS 필수"
 #, fuzzy
 msgid "Require single sign-on"
 msgstr "싱글 사인온 필수"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Required"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #: src/sourceLabels.ts
@@ -10917,6 +11642,18 @@ msgid "Reusing the name of the active preset overwrites it."
 msgstr "활성 프리셋의 이름을 재사용하면 기존 프리셋을 덮어씁니다."
 
 #: src/pages/ActivityPage.tsx
+msgid "Revert this upgrade"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Reverted"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Reverted by a user"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -11058,6 +11795,10 @@ msgstr "설정 안내 실행"
 msgid "Running"
 msgstr "실행 중"
 
+#: src/pages/SettingsPage.tsx
+msgid "Runs the daily scan and lets a series-level scan enqueue upgrades too."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -11085,6 +11826,7 @@ msgstr "샘플 챕터"
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -11166,6 +11908,7 @@ msgstr "복구 코드 저장"
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/SettingsPage.tsx
@@ -11210,15 +11953,42 @@ msgstr "크기 조정 ({scale}%)"
 msgid "Scan"
 msgstr "스캔"
 
+#: src/pages/SettingsPage.tsx
+msgid "Scan after hour"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Scan files"
 msgstr "파일 스캔"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scan for upgrades"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Scan incognito series"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Scan now"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Scan root folders and adopt existing series"
 msgstr "루트 폴더를 스캔하고 기존 시리즈 추가"
+
+#: src/pages/ActivityPage.tsx
+msgid "Scan running…"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+#: src/pages/SettingsPage.tsx
+msgid "Scan started"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -11231,6 +12001,8 @@ msgstr "인증 앱으로 스캔하거나 키를 수동으로 입력한 후 표�
 msgid "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
 msgstr "스캔, api key, 경로 매핑, 표지, 라이브러리 서버, 읽기 상태 연결, kavita 사용자, 진행률 소유자"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Scanlator"
@@ -11286,6 +12058,22 @@ msgstr "범위"
 #, fuzzy
 msgid "Scopes"
 msgstr "범위"
+
+#: src/pages/ActivityPage.tsx
+msgid "Score"
+msgstr ""
+
+#: src/components/series/UpgradeNowResultModal.tsx
+msgid "score {score}"
+msgstr ""
+
+#: src/components/SourceCompareModal.tsx
+msgid "Score {score}"
+msgstr ""
+
+#: src/components/series/FileQualityBadge.tsx
+msgid "Score: {score}"
+msgstr ""
 
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -11476,6 +12264,18 @@ msgstr "이 제목의 남은 소스를 다시 검색합니다. 이미 연결된 
 #, fuzzy
 msgid "Search titles"
 msgstr "작품 검색"
+
+#: src/pages/SettingsPage.tsx
+msgid "Search torrents for volume releases"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Search volume releases"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Search volumes now"
+msgstr ""
 
 #: src/components/CommandPalette.tsx
 #, fuzzy
@@ -11673,6 +12473,7 @@ msgid "Send silently"
 msgstr "소리 없이 보내기"
 
 #: src/components/ReleaseSearchModal.tsx
+#: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
 msgid "Sent to qBittorrent: {title}"
 msgstr "qBittorrent로 전송됨: {title}"
@@ -11744,6 +12545,7 @@ msgstr "시리즈 메타데이터는 MangaBaka에서 가져옵니다. 로컬 데
 msgid "Series moved"
 msgstr "시리즈 이동됨"
 
+#: src/api/upgrades.ts
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series not found"
@@ -11754,6 +12556,10 @@ msgstr "시리즈를 찾을 수 없습니다."
 #, fuzzy
 msgid "Series page"
 msgstr "시리즈 페이지"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Series pinned to this profile fall back to the instance default. This can't be undone."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11902,6 +12708,10 @@ msgstr "읽은 챕터 비율에서 라이브러리 비율을 뺀 값입니다. �
 msgid "Share of the series you've read."
 msgstr "읽은 시리즈의 비율입니다."
 
+#: src/api/upgrades.ts
+msgid "Shares a file with another chapter"
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Shift + Space"
@@ -11989,6 +12799,10 @@ msgstr "통과 항목 표시"
 #, fuzzy
 msgid "Show reading streaks"
 msgstr "읽기 연속 기록 표시"
+
+#: src/pages/ActivityPage.tsx
+msgid "Show replaced files"
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -12173,6 +12987,10 @@ msgstr "크기 불일치"
 msgid "Skip {latestVersion}"
 msgstr "{latestVersion} 건너뛰기"
 
+#: src/pages/SettingsPage.tsx
+msgid "Skip a chapter this long after it was added or last upgraded."
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -12187,6 +13005,10 @@ msgstr "설정 건너뛰기"
 #, fuzzy
 msgid "Skip specials on new series"
 msgstr "새 시리즈의 특별편 건너뛰기"
+
+#: src/components/ImportReviewModal.tsx
+msgid "Skip this file"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -12291,6 +13113,14 @@ msgstr "소스"
 msgid "Source {letter}"
 msgstr "소스 {letter}"
 
+#: src/api/upgrades.ts
+msgid "Source is"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Source kind is"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Source matching finished"
@@ -12316,6 +13146,7 @@ msgstr "정리하지 않고 소스 제거됨"
 msgid "Source state"
 msgstr "소스 상태"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
@@ -12812,6 +13643,14 @@ msgstr "해당 챕터가 더 이상 존재하지 않습니다"
 msgid "That happens with omnibus volumes and names the matcher can't parse. Try Relink files first, which reads each volume to find the chapters inside it; use the link button on a row for anything it can't place."
 msgstr "옴니버스 권 파일이나 연결기가 해석할 수 없는 이름에서 이런 일이 생깁니다. 먼저 파일 다시 연결을 사용해 각 권 파일 안의 챕터를 찾으세요. 찾지 못한 항목은 해당 행의 연결 버튼으로 직접 연결하세요."
 
+#: src/api/upgrades.ts
+msgid "That source is rate-limited right now"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "That source's tier isn't allowed by the profile"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "That was your {label}"
@@ -12872,6 +13711,10 @@ msgstr "압축 파일 안의 페이지 파일명에서 챕터 번호를 확인�
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
 msgstr "현재 피드 URL은 즉시 작동하지 않게 됩니다. 이를 사용하는 모든 앱에 새 URL을 설정해야 합니다."
 
+#: src/components/SourceCompareModal.tsx
+msgid "The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
@@ -12886,6 +13729,10 @@ msgstr "파일 이름에서 챕터를 확인했습니다."
 #, fuzzy
 msgid "The file name carries no chapter or volume number, so nothing can be matched to it. Rename it to the library's naming format and rescan, or link it by hand from the series' Files tab."
 msgstr "파일 이름에 챕터 또는 볼륨 번호가 없어 일치시킬 수 없습니다. 라이브러리 이름 지정 형식으로 이름을 변경한 다음 다시 스캔하거나 시리즈의 파일 탭에서 수동으로 연결하세요."
+
+#: src/api/queue.ts
+msgid "The file this upgrade was meant to replace is gone"
+msgstr ""
 
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
@@ -12963,6 +13810,10 @@ msgstr "팔로우 중인 창작자와 스튜디오의 최신 작품입니다. �
 msgid "The odd one out"
 msgstr "특이한 항목"
 
+#: src/api/queue.ts
+msgid "The old file could not be moved aside for the upgrade"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "The profile and its reader settings are removed. This can't be undone."
@@ -12992,6 +13843,10 @@ msgstr "각 소스가 스캔한 동일한 챕터이며 무거운 항목부터 �
 #, fuzzy
 msgid "The same counts the Stats page shows, kept here so the groups above have something to sit against."
 msgstr "통계 페이지에 표시되는 것과 같은 집계이며, 위 그룹이 비교할 기준으로 사용할 수 있도록 여기에 유지합니다."
+
+#: src/api/upgrades.ts
+msgid "The sample download failed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -13028,6 +13883,10 @@ msgstr "라이브러리에서 계속 다시 나타나는 구체적인 항목이�
 msgid "The starting point for every series. Any series can be set to something else from its own page, or for a whole selection at once from the Library's Select mode."
 msgstr "모든 시리즈의 시작점입니다. 각 시리즈의 페이지에서 다른 항목으로 설정하거나, 라이브러리의 선택 모드에서 한 번에 전체 선택 항목에 설정할 수 있습니다."
 
+#: src/api/upgrades.ts
+msgid "The title might be a different series"
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "The titles climbing fastest in popularity right now."
@@ -13047,6 +13906,14 @@ msgstr "토렌트는 선택한 대상을 계속 시딩합니다."
 #, fuzzy
 msgid "The torrent never appeared in qBittorrent"
 msgstr "qBittorrent에 토렌트가 나타나지 않았습니다"
+
+#: src/pages/ActivityPage.tsx
+msgid "The trashed copy is gone"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "The trashed copy of this file is gone"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -13146,6 +14013,10 @@ msgstr "각 소스가 이 챕터를 스캔한 결과를 용량이 큰 순서대�
 msgid "This chapter has no readable file."
 msgstr "이 챕터에는 읽을 수 있는 파일이 없습니다."
 
+#: src/api/upgrades.ts
+msgid "This chapter was added or upgraded too recently"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "This file is already gone from disk, so nothing is deleted. It drops the record that still links these chapters to it, so they stop reading as downloaded."
@@ -13232,6 +14103,22 @@ msgstr "현재 라이브러리와 설정을 <0>{backupName}</0>으로 바꾸고 
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
 msgstr "이 시리즈에는 아직 챕터가 없습니다. Maki가 연결 대상을 알 수 있도록 먼저 소스 연결을 추가하세요."
 
+#: src/api/upgrades.ts
+msgid "This series has no quality profile"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "This series isn't eligible for a volume search"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "This series was searched in the last week"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "This series' profile doesn't aim for volume releases"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
@@ -13251,6 +14138,10 @@ msgstr "스냅샷마다 한두 분 정도 걸리며 한 번만 실행됩니다."
 #, fuzzy
 msgid "this title only"
 msgstr "이 작품만"
+
+#: src/pages/ActivityPage.tsx
+msgid "This upgrade was already reverted"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -13327,6 +14218,10 @@ msgstr "이 파일에 포함된 챕터를 모두 선택하세요. 옴니버스�
 msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
 msgstr "챕터 목록을 받아오는 즉시 시청 완료로 표시합니다. 시청한 챕터는 읽기 통계에 포함되지 않습니다."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Tier order"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -13396,6 +14291,10 @@ msgstr "제목만 일치시킵니다. 의미로 검색하려면 추천 인덱스
 #, fuzzy
 msgid "Title search"
 msgstr "제목 검색"
+
+#: src/api/upgrades.ts
+msgid "Title uncertain"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -13560,6 +14459,14 @@ msgstr "비극"
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 msgstr "영어 이외의 번역은 기계 번역으로 작성되었으며 시간이 지나며 수정됩니다. 아직 번역되지 않은 항목은 영어로 표시됩니다."
 
+#: src/pages/SettingsPage.tsx
+msgid "Trash retention (days)"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Trash: {trashSize} across {trashFilesText}"
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Trending now"
@@ -13669,6 +14576,7 @@ msgstr "2단계 인증 코드"
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13750,6 +14658,8 @@ msgstr "팔로우 취소"
 msgid "Unfollow {name}"
 msgstr "{name} 팔로우 취소"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/stats/labels.ts
@@ -13855,6 +14765,10 @@ msgstr "미지정"
 msgid "Unspecified"
 msgstr "지정되지 않음"
 
+#: src/api/upgrades.ts
+msgid "Unsupported file type"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Until it is built, the badges compare against your own library only."
@@ -13927,6 +14841,60 @@ msgstr "업데이트"
 msgid "Updating ComicInfo"
 msgstr "ComicInfo 업데이트 중"
 
+#: src/components/ReleaseSearchModal.tsx
+#: src/components/SourceCompareModal.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Upgrade"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Upgrade now"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Upgrade restore failed"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrade until score"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade, quality profile, default profile, automatic upgrades"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/settings/registry.ts
+#: src/pages/SettingsPage.tsx
+msgid "Upgrades"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Upgrades are off for this profile"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Upgrades are turned off in this series' profile"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades enabled"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades off"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades on"
+msgstr ""
+
 #: src/api/hooks.ts
 #, fuzzy
 msgid "Upload failed: {status}"
@@ -13994,6 +14962,10 @@ msgstr "잘못된 소스 일치로 가져온 챕터를 정리할 때 사용하�
 #, fuzzy
 msgid "Use trackers"
 msgstr "트래커 사용"
+
+#: src/pages/SettingsPage.tsx
+msgid "Used by any series that hasn't been pinned to a profile of its own."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -14084,6 +15056,10 @@ msgstr "UTC"
 #, fuzzy
 msgid "Validating"
 msgstr "검증 중"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Value"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -14201,6 +15177,11 @@ msgstr "{volNum}권 {chapterNumber}화"
 msgid "Vol.{volume} Ch.{chapter}"
 msgstr "{volume}권 {chapter}화"
 
+#: src/api/upgrades.ts
+#: src/components/series/FileQualityBadge.tsx
+msgid "Volume"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "volume {number}"
@@ -14210,6 +15191,35 @@ msgstr "{number}권"
 #, fuzzy
 msgid "Volume {number}"
 msgstr "{number}권"
+
+#: src/api/upgrades.ts
+msgid "Volume {range}"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Volume release proposed"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "Volume releases waiting for you"
+msgstr ""
+
+#: src/api/upgrades.ts
+msgid "Volume search is turned off"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+#: src/pages/SeriesDetailPage.tsx
+msgid "Volume search started"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Volume searches per run"
+msgstr ""
+
+#: src/api/inbox.ts
+msgid "Volume upgraded"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
@@ -14228,6 +15238,10 @@ msgstr "{number}~{volumeEnd}권"
 #, fuzzy
 msgid "Volumes {number}-{volumeEnd}"
 msgstr "{number}~{volumeEnd}권"
+
+#: src/api/upgrades.ts
+msgid "Volumes {range}"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -14404,6 +15418,7 @@ msgstr "읽은 내용"
 msgid "What's new in v{version}"
 msgstr "v{version}의 새로운 기능"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "When"
@@ -14418,6 +15433,10 @@ msgstr "새로고침에서 한 시리즈에 이 값보다 많은 새 챕터가 �
 #, fuzzy
 msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
 msgstr "디스크에 있는 시리즈를 가져올 때 폴더 이름을 시리즈 폴더 형식에 맞게 바꾸거나 현재 이름을 유지합니다."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -14465,6 +15484,10 @@ msgid "Where your taste has moved"
 msgstr "취향이 이동한 방향"
 
 #: src/pages/SettingsPage.tsx
+msgid "Whether an existing file should be replaced once a better release shows up, judged against a series' quality profile. The daily scan runs after the chosen hour and only replaces files a profile actually marks as upgradable."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Which language series titles are shown in, where the metadata provider has one. Display only: folders and file names keep the English title, and so does sorting."
 msgstr "메타데이터 제공자가 제공하는 경우 시리즈 제목을 표시할 언어입니다. 표시만 변경됩니다. 폴더와 파일 이름은 영어 제목을 유지하며 정렬도 마찬가지입니다."
@@ -14505,10 +15528,18 @@ msgstr "프랜차이즈 전체"
 msgid "Whole library"
 msgstr "전체 라이브러리"
 
+#: src/api/upgrades.ts
+msgid "Whole series"
+msgstr ""
+
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
 msgid "Whole year"
 msgstr "전체 연도"
+
+#: src/api/upgrades.ts
+msgid "Whole-series pack, needs your call"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

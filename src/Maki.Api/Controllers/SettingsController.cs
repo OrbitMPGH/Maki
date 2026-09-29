@@ -129,6 +129,24 @@ public class SettingsController(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
         bool UseHardlinks = true, int? BulkHoldThreshold = null);
+    /// <param name="Enabled">Turns the daily upgrade scan on.</param>
+    /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
+    /// <param name="MaxPerDay">0 means no cap.</param>
+    /// <param name="TrashRetentionDays">0 purges replaced files on the next housekeeping run.</param>
+    public record UpgradeSettings(
+        bool Enabled,
+        int? DefaultProfileId,
+        int ScanHour = 4,
+        int MaxPerDay = 25,
+        int MaxProbesPerRun = 50,
+        int QuietPeriodDays = 7,
+        int TrashRetentionDays = 14,
+        bool ScanIncognito = true,
+        bool VolumeSearch = true,
+        long TorrentAutoGrabMaxBytes = UpgradeOptions.DefaultAutoGrabMaxBytes,
+        int VolumeMissingTolerance = 3,
+        int VolumeSearchesPerRun = 10,
+        int ProposalExpiryDays = 30);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -842,6 +860,101 @@ public class SettingsController(
         }
 
         return Ok(request with { BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct) });
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("upgrades")]
+    public async Task<IActionResult> GetUpgrades(CancellationToken ct)
+    {
+        var options = await UpgradeOptions.LoadAsync(settings, ct);
+        var defaultId = options.DefaultProfileId;
+        if (defaultId is { } id && !await db.UpgradeProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            defaultId = null;
+        }
+
+        return Ok(new UpgradeSettings(options.Enabled, defaultId, options.ScanHour, options.MaxPerDay,
+            options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito,
+            options.VolumeSearch, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance,
+            options.VolumeSearchesPerRun, options.ProposalExpiryDays));
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("upgrades")]
+    public async Task<IActionResult> SetUpgrades([FromBody] UpgradeSettings request, CancellationToken ct)
+    {
+        if (request.DefaultProfileId is { } id && !await db.UpgradeProfiles.AnyAsync(p => p.Id == id, ct))
+        {
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
+        }
+
+        if (request.ScanHour is < 0 or > 23)
+        {
+            return this.Fail(localizer, "error.settings.upgradesScanHourRange", new { min = 0, max = 23 });
+        }
+
+        if (request.MaxPerDay is < 0 or > 1000)
+        {
+            return this.Fail(localizer, "error.settings.upgradesMaxPerDayRange", new { min = 0, max = 1000 });
+        }
+
+        if (request.MaxProbesPerRun is < 1 or > 500)
+        {
+            return this.Fail(localizer, "error.settings.upgradesMaxProbesPerRunRange", new { min = 1, max = 500 });
+        }
+
+        if (request.QuietPeriodDays is < 0 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesQuietPeriodDaysRange", new { min = 0, max = 365 });
+        }
+
+        if (request.TrashRetentionDays is < 0 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTrashRetentionDaysRange", new { min = 0, max = 365 });
+        }
+
+        if (request.TorrentAutoGrabMaxBytes < 0)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTorrentAutoGrabMaxBytesRange");
+        }
+
+        if (request.VolumeMissingTolerance is < 0 or > 50)
+        {
+            return this.Fail(localizer, "error.settings.upgradesVolumeMissingToleranceRange", new { min = 0, max = 50 });
+        }
+
+        if (request.VolumeSearchesPerRun is < 1 or > 200)
+        {
+            return this.Fail(localizer, "error.settings.upgradesVolumeSearchesPerRunRange", new { min = 1, max = 200 });
+        }
+
+        if (request.ProposalExpiryDays is < 1 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesProposalExpiryDaysRange", new { min = 1, max = 365 });
+        }
+
+        await settings.SetAsync(SettingKeys.UpgradesEnabled, request.Enabled ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesDefaultProfileId,
+            request.DefaultProfileId?.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesScanHour, request.ScanHour.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMaxPerDay, request.MaxPerDay.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMaxProbesPerRun,
+            request.MaxProbesPerRun.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesQuietPeriodDays,
+            request.QuietPeriodDays.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesTrashRetentionDays,
+            request.TrashRetentionDays.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesScanIncognito, request.ScanIncognito ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeSearch, request.VolumeSearch ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesTorrentAutoGrabMaxBytes,
+            request.TorrentAutoGrabMaxBytes.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeMissingTolerance,
+            request.VolumeMissingTolerance.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeSearchesPerRun,
+            request.VolumeSearchesPerRun.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesProposalExpiryDays,
+            request.ProposalExpiryDays.ToString(CultureInfo.InvariantCulture), ct);
+        return Ok(request);
     }
 
     [Authorize(Policy = Policies.Admin)]

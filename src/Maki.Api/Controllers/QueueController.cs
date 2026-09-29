@@ -2,12 +2,15 @@ using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
+using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 namespace Maki.Api.Controllers;
 
@@ -19,7 +22,9 @@ public class QueueController(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     TorrentImportService importer,
-    EventBroadcaster events)
+    EventBroadcaster events,
+    ISchedulerFactory schedulerFactory,
+    ILogger<QueueController> logger)
     : ControllerBase
 {
     /// <summary>
@@ -79,11 +84,26 @@ public class QueueController(
             .Take(pageSize)
             .ToListAsync(ct);
 
+        var historyIds = items
+            .Where(q => q.UpgradeInfoJson != null && !TorrentUpgradeInfo.IsTorrent(q.UpgradeInfoJson))
+            .Select(q => UpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryId)
+            .OfType<int>()
+            .ToList();
+        var upgrades = await UpgradeHistoryStates.LoadAsync(db, historyIds, ct);
+        var groupIds = items
+            .Select(q => TorrentUpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryGroupId)
+            .OfType<Guid>()
+            .ToList();
+        var groups = await UpgradeHistoryStates.LoadGroupsAsync(db, groupIds, ct);
+
         var dtos = items
             .Where(q => q.Series != null)
             .Select(q => QueueItemDto.FromEntity(
                 q, q.Chapter, q.Series!,
-                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?")))
+                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"),
+                TorrentUpgradeInfo.Parse(q.UpgradeInfoJson) is { } torrent
+                    ? torrent.HistoryGroupId is { } groupId ? groups.GetValueOrDefault(groupId) : null
+                    : UpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryId is { } historyId ? upgrades.GetValueOrDefault(historyId) : null))
             .ToList();
 
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
@@ -200,7 +220,9 @@ public class QueueController(
             error = plan.ErrorKey is not null ? localizer.Get(plan.ErrorKey, plan.ErrorArgs) : null,
             plan.HasConflicts,
             plan.NewChapterCount,
-            plan.ReplacedFileCount
+            plan.ReplacedFileCount,
+            plan.IsUpgrade,
+            plan.SuggestedSkips
         });
     }
 
@@ -232,6 +254,12 @@ public class QueueController(
             item.Status = QueueStatus.Cancelled;
             item.CompletedAt = DateTime.UtcNow;
             item.SetError("error.download.importRejected");
+            if (TorrentUpgradeInfo.Parse(item.UpgradeInfoJson) is { } rejected)
+            {
+                rejected.Outcome = TorrentUpgradeOutcomes.Rejected;
+                item.UpgradeInfoJson = rejected.Serialize();
+            }
+
             await db.SaveChangesAsync(ct);
             await batches.DiscardAsync(item.SeriesId, item.Id);
             await Broadcast(item);
@@ -250,7 +278,8 @@ public class QueueController(
         try
         {
             var contentPath = await importer.ResolveContentPathAsync(item, ct);
-            outcome = await importer.ImportAsync(item, item.Series, contentPath, mode, ct);
+            var skipFiles = request.SkipFiles is { Count: > 0 } skip ? skip.ToHashSet(StringComparer.Ordinal) : null;
+            outcome = await importer.ImportAsync(item, item.Series, contentPath, mode, ct, skipFiles: skipFiles);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -281,12 +310,17 @@ public class QueueController(
         item.Status = QueueStatus.Completed;
         item.CompletedAt = DateTime.UtcNow;
         item.PagesDone = item.PagesTotal;
+        item.ClearError();
 
         // Saved before the rename: its active-download check re-queries this row, and an item still
         // reading as in-flight makes it refuse to name the files it just imported.
         await db.SaveChangesAsync(ct);
         await importer.ApplyNamingAsync(item.Series, outcome.ImportedPaths, ct);
         await Broadcast(item);
+        if (outcome.Imported > 0)
+        {
+            await ChapterFileMeasureJob.TriggerAsync(schedulerFactory, logger);
+        }
 
         return Ok(new ImportDecisionResultDto(
             outcome.Imported, outcome.Linked, outcome.Skipped, outcome.Deleted));

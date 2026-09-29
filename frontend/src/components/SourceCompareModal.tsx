@@ -42,6 +42,10 @@ import { useAuth } from '../auth/AuthProvider'
 import type { ComparePanel } from '../api/types'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now, plural } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
+import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS, upgradeReasonLabel } from '../api/upgrades'
+import type { QualityTierName } from '../api/upgrades'
+import { useLabel } from '../i18n-context'
 
 const COLUMN_WIDTH = 300
 
@@ -54,6 +58,30 @@ function formatSize(bytes: number): string {
     unit++
   }
   return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`
+}
+
+/** "Aggregator · 969px", or just the tier when no page width could be measured for this column. */
+function tierWidthLabel(
+  renderLabel: (m: MessageDescriptor) => string,
+  tier: QualityTierName,
+  width: number | null,
+): string {
+  const tierLabel = renderLabel(QUALITY_TIER_LABELS[tier])
+  return width != null ? now`${tierLabel} · ${width}px` : tierLabel
+}
+
+/** "Current: Aggregator 969px, score 0" for the pick-mode header, from whichever parts are known. */
+function currentQualityText(
+  renderLabel: (m: MessageDescriptor) => string,
+  tier: QualityTierName,
+  width: number | null,
+  score: number | null,
+): string {
+  const tierLabel = renderLabel(QUALITY_TIER_LABELS[tier])
+  if (width != null && score != null) return now`Current: ${tierLabel} ${width}px, score ${score}`
+  if (width != null) return now`Current: ${tierLabel} ${width}px`
+  if (score != null) return now`Current: ${tierLabel}, score ${score}`
+  return now`Current: ${tierLabel}`
 }
 
 /** The chapter a `pick` run is about: one fixed chapter, re-fetched from whichever panel wins. */
@@ -91,6 +119,7 @@ export function SourceCompareModal({
 }) {
   const { can } = useAuth()
   const { t, i18n } = useLingui()
+  const renderLabel = useLabel()
   const start = useStartSourceCompare()
   const isAdmin = can('Admin')
   // Only poll once the job exists: a GET that lands first answers 404, and a query with no data
@@ -104,6 +133,7 @@ export function SourceCompareModal({
   const redownload = useRedownloadFromSource()
   const downloadFrom = useDownloadChapterFrom()
   const pick = mode === 'pick' && chapter ? chapter : null
+  const pickLabel = pick?.label ?? null
 
   const [order, setOrder] = useState<number[]>([])
   // Until the user drags something, failed panels are floated to the back. Seeding can't do it —
@@ -190,6 +220,14 @@ export function SourceCompareModal({
     const known = order.map((id) => byId.get(id)).filter((p): p is ComparePanel => p !== undefined)
     return [...known, ...snapshot.panels.filter((p) => !order.includes(p.mappingId))]
   }, [snapshot, order, ranked, startingOrder])
+
+  // Every panel's quality carries the same Current* fields (the file on disk, not this source's
+  // scan), so the first one that has them at all is as good as any other.
+  const currentQuality = pick ? (panels.find((p) => p.quality?.currentTier != null)?.quality ?? null) : null
+  const currentQualityLine =
+    currentQuality?.currentTier != null
+      ? currentQualityText(renderLabel, currentQuality.currentTier, currentQuality.currentWidth, currentQuality.currentScore)
+      : null
 
   function handleRowDragOver(e: React.DragEvent) {
     e.preventDefault()
@@ -372,7 +410,7 @@ export function SourceCompareModal({
         opened={opened}
         onClose={onClose}
         size="min(1180px, calc(100vw - 3rem))"
-        title={pick ? t`Find a better copy of ${pick.label}` : t`Compare sources`}
+        title={pick ? t`Find a better copy of ${pickLabel}` : t`Compare sources`}
         // Full height with the column row taking what's left, so the row scrolls inside the modal
         // and its horizontal scrollbar stays on screen. Otherwise the modal itself scrolls and a
         // webtoon's tall pages push that scrollbar far below the fold.
@@ -399,6 +437,12 @@ export function SourceCompareModal({
               </Trans>
             )}
           </Text>
+
+          {currentQualityLine && (
+            <Text size="xs" c="var(--ink-3)" fw={500}>
+              {currentQualityLine}
+            </Text>
+          )}
 
           <Group justify="space-between" wrap="wrap" gap="sm">
             <Group gap="sm">
@@ -460,7 +504,8 @@ export function SourceCompareModal({
               style={{ minHeight: 200 }}
             >
               {panels.map((panel, i) => {
-                const { chapterLabel } = panel
+                const { chapterLabel, quality } = panel
+                const score = quality?.score ?? null
                 const weight = formatSize(weightOf(panel))
                 let shift = 0
                 if (dragFromIndex !== null && hoverIndex !== null && i !== dragFromIndex) {
@@ -540,6 +585,34 @@ export function SourceCompareModal({
                         )}
                       </Group>
 
+                      {quality && (
+                        <Group gap={6} wrap="wrap" mb={4}>
+                          <Badge size="xs" variant="light" color={QUALITY_TIER_COLOR[quality.tier]}>
+                            {tierWidthLabel(renderLabel, quality.tier, quality.medianWidth)}
+                          </Badge>
+                          <Text size="xs" c="var(--ink-3)">
+                            <Trans>Score {score}</Trans>
+                          </Text>
+                          {pick &&
+                            (quality.isUpgrade ? (
+                              <Badge size="xs" variant="light" color="var(--ok)">
+                                <Trans>Upgrade</Trans>
+                              </Badge>
+                            ) : (
+                              quality.reason && (
+                                <Text size="xs" c="var(--ink-3)">
+                                  {upgradeReasonLabel(renderLabel, quality.reason)}
+                                </Text>
+                              )
+                            ))}
+                        </Group>
+                      )}
+                      {quality && quality.matchedFormats.length > 0 && (
+                        <Text size="xs" c="var(--ink-3)" mb={4} truncate>
+                          {quality.matchedFormats.join(', ')}
+                        </Text>
+                      )}
+
                       {panel.status === 'ready' && panel.pages.some((x) => x !== null) && (
                         <Tooltip
                           label={t`Total bytes across the pages shown. Over the same pages it tracks how hard the source compressed them, which is why the columns start in this order, but a source that upscales its scans is bigger without being better.`}
@@ -560,18 +633,25 @@ export function SourceCompareModal({
                               {plural(panel.pageCount, { one: '# page', other: '# pages' })}
                             </Text>
                           )}
-                          <Button
-                            size="xs"
-                            variant="light"
-                            fullWidth
-                            loading={
-                              downloadFrom.isPending &&
-                              downloadFrom.variables?.sourceMappingId === panel.mappingId
-                            }
-                            onClick={() => pickPanel(panel)}
+                          <Tooltip
+                            label={t`The current file moves to trash rather than being deleted outright, so this can be undone from Activity if the new copy turns out worse.`}
+                            withArrow
+                            multiline
+                            w={260}
                           >
-                            <Trans>Use this copy</Trans>
-                          </Button>
+                            <Button
+                              size="xs"
+                              variant="light"
+                              fullWidth
+                              loading={
+                                downloadFrom.isPending &&
+                                downloadFrom.variables?.sourceMappingId === panel.mappingId
+                              }
+                              onClick={() => pickPanel(panel)}
+                            >
+                              <Trans>Use this copy</Trans>
+                            </Button>
+                          </Tooltip>
                         </Stack>
                       )}
 

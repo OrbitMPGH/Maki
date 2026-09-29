@@ -109,7 +109,7 @@ public sealed class DownloadBatchNotifier : IDisposable
             batch.LastActivity = _time.GetUtcNow();
         }
 
-        if (!opened || !announce)
+        if (!opened || !announce || origin == DownloadOrigin.Upgrade)
         {
             return;
         }
@@ -256,12 +256,19 @@ public sealed class DownloadBatchNotifier : IDisposable
     {
         var unfinished = batch.Pending.Count;
         var automatic = batch.Origin is
-            DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval;
+            DownloadOrigin.SmartDownload or DownloadOrigin.MonitorRefresh or DownloadOrigin.RequestApproval or
+            DownloadOrigin.Upgrade;
 
         // Discord and webhooks go to a channel, not to a person, so there is nobody whose language
         // to consult: they render once in the instance's own. The inbox copies below stay unrendered
         // and are worded per reader instead.
         var locale = await _locales.DefaultAsync();
+
+        if (batch.Origin == DownloadOrigin.Upgrade)
+        {
+            SummarizeUpgrades(seriesId, batch, unfinished);
+            return;
+        }
 
         if (batch.Failed == 0 && unfinished == 0)
         {
@@ -335,6 +342,44 @@ public sealed class DownloadBatchNotifier : IDisposable
                 SeriesId: seriesId,
                 Url: $"/series/{seriesId}"), seriesId);
         }
+    }
+
+    /// <summary>
+    /// Upgrades replace files the library already has, so they never reach chat channels or webhooks,
+    /// whatever the outcome. The inbox still hears about replaced files and about failures; rejected
+    /// candidates count as cancelled and are not news.
+    /// </summary>
+    private void SummarizeUpgrades(int seriesId, Batch batch, int unfinished)
+    {
+        if (batch.Failed == 0 && unfinished == 0)
+        {
+            if (batch.Completed > 0)
+            {
+                _inbox.RaiseForSeries(InboxEventType.ChapterUpgraded, new InboxMessage(
+                    Key: "inbox.upgrade.batch",
+                    Params: InboxMessage.Args(new { count = batch.Completed }),
+                    SeriesId: seriesId,
+                    Url: $"/series/{seriesId}"), seriesId);
+            }
+
+            return;
+        }
+
+        _inbox.RaiseForSeries(InboxEventType.DownloadFailed, new InboxMessage(
+            Key: "inbox.downloads.finishedWithErrors",
+            Params: InboxMessage.Args(new
+            {
+                completed = batch.Completed,
+                failed = batch.Failed,
+                cancelled = batch.Cancelled,
+                unfinished,
+                queued = batch.Queued,
+                hasError = batch.FirstError is { Length: > 0 } ? "yes" : "no",
+                error = batch.FirstError,
+            }),
+            Level: batch.Completed > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
+            SeriesId: seriesId,
+            Url: $"/series/{seriesId}"), seriesId);
     }
 
     public void Dispose() => _sweeper.Dispose();

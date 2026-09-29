@@ -112,6 +112,37 @@ public class MangaDexSourceTests
     }
 
     [Fact]
+    public async Task Feed_request_includes_scanlation_group_relationships()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-multilingual.json")
+        });
+
+        await new MangaDexSource(factory).ListChaptersAsync("a1c7c817");
+
+        var feed = Assert.Single(factory.Requests);
+        Assert.Contains("includes[]=scanlation_group", feed);
+    }
+
+    [Fact]
+    public async Task Chapters_carry_the_uploading_scanlation_groups()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-multilingual.json")
+        });
+
+        var chapters = await new MangaDexSource(factory).ListChaptersAsync("a1c7c817", "en,es-la");
+
+        // Chapter 1/en was kept from a single group; chapter 1/es-la is a joint release of two,
+        // joined with ", "; chapter 2/en carries no scanlation_group relationship at all.
+        Assert.Equal("Scanlation Corp", chapters.Single(c => c.NumberRaw == "1" && c.Language == "en").Group);
+        Assert.Equal("Grupo A, Grupo B", chapters.Single(c => c.Language == "es-la").Group);
+        Assert.Null(chapters.Single(c => c.NumberRaw == "2").Group);
+    }
+
+    [Fact]
     public async Task An_entry_with_no_links_still_reports_its_own_uuid()
     {
         var results = await WithSearch().SearchAsync("one piece");

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
+import { ApiError } from '../api/client'
 import { useLabel, useLanguageChoice } from '../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -61,6 +62,13 @@ import { OidcSection, SecuritySection } from '../components/settings/SecuritySec
 import { UsersSection } from '../components/settings/UsersSection'
 import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSection'
 import { ProgressSection } from '../components/settings/ProgressSection'
+import { QualityFormatsSection, UpgradeProfilesSection } from '../components/settings/UpgradeProfilesSection'
+import {
+  useUpgradeProfiles,
+  useRunUpgradeScan,
+  useSaveUpgradeSettings,
+  useUpgradeSettings,
+} from '../api/upgrades'
 import { CONTENT_RATINGS, ContentRatingCards } from '../components/ContentRatingCards'
 import { useIncognitoOptions, type IncognitoMode } from '../components/ui/incognito'
 import { useApplyLanguage, useLanguageOptions } from '../components/ui/language'
@@ -1307,6 +1315,258 @@ function DownloadSection() {
                 onSuccess: () =>
                   notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
               },
+            )
+          }
+        />
+      </Group>
+    </Panel>
+  )
+}
+
+const BYTES_PER_MB = 1024 * 1024
+
+function UpgradesSettingsSection() {
+  const { t } = useLingui()
+  const { data: settings } = useUpgradeSettings()
+  const { data: profiles } = useUpgradeProfiles()
+  const save = useSaveUpgradeSettings()
+  const scan = useRunUpgradeScan()
+  const [enabled, setEnabled] = useState(false)
+  const [defaultProfileId, setDefaultProfileId] = useState<number | null>(null)
+  const [scanHour, setScanHour] = useState<number | string>(4)
+  const [maxPerDay, setMaxPerDay] = useState<number | string>(25)
+  const [maxProbesPerRun, setMaxProbesPerRun] = useState<number | string>(50)
+  const [quietPeriodDays, setQuietPeriodDays] = useState<number | string>(7)
+  const [trashRetentionDays, setTrashRetentionDays] = useState<number | string>(14)
+  const [scanIncognito, setScanIncognito] = useState(true)
+  const [volumeSearch, setVolumeSearch] = useState(true)
+  const [autoGrabMb, setAutoGrabMb] = useState<number | string>(500)
+  const [volumeMissingTolerance, setVolumeMissingTolerance] = useState<number | string>(3)
+  const [volumeSearchesPerRun, setVolumeSearchesPerRun] = useState<number | string>(10)
+  const [proposalExpiryDays, setProposalExpiryDays] = useState<number | string>(30)
+
+  useEffect(() => {
+    if (settings) {
+      setEnabled(settings.enabled)
+      setDefaultProfileId(settings.defaultProfileId)
+      setScanHour(settings.scanHour)
+      setMaxPerDay(settings.maxPerDay)
+      setMaxProbesPerRun(settings.maxProbesPerRun)
+      setQuietPeriodDays(settings.quietPeriodDays)
+      setTrashRetentionDays(settings.trashRetentionDays)
+      setScanIncognito(settings.scanIncognito)
+      setVolumeSearch(settings.volumeSearch)
+      setAutoGrabMb(settings.torrentAutoGrabMaxBytes / BYTES_PER_MB)
+      setVolumeMissingTolerance(settings.volumeMissingTolerance)
+      setVolumeSearchesPerRun(settings.volumeSearchesPerRun)
+      setProposalExpiryDays(settings.proposalExpiryDays)
+    }
+  }, [settings])
+
+  const autoGrabBytes = Math.round(Number(autoGrabMb) * BYTES_PER_MB)
+
+  const dirty =
+    settings !== undefined &&
+    (enabled !== settings.enabled ||
+      defaultProfileId !== settings.defaultProfileId ||
+      Number(scanHour) !== settings.scanHour ||
+      Number(maxPerDay) !== settings.maxPerDay ||
+      Number(maxProbesPerRun) !== settings.maxProbesPerRun ||
+      Number(quietPeriodDays) !== settings.quietPeriodDays ||
+      Number(trashRetentionDays) !== settings.trashRetentionDays ||
+      scanIncognito !== settings.scanIncognito ||
+      volumeSearch !== settings.volumeSearch ||
+      autoGrabBytes !== settings.torrentAutoGrabMaxBytes ||
+      Number(volumeMissingTolerance) !== settings.volumeMissingTolerance ||
+      Number(volumeSearchesPerRun) !== settings.volumeSearchesPerRun ||
+      Number(proposalExpiryDays) !== settings.proposalExpiryDays)
+
+  return (
+    <Panel>
+      <Title order={4} mb="sm">
+        <Trans>Upgrades</Trans>
+      </Title>
+      <SettingsHelp mb="md">
+        <Trans>
+          Whether an existing file should be replaced once a better release shows up, judged against
+          a series' quality profile. The daily scan runs after the chosen hour and only replaces
+          files a profile actually marks as upgradable.
+        </Trans>
+      </SettingsHelp>
+      <Switch
+        label={t`Enabled`}
+        description={t`Runs the daily scan and lets a series-level scan enqueue upgrades too.`}
+        checked={enabled}
+        onChange={(e) => setEnabled(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Select
+        label={t`Default profile`}
+        description={t`Used by any series that hasn't been pinned to a profile of its own.`}
+        value={defaultProfileId == null ? '' : String(defaultProfileId)}
+        onChange={(value) => setDefaultProfileId(value ? Number(value) : null)}
+        data={[
+          { value: '', label: t`None` },
+          ...(profiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+        ]}
+        w={260}
+        mb="md"
+      />
+      <Group grow mb="md">
+        <NumberInput
+          label={t`Scan after hour`}
+          description={t`Local time, 0-23.`}
+          min={0}
+          max={23}
+          clampBehavior="strict"
+          value={scanHour}
+          onChange={setScanHour}
+        />
+        <NumberInput
+          label={t`Max upgrades per day`}
+          description={t`0 means no cap.`}
+          min={0}
+          max={1000}
+          clampBehavior="strict"
+          value={maxPerDay}
+          onChange={setMaxPerDay}
+        />
+      </Group>
+      <Group grow mb="md">
+        <NumberInput
+          label={t`Max probes per scan`}
+          min={1}
+          max={500}
+          clampBehavior="strict"
+          value={maxProbesPerRun}
+          onChange={setMaxProbesPerRun}
+        />
+        <NumberInput
+          label={t`Quiet period (days)`}
+          description={t`Skip a chapter this long after it was added or last upgraded.`}
+          min={0}
+          max={365}
+          clampBehavior="strict"
+          value={quietPeriodDays}
+          onChange={setQuietPeriodDays}
+        />
+      </Group>
+      <NumberInput
+        label={t`Trash retention (days)`}
+        description={t`Replaced files are kept this long before being purged. 0 purges on the next housekeeping pass.`}
+        min={0}
+        max={365}
+        clampBehavior="strict"
+        value={trashRetentionDays}
+        onChange={setTrashRetentionDays}
+        w={260}
+        mb="md"
+      />
+      <Switch
+        label={t`Scan incognito series`}
+        description={t`Off skips any series set to Scrobble-only or Full incognito; on scans them too.`}
+        checked={scanIncognito}
+        onChange={(e) => setScanIncognito(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Switch
+        label={t`Search torrents for volume releases`}
+        description={t`Looks for volume packs that could replace single-chapter files when a series' profile aims for volumes. Needs Prowlarr.`}
+        checked={volumeSearch}
+        onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Group grow mb="md" align="flex-start">
+        <NumberInput
+          label={t`Auto-grab size limit (MB)`}
+          description={t`Larger releases become proposals you approve by hand.`}
+          min={0}
+          max={102400}
+          decimalScale={0}
+          clampBehavior="strict"
+          value={autoGrabMb}
+          onChange={setAutoGrabMb}
+          disabled={!volumeSearch}
+        />
+        <NumberInput
+          label={t`Missing chapters allowed per volume`}
+          description={t`Auto-grab only when a volume adds this many chapters or fewer that you don't have.`}
+          min={0}
+          max={50}
+          clampBehavior="strict"
+          value={volumeMissingTolerance}
+          onChange={setVolumeMissingTolerance}
+          disabled={!volumeSearch}
+        />
+      </Group>
+      <Group grow mb="md" align="flex-start">
+        <NumberInput
+          label={t`Volume searches per run`}
+          min={1}
+          max={200}
+          clampBehavior="strict"
+          value={volumeSearchesPerRun}
+          onChange={setVolumeSearchesPerRun}
+          disabled={!volumeSearch}
+        />
+        <NumberInput
+          label={t`Proposal expiry (days)`}
+          description={t`A proposal nobody answers is dropped after this long.`}
+          min={1}
+          max={365}
+          clampBehavior="strict"
+          value={proposalExpiryDays}
+          onChange={setProposalExpiryDays}
+          disabled={!volumeSearch}
+        />
+      </Group>
+      <Group justify="space-between" mt="md">
+        <Button
+          variant="default"
+          loading={scan.isPending}
+          onClick={() =>
+            scan.mutate(undefined, {
+              onSuccess: () => {
+                notifications.show({
+                  message: now`Scan started`,
+                  color: 'var(--ok)',
+                })
+              },
+              onError: (error) => {
+                notifications.show({
+                  message:
+                    error instanceof ApiError && error.status === 409
+                      ? now`A scan is already running`
+                      : now`Couldn't start the scan`,
+                  color: 'var(--danger)',
+                })
+              },
+            })
+          }
+        >
+          <Trans>Scan now</Trans>
+        </Button>
+        <SaveButton
+          dirty={dirty}
+          loading={save.isPending}
+          onClick={() =>
+            save.mutate(
+              {
+                enabled,
+                defaultProfileId,
+                scanHour: Number(scanHour),
+                maxPerDay: Number(maxPerDay),
+                maxProbesPerRun: Number(maxProbesPerRun),
+                quietPeriodDays: Number(quietPeriodDays),
+                trashRetentionDays: Number(trashRetentionDays),
+                scanIncognito,
+                volumeSearch,
+                torrentAutoGrabMaxBytes: autoGrabBytes,
+                volumeMissingTolerance: Number(volumeMissingTolerance),
+                volumeSearchesPerRun: Number(volumeSearchesPerRun),
+                proposalExpiryDays: Number(proposalExpiryDays),
+              },
+              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )
           }
         />
@@ -2572,8 +2832,11 @@ function useSectionNodes(): Record<string, ReactNode> {
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
       recommendations: <RecommendationIndexSection />,
+      profiles: <UpgradeProfilesSection />,
+      formats: <QualityFormatsSection />,
 
       downloads: <DownloadSection />,
+      upgrades: <UpgradesSettingsSection />,
       sources: (
         <Stack gap="md">
           <SourceLanguageSection />

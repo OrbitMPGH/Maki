@@ -76,6 +76,10 @@ internal class MdRelationshipAttributes
 {
     [JsonPropertyName("fileName")]
     public string? FileName { get; set; }
+
+    /// <summary>Scanlation group's display name, present when the relationship is "scanlation_group".</summary>
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 }
 
 internal class MdChapter
@@ -85,6 +89,9 @@ internal class MdChapter
 
     [JsonPropertyName("attributes")]
     public MdChapterAttributes Attributes { get; set; } = new();
+
+    [JsonPropertyName("relationships")]
+    public List<MdRelationship> Relationships { get; set; } = [];
 }
 
 internal class MdChapterAttributes

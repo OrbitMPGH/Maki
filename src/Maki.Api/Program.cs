@@ -796,6 +796,15 @@ try
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<FileRelinkPlanner>();
+    builder.Services.AddSingleton<ChapterFileQualityService>();
+    builder.Services.AddScoped<ChapterFileMeasureService>();
+    builder.Services.AddScoped<UpgradeEvaluationService>();
+    builder.Services.AddScoped<UpgradeProfileSeeder>();
+    builder.Services.AddSingleton<SourceProbeService>();
+    builder.Services.AddScoped<UpgradeScanService>();
+    builder.Services.AddScoped<UpgradeRevertService>();
+    builder.Services.AddScoped<UpgradeTrashService>();
+    builder.Services.AddScoped<TorrentUpgradeService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -1134,6 +1143,41 @@ try
             .WithIdentity(Maki.Api.Jobs.ImageCacheRebuildJob.Key)
             .StoreDurably());
 
+        // Measures chapter files nothing has opened yet. Also fired after library and torrent
+        // imports; the timer catches anything those triggers missed. First run at +15, clear of the
+        // artifact builds in the first minutes after startup.
+        q.AddJob<Maki.Api.Jobs.ChapterFileMeasureJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ChapterFileMeasureJob.Key)
+            .WithIdentity("chapter-file-measure-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(15))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever()));
+
+        // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
+        // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First
+        // poll at +25: a scan probes sources, some of which launch a browser, so it stays clear of
+        // the artifact builds and the +20 monitored sync.
+        q.AddJob<Maki.Api.Jobs.UpgradeScanJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.UpgradeScanJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.UpgradeScanJob.Key)
+            .WithIdentity("upgrade-scan-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
+
+        // Torrent volume search, same marker shape as the upgrade scan, an hour after it.
+        q.AddJob<Maki.Api.Jobs.UpgradeVolumeSearchJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.UpgradeVolumeSearchJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.UpgradeVolumeSearchJob.Key)
+            .WithIdentity("upgrade-volume-search-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(40))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
+
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j
             .WithIdentity(Maki.Api.Jobs.CheckForUpdatesJob.Key));
@@ -1212,6 +1256,9 @@ try
         // Seed the activity log from pre-existing data (once, marker-gated). Runs
         // before Kestrel/Quartz so live event hooks can't overlap the backfill window.
         scope.ServiceProvider.GetRequiredService<StatsBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        scope.ServiceProvider.GetRequiredService<UpgradeProfileSeeder>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist

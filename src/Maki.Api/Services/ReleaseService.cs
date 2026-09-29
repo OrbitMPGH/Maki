@@ -19,7 +19,14 @@ public record ReleaseDto(
     string Protocol,
     string? DownloadUrl,
     string? MagnetUrl,
-    string? InfoUrl);
+    string? InfoUrl)
+{
+    /// <summary>
+    /// How the release reads against the series' upgrade profile. Filled only on search results, and
+    /// only when the series resolves to a profile.
+    /// </summary>
+    public Dtos.ReleaseParsedDto? Parsed { get; init; }
+}
 
 /// <summary>Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson).</summary>
 public record ReleaseInfo(
@@ -40,7 +47,7 @@ public partial class ReleaseService(
     [GeneratedRegex(@"xt=urn:btih:([0-9a-fA-F]{40}|[a-zA-Z2-7]{32})")]
     private static partial Regex MagnetHash();
 
-    public async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
+    public virtual async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
         var series = await db.Series.FindAsync([seriesId], ct)
             ?? throw new InvalidOperationException("Series not found");
@@ -77,7 +84,12 @@ public partial class ReleaseService(
         return new ReleaseSearchResult(attempted, results);
     }
 
-    public async Task<DownloadQueueItem> GrabAsync(int seriesId, ReleaseDto release, CancellationToken ct = default)
+    /// <param name="origin">What asked for it; an unattended grab notifies, a click does not.</param>
+    /// <param name="queuedByUserId">Who clicked, or null for the volume search.</param>
+    /// <param name="upgradeInfoJson">A serialised <c>TorrentUpgradeInfo</c> when the grab replaces files.</param>
+    public virtual async Task<DownloadQueueItem> GrabAsync(
+        int seriesId, ReleaseDto release, DownloadOrigin origin, int? queuedByUserId, string? upgradeInfoJson,
+        CancellationToken ct = default)
     {
         if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
@@ -106,7 +118,10 @@ public partial class ReleaseService(
             Title = release.Title,
             ReleaseInfoJson = JsonSerializer.Serialize(new ReleaseInfo(release.Guid, release.Title, release.Indexer, hash)),
             QueuedAt = DateTime.UtcNow,
-            SortOrder = await DownloadQueueService.NextSortOrderAsync(db, ct)
+            SortOrder = await DownloadQueueService.NextSortOrderAsync(db, ct),
+            Origin = origin,
+            QueuedByUserId = queuedByUserId,
+            UpgradeInfoJson = upgradeInfoJson
         };
         db.DownloadQueue.Add(item);
         await db.SaveChangesAsync(ct);

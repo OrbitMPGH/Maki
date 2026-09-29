@@ -85,6 +85,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
     public DbSet<ReadingGoal> ReadingGoals => Set<ReadingGoal>();
     public DbSet<ImportListSkip> ImportListSkips => Set<ImportListSkip>();
+    public DbSet<UpgradeProfile> UpgradeProfiles => Set<UpgradeProfile>();
+    public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
+    public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
+    public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
+    public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
 
     public override int SaveChanges()
     {
@@ -248,6 +253,21 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(x => _scope.Unrestricted || x.UserId == _scope.UserId);
         });
 
+        modelBuilder.Entity<UpgradeProfile>(e =>
+        {
+            e.Property(p => p.Name).UseCollation("NOCASE");
+            e.HasIndex(p => p.Name).IsUnique();
+            e.Property(p => p.Tiers).HasConversion(JsonListConverter<ProfileTier>.Instance, JsonListConverter<ProfileTier>.Comparer);
+            e.Property(p => p.FormatScores).HasConversion(JsonListConverter<FormatScore>.Instance, JsonListConverter<FormatScore>.Comparer);
+        });
+
+        modelBuilder.Entity<QualityFormat>(e =>
+        {
+            e.Property(f => f.Name).UseCollation("NOCASE");
+            e.HasIndex(f => f.Name).IsUnique();
+            e.Property(f => f.Conditions).HasConversion(JsonListConverter<FormatCondition>.Instance, JsonListConverter<FormatCondition>.Comparer);
+        });
+
         modelBuilder.Entity<ReadingProfile>(e =>
         {
             // NOCASE for the same reason Tag.Label is: the name is free text and the picker shows
@@ -311,6 +331,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.RootFolder).WithMany().HasForeignKey(s => s.RootFolderId).OnDelete(DeleteBehavior.Restrict);
+            // SetNull is only the safety net: the API refuses to delete a profile any series still uses.
+            e.HasOne(s => s.UpgradeProfile).WithMany().HasForeignKey(s => s.UpgradeProfileId).OnDelete(DeleteBehavior.SetNull);
             e.HasMany(s => s.UserTags).WithMany(t => t.Series).UsingEntity<SeriesTag>(
                 r => r.HasOne<Tag>().WithMany().HasForeignKey(j => j.TagId),
                 l => l.HasOne<Series>().WithMany().HasForeignKey(j => j.SeriesId),
@@ -413,6 +435,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // is a full scan plus a sort of every file in the library on every landing-page load.
             e.HasIndex(f => f.DateAdded);
 
+            // Cheap lookup for the measurement backfill: only the unmeasured rows are ever queried
+            // through this index, so indexing the rest of the table would be pure overhead.
+            e.HasIndex(f => f.MeasuredAtUtc).HasFilter("MeasuredAtUtc IS NULL");
+
             e.HasOne<Series>().WithMany().HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -458,6 +484,36 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.SourceMapping).WithMany().HasForeignKey(q => q.SourceMappingId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UpgradeAttempt>(e =>
+        {
+            e.HasQueryFilter(a => _scope.Unrestricted || Series.Any(s => s.Id == a.SeriesId));
+            e.HasIndex(a => new { a.ChapterId, a.SourceMappingId, a.SourceChapterId, a.ProfileId, a.ProfileVersion }).IsUnique();
+            e.HasIndex(a => a.SeriesId);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(a => a.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(a => a.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<SourceMapping>().WithMany().HasForeignKey(a => a.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UpgradeHistory>(e =>
+        {
+            e.HasQueryFilter(h => _scope.Unrestricted || Series.Any(s => s.Id == h.SeriesId));
+            e.HasIndex(h => new { h.SeriesId, h.CreatedAtUtc });
+            e.HasIndex(h => h.ChapterFileId);
+            e.HasIndex(h => h.GroupId);
+            e.HasOne<Series>().WithMany().HasForeignKey(h => h.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(h => h.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            // No FK to ChapterFile: a torrent replacement removes the superseded file's row and its
+            // history has to outlive it so the group can be reverted.
+        });
+
+        modelBuilder.Entity<TorrentProposal>(e =>
+        {
+            e.HasQueryFilter(p => _scope.Unrestricted || Series.Any(s => s.Id == p.SeriesId));
+            e.HasIndex(p => new { p.SeriesId, p.Status });
+            e.HasIndex(p => new { p.SeriesId, p.ReleaseGuid }).IsUnique();
+            e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AppConfigEntry>(e =>

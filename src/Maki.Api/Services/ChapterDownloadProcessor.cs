@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
 using Maki.Api.Configuration;
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
@@ -10,6 +11,8 @@ using Maki.Core.Http;
 using Maki.Core.Inbox;
 using Maki.Core.Naming;
 using Maki.Core.Notifications;
+using Maki.Core.Paths;
+using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +49,7 @@ public class ChapterDownloadProcessor(
     SourceAvailability sourceAvailability,
     ReaderArchiveCache archives,
     NamingService naming,
+    ChapterFileQualityService quality,
     ILocalizer localizer,
     IUserLocaleResolver locales,
     ILogger<ChapterDownloadProcessor> logger)
@@ -214,6 +218,12 @@ public class ChapterDownloadProcessor(
 
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
+            if (item.UpgradeInfoJson is not null)
+            {
+                return await ApplyUpgradeAsync(item, chapter, series, rootFolder, mapping, source, sourceChapterId,
+                    tmpCbz, workingDir, ct);
+            }
+
             var relativePath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
             var finalPath = Path.Combine(rootFolder.Path, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
@@ -246,10 +256,26 @@ public class ChapterDownloadProcessor(
                 chapterFile.SourceName = mapping.SourceName;
                 chapterFile.DateAdded = DateTime.UtcNow;
 
+                // New bytes, so nothing about the old rip carries over: Stamp never downgrades a
+                // tier or group it finds already set, and a failed measure must leave this unmeasured.
+                chapterFile.Tier = QualityTier.Unknown;
+                chapterFile.Group = null;
+                chapterFile.MeasuredAtUtc = null;
+
                 // Same row id, different archive behind it. The reader caches its page list per
                 // ChapterFile, so without this the reader serves the old rip's page names.
                 archives.Invalidate(chapterFile.Id);
             }
+
+            chapterFile.SourceChapterId = sourceChapterId;
+            var linkGroup = await db.ChapterSourceLinks
+                .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
+                .Select(l => l.Group)
+                .FirstOrDefaultAsync(ct);
+            // Not cancellable: the archive is already in the library. Sampled like the backfill, since the
+            // pages were validated moments ago and a full second read would only repeat that work.
+            quality.Stamp(chapterFile, finalPath, source.Kind, linkGroup ?? ChapterFileQualityService.SiteGroup(source),
+                ChapterFileMeasureService.SampleSize, CancellationToken.None);
 
             // Only a chapter the library didn't already have counts. A re-download replaces bytes
             // at a path that was already there, so recording it again inflates the instance's
@@ -385,6 +411,284 @@ public class ChapterDownloadProcessor(
     }
 
     /// <summary>
+    /// The replacement gate for items carrying an <see cref="UpgradeInfo"/>. The packaged archive is
+    /// measured in full and judged again against the file as it is now, under the series' profile as
+    /// it is now; a forced item (a user's pick) skips the profile and only faces the hard guards. A
+    /// loss deletes the archive and leaves the library untouched. A win moves the old file into
+    /// <c>.maki-trash</c> and puts the new one at the same relative path, then updates the same
+    /// <see cref="ChapterFile"/> row. Nothing is overwritten in place and no StatsEvent is written.
+    /// </summary>
+    private async Task<DownloadOutcome> ApplyUpgradeAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, RootFolder rootFolder, SourceMapping mapping,
+        ISource source, string sourceChapterId, string tmpCbz, string workingDir, CancellationToken ct)
+    {
+        var info = UpgradeInfo.Parse(item.UpgradeInfoJson);
+        var current = info is null || chapter.ChapterFileId != info.ChapterFileId
+            ? null
+            : await db.ChapterFiles.FirstOrDefaultAsync(f => f.Id == info.ChapterFileId && f.SeriesId == series.Id, ct);
+        var finalPath = current is null ? null : LibraryPaths.Resolve(rootFolder.Path, current.RelativePath);
+        if (info is null || current is null || finalPath is null || !File.Exists(finalPath))
+        {
+            TryDeleteFile(tmpCbz);
+            await FailAsync(item, "error.download.upgradeTargetGone", ct, permanent: true);
+            return DownloadOutcome.Settled;
+        }
+
+        // The packaged copy is always a zip; putting it under a .pdf name would corrupt the chapter.
+        if (!UpgradeTrash.IsReplaceable(current.RelativePath))
+        {
+            return await RejectUpgradeAsync(item, chapter, series, mapping, sourceChapterId, tmpCbz, workingDir, info,
+                UpgradeReasons.UnsupportedFile, after: null, info.ProfileId, info.ProfileVersion, null, null, null, ct);
+        }
+
+        var measurement = ChapterFileMeasurer.MeasureArchive(tmpCbz, 0, ct);
+        var size = new FileInfo(tmpCbz).Length;
+        var group = await db.ChapterSourceLinks
+            .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
+            .Select(l => l.Group)
+            .FirstOrDefaultAsync(ct) ?? ChapterFileQualityService.SiteGroup(source);
+        var fileName = Path.GetFileName(current.RelativePath);
+        var tier = QualityTierResolver.Resolve(source.Kind, null, fileName, isVolume: false);
+
+        var evaluator = await new UpgradeEvaluationService(db, quality).ForSeriesAsync(series.Id, ct);
+        QualityScore? before = null;
+        QualityScore? candidate = null;
+        var reason = UpgradeReasons.UpgradeRejected;
+        if (info.Force)
+        {
+            before = evaluator?.Evaluate(current, chapter.Language)?.Score;
+            candidate = evaluator?.Score(evaluator.CandidateFor(mapping.SourceName, group, fileName,
+                measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language));
+            tier = candidate?.Tier ?? tier;
+            var shared = await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct) > 1;
+            reason = ForcedGuard(info, current, shared, measurement, evaluator?.Profile.PageTolerancePercent ?? 10);
+        }
+        else if (evaluator?.Evaluate(current, chapter.Language) is { } evaluated)
+        {
+            before = evaluated.Score;
+            candidate = evaluator.Score(evaluator.CandidateFor(mapping.SourceName, group, fileName,
+                measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language));
+            tier = candidate.Tier;
+            reason = QualityScorer.IsUpgrade(evaluator.Profile, before, current.PageCount, current.Trusted, candidate,
+                measurement.MedianWidth, measurement.PageCount)
+                ? null
+                : UpgradeReasons.Explain(evaluator.Profile, current.PageCount, candidate, measurement.MedianWidth,
+                    measurement.PageCount);
+        }
+
+        var after = new QualitySnapshot
+        {
+            Tier = QualitySnapshot.TierName(tier),
+            SourceName = mapping.SourceName,
+            SourceChapterId = sourceChapterId,
+            Group = group,
+            PageCount = measurement.PageCount,
+            MedianWidth = measurement.MedianWidth,
+            MedianHeight = measurement.MedianHeight,
+            ImageFormat = measurement.ImageFormat,
+            SizeBytes = size,
+            Score = candidate?.Score ?? 0
+        };
+        var profileId = evaluator?.Profile.Id ?? info.ProfileId;
+        var profileVersion = evaluator?.Profile.Version ?? info.ProfileVersion;
+
+        if (reason is not null || (before is null && !info.Force))
+        {
+            return await RejectUpgradeAsync(item, chapter, series, mapping, sourceChapterId, tmpCbz, workingDir, info,
+                reason, after, profileId, profileVersion, measurement.PageCount, measurement.MedianWidth,
+                candidate?.Score, ct);
+        }
+
+        var beforeSnapshot = UpgradeEvaluator.Snapshot(current, before?.Score ?? 0);
+        var trashRelative = UpgradeTrash.NewRelativePath(rootFolder.Path, series.Id, current.Id.ToString(CultureInfo.InvariantCulture), fileName);
+        var trashPath = LibraryPaths.Resolve(rootFolder.Path, trashRelative)!;
+        UpgradeTrash.EnsureFolder(rootFolder.Path, series.Id);
+        var trashBytes = new FileInfo(finalPath).Length;
+        if (!await UpgradeTrash.MoveIntoTrashAsync(finalPath, trashPath, logger, ct))
+        {
+            TryDeleteFile(tmpCbz);
+            await FailAsync(item, "error.download.upgradeMoveFailed", ct);
+            return DownloadOutcome.Settled;
+        }
+
+        try
+        {
+            File.Move(tmpCbz, finalPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not place upgraded {Path}; restoring the original", finalPath);
+            try
+            {
+                File.Move(trashPath, finalPath);
+            }
+            catch (Exception restoreEx) when (restoreEx is IOException or UnauthorizedAccessException)
+            {
+                // The chapter now has no file at its path. Say where the original went, loudly, rather
+                // than leave it to be found in the trash (or purged from it).
+                logger.LogError(restoreEx, "Could not restore {Trash} to {Path}; the original is stranded in the trash",
+                    trashPath, finalPath);
+                inbox.Raise(InboxEventType.UpgradeRestoreFailed, new InboxMessage(
+                    Key: "inbox.upgrade.restoreFailed",
+                    Params: InboxMessage.Args(new
+                    {
+                        chapter = chapter.Number?.ToString("0.###", CultureInfo.InvariantCulture) ?? chapter.Title,
+                        trashPath = trashRelative,
+                    }),
+                    Level: NotificationLevel.Error,
+                    SeriesId: series.Id,
+                    ChapterId: chapter.Id,
+                    Url: $"/series/{series.Id}"), InboxAudience.Admins);
+            }
+
+            TryDeleteFile(tmpCbz);
+            await FailAsync(item, "error.download.upgradeMoveFailed", ct);
+            return DownloadOutcome.Settled;
+        }
+
+        archives.Invalidate(current.Id);
+
+        // The swap is done; from here on nothing may stop the rows describing it from being written.
+        var now = DateTime.UtcNow;
+        current.Tier = tier;
+        current.Group = group;
+        current.SourceName = mapping.SourceName;
+        current.SourceChapterId = sourceChapterId;
+        current.Size = new FileInfo(finalPath).Length;
+        current.PageCount = measurement.PageCount;
+        current.MedianWidth = measurement.MedianWidth;
+        current.MedianHeight = measurement.MedianHeight;
+        current.ImageFormat = measurement.ImageFormat;
+        current.MeasuredAtUtc = now;
+        current.ReplacedAtUtc = now;
+        current.ReleaseName = null;
+        current.ReleaseHash = null;
+
+        var history = new UpgradeHistory
+        {
+            SeriesId = series.Id,
+            ChapterId = chapter.Id,
+            ChapterFileId = current.Id,
+            QueueItemId = item.Id,
+            ProfileId = profileId,
+            ProfileVersion = profileVersion,
+            QueuedByUserId = item.QueuedByUserId,
+            BeforeJson = beforeSnapshot.Serialize(),
+            AfterJson = after.Serialize(),
+            TrashPath = trashRelative,
+            TrashBytes = trashBytes,
+            CreatedAtUtc = now
+        };
+        db.UpgradeHistory.Add(history);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        info.Outcome = UpgradeOutcomes.Applied;
+        info.Reason = null;
+        info.After = after;
+        info.HistoryId = history.Id;
+        item.UpgradeInfoJson = info.Serialize();
+        item.Status = QueueStatus.Completed;
+        item.CompletedAt = now;
+        item.NextAttempt = null;
+        item.ClearError();
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        queue.ClearRateLimitBackoff(mapping.SourceName);
+        await events.QueueUpdated(QueueItemDto.FromEntity(item, chapter, series, mapping.SourceName,
+            new UpgradeHistoryState(Reverted: false, TrashAvailable: true)));
+        await events.ChapterImported(series.Id, chapter.Id, series.RootFolderId);
+
+        // A user who clicked "Upgrade now" watched it happen; only the unattended scan pings the inbox.
+        if (!await batches.CompletedAsync(series.Id, item.Id) && item.IsAutomatic && item.QueuedByUserId is null)
+        {
+            var label = chapter.Number?.ToString("0.###", CultureInfo.InvariantCulture) ?? chapter.Title;
+            inbox.RaiseForSeries(InboxEventType.ChapterUpgraded, new InboxMessage(
+                Key: "inbox.upgrade.chapter",
+                Params: InboxMessage.Args(new
+                {
+                    chapter = label,
+                    fromSource = beforeSnapshot.SourceName,
+                    hasFromWidth = beforeSnapshot.MedianWidth is null ? "no" : "yes",
+                    fromWidth = beforeSnapshot.MedianWidth,
+                    toSource = after.SourceName,
+                    toWidth = after.MedianWidth,
+                }),
+                SeriesId: series.Id,
+                ChapterId: chapter.Id,
+                Url: $"/series/{series.Id}"), series.Id);
+        }
+
+        kavitaScans.QueueScan(Path.Combine(rootFolder.Path, series.FolderName), series.Id);
+        TryDeleteDirectory(workingDir);
+        logger.LogInformation("Upgraded {Series} {Chapter} from {From} to {To}",
+            series.Title, chapter.Number, beforeSnapshot.SourceName, mapping.SourceName);
+        return DownloadOutcome.Settled;
+    }
+
+    /// <summary>
+    /// Why a forced replacement may not go ahead, or null. A shared file would take other chapters'
+    /// pages with it, so that guard holds even when the caller may ignore the rest.
+    /// </summary>
+    private static string? ForcedGuard(UpgradeInfo info, ChapterFile current, bool shared,
+        ChapterFileMeasurement measurement, int pageTolerancePercent)
+    {
+        if (shared) return "shared_file";
+        if (info.IgnoreGuards) return null;
+        if (current.Trusted) return "trusted";
+        if (measurement.MedianWidth is null) return UpgradeReasons.Unmeasurable;
+        if (measurement.PageCount < current.PageCount * (1 - pageTolerancePercent / 100.0)) return UpgradeReasons.FewerPages;
+        return null;
+    }
+
+    /// <summary>
+    /// Settles an upgrade that will not be applied: the packaged copy is deleted, the library is left
+    /// exactly as it was, the candidate is memoised (unless a user forced it) and the row completes
+    /// with its reason recorded.
+    /// </summary>
+    private async Task<DownloadOutcome> RejectUpgradeAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, SourceMapping mapping, string sourceChapterId,
+        string tmpCbz, string workingDir, UpgradeInfo info, string? reason, QualitySnapshot? after, int profileId,
+        int profileVersion, int? pageCount, int? width, int? score, CancellationToken ct)
+    {
+        TryDeleteFile(tmpCbz);
+        if (!info.Force)
+        {
+            await UpgradeAttempts.UpsertAsync(db, chapter.Id, series.Id, mapping.Id, sourceChapterId, profileId,
+                profileVersion, UpgradeReasons.UpgradeRejected, probed: true, pageCount, width, score, ct);
+        }
+
+        info.Outcome = UpgradeOutcomes.Rejected;
+        info.Reason = reason ?? UpgradeReasons.UpgradeRejected;
+        info.After = after;
+        item.UpgradeInfoJson = info.Serialize();
+        item.Status = QueueStatus.Completed;
+        item.CompletedAt = DateTime.UtcNow;
+        item.NextAttempt = null;
+        item.ClearError();
+        await db.SaveChangesAsync(ct);
+
+        queue.ClearRateLimitBackoff(mapping.SourceName);
+        await BroadcastAsync(item, chapter, series, mapping.SourceName);
+        await batches.DiscardAsync(series.Id, item.Id);
+        TryDeleteDirectory(workingDir);
+        logger.LogInformation("Upgrade of {Series} {Chapter} from {Source} rejected: {Reason}",
+            series.Title, chapter.Number, mapping.SourceName, info.Reason);
+        return DownloadOutcome.Settled;
+    }
+
+    private void TryDeleteFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogDebug(ex, "Could not delete {Path}", path);
+        }
+    }
+
+    /// <summary>
     /// Parks the item in <see cref="QueueStatus.RateLimited"/> and starts <paramref name="sourceName"/>'s
     /// cooldown. Only that source backs off — other trackers keep dispatching from the rest of the
     /// queue, and <see cref="DownloadQueueService.ClaimNextAsync"/> picks this item back up once its
@@ -450,12 +754,24 @@ public class ChapterDownloadProcessor(
     /// handed English. These keys take no placeholders, because the batch summary keeps one reason
     /// for a whole series and has nowhere to put values.
     /// </param>
-    private async Task FailAsync(DownloadQueueItem item, string key, CancellationToken ct)
+    /// <param name="permanent">
+    /// Nothing a retry could change: the row fails without a retry scheduled or counted, and
+    /// <see cref="DownloadQueueService.RequeueEligibleFailuresAsync"/> leaves it alone.
+    /// </param>
+    private async Task FailAsync(DownloadQueueItem item, string key, CancellationToken ct, bool permanent = false)
     {
         item.Status = QueueStatus.Failed;
         item.SetError(key);
-        item.RetryCount++;
-        item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
+        if (permanent)
+        {
+            item.NextAttempt = null;
+        }
+        else
+        {
+            item.RetryCount++;
+            item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
+        }
+
         await db.SaveChangesAsync(ct);
         if (item.Series != null)
         {
@@ -472,25 +788,29 @@ public class ChapterDownloadProcessor(
         }
 
         // Outbound chat and webhooks, not somebody's inbox. There is no reader whose preference
-        // could be consulted, so this renders once in the instance's own language.
-        var locale = await locales.DefaultAsync(ct);
-        var series = item.Series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");
-        var body = localizer.GetFor(locale, "notify.download.failed.body", new
+        // could be consulted, so this renders once in the instance's own language. Upgrades never go
+        // there: the chapter is already in the library, so a failed replacement is not a lost download.
+        if (item.Origin != DownloadOrigin.Upgrade && item.UpgradeInfoJson is null)
         {
-            series,
-            hasChapter = chapterLabel is null ? "no" : "yes",
-            chapter = chapterLabel ?? string.Empty,
-            reason = localizer.GetFor(locale, key),
-        });
+            var locale = await locales.DefaultAsync(ct);
+            var series = item.Series?.Title ?? localizer.GetFor(locale, "inbox.unknownSeries");
+            var body = localizer.GetFor(locale, "notify.download.failed.body", new
+            {
+                series,
+                hasChapter = chapterLabel is null ? "no" : "yes",
+                chapter = chapterLabel ?? string.Empty,
+                reason = localizer.GetFor(locale, key),
+            });
 
-        notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
-            NotificationEventType.DownloadFailed,
-            Title: localizer.GetFor(locale, "notify.download.failed.title"),
-            Body: body,
-            Level: NotificationLevel.Error,
-            SeriesTitle: item.Series?.Title,
-            SeriesId: item.SeriesId,
-            ChapterNumber: chapterLabel));
+            notifications.Dispatch(NotificationEventType.DownloadFailed, new NotificationMessage(
+                NotificationEventType.DownloadFailed,
+                Title: localizer.GetFor(locale, "notify.download.failed.title"),
+                Body: body,
+                Level: NotificationLevel.Error,
+                SeriesTitle: item.Series?.Title,
+                SeriesId: item.SeriesId,
+                ChapterNumber: chapterLabel));
+        }
 
         if (item.IsAutomatic)
         {

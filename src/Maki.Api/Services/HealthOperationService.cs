@@ -23,7 +23,8 @@ public record RepairCandidate(int ChapterId, string RelativePath, string Hash, A
 public sealed class PdfRepairUnsupportedException : Exception;
 
 public class HealthOperationService(MakiDbContext db, DownloadQueueService queue,
-    ChapterSourceResolver resolver, ReaderArchiveCache archives, EventBroadcaster events, KavitaScanService kavita, AppPaths? paths = null)
+    ChapterSourceResolver resolver, ReaderArchiveCache archives, EventBroadcaster events, KavitaScanService kavita,
+    ChapterFileQualityService quality, AppPaths? paths = null)
 {
     public static readonly SemaphoreSlim MutationGate = new(1);
     public static bool Terminal(string status) => status is "completed" or "failed" or "cancelled";
@@ -211,6 +212,11 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                         var mappingId = candidate.SourceMappingId ?? op.SourceMappingId;
                         var mapping = mappingId == null ? null : await db.SourceMappings.FindAsync([mappingId], ct);
                         var replacement = new ChapterFile { SeriesId = chapter.SeriesId, RelativePath = candidate.FinalPath!, Size = new FileInfo(HealthPaths.Resolve(root.Path, candidate.FinalPath!)).Length, SourceName = mapping?.SourceName ?? "health", DateAdded = DateTime.UtcNow };
+                        var group = mapping == null ? null : await db.ChapterSourceLinks
+                            .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
+                            .Select(l => l.Group)
+                            .FirstOrDefaultAsync(ct);
+                        ChapterFileQualityService.StampTierOnly(replacement, quality.KindOf(replacement.SourceName), group);
                         db.ChapterFiles.Add(replacement);
                         await db.SaveChangesAsync(ct);
                         chapter.ChapterFileId = replacement.Id;

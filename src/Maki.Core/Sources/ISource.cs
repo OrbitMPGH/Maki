@@ -210,7 +210,13 @@ public record SourceSeriesDetail(
     string? Description = null,
     string? Status = null);
 
-/// <summary>A chapter as listed by the source.</summary>
+/// <summary>
+/// A chapter as listed by the source.
+/// </summary>
+/// <param name="Group">
+/// Scanlation group (or joint groups, "A, B") of the upload the source kept, when the source
+/// publishes one. Null for sources that don't (most of them) or a chapter with none attached.
+/// </param>
 public record SourceChapter(
     string SourceName,
     string SourceSeriesId,
@@ -221,7 +227,8 @@ public record SourceChapter(
     string? Title,
     string Language,
     DateTime? ReleaseDate,
-    string? Url = null);
+    string? Url = null,
+    string? Group = null);
 
 /// <summary>Resolved page list for a chapter.</summary>
 public record ChapterPages(IReadOnlyList<PageRequest> Pages);

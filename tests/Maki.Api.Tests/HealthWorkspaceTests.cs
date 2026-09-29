@@ -21,7 +21,8 @@ public class HealthWorkspaceTests : IDisposable
     private readonly string root = Directory.CreateTempSubdirectory("maki-health-workspace-").FullName;
     public void Dispose() { fixture.Dispose(); Directory.Delete(root,true); }
     private HealthOperationService Operations(MakiDbContext db) => new(db,null!,null!,new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
-        new EventBroadcaster(new NoopHubContext(), fixture.ScopeFactory()), new KavitaScanService(null!,null!,fixture.ScopeFactory(),NullLogger<KavitaScanService>.Instance));
+        new EventBroadcaster(new NoopHubContext(), fixture.ScopeFactory()), new KavitaScanService(null!,null!,fixture.ScopeFactory(),NullLogger<KavitaScanService>.Instance),
+        TestQuality.Create());
     private async Task<HealthFile> Seed(MakiDbContext db, bool tracked = false)
     {
         var folder = new RootFolder { Path=root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();

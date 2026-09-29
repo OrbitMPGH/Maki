@@ -57,6 +57,18 @@ public class Series
     /// </summary>
     public NewChapterMonitorMode MonitorNewItems { get; set; } = NewChapterMonitorMode.All;
 
+    /// <summary>Null means the instance default from <c>SettingKeys.UpgradesDefaultProfileId</c>, which may itself be unset.</summary>
+    public int? UpgradeProfileId { get; set; }
+    public UpgradeProfile? UpgradeProfile { get; set; }
+
+    /// <summary>When the upgrade scanner last went over this series, from any entry point.</summary>
+    public DateTime? LastUpgradeScanUtc { get; set; }
+    public int? LastUpgradeScanProbed { get; set; }
+    public int? LastUpgradeScanQueued { get; set; }
+
+    /// <summary>When the torrent volume search last queried Prowlarr for this series.</summary>
+    public DateTime? LastVolumeSearchUtc { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;

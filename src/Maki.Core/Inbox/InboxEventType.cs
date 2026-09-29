@@ -37,6 +37,11 @@ public enum InboxEventType
 
     /// <summary>A creator or studio the user follows has a new series in the catalogue.</summary>
     FollowedCreatorRelease = 17,
+
+    ChapterUpgraded = 18,
+    UpgradeRestoreFailed = 19,
+    TorrentProposalPending = 20,
+    VolumeUpgraded = 21,
 }
 
 /// <summary>
@@ -54,7 +59,8 @@ public static class InboxEventTypes
         InboxEventType.UpdateAvailable or
         InboxEventType.ImportFinished or
         InboxEventType.BackupFinished or
-        InboxEventType.RequestSubmitted;
+        InboxEventType.RequestSubmitted or
+        InboxEventType.UpgradeRestoreFailed;
 
     /// <summary>
     /// Events that report the instance failing rather than the series being interesting. A reader's
@@ -66,7 +72,8 @@ public static class InboxEventTypes
     /// all. A failed download is a reader's business too — it is their chapter that did not arrive.
     /// </para>
     /// </summary>
-    public static bool IsOperational(InboxEventType type) => type is InboxEventType.DownloadFailed;
+    public static bool IsOperational(InboxEventType type) =>
+        type is InboxEventType.DownloadFailed or InboxEventType.UpgradeRestoreFailed;
 
     /// <summary>
     /// Events that are off unless the user turns them on. Only one so far: a finished source match

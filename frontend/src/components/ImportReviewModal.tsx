@@ -3,6 +3,7 @@ import {
   Badge,
   Button,
   Card,
+  Checkbox,
   Group,
   Loader,
   Modal,
@@ -10,9 +11,12 @@ import {
   Text,
 } from '@mantine/core'
 import { IconAlertTriangle, IconArrowRight, IconBan, IconFileTypePdf, IconFileZip } from '@tabler/icons-react'
+import { useEffect, useState } from 'react'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { useImportPlan, useSettleImport } from '../api/hooks'
+import { useImportPlan, useQueue, useSettleImport } from '../api/hooks'
+import { queueErrorMessage } from '../api/queue'
 import type { ImportDecision, ImportPlanFileDto } from '../api/types'
+import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 
 function formatSize(bytes: number): string {
@@ -35,7 +39,14 @@ function ChapterList({ chapters }: { chapters: string[] }) {
   )
 }
 
-function PlanFile({ file }: { file: ImportPlanFileDto }) {
+function PlanFile({
+  file,
+  skip,
+}: {
+  file: ImportPlanFileDto
+  /** Set for an upgrade download, where each file can be left out of the import. */
+  skip?: { checked: boolean; suggested: boolean; onChange: (checked: boolean) => void }
+}) {
   const { fileName, chapters, label, size, newChapters, replaces } = file
   const newChapterCount = newChapters.length
   return (
@@ -67,6 +78,22 @@ function PlanFile({ file }: { file: ImportPlanFileDto }) {
           </Text>
         </Group>
       </Group>
+
+      {skip && (
+        <Group gap="xs" mt={8}>
+          <Checkbox
+            size="xs"
+            label={<Trans>Skip this file</Trans>}
+            checked={skip.checked}
+            onChange={(e) => skip.onChange(e.currentTarget.checked)}
+          />
+          {skip.suggested && (
+            <Text size="xs" c="var(--ink-3)">
+              <Trans>already at cutoff</Trans>
+            </Text>
+          )}
+        </Group>
+      )}
 
       {newChapterCount > 0 && (
         <Text size="xs" c="var(--ok)" mt={6}>
@@ -113,13 +140,34 @@ export function ImportReviewModal({
   onClose: () => void
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const { data: plan, isLoading } = useImportPlan(queueItemId)
+  const { data: queue } = useQueue()
   const settle = useSettleImport()
+  const [skipped, setSkipped] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    setSkipped(new Set(plan?.isUpgrade ? plan.suggestedSkips : []))
+  }, [plan])
 
   const decide = (mode: ImportDecision) => {
     if (queueItemId === null) return
-    settle.mutate({ id: queueItemId, mode }, { onSuccess: onClose })
+    const skipFiles = plan?.isUpgrade && mode !== 'Reject' ? [...skipped] : undefined
+    settle.mutate({ id: queueItemId, mode, skipFiles }, { onSuccess: onClose })
   }
+
+  const toggleSkip = (fileName: string, checked: boolean) =>
+    setSkipped((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(fileName)
+      else next.delete(fileName)
+      return next
+    })
+
+  const queueItem = queue?.items.find((q) => q.id === queueItemId)
+  const guardMessage = queueItem?.errorKey === 'error.upgrades.volumeGuard' ? queueErrorMessage(queueItem, renderLabel) : null
+  const suggestedSkips = new Set(plan?.suggestedSkips ?? [])
+  const skippedCount = skipped.size
 
   const replacedFiles = plan?.replacedFileCount ?? 0
   const newChapters = plan?.newChapterCount ?? 0
@@ -166,11 +214,35 @@ export function ImportReviewModal({
             </Text>
           </div>
 
+          {guardMessage && (
+            <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />} title={t`Held back before importing`}>
+              {guardMessage}
+            </Alert>
+          )}
+
           <Stack gap="xs" mah="min(360px, 35dvh)" style={{ overflowY: 'auto' }}>
             {plan.files.map((file) => (
-              <PlanFile key={file.fileName} file={file} />
+              <PlanFile
+                key={file.fileName}
+                file={file}
+                skip={
+                  plan.isUpgrade
+                    ? {
+                        checked: skipped.has(file.fileName),
+                        suggested: suggestedSkips.has(file.fileName),
+                        onChange: (checked) => toggleSkip(file.fileName, checked),
+                      }
+                    : undefined
+                }
+              />
             ))}
           </Stack>
+
+          {plan.isUpgrade && skippedCount > 0 && (
+            <Text size="xs" c="var(--ink-3)">
+              <Plural value={skippedCount} one="# file will be left out of the import" other="# files will be left out of the import" />
+            </Text>
+          )}
 
           <Stack gap="xs">
             <Button
@@ -180,8 +252,8 @@ export function ImportReviewModal({
               leftSection={<IconAlertTriangle size={16} />}
             >
               <Trans>
-                Import everything, delete the{' '}
-                <Plural value={replacedFiles} one="# file" other="# files" /> it replaces
+                Import everything, replace the{' '}
+                <Plural value={replacedFiles} one="# file" other="# files" /> it covers
               </Trans>
             </Button>
             <Button variant="light" onClick={() => decide('SkipExisting')} loading={settle.isPending}>
@@ -200,7 +272,7 @@ export function ImportReviewModal({
 
           <Text size="xs" c="var(--ink-3)">
             <Trans>The torrent keeps seeding whichever you pick.</Trans>{' '}
-            <Trans>Deleted files are removed from disk and cannot be recovered from Maki.</Trans>
+            <Trans>Replaced files go to the trash folder until housekeeping purges them, and can be reverted from Activity.</Trans>
           </Text>
         </Stack>
       )}

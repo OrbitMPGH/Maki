@@ -183,7 +183,8 @@ public class DownloadQueuePinTests : IDisposable
         SeedRow(s.Series, s.Chapter, QueueStatus.Downloading, s.High);
 
         var result = await Controller(queue).DownloadFrom(
-            s.Chapter, new DownloadChapterFromRequest(s.Low), CancellationToken.None);
+            s.Chapter, new DownloadChapterFromRequest(s.Low), new UpgradeEvaluationService(_db.NewContext(), TestQuality.Create()),
+            CancellationToken.None);
 
         Assert.IsType<ConflictObjectResult>(result);
     }
@@ -196,7 +197,8 @@ public class DownloadQueuePinTests : IDisposable
         SeedRow(s.Series, s.Chapter, QueueStatus.Queued, s.High);
 
         var result = await Controller(queue).DownloadFrom(
-            s.Chapter, new DownloadChapterFromRequest(s.Low), CancellationToken.None);
+            s.Chapter, new DownloadChapterFromRequest(s.Low), new UpgradeEvaluationService(_db.NewContext(), TestQuality.Create()),
+            CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
     }
