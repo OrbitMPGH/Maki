@@ -69,6 +69,30 @@ public static class SourceQualitySamples
         return estimates;
     }
 
+    /// <summary>
+    /// Each source's record across every series, newest <paramref name="perSource"/> samples, for the
+    /// global source list. Keyed by source name, case-insensitive.
+    /// </summary>
+    public static async Task<Dictionary<string, (SourceQualityEstimate Estimate, int Series)>> LibraryEstimatesAsync(
+        MakiDbContext db, CancellationToken ct, int perSource = 200)
+    {
+        var samples = await db.SourceQualitySamples.IgnoreQueryFilters().AsNoTracking()
+            .Join(db.SourceMappings.IgnoreQueryFilters(), s => s.SourceMappingId, m => m.Id,
+                (s, m) => new { Sample = s, m.SourceName })
+            .ToListAsync(ct);
+        var result = new Dictionary<string, (SourceQualityEstimate, int)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var group in samples.GroupBy(x => x.SourceName, StringComparer.OrdinalIgnoreCase))
+        {
+            var newest = group.Select(x => x.Sample).OrderByDescending(s => s.MeasuredAtUtc).Take(perSource).ToList();
+            if (SourceQualityEstimate.From(newest) is { } estimate)
+            {
+                result[group.Key] = (estimate, newest.Select(s => s.SeriesId).Distinct().Count());
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>Leaves room for one more: the newest <see cref="Keep"/> minus one saved rows survive.</summary>
     private static async Task PruneAsync(MakiDbContext db, int mappingId, CancellationToken ct)
     {

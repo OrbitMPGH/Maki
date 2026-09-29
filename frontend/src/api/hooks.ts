@@ -2411,6 +2411,20 @@ export interface SourceInfo {
   rating?: SourceRating
   /** Whether a fresh install turns this source on. What "Reset to defaults" restores. */
   defaultEnabled?: boolean
+  /** Position in a fresh install's priority order. What "Reset to defaults" restores. */
+  defaultRank?: number
+  /** How this source's copies measure in general; null when nothing has measured it. */
+  quality?: SourceQualitySummary | null
+}
+
+export interface SourceQualitySummary {
+  rating: 'high' | 'good' | 'fair' | 'low'
+  /** JPG-equivalent median bits per pixel. */
+  bitsPerPixel: number
+  /** `library` when this instance's own measurements decide it, `baseline` for Maki's shipped sample. */
+  basis: 'library' | 'baseline'
+  samples: number
+  series: number
 }
 
 export type SourceKind = 'official' | 'scanlator' | 'aggregator'
@@ -3138,6 +3152,8 @@ export interface DownloadSettings {
   bulkHoldThreshold: number
   /** Which source a series without its own setting downloads from first. */
   sourceOrder: SourceOrderMode
+  /** Measure every linked source of a newly matched series before anything downloads. */
+  scoutOnMatch: boolean
 }
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */

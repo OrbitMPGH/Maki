@@ -1080,6 +1080,10 @@ msgstr ""
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, other {インポートの判断待ちのダウンロード#件}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -5777,6 +5781,10 @@ msgstr "通知を更新できませんでした: {detail}"
 msgid "Failed to update tags: {detail}"
 msgstr "タグの更新に失敗しました: {detail}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Fair quality"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Falling means you moved."
@@ -6373,6 +6381,10 @@ msgstr "目標値"
 msgid "Goals"
 msgstr "目標"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Good quality"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
@@ -6606,6 +6618,10 @@ msgstr "この作品とシリーズ全体を非表示にする"
 #, fuzzy
 msgid "Hide this title"
 msgstr "このタイトルを非表示にする"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "High quality"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
@@ -7869,6 +7885,10 @@ msgstr "ディスク容量低下警告（%）"
 msgid "Low disk warning (GiB)"
 msgstr "ディスク容量低下警告（GiB）"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Low quality"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Lower Case"
@@ -8208,8 +8228,24 @@ msgstr "最大コンテンツレーティング"
 msgid "Maybe next year"
 msgstr "来年かもしれません"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Measure"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Measure sources when a series is added"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Measured quality"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Measuring {scoutDone}/{scoutPlanned}"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -9798,6 +9834,10 @@ msgstr "棚にありますが、ランキングには使われません"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add."
 msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
@@ -11965,6 +12005,14 @@ msgstr "安全"
 #, fuzzy
 msgid "same author"
 msgstr "同じ著者"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Sample a few pages from three chapters on every enabled source and update each source's quality."
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured {scoutMeasured} of {scoutPlanned} samples."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy

@@ -27,6 +27,7 @@ public class SourceMappingController(
     ChapterSyncService chapterSync,
     SourceMappingRemovalService removalService,
     SourceOrderService sourceOrder,
+    SourceScoutService scout,
     ICurrentUser currentUser) : ControllerBase
 {
     public record CreateMappingRequest(
@@ -238,7 +239,25 @@ public class SourceMappingController(
             SourceOrderService.Name(order.DefaultMode),
             SourceOrderService.Name(order.Mode),
             [.. order.Ordered.Concat(rest).Select(m => m.Id)],
-            [.. estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now))]));
+            [.. estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now))],
+            scout.Snapshot(seriesId)));
+    }
+
+    public record ScoutRequest(int SeriesId);
+
+    /// <summary>
+    /// Samples a few chapters from every enabled source of the series, in the background. Available
+    /// whether or not <see cref="SettingKeys.SourcesScoutOnMatch"/> is on; poll <c>GET quality</c>.
+    /// </summary>
+    [HttpPost("scout")]
+    public async Task<IActionResult> Scout([FromBody] ScoutRequest request, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        {
+            return NotFound();
+        }
+
+        return Accepted(scout.Start(request.SeriesId));
     }
 
     public record OrderModeRequest(int SeriesId, string? Mode);

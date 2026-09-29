@@ -7,7 +7,7 @@ namespace Maki.Core.Quality;
 /// samples. Width and compression barely move between chapters of one series on one source, so a
 /// handful of samples predicts the next copy well enough to decide whether probing it is worth it.
 /// </summary>
-/// <param name="BitsPerPixel">Raw, before <see cref="MeasuredQuality.FormatEfficiency"/>.</param>
+/// <param name="BitsPerPixel">JPG-equivalent, each sample adjusted for its own format before the median, so a source mixing PNG and JPG chapters is not judged by whichever format is commoner.</param>
 public sealed record SourceQualityEstimate(
     int Samples, int MedianWidth, int MedianHeight, double BitsPerPixel, string? ImageFormat, DateTime LatestUtc)
 {
@@ -34,7 +34,8 @@ public sealed record SourceQualityEstimate(
             usable.Count,
             (int)Median(usable.Select(s => (double)s.MedianWidth)),
             (int)Median(usable.Select(s => (double)s.MedianHeight)),
-            Median(usable.Select(s => s.SizeBytes * 8.0 / s.PageCount / ((double)s.MedianWidth * s.MedianHeight))),
+            Median(usable.Select(s => s.SizeBytes * 8.0 / s.PageCount / ((double)s.MedianWidth * s.MedianHeight)
+                                      * MeasuredQuality.FormatEfficiency(s.ImageFormat))),
             format.Length == 0 ? null : format,
             usable.Max(s => s.MeasuredAtUtc));
     }

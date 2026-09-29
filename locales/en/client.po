@@ -889,6 +889,10 @@ msgstr "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
+msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
 msgstr "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -4762,6 +4766,10 @@ msgstr "Failed to update notifications: {detail}"
 msgid "Failed to update tags: {detail}"
 msgstr "Failed to update tags: {detail}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Fair quality"
+msgstr "Fair quality"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Falling means you moved."
 msgstr "Falling means you moved."
@@ -5253,6 +5261,10 @@ msgstr "Goal target"
 msgid "Goals"
 msgstr "Goals"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Good quality"
+msgstr "Good quality"
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 msgid "Grab"
@@ -5445,6 +5457,10 @@ msgstr "Hide this and its franchise"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Hide this title"
 msgstr "Hide this title"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "High quality"
+msgstr "High quality"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "Higher for readers like you"
@@ -6486,6 +6502,10 @@ msgstr "Low disk warning (%)"
 msgid "Low disk warning (GiB)"
 msgstr "Low disk warning (GiB)"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Low quality"
+msgstr "Low quality"
+
 #: src/components/NamingTokenModal.tsx
 msgid "Lower Case"
 msgstr "Lower Case"
@@ -6764,9 +6784,25 @@ msgstr "Maximum content rating"
 msgid "Maybe next year"
 msgstr "Maybe next year"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Measure"
+msgstr "Measure"
+
+#: src/pages/SettingsPage.tsx
+msgid "Measure sources when a series is added"
+msgstr "Measure sources when a series is added"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher."
+msgstr "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher."
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Measured quality"
 msgstr "Measured quality"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Measuring {scoutDone}/{scoutPlanned}"
+msgstr "Measuring {scoutDone}/{scoutPlanned}"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Mecha"
@@ -8078,6 +8114,10 @@ msgstr "On your shelf, not used for ranking"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
 msgstr "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+
+#: src/pages/SettingsPage.tsx
+msgid "Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add."
+msgstr "Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add."
 
 #: src/components/settings/ProgressSection.tsx
 msgid "One missed day a week is forgiven, and today never breaks a streak."
@@ -9875,6 +9915,14 @@ msgstr "Safe"
 #: src/components/ui/DiscoverRail.tsx
 msgid "same author"
 msgstr "same author"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Sample a few pages from three chapters on every enabled source and update each source's quality."
+msgstr "Sample a few pages from three chapters on every enabled source and update each source's quality."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured {scoutMeasured} of {scoutPlanned} samples."
+msgstr "Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured {scoutMeasured} of {scoutPlanned} samples."
 
 #: src/components/SourceCompareModal.tsx
 msgid "Sample chapter"

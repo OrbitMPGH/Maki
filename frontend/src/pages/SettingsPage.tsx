@@ -1147,6 +1147,7 @@ function DownloadSection() {
   const [useHardlinks, setUseHardlinks] = useState(true)
   const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number | string>(5)
   const [sourceOrder, setSourceOrder] = useState<SourceOrderMode>('manual')
+  const [scoutOnMatch, setScoutOnMatch] = useState(false)
 
   useEffect(() => {
     if (settings) {
@@ -1158,6 +1159,7 @@ function DownloadSection() {
       setUseHardlinks(settings.useHardlinks)
       setBulkHoldThreshold(settings.bulkHoldThreshold)
       setSourceOrder(settings.sourceOrder)
+      setScoutOnMatch(settings.scoutOnMatch)
     }
   }, [settings])
 
@@ -1170,7 +1172,8 @@ function DownloadSection() {
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
       useHardlinks !== settings.useHardlinks ||
       Number(bulkHoldThreshold) !== settings.bulkHoldThreshold ||
-      sourceOrder !== settings.sourceOrder)
+      sourceOrder !== settings.sourceOrder ||
+      scoutOnMatch !== settings.scoutOnMatch)
 
   return (
     <Panel>
@@ -1212,6 +1215,13 @@ function DownloadSection() {
         onChange={(value) => value && setSourceOrder(value as SourceOrderMode)}
         allowDeselect={false}
         w={220}
+        mb="sm"
+      />
+      <Switch
+        label={t`Measure sources when a series is added`}
+        description={t`Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add.`}
+        checked={scoutOnMatch}
+        onChange={(e) => setScoutOnMatch(e.currentTarget.checked)}
         mb="md"
       />
       <Text fw={500} size="sm" mb={4}>
@@ -1336,6 +1346,7 @@ function DownloadSection() {
                 useHardlinks,
                 bulkHoldThreshold: Number(bulkHoldThreshold),
                 sourceOrder,
+                scoutOnMatch,
               },
               {
                 onSuccess: () =>

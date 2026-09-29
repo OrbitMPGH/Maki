@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Maki.Core.Entities;
 using Maki.Core.Scrobbling;
+using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -106,10 +107,12 @@ public partial class SourceMatchService(
     /// <summary>
     /// Sources named in the "sources.priorityorder" CSV setting, in that order, followed by any
     /// remaining registered sources in registration order. Unknown names in the setting are ignored.
+    /// Never set means <see cref="SourceQualityBaseline.DefaultPriorityOrder"/>, so an instance that
+    /// saved its own order keeps it.
     /// </summary>
     public static List<ISource> OrderSources(IReadOnlyCollection<ISource> all, string? priorityCsv)
     {
-        var preferred = (priorityCsv ?? string.Empty)
+        var preferred = (string.IsNullOrWhiteSpace(priorityCsv) ? SourceQualityBaseline.DefaultPriorityOrder : priorityCsv)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(name => all.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)))
             .Where(s => s is not null)

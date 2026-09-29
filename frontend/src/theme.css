@@ -7749,6 +7749,25 @@ body.reader-open {
   background: var(--warn-soft);
   color: var(--warn);
 }
+.source-tag[data-tone='quality-high'] {
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-weight: var(--fw-semibold);
+}
+.source-tag[data-tone='quality-good'] {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--ok) 50%, transparent);
+  color: var(--ok);
+}
+.source-tag[data-tone='quality-fair'] {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--warn) 50%, transparent);
+  color: var(--warn);
+}
+.source-tag[data-tone='quality-low'] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
 .source-tag[data-tone='filter'] {
   background: var(--info-soft);
   color: var(--info);

@@ -128,10 +128,11 @@ public class SettingsController(
     /// <param name="SourceOrder">
     /// "manual" or "quality"; see <see cref="SettingKeys.DownloadSourceOrder"/>. Null on a write leaves it alone.
     /// </param>
+    /// <param name="ScoutOnMatch">See <see cref="SettingKeys.SourcesScoutOnMatch"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -812,7 +813,8 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
         await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
         await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
-        await SourceOrderNameAsync(ct)));
+        await SourceOrderNameAsync(ct),
+        await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"));
 
     private async Task<string> SourceOrderNameAsync(CancellationToken ct) => SourceOrderService.Name(
         SourceOrderService.Parse(await settings.GetAsync(SettingKeys.DownloadSourceOrder, ct)) ?? SourceOrderMode.Manual);
@@ -877,10 +879,16 @@ public class SettingsController(
             await settings.SetAsync(SettingKeys.DownloadSourceOrder, SourceOrderService.Name(order), ct);
         }
 
+        if (request.ScoutOnMatch is { } scoutOnMatch)
+        {
+            await settings.SetAsync(SettingKeys.SourcesScoutOnMatch, scoutOnMatch ? "true" : "false", ct);
+        }
+
         return Ok(request with
         {
             BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct),
-            SourceOrder = await SourceOrderNameAsync(ct)
+            SourceOrder = await SourceOrderNameAsync(ct),
+            ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true"
         });
     }
 

@@ -26,6 +26,14 @@ public class SourceQualityEstimateTests
     }
 
     [Fact]
+    public void Mixed_formats_are_compared_as_jpg_equivalent_before_the_median()
+    {
+        var estimate = SourceQualityEstimate.From([Sample(1000, 2.0, "png"), Sample(1000, 2.0, "png"), Sample(1000, 1.3)])!;
+
+        Assert.Equal(1.3, estimate.BitsPerPixel, 2);
+    }
+
+    [Fact]
     public void Unusable_samples_are_ignored()
     {
         Assert.Null(SourceQualityEstimate.From([Sample(1000, 1.5, pages: 0)]));

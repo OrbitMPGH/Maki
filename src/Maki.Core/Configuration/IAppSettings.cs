@@ -337,6 +337,13 @@ public static class SettingKeys
     /// </summary>
     public const string DownloadSourceOrder = "download.sourceorder";
 
+    /// <summary>
+    /// "true" → once auto-matching has linked a new series' sources, sample a few chapters from each
+    /// of them (<c>SourceScoutService</c>) so the series starts with a measured source order. Off by
+    /// default: it downloads pages from every linked source of every series added.
+    /// </summary>
+    public const string SourcesScoutOnMatch = "sources.scoutonmatch";
+
     /// <summary>"true" turns on the daily automatic upgrade scan. A per-series manual scan ignores it.</summary>
     public const string UpgradesEnabled = "upgrades.enabled";
 

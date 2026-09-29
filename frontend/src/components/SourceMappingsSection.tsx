@@ -28,6 +28,7 @@ import {
 import {
   IconCheck,
   IconColumns,
+  IconRuler,
   IconExternalLink,
   IconLink,
   IconPlugConnected,
@@ -53,7 +54,7 @@ import {
   type SourceOrderMode,
 } from '../api/hooks'
 import type { SourceMappingDto } from '../api/types'
-import { useSetSourceOrderMode, useSourceOrder, type SourceQualityDto } from '../api/upgrades'
+import { useMeasureSources, useSetSourceOrderMode, useSourceOrder, type SourceQualityDto } from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
@@ -95,6 +96,12 @@ export function SourceMappingsSection({
   const { data: mappings } = useSourceMappings(seriesId)
   const { data: sourceOrder } = useSourceOrder(seriesId)
   const setOrderMode = useSetSourceOrderMode(seriesId)
+  const measureSources = useMeasureSources(seriesId)
+  const scout = sourceOrder?.scout
+  const scouting = scout?.running ?? false
+  const scoutDone = scout?.done ?? 0
+  const scoutPlanned = scout?.probes ?? 0
+  const scoutMeasured = scout?.measured ?? 0
   const qualities = sourceOrder?.sources
   const byQuality = sourceOrder?.mode === 'quality'
   const orderedMappings = useMemo(() => {
@@ -288,6 +295,37 @@ export function SourceMappingsSection({
                 onClick={() => setCompareOpen(true)}
               >
                 <Trans>Compare</Trans>
+              </Button>
+            </Box>
+          </Tooltip>
+          <Tooltip
+            label={
+              matching
+                ? t`Auto-matching is still running. It'll be free in a moment.`
+                : scout && !scout.running
+                  ? t`Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured ${scoutMeasured} of ${scoutPlanned} samples.`
+                  : t`Sample a few pages from three chapters on every enabled source and update each source's quality.`
+            }
+            withArrow
+            multiline
+            w={260}
+          >
+            <Box component="span" display="inline-flex">
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<IconRuler size={14} />}
+                disabled={matching || (mappings?.length ?? 0) === 0}
+                loading={measureSources.isPending}
+                onClick={() => !scouting && measureSources.mutate()}
+              >
+                {scouting ? (
+                  <Trans>
+                    Measuring {scoutDone}/{scoutPlanned}
+                  </Trans>
+                ) : (
+                  <Trans>Measure</Trans>
+                )}
               </Button>
             </Box>
           </Tooltip>

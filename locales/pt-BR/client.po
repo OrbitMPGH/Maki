@@ -1080,6 +1080,10 @@ msgstr ""
 msgid "{review, plural, one {# download waiting for an import decision} other {# downloads waiting for an import decision}}"
 msgstr "{review, plural, one {# download aguardando uma decisão de importação} many {# downloads aguardando uma decisão de importação} other {# downloads aguardando uma decisão de importação}}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
@@ -5777,6 +5781,10 @@ msgstr "Falha ao atualizar as notificações: {detail}"
 msgid "Failed to update tags: {detail}"
 msgstr "Falha ao atualizar as tags: {detail}"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Fair quality"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Falling means you moved."
@@ -6373,6 +6381,10 @@ msgstr "Alvo da meta"
 msgid "Goals"
 msgstr "Metas"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Good quality"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/upgrades/TorrentProposalCard.tsx
 #, fuzzy
@@ -6606,6 +6618,10 @@ msgstr "Ocultar este e sua franquia"
 #, fuzzy
 msgid "Hide this title"
 msgstr "Ocultar este título"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "High quality"
+msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
@@ -7869,6 +7885,10 @@ msgstr "Aviso de pouco espaço em disco (%)"
 msgid "Low disk warning (GiB)"
 msgstr "Aviso de pouco espaço em disco (GiB)"
 
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Low quality"
+msgstr ""
+
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
 msgid "Lower Case"
@@ -8208,8 +8228,24 @@ msgstr "Classificação máxima de conteúdo"
 msgid "Maybe next year"
 msgstr "Talvez no próximo ano"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Measure"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Measure sources when a series is added"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Measured quality"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Measuring {scoutDone}/{scoutPlanned}"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -9798,6 +9834,10 @@ msgstr "Na sua estante, não usado para classificação"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
+msgid "Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add."
 msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
@@ -11965,6 +12005,14 @@ msgstr "Seguro"
 #, fuzzy
 msgid "same author"
 msgstr "mesmo autor"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Sample a few pages from three chapters on every enabled source and update each source's quality."
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured {scoutMeasured} of {scoutPlanned} samples."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy

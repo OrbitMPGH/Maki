@@ -3,7 +3,7 @@ using Maki.Core.Sources;
 namespace Maki.Core.Quality;
 
 /// <summary>Everything <see cref="QualityScorer"/> may look at for one chapter file. Null means unknown.</summary>
-/// <param name="EstimatedBitsPerPixel">Raw bits per pixel from a <see cref="SourceQualityEstimate"/>, for a listing with no size or page count of its own.</param>
+/// <param name="EstimatedBitsPerPixel">JPG-equivalent bits per pixel from a <see cref="SourceQualityEstimate"/>, for a listing with no size or page count of its own.</param>
 public record QualityCandidate(
     QualityTier Tier,
     string? SourceName,

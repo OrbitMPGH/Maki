@@ -41,7 +41,23 @@ public class SourceMatchServiceTests : IDisposable
     private Task<List<string>> RunAutoMatch(
         int seriesId, SourceAvailability availability, IProgress<SourceMatchStep>? progress,
         params ISource[] sources) =>
-        RunAutoMatch(seriesId, availability, progress, new FakeAppSettings(), sources);
+        // Pinned to the order given, so a fake named after a real source isn't reordered by the
+        // shipped default priority order.
+        RunAutoMatch(seriesId, availability, progress,
+            new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, string.Join(",", sources.Select(s => s.Name))),
+            sources);
+
+    [Fact]
+    public void An_unset_priority_order_uses_the_measured_default_then_registration_order()
+    {
+        ISource[] all = [.. new[] { "unknown-b", "topmanhua", "unknown-a", "mangadex", "webtoons" }
+            .Select(name => new FakeSource { Name = name })];
+
+        Assert.Equal(["mangadex", "webtoons", "topmanhua", "unknown-b", "unknown-a"],
+            SourceMatchService.OrderSources(all, null).Select(s => s.Name));
+        Assert.Equal(["unknown-a", "unknown-b", "topmanhua", "mangadex", "webtoons"],
+            SourceMatchService.OrderSources(all, "unknown-a").Select(s => s.Name));
+    }
 
     private async Task<List<string>> RunAutoMatch(
         int seriesId, SourceAvailability availability, IProgress<SourceMatchStep>? progress,

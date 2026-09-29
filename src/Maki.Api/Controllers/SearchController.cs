@@ -3,8 +3,10 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Metadata;
+using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
+using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Controllers;
@@ -161,14 +163,22 @@ public class SearchController(
     /// <summary>Redirect hops the cover proxy will follow before giving up.</summary>
     private const int MaxCoverRedirects = 3;
 
+    /// <summary>A source's own measurements count once there are this many samples from this many series.</summary>
+    private const int LibraryQualityMinSamples = 10;
+    private const int LibraryQualityMinSeries = 2;
+
     [HttpGet("sources")]
-    public async Task<IActionResult> ListSources(CancellationToken ct)
+    public async Task<IActionResult> ListSources([FromServices] MakiDbContext db, CancellationToken ct)
     {
         // Enabled is the global switch, not a per-series one: a disabled source can't be
         // linked and none of its existing mappings run, but those mappings keep their flags.
         var disabled = await sourceAvailability.DisabledAsync(ct);
         var instanceLanguage = Core.Localization.SupportedLanguages.Resolve(
             await settings.GetAsync(SettingKeys.UiDefaultLanguage, ct));
+        var library = await SourceQualitySamples.LibraryEstimatesAsync(db, ct);
+        var defaultRank = SourceMatchService.OrderSources(sourceRegistry.All, null)
+            .Select((s, i) => (s.Name, i))
+            .ToDictionary(x => x.Name, x => x.i, StringComparer.OrdinalIgnoreCase);
 
         return Ok(sourceRegistry.All.Select(s => new
         {
@@ -186,8 +196,32 @@ public class SearchController(
             Kind = s.Kind.ToString().ToLowerInvariant(),
             Content = ContentFlagNames(s.Content),
             Rating = s.Rating.ToString().ToLowerInvariant(),
-            DefaultEnabled = SourceAvailability.DefaultsOn(s, instanceLanguage)
+            DefaultEnabled = SourceAvailability.DefaultsOn(s, instanceLanguage),
+            // Position in the order a fresh install uses, so "Reset to defaults" restores it.
+            DefaultRank = defaultRank[s.Name],
+            Quality = QualityOf(s.Name, library)
         }));
+    }
+
+    /// <param name="Basis">"library" when this instance's own samples decide it, "baseline" for <see cref="SourceQualityBaseline"/>.</param>
+    public record SourceQualitySummary(string Rating, double BitsPerPixel, string Basis, int Samples, int Series);
+
+    /// <summary>Null when neither this library nor the baseline has measured the source.</summary>
+    private static SourceQualitySummary? QualityOf(
+        string sourceName, Dictionary<string, (SourceQualityEstimate Estimate, int Series)> library)
+    {
+        if (library.TryGetValue(sourceName, out var own) &&
+            own.Estimate.Samples >= LibraryQualityMinSamples && own.Series >= LibraryQualityMinSeries)
+        {
+            return Summary(own.Estimate.BitsPerPixel, "library", own.Estimate.Samples, own.Series);
+        }
+
+        return SourceQualityBaseline.BitsPerPixel.TryGetValue(sourceName, out var baseline)
+            ? Summary(baseline, "baseline", 0, 0)
+            : null;
+
+        static SourceQualitySummary Summary(double bpp, string basis, int samples, int series) => new(
+            SourceQualityBaseline.Rate(bpp).ToString().ToLowerInvariant(), Math.Round(bpp, 2), basis, samples, series);
     }
 
     /// <summary>Lowercase flag names set on <paramref name="content"/>, in declaration order.</summary>

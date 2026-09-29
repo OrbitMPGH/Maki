@@ -552,12 +552,39 @@ export interface SourceOrderDto {
   /** Mapping ids in the order a download tries them; disabled mappings last. */
   order: number[]
   sources: SourceQualityDto[]
+  /** The latest source measurement run since the server started, or null. */
+  scout: ScoutSnapshot | null
+}
+
+export interface ScoutSnapshot {
+  running: boolean
+  /** Chapter samples planned across every source. */
+  probes: number
+  done: number
+  /** Samples that produced a measurement; the rest failed or the source was rate-limited. */
+  measured: number
+  startedAtUtc: string
+  finishedAtUtc: string | null
 }
 
 export function useSourceOrder(seriesId: number) {
   return useQuery({
     queryKey: ['source-order', seriesId],
     queryFn: () => api<SourceOrderDto>(`/sourcemapping/quality?seriesId=${seriesId}`),
+    refetchInterval: (query) => (query.state.data?.scout?.running ? 2000 : false),
+  })
+}
+
+/** Samples every linked source of the series in the background; `useSourceOrder` polls while it runs. */
+export function useMeasureSources(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      api<ScoutSnapshot>('/sourcemapping/scout', { method: 'POST', body: JSON.stringify({ seriesId }) }),
+    onSuccess: (scout) => {
+      queryClient.setQueryData<SourceOrderDto>(['source-order', seriesId], (old) => (old ? { ...old, scout } : old))
+      void queryClient.invalidateQueries({ queryKey: ['source-order', seriesId] })
+    },
   })
 }
 

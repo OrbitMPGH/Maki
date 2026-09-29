@@ -108,6 +108,8 @@ public class SourceMatchWorkerHostedService(
             {
                 var sync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
                 await sync.SyncSeriesAsync(series.Id, ct);
+                await scope.ServiceProvider.GetRequiredService<SourceScoutService>()
+                    .StartIfEnabledAsync(db, series.Id, ct);
             }
         }
         catch (Exception ex)
