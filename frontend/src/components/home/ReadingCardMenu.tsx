@@ -46,6 +46,7 @@ export function ReadingCardMenu({
           <Button
             size="xs"
             variant="subtle"
+            style={{ flexShrink: 0 }}
             onClick={() => {
               notifications.hide(id)
               void hide.mutateAsync({ seriesId, hidden: false })

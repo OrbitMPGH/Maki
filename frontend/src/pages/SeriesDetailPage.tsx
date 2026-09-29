@@ -1431,7 +1431,7 @@ export default function SeriesDetailPage() {
             <Text size="sm">
               <Trans>Won't suggest resuming from this anime again.</Trans>
             </Text>
-            <Button size="xs" variant="subtle" loading disabled>
+            <Button size="xs" variant="subtle" style={{ flexShrink: 0 }} loading disabled>
               <Trans>Undo</Trans>
             </Button>
           </Group>
@@ -1450,7 +1450,7 @@ export default function SeriesDetailPage() {
               <Text size="sm">
                 <Trans>Undo failed: {String(error)}</Trans>
               </Text>
-              <Button size="xs" variant="subtle" onClick={performUndo}>
+              <Button size="xs" variant="subtle" style={{ flexShrink: 0 }} onClick={performUndo}>
                 <Trans>Retry</Trans>
               </Button>
             </Group>
@@ -1466,7 +1466,7 @@ export default function SeriesDetailPage() {
           <Text size="sm">
             <Trans>Won't suggest resuming from this anime again.</Trans>
           </Text>
-          <Button size="xs" variant="subtle" onClick={performUndo}>
+          <Button size="xs" variant="subtle" style={{ flexShrink: 0 }} onClick={performUndo}>
             <Trans>Undo</Trans>
           </Button>
         </Group>
