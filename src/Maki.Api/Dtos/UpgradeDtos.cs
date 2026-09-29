@@ -15,6 +15,7 @@ public record FormatScoreDto(int FormatId, int Score);
 public record UpgradeProfileDto(
     int Id,
     string Name,
+    string? Description,
     IReadOnlyList<ProfileTierDto> Tiers,
     string Cutoff,
     bool UpgradesEnabled,
@@ -31,6 +32,7 @@ public record UpgradeProfileDto(
     public static UpgradeProfileDto From(UpgradeProfile p, int seriesCount) => new(
         p.Id,
         p.Name,
+        p.Description,
         [.. p.Tiers.Select(t => new ProfileTierDto(QualityNames.Tier(t.Tier), t.Allowed))],
         QualityNames.Tier(p.Cutoff),
         p.UpgradesEnabled,
@@ -56,7 +58,8 @@ public record UpgradeProfileWriteDto(
     int PageTolerancePercent,
     bool AllowReplacingUnknown,
     int ResolutionWeight = 0,
-    int CompressionWeight = 0);
+    int CompressionWeight = 0,
+    string? Description = null);
 
 /// <param name="Type">camelCase <see cref="FormatConditionType"/> name, e.g. <c>minWidth</c>.</param>
 public record FormatConditionDto(string Type, string Value, bool Required, bool Negate);

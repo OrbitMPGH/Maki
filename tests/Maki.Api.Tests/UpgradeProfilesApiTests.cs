@@ -510,20 +510,25 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         {
             var profiles = db.UpgradeProfiles.ToDictionary(p => p.Name);
             Assert.Equal(2, db.QualityFormats.Count());
-            Assert.Equal(["Balanced", "Digital volumes", "Never upgrade", "Official releases"], profiles.Keys.Order());
-            Assert.False(profiles["Never upgrade"].UpgradesEnabled);
-            Assert.Equal(QualityTier.Scanlator, profiles["Balanced"].Cutoff);
-            Assert.Equal(QualityTier.Official, profiles["Official releases"].Cutoff);
-            Assert.Equal(QualityTier.Volume, profiles["Digital volumes"].Cutoff);
+            Assert.Equal(
+                [UpgradeProfileSeeder.NeverUpgrade, UpgradeProfileSeeder.ReplaceAggregatorCopies,
+                    UpgradeProfileSeeder.UpgradeToVolumes, UpgradeProfileSeeder.UpgradeToOfficial],
+                profiles.Keys.Order());
+            Assert.False(profiles[UpgradeProfileSeeder.NeverUpgrade].UpgradesEnabled);
+            Assert.Equal(QualityTier.Scanlator, profiles[UpgradeProfileSeeder.ReplaceAggregatorCopies].Cutoff);
+            Assert.Equal(QualityTier.Official, profiles[UpgradeProfileSeeder.UpgradeToOfficial].Cutoff);
+            Assert.Equal(QualityTier.Volume, profiles[UpgradeProfileSeeder.UpgradeToVolumes].Cutoff);
+            var scores = profiles[UpgradeProfileSeeder.NeverUpgrade].FormatScores;
+            Assert.Equal(2, scores.Count);
             Assert.All(profiles.Values, p =>
             {
+                Assert.False(string.IsNullOrWhiteSpace(p.Description));
+                Assert.Equal(scores, p.FormatScores);
                 Assert.False(p.AllowReplacingUnknown);
                 Assert.Equal(UpgradeProfileSeeder.MeasuredWeight, p.ResolutionWeight);
                 Assert.Equal(UpgradeProfileSeeder.MeasuredWeight, p.CompressionWeight);
                 Assert.Equal(UpgradeProfileDefaults.DefaultOrder, p.Tiers.Select(t => t.Tier));
             });
-            Assert.Single(profiles["Balanced"].FormatScores);
-            Assert.Equal(2, profiles["Digital volumes"].FormatScores.Count);
             Assert.False(db.AppConfig.Any(c => c.Key == SettingKeys.UpgradesDefaultProfileId));
 
             db.UpgradeProfiles.RemoveRange(profiles.Values);
@@ -547,7 +552,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
                 Name = UpgradeProfileSeeder.RawOrMachineTranslated,
                 Conditions = [new FormatCondition(FormatConditionType.ReleaseNameMatches, "RAW", true, false)]
             });
-            db.UpgradeProfiles.Add(new UpgradeProfile { Name = "Balanced", Cutoff = QualityTier.Official });
+            db.UpgradeProfiles.Add(new UpgradeProfile { Name = UpgradeProfileSeeder.ReplaceAggregatorCopies, Cutoff = QualityTier.Official });
             db.SaveChanges();
 
             await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
@@ -557,10 +562,42 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         {
             var raw = Assert.Single(db.QualityFormats.ToList(), f => f.Name == UpgradeProfileSeeder.RawOrMachineTranslated);
             Assert.Equal("RAW", raw.Conditions[0].Value);
-            var balanced = Assert.Single(db.UpgradeProfiles.ToList(), p => p.Name == "Balanced");
-            Assert.Equal(QualityTier.Official, balanced.Cutoff);
-            Assert.Contains(db.UpgradeProfiles.ToList(), p => p.Name == "Official releases" &&
+            var mine = Assert.Single(db.UpgradeProfiles.ToList(), p => p.Name == UpgradeProfileSeeder.ReplaceAggregatorCopies);
+            Assert.Equal(QualityTier.Official, mine.Cutoff);
+            Assert.Null(mine.Description);
+            Assert.Contains(db.UpgradeProfiles.ToList(), p => p.Name == UpgradeProfileSeeder.UpgradeToOfficial &&
                 p.FormatScores.Contains(new FormatScore(raw.Id, -100)));
+        }
+    }
+
+    [Fact]
+    public async Task Untouched_starters_from_the_previous_seed_are_renamed_and_edited_or_deleted_ones_are_left_alone()
+    {
+        using (var db = _db.NewContext())
+        {
+            var raw = new QualityFormat { Name = UpgradeProfileSeeder.RawOrMachineTranslated, Conditions = [new(FormatConditionType.MinPages, "1", true, false)] };
+            var ripper = new QualityFormat { Name = UpgradeProfileSeeder.TrustedDigitalRipper, Conditions = [new(FormatConditionType.MinPages, "1", true, false)] };
+            db.QualityFormats.AddRange(raw, ripper);
+            db.SaveChanges();
+            db.UpgradeProfiles.AddRange(
+                new UpgradeProfile { Name = "Balanced", Cutoff = QualityTier.Scanlator, FormatScores = [new(raw.Id, -100)] },
+                new UpgradeProfile { Name = "Official releases", Cutoff = QualityTier.Official, Version = 4 });
+            db.AppConfig.Add(new AppConfigEntry { Key = UpgradeProfileSeeder.PreviousMarkerKey, Value = "x" });
+            db.SaveChanges();
+
+            await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var profiles = db.UpgradeProfiles.ToDictionary(p => p.Name);
+            Assert.Equal(["Official releases", UpgradeProfileSeeder.ReplaceAggregatorCopies], profiles.Keys.Order());
+            var renamed = profiles[UpgradeProfileSeeder.ReplaceAggregatorCopies];
+            Assert.NotNull(renamed.Description);
+            Assert.Equal(2, renamed.FormatScores.Count);
+            Assert.Equal(2, renamed.Version);
+            Assert.Null(profiles["Official releases"].Description);
+            Assert.Equal(2, db.QualityFormats.Count());
         }
     }
 
@@ -578,7 +615,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
     {
         using var db = _db.NewContext();
         await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
-        var profile = db.UpgradeProfiles.Single(p => p.Name == "Digital volumes");
+        var profile = db.UpgradeProfiles.Single(p => p.Name == UpgradeProfileSeeder.UpgradeToVolumes);
         const int height = 1500, pages = 20;
         var size = (long)(bitsPerPixel * width * height / 8) * pages;
         var candidate = new QualityCandidate(

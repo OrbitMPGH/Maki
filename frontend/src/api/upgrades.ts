@@ -41,6 +41,8 @@ export interface FormatScoreDto {
 export interface UpgradeProfileDto {
   id: number
   name: string
+  /** What choosing this profile does and costs. Null when the admin left it blank. */
+  description: string | null
   /** Highest priority first. */
   tiers: ProfileTierDto[]
   cutoff: QualityTierName

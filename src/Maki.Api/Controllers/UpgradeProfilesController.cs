@@ -22,6 +22,7 @@ public class UpgradeProfilesController(ILocalizer localizer, MakiDbContext db) :
 {
     public const int MaxNameLength = 60;
     public const int MaxMeasuredWeight = 50;
+    public const int MaxDescriptionLength = 300;
 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -107,6 +108,12 @@ public class UpgradeProfilesController(ILocalizer localizer, MakiDbContext db) :
             return this.Fail(localizer, "error.upgrades.nameTooLong", new { maxLength = MaxNameLength });
         }
 
+        var description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        if (description?.Length > MaxDescriptionLength)
+        {
+            return this.Fail(localizer, "error.upgrades.descriptionTooLong", new { maxLength = MaxDescriptionLength });
+        }
+
         var tiers = new List<ProfileTier>();
         foreach (var tier in request.Tiers ?? [])
         {
@@ -170,6 +177,7 @@ public class UpgradeProfilesController(ILocalizer localizer, MakiDbContext db) :
         }
 
         profile.Name = name;
+        profile.Description = description;
         profile.Tiers = candidate.Tiers;
         profile.Cutoff = cutoff;
         profile.UpgradesEnabled = request.UpgradesEnabled;

@@ -1090,6 +1090,10 @@ msgid "error.upgrades.measuredWeightRange"
 msgstr "Resolution and compression weights must be between {min} and {max}"
 
 #: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+msgid "error.upgrades.descriptionTooLong"
+msgstr "Description must be {maxLength} characters or fewer"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
 msgid "error.upgrades.profileInUse"
 msgstr "\"{name}\" is still used by a series or is the default profile"
 

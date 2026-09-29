@@ -4643,7 +4643,6 @@ msgstr ""
 msgid "Cutoff unmet ({cutoffUnmetFilterCount})"
 msgstr ""
 
-#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Cutoff: {cutoffLabel}"
 msgstr ""
@@ -4908,6 +4907,10 @@ msgstr "Demografie"
 #, fuzzy
 msgid "Describe what you're after, a title, or author:\"Junji Ito\""
 msgstr "Beschreibe, wonach du suchst, einen Titel oder einen Autor:„Junji Ito“"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Description"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8737,6 +8740,10 @@ msgstr "Noch nie ausgeführt."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Never scanned for upgrades"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Never upgrades"
 msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
@@ -15120,11 +15127,31 @@ msgid "Upgrades enabled"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Upgrades off"
+msgid "Upgrades files Maki knows nothing about, then stops"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Upgrades on"
+#~ msgid "Upgrades off"
+#~ msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#~ msgid "Upgrades on"
+#~ msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until chapters are covered by a digital volume"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter has any known copy"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter is from a scanlator or an official source"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter is from an official source"
 msgstr ""
 
 #: src/api/hooks.ts
@@ -15604,6 +15631,10 @@ msgstr "Was mit später veröffentlichten Kapiteln passiert"
 #, fuzzy
 msgid "What lands in your bell. These settings only affect you."
 msgstr "Was in deiner Glocke angezeigt wird. Diese Einstellungen betreffen nur dich."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "What picking this profile does, shown in the profile list."
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy

@@ -3832,7 +3832,6 @@ msgstr "Cutoff unmet"
 msgid "Cutoff unmet ({cutoffUnmetFilterCount})"
 msgstr "Cutoff unmet ({cutoffUnmetFilterCount})"
 
-#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Cutoff: {cutoffLabel}"
 msgstr "Cutoff: {cutoffLabel}"
@@ -4052,6 +4051,10 @@ msgstr "Demographic"
 #: src/pages/DiscoverPage.tsx
 msgid "Describe what you're after, a title, or author:\"Junji Ito\""
 msgstr "Describe what you're after, a title, or author:\"Junji Ito\""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Description"
+msgstr "Description"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7210,6 +7213,10 @@ msgstr "Never run."
 #: src/pages/SeriesDetailPage.tsx
 msgid "Never scanned for upgrades"
 msgstr "Never scanned for upgrades"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Never upgrades"
+msgstr "Never upgrades"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
@@ -12485,12 +12492,32 @@ msgid "Upgrades enabled"
 msgstr "Upgrades enabled"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Upgrades off"
-msgstr "Upgrades off"
+msgid "Upgrades files Maki knows nothing about, then stops"
+msgstr "Upgrades files Maki knows nothing about, then stops"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Upgrades on"
-msgstr "Upgrades on"
+#~ msgid "Upgrades off"
+#~ msgstr "Upgrades off"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#~ msgid "Upgrades on"
+#~ msgstr "Upgrades on"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until chapters are covered by a digital volume"
+msgstr "Upgrades until chapters are covered by a digital volume"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter has any known copy"
+msgstr "Upgrades until each chapter has any known copy"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter is from a scanlator or an official source"
+msgstr "Upgrades until each chapter is from a scanlator or an official source"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter is from an official source"
+msgstr "Upgrades until each chapter is from an official source"
 
 #: src/api/hooks.ts
 msgid "Upload failed: {status}"
@@ -12886,6 +12913,10 @@ msgstr "What happens to chapters released later"
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "What lands in your bell. These settings only affect you."
 msgstr "What lands in your bell. These settings only affect you."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "What picking this profile does, shown in the profile list."
+msgstr "What picking this profile does, shown in the profile list."
 
 #: src/components/discover/discoverSectionDefs.ts
 msgid "What readers who finished the same series as you went on to finish."

@@ -1550,6 +1550,11 @@ msgid "error.upgrades.measuredWeightRange"
 msgstr ""
 
 #: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Description must be {maxLength} characters or fewer
+msgid "error.upgrades.descriptionTooLong"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
 #. English: "{name}" is still used by a series or is the default profile
 msgid "error.upgrades.profileInUse"
 msgstr ""
