@@ -37,7 +37,8 @@ public class UsersController(
     TimeProvider clock,
     ILogger<UsersController> logger,
     OidcRuntimeOptions oidc,
-    IHubContext<EventsHub> hub) : ControllerBase
+    IHubContext<EventsHub> hub,
+    IUserSnapshotCache snapshots) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -165,6 +166,9 @@ public class UsersController(
             {
                 return BadRequest(new { error = Describe(renamed) });
             }
+
+            // SetUserNameAsync saves every tracked change, including a permission or disabled edit above.
+            snapshots.Evict(user.Id);
         }
 
         if (request.DisplayName is not null)
@@ -201,10 +205,12 @@ public class UsersController(
 
         await ReplaceRootFolderGrantsAsync(user, request.RootFolderIds, ct);
         await db.SaveChangesAsync(ct);
+        snapshots.Evict(user.Id);
 
         // Any change to what the account may do, or whether it may sign in at all, invalidates its
         // existing cookies. Permission checks read the database per request so they are already
-        // current; this is about not leaving a disabled user with a live session.
+        // current (the snapshot cache was evicted above); this is about not leaving a disabled user
+        // with a live session.
         if (user.Permissions != before || request.Disabled is not null || !string.IsNullOrEmpty(request.Password))
         {
             await userManager.UpdateSecurityStampAsync(user);
@@ -252,6 +258,7 @@ public class UsersController(
         var name = user.UserName ?? string.Empty;
         db.Users.Remove(user);
         await db.SaveChangesAsync(ct);
+        snapshots.Evict(id);
         await EventsHub.DisconnectUserAsync(hub, id);
 
         await auditLog.LogAsync(AuthEventType.UserDeleted, currentUser.UserName, currentUser.UserId,

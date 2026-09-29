@@ -840,6 +840,7 @@ try
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.
     builder.Services.AddMemoryCache();
+    builder.Services.AddSingleton<IUserSnapshotCache, UserSnapshotCache>();
     builder.Services.AddScoped<UserMetricsService>();
     builder.Services.AddScoped<AchievementService>();
     builder.Services.AddSingleton<ReadingProgressGate>();

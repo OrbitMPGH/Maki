@@ -45,7 +45,8 @@ public class OidcSignInService(
     UserManager<MakiUser> userManager,
     OidcRuntimeOptions options,
     TimeProvider clock,
-    ILogger<OidcSignInService> logger)
+    ILogger<OidcSignInService> logger,
+    IUserSnapshotCache snapshots)
 {
     /// <param name="provider">The login provider name stored in <c>AspNetUserLogins</c>.</param>
     /// <param name="subject">
@@ -251,6 +252,7 @@ public class OidcSignInService(
         if (changed)
         {
             await db.SaveChangesAsync(ct);
+            snapshots.Evict(user.Id);
         }
 
         await RefreshLoginDisplayNameAsync(user, provider, providerKey, subject, claims, ct);

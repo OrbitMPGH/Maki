@@ -647,7 +647,8 @@ public class OidcTests
         await options.LoadAsync(db);
         var controller = new Maki.Api.Controllers.AccountController(
             new TestLocalizer(), db, BuildUserManager(db), null!, new TestCurrentUser(userId),
-            new AuthEventLogger(db, clock), options, clock);
+            new AuthEventLogger(db, clock), options, clock,
+            new UserSnapshotCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())));
 
         // No password on this account (SeedUser never sets one), so enrolment is refused either
         // way; this asserts the SSO-specific message is still surfaced when the account is linked.
@@ -697,7 +698,8 @@ public class OidcTests
         var signIn = new RefreshCountingSignInManager(users);
         var controller = new Maki.Api.Controllers.AccountController(
             new TestLocalizer(), db, users, signIn, new TestCurrentUser(userId),
-            new AuthEventLogger(db, clock), options, clock);
+            new AuthEventLogger(db, clock), options, clock,
+            new UserSnapshotCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())));
 
         // Linked to SSO, but the password path still works and auth.oidconly is off: refusing
         // enrolment here would be a security downgrade, not a consequence of SSO delegating anything.
@@ -785,7 +787,8 @@ public class OidcTests
         return new OidcSignInService(
             db, BuildUserManager(db), options,
             new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)),
-            NullLogger<OidcSignInService>.Instance);
+            NullLogger<OidcSignInService>.Instance,
+            new UserSnapshotCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())));
     }
 
     private static UserManager<MakiUser> BuildUserManager(MakiDbContext db)

@@ -45,6 +45,7 @@ public class HostStartupTests : IDisposable
         Assert.Equal(System.Net.HttpStatusCode.OK, (await client.GetAsync("/api/v1/health")).StatusCode);
         user.Permissions = Maki.Core.Security.MakiPermission.None;
         await db.SaveChangesAsync();
+        factory.Services.GetRequiredService<Maki.Api.Auth.IUserSnapshotCache>().Evict(user.Id);
         foreach (var path in new[] { "/api/v1/health", "/api/v1/system/health", "/api/v1/health/files/1/pages/0?version=x", "/api/v1/health/operations/1/candidates/1/pages/0" })
             Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.GetAsync(path)).StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/health/refresh", null)).StatusCode);

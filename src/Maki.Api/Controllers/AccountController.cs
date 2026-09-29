@@ -34,7 +34,8 @@ public class AccountController(
     ICurrentUser currentUser,
     AuthEventLogger auditLog,
     OidcRuntimeOptions oidc,
-    TimeProvider clock) : ControllerBase
+    TimeProvider clock,
+    IUserSnapshotCache snapshots) : ControllerBase
 {
     private const int RecoveryCodeCount = 8;
 
@@ -441,6 +442,7 @@ public class AccountController(
 
         user.MaxContentRating = rating!;
         await db.SaveChangesAsync(ct);
+        snapshots.Evict(user.Id);
         return NoContent();
     }
 

@@ -38,7 +38,8 @@ public class AccountApiKeyScopeTests : IDisposable
         var clock = new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero));
         return new AccountController(
             new TestLocalizer(), db, BuildUserManager(db), null!, new TestCurrentUser(userId),
-            new AuthEventLogger(db, clock), new OidcRuntimeOptions(), clock);
+            new AuthEventLogger(db, clock), new OidcRuntimeOptions(), clock,
+            new UserSnapshotCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())));
     }
 
     private static UserManager<MakiUser> BuildUserManager(MakiDbContext db)
