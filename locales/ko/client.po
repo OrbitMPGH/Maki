@@ -690,6 +690,10 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP, 레벨 {nextLevel}까지"
 
 #: src/components/home/ProgressCard.tsx
+msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+msgstr ""
+
+#: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP, 레벨 {nextLevel}까지"
@@ -3059,6 +3063,10 @@ msgstr "이 시리즈 다운로드가 진행 중이면 차단됩니다. Maki가 
 msgid "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 msgstr "로그인을 차단하고 기존 세션을 종료합니다. 계정과 기록은 유지합니다."
 
+#: src/theme-context.tsx
+msgid "Blush"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -4963,6 +4971,7 @@ msgid "Disabled"
 msgstr "비활성화됨"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Discard"
 msgstr "취소"
@@ -12028,6 +12037,7 @@ msgstr "샘플 챕터"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Save"
 msgstr "저장"
@@ -14971,6 +14981,10 @@ msgstr "인식할 수 없는 이름"
 #, fuzzy
 msgid "Unresolved"
 msgstr "해결되지 않음"
+
+#: src/pages/settings/SettingsSection.tsx
+msgid "Unsaved"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy

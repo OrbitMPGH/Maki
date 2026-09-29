@@ -690,6 +690,10 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP jusqu'au niveau {nextLevel}"
 
 #: src/components/home/ProgressCard.tsx
+msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+msgstr ""
+
+#: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP jusqu'au niveau {nextLevel}"
@@ -3059,6 +3063,10 @@ msgstr "Bloqué pendant le téléchargement de cette série, sauf si Maki ne man
 msgid "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 msgstr "Bloque la connexion et met fin aux sessions existantes. Le compte et son historique sont conservés."
 
+#: src/theme-context.tsx
+msgid "Blush"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -4963,6 +4971,7 @@ msgid "Disabled"
 msgstr "Désactivé"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Discard"
 msgstr "Abandonner"
@@ -12028,6 +12037,7 @@ msgstr "Chapitre échantillon"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Save"
 msgstr "Enregistrer"
@@ -14971,6 +14981,10 @@ msgstr "Nom non reconnu"
 #, fuzzy
 msgid "Unresolved"
 msgstr "Non résolu"
+
+#: src/pages/settings/SettingsSection.tsx
+msgid "Unsaved"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy

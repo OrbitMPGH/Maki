@@ -571,6 +571,10 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 
 #: src/components/home/ProgressCard.tsx
+msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP"
+
+#: src/components/home/ProgressCard.tsx
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 
@@ -2523,6 +2527,10 @@ msgstr "Blocked while a download for this series is in flight, unless Maki isn't
 msgid "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 msgstr "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 
+#: src/theme-context.tsx
+msgid "Blush"
+msgstr "Blush"
+
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Bookmark this page"
@@ -4098,6 +4106,7 @@ msgid "Disabled"
 msgstr "Disabled"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SettingsSection.tsx
 msgid "Discard"
 msgstr "Discard"
 
@@ -9937,6 +9946,7 @@ msgstr "Sample chapter"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/SettingsSection.tsx
 msgid "Save"
 msgstr "Save"
 
@@ -12354,6 +12364,10 @@ msgstr "Unrecognized name"
 #: src/sourceLabels.ts
 msgid "Unresolved"
 msgstr "Unresolved"
+
+#: src/pages/settings/SettingsSection.tsx
+msgid "Unsaved"
+msgstr "Unsaved"
 
 #: src/components/settings/SaveButton.tsx
 msgid "Unsaved changes"

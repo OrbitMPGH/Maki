@@ -1,5 +1,5 @@
-import { Divider, Group, SegmentedControl, Stack, Switch, Text, Title } from '@mantine/core'
-import { Panel } from '../ui/Panel'
+import { Divider, Group, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
+import { SettingsSection } from '../../pages/settings/SettingsSection'
 import {
   INBOX_ADMIN_ONLY,
   INBOX_CATEGORIES,
@@ -44,16 +44,12 @@ export function NotificationPrefsSection() {
   }
 
   return (
-    <Panel>
-      <Title order={4}>
-        <Trans>Notifications</Trans>
-      </Title>
-      <Text size="sm" c="var(--ink-3)" mt={4}>
-        <Trans>What lands in your bell. These settings only affect you.</Trans>
-      </Text>
-
+    <SettingsSection
+      id="notification-prefs"
+      title={<Trans>Notifications</Trans>}
+      description={<Trans>What lands in your bell. These settings only affect you.</Trans>}
+    >
       <Switch
-        mt="md"
         label={t`Show a popup when a notification arrives`}
         description={t`Turn this off to only see them in the bell.`}
         checked={prefs.toasts}
@@ -113,6 +109,6 @@ export function NotificationPrefsSection() {
           </Stack>
         </div>
       ))}
-    </Panel>
+    </SettingsSection>
   )
 }

@@ -14,7 +14,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconPlus } from '@tabler/icons-react'
@@ -36,7 +35,7 @@ import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { Panel } from '../ui/Panel'
+import { SettingsSection } from '../../pages/settings/SettingsSection'
 
 /**
  * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
@@ -95,20 +94,21 @@ export function UsersSection() {
   const deletingName = deleting ? deleting.displayName?.trim() || deleting.userName : ''
 
   return (
-    <Panel id="users" p="md">
-      <Group justify="space-between" mb="sm">
-        <Title order={4}>
-          <Trans>Users</Trans>
-        </Title>
-        <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => setEditing('new')}>
-          <Trans>Add user</Trans>
-        </Button>
-      </Group>
-      <Text size="sm" c="var(--ink-3)" mb="md">
+    <SettingsSection
+      id="users"
+      title={<Trans>Users</Trans>}
+      description={
         <Trans>
           Each account has its own login, permissions, content rating and reading history.
         </Trans>
-      </Text>
+      }
+      actions={
+        <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => setEditing('new')}>
+          <Trans>Add user</Trans>
+        </Button>
+      }
+      panelProps={{ id: 'users', p: 'md' }}
+    >
 
       <Table.ScrollContainer minWidth={576}>
         <Table className="panel-table ops-table">
@@ -204,7 +204,7 @@ export function UsersSection() {
       >
         <Trans>They will no longer be able to sign in. This can't be undone.</Trans>
       </ConfirmDialog>
-    </Panel>
+    </SettingsSection>
   )
 }
 

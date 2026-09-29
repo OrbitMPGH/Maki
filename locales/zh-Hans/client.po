@@ -690,6 +690,10 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "距离等级 {nextLevel} 还需 {intoLevel} / {levelSpan} XP"
 
 #: src/components/home/ProgressCard.tsx
+msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+msgstr ""
+
+#: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "距离等级 {nextLevel} 还需 {intoLevelFormatted} / {levelSpanFormatted} XP"
@@ -3059,6 +3063,10 @@ msgstr "此系列有下载正在进行时会被阻止，除非 Maki 本身不会
 msgid "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 msgstr "阻止登录并终止现有会话。账户及其历史记录会保留。"
 
+#: src/theme-context.tsx
+msgid "Blush"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -4963,6 +4971,7 @@ msgid "Disabled"
 msgstr "已禁用"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Discard"
 msgstr "放弃"
@@ -12028,6 +12037,7 @@ msgstr "示例章节"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Save"
 msgstr "保存"
@@ -14971,6 +14981,10 @@ msgstr "无法识别的名称"
 #, fuzzy
 msgid "Unresolved"
 msgstr "未解决"
+
+#: src/pages/settings/SettingsSection.tsx
+msgid "Unsaved"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy

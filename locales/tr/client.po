@@ -690,6 +690,10 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "Seviye {nextLevel} için {intoLevel} / {levelSpan} XP"
 
 #: src/components/home/ProgressCard.tsx
+msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+msgstr ""
+
+#: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "Seviye {nextLevel} için {intoLevelFormatted} / {levelSpanFormatted} XP"
@@ -3059,6 +3063,10 @@ msgstr "Maki dosyalara kendisi dokunmuyor olmadıkça, bu seri için bir indirme
 msgid "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 msgstr "Oturum açmayı engeller ve mevcut oturumları sonlandırır. Hesabı ve geçmişini korur."
 
+#: src/theme-context.tsx
+msgid "Blush"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -4963,6 +4971,7 @@ msgid "Disabled"
 msgstr "Devre dışı"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Discard"
 msgstr "Vazgeç"
@@ -12028,6 +12037,7 @@ msgstr "Örnek bölüm"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Save"
 msgstr "Kaydet"
@@ -14971,6 +14981,10 @@ msgstr "Tanınmayan ad"
 #, fuzzy
 msgid "Unresolved"
 msgstr "Çözülmedi"
+
+#: src/pages/settings/SettingsSection.tsx
+msgid "Unsaved"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy
