@@ -120,6 +120,32 @@ public record QualitySnapshotDto(
         s.SourceName, s.Group, s.PageCount, s.MedianWidth, s.MedianHeight, s.ImageFormat, s.SizeBytes, s.Score);
 }
 
+/// <summary>One source mapping's measured track record for a series.</summary>
+/// <param name="BitsPerPixel">JPG-equivalent median, see <see cref="MeasuredQuality"/>.</param>
+/// <param name="Reliable">Enough recent samples that the upgrade scan trusts them instead of probing.</param>
+/// <param name="ResolutionPoints">Under the series' upgrade profile; null when it has none.</param>
+public record SourceQualityDto(
+    int MappingId,
+    int Samples,
+    int MedianWidth,
+    double BitsPerPixel,
+    string? ImageFormat,
+    DateTime LatestUtc,
+    bool Reliable,
+    int? ResolutionPoints,
+    int? CompressionPoints)
+{
+    public static SourceQualityDto From(int mappingId, SourceQualityEstimate estimate, UpgradeProfile? profile, DateTime nowUtc)
+    {
+        var candidate = estimate.Apply(
+            new QualityCandidate(QualityTier.Unknown, null, null, null, null, null, null, null, null, null));
+        var points = profile is null ? ((int, int)?)null : MeasuredQuality.Points(profile, candidate);
+        return new SourceQualityDto(mappingId, estimate.Samples, estimate.MedianWidth,
+            Math.Round(MeasuredQuality.BitsPerPixel(candidate) ?? 0, 2), estimate.ImageFormat, estimate.LatestUtc,
+            estimate.IsReliable(nowUtc), points?.Item1, points?.Item2);
+    }
+}
+
 /// <summary>Where an applied upgrade's history row stands, for the queue's Revert button.</summary>
 public record UpgradeHistoryState(bool Reverted, bool TrashAvailable);
 

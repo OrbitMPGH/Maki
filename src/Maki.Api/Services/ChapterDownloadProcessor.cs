@@ -276,6 +276,9 @@ public class ChapterDownloadProcessor(
             // pages were validated moments ago and a full second read would only repeat that work.
             quality.Stamp(chapterFile, finalPath, source.Kind, linkGroup ?? ChapterFileQualityService.SiteGroup(source),
                 ChapterFileMeasureService.SampleSize, CancellationToken.None);
+            await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Download,
+                chapterFile.PageCount, chapterFile.MedianWidth, chapterFile.MedianHeight, chapterFile.Size,
+                chapterFile.ImageFormat, DateTime.UtcNow, CancellationToken.None);
 
             // Only a chapter the library didn't already have counts. A re-download replaces bytes
             // at a path that was already there, so recording it again inflates the instance's
@@ -443,6 +446,9 @@ public class ChapterDownloadProcessor(
 
         var measurement = ChapterFileMeasurer.MeasureArchive(tmpCbz, 0, ct);
         var size = new FileInfo(tmpCbz).Length;
+        await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Download,
+            measurement.PageCount, measurement.MedianWidth, measurement.MedianHeight, size, measurement.ImageFormat,
+            DateTime.UtcNow, ct);
         var group = await db.ChapterSourceLinks
             .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
             .Select(l => l.Group)

@@ -801,6 +801,7 @@ try
     builder.Services.AddScoped<ChapterFileMeasureService>();
     builder.Services.AddScoped<UpgradeEvaluationService>();
     builder.Services.AddScoped<UpgradeProfileSeeder>();
+    builder.Services.AddScoped<SourceQualitySeeder>();
     builder.Services.AddSingleton<SourceProbeService>();
     builder.Services.AddScoped<UpgradeScanService>();
     builder.Services.AddScoped<UpgradeRevertService>();
@@ -1260,6 +1261,8 @@ try
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         scope.ServiceProvider.GetRequiredService<UpgradeProfileSeeder>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+        scope.ServiceProvider.GetRequiredService<SourceQualitySeeder>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist

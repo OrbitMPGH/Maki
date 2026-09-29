@@ -36,15 +36,16 @@ public static class MeasuredQuality
         _ => 1.0
     };
 
-    /// <summary>JPG-equivalent bits per pixel, or null when any of size, pages, width or height is unknown.</summary>
+    /// <summary>
+    /// JPG-equivalent bits per pixel, measured from size, pages, width and height, else the candidate's
+    /// estimate; null when neither is known.
+    /// </summary>
     public static double? BitsPerPixel(QualityCandidate c)
     {
-        if (c is not { SizeBytes: > 0 and var size, PageCount: > 0 and var pages, MedianWidth: > 0 and var width, MedianHeight: > 0 and var height })
-        {
-            return null;
-        }
-
-        return size * 8.0 / pages / ((double)width * height) * FormatEfficiency(c.ImageFormat);
+        var raw = c is { SizeBytes: > 0 and var size, PageCount: > 0 and var pages, MedianWidth: > 0 and var width, MedianHeight: > 0 and var height }
+            ? size * 8.0 / pages / ((double)width * height)
+            : c.EstimatedBitsPerPixel;
+        return raw * FormatEfficiency(c.ImageFormat);
     }
 
     public static double? ResolutionUnits(QualityCandidate c) =>

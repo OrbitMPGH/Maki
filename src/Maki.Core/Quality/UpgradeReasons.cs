@@ -19,6 +19,14 @@ public static class UpgradeReasons
     public const string UpgradeRejected = "upgrade_rejected";
     public const string RevertedByUser = "reverted_by_user";
 
+    /// <summary>
+    /// Not probed: the source's recent measurements (<see cref="SourceQualityEstimate"/>) say it would
+    /// not win. Expires after <see cref="EstimateMemoLifetime"/>, since a source can improve.
+    /// </summary>
+    public const string EstimateNotHigher = "estimate_not_higher";
+
+    public static readonly TimeSpan EstimateMemoLifetime = TimeSpan.FromDays(30);
+
     /// <summary>The file on disk is not an archive (a PDF), so a downloaded copy cannot take its place.</summary>
     public const string UnsupportedFile = "unsupported_file";
 

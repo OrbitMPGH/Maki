@@ -520,6 +520,10 @@ msgstr "{count, plural, one {# gizli başlık} other {# gizli başlık}}"
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr "{count, plural, one {# arşivin kalıcı olarak silinmesini onaylıyorum.} other {# arşivin kalıcı olarak silinmesini onaylıyorum.}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
@@ -1495,6 +1499,10 @@ msgstr "{weekday} {hourLabel}: {minutes} dk"
 #, fuzzy
 msgid "{weight} total"
 msgstr "toplam {weight}"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "{width}px · {bpp} bpp"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -7351,6 +7359,10 @@ msgstr "Son hata: {lastError}"
 msgid "Last library scan: {lastScanText}"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Last measured {measured}."
+msgstr ""
+
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Last page"
@@ -9322,6 +9334,10 @@ msgstr "Tekrar önerilmeyecek"
 msgid "Not run yet"
 msgstr "Henüz çalıştırılmadı"
 
+#: src/api/upgrades.ts
+msgid "Not sampled: this source's recent chapters wouldn't score higher"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Not scanned"
@@ -9365,6 +9381,10 @@ msgstr "Yeterince yakın bir sonuç yok. Farklı şekilde tanımlamayı veya dah
 
 #: src/pages/ActivityPage.tsx
 msgid "Nothing downloaded falls short of the quality profile assigned to it."
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Nothing downloaded or sampled from this source yet."
 msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -10573,6 +10593,7 @@ msgid "qBittorrent"
 msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/components/SourceMappingsSection.tsx
 msgid "Quality"
 msgstr ""
 
@@ -11586,6 +11607,10 @@ msgstr "Varsayılanlara sıfırla"
 #, fuzzy
 msgid "Reset zoom"
 msgstr "Yakınlaştırmayı sıfırla"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Resolution {resolution}, compression {compression} under this series' profile."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 msgid "Resolution {resolution}, compression {compression}, formats {formats}."
@@ -14479,6 +14504,10 @@ msgstr "Belirteç büyük/küçük harfi"
 msgid "Token separator"
 msgstr "Belirteç ayırıcı"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Too few or too old to trust yet, so upgrade scans still sample this source first."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "Took too long to find a source"
@@ -14968,7 +14997,12 @@ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+#~ msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+#~ msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 msgstr ""
 
 #: src/api/inbox.ts

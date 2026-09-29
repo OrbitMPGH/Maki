@@ -291,6 +291,7 @@ export interface UpgradeScanResultDto {
 export type UpgradeReasonCode =
   | 'tier_not_allowed'
   | 'score_not_higher'
+  | 'estimate_not_higher'
   | 'fewer_pages'
   | 'unmeasurable'
   | 'quiet_period'
@@ -324,6 +325,7 @@ export type UpgradeSkipReasonCode =
 export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReasonCode, MessageDescriptor> = {
   tier_not_allowed: msg`That source's tier isn't allowed by the profile`,
   score_not_higher: msg`Didn't score higher than the current file`,
+  estimate_not_higher: msg`Not sampled: this source's recent chapters wouldn't score higher`,
   fewer_pages: msg`Has fewer pages than the current file`,
   unmeasurable: msg`Couldn't be measured`,
   quiet_period: msg`This chapter was added or upgraded too recently`,
@@ -522,6 +524,29 @@ export function volumeSearchResultText(
   }
   if (result.resultCount === 0) return now`No releases found`
   return now`Nothing worth grabbing in the results`
+}
+
+/** One source mapping's measured track record for a series, from `GET /sourcemapping/quality`. */
+export interface SourceQualityDto {
+  mappingId: number
+  samples: number
+  medianWidth: number
+  /** JPG-equivalent median. */
+  bitsPerPixel: number
+  imageFormat: string | null
+  latestUtc: string
+  /** Enough recent samples that the upgrade scan trusts them instead of sampling pages first. */
+  reliable: boolean
+  /** Under the series' upgrade profile; null when it has none. */
+  resolutionPoints: number | null
+  compressionPoints: number | null
+}
+
+export function useSourceQuality(seriesId: number) {
+  return useQuery({
+    queryKey: ['source-quality', seriesId],
+    queryFn: () => api<SourceQualityDto[]>(`/sourcemapping/quality?seriesId=${seriesId}`),
+  })
 }
 
 export function useUpgradeProfiles() {

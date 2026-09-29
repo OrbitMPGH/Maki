@@ -264,6 +264,7 @@ public class UpgradeScanService(
                 .Where(a => a.SeriesId == seriesId && a.ProfileId == profile.Id && a.ProfileVersion == profile.Version)
                 .ToListAsync(ct))
             .ToDictionary(a => (a.ChapterId, a.SourceMappingId, a.SourceChapterId));
+        var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
 
         var survivors = new List<Survivor>();
         foreach (var chapter in chapters)
@@ -336,6 +337,8 @@ public class UpgradeScanService(
                 if (memo.TryGetValue((chapter.Id, mapping.Id, link.SourceChapterId), out var seen) &&
                     !(seen.Reason is UpgradeReasons.ProbeFailed or UpgradeReasons.SourceCooldown &&
                       seen.CreatedAtUtc < now.AddDays(-1)) &&
+                    !(seen.Reason == UpgradeReasons.EstimateNotHigher &&
+                      seen.CreatedAtUtc < now - UpgradeReasons.EstimateMemoLifetime) &&
                     !(seen.Reason == UpgradeReasons.Enqueued &&
                       lastUpgrade.GetValueOrDefault(chapter.Id) is null or QueueStatus.Failed or QueueStatus.Cancelled))
                 {
@@ -358,6 +361,18 @@ public class UpgradeScanService(
                 {
                     await RecordAsync(chapter, mapping, link, profile, UpgradeReasons.ScoreNotHigher, false, null, null, null, run, ct);
                     continue;
+                }
+
+                // Only once the listing alone could still win, so a loser for good stays score_not_higher.
+                if (estimates.GetValueOrDefault(mapping.Id) is { } estimate && estimate.IsReliable(now))
+                {
+                    listing = estimate.Apply(listing);
+                    if (!evaluator.CouldUpgrade(current.Score, file.PageCount, file.Trusted, listing))
+                    {
+                        await RecordAsync(chapter, mapping, link, profile, UpgradeReasons.EstimateNotHigher, false, null,
+                            estimate.MedianWidth, evaluator.Score(listing).Score, run, ct);
+                        continue;
+                    }
                 }
 
                 survivors.Add(new Survivor(chapter, file, current.Score, mapping, source, link, group,
@@ -403,6 +418,8 @@ public class UpgradeScanService(
             }
 
             long? size = probe.SampledPages > 0 ? probe.SampleBytes / probe.SampledPages * probe.PageCount : null;
+            await SourceQualitySamples.RecordAsync(db, s.Mapping, chapter.Id, SourceQualityOrigin.Probe, probe.PageCount,
+                probe.MedianWidth, probe.MedianHeight, size, probe.ImageFormat, now, ct);
             var score = evaluator.Score(evaluator.CandidateFor(sourceName, s.Group, Path.GetFileName(s.File.RelativePath),
                 probe.PageCount, probe.MedianWidth, probe.ImageFormat, size, chapter.Language, probe.MedianHeight));
             if (!QualityScorer.IsUpgrade(profile, s.Current, s.File.PageCount, s.File.Trusted, score, probe.MedianWidth,

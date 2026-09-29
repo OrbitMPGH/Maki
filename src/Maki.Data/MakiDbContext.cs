@@ -88,6 +88,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<UpgradeProfile> UpgradeProfiles => Set<UpgradeProfile>();
     public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
     public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
+    public DbSet<SourceQualitySample> SourceQualitySamples => Set<SourceQualitySample>();
     public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
 
@@ -484,6 +485,14 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne(q => q.Series).WithMany().HasForeignKey(q => q.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.Chapter).WithMany().HasForeignKey(q => q.ChapterId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(q => q.SourceMapping).WithMany().HasForeignKey(q => q.SourceMappingId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<SourceQualitySample>(e =>
+        {
+            e.HasQueryFilter(s => _scope.Unrestricted || Series.Any(x => x.Id == s.SeriesId));
+            e.HasOne(s => s.SourceMapping).WithMany().HasForeignKey(s => s.SourceMappingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(s => new { s.SourceMappingId, s.ChapterId }).IsUnique();
+            e.HasIndex(s => s.SeriesId);
         });
 
         modelBuilder.Entity<UpgradeAttempt>(e =>

@@ -433,6 +433,10 @@ msgstr "{count, plural, one {Hidden # title} other {Hidden # titles}}"
 msgid "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 msgstr "{count, plural, one {I confirm permanent deletion of # archive.} other {I confirm permanent deletion of # archives.}}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
+msgstr "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Show # affected series} other {Show # affected series}}"
@@ -1229,6 +1233,10 @@ msgstr "{weekday} {hourLabel}: {minutes} min"
 #: src/components/SourceCompareModal.tsx
 msgid "{weight} total"
 msgstr "{weight} total"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "{width}px · {bpp} bpp"
+msgstr "{width}px · {bpp} bpp"
 
 #: src/pages/CreatorPage.tsx
 msgid "{workCount, plural, one {# title in the catalogue} other {# titles in the catalogue}}"
@@ -6055,6 +6063,10 @@ msgstr "Last error: {lastError}"
 msgid "Last library scan: {lastScanText}"
 msgstr "Last library scan: {lastScanText}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Last measured {measured}."
+msgstr "Last measured {measured}."
+
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Last page"
 msgstr "Last page"
@@ -7678,6 +7690,10 @@ msgstr "Not recommended again"
 msgid "Not run yet"
 msgstr "Not run yet"
 
+#: src/api/upgrades.ts
+msgid "Not sampled: this source's recent chapters wouldn't score higher"
+msgstr "Not sampled: this source's recent chapters wouldn't score higher"
+
 #: src/pages/HealthPage.tsx
 msgid "Not scanned"
 msgstr "Not scanned"
@@ -7714,6 +7730,10 @@ msgstr "Nothing close enough. Try describing it differently, or use fewer words.
 #: src/pages/ActivityPage.tsx
 msgid "Nothing downloaded falls short of the quality profile assigned to it."
 msgstr "Nothing downloaded falls short of the quality profile assigned to it."
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Nothing downloaded or sampled from this source yet."
+msgstr "Nothing downloaded or sampled from this source yet."
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/SourceReliability.tsx
@@ -8709,6 +8729,7 @@ msgid "qBittorrent"
 msgstr "qBittorrent"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/components/SourceMappingsSection.tsx
 msgid "Quality"
 msgstr "Quality"
 
@@ -9551,6 +9572,10 @@ msgstr "Reset to defaults"
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Reset zoom"
 msgstr "Reset zoom"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Resolution {resolution}, compression {compression} under this series' profile."
+msgstr "Resolution {resolution}, compression {compression} under this series' profile."
 
 #: src/components/SourceCompareModal.tsx
 msgid "Resolution {resolution}, compression {compression}, formats {formats}."
@@ -11932,6 +11957,10 @@ msgstr "Token case"
 msgid "Token separator"
 msgstr "Token separator"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Too few or too old to trust yet, so upgrade scans still sample this source first."
+msgstr "Too few or too old to trust yet, so upgrade scans still sample this source first."
+
 #: src/api/queue.ts
 msgid "Took too long to find a source"
 msgstr "Took too long to find a source"
@@ -12333,8 +12362,13 @@ msgstr "Upgrade now"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+#~ msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+#~ msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
+msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 
 #: src/api/inbox.ts
 msgid "Upgrade restore failed"

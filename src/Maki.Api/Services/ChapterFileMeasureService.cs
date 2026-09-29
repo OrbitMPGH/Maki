@@ -1,3 +1,4 @@
+using Maki.Core.Entities;
 using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -92,6 +93,16 @@ public class ChapterFileMeasureService(
                     }
 
                     measured++;
+                    if (chapterByFile.GetValueOrDefault(file.Id) is { } chapter &&
+                        chapter.SourceLinks.Select(l => l.SourceMapping).FirstOrDefault(m =>
+                            string.Equals(m?.SourceName, file.SourceName, StringComparison.OrdinalIgnoreCase)) is { } mapping)
+                    {
+                        await SourceQualitySamples.RecordAsync(db, mapping, chapter.Id, SourceQualityOrigin.Library,
+                            file.PageCount, file.MedianWidth, file.MedianHeight, file.Size, file.ImageFormat, file.DateAdded,
+                            CancellationToken.None);
+                        await db.SaveChangesAsync(CancellationToken.None);
+                    }
+
                     if (DelayBetweenFiles > TimeSpan.Zero)
                     {
                         await Task.Delay(DelayBetweenFiles, ct);

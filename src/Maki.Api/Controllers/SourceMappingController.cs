@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
+using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -212,6 +213,21 @@ public class SourceMappingController(
         {
             return this.Conflict(localizer, "error.sourceMapping.compareAlreadyRunning");
         }
+    }
+
+    [HttpGet("quality")]
+    public async Task<IActionResult> Quality(
+        [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
+        var profile = (await upgrades.ForSeriesAsync(seriesId, ct))?.Profile;
+        var now = DateTime.UtcNow;
+        return Ok(estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now)).ToList());
     }
 
     [HttpGet("compare")]

@@ -52,6 +52,7 @@ import {
   useUpdateMapping,
 } from '../api/hooks'
 import type { SourceMappingDto } from '../api/types'
+import { useSourceQuality, type SourceQualityDto } from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
@@ -91,6 +92,7 @@ export function SourceMappingsSection({
   matching?: boolean
 }) {
   const { data: mappings } = useSourceMappings(seriesId)
+  const { data: qualities } = useSourceQuality(seriesId)
   const { data: sources } = useSources()
   const { data: progress } = useSourceMatchProgress(seriesId)
   const updateMapping = useUpdateMapping()
@@ -306,6 +308,7 @@ export function SourceMappingsSection({
               <Table.Th><Trans>Series</Trans></Table.Th>
               <Table.Th><Trans>Languages</Trans></Table.Th>
               <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Priority</Trans></Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}><Trans>Quality</Trans></Table.Th>
               {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
               <Table.Th w={44}>
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
@@ -381,6 +384,9 @@ export function SourceMappingsSection({
                       }}
                     />
                   </Tooltip>
+                </Table.Td>
+                <Table.Td>
+                  <MappingQuality quality={qualities?.find((q) => q.mappingId === m.id)} />
                 </Table.Td>
                 <Table.Td>
                   <Tooltip
@@ -792,6 +798,54 @@ export function SourceMappingsSection({
  * one adds its own row per chapter number and its own wanted/missing count, and each downloads to
  * its own file. Hence the warning rather than a bare picker.
  */
+/** Median width and compression of this source's recently measured chapters of the series. */
+function MappingQuality({ quality }: { quality: SourceQualityDto | undefined }) {
+  const { t, i18n } = useLingui()
+  if (!quality) {
+    return (
+      <Tooltip label={t`Nothing downloaded or sampled from this source yet.`} withArrow>
+        <Text size="xs" c="var(--ink-3)">
+          –
+        </Text>
+      </Tooltip>
+    )
+  }
+
+  const width = i18n.number(quality.medianWidth)
+  const bpp = i18n.number(quality.bitsPerPixel, { maximumFractionDigits: 2 })
+  const count = quality.samples
+  const measured = formatDateTime(quality.latestUtc)
+  const lines = [
+    plural(count, {
+      one: `Median of # measured chapter: ${width}px wide, ${bpp} bits per pixel (JPG equivalent).`,
+      other: `Median of # measured chapters: ${width}px wide, ${bpp} bits per pixel (JPG equivalent).`,
+    }),
+    t`Last measured ${measured}.`,
+  ]
+  if (quality.resolutionPoints != null && quality.compressionPoints != null) {
+    const resolution = signedNumber(i18n, quality.resolutionPoints)
+    const compression = signedNumber(i18n, quality.compressionPoints)
+    lines.push(t`Resolution ${resolution}, compression ${compression} under this series' profile.`)
+  }
+  if (!quality.reliable) {
+    lines.push(t`Too few or too old to trust yet, so upgrade scans still sample this source first.`)
+  }
+
+  return (
+    <Tooltip label={lines.join(' ')} withArrow multiline w={280}>
+      <Text size="xs" c={quality.reliable ? undefined : 'var(--ink-3)'} style={{ whiteSpace: 'nowrap' }}>
+        <Trans>
+          {width}px · {bpp} bpp
+        </Trans>
+      </Text>
+    </Tooltip>
+  )
+}
+
+function signedNumber(i18n: { number: (n: number) => string }, n: number) {
+  return n > 0 ? `+${i18n.number(n)}` : i18n.number(n)
+}
+
 function MappingLanguages({
   mapping,
   supported,
