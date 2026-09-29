@@ -791,6 +791,7 @@ try
     builder.Services.AddSingleton<SourceMatchQueue>();
     // Singleton because it owns detached jobs the request that started them no longer waits on.
     builder.Services.AddSingleton<SourceComparePreviewService>();
+    builder.Services.AddSingleton<SeriesPreviewService>();
     builder.Services.AddHostedService<SourceMatchWorkerHostedService>();
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();

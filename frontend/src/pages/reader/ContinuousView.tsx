@@ -32,6 +32,7 @@ export default function ContinuousView({
   scale,
   gap,
   label,
+  pastEndLabel,
 }: {
   urls: string[]
   page: number
@@ -46,6 +47,8 @@ export default function ContinuousView({
   /** Picks which bottom-of-strip prompt shows: the fillable "scroll for next chapter" meter, or,
    *  on the last chapter, an inert "no more chapters" one that never advances anywhere. */
   hasNext: boolean
+  /** What the fillable meter says; the Discover preview has no next chapter to scroll into. */
+  pastEndLabel?: React.ReactNode
   fit: ReaderFit
   /** Percent scale on top of the '1:1' fit; ignored for the other fits. */
   scale: number
@@ -263,7 +266,7 @@ export default function ContinuousView({
       </div>
       {(pastEndProgress > 0 || atLibraryEnd) && (
         <div className={`reader-next-chapter-hint${atLibraryEnd ? ' is-end' : ''}`}>
-          <span>{atLibraryEnd ? <Trans>No more chapters</Trans> : <Trans>Scroll for next chapter</Trans>}</span>
+          <span>{atLibraryEnd ? <Trans>No more chapters</Trans> : (pastEndLabel ?? <Trans>Scroll for next chapter</Trans>)}</span>
           <div className="reader-next-chapter-bar">
             {!atLibraryEnd && (
               <div

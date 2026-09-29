@@ -666,6 +666,41 @@ msgstr "URLは完全なhttp://またはhttps://アドレスでなければなり
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook URLが必要です"
 
+#: src/Maki.Api/Controllers/PreviewController.cs
+#. English: Other previews are loading right now. Try again in a moment.
+msgid "error.preview.busy"
+msgstr ""
+
+#: src/Maki.Api/Controllers/PreviewController.cs
+#. English: This series is above your content rating limit
+msgid "error.preview.contentRating"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: The preview could not be loaded
+msgid "error.preview.failed"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: No source has the first chapter available
+msgid "error.preview.noChapter"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: No source carries this series
+msgid "error.preview.noSource"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: Sources are rate limited, try again shortly
+msgid "error.preview.rateLimited"
+msgstr ""
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+#. English: The preview took too long to load
+msgid "error.preview.timedOut"
+msgstr ""
+
 #: src/Maki.Api/Controllers/ProgressController.cs
 #. English: Unknown period or metric
 #, fuzzy

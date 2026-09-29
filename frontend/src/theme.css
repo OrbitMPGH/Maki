@@ -5052,6 +5052,16 @@ body.reader-open {
   color: #fff;
   background: #0a0a0b;
 }
+/* The Discover preview opens over the detail modal (z-index 1000), and keeps its top bar up, so
+   the pages sit below it rather than under it. */
+.reader-root[data-preview] {
+  z-index: 1100;
+}
+.reader-preview-body {
+  position: absolute;
+  inset: 56px 0 0;
+  overflow: auto;
+}
 /* A page's outline while the chapter loads. Its own colours: the reader is always dark, and the
    theme's skeleton grey is a light-mode grey on a light theme. */
 .reader-page-skeleton {

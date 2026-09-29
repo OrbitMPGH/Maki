@@ -106,12 +106,12 @@ public class HousekeepingJob(
             }
         }
 
-        // Source-comparison samples. A job wipes its own series folder before refilling it, so
-        // anything still here belongs to a comparison somebody looked at and closed.
-        if (Directory.Exists(paths.SourcePreviewDir))
+        // Source-comparison samples and Discover previews. Each job clears its own folder when it
+        // is superseded, so anything still here belongs to one somebody looked at and closed.
+        foreach (var previewRoot in new[] { paths.SourcePreviewDir, paths.SeriesPreviewDir }.Where(Directory.Exists))
         {
             var stale = DateTime.UtcNow.AddDays(-1);
-            foreach (var dir in Directory.GetDirectories(paths.SourcePreviewDir))
+            foreach (var dir in Directory.GetDirectories(previewRoot))
             {
                 if (ct.IsCancellationRequested)
                 {
@@ -129,7 +129,7 @@ public class HousekeepingJob(
                 }
                 catch (Exception ex)
                 {
-                    logger.LogDebug(ex, "Could not clean source preview dir {Dir}", dir);
+                    logger.LogDebug(ex, "Could not clean preview dir {Dir}", dir);
                 }
             }
         }

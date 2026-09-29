@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   ActionIcon,
   Badge,
   Box,
+  Button,
   CloseButton, Divider,
   Group,
   Modal,
@@ -16,6 +17,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
+  IconBook,
   IconStar,
   IconTrendingDown,
   IconTrendingUp,
@@ -45,6 +47,7 @@ import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
+import { SeriesPreviewReader } from './SeriesPreviewReader'
 import { DiscoverTags } from './DiscoverTags'
 import { DiceIcon } from '../LuckyButton'
 import { prefersReducedMotion, useDiceTumble } from '../../lib/lucky'
@@ -75,6 +78,8 @@ export function DiscoverDetailModal({
   const rerolling = useRef(false)
   const rerollTimer = useRef<number | undefined>(undefined)
   const open = item != null
+  const [previewFor, setPreviewFor] = useState<string | null>(null)
+  const previewing = previewFor != null && previewFor === item?.providerId
   useEffect(() => {
     if (open) return
     window.clearTimeout(rerollTimer.current)
@@ -148,6 +153,10 @@ export function DiscoverDetailModal({
     <Modal
       opened={item !== null}
       onClose={onClose}
+      // The preview reader portals out of the card, so while it is up the card must neither take
+      // Escape for itself nor pull focus back from the reader's controls.
+      closeOnEscape={!previewing}
+      trapFocus={!previewing}
       // A width, not a Mantine size step: the two-column body wants ~1180px, and the calc keeps it
       // off the edges of a laptop screen rather than relying on the modal's own max-width.
       size="min(1180px, calc(100vw - 3rem))"
@@ -385,6 +394,16 @@ export function DiscoverDetailModal({
                     onClose={onClose}
                     addedFrom={feedbackContext ? 'recommendation' : 'library'}
                   />
+                  {inLibrarySeriesId == null && (
+                    <Button
+                      variant="default"
+                      fullWidth
+                      leftSection={<IconBook size={16} />}
+                      onClick={() => setPreviewFor(item.providerId)}
+                    >
+                      <Trans>Preview first chapter</Trans>
+                    </Button>
+                  )}
                   {feedbackContext && (
                     <RecommendationFeedbackMenu
                       providerId={item.providerId}
@@ -487,6 +506,15 @@ export function DiscoverDetailModal({
               )}
             </div>
           </div>
+          {previewing && (
+            <SeriesPreviewReader
+              providerId={item.providerId}
+              title={title}
+              coverUrl={cover}
+              seriesType={detail?.type ?? null}
+              onClose={() => setPreviewFor(null)}
+            />
+          )}
         </div>
       )}
     </Modal>

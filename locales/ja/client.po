@@ -2115,6 +2115,10 @@ msgstr "シリーズを追加"
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "まずライブラリにシリーズを追加すると、Makiが似た作品を提案します。"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Add the series to your library, or request it, to keep reading."
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2857,6 +2861,10 @@ msgstr "ライブラリに戻る"
 msgid "Back to series"
 msgstr "シリーズに戻る"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Back to the series"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Back up now"
@@ -3520,6 +3528,10 @@ msgstr "章"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "第{chapterId}章：{pageCount, plural, other {#ページ}}"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Chapter {chapterLabel}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -3888,6 +3900,10 @@ msgstr "クライアントシークレット"
 #, fuzzy
 msgid "Close"
 msgstr "閉じる"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Close preview"
+msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
@@ -5386,6 +5402,10 @@ msgstr "有効"
 msgid "End"
 msgstr "最後"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "End of the preview"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -5776,6 +5796,14 @@ msgstr "取得中"
 msgid "Fetching {label} again. The file is replaced when it lands."
 msgstr "{label}を再取得中です。取得後にファイルが置き換わります。"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}, {readyPages} of {pageCount} pages"
+msgstr ""
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}…"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Fetching metadata"
@@ -5940,6 +5968,10 @@ msgstr "Makiのリーダーで章を読み終えると、Kavitaでも既読に�
 #, fuzzy
 msgid "first"
 msgstr "最初"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "First chapter"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7747,6 +7779,10 @@ msgstr "ロックアウト期間（分）"
 #, fuzzy
 msgid "longest {longestSitting}"
 msgstr "最長{longestSitting}"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Looking for a source…"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -10008,6 +10044,10 @@ msgstr "ページサムネイル"
 msgid "Page tolerance %"
 msgstr ""
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Paged"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -10337,6 +10377,18 @@ msgstr "{relatedTo}の前日譚"
 #, fuzzy
 msgid "Press Enter to create a new tag"
 msgstr "Enterを押して新しいタグを作成"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview"
+msgstr ""
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview · {chapterName} · via {source}"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Preview first chapter"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -12137,10 +12189,18 @@ msgstr "読書をScrobble"
 msgid "Scrobbling"
 msgstr "Scrobbling"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "スクロールして次の章へ"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll to finish the preview"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13364,6 +13424,7 @@ msgstr "ステータス"
 msgid "Status change"
 msgstr "ステータス変更"
 
+#: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Stay here"

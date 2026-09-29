@@ -468,6 +468,34 @@ msgstr "URL must be a full http:// or https:// address"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "Webhook URL is required"
 
+#: src/Maki.Api/Controllers/PreviewController.cs
+msgid "error.preview.busy"
+msgstr "Other previews are loading right now. Try again in a moment."
+
+#: src/Maki.Api/Controllers/PreviewController.cs
+msgid "error.preview.contentRating"
+msgstr "This series is above your content rating limit"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+msgid "error.preview.failed"
+msgstr "The preview could not be loaded"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+msgid "error.preview.noChapter"
+msgstr "No source has the first chapter available"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+msgid "error.preview.noSource"
+msgstr "No source carries this series"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+msgid "error.preview.rateLimited"
+msgstr "Sources are rate limited, try again shortly"
+
+#: src/Maki.Api/Services/SeriesPreviewService.cs
+msgid "error.preview.timedOut"
+msgstr "The preview took too long to load"
+
 #: src/Maki.Api/Controllers/ProgressController.cs
 msgid "error.progress.unknownPeriodOrMetric"
 msgstr "Unknown period or metric"

@@ -2115,6 +2115,10 @@ msgstr "시리즈 추가"
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "먼저 라이브러리에 시리즈를 추가하면 Maki가 비슷한 시리즈를 더 추천합니다."
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Add the series to your library, or request it, to keep reading."
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2857,6 +2861,10 @@ msgstr "라이브러리로 돌아가기"
 msgid "Back to series"
 msgstr "시리즈로 돌아가기"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Back to the series"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Back up now"
@@ -3520,6 +3528,10 @@ msgstr "챕터"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "챕터 {chapterId}: {pageCount, plural, other {페이지 #개}}"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Chapter {chapterLabel}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -3888,6 +3900,10 @@ msgstr "클라이언트 시크릿"
 #, fuzzy
 msgid "Close"
 msgstr "닫기"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Close preview"
+msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
@@ -5386,6 +5402,10 @@ msgstr "활성화됨"
 msgid "End"
 msgstr "끝"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "End of the preview"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -5776,6 +5796,14 @@ msgstr "가져오는 중"
 msgid "Fetching {label} again. The file is replaced when it lands."
 msgstr "{label} 다시 가져오는 중입니다. 파일이 도착하면 교체됩니다."
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}, {readyPages} of {pageCount} pages"
+msgstr ""
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}…"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Fetching metadata"
@@ -5940,6 +5968,10 @@ msgstr "Maki 리더에서 챕터를 완료하면 Kavita에서도 읽음으로 �
 #, fuzzy
 msgid "first"
 msgstr "첫 번째"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "First chapter"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7747,6 +7779,10 @@ msgstr "잠금 기간(분)"
 #, fuzzy
 msgid "longest {longestSitting}"
 msgstr "최장 {longestSitting}"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Looking for a source…"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -10008,6 +10044,10 @@ msgstr "페이지 썸네일"
 msgid "Page tolerance %"
 msgstr ""
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Paged"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -10337,6 +10377,18 @@ msgstr "{relatedTo}의 전일담"
 #, fuzzy
 msgid "Press Enter to create a new tag"
 msgstr "Enter 키를 눌러 새 태그를 만드세요"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview"
+msgstr ""
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview · {chapterName} · via {source}"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Preview first chapter"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -12137,10 +12189,18 @@ msgstr "Scrobble 읽기"
 msgid "Scrobbling"
 msgstr "Scrobbling"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "다음 챕터를 보려면 스크롤"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll to finish the preview"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13364,6 +13424,7 @@ msgstr "상태"
 msgid "Status change"
 msgstr "상태 변경"
 
+#: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Stay here"

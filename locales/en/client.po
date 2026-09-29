@@ -1740,6 +1740,10 @@ msgstr "Add series"
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "Add some series to your library first and Maki will suggest more like them."
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Add the series to your library, or request it, to keep reading."
+msgstr "Add the series to your library, or request it, to keep reading."
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Add to library"
@@ -2354,6 +2358,10 @@ msgstr "Back to library"
 msgid "Back to series"
 msgstr "Back to series"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Back to the series"
+msgstr "Back to the series"
+
 #: src/pages/SettingsPage.tsx
 msgid "Back up now"
 msgstr "Back up now"
@@ -2894,6 +2902,10 @@ msgstr "Chapter"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Chapter {chapterLabel}"
+msgstr "Chapter {chapterLabel}"
+
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
 msgstr "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -3197,6 +3209,10 @@ msgstr "Client secret"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Close preview"
+msgstr "Close preview"
 
 #: src/pages/rewind/RewindIntro.tsx
 msgid "Close Rewind"
@@ -4433,6 +4449,10 @@ msgstr "Enabled"
 msgid "End"
 msgstr "End"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "End of the preview"
+msgstr "End of the preview"
+
 #: src/components/AnimeCoverageBar.tsx
 msgid "ends at ch. {num}"
 msgstr "ends at ch. {num}"
@@ -4749,6 +4769,14 @@ msgstr "Fetching"
 msgid "Fetching {label} again. The file is replaced when it lands."
 msgstr "Fetching {label} again. The file is replaced when it lands."
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}, {readyPages} of {pageCount} pages"
+msgstr "Fetching from {source}, {readyPages} of {pageCount} pages"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}…"
+msgstr "Fetching from {source}…"
+
 #: src/pages/ImportPage.tsx
 msgid "Fetching metadata"
 msgstr "Fetching metadata"
@@ -4886,6 +4914,10 @@ msgstr "Finishing a chapter in Maki's reader also marks it read in Kavita. Only 
 #: src/pages/RequestsPage.tsx
 msgid "first"
 msgstr "first"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "First chapter"
+msgstr "First chapter"
 
 #: src/pages/SettingsPage.tsx
 msgid "First download in progress"
@@ -6371,6 +6403,10 @@ msgstr "Lockout duration (minutes)"
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "longest {longestSitting}"
 msgstr "longest {longestSitting}"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Looking for a source…"
+msgstr "Looking for a source…"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Looking up {looked} of {total}"
@@ -8229,6 +8265,10 @@ msgstr "Page thumbnails"
 msgid "Page tolerance %"
 msgstr "Page tolerance %"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Paged"
+msgstr "Paged"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
 msgstr "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -8496,6 +8536,18 @@ msgstr "Prequel to {relatedTo}"
 #: src/components/SeriesTagsEditor.tsx
 msgid "Press Enter to create a new tag"
 msgstr "Press Enter to create a new tag"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview"
+msgstr "Preview"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview · {chapterName} · via {source}"
+msgstr "Preview · {chapterName} · via {source}"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Preview first chapter"
+msgstr "Preview first chapter"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Previous chapter"
@@ -10000,9 +10052,17 @@ msgstr "Scrobble reading"
 msgid "Scrobbling"
 msgstr "Scrobbling"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll"
+msgstr "Scroll"
+
 #: src/pages/reader/ContinuousView.tsx
 msgid "Scroll for next chapter"
 msgstr "Scroll for next chapter"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll to finish the preview"
+msgstr "Scroll to finish the preview"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -11002,6 +11062,7 @@ msgstr "Status"
 msgid "Status change"
 msgstr "Status change"
 
+#: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Stay here"
 msgstr "Stay here"

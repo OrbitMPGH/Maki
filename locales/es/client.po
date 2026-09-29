@@ -2115,6 +2115,10 @@ msgstr "Añadir serie"
 msgid "Add some series to your library first and Maki will suggest more like them."
 msgstr "Añade primero algunas series a tu biblioteca y Maki te sugerirá otras parecidas."
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Add the series to your library, or request it, to keep reading."
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2857,6 +2861,10 @@ msgstr "Volver a la biblioteca"
 msgid "Back to series"
 msgstr "Volver a la serie"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Back to the series"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Back up now"
@@ -3520,6 +3528,10 @@ msgstr "Capítulo"
 msgid "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgstr "Capítulo {chapterId}: {pageCount, plural, one {# página} many {# páginas} other {# páginas}}"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Chapter {chapterLabel}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -3888,6 +3900,10 @@ msgstr "Secreto de cliente"
 #, fuzzy
 msgid "Close"
 msgstr "Cerrar"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Close preview"
+msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
@@ -5386,6 +5402,10 @@ msgstr "Activado"
 msgid "End"
 msgstr "Final"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "End of the preview"
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "ends at ch. {num}"
@@ -5776,6 +5796,14 @@ msgstr "Obteniendo"
 msgid "Fetching {label} again. The file is replaced when it lands."
 msgstr "Volviendo a obtener {label}. El archivo se sustituirá cuando llegue."
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}, {readyPages} of {pageCount} pages"
+msgstr ""
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Fetching from {source}…"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Fetching metadata"
@@ -5940,6 +5968,10 @@ msgstr "Al terminar un capítulo en el lector de Maki, también se marca como le
 #, fuzzy
 msgid "first"
 msgstr "primero"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "First chapter"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7747,6 +7779,10 @@ msgstr "Duración del bloqueo (minutos)"
 #, fuzzy
 msgid "longest {longestSitting}"
 msgstr "la más larga: {longestSitting}"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Looking for a source…"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -10008,6 +10044,10 @@ msgstr "Miniaturas de páginas"
 msgid "Page tolerance %"
 msgstr ""
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Paged"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Paged pace · {remainingChapters} chapters left · based on {sampleChapters} chapters from this series"
@@ -10337,6 +10377,18 @@ msgstr "Precuela de {relatedTo}"
 #, fuzzy
 msgid "Press Enter to create a new tag"
 msgstr "Pulsa Intro para crear una etiqueta nueva"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview"
+msgstr ""
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Preview · {chapterName} · via {source}"
+msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Preview first chapter"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -12137,10 +12189,18 @@ msgstr "Sincronizar lecturas"
 msgid "Scrobbling"
 msgstr "Scrobbling"
 
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "Desplázate para ver el capítulo siguiente"
+
+#: src/components/discover/SeriesPreviewReader.tsx
+msgid "Scroll to finish the preview"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13364,6 +13424,7 @@ msgstr "Estado"
 msgid "Status change"
 msgstr "Cambio de estado"
 
+#: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Stay here"

@@ -111,6 +111,29 @@ public class SourceMatchServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task FindCandidates_ranks_like_auto_match_and_writes_nothing()
+    {
+        // The Discover preview asks for candidates on a series that was never saved, so the search
+        // must not need the row and must not leave mappings behind for one that does exist.
+        var seriesId = _db.SeedSeries("Hajime no Ippo");
+        var first = new FakeSource { Name = "first", OnSearch = _ => [Hit("a", "Hajime no Ippo")] };
+        var miss = new FakeSource { Name = "miss", OnSearch = _ => [Hit("b", "Something Else Entirely")] };
+        var second = new FakeSource { Name = "second", OnSearch = _ => [Hit("c", "Hajime no Ippo")] };
+        var appSettings = new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "second,miss,first");
+
+        var context = _db.NewContext();
+        var service = new SourceMatchService(
+            context, new SourceRegistry([first, miss, second]), appSettings, Sources.AllEnabled,
+            new SourceExternalIdCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance);
+
+        var candidates = await service.FindCandidatesAsync(new Series { Id = seriesId, Title = "Hajime no Ippo" });
+
+        Assert.Equal(["second", "first"], candidates.Select(c => c.Source.Name));
+        Assert.Equal(["c", "a"], candidates.Select(c => c.SourceSeriesId));
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
     public async Task Language_order_ranks_a_Japanese_source_above_an_English_one()
     {
         var seriesId = _db.SeedSeries("Hajime no Ippo");

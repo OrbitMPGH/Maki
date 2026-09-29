@@ -47,7 +47,8 @@ public class ImageCacheRebuildService(
         try
         {
             status.SetPhase("clearing");
-            var cleared = ClearCacheDir(paths.ReaderCacheDir) + ClearCacheDir(paths.SourcePreviewDir);
+            var cleared = ClearCacheDir(paths.ReaderCacheDir) + ClearCacheDir(paths.SourcePreviewDir)
+                + ClearCacheDir(paths.SeriesPreviewDir);
             status.ReportThumbnailsCleared(cleared);
 
             DeleteOrphanedCoverDirs(ct);
