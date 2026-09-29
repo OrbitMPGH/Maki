@@ -353,7 +353,7 @@ function ProfileEditor({
 
       <Switch
         label={t`Upgrades enabled`}
-        description={t`Stored for a later release: automatic upgrades don't run yet.`}
+        description={t`When the instance switch is on, the daily scan may replace files of series on this profile with better copies.`}
         checked={upgradesEnabled}
         onChange={(e) => setUpgradesEnabled(e.currentTarget.checked)}
       />

@@ -13405,10 +13405,6 @@ msgstr "Bitirmeden bırakıldı"
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Maki kurulumunuz için depolama, meta veri, indirme istemcileri ve entegrasyonlar."
 
-#: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Stored for a later release: automatic upgrades don't run yet."
-msgstr ""
-
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15449,6 +15445,10 @@ msgstr "Bir yenileme, bir seri için bundan fazla yeni bölüm bulduğunda hiçb
 #, fuzzy
 msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
 msgstr "Diskteki mevcut bir seriyi içe aktarırken klasörünü Seri Klasörü Biçimi'ne göre yeniden adlandırın veya bulunduğu adı koruyun."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy

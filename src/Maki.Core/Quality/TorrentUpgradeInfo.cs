@@ -18,6 +18,9 @@ public sealed class TorrentUpgradeInfo
     public List<string> SkipFileNames { get; set; } = [];
     public List<string> Reasons { get; set; } = [];
 
+    /// <summary>The chapter language the verdict judged; the import links only chapters of it.</summary>
+    public string? Language { get; set; }
+
     /// <summary>pending, applied, parked or rejected.</summary>
     public string Outcome { get; set; } = TorrentUpgradeOutcomes.Pending;
 

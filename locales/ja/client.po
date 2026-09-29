@@ -13405,10 +13405,6 @@ msgstr "完読前に中断"
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Makiインスタンスのストレージ、メタデータ、ダウンロードクライアント、連携。"
 
-#: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Stored for a later release: automatic upgrades don't run yet."
-msgstr ""
-
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15449,6 +15445,10 @@ msgstr "更新でシリーズの新しい章がこの数を超えて見つかっ
 #, fuzzy
 msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
 msgstr "ディスク上の既存シリーズをインポートするとき、フォルダー名をシリーズフォルダー形式に変更するか、そのまま保持します。"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy

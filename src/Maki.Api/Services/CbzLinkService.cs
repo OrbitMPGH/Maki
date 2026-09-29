@@ -37,12 +37,19 @@ public class CbzLinkService(
     /// volume may displace single-chapter files but never another volume; a torrent upgrade passes the
     /// files its verdict said it replaces.
     /// </param>
+    /// <param name="language">
+    /// When set, only chapters of this language are linked, by chapter and by volume alike; a torrent
+    /// upgrade passes the language its verdict judged.
+    /// </param>
     public async Task<(int Linked, int Unrecognized)> LinkFilesAsync(
         Series series, string seriesDir, IEnumerable<string> files, string sourceName,
         Func<int, int, Task>? progress = null, bool updateComicInfo = true, string? releaseName = null,
-        bool replaceExisting = true, CancellationToken ct = default, IReadOnlySet<int>? displaceableFileIds = null)
+        bool replaceExisting = true, CancellationToken ct = default, IReadOnlySet<int>? displaceableFileIds = null,
+        string? language = null)
     {
-        var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
+        var chapters = (await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct))
+            .Where(c => language is null || string.Equals(ChapterFileLanguage.Of(c), language, StringComparison.OrdinalIgnoreCase))
+            .ToList();
         var volumeFileIds = await VolumeFileIdsAsync(series.Id, ct);
         var linked = 0;
         var unrecognized = 0;

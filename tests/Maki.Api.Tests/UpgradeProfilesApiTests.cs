@@ -255,6 +255,35 @@ public sealed class UpgradeProfilesApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Editing_a_formats_conditions_bumps_every_profile_scoring_it_and_a_rename_bumps_none()
+    {
+        var wide = SeedFormat("Wide", new FormatCondition(FormatConditionType.MinWidth, "1400", true, false));
+        var png = SeedFormat("Png", new FormatCondition(FormatConditionType.ImageFormatIs, "png", true, false));
+        var first = SeedProfile("First", scores: [new(wide, 10)]);
+        var second = SeedProfile("Second", scores: [new(wide, 5), new(png, 3)]);
+        var other = SeedProfile("Other", scores: [new(png, 3)]);
+
+        using (var db = _db.NewContext())
+        {
+            Value<QualityFormatDto>(await Formats(db).Update(wide, FormatBody("Wider", new FormatConditionDto("minWidth", "1400", true, false)), default));
+        }
+
+        using (var check = _db.NewContext())
+        {
+            Assert.All(check.UpgradeProfiles.ToList(), p => Assert.Equal(1, p.Version));
+        }
+
+        using (var db = _db.NewContext())
+        {
+            Value<QualityFormatDto>(await Formats(db).Update(wide, FormatBody("Wider", new FormatConditionDto("minWidth", "1600", true, false)), default));
+        }
+
+        using var after = _db.NewContext();
+        var profiles = after.UpgradeProfiles.ToDictionary(p => p.Id, p => p.Version);
+        Assert.Equal((2, 2, 1), (profiles[first], profiles[second], profiles[other]));
+    }
+
+    [Fact]
     public async Task Settings_default_must_reference_an_existing_profile()
     {
         var id = SeedProfile();

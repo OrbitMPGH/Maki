@@ -11033,10 +11033,6 @@ msgstr "Stopped before finishing"
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Storage, metadata, download clients and integrations for your Maki instance."
 
-#: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Stored for a later release: automatic upgrades don't run yet."
-msgstr "Stored for a later release: automatic upgrades don't run yet."
-
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -12719,6 +12715,10 @@ msgstr "When a refresh finds more new chapters for a series than this, none of t
 #: src/pages/SettingsPage.tsx
 msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
 msgstr "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
+msgstr "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
 
 #: src/pages/settings/registry.ts
 msgid "Where files live, how they are named, and where metadata comes from."

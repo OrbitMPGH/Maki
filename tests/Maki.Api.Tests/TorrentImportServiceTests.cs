@@ -568,7 +568,7 @@ public class TorrentImportServiceTests : IDisposable
     /// upgrade that replaces the files <paramref name="replaces"/> picks (default: every untrusted one).
     /// </summary>
     private void MakeUpgrade(Series series, DownloadQueueItem item, Action<List<ChapterFile>>? files = null,
-        Func<List<ChapterFile>, IEnumerable<int>>? replaces = null)
+        Func<List<ChapterFile>, IEnumerable<int>>? replaces = null, string? language = null)
     {
         using var db = _db.NewContext();
         var profile = new UpgradeProfile { Name = "Volumes", Cutoff = QualityTier.Volume, UpgradesEnabled = true };
@@ -589,7 +589,8 @@ public class TorrentImportServiceTests : IDisposable
         var info = new TorrentUpgradeInfo
         {
             ProfileId = profile.Id,
-            ReplacedFileIds = [.. replaces?.Invoke(rows) ?? rows.Where(f => !f.Trusted).Select(f => f.Id)]
+            ReplacedFileIds = [.. replaces?.Invoke(rows) ?? rows.Where(f => !f.Trusted).Select(f => f.Id)],
+            Language = language
         };
         db.DownloadQueue.Single(q => q.Id == item.Id).UpgradeInfoJson = info.Serialize();
         item.UpgradeInfoJson = info.Serialize();
@@ -630,6 +631,37 @@ public class TorrentImportServiceTests : IDisposable
         var v02 = plan.Files.Single(f => f.FileName.Contains("v02"));
         Assert.Equal((3, 0), (v01.UpgradeCount, v01.AlreadyMetCount));
         Assert.Equal((0, 3), (v02.UpgradeCount, v02.AlreadyMetCount));
+    }
+
+    [Fact]
+    public async Task An_upgrade_for_one_language_never_links_a_chapter_of_another()
+    {
+        var (series, item) = SeedLibrary();
+        int spanishId;
+        using (var db = _db.NewContext())
+        {
+            foreach (var chapter in db.Chapters.Where(c => c.SeriesId == series.Id))
+            {
+                chapter.Language = "fr";
+            }
+
+            var spanish = new Chapter { SeriesId = series.Id, Number = 2, Volume = 1, Language = "es" };
+            db.Chapters.Add(spanish);
+            db.SaveChanges();
+            spanishId = spanish.Id;
+        }
+
+        MakeUpgrade(series, item, language: "fr");
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
+
+        var outcome = await Service().ImportAsync(item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
+
+        Assert.True(outcome.Applied);
+        using var after = _db.NewContext();
+        var imported = after.ChapterFiles.Single(f => f.SeriesId == series.Id && f.RelativePath.Contains("v01"));
+        var chapters = after.Chapters.Where(c => c.SeriesId == series.Id).ToList();
+        Assert.Null(chapters.Single(c => c.Id == spanishId).ChapterFileId);
+        Assert.All(chapters.Where(c => c.Language == "fr"), c => Assert.Equal(imported.Id, c.ChapterFileId));
     }
 
     [Fact]

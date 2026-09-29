@@ -13405,10 +13405,6 @@ msgstr "Arrêtées avant d'être terminées"
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Stockage, métadonnées, clients de téléchargement et intégrations de votre instance Maki."
 
-#: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Stored for a later release: automatic upgrades don't run yet."
-msgstr ""
-
 #: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -15449,6 +15445,10 @@ msgstr "Quand une actualisation trouve plus de nouveaux chapitres pour une séri
 #, fuzzy
 msgid "When importing an existing series from disk: rename its folder to the Series Folder Format, or keep it as found."
 msgstr "Lors de l'import d'une série existante depuis le disque : renommez son dossier selon le format de dossier de série ou conservez le nom actuel."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "When the instance switch is on, the daily scan may replace files of series on this profile with better copies."
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #, fuzzy

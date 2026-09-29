@@ -72,11 +72,14 @@ public class TorrentUpgradeServiceTests : IDisposable
         new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
         _clock, NullLogger<TorrentUpgradeService>.Instance);
 
-    private int Chapter(decimal number, int? volume, bool withFile = true, bool wanted = true, Action<ChapterFile>? file = null)
+    private int Chapter(decimal number, int? volume, bool withFile = true, bool wanted = true, Action<ChapterFile>? file = null,
+        string language = "en")
     {
         var (chapterId, _) = _world.Chapter(number, file, withFile, wanted);
         using var db = _world.Db.NewContext();
-        db.Chapters.Single(c => c.Id == chapterId).Volume = volume;
+        var chapter = db.Chapters.Single(c => c.Id == chapterId);
+        chapter.Volume = volume;
+        chapter.Language = language;
         db.SaveChanges();
         return chapterId;
     }
@@ -181,6 +184,41 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.Equal(SpanOutcome.Proposal, view.Verdict.Outcome);
         Assert.Contains(SpanVerdictReasons.TrailingNumber, view.Verdict.Reasons);
         Assert.Equal(1, view.Verdict.UpgradeCount);
+    }
+
+    [Fact]
+    public async Task Without_english_the_verdict_judges_only_the_language_with_the_most_files()
+    {
+        Action<ChapterFile> Named(string suffix) => f => f.RelativePath = f.RelativePath.Replace(".cbz", $" [{suffix}].cbz");
+        Chapter(1, 1, file: Named("es"), language: "es");
+        Chapter(2, 1, withFile: false, language: "es");
+        Chapter(3, 1, withFile: false, language: "es");
+        var fr1 = Chapter(1, 1, file: Named("fr"), language: "fr");
+        var fr2 = Chapter(2, 1, file: Named("fr"), language: "fr");
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+        await SearchAsync();
+
+        using var db = _world.Db.NewContext();
+        var frFiles = db.Chapters.Where(c => c.Id == fr1 || c.Id == fr2).Select(c => c.ChapterFileId!.Value).ToHashSet();
+        Assert.Equal("fr", view.Language);
+        Assert.Equal((2, 0), (view.Verdict.UpgradeCount, view.Verdict.MissingCount));
+        Assert.Equal(frFiles, view.Verdict.ReplacedFileIds.ToHashSet());
+        var info = TorrentUpgradeInfo.Parse(Assert.Single(_releases.Grabs).Info)!;
+        Assert.Equal("fr", info.Language);
+        Assert.Equal(frFiles, info.ReplacedFileIds.ToHashSet());
+    }
+
+    [Fact]
+    public void A_file_count_tie_goes_to_the_language_with_more_rows_then_to_ordinal_order()
+    {
+        List<Chapter> Rows(params (string Language, int? FileId)[] rows) =>
+            [.. rows.Select((r, i) => new Chapter { Id = i + 1, Number = i + 1, Language = r.Language, ChapterFileId = r.FileId })];
+
+        Assert.Equal("fr", TorrentUpgradeRules.PrimaryLanguage(Rows(("es", 1), ("fr", 2), ("fr", null))).Language);
+        Assert.Equal("de", TorrentUpgradeRules.PrimaryLanguage(Rows(("fr", 1), ("de", 2))).Language);
+        Assert.Equal("en", TorrentUpgradeRules.PrimaryLanguage(Rows(("fr", 1), ("fr", 2), ("en", null))).Language);
     }
 
     [Fact]

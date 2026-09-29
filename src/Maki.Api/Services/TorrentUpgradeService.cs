@@ -4,6 +4,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
+using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Quality;
@@ -16,8 +17,9 @@ namespace Maki.Api.Services;
 
 /// <param name="Parsed">The title as the verdict read it: a trailing chapter number is already in the span.</param>
 /// <param name="WholeSeries">A digital pack naming no span, judged against every chapter of the series.</param>
+/// <param name="Language">The one chapter language the verdict judged.</param>
 public sealed record TorrentCandidateView(ReleaseDto Release, ParsedReleaseTitle Parsed, bool TitleMatched,
-    QualityTier Tier, int Score, SpanVerdict Verdict, bool WholeSeries = false);
+    QualityTier Tier, int Score, SpanVerdict Verdict, bool WholeSeries = false, string? Language = null);
 
 /// <summary>The shape of <see cref="TorrentProposal.SpanJson"/>.</summary>
 public sealed record StoredReleaseSpan(NumberRange? Volumes, IReadOnlyList<NumberRange>? ChapterSegments, bool WholeSeries = false)
@@ -83,9 +85,23 @@ public static class TorrentUpgradeRules
             : ChapterSpanState.AlreadyMet;
     }
 
-    /// <summary>The rows of one language: English when the series has any, otherwise all of them.</summary>
-    public static List<Chapter> PrimaryLanguage(List<Chapter> chapters) =>
-        chapters.Any(c => c.Language == "en") ? [.. chapters.Where(c => c.Language == "en")] : chapters;
+    /// <summary>
+    /// The rows of one language: English when the series has any, otherwise the language with the most
+    /// files, then the most rows, then the first code in ordinal order. Null language for no rows.
+    /// </summary>
+    public static (string? Language, List<Chapter> Chapters) PrimaryLanguage(List<Chapter> chapters)
+    {
+        var language = chapters.Any(c => ChapterFileLanguage.Of(c) == FileNameBuilder.DefaultLanguage)
+            ? FileNameBuilder.DefaultLanguage
+            : chapters
+                .GroupBy(ChapterFileLanguage.Of, StringComparer.Ordinal)
+                .OrderByDescending(g => g.Where(c => c.ChapterFileId != null).Select(c => c.ChapterFileId).Distinct().Count())
+                .ThenByDescending(g => g.Count())
+                .ThenBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g => g.Key)
+                .FirstOrDefault();
+        return (language, [.. chapters.Where(c => ChapterFileLanguage.Of(c) == language)]);
+    }
 }
 
 /// <summary>
@@ -144,7 +160,8 @@ public class TorrentUpgradeService(
                 verdict = verdict.AtMostProposal(SpanVerdictReasons.TrailingNumber);
             }
 
-            views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, score.Score, verdict, wholeSeries));
+            views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, score.Score, verdict, wholeSeries,
+                library.Language));
         }
 
         return views;
@@ -300,7 +317,7 @@ public class TorrentUpgradeService(
                 try
                 {
                     var item = await releases.GrabAsync(seriesId, grab.Release with { Parsed = null }, DownloadOrigin.Upgrade,
-                        null, InfoFor(evaluator!, grab.Verdict, null).Serialize(), ct);
+                        null, InfoFor(evaluator!, grab, null).Serialize(), ct);
                     logger.LogInformation("Volume search grabbed '{Release}' for '{Title}'", grab.Release.Title, series.Title);
                     return new SeriesVolumeSearchResult(true, result.Releases.Count, item.Id, null, null);
                 }
@@ -348,7 +365,7 @@ public class TorrentUpgradeService(
         var evaluator = await evaluation.ForSeriesAsync(row.SeriesId, ct);
         var view = (await EvaluateAsync(row.SeriesId, [release], ct)).FirstOrDefault();
         var info = evaluator is not null && view is not null
-            ? InfoFor(evaluator, view.Verdict, row.Id)
+            ? InfoFor(evaluator, view, row.Id)
             : new TorrentUpgradeInfo { ProposalId = row.Id, Reasons = [SpanVerdictReasons.NoProfile] };
 
         var item = await releases.GrabAsync(row.SeriesId, release, DownloadOrigin.Upgrade, userId, info.Serialize(), ct);
@@ -410,13 +427,14 @@ public class TorrentUpgradeService(
 
     private static SeriesVolumeSearchResult NotEligible(string reason) => new(false, 0, null, null, reason);
 
-    private static TorrentUpgradeInfo InfoFor(UpgradeEvaluator evaluator, SpanVerdict verdict, int? proposalId) => new()
+    private static TorrentUpgradeInfo InfoFor(UpgradeEvaluator evaluator, TorrentCandidateView view, int? proposalId) => new()
     {
         ProposalId = proposalId,
         ProfileId = evaluator.Profile.Id,
         ProfileVersion = evaluator.Profile.Version,
-        ReplacedFileIds = [.. verdict.ReplacedFileIds],
-        Reasons = [.. verdict.Reasons]
+        ReplacedFileIds = [.. view.Verdict.ReplacedFileIds],
+        Reasons = [.. view.Verdict.Reasons],
+        Language = view.Language
     };
 
     private async Task<string?> EligibilityAsync(
@@ -499,7 +517,7 @@ public class TorrentUpgradeService(
 
     private async Task<LibraryState> LibraryAsync(Series series, CancellationToken ct)
     {
-        var chapters = TorrentUpgradeRules.PrimaryLanguage(await db.Chapters.AsNoTracking()
+        var (language, chapters) = TorrentUpgradeRules.PrimaryLanguage(await db.Chapters.AsNoTracking()
             .Where(c => c.SeriesId == series.Id)
             .Include(c => c.ChapterFile)
             .ToListAsync(ct));
@@ -536,11 +554,13 @@ public class TorrentUpgradeService(
             }
         }
 
-        return new LibraryState(chapters, inferred);
+        return new LibraryState(language, chapters, inferred);
     }
 
-    private sealed class LibraryState(List<Chapter> chapters, Dictionary<int, int> inferred)
+    private sealed class LibraryState(string? language, List<Chapter> chapters, Dictionary<int, int> inferred)
     {
+        public string? Language => language;
+
         private int? VolumeOf(Chapter chapter) => chapter.Volume ?? (inferred.TryGetValue(chapter.Id, out var v) ? v : null);
 
         public List<SpanChapter> All(UpgradeEvaluator evaluator, QualityScore score) =>

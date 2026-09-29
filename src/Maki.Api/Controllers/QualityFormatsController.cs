@@ -48,14 +48,24 @@ public class QualityFormatsController(ILocalizer localizer, MakiDbContext db) : 
             return NotFound();
         }
 
+        var before = format.Conditions.ToList();
         if (await ApplyAsync(format, request, id, ct) is { } invalid)
         {
             return invalid;
         }
 
         format.Version++;
+        var profiles = await db.UpgradeProfiles.ToListAsync(ct);
+        if (!before.SequenceEqual(format.Conditions))
+        {
+            // Matching changed, so every memo keyed on a profile that scores this format is stale.
+            foreach (var profile in profiles.Where(p => p.FormatScores.Any(s => s.FormatId == id)))
+            {
+                profile.Version++;
+            }
+        }
+
         await db.SaveChangesAsync(ct);
-        var profiles = await db.UpgradeProfiles.AsNoTracking().ToListAsync(ct);
         return Ok(QualityFormatDto.From(format, ProfileCount(profiles, id)));
     }
 

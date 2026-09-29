@@ -229,21 +229,24 @@ public class TorrentImportService(
                 new { detail = ComicSourceScanner.Describe(contentPath) });
         }
 
-        var chapters = await db.Chapters
+        var upgradeInfo = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson);
+        var chapters = (await db.Chapters
             .Where(c => c.SeriesId == series.Id)
-            .ToListAsync(ct);
+            .ToListAsync(ct))
+            .Where(c => upgradeInfo?.Language is not { } language || ChapterFileLanguage.Of(c) == language)
+            .ToList();
         var existingFiles = await db.ChapterFiles
             .Where(f => f.SeriesId == series.Id)
             .ToListAsync(ct);
 
-        var isUpgrade = TorrentUpgradeInfo.IsTorrent(item.UpgradeInfoJson);
+        var isUpgrade = upgradeInfo is not null;
         var evaluator = isUpgrade ? await evaluation.ForSeriesAsync(series.Id, ct) : null;
         var releaseInfo = ReleaseInfoOf(item);
         var titleGroup = ReleaseTitleParser.Parse(releaseName).Group;
         var suggestedSkips = new List<string>();
 
         // An upgrade's verdict may name volume files, and the linker takes chapters off exactly those.
-        var displaceable = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)?.ReplacedFileIds ?? [];
+        var displaceable = upgradeInfo?.ReplacedFileIds ?? [];
         var volumeFileIds = existingFiles
             .Where(f => !displaceable.Contains(f.Id) && ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
             .Select(f => f.Id)
@@ -438,7 +441,8 @@ public class TorrentImportService(
             // already good file inside the volume's span keeps its chapter.
             displaceableFileIds: mode == TorrentImportMode.Replace && upgrade is { ReplacedFileIds.Count: > 0 }
                 ? upgrade.ReplacedFileIds.ToHashSet()
-                : null);
+                : null,
+            language: upgrade?.Language);
 
         var importedRows = await ImportedRowsAsync(series, imported, ct);
         var hash = ReleaseInfoOf(item)?.TorrentHash;
