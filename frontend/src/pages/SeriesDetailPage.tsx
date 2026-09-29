@@ -113,6 +113,7 @@ import {
   useSetFileTrusted,
   useTorrentProposals,
   useUpgradeChapterNow,
+  scanReasonSummary,
   useSeriesUpgradeScanStatus,
   useUpgradeProfiles,
   useVolumeSearch,
@@ -460,20 +461,28 @@ export default function SeriesDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
     const { queued, chaptersChecked } = scanStatus
     if (scanStatus.state === 'done') {
+      const reasons = scanReasonSummary(renderLabel, scanStatus.skipped)
       notifications.show({
-        color: 'var(--ok)',
+        color: queued > 0 ? 'var(--ok)' : 'var(--info)',
+        title:
+          chaptersChecked === 0
+            ? staticT`Upgrade scan finished with nothing to check`
+            : queued > 0
+              ? plural(queued, {
+                  one: 'Upgrade scan finished: # better copy queued',
+                  other: 'Upgrade scan finished: # better copies queued',
+                })
+              : plural(chaptersChecked, {
+                  one: 'Upgrade scan finished: no better copy for the # chapter checked',
+                  other: 'Upgrade scan finished: no better copies for the # chapters checked',
+                }),
         message:
           chaptersChecked === 0
-            ? staticT`Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters.`
-            : queued > 0
-            ? plural(queued, {
-                one: 'Upgrade scan finished: # better copy queued',
-                other: 'Upgrade scan finished: # better copies queued',
-              })
-            : plural(chaptersChecked, {
-                one: 'Upgrade scan finished: no better copies for the # chapter checked',
-                other: 'Upgrade scan finished: no better copies for the # chapters checked',
-              }),
+            ? staticT`It needs a quality profile and downloaded chapters.`
+            : reasons
+              ? staticT`Passed over: ${reasons}`
+              : undefined,
+        autoClose: reasons ? 10_000 : undefined,
       })
     } else if (scanStatus.state === 'busy') {
       notifications.show({
@@ -486,7 +495,7 @@ export default function SeriesDetailPage() {
         message: staticT`The upgrade scan could not run. The server log has the details.`,
       })
     }
-  }, [scanStatus, queryClient, seriesId])
+  }, [scanStatus, queryClient, seriesId, renderLabel])
   const runVolumeSearch = useVolumeSearch()
   const [upgradeNowResult, setUpgradeNowResult] = useState<UpgradeScanResultDto | null>(null)
   const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
@@ -1897,13 +1906,31 @@ export default function SeriesDetailPage() {
                     ) : series.lastUpgradeScan ? (
                         (() => {
                           const at = formatDate(series.lastUpgradeScan.at)
-                          const { probed, queued } = series.lastUpgradeScan
+                          const { probed, queued, checked } = series.lastUpgradeScan
+                          const reasons = scanReasonSummary(renderLabel, series.lastUpgradeScan.skipped)
                           return (
-                              <Trans>
-                                Last upgrade scan: {at}, <Plural value={probed} one="# probed" other="# probed" />
-                                ,{' '}
-                                <Plural value={queued} one="# queued" other="# queued" />
-                              </Trans>
+                              <>
+                                {checked == null ? (
+                                    <Trans>
+                                      Last upgrade scan: {at}, <Plural value={probed} one="# probed" other="# probed" />
+                                      ,{' '}
+                                      <Plural value={queued} one="# queued" other="# queued" />
+                                    </Trans>
+                                ) : (
+                                    <Trans>
+                                      Last upgrade scan: {at}, <Plural value={checked} one="# chapter checked" other="# chapters checked" />
+                                      , <Plural value={probed} one="# probed" other="# probed" />
+                                      ,{' '}
+                                      <Plural value={queued} one="# queued" other="# queued" />
+                                    </Trans>
+                                )}
+                                {reasons && (
+                                    <>
+                                      <br />
+                                      <Trans>Passed over: {reasons}</Trans>
+                                    </>
+                                )}
+                              </>
                           )
                         })()
                     ) : (

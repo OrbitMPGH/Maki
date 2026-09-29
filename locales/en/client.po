@@ -354,8 +354,12 @@ msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} ch"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+#~ msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{chaptersCount, plural, one {# affected chapter} other {# affected chapters}}"
@@ -5935,6 +5939,10 @@ msgstr "Issuer URL"
 msgid "It may have been removed from the library."
 msgstr "It may have been removed from the library."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "It needs a quality profile and downloaded chapters."
+msgstr "It needs a quality profile and downloaded chapters."
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 msgid "Italian"
@@ -6208,6 +6216,10 @@ msgstr "Last sign-in"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Last synced {synced}"
 msgstr "Last synced {synced}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {checked, plural, one {# chapter checked} other {# chapters checked}}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr "Last upgrade scan: {at}, {checked, plural, one {# chapter checked} other {# chapters checked}}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
@@ -7548,6 +7560,10 @@ msgstr "No one else on this instance has opted in yet."
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 
+#: src/api/upgrades.ts
+msgid "No other source lists it"
+msgstr "No other source lists it"
+
 #: src/components/SetupWizard.tsx
 msgid "No outside tools connected. That's fine, sources download on their own."
 msgstr "No outside tools connected. That's fine, sources download on their own."
@@ -8496,6 +8512,10 @@ msgstr "Parsed"
 #: src/pages/HealthPage.tsx
 msgid "Partial"
 msgstr "Partial"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Passed over: {reasons}"
+msgstr "Passed over: {reasons}"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -12575,8 +12595,12 @@ msgid "Upgrade restore failed"
 msgstr "Upgrade restore failed"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
-msgstr "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
+msgid "Upgrade scan finished with nothing to check"
+msgstr "Upgrade scan finished with nothing to check"
+
+#: src/pages/SeriesDetailPage.tsx
+#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
+#~ msgstr "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"

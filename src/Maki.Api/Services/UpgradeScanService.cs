@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Quality;
@@ -170,6 +171,9 @@ public class UpgradeScanService(
         /// <summary>A series or chapter someone asked for, so series-level skips are worth reporting.</summary>
         public bool Targeted { get; init; }
 
+        /// <summary>A whole series scanned because someone asked: waits for nothing and re-checks every candidate.</summary>
+        public bool ByHand => Targeted && OnlyChapter is null;
+
         public int? UserId { get; init; }
 
         public List<UpgradeCandidateOutcome>? Outcomes { get; } = onlyChapter is null ? null : [];
@@ -230,6 +234,8 @@ public class UpgradeScanService(
         run.SeriesScanned++;
         var probedBefore = run.CandidatesProbed;
         var enqueuedBefore = run.Enqueued;
+        var checkedBefore = run.ChaptersChecked;
+        var skippedBefore = new Dictionary<string, int>(run.Skipped);
         var profile = evaluator!.Profile;
         var now = time.GetUtcNow().UtcDateTime;
 
@@ -305,7 +311,8 @@ public class UpgradeScanService(
             }
 
             var settled = file.ReplacedAtUtc is { } replaced && replaced > file.DateAdded ? replaced : file.DateAdded;
-            if (run.OnlyChapter is null && settled.AddDays(options.QuietPeriodDays) > now)
+            // Someone pressing "Scan for upgrades" wants it tried now, so only the daily scan waits.
+            if (run.OnlyChapter is null && !run.ByHand && settled.AddDays(options.QuietPeriodDays) > now)
             {
                 run.Skip(UpgradeReasons.QuietPeriod);
                 continue;
@@ -318,6 +325,7 @@ public class UpgradeScanService(
             }
 
             var fileName = Path.GetFileName(file.RelativePath);
+            var anyOtherSource = false;
             foreach (var link in chapter.SourceLinks)
             {
                 if (link.SourceMapping is not { Enabled: true } mapping || disabled.Contains(mapping.SourceName) ||
@@ -334,13 +342,18 @@ public class UpgradeScanService(
                     continue;
                 }
 
+                anyOtherSource = true;
+
+                // A scan asked for by hand looks at every candidate again; only a download it already
+                // queued, and that could still happen, keeps it from being queued twice.
                 if (memo.TryGetValue((chapter.Id, mapping.Id, link.SourceChapterId), out var seen) &&
-                    !(seen.Reason is UpgradeReasons.ProbeFailed or UpgradeReasons.SourceCooldown &&
-                      seen.CreatedAtUtc < now.AddDays(-1)) &&
-                    !(seen.Reason == UpgradeReasons.EstimateNotHigher &&
-                      seen.CreatedAtUtc < now - UpgradeReasons.EstimateMemoLifetime) &&
-                    !(seen.Reason == UpgradeReasons.Enqueued &&
-                      lastUpgrade.GetValueOrDefault(chapter.Id) is null or QueueStatus.Failed or QueueStatus.Cancelled))
+                    (seen.Reason == UpgradeReasons.Enqueued
+                        ? lastUpgrade.GetValueOrDefault(chapter.Id) is not (null or QueueStatus.Failed or QueueStatus.Cancelled)
+                        : !run.ByHand &&
+                          !(seen.Reason is UpgradeReasons.ProbeFailed or UpgradeReasons.SourceCooldown &&
+                            seen.CreatedAtUtc < now.AddDays(-1)) &&
+                          !(seen.Reason == UpgradeReasons.EstimateNotHigher &&
+                            seen.CreatedAtUtc < now - UpgradeReasons.EstimateMemoLifetime)))
                 {
                     run.Skip("memoised");
                     run.Outcome(mapping, link.SourceChapterId, seen.Reason, seen.Probed, seen.CandidatePageCount,
@@ -377,6 +390,11 @@ public class UpgradeScanService(
 
                 survivors.Add(new Survivor(chapter, file, current.Score, mapping, source, link, group,
                     evaluator.OptimisticScore(listing)));
+            }
+
+            if (!anyOtherSource)
+            {
+                run.Skip(UpgradeReasons.NoOtherSource);
             }
         }
 
@@ -523,12 +541,20 @@ public class UpgradeScanService(
 
         var probed = run.CandidatesProbed - probedBefore;
         var enqueued = run.Enqueued - enqueuedBefore;
+        var skips = run.Skipped
+            .Select(kv => (kv.Key, Count: kv.Value - skippedBefore.GetValueOrDefault(kv.Key)))
+            .Where(x => x.Count > 0)
+            .ToDictionary(x => x.Key, x => x.Count);
+        var skipsJson = JsonSerializer.Serialize(skips);
+        var checkedCount = run.ChaptersChecked - checkedBefore;
         await db.Series.IgnoreQueryFilters()
             .Where(x => x.Id == seriesId)
             .ExecuteUpdateAsync(u => u
                 .SetProperty(x => x.LastUpgradeScanUtc, now)
                 .SetProperty(x => x.LastUpgradeScanProbed, probed)
-                .SetProperty(x => x.LastUpgradeScanQueued, enqueued), ct);
+                .SetProperty(x => x.LastUpgradeScanQueued, enqueued)
+                .SetProperty(x => x.LastUpgradeScanChecked, checkedCount)
+                .SetProperty(x => x.LastUpgradeScanSkipsJson, skipsJson), ct);
     }
 
     private static bool Beats(UpgradeProfile profile, Winner a, Winner b)

@@ -315,6 +315,7 @@ export type UpgradeSkipReasonCode =
   | 'probe_budget'
   | 'daily_cap'
   | 'unsupported_file'
+  | 'no_other_source'
   /** `ComparePanelQualityDto.reason` on a series with no upgrade profile; never a scan bucket. */
   | 'no_profile'
   | 'upgrades_disabled'
@@ -343,6 +344,7 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
   shared_file: msg`Shares a file with another chapter`,
   queued: msg`Already queued`,
   memoised: msg`Already checked recently`,
+  no_other_source: msg`No other source lists it`,
   probe_budget: msg`Ran out of probes for this run`,
   daily_cap: msg`Daily upgrade cap reached`,
   unsupported_file: msg`Unsupported file type`,
@@ -354,6 +356,18 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
 /** `LABELS[x] ?? x`: a code this build has no case for renders as-is rather than disappearing. */
 export function upgradeReasonLabel(renderLabel: (m: MessageDescriptor) => string, code: string): string {
   return renderLabel(UPGRADE_REASON_LABELS[code as UpgradeReasonCode | UpgradeSkipReasonCode] ?? code)
+}
+
+/** Why a scan passed chapters or candidates over, most common first: "Label (3) · Label (1)". */
+export function scanReasonSummary(
+  renderLabel: (m: MessageDescriptor) => string,
+  skipped: Record<string, number> | null | undefined,
+): string {
+  return Object.entries(skipped ?? {})
+    .filter(([, count]) => count > 0)
+    .sort(([, a], [, b]) => b - a)
+    .map(([code, count]) => `${upgradeReasonLabel(renderLabel, code)} (${i18n.number(count)})`)
+    .join(' · ')
 }
 
 export interface NumberRangeDto {
@@ -593,6 +607,8 @@ export interface SeriesScanStatus {
   chaptersChecked: number
   probed: number
   queued: number
+  /** Reason code to count, once done. */
+  skipped: Record<string, number> | null
 }
 
 export function useSeriesUpgradeScanStatus(seriesId: number) {

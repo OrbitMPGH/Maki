@@ -421,7 +421,11 @@ msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} 챕터"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+#~ msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -7187,6 +7191,10 @@ msgstr "발급자 URL"
 msgid "It may have been removed from the library."
 msgstr "라이브러리에서 삭제되었을 수 있습니다."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "It needs a quality profile and downloaded chapters."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7514,6 +7522,10 @@ msgstr "마지막 로그인"
 #, fuzzy
 msgid "Last synced {synced}"
 msgstr "마지막 동기화 {synced}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {checked, plural, one {# chapter checked} other {# chapters checked}}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
@@ -9136,6 +9148,10 @@ msgstr "이 인스턴스에는 아직 참여한 다른 사용자가 없습니다
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "다른 파일이 {lowerLabel}을(를) 뒷받침하지 않습니다. 비교할 항목이 없으므로 가져오기가 이 보관 파일을 채택하고 챕터에 연결합니다."
 
+#: src/api/upgrades.ts
+msgid "No other source lists it"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "No outside tools connected. That's fine, sources download on their own."
@@ -10285,6 +10301,10 @@ msgstr "구문 분석됨"
 #, fuzzy
 msgid "Partial"
 msgstr "부분"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Passed over: {reasons}"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
@@ -15210,8 +15230,12 @@ msgid "Upgrade restore failed"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
+msgid "Upgrade scan finished with nothing to check"
 msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
+#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"

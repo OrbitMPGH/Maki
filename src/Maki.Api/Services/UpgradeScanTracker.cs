@@ -4,8 +4,10 @@ namespace Maki.Api.Services;
 
 /// <param name="State">"queued", "running", "done", "busy" (another scan held the gate, nothing ran) or "failed".</param>
 /// <param name="ChaptersChecked">Filled once done.</param>
+/// <param name="Skipped">Reason code to count, once done.</param>
 public sealed record SeriesScanStatus(
-    string State, DateTime QueuedAtUtc, DateTime? FinishedAtUtc, int ChaptersChecked, int Probed, int Queued);
+    string State, DateTime QueuedAtUtc, DateTime? FinishedAtUtc, int ChaptersChecked, int Probed, int Queued,
+    IReadOnlyDictionary<string, int>? Skipped = null);
 
 /// <summary>
 /// What became of the per-series upgrade scans asked for since startup, so the series page can show
@@ -29,7 +31,8 @@ public sealed class UpgradeScanTracker
         FinishedAtUtc = DateTime.UtcNow,
         ChaptersChecked = result.ChaptersChecked,
         Probed = result.CandidatesProbed,
-        Queued = result.Enqueued
+        Queued = result.Enqueued,
+        Skipped = result.Skipped
     });
 
     public void Ended(int seriesId, string state) =>

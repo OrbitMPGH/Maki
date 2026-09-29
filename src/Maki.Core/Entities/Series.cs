@@ -68,6 +68,10 @@ public class Series
     public DateTime? LastUpgradeScanUtc { get; set; }
     public int? LastUpgradeScanProbed { get; set; }
     public int? LastUpgradeScanQueued { get; set; }
+    public int? LastUpgradeScanChecked { get; set; }
+
+    /// <summary>Reason code to count, for why chapters or candidates were passed over in that scan.</summary>
+    public string? LastUpgradeScanSkipsJson { get; set; }
 
     /// <summary>When the torrent volume search last queried Prowlarr for this series.</summary>
     public DateTime? LastVolumeSearchUtc { get; set; }
