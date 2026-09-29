@@ -6,14 +6,48 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// Seeds the starter upgrade profiles and the one format they use, once. Gated by an AppConfig
-/// marker rather than by an empty table, so an admin who deletes every profile does not get them
-/// back on the next restart. Neither profile is made the default; nothing changes for any series
-/// until an admin picks one.
+/// Seeds the starter formats and upgrade profiles, once. Gated by an AppConfig marker rather than
+/// by an empty table, so an admin who deletes them does not get them back on the next restart.
+/// Anything whose name is already taken is left alone. No profile is made the default; nothing
+/// changes for any series until an admin picks one.
 /// </summary>
+/// <remarks>
+/// Sharpness and compression are scored by <see cref="MeasuredQuality"/> rather than by width or size
+/// formats, whose thresholds turned into cliffs: aggregators cap width at 1200 to 1400px, and width
+/// otherwise follows the series rather than the source. At weight 10, a copy with twice the image data
+/// per pixel is 10 points ahead, and the profiles' MinScoreDelta of 5 ignores differences under about
+/// 40%. No starter profile replaces an Unknown file: that is mostly an imported library, and the
+/// lowest tier, so the first aggregator scrape would win.
+/// </remarks>
 public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder> logger)
 {
-    public const string MarkerKey = "upgrades.seeded";
+    public const string MarkerKey = "upgrades.seeded.v2";
+
+    public const int MeasuredWeight = 10;
+
+    public const string RawOrMachineTranslated = "Raw or machine translated";
+    public const string TrustedDigitalRipper = "Trusted digital ripper";
+
+    private static readonly (string Name, FormatCondition[] Conditions)[] Formats =
+    [
+        (RawOrMachineTranslated,
+            [new(FormatConditionType.ReleaseNameMatches, @"[\[(]\s*(raws?|mtl|machine[ ._-]?translat\w*)\s*[\])]", Required: true, Negate: false)]),
+        (TrustedDigitalRipper,
+            [new(FormatConditionType.GroupMatches, "^(1r0n|danke-Empire|LuCaZ|Oak)$", Required: true, Negate: false)])
+    ];
+
+    private static readonly (string Format, int Score)[] BaseScores =
+    [
+        (RawOrMachineTranslated, -100)
+    ];
+
+    private static readonly (string Name, QualityTier Cutoff, bool Upgrades, (string Format, int Score)[] Scores)[] Profiles =
+    [
+        ("Never upgrade", QualityTier.Aggregator, false, []),
+        ("Balanced", QualityTier.Scanlator, true, BaseScores),
+        ("Official releases", QualityTier.Official, true, BaseScores),
+        ("Digital volumes", QualityTier.Volume, true, [.. BaseScores, (TrustedDigitalRipper, 20)])
+    ];
 
     public async Task RunOnceAsync(CancellationToken ct = default)
     {
@@ -22,40 +56,45 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
             return;
         }
 
-        if (!await db.UpgradeProfiles.AnyAsync(ct))
+        var formats = await db.QualityFormats.ToDictionaryAsync(f => f.Name, StringComparer.OrdinalIgnoreCase, ct);
+        foreach (var (name, conditions) in Formats)
         {
-            var highResolution = await db.QualityFormats.FirstOrDefaultAsync(f => f.Name == "High resolution", ct);
-            if (highResolution is null)
+            if (!formats.ContainsKey(name))
             {
-                highResolution = new QualityFormat
-                {
-                    Name = "High resolution",
-                    Conditions = [new FormatCondition(FormatConditionType.MinWidth, "1400", Required: true, Negate: false)]
-                };
-                db.QualityFormats.Add(highResolution);
-                await db.SaveChangesAsync(ct);
+                var format = new QualityFormat { Name = name, Conditions = [.. conditions] };
+                db.QualityFormats.Add(format);
+                formats[name] = format;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var taken = (await db.UpgradeProfiles.Select(p => p.Name).ToListAsync(ct))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, cutoff, upgrades, scores) in Profiles)
+        {
+            if (taken.Contains(name))
+            {
+                continue;
             }
 
-            var any = new UpgradeProfile
+            var profile = new UpgradeProfile
             {
-                Name = "Any",
-                Cutoff = QualityTier.Aggregator,
-                UpgradesEnabled = false
+                Name = name,
+                Cutoff = cutoff,
+                UpgradesEnabled = upgrades,
+                MinScoreDelta = 5,
+                AllowReplacingUnknown = false,
+                ResolutionWeight = MeasuredWeight,
+                CompressionWeight = MeasuredWeight,
+                FormatScores = [.. scores.Select(s => new FormatScore(formats[s.Format].Id, s.Score))]
             };
-            var preferOfficial = new UpgradeProfile
-            {
-                Name = "Prefer official",
-                Cutoff = QualityTier.Official,
-                UpgradesEnabled = true,
-                FormatScores = [new FormatScore(highResolution.Id, 10)]
-            };
-            UpgradeProfileDefaults.Normalise(any);
-            UpgradeProfileDefaults.Normalise(preferOfficial);
-            db.UpgradeProfiles.AddRange(any, preferOfficial);
-            logger.LogInformation("Seeded the starter upgrade profiles");
+            UpgradeProfileDefaults.Normalise(profile);
+            db.UpgradeProfiles.Add(profile);
         }
 
         db.AppConfig.Add(new AppConfigEntry { Key = MarkerKey, Value = DateTime.UtcNow.ToString("O") });
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("Seeded the starter quality formats and upgrade profiles");
     }
 }

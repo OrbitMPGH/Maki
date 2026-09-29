@@ -13,6 +13,9 @@ public record QualityCandidate(
     int? MedianWidth,
     string? ImageFormat,
     long? SizeBytes,
-    string? Language);
+    string? Language,
+    int? MedianHeight = null);
 
-public record QualityScore(QualityTier Tier, int Score, IReadOnlyList<int> MatchedFormatIds);
+/// <param name="Score">Format scores plus the measured points.</param>
+public record QualityScore(
+    QualityTier Tier, int Score, IReadOnlyList<int> MatchedFormatIds, int ResolutionPoints = 0, int CompressionPoints = 0);

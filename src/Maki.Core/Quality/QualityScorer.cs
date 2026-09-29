@@ -82,7 +82,8 @@ public static class QualityScorer
             }
         }
 
-        return new QualityScore(candidate.Tier, score, matched);
+        var (resolution, compression) = MeasuredQuality.Points(profile, candidate);
+        return new QualityScore(candidate.Tier, score + resolution + compression, matched, resolution, compression);
     }
 
     /// <summary>Position counted from the bottom of <see cref="UpgradeProfile.Tiers"/>; 0 for a tier the list lacks.</summary>
@@ -148,7 +149,7 @@ public static class QualityScorer
     /// The highest score <paramref name="listing"/> could still reach once its unknown attributes are
     /// measured: a positively scored format counts when every condition it can evaluate matches,
     /// treating a condition on an unknown attribute as matched; a zero or negative one only counts
-    /// when it matches on what is already known.
+    /// when it matches on what is already known. Unmeasured points count at their maximum.
     /// </summary>
     public static QualityScore OptimisticScore(
         UpgradeProfile profile, IReadOnlyList<QualityFormat> formats, QualityCandidate listing, RegexCache regexes)
@@ -168,7 +169,8 @@ public static class QualityScorer
             score += weight;
         }
 
-        return new QualityScore(listing.Tier, score, matched);
+        var (resolution, compression) = MeasuredQuality.OptimisticPoints(profile, listing);
+        return new QualityScore(listing.Tier, score + resolution + compression, matched, resolution, compression);
     }
 
     /// <summary>

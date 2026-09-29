@@ -381,6 +381,10 @@ msgstr ""
 msgid "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{biggestDayCount, plural, other {하루에 챕터 #개}}"
 
+#: src/components/SourceCompareModal.tsx
+msgid "{bpp} bits per pixel, JPG equivalent."
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{busiestChapters, plural, one {# chapter in one month.} other {# chapters in one month.}}"
@@ -4046,6 +4050,10 @@ msgstr "완성도"
 #, fuzzy
 msgid "Composition"
 msgstr "구성"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Compression weight"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -8157,6 +8165,10 @@ msgstr "최대 콘텐츠 등급"
 msgid "Maybe next year"
 msgstr "아마 내년"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Measured quality"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Mecha"
@@ -10291,6 +10303,10 @@ msgstr "{rewindYear} 회고 재생"
 msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
 msgstr ""
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Points from the pages themselves, so a somewhat sharper or less compressed copy scores somewhat higher. Each weight is the points for doubling that measurement. 0 turns it off."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Polish"
@@ -11571,6 +11587,14 @@ msgstr "기본값으로 초기화"
 msgid "Reset zoom"
 msgstr "확대/축소 초기화"
 
+#: src/components/SourceCompareModal.tsx
+msgid "Resolution {resolution}, compression {compression}, formats {formats}."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Resolution weight"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -12143,6 +12167,14 @@ msgstr ""
 
 #: src/components/series/FileQualityBadge.tsx
 msgid "Score: {score}"
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Scored on image data per pixel, adjusted so PNG and WebP compare fairly with JPG."
+msgstr ""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Scored on median page width, from 500 to 2000 pixels."
 msgstr ""
 
 #: src/pages/stats/labels.ts

@@ -39,7 +39,7 @@ import {
   useStartSourceCompare,
 } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
-import type { ComparePanel } from '../api/types'
+import type { ComparePanel, ComparePanelQualityDto } from '../api/types'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -176,6 +176,19 @@ export function SourceCompareModal({
   }, [snapshot, order.length])
 
   /** Bytes across every page this source actually returned. Missing rows count for nothing. */
+  const signed = (n: number) => (n > 0 ? `+${i18n.number(n)}` : i18n.number(n))
+  const breakdown = (score: number, resolutionPoints: number, compressionPoints: number, bitsPerPixel: number | null) => {
+    const resolution = signed(resolutionPoints)
+    const compression = signed(compressionPoints)
+    const formats = signed(score - resolutionPoints - compressionPoints)
+    const parts = t`Resolution ${resolution}, compression ${compression}, formats ${formats}.`
+    if (bitsPerPixel == null) return parts
+    const bpp = i18n.number(bitsPerPixel, { maximumFractionDigits: 2 })
+    return `${parts} ${t`${bpp} bits per pixel, JPG equivalent.`}`
+  }
+  const scoreBreakdown = (q: ComparePanelQualityDto) =>
+    breakdown(q.score, q.resolutionPoints, q.compressionPoints, q.bitsPerPixel)
+
   const weightOf = (panel: ComparePanel) =>
     panel.pages.reduce((sum, page) => sum + (page?.bytes ?? 0), 0)
 
@@ -438,10 +451,23 @@ export function SourceCompareModal({
             )}
           </Text>
 
-          {currentQualityLine && (
-            <Text size="xs" c="var(--ink-3)" fw={500}>
-              {currentQualityLine}
-            </Text>
+          {currentQualityLine && currentQuality && (
+            <Tooltip
+              label={breakdown(
+                currentQuality.currentScore ?? 0,
+                currentQuality.currentResolutionPoints ?? 0,
+                currentQuality.currentCompressionPoints ?? 0,
+                currentQuality.currentBitsPerPixel,
+              )}
+              disabled={currentQuality.currentScore == null}
+              withArrow
+              multiline
+              w={260}
+            >
+              <Text size="xs" c="var(--ink-3)" fw={500}>
+                {currentQualityLine}
+              </Text>
+            </Tooltip>
           )}
 
           <Group justify="space-between" wrap="wrap" gap="sm">
@@ -590,9 +616,11 @@ export function SourceCompareModal({
                           <Badge size="xs" variant="light" color={QUALITY_TIER_COLOR[quality.tier]}>
                             {tierWidthLabel(renderLabel, quality.tier, quality.medianWidth)}
                           </Badge>
-                          <Text size="xs" c="var(--ink-3)">
-                            <Trans>Score {score}</Trans>
-                          </Text>
+                          <Tooltip label={scoreBreakdown(quality)} withArrow multiline w={260}>
+                            <Text size="xs" c="var(--ink-3)">
+                              <Trans>Score {score}</Trans>
+                            </Text>
+                          </Tooltip>
                           {pick &&
                             (quality.isUpgrade ? (
                               <Badge size="xs" variant="light" color="var(--ok)">

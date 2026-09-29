@@ -23,6 +23,12 @@ public class UpgradeProfile
     public int UpgradeUntilScore { get; set; }
 
     public List<FormatScore> FormatScores { get; set; } = [];
+
+    /// <summary>Points per doubling of median page width. 0 turns it off. See <see cref="MeasuredQuality"/>.</summary>
+    public int ResolutionWeight { get; set; }
+
+    /// <summary>Points per doubling of image data per pixel. 0 turns it off. See <see cref="MeasuredQuality"/>.</summary>
+    public int CompressionWeight { get; set; }
     public int PageTolerancePercent { get; set; } = 10;
     public bool AllowReplacingUnknown { get; set; } = true;
 

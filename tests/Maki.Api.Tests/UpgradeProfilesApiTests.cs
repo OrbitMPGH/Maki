@@ -508,20 +508,25 @@ public sealed class UpgradeProfilesApiTests : IDisposable
 
         using (var db = _db.NewContext())
         {
-            var profiles = db.UpgradeProfiles.OrderBy(p => p.Name).ToList();
-            var format = Assert.Single(db.QualityFormats.ToList());
-            Assert.Equal(["Any", "Prefer official"], profiles.Select(p => p.Name));
-            Assert.Equal(QualityTier.Aggregator, profiles[0].Cutoff);
-            Assert.False(profiles[0].UpgradesEnabled);
-            Assert.Equal(QualityTier.Official, profiles[1].Cutoff);
-            Assert.True(profiles[1].UpgradesEnabled);
-            Assert.Equal([new FormatScore(format.Id, 10)], profiles[1].FormatScores);
-            Assert.Equal(UpgradeProfileDefaults.DefaultOrder, profiles[1].Tiers.Select(t => t.Tier));
-            Assert.Equal(
-                [new FormatCondition(FormatConditionType.MinWidth, "1400", true, false)], format.Conditions);
+            var profiles = db.UpgradeProfiles.ToDictionary(p => p.Name);
+            Assert.Equal(2, db.QualityFormats.Count());
+            Assert.Equal(["Balanced", "Digital volumes", "Never upgrade", "Official releases"], profiles.Keys.Order());
+            Assert.False(profiles["Never upgrade"].UpgradesEnabled);
+            Assert.Equal(QualityTier.Scanlator, profiles["Balanced"].Cutoff);
+            Assert.Equal(QualityTier.Official, profiles["Official releases"].Cutoff);
+            Assert.Equal(QualityTier.Volume, profiles["Digital volumes"].Cutoff);
+            Assert.All(profiles.Values, p =>
+            {
+                Assert.False(p.AllowReplacingUnknown);
+                Assert.Equal(UpgradeProfileSeeder.MeasuredWeight, p.ResolutionWeight);
+                Assert.Equal(UpgradeProfileSeeder.MeasuredWeight, p.CompressionWeight);
+                Assert.Equal(UpgradeProfileDefaults.DefaultOrder, p.Tiers.Select(t => t.Tier));
+            });
+            Assert.Single(profiles["Balanced"].FormatScores);
+            Assert.Equal(2, profiles["Digital volumes"].FormatScores.Count);
             Assert.False(db.AppConfig.Any(c => c.Key == SettingKeys.UpgradesDefaultProfileId));
 
-            db.UpgradeProfiles.RemoveRange(profiles);
+            db.UpgradeProfiles.RemoveRange(profiles.Values);
             db.SaveChanges();
         }
 
@@ -530,5 +535,55 @@ public sealed class UpgradeProfilesApiTests : IDisposable
             await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
             Assert.Empty(db.UpgradeProfiles);
         }
+    }
+
+    [Fact]
+    public async Task Seeding_leaves_a_profile_or_format_whose_name_is_taken_alone()
+    {
+        using (var db = _db.NewContext())
+        {
+            db.QualityFormats.Add(new QualityFormat
+            {
+                Name = UpgradeProfileSeeder.RawOrMachineTranslated,
+                Conditions = [new FormatCondition(FormatConditionType.ReleaseNameMatches, "RAW", true, false)]
+            });
+            db.UpgradeProfiles.Add(new UpgradeProfile { Name = "Balanced", Cutoff = QualityTier.Official });
+            db.SaveChanges();
+
+            await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var raw = Assert.Single(db.QualityFormats.ToList(), f => f.Name == UpgradeProfileSeeder.RawOrMachineTranslated);
+            Assert.Equal("RAW", raw.Conditions[0].Value);
+            var balanced = Assert.Single(db.UpgradeProfiles.ToList(), p => p.Name == "Balanced");
+            Assert.Equal(QualityTier.Official, balanced.Cutoff);
+            Assert.Contains(db.UpgradeProfiles.ToList(), p => p.Name == "Official releases" &&
+                p.FormatScores.Contains(new FormatScore(raw.Id, -100)));
+        }
+    }
+
+    /// <summary>Bits per pixel are medians from sampling a real library, per source.</summary>
+    [Theory]
+    [InlineData("Berserk v01 (2019) (Digital) (1r0n).cbz", "1r0n", 2250, "jpg", 2.3, 36)]
+    [InlineData("Raw Hero v01 (2018) (Digital) (Oak).cbz", "Oak", 1000, "jpg", 1.5, 20)]
+    [InlineData("Some Series c012 (Raw).cbz", null, 1000, "jpg", 1.5, -100)]
+    [InlineData("Some Series c012 [MTL].cbz", null, 1000, "jpg", 1.5, -100)]
+    [InlineData(null, null, 1000, "png", 3.93, 8)]
+    [InlineData(null, null, 800, "jpg", 2.13, 2)]
+    [InlineData(null, null, 720, "webp", 0.47, -17)]
+    public async Task The_starter_profiles_score_typical_files(
+        string? releaseName, string? group, int width, string format, double bitsPerPixel, int expected)
+    {
+        using var db = _db.NewContext();
+        await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
+        var profile = db.UpgradeProfiles.Single(p => p.Name == "Digital volumes");
+        const int height = 1500, pages = 20;
+        var size = (long)(bitsPerPixel * width * height / 8) * pages;
+        var candidate = new QualityCandidate(
+            QualityTier.Volume, null, null, group, releaseName, pages, width, format, size, "en", height);
+
+        Assert.Equal(expected, QualityScorer.Score(profile, db.QualityFormats.ToList(), candidate).Score);
     }
 }

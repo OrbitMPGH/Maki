@@ -209,7 +209,7 @@ public static class ChapterFileMeasurer
         return width > 0 && height > 0;
     }
 
-    private static string? FormatName(IImageFormat? format)
+    public static string? FormatName(IImageFormat? format)
     {
         if (format is null) return null;
         return format.Name.ToUpperInvariant() switch

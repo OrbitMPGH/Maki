@@ -21,6 +21,7 @@ namespace Maki.Api.Controllers;
 public class UpgradeProfilesController(ILocalizer localizer, MakiDbContext db) : ControllerBase
 {
     public const int MaxNameLength = 60;
+    public const int MaxMeasuredWeight = 50;
 
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -144,6 +145,12 @@ public class UpgradeProfilesController(ILocalizer localizer, MakiDbContext db) :
             return this.Fail(localizer, "error.upgrades.pageToleranceRange", new { min = 0, max = 100 });
         }
 
+        if (request.ResolutionWeight is < 0 or > MaxMeasuredWeight ||
+            request.CompressionWeight is < 0 or > MaxMeasuredWeight)
+        {
+            return this.Fail(localizer, "error.upgrades.measuredWeightRange", new { min = 0, max = MaxMeasuredWeight });
+        }
+
         var scores = (request.FormatScores ?? [])
             .Where(s => s.Score != 0)
             .DistinctBy(s => s.FormatId)
@@ -169,6 +176,8 @@ public class UpgradeProfilesController(ILocalizer localizer, MakiDbContext db) :
         profile.MinScoreDelta = request.MinScoreDelta;
         profile.UpgradeUntilScore = request.UpgradeUntilScore;
         profile.FormatScores = scores;
+        profile.ResolutionWeight = request.ResolutionWeight;
+        profile.CompressionWeight = request.CompressionWeight;
         profile.PageTolerancePercent = request.PageTolerancePercent;
         profile.AllowReplacingUnknown = request.AllowReplacingUnknown;
         return null;

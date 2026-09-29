@@ -9,9 +9,12 @@ namespace Maki.Api.Services;
 /// <param name="Tier">Lowercase tier name.</param>
 /// <param name="Reason">Why this copy would not be an upgrade, as a reason code; null when it would, or when there is no file.</param>
 /// <param name="CurrentTier">The file on disk, null when the chapter has none.</param>
+/// <param name="BitsPerPixel">JPG-equivalent, see <see cref="MeasuredQuality"/>; null when the sample could not be measured.</param>
 public sealed record ComparePanelQuality(string Tier, int Score, IReadOnlyList<string> MatchedFormats,
     bool IsUpgrade, string? Reason, int? MedianWidth, int? PageCount, string? CurrentTier,
-    int? CurrentScore, int? CurrentWidth);
+    int? CurrentScore, int? CurrentWidth,
+    int ResolutionPoints = 0, int CompressionPoints = 0, double? BitsPerPixel = null,
+    int? CurrentResolutionPoints = null, int? CurrentCompressionPoints = null, double? CurrentBitsPerPixel = null);
 
 /// <summary>
 /// Scores each compare panel's sampled pages against the chapter's file on disk. Runs on the snapshot
@@ -54,6 +57,9 @@ public static class SourceCompareQuality
             ? []
             : await db.QualityFormats.AsNoTracking().ToDictionaryAsync(f => f.Id, f => f.Name, ct);
         var fileName = file is null ? string.Empty : Path.GetFileName(file.RelativePath);
+        var currentBitsPerPixel = file is null || evaluator is null
+            ? null
+            : MeasuredQuality.BitsPerPixel(evaluator.CandidateFor(file, language));
         var currentTier = file is null ? null : QualityNames.Tier(file.Tier);
 
         return snapshot with { Panels = [.. snapshot.Panels.Select(p => p with { Quality = Panel(p) })] };
@@ -67,6 +73,7 @@ public static class SourceCompareQuality
             }
 
             var width = ChapterFileMeasurer.Median(widths);
+            var (height, format, size) = Sample(panel);
             var source = registry.Find(panel.SourceName);
             if (evaluator is null)
             {
@@ -77,8 +84,9 @@ public static class SourceCompareQuality
 
             var group = chapter?.SourceLinks.FirstOrDefault(l => l.SourceMappingId == panel.MappingId)?.Group
                         ?? ChapterFileQualityService.SiteGroup(source);
-            var score = evaluator.Score(evaluator.CandidateFor(panel.SourceName, group, fileName, panel.PageCount, width,
-                null, null, language));
+            var candidate = evaluator.CandidateFor(panel.SourceName, group, fileName, panel.PageCount, width,
+                format, size, language, height);
+            var score = evaluator.Score(candidate);
             var profile = evaluator.Profile;
             string? reason = null;
             var isUpgrade = false;
@@ -95,9 +103,31 @@ public static class SourceCompareQuality
 
             return new ComparePanelQuality(QualityNames.Tier(score.Tier), score.Score,
                 [.. score.MatchedFormatIds.Select(id => formatNames.GetValueOrDefault(id)).OfType<string>()],
-                isUpgrade, reason, width, panel.PageCount, currentTier, current?.Score.Score, file?.MedianWidth);
+                isUpgrade, reason, width, panel.PageCount, currentTier, current?.Score.Score, file?.MedianWidth,
+                score.ResolutionPoints, score.CompressionPoints, Round(MeasuredQuality.BitsPerPixel(candidate)),
+                current?.Score.ResolutionPoints, current?.Score.CompressionPoints, Round(currentBitsPerPixel));
         }
     }
+
+    /// <summary>
+    /// Median height, format and a whole-chapter size extrapolated from the measured pages, the same
+    /// way the upgrade scan extrapolates a probe.
+    /// </summary>
+    private static (int? Height, string? Format, long? Size) Sample(ComparePanel panel)
+    {
+        var measured = panel.Pages.OfType<ComparePage>().Where(p => p is { Width: > 0, Height: > 0 }).ToList();
+        if (measured.Count == 0 || panel.PageCount is not { } pages || pages <= 0)
+        {
+            return (null, null, null);
+        }
+
+        var formats = measured.Select(p => p.Format).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var format = formats.Count switch { 0 => null, 1 => formats[0], _ => "mixed" };
+        return (ChapterFileMeasurer.Median([.. measured.Select(p => p.Height!.Value)]), format,
+            measured.Sum(p => p.Bytes) / measured.Count * pages);
+    }
+
+    private static double? Round(double? value) => value is { } v ? Math.Round(v, 2) : null;
 
     private static List<int> KnownWidths(ComparePanel panel) =>
         [.. panel.Pages.Where(p => p?.Width is not null).Select(p => p!.Width!.Value)];

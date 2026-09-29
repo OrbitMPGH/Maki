@@ -48,6 +48,10 @@ export interface UpgradeProfileDto {
   /** 0 means ignore, i.e. never stop upgrading once the cutoff tier is met. */
   upgradeUntilScore: number
   formatScores: FormatScoreDto[]
+  /** Points per doubling of median page width, clamped to 500 to 2000px around 1000px. 0 is off. */
+  resolutionWeight: number
+  /** Points per doubling of image data per pixel, after adjusting for PNG/WebP/AVIF. 0 is off. */
+  compressionWeight: number
   pageTolerancePercent: number
   allowReplacingUnknown: boolean
   version: number

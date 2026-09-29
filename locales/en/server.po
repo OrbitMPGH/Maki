@@ -1082,6 +1082,10 @@ msgid "error.upgrades.pageToleranceRange"
 msgstr "Page tolerance must be between {min} and {max} percent"
 
 #: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+msgid "error.upgrades.measuredWeightRange"
+msgstr "Resolution and compression weights must be between {min} and {max}"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
 msgid "error.upgrades.profileInUse"
 msgstr "\"{name}\" is still used by a series or is the default profile"
 

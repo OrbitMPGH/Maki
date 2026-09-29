@@ -320,6 +320,10 @@ msgstr "{beforeLabel} to {afterLabel}"
 msgid "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
 
+#: src/components/SourceCompareModal.tsx
+msgid "{bpp} bits per pixel, JPG equivalent."
+msgstr "{bpp} bits per pixel, JPG equivalent."
+
 #: src/pages/rewind/slides.tsx
 msgid "{busiestChapters, plural, one {# chapter in one month.} other {# chapters in one month.}}"
 msgstr "{busiestChapters, plural, one {# chapter in one month.} other {# chapters in one month.}}"
@@ -3329,6 +3333,10 @@ msgstr "Completeness"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Composition"
 msgstr "Composition"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Compression weight"
+msgstr "Compression weight"
 
 #: src/pages/SettingsPage.tsx
 msgid "Concurrent chapter downloads"
@@ -6713,6 +6721,10 @@ msgstr "Maximum content rating"
 msgid "Maybe next year"
 msgstr "Maybe next year"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Measured quality"
+msgstr "Measured quality"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Mecha"
 msgstr "Mecha"
@@ -8467,6 +8479,10 @@ msgstr "Play the {rewindYear} retrospective"
 msgid "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
 msgstr "Points added to a file's score for each quality format it matches. 0 means the format isn't scored by this profile."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Points from the pages themselves, so a somewhat sharper or less compressed copy scores somewhat higher. Each weight is the points for doubling that measurement. 0 turns it off."
+msgstr "Points from the pages themselves, so a somewhat sharper or less compressed copy scores somewhat higher. Each weight is the points for doubling that measurement. 0 turns it off."
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Polish"
 msgstr "Polish"
@@ -9536,6 +9552,14 @@ msgstr "Reset to defaults"
 msgid "Reset zoom"
 msgstr "Reset zoom"
 
+#: src/components/SourceCompareModal.tsx
+msgid "Resolution {resolution}, compression {compression}, formats {formats}."
+msgstr "Resolution {resolution}, compression {compression}, formats {formats}."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Resolution weight"
+msgstr "Resolution weight"
+
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Resolved"
@@ -10015,6 +10039,14 @@ msgstr "Score {score}"
 #: src/components/series/FileQualityBadge.tsx
 msgid "Score: {score}"
 msgstr "Score: {score}"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Scored on image data per pixel, adjusted so PNG and WebP compare fairly with JPG."
+msgstr "Scored on image data per pixel, adjusted so PNG and WebP compare fairly with JPG."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Scored on median page width, from 500 to 2000 pixels."
+msgstr "Scored on median page width, from 500 to 2000 pixels."
 
 #: src/pages/stats/labels.ts
 msgid "Scraper"

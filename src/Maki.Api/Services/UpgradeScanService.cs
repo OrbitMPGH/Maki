@@ -404,7 +404,7 @@ public class UpgradeScanService(
 
             long? size = probe.SampledPages > 0 ? probe.SampleBytes / probe.SampledPages * probe.PageCount : null;
             var score = evaluator.Score(evaluator.CandidateFor(sourceName, s.Group, Path.GetFileName(s.File.RelativePath),
-                probe.PageCount, probe.MedianWidth, probe.ImageFormat, size, chapter.Language));
+                probe.PageCount, probe.MedianWidth, probe.ImageFormat, size, chapter.Language, probe.MedianHeight));
             if (!QualityScorer.IsUpgrade(profile, s.Current, s.File.PageCount, s.File.Trusted, score, probe.MedianWidth,
                     probe.PageCount))
             {

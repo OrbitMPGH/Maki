@@ -458,7 +458,8 @@ public class ChapterDownloadProcessor(
         {
             before = evaluator?.Evaluate(current, chapter.Language)?.Score;
             candidate = evaluator?.Score(evaluator.CandidateFor(mapping.SourceName, group, fileName,
-                measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language));
+                measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language,
+                measurement.MedianHeight));
             tier = candidate?.Tier ?? tier;
             var shared = await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct) > 1;
             reason = ForcedGuard(info, current, shared, measurement, evaluator?.Profile.PageTolerancePercent ?? 10);
@@ -467,7 +468,8 @@ public class ChapterDownloadProcessor(
         {
             before = evaluated.Score;
             candidate = evaluator.Score(evaluator.CandidateFor(mapping.SourceName, group, fileName,
-                measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language));
+                measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language,
+                measurement.MedianHeight));
             tier = candidate.Tier;
             reason = QualityScorer.IsUpgrade(evaluator.Profile, before, current.PageCount, current.Trusted, candidate,
                 measurement.MedianWidth, measurement.PageCount)

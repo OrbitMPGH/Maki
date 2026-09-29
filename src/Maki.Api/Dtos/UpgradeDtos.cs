@@ -20,6 +20,8 @@ public record UpgradeProfileDto(
     int MinScoreDelta,
     int UpgradeUntilScore,
     IReadOnlyList<FormatScoreDto> FormatScores,
+    int ResolutionWeight,
+    int CompressionWeight,
     int PageTolerancePercent,
     bool AllowReplacingUnknown,
     int Version,
@@ -34,6 +36,8 @@ public record UpgradeProfileDto(
         p.MinScoreDelta,
         p.UpgradeUntilScore,
         [.. p.FormatScores.Select(s => new FormatScoreDto(s.FormatId, s.Score))],
+        p.ResolutionWeight,
+        p.CompressionWeight,
         p.PageTolerancePercent,
         p.AllowReplacingUnknown,
         p.Version,
@@ -49,7 +53,9 @@ public record UpgradeProfileWriteDto(
     int UpgradeUntilScore,
     List<FormatScoreDto>? FormatScores,
     int PageTolerancePercent,
-    bool AllowReplacingUnknown);
+    bool AllowReplacingUnknown,
+    int ResolutionWeight = 0,
+    int CompressionWeight = 0);
 
 /// <param name="Type">camelCase <see cref="FormatConditionType"/> name, e.g. <c>minWidth</c>.</param>
 public record FormatConditionDto(string Type, string Value, bool Required, bool Negate);

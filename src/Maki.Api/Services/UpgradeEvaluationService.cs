@@ -65,12 +65,12 @@ public sealed class UpgradeEvaluator
     /// </summary>
     public QualityCandidate CandidateFor(
         string sourceName, string? group, string fileName, int? pageCount, int? medianWidth, string? imageFormat,
-        long? sizeBytes, string? language)
+        long? sizeBytes, string? language, int? medianHeight = null)
     {
         var kind = _quality.KindOf(sourceName);
         return new QualityCandidate(
             QualityTierResolver.Resolve(kind, null, fileName, isVolume: false),
-            sourceName, kind, group, null, pageCount, medianWidth, imageFormat, sizeBytes, language);
+            sourceName, kind, group, null, pageCount, medianWidth, imageFormat, sizeBytes, language, medianHeight);
     }
 
     public static QualitySnapshot Snapshot(ChapterFile file, int score) => new()
@@ -99,7 +99,8 @@ public sealed class UpgradeEvaluator
         file.MedianWidth,
         file.ImageFormat,
         file.Size,
-        language);
+        language,
+        file.MedianHeight);
 }
 
 /// <summary>

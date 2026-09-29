@@ -465,6 +465,14 @@ export interface ComparePanelQualityDto {
   currentTier: QualityTierName | null
   currentScore: number | null
   currentWidth: number | null
+  /** Parts of `score` from the profile's resolution and compression weights. */
+  resolutionPoints: number
+  compressionPoints: number
+  /** JPG-equivalent bits per pixel of the sampled pages, null when they could not be measured. */
+  bitsPerPixel: number | null
+  currentResolutionPoints: number | null
+  currentCompressionPoints: number | null
+  currentBitsPerPixel: number | null
 }
 
 export interface ComparePanel {

@@ -69,6 +69,8 @@ const DEFAULT_PROFILE: UpgradeProfileInput = {
   minScoreDelta: 1,
   upgradeUntilScore: 0,
   formatScores: [],
+  resolutionWeight: 10,
+  compressionWeight: 10,
   pageTolerancePercent: 10,
   allowReplacingUnknown: true,
 }
@@ -274,6 +276,8 @@ function ProfileEditor({
   const [minScoreDelta, setMinScoreDelta] = useState<number | string>(initial.minScoreDelta)
   const [upgradeUntilScore, setUpgradeUntilScore] = useState<number | string>(initial.upgradeUntilScore)
   const [formatScores, setFormatScores] = useState<FormatScoreDto[]>(initial.formatScores)
+  const [resolutionWeight, setResolutionWeight] = useState<number | string>(initial.resolutionWeight)
+  const [compressionWeight, setCompressionWeight] = useState<number | string>(initial.compressionWeight)
   const [pageTolerancePercent, setPageTolerancePercent] = useState<number | string>(initial.pageTolerancePercent)
   const [allowReplacingUnknown, setAllowReplacingUnknown] = useState(initial.allowReplacingUnknown)
 
@@ -383,6 +387,36 @@ function ProfileEditor({
         />
       </Group>
 
+      <div>
+        <Text size="sm" fw={500} mb={4}>
+          <Trans>Measured quality</Trans>
+        </Text>
+        <SettingsHelp mb="xs">
+          <Trans>
+            Points from the pages themselves, so a somewhat sharper or less compressed copy scores somewhat higher. Each
+            weight is the points for doubling that measurement. 0 turns it off.
+          </Trans>
+        </SettingsHelp>
+        <Group grow align="flex-start">
+          <NumberInput
+            label={t`Resolution weight`}
+            description={t`Scored on median page width, from 500 to 2000 pixels.`}
+            min={0}
+            max={50}
+            value={resolutionWeight}
+            onChange={setResolutionWeight}
+          />
+          <NumberInput
+            label={t`Compression weight`}
+            description={t`Scored on image data per pixel, adjusted so PNG and WebP compare fairly with JPG.`}
+            min={0}
+            max={50}
+            value={compressionWeight}
+            onChange={setCompressionWeight}
+          />
+        </Group>
+      </div>
+
       <Switch
         label={t`Allow replacing unknown-tier files`}
         checked={allowReplacingUnknown}
@@ -441,6 +475,8 @@ function ProfileEditor({
               minScoreDelta: Number(minScoreDelta) || 0,
               upgradeUntilScore: Number(upgradeUntilScore) || 0,
               formatScores,
+              resolutionWeight: Number(resolutionWeight) || 0,
+              compressionWeight: Number(compressionWeight) || 0,
               pageTolerancePercent: Number(pageTolerancePercent) || 0,
               allowReplacingUnknown,
             })

@@ -1540,6 +1540,11 @@ msgid "error.upgrades.pageToleranceRange"
 msgstr ""
 
 #: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+#. English: Resolution and compression weights must be between {min} and {max}
+msgid "error.upgrades.measuredWeightRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
 #. English: "{name}" is still used by a series or is the default profile
 msgid "error.upgrades.profileInUse"
 msgstr ""
