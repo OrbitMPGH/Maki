@@ -1907,7 +1907,6 @@ export default function SeriesDetailPage() {
                         (() => {
                           const at = formatDate(series.lastUpgradeScan.at)
                           const { probed, queued, checked } = series.lastUpgradeScan
-                          const reasons = scanReasonSummary(renderLabel, series.lastUpgradeScan.skipped)
                           return (
                               <>
                                 {checked == null ? (
@@ -1923,12 +1922,6 @@ export default function SeriesDetailPage() {
                                       ,{' '}
                                       <Plural value={queued} one="# queued" other="# queued" />
                                     </Trans>
-                                )}
-                                {reasons && (
-                                    <>
-                                      <br />
-                                      <Trans>Passed over: {reasons}</Trans>
-                                    </>
                                 )}
                               </>
                           )
