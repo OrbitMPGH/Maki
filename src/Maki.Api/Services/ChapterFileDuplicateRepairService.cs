@@ -56,8 +56,11 @@ public class ChapterFileDuplicateRepairService(
             .Select(f => new { f.Id, f.SeriesId, f.RelativePath })
             .ToListAsync(ct);
 
+        // Case folds only where the filesystem does: on Linux "Ch 1.cbz" and "ch 1.cbz" are two files.
         var duplicates = rows
-            .GroupBy(f => (f.SeriesId, Key: LibraryPaths.ComparisonKey(f.RelativePath).ToUpperInvariant()))
+            .GroupBy(f => (f.SeriesId, Key: OperatingSystem.IsWindows()
+                ? LibraryPaths.ComparisonKey(f.RelativePath).ToUpperInvariant()
+                : LibraryPaths.ComparisonKey(f.RelativePath)))
             .Where(g => g.Count() > 1)
             .Select(g => g.OrderBy(f => f.Id).Select(f => f.Id).ToList())
             .ToList();

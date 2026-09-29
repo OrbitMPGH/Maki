@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import {
   ActionIcon,
@@ -73,6 +73,14 @@ export function DiscoverDetailModal({
   const { data: detail, isLoading } = useRecommendationDetail(item?.providerId ?? null)
   const { scope: diceScope, tumble } = useDiceTumble()
   const rerolling = useRef(false)
+  const rerollTimer = useRef<number | undefined>(undefined)
+  const open = item != null
+  useEffect(() => {
+    if (open) return
+    window.clearTimeout(rerollTimer.current)
+    rerolling.current = false
+  }, [open])
+  useEffect(() => () => window.clearTimeout(rerollTimer.current), [])
   const reroll = () => {
     if (!onReroll || rerolling.current) return
     if (prefersReducedMotion()) {
@@ -81,7 +89,7 @@ export function DiscoverDetailModal({
     }
     rerolling.current = true
     void tumble(500)
-    window.setTimeout(() => {
+    rerollTimer.current = window.setTimeout(() => {
       rerolling.current = false
       onReroll()
     }, 500)

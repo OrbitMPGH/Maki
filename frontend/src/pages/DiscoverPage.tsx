@@ -1,6 +1,6 @@
 // Loaded in the shell rather than the tab so it lands once, whichever tab opens first.
 import '@mantine/charts/styles.css'
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ActionIcon,
@@ -92,6 +92,7 @@ import { RecommenderDials } from '../components/discover/RecommenderDials'
 import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
 import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { FollowingRail } from '../components/discover/FollowingRail'
 import { LuckyButton } from '../components/LuckyButton'
 import { pickRandom } from '../lib/lucky'
 import {
@@ -110,6 +111,7 @@ import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
 import { reconcileLayout } from '../components/layout/pageLayout'
 import { DISCOVER_LAYOUT_CONFIG, DISCOVER_SECTION_DEFS } from '../components/discover/discoverSectionDefs'
 import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '../api/customRails'
+import { FOLLOWING_RAIL_KEY } from '../api/following'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -903,9 +905,11 @@ function FeedExpandModal({
   const { density, setDensity, cols } = useDensityPref('discover-expand')
 
   // Reset filters whenever a different rail is opened. A custom rail opens with its filter loaded
-  // instead, since the filter is the whole point of the rail.
+  // instead, since the filter is the whole point of the rail, and so does the follow rail, whose
+  // filter is the people followed.
   const railKey = rail?.key
-  const presetFilters = railKey?.startsWith(CUSTOM_RAIL_PREFIX) ? rail?.filters : null
+  const presetFilters =
+    railKey?.startsWith(CUSTOM_RAIL_PREFIX) || railKey === FOLLOWING_RAIL_KEY ? rail?.filters : null
   const resetAll = catalogue.reset
   const hydrateAll = catalogue.hydrate
   useEffect(() => {
@@ -1114,8 +1118,8 @@ function DiscoverBrowseTab({
   onExitEditing: () => void
 }) {
   const { t } = useLingui()
-  const { data: ui } = useUiSettings()
-  const { data: customRails } = useCustomRails()
+  const { data: ui, isError: uiFailed } = useUiSettings()
+  const { data: customRails, isError: railsFailed } = useCustomRails()
   const discoverRails = useMemo(
     () => customRails?.filter((r) => r.placement === 'discover'),
     [customRails],
@@ -1145,9 +1149,28 @@ function DiscoverBrowseTab({
     refreshNonce,
     on('sideinterests'),
   )
-  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres(0, on('genres'))
+  const { data: genreRails, isFetching: genresFetching } = useDiscoverGenres(
+    refreshNonce,
+    on('genres'),
+  )
   const cohortRequest = useMemo(() => ({}), [])
-  const { data: cohortRail, isFetching: cohortFetching } = useDiscoverCohort(cohortRequest, on('cohort'))
+  const { data: cohortRail, isFetching: cohortFetching, refetch: refetchCohort } = useDiscoverCohort(
+    cohortRequest,
+    on('cohort'),
+  )
+  // The cohort rail has no per-user server cache to bust, and its request body never changes
+  // shape, so its query key never changes and bumping refreshNonce wouldn't refetch it the way it
+  // does for the rails above. Refetch it directly instead; skip the initial nonce so this doesn't
+  // double-fetch on mount.
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      return
+    }
+    if (on('cohort')) void refetchCohort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshNonce])
 
   const { data: rootFolders } = useRootFolders()
   const navigate = useNavigate()
@@ -1164,6 +1187,14 @@ function DiscoverBrowseTab({
     if (rail) setExpandedRail(customRailAsDiscoverRail(rail, []))
     navigate(location.pathname, { replace: true, state: null })
   }, [expandRailId, customRails, navigate, location.pathname])
+
+  // Home's follow rail hands over the same way.
+  const expandFollowing = (location.state as { expandFollowing?: DiscoverRail } | null)?.expandFollowing
+  useEffect(() => {
+    if (!expandFollowing) return
+    setExpandedRail(expandFollowing)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [expandFollowing, navigate, location.pathname])
 
   const recommendFrom = useCallback(
     (item: RecommendationItem) =>
@@ -1229,7 +1260,7 @@ function DiscoverBrowseTab({
         onExit={onExitEditing}
       />
     ) : (
-      <PageLayoutEditorLoading />
+      <PageLayoutEditorLoading failed={uiFailed || railsFailed} onExit={onExitEditing} />
     )
   }
 
@@ -1301,6 +1332,16 @@ function DiscoverBrowseTab({
     ) : recentFetching ? (
       <RailSkeleton engine title />
     ) : null,
+
+    following: (
+      <FollowingRail
+        enabled={on('following')}
+        limit={40}
+        seriesIdFor={seriesIdFor}
+        onOpen={setDetailItem}
+        onShowMore={setExpandedRail}
+      />
+    ),
 
     sideinterests: (
       <>

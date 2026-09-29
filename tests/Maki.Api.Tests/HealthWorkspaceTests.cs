@@ -114,6 +114,18 @@ public class HealthWorkspaceTests : IDisposable
         await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,verify);
         return file;
     }
+    [Fact] public async Task Partial_analysis_is_a_hint_not_a_finding()
+    {
+        using var db=fixture.NewContext();
+        var folder=new RootFolder { Path=root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
+        var name=$"{Guid.NewGuid():N}.cbz";
+        using (var zip=ZipFile.Open(Path.Combine(root,name),ZipArchiveMode.Create)) { using var stream=zip.CreateEntry("1.avif").Open(); stream.Write(new byte[256]); }
+        var file=new HealthFile { RootFolderId=folder.Id,RelativePath=name }; db.HealthFiles.Add(file); await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true);
+        Assert.Equal("partial",file.Status);
+        Assert.Contains(HealthScanService.Analysis(file).Problems,p=>p.Kind=="incomplete");
+        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id&&f.Kind=="incomplete");
+    }
     [Fact] public async Task A_replacement_needs_a_source_whether_or_not_one_was_named()
     {
         using var db=fixture.NewContext(); var file=await Seed(db,true); var service=Operations(db);
@@ -223,6 +235,29 @@ public class HealthWorkspaceTests : IDisposable
         var op=await service.PreviewDeleteAsync(file.Id,file.Version,1,default);op.Status="deleting";await db.SaveChangesAsync();
         File.Delete(Path.Combine(root,"one.cbz"));await service.RecoverAsync(default);
         Assert.Equal("completed",op.Status);Assert.Empty(db.ChapterFiles);Assert.Equal(2,await db.Chapters.CountAsync());
+    }
+    [Fact] public async Task A_scan_retires_an_unlinked_archive_that_is_gone_from_disk()
+    {
+        // What a relink that deletes superseded single chapters leaves behind: the ChapterFile row
+        // is gone with the file, but the inventory still lists the path.
+        using var db=fixture.NewContext();var file=await Seed(db);
+        File.Delete(Path.Combine(root,"one.cbz"));
+        var scan=new HealthScan();db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        db.ChangeTracker.Clear();
+        Assert.True((await db.HealthFiles.SingleAsync()).Removed);
+        Assert.DoesNotContain(db.HealthFindings,f=>f.State=="open");
+        Assert.DoesNotContain(db.HealthFindings,f=>f.Kind=="missing");
+    }
+    [Fact] public async Task A_scan_still_reports_a_linked_archive_that_is_gone_from_disk()
+    {
+        using var db=fixture.NewContext();await Seed(db,true);
+        File.Delete(Path.Combine(root,"one.cbz"));
+        var scan=new HealthScan();db.HealthScans.Add(scan);await db.SaveChangesAsync();
+        await new HealthScanService(db).RunAsync(scan,default);
+        db.ChangeTracker.Clear();
+        Assert.False((await db.HealthFiles.SingleAsync()).Removed);
+        Assert.Contains(db.HealthFindings,f=>f.Kind=="missing"&&f.State=="open");
     }
     [Fact] public async Task Unavailable_root_does_not_resolve_prior_findings()
     {

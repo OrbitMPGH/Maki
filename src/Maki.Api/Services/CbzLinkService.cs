@@ -61,7 +61,7 @@ public class CbzLinkService(
         var folderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(seriesDir));
         var ordered = files.OrderBy(f => f).ToList();
         var index = 0;
-        var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record)>();
+        var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record, string Path)>();
         var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
         foreach (var file in ordered)
         {
@@ -119,7 +119,8 @@ public class CbzLinkService(
             }
             else
             {
-                matched = LinkChapters(chapters, parsed, chapterFile.Id, volumeFileIds, replaceExisting, displaceableFileIds);
+                matched = LinkChapters(chapters, parsed, chapterFile.Id, file, volumeFileIds, replaceExisting,
+                    displaceableFileIds);
                 if (matched.Count == 0 && parsed.IsVolume)
                 {
                     // No volume metadata to range-match against — read the chapters the
@@ -139,7 +140,7 @@ public class CbzLinkService(
                 }
                 else if (parsed.IsVolume)
                 {
-                    unlinkedVolumeFiles.Add((parsed, chapterFile));
+                    unlinkedVolumeFiles.Add((parsed, chapterFile, file));
                 }
             }
 
@@ -155,7 +156,8 @@ public class CbzLinkService(
         if (unlinkedVolumeFiles.Count > 0 && await TryBackfillChapterVolumesAsync(series, chapters, ct))
         {
             linked += unlinkedVolumeFiles.Count(
-                x => LinkChapters(chapters, x.Parsed, x.Record.Id, volumeFileIds, replaceExisting, displaceableFileIds).Count > 0);
+                x => LinkChapters(chapters, x.Parsed, x.Record.Id, x.Path, volumeFileIds, replaceExisting,
+                    displaceableFileIds).Count > 0);
         }
 
         // A volume file that range-matched some chapters can still contain others the
@@ -201,13 +203,14 @@ public class CbzLinkService(
         var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
         foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
         {
-            var seriesDir = Path.Combine(rootFolder.Path, folder);
-            if (!Directory.Exists(seriesDir))
+            // A symlink or junction anywhere below the root would have adoption read, and the
+            // ComicInfo rewrite modify, archives outside the library.
+            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir || !Directory.Exists(seriesDir))
             {
                 continue;
             }
 
-            onDisk.AddRange(Directory.GetFiles(seriesDir, "*", SearchOption.AllDirectories)
+            onDisk.AddRange(LibraryPaths.EnumerateFilesNoLinks(seriesDir)
                 .Where(ComicFile.IsComic)
                 .Select(f => (seriesDir, f, Path.Combine(folder, Path.GetRelativePath(seriesDir, f)))));
         }
@@ -255,10 +258,10 @@ public class CbzLinkService(
                 continue;
             }
 
-            var matched = LinkChapters(chapters, parsed, dbFile.Id, volumeFileIds);
+            var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, dbFile.RelativePath);
+            var matched = LinkChapters(chapters, parsed, dbFile.Id, absolutePath, volumeFileIds);
             if (matched.Count == 0 && parsed.IsVolume)
             {
-                var absolutePath = LibraryPaths.Resolve(rootFolder.Path, dbFile.RelativePath);
                 if (absolutePath is not null)
                 {
                     matched = LinkVolumeByContents(chapters, parsed, absolutePath, dbFile.Id, volumeFileIds);
@@ -279,7 +282,7 @@ public class CbzLinkService(
         var volumeFilesOnDisk = dbFiles
             .Select(f => (
                 f.Id,
-                AbsolutePath: LibraryPaths.Resolve(rootFolder.Path, f.RelativePath),
+                AbsolutePath: LibraryPaths.ResolveNoLinks(rootFolder.Path, f.RelativePath),
                 Parsed: ReleaseNameParser.ParseFileName(f.RelativePath)))
             .Where(f => f.AbsolutePath is not null)
             .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
@@ -331,8 +334,9 @@ public class CbzLinkService(
         {
             ct.ThrowIfCancellationRequested();
             // Resolve, not Combine: this opens and rewrites the archive in place, so a stored path
-            // escaping the root would turn an EditMetadata grant into arbitrary file modification.
-            var path = LibraryPaths.Resolve(rootFolder.Path, chapterFile.RelativePath);
+            // escaping the root, lexically or through a link, would turn an EditMetadata grant into
+            // arbitrary file modification.
+            var path = LibraryPaths.ResolveNoLinks(rootFolder.Path, chapterFile.RelativePath);
             if (path is null || !File.Exists(path))
             {
                 continue;
@@ -619,22 +623,33 @@ public class CbzLinkService(
     }
 
     /// <summary>Points matching chapters at the file; returns the chapters that were linked.</summary>
+    /// <param name="filePath">
+    /// The file on disk; a single file's name also says its language. A volume whose page names
+    /// carry chapter markers takes a chapter off another file only when the markers name it; the
+    /// provider's range alone would hand a partial volume every chapter of that volume and orphan
+    /// files it does not replace.
+    /// </param>
     /// <param name="replaceExisting">
     /// False leaves a chapter that already has a file alone, so this file links only what nothing
     /// backs yet.
     /// </param>
     private static List<Chapter> LinkChapters(
-        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, HashSet<int> volumeFileIds,
-        bool replaceExisting = true, IReadOnlySet<int>? displaceable = null)
+        List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, string? filePath,
+        HashSet<int> volumeFileIds, bool replaceExisting = true, IReadOnlySet<int>? displaceable = null)
     {
         List<Chapter> targets = [];
         if (parsed.IsChapter)
         {
             // A single file replaces another single file, never a volume.
-            var match = chapters.FirstOrDefault(c => c.Number == parsed.Number && c.ChapterFileId == null)
+            var languages = filePath is null
+                ? null
+                : ChapterFileLanguage.FromName(filePath, ChapterFileLanguage.SeriesLanguages(chapters));
+            bool Fits(Chapter c) => c.Number == parsed.Number
+                                    && (languages is null || languages.Contains(ChapterFileLanguage.Of(c)));
+            var match = chapters.FirstOrDefault(c => Fits(c) && c.ChapterFileId == null)
                         ?? (replaceExisting
                             ? chapters.FirstOrDefault(c =>
-                                c.Number == parsed.Number && c.ChapterFileId is { } fileId &&
+                                Fits(c) && c.ChapterFileId is { } fileId &&
                                 (displaceable?.Contains(fileId) ?? !volumeFileIds.Contains(fileId)))
                             : null);
             if (match != null)
@@ -645,9 +660,20 @@ public class CbzLinkService(
         else if (parsed.IsVolume)
         {
             var end = parsed.VolumeEnd ?? parsed.Volume;
+            HashSet<decimal>? markers = null;
             targets = chapters
                 .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
                             && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable))
+                .Where(c =>
+                {
+                    if (c.ChapterFileId is null)
+                    {
+                        return true;
+                    }
+
+                    markers ??= filePath is null ? [] : [.. VolumeChapterScanner.ScanCbz(filePath)];
+                    return markers.Count == 0 || (c.Number is { } number && markers.Contains(number));
+                })
                 .ToList();
         }
 

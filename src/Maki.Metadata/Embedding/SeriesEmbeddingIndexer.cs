@@ -57,6 +57,39 @@ public class SeriesEmbeddingIndexer(
         return Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
     }
 
+    private int _warming;
+    private volatile bool _warmFailed;
+
+    /// <summary>
+    /// Fills the status total in the background. The count is a full scan of the multi-GB dump, so
+    /// a status poll must not wait on it; one runs at a time and a failure leaves the total unset and is not retried, so a
+    /// dump that cannot be counted is not rescanned on every poll.
+    /// </summary>
+    public void WarmRecommendableTotal()
+    {
+        if (_warmFailed || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                status.SetTotal(await CountRecommendableAsync());
+            }
+            catch (Exception ex)
+            {
+                _warmFailed = true;
+                logger.LogDebug(ex, "Recommendable count failed");
+            }
+            finally
+            {
+                Volatile.Write(ref _warming, 0);
+            }
+        });
+    }
+
     /// <summary>
     /// Runs the pass. <paramref name="limit"/> caps how many candidate rows are scanned
     /// (used by tests); null scans them all.

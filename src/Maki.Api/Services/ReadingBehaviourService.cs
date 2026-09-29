@@ -103,7 +103,30 @@ public class ReadingBehaviourService(
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);
 
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<(int UserId, bool AllRootFolders), (ReadingBehaviour Behaviour, DateTime GeneratedAt)> _cache = [];
+    private readonly Dictionary<(int UserId, string Access), (ReadingBehaviour Behaviour, DateTime GeneratedAt)> _cache = [];
+
+    /// <summary>
+    /// Which series a user can see, as a cache-key fragment. Part of the key so a changed grant misses
+    /// the cache instead of serving titles from a folder the user has since lost.
+    /// </summary>
+    internal static string AccessKey(bool allRootFolders, IEnumerable<int> rootFolderIds) =>
+        allRootFolders ? "*" : string.Join(',', rootFolderIds.Order());
+
+    public async Task<string> AccessKeyAsync(int userId, bool allRootFolders, CancellationToken ct)
+    {
+        if (allRootFolders)
+        {
+            return AccessKey(true, []);
+        }
+
+        using var dbScope = scopeFactory.CreateScope();
+        var db = dbScope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var folders = await db.UserRootFolders.AsNoTracking().IgnoreQueryFilters()
+            .Where(g => g.UserId == userId)
+            .Select(g => g.RootFolderId)
+            .ToListAsync(ct);
+        return AccessKey(false, folders);
+    }
 
     public Task<ReadingBehaviour> GetAsync(
         ICurrentUser scope, bool refresh, CancellationToken ct = default) =>
@@ -116,7 +139,7 @@ public class ReadingBehaviourService(
     public async Task<ReadingBehaviour> GetAsync(
         int userId, bool allRootFolders, bool refresh, CancellationToken ct = default)
     {
-        var key = (userId, allRootFolders);
+        var key = (userId, await AccessKeyAsync(userId, allRootFolders, ct));
         await _lock.WaitAsync(ct);
         try
         {

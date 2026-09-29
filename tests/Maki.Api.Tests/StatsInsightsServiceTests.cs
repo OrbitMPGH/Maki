@@ -36,11 +36,19 @@ public sealed class StatsInsightsServiceTests : IDisposable
         }
     }
 
-    private StatsInsightsService Service(int caller = Owner, bool allRootFolders = true) => new(
-        _db.NewContext(caller, allRootFolders),
-        _settings,
-        new MemoryCache(new MemoryCacheOptions()),
-        new TestCurrentUser(caller));
+    private StatsInsightsService Service(int caller = Owner, bool allRootFolders = true)
+    {
+        // Mirrors what CurrentUserMiddleware hands a real ICurrentUser: the grants a restricted
+        // caller actually holds, read fresh so a test can seed UserRootFolders before calling this.
+        var rootFolderIds = allRootFolders
+            ? new HashSet<int>()
+            : _db.NewContext().UserRootFolders.Where(g => g.UserId == caller).Select(g => g.RootFolderId).ToHashSet();
+        return new(
+            _db.NewContext(caller, allRootFolders),
+            _settings,
+            new MemoryCache(new MemoryCacheOptions()),
+            new TestCurrentUser(caller, allRootFolders: allRootFolders, rootFolderIds: rootFolderIds));
+    }
 
     private void AddEvent(StatsEventType type, DateTime utc, int value, int? seriesId = null,
         int userId = Owner, string? seriesKey = null, string? payload = null, string title = "S")
@@ -307,14 +315,17 @@ public sealed class StatsInsightsServiceTests : IDisposable
             s.Genres = ["Horror"];
         });
         var open = _db.SeedSeries("Open", configure: s => s.Genres = ["Comedy"]);
+        _db.SeedSeries("Shelf", configure: s => s.Genres = ["Drama"]);
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 5, secret);
         AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 5, open);
 
         var dto = await Service().GetAsync(Owner, YearStart, YearEnd, 0, CancellationToken.None);
 
         Assert.Equal(5, dto.Taste.Types.Sum(t => t.Count));
-        Assert.Equal(1.0, dto.Taste.Lean.Single(l => l.Name == "Comedy").ReadShare, 5);
-        Assert.Equal(0.0, dto.Taste.Lean.Single(l => l.Name == "Horror").ReadShare, 5);
+        var comedy = dto.Taste.Lean.Single(l => l.Name == "Comedy");
+        Assert.Equal(1.0, comedy.ReadShare, 5);
+        Assert.Equal(0.5, comedy.LibraryShare, 5);
+        Assert.DoesNotContain(dto.Taste.Lean, l => l.Name == "Horror");
     }
 
     [Fact]
@@ -353,6 +364,57 @@ public sealed class StatsInsightsServiceTests : IDisposable
 
         Assert.Equal(4, dto.Taste.Demographics.Single(d => d.Name == "Seinen").Count);
         Assert.Equal(1.0, dto.Taste.Lean.Single(l => l.Name == "Drama").ReadShare, 5);
+    }
+
+    [Fact]
+    public async Task Removed_series_snapshot_outside_the_callers_grants_is_dropped()
+    {
+        // A limited admin viewing somebody else's insights: their own grants gate the removed
+        // snapshot the same way a live series' root folder would.
+        var admin = _db.SeedUser("admin", MakiPermission.None, allRootFolders: false);
+        var visible = _db.SeedSeries("Visible");
+        int visibleRoot;
+        using (var db = _db.NewContext())
+        {
+            visibleRoot = db.Series.Single(s => s.Id == visible).RootFolderId;
+            db.UserRootFolders.Add(new UserRootFolder { UserId = admin, RootFolderId = visibleRoot });
+            db.SaveChanges();
+        }
+        var outsideRoot = visibleRoot + 1000;
+
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 4,
+            seriesKey: "mb:9", userId: Owner);
+        AddEvent(StatsEventType.SeriesRemoved, new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), 1,
+            seriesKey: "mb:9", payload: $$"""{"genres":["Seinen"],"tags":[],"rootFolderId":{{outsideRoot}}}""");
+
+        var dto = await Service(admin, allRootFolders: false)
+            .GetAsync(Owner, YearStart, YearEnd, 0, CancellationToken.None);
+
+        Assert.DoesNotContain(dto.Taste.Demographics, d => d.Name == "Seinen");
+    }
+
+    [Fact]
+    public async Task Removed_series_snapshot_inside_the_callers_grants_still_contributes()
+    {
+        var admin = _db.SeedUser("admin", MakiPermission.None, allRootFolders: false);
+        var visible = _db.SeedSeries("Visible");
+        int visibleRoot;
+        using (var db = _db.NewContext())
+        {
+            visibleRoot = db.Series.Single(s => s.Id == visible).RootFolderId;
+            db.UserRootFolders.Add(new UserRootFolder { UserId = admin, RootFolderId = visibleRoot });
+            db.SaveChanges();
+        }
+
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), 4,
+            seriesKey: "mb:9", userId: Owner);
+        AddEvent(StatsEventType.SeriesRemoved, new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), 1,
+            seriesKey: "mb:9", payload: $$"""{"genres":["Seinen"],"tags":[],"rootFolderId":{{visibleRoot}}}""");
+
+        var dto = await Service(admin, allRootFolders: false)
+            .GetAsync(Owner, YearStart, YearEnd, 0, CancellationToken.None);
+
+        Assert.Contains(dto.Taste.Demographics, d => d.Name == "Seinen");
     }
 
     [Fact]

@@ -140,6 +140,39 @@ public class CbzLinkVolumeTests : IDisposable
     }
 
     [Fact]
+    public async Task A_single_file_links_the_row_in_its_own_language()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        int englishId, germanId;
+        using (var db = _db.NewContext())
+        {
+            var german = new Chapter { SeriesId = series.Id, Number = 45, Language = "de" };
+            db.Chapters.Add(german);
+            db.SaveChanges();
+            var english = new Chapter { SeriesId = series.Id, Number = 45, Language = "en" };
+            db.Chapters.Add(english);
+            db.SaveChanges();
+            (englishId, germanId) = (english.Id, german.Id);
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk Ch.45.cbz"));
+
+        using (var db = _db.NewContext())
+        {
+            Assert.NotNull(db.Chapters.Single(c => c.Id == englishId).ChapterFileId);
+            Assert.Null(db.Chapters.Single(c => c.Id == germanId).ChapterFileId);
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk Ch.45 [de].cbz"));
+
+        using var check = _db.NewContext();
+        Assert.NotNull(check.Chapters.Single(c => c.Id == germanId).ChapterFileId);
+        Assert.NotEqual(
+            check.Chapters.Single(c => c.Id == englishId).ChapterFileId,
+            check.Chapters.Single(c => c.Id == germanId).ChapterFileId);
+    }
+
+    [Fact]
     public async Task Chapters_linked_by_contents_take_the_volume_from_the_file_name()
     {
         var series = SeedSeries();

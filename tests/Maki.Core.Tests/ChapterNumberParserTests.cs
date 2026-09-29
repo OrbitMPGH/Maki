@@ -15,6 +15,8 @@ public class ChapterNumberParserTests
     [InlineData("#12", 12, null, false)]
     [InlineData("100 - The Ending", 100, null, false)]
     [InlineData("5.5: Extras", 5.5, null, false)]
+    [InlineData("Episode 124", 124, null, false)]
+    [InlineData("Ep. 7.5", 7.5, null, false)]
     public void Parses_chapter_numbers(string input, double expected, int? volume, bool oneShot)
     {
         var result = ChapterNumberParser.Parse(input);
@@ -75,5 +77,21 @@ public class ChapterNumberParserTests
         var result = ChapterNumberParser.Parse("Special Extra Bonus");
         Assert.True(result.IsOneShot);
         Assert.Null(result.Number);
+    }
+
+    [Fact]
+    public void Overflowing_embedded_volume_is_treated_as_no_volume()
+    {
+        var result = ChapterNumberParser.Parse("Vol.99999999999999999999 Ch.24");
+        Assert.Equal(24m, result.Number);
+        Assert.Null(result.Volume);
+    }
+
+    [Fact]
+    public void Overflowing_separate_volume_string_is_treated_as_no_volume()
+    {
+        var result = ChapterNumberParser.Parse("24", "99999999999999999999");
+        Assert.Equal(24m, result.Number);
+        Assert.Null(result.Volume);
     }
 }

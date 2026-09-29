@@ -205,6 +205,7 @@ public sealed class FuzzyTermIndex
 
         Span<byte> probe = stackalloc byte[token.Length];
         Encoding.ASCII.GetBytes(token, probe);
+        LowercaseAscii(probe);
         var probeMask = CatalogueText.LetterMask(probe);
 
         // Distance is symmetric, so the query token is the DP's target and the scratch it needs is
@@ -297,6 +298,8 @@ public sealed class FuzzyTermIndex
             return -1;
         }
 
+        LowercaseAscii(probe);
+
         var low = _lengthStart[term.Length];
         var high = _lengthStart[term.Length + 1] - 1;
         while (low <= high)
@@ -319,6 +322,22 @@ public sealed class FuzzyTermIndex
         }
 
         return -1;
+    }
+
+    /// <summary>
+    /// ASCII-lowercases in place. The dictionary was built from an FTS5 vocabulary that is already
+    /// case-folded, so a query token with any uppercase letters compared byte for byte would never
+    /// match a term it is otherwise identical to.
+    /// </summary>
+    private static void LowercaseAscii(Span<byte> ascii)
+    {
+        for (var i = 0; i < ascii.Length; i++)
+        {
+            if (ascii[i] is >= (byte)'A' and <= (byte)'Z')
+            {
+                ascii[i] += 32;
+            }
+        }
     }
 
     private static int[] BuildEmptyLengthStarts() => new int[CatalogueText.MaxComparableLength + 2];

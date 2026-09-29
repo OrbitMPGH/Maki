@@ -12,6 +12,7 @@ import {
 } from '../../api/hooks'
 import { useUpgradeProfiles } from '../../api/upgrades'
 import { useCreateSeriesRequest } from '../../api/requests'
+import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
 import { useAuth } from '../../auth/AuthProvider'
 import type { RootFolder } from '../../api/types'
 import { RequestForm } from '../RequestForm'
@@ -50,6 +51,7 @@ export function DiscoverLibraryRail({
   const addSeries = useAddSeries()
   const addMutationId = useRef<string | null>(null)
   const createRequest = useCreateSeriesRequest()
+  const applyAnimeResume = useApplyAnimeResumeAfterAdd()
   const { data: librarySettings } = useLibrarySettings()
   const { data: upgradeProfiles } = useUpgradeProfiles()
 
@@ -60,6 +62,8 @@ export function DiscoverLibraryRail({
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [upgradeProfileId, setUpgradeProfileId] = useState<string | null>(null)
   const [monitored, setMonitored] = useState(true)
+  /** On by default: the modal only offers it when the reader finished the anime. */
+  const [markAnimeWatched, setMarkAnimeWatched] = useState(true)
   /**
    * Null until the content-rating rules have had their say. Choosing a value from the Select pins
    * it, so a rule that resolves late (the detail request carries the rating) can't overwrite a
@@ -97,6 +101,7 @@ export function DiscoverLibraryRail({
 
   const seriesId = inLibrarySeriesId ?? addedSeriesId
   const title = detail?.title ?? item.title
+  const animeResume = detail?.animeResume ?? null
 
   const goToLibrary = () => {
     if (seriesId != null) {
@@ -125,6 +130,7 @@ export function DiscoverLibraryRail({
           // the Discover filters the user had set up and making a second add a round trip. The
           // button becomes "Go to series" instead, so leaving is their choice.
           setAddedSeriesId(series.id)
+          if (animeResume && markAnimeWatched) applyAnimeResume.mutate({ seriesId: series.id })
 
           // The series was created either way, so this stays a success, but a failed folder has to
           // be said out loud, not just logged server-side. Source matching is no longer among the
@@ -274,6 +280,13 @@ export function DiscoverLibraryRail({
               styles={{ body: { justifyContent: 'space-between' } }}
             />
           </Tooltip>
+          {animeResume && (
+            <AnimeWatchedSwitch
+              coveredTo={animeResume.coveredTo}
+              checked={markAnimeWatched}
+              onChange={setMarkAnimeWatched}
+            />
+          )}
           <Button
             fullWidth
             mt={2}
@@ -324,11 +337,46 @@ export function DiscoverLibraryRail({
           {String(addSeries.error)}
         </Alert>
       )}
+      {applyAnimeResume.isError && (
+        <Alert color="var(--danger)" variant="light" mt="sm">
+          {String(applyAnimeResume.error)}
+        </Alert>
+      )}
       {createRequest.isError && (
         <Alert color="var(--danger)" variant="light" mt="sm">
           {String(createRequest.error)}
         </Alert>
       )}
     </Paper>
+  )
+}
+
+function AnimeWatchedSwitch({
+  coveredTo,
+  checked,
+  onChange,
+}: {
+  coveredTo: number
+  checked: boolean
+  onChange: (checked: boolean) => void
+}) {
+  const { t } = useLingui()
+  return (
+    <Tooltip
+      label={t`Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats.`}
+      withArrow
+      multiline
+      w={260}
+      zIndex={1001}
+    >
+      <Switch
+        label={t`Mark ch. 1 to ${coveredTo} watched`}
+        checked={checked}
+        onChange={(e) => onChange(e.currentTarget.checked)}
+        labelPosition="left"
+        size="sm"
+        styles={{ body: { justifyContent: 'space-between' } }}
+      />
+    </Tooltip>
   )
 }

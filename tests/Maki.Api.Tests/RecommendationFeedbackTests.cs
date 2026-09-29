@@ -491,8 +491,8 @@ public class RecommendationFeedbackTests : IDisposable
 
     private sealed class FakeAnimeSource : IAnimeListSource
     {
-        public Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default) =>
-            Task.FromResult<IReadOnlyList<AnimeListEntry>>([]);
+        public Task<AnimeListResult> ListAnimeAsync(int userId, CancellationToken ct = default) =>
+            Task.FromResult(new AnimeListResult([]));
 
         public Task<AnimeRelatedManga?> RelatedMangaAsync(
             int userId, long animeId, CancellationToken ct = default) =>

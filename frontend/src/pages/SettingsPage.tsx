@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
 import { ApiError } from '../api/client'
 import { useLabel, useLanguageChoice } from '../i18n-context'
@@ -148,6 +149,7 @@ import { ImportListsSection } from '../components/ImportListsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
 import { useThemeChoice } from '../theme-context'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
+import { useCopyText } from '../components/ui/useCopyText'
 
 function RootFoldersSection() {
   const { t } = useLingui()
@@ -490,16 +492,21 @@ function RecommendationIndexSection() {
 function useLibraryPatch() {
   const { data: settings } = useLibrarySettings()
   const save = useSaveLibrarySettings()
-  const patch = (changes: Partial<LibrarySettings>) =>
+  const queryClient = useQueryClient()
+  const patch = (changes: Partial<LibrarySettings>) => {
+    // Merge over the freshest cache, not `settings`: that's a render snapshot, and two patches
+    // fired before the first refetch lands would otherwise have the second undo the first.
+    const current = queryClient.getQueryData<LibrarySettings>(['settings', 'library']) ?? settings
     save.mutate(
       {
-        writeComicInfo: settings?.writeComicInfo ?? true,
-        folderNamingMode: settings?.folderNamingMode ?? 'rename',
-        writeCoverToFolder: settings?.writeCoverToFolder ?? false,
+        writeComicInfo: current?.writeComicInfo ?? true,
+        folderNamingMode: current?.folderNamingMode ?? 'rename',
+        writeCoverToFolder: current?.writeCoverToFolder ?? false,
         ...changes,
       },
       { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
     )
+  }
   return { settings, patch }
 }
 
@@ -867,6 +874,7 @@ function OpdsSection() {
   const save = useSaveOpdsSettings()
   const rotate = useRotateOpdsToken()
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
+  const { copy: copyFeedUrl } = useCopyText()
 
   // The token itself is never stored, only its SHA-256 digest, so the full feed URL exists exactly
   // once, in the response that minted it. Held here for as long as the page stays open; after that
@@ -893,9 +901,9 @@ function OpdsSection() {
 
   const copy = () => {
     if (!feedUrl) return
-    void navigator.clipboard
-      .writeText(feedUrl)
-      .then(() => notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' }))
+    void copyFeedUrl(feedUrl).then((ok) => {
+      if (ok) notifications.show({ message: now`Feed URL copied`, color: 'var(--ok)' })
+    })
   }
 
   return (
@@ -1030,23 +1038,55 @@ function OpdsSection() {
 function KavitaImportResultSummary({
   result,
 }: {
-  result: { seriesMatched: number; chaptersMarked: number; seriesUnmatched: number }
+  result: {
+    seriesMatched: number
+    chaptersMarked: number
+    seriesUnmatched: number
+    seriesFailed: number
+    failedTitles: string[]
+  }
 }) {
-  const { chaptersMarked, seriesMatched, seriesUnmatched } = result
+  const { chaptersMarked, seriesMatched, seriesUnmatched, seriesFailed, failedTitles } = result
+
+  // Capped so one huge Kavita library can't turn this line into a wall of titles; the rest are
+  // named only by count, in a suffix that still needs its own plural forms.
+  const shownTitles = failedTitles.slice(0, 5)
+  const moreCount = failedTitles.length - shownTitles.length
+  const titles =
+    moreCount > 0
+      ? `${shownTitles.join(', ')} ${plural(moreCount, { one: '+# more', other: '+# more' })}`
+      : shownTitles.join(', ')
+
   return (
-    <Text size="xs" c="var(--ink-3)">
-      {seriesUnmatched > 0 ? (
-        <Trans>
-          <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-          {seriesMatched} series, {seriesUnmatched} Kavita series unmatched
-        </Trans>
-      ) : (
-        <Trans>
-          <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
-          {seriesMatched} series
-        </Trans>
+    <Stack gap={2}>
+      <Text size="xs" c="var(--ink-3)">
+        {seriesUnmatched > 0 ? (
+          <Trans>
+            <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
+            {seriesMatched} series, {seriesUnmatched} Kavita series unmatched
+          </Trans>
+        ) : (
+          <Trans>
+            <Plural value={chaptersMarked} one="# chapter" other="# chapters" /> marked read across{' '}
+            {seriesMatched} series
+          </Trans>
+        )}
+      </Text>
+      {seriesFailed > 0 && (
+        <Text size="xs" c="var(--danger)">
+          {titles ? (
+            <Trans>
+              Could not read progress for{' '}
+              <Plural value={seriesFailed} one="# series" other="# series" />: {titles}
+            </Trans>
+          ) : (
+            <Trans>
+              Could not read progress for <Plural value={seriesFailed} one="# series" other="# series" />
+            </Trans>
+          )}
+        </Text>
       )}
-    </Text>
+    </Stack>
   )
 }
 
@@ -1106,6 +1146,7 @@ function DownloadSection() {
   const [smartDownloadChapters, setSmartDownloadChapters] = useState<number | string>(10)
   const [itemTimeoutMinutes, setItemTimeoutMinutes] = useState<number | string>(120)
   const [useHardlinks, setUseHardlinks] = useState(true)
+  const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number | string>(5)
 
   useEffect(() => {
     if (settings) {
@@ -1115,6 +1156,7 @@ function DownloadSection() {
       setSmartDownloadChapters(settings.smartDownloadChapters)
       setItemTimeoutMinutes(settings.itemTimeoutMinutes)
       setUseHardlinks(settings.useHardlinks)
+      setBulkHoldThreshold(settings.bulkHoldThreshold)
     }
   }, [settings])
 
@@ -1125,7 +1167,8 @@ function DownloadSection() {
       Number(smartDownloadChaptersLeft) !== settings.smartDownloadChaptersLeft ||
       Number(smartDownloadChapters) !== settings.smartDownloadChapters ||
       Number(itemTimeoutMinutes) !== settings.itemTimeoutMinutes ||
-      useHardlinks !== settings.useHardlinks)
+      useHardlinks !== settings.useHardlinks ||
+      Number(bulkHoldThreshold) !== settings.bulkHoldThreshold)
 
   return (
     <Panel>
@@ -1178,6 +1221,26 @@ function DownloadSection() {
           w={220}
         />
       </Group>
+      <Text fw={500} size="sm" mb={4}>
+        <Trans>Bulk new chapters</Trans>
+      </Text>
+      <SettingsHelp mb="xs">
+        <Trans>
+          When a refresh finds more new chapters for a series than this, none of them are queued.
+          That usually means a source renumbered or backfilled its list, not a real release. They
+          stay wanted, so you can download them from the series page. 0 means always queue.
+        </Trans>
+      </SettingsHelp>
+      <NumberInput
+        label={t`Hold back more than (chapters)`}
+        min={0}
+        max={1000}
+        clampBehavior="strict"
+        value={bulkHoldThreshold}
+        onChange={setBulkHoldThreshold}
+        w={220}
+        mb="md"
+      />
       <Text fw={500} size="sm" mb={4}>
         <Trans>Stuck downloads</Trans>
       </Text>
@@ -1248,6 +1311,7 @@ function DownloadSection() {
                 smartDownloadChapters: Number(smartDownloadChapters),
                 itemTimeoutMinutes: Number(itemTimeoutMinutes),
                 useHardlinks,
+                bulkHoldThreshold: Number(bulkHoldThreshold),
               },
               {
                 onSuccess: () =>
@@ -2060,13 +2124,18 @@ function ImportListInstanceControls() {
   const { data } = useImportListSettings()
   const save = useSaveImportListSettings()
   const [form, setForm] = useState<ImportListSettings | null>(null)
+  // Tracks whether the user has touched the form since the last seed/save, so a background
+  // refetch can rebase onto newer server values without clobbering an in-progress edit.
+  const editedRef = useRef(false)
 
   useEffect(() => {
-    if (data && form === null) setForm(data)
-  }, [data, form])
+    if (data && !editedRef.current) setForm(data)
+  }, [data])
 
-  const set = (patch: Partial<ImportListSettings>) =>
+  const set = (patch: Partial<ImportListSettings>) => {
+    editedRef.current = true
     setForm((f) => (f ? { ...f, ...patch } : f))
+  }
   const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
 
   return (
@@ -2074,6 +2143,7 @@ function ImportListInstanceControls() {
       <Switch
         label={t`Enable import lists for everyone`}
         checked={form?.enabled ?? true}
+        disabled={data === undefined}
         onChange={(e) => set({ enabled: e.currentTarget.checked })}
       />
       <NumberInput
@@ -2082,6 +2152,7 @@ function ImportListInstanceControls() {
         max={1440}
         clampBehavior="strict"
         value={form?.intervalMinutes ?? 15}
+        disabled={data === undefined}
         onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
       />
       <Group justify="flex-end">
@@ -2091,7 +2162,10 @@ function ImportListInstanceControls() {
           onClick={() =>
             form &&
             save.mutate(form, {
-              onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+              onSuccess: () => {
+                editedRef.current = false
+                notifications.show({ message: now`Saved`, color: 'var(--ok)' })
+              },
             })
           }
         />
@@ -2109,8 +2183,14 @@ function ImportListInstanceControls() {
 function useUiPatch(): ((patch: Partial<UiSettings>) => void) | null {
   const { data: ui } = useUiSettings()
   const save = useSaveUiSettings()
+  const queryClient = useQueryClient()
   if (!ui) return null
-  return (patch) => save.mutate({ ...ui, ...patch })
+  // Merge over the freshest cache, not `ui`: that's a render snapshot, and two patches fired
+  // before the first refetch lands would otherwise have the second undo the first.
+  return (patch) => {
+    const current = queryClient.getQueryData<UiSettings>(['settings', 'ui']) ?? ui
+    save.mutate({ ...current, ...patch })
+  }
 }
 
 /**

@@ -118,6 +118,9 @@ public class SettingsController(
     /// Wall-clock cap on one chapter download before the worker abandons it. 0 means no cap.
     /// See <see cref="SettingKeys.DownloadItemTimeoutMinutes"/>.
     /// </param>
+    /// <param name="BulkHoldThreshold">
+    /// See <see cref="SettingKeys.MonitoringBulkHoldThreshold"/>. Null on a write leaves it alone.
+    /// </param>
     /// <param name="UseHardlinks">
     /// Hardlink completed torrents into the library instead of copying them, where the
     /// filesystem allows it. See <see cref="SettingKeys.DownloadUseHardlinks"/>.
@@ -125,7 +128,7 @@ public class SettingsController(
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
-        bool UseHardlinks = true);
+        bool UseHardlinks = true, int? BulkHoldThreshold = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -381,10 +384,21 @@ public class SettingsController(
     /// <summary>
     /// Revokes any live OPDS token for this user and issues one new one. Revoking rather than deleting
     /// keeps the rotation visible in the account UI and in the audit trail.
+    /// <para>
+    /// Revoke and insert run in one transaction: two rotations racing each other used to both read
+    /// "no live key yet" between the other's revoke and insert, and both would then insert a live row.
+    /// The <c>OpdsKeyOneLivePerScope</c> migration's filtered unique index is the backstop for
+    /// whatever this transaction doesn't already prevent on its own: if a second live row for this
+    /// user's OPDS scope reaches an insert, the index refuses it at the database rather than letting
+    /// it commit.
+    /// </para>
     /// </summary>
     private async Task<(string Prefix, string FeedUrl)> MintOpdsKeyAsync(CancellationToken ct)
     {
         var now = TimeProvider.System.GetUtcNow().UtcDateTime;
+        var secret = ApiKeyCrypto.Generate();
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         await db.UserApiKeys
             .Where(k => k.UserId == currentUser.UserId
@@ -392,7 +406,6 @@ public class SettingsController(
                         && k.RevokedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(k => k.RevokedAt, now), ct);
 
-        var secret = ApiKeyCrypto.Generate();
         db.UserApiKeys.Add(new UserApiKey
         {
             UserId = currentUser.UserId,
@@ -403,6 +416,7 @@ public class SettingsController(
             CreatedAt = now
         });
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
         // Root-relative on purpose. Building an absolute URL from Request.Scheme/Host hands out an
         // http:// link through any TLS-terminating proxy that doesn't rewrite it.
@@ -793,7 +807,8 @@ public class SettingsController(
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersLeft, ct), out var l) ? l : 5,
         int.TryParse(await settings.GetAsync(SettingKeys.SmartDownloadChaptersCount, ct), out var c) ? c : 10,
         int.TryParse(await settings.GetAsync(SettingKeys.DownloadItemTimeoutMinutes, ct), out var t) ? t : 120,
-        await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false"));
+        await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false",
+        await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct)));
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPut("download")]
@@ -817,6 +832,11 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.downloadTimeoutRange", new { min = 10, max = 1440 });
         }
 
+        if (request.BulkHoldThreshold is < 0 or > 1000)
+        {
+            return this.Fail(localizer, "error.settings.bulkHoldRange", new { max = 1000 });
+        }
+
         await settings.SetAsync(
             SettingKeys.DownloadConcurrentChapters,
             request.ConcurrentChapters.ToString(CultureInfo.InvariantCulture),
@@ -833,7 +853,13 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadItemTimeoutMinutes,
             request.ItemTimeoutMinutes.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.DownloadUseHardlinks, request.UseHardlinks ? "true" : "false", ct);
-        return Ok(request);
+        if (request.BulkHoldThreshold is { } bulkHold)
+        {
+            await settings.SetAsync(SettingKeys.MonitoringBulkHoldThreshold,
+                bulkHold.ToString(CultureInfo.InvariantCulture), ct);
+        }
+
+        return Ok(request with { BulkHoldThreshold = await RefreshMonitoredSeriesJob.BulkHoldThresholdAsync(settings, ct) });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1414,13 +1440,12 @@ public class SettingsController(
         var snap = embeddingStatus.Snapshot();
         var dumpPresent = (await mangaBakaDump.GetStatusAsync(ct)).Present;
 
-        // The recommendable total needs a full-table count; compute it once when idle and
-        // cache it on the status object so status polls stay cheap.
+        // The recommendable total needs a full-table count over the dump. It fills in on the status
+        // object in the background so this response never waits on it.
         var total = snap.RecommendableTotal;
         if (total is null && !snap.Running && dumpPresent)
         {
-            total = await embeddingIndexer.CountRecommendableAsync(ct);
-            embeddingStatus.SetTotal(total.Value);
+            embeddingIndexer.WarmRecommendableTotal();
         }
 
         var prebuiltEnabled = await prebuiltIndex.IsEnabledAsync(ct);

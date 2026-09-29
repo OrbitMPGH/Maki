@@ -272,6 +272,21 @@ public class WebtoonsSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_falls_back_to_html_when_the_api_answers_html()
+    {
+        var source = SourceFor(new()
+        {
+            ["webtoon/95/episodes"] = "<html><body>Access denied</body></html>",
+            ["page=1"] = FakeHttpClientFactory.Fixture("webtoons-list-page1.html"),
+            ["page="] = FakeHttpClientFactory.Fixture("webtoons-list-last.html")
+        });
+
+        var chapters = await source.ListChaptersAsync("fantasy/tower-of-god/95");
+
+        Assert.Equal(13, chapters.Count);
+    }
+
+    [Fact]
     public async Task GetPages_returns_only_the_viewer_strip_with_a_referer()
     {
         var source = SourceFor(new() { ["viewer"] = FakeHttpClientFactory.Fixture("webtoons-viewer.html") });

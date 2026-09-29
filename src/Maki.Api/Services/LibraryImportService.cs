@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Core.Configuration;
@@ -8,6 +8,7 @@ using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -81,10 +82,16 @@ public class LibraryImportService(
     StatsEventService stats,
     SeriesIdentityService identity,
     ILocalizer localizer,
+    ICurrentUser currentUser,
     ILogger<LibraryImportService> logger)
 {
     public async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId, CancellationToken ct = default)
     {
+        if (!currentUser.AllRootFolders && !currentUser.RootFolderIds.Contains(rootFolderId))
+        {
+            throw new InvalidOperationException("Root folder not found");
+        }
+
         var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct)
             ?? throw new InvalidOperationException("Root folder not found");
 
@@ -119,7 +126,7 @@ public class LibraryImportService(
         foreach (var dir in Directory.GetDirectories(rootFolder.Path).OrderBy(d => d))
         {
             var folderName = Path.GetFileName(dir);
-            if (folderName.StartsWith('.') || claimed.Contains(folderName))
+            if (folderName.StartsWith('.') || claimed.Contains(folderName) || LibraryPaths.IsLink(dir))
             {
                 continue;
             }
@@ -172,18 +179,42 @@ public class LibraryImportService(
     }
 
     public async Task<ImportResult> ImportAsync(
-        int rootFolderId, ImportRequestItem item, bool updateComicInfo = true, CancellationToken ct = default)
+        int rootFolderId, ImportRequestItem item, bool updateComicInfo = true, string? operationId = null,
+        CancellationToken ct = default)
     {
-        var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct)
-            ?? throw new InvalidOperationException("Root folder not found");
+        var rootFolder = currentUser.AllRootFolders || currentUser.RootFolderIds.Contains(rootFolderId)
+            ? await db.RootFolders.FindAsync([rootFolderId], ct)
+            : null;
+        if (rootFolder is null)
+        {
+            return new ImportResult(item.FolderName, false, localizer.Get("error.series.rootFolderNotFound"));
+        }
 
-        var sourceDir = Path.Combine(rootFolder.Path, item.FolderName);
+        // FolderName comes straight off the request. It must name exactly one entry directly
+        // inside the root, never an absolute path (Path.Combine would discard the root entirely)
+        // or a ".."-laden one that walks out of it, or import could move/rewrite files anywhere
+        // on disk the process can reach.
+        if (string.IsNullOrEmpty(item.FolderName) ||
+            Path.GetFileName(item.FolderName) != item.FolderName ||
+            item.FolderName.Trim('.', ' ').Length == 0)
+        {
+            return new ImportResult(item.FolderName, false,
+                localizer.Get("error.libraryImport.invalidFolderName"));
+        }
+
+        var sourceDir = LibraryPaths.ResolveNoLinks(rootFolder.Path, item.FolderName);
+        if (sourceDir is null)
+        {
+            return new ImportResult(item.FolderName, false,
+                localizer.Get("error.libraryImport.invalidFolderName"));
+        }
+
         if (!Directory.Exists(sourceDir))
         {
             return new ImportResult(item.FolderName, false, localizer.Get("error.libraryImport.folderGone"));
         }
 
-        await events.ImportProgress(item.FolderName, ImportStage.FetchingMetadata);
+        await events.ImportProgress(item.FolderName, ImportStage.FetchingMetadata, operationId: operationId);
         var provider = metadataProviders.First();
         var metadata = await provider.GetAsync(item.MetadataProviderId, ct);
         if (metadata is null)
@@ -206,7 +237,7 @@ public class LibraryImportService(
                     localizer.Get("error.libraryImport.alreadyInLibrary", new { title = metadata.Title }));
             }
 
-            return await ReimportIntoExistingAsync(existingSeries, rootFolder, item, sourceDir, updateComicInfo, ct);
+            return await ReimportIntoExistingAsync(existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, ct);
         }
 
         // Standardize the folder name to the configured series folder format, unless the folder
@@ -227,7 +258,7 @@ public class LibraryImportService(
                     localizer.Get("error.libraryImport.renameTargetExists", new { name = standardName }));
             }
 
-            await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder);
+            await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
             Directory.Move(sourceDir, targetDir);
             logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
             seriesFolderName = standardName;
@@ -254,7 +285,7 @@ public class LibraryImportService(
 
         if (metadata.CoverUrl != null)
         {
-            await events.ImportProgress(item.FolderName, ImportStage.DownloadingCover);
+            await events.ImportProgress(item.FolderName, ImportStage.DownloadingCover, operationId: operationId);
             var coverPath = await coverService.DownloadCoverAsync(series.Id, metadata.CoverUrl, ct);
             if (coverPath != null)
             {
@@ -266,11 +297,11 @@ public class LibraryImportService(
         // Link scraper sources and pull the chapter list before matching files.
         try
         {
-            await events.ImportProgress(item.FolderName, ImportStage.FindingSources);
+            await events.ImportProgress(item.FolderName, ImportStage.FindingSources, operationId: operationId);
             var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
             if (mapped.Count > 0)
             {
-                await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters);
+                await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters, operationId: operationId);
                 await chapterSyncService.SyncSeriesAsync(series.Id, ct);
             }
         }
@@ -283,7 +314,7 @@ public class LibraryImportService(
         var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
-            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
+            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
             updateComicInfo, ct: ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
@@ -297,7 +328,7 @@ public class LibraryImportService(
     /// </summary>
     private async Task<ImportResult> ReimportIntoExistingAsync(
         Series series, RootFolder rootFolder, ImportRequestItem item, string sourceDir,
-        bool updateComicInfo, CancellationToken ct)
+        bool updateComicInfo, string? operationId, CancellationToken ct)
     {
         var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
@@ -311,13 +342,13 @@ public class LibraryImportService(
             {
                 // The series' standardized folder already exists (e.g. an empty folder created
                 // when it was added) — fold the scanned folder's files into it.
-                await events.ImportProgress(item.FolderName, ImportStage.MergingFolder);
+                await events.ImportProgress(item.FolderName, ImportStage.MergingFolder, operationId: operationId);
                 MergeDirectory(sourceDir, targetDir);
                 logger.LogInformation("Merged '{Old}' into existing '{New}'", item.FolderName, standardName);
             }
             else
             {
-                await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder);
+                await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
                 Directory.Move(sourceDir, targetDir);
                 logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
             }
@@ -344,11 +375,11 @@ public class LibraryImportService(
         {
             try
             {
-                await events.ImportProgress(item.FolderName, ImportStage.FindingSources);
+                await events.ImportProgress(item.FolderName, ImportStage.FindingSources, operationId: operationId);
                 var mapped = await sourceMatchService.AutoMatchAsync(series, ct);
                 if (mapped.Count > 0)
                 {
-                    await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters);
+                    await events.ImportProgress(item.FolderName, ImportStage.SyncingChapters, operationId: operationId);
                     await chapterSyncService.SyncSeriesAsync(series.Id, ct);
                 }
             }
@@ -362,7 +393,7 @@ public class LibraryImportService(
         var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
-            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total),
+            (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
             updateComicInfo, ct: ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized);
@@ -423,7 +454,7 @@ public class LibraryImportService(
     /// (preserving sub-paths, skipping name collisions), then removes the now-empty source.</summary>
     private static void MergeDirectory(string sourceDir, string targetDir)
     {
-        foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        foreach (var file in LibraryPaths.EnumerateFilesNoLinks(sourceDir).ToList())
         {
             var rel = Path.GetRelativePath(sourceDir, file);
             var dest = Path.Combine(targetDir, rel);
@@ -432,6 +463,12 @@ public class LibraryImportService(
             {
                 File.Move(file, dest);
             }
+        }
+
+        // A recursive delete would drop any link left behind along with it.
+        if (LibraryPaths.ContainsLink(sourceDir))
+        {
+            return;
         }
 
         try

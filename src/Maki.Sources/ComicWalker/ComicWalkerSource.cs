@@ -40,26 +40,53 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
         return tail is not null && !tail.Contains('/') && SeriesIdPattern().IsMatch(tail) ? tail : null;
     }
 
+    private const int SearchPageSize = 30;
+    private const int SearchResultCap = 500;
+    // The 500-result cap limits how far this walks (a query the server ignores offset for, or a
+    // wildly over-broad keyword, must not page forever), not how many results a single page holds.
+    private const int MaxPages = SearchResultCap / SearchPageSize;
+
     public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
     {
-        var url = $"api/search/keywords?keywords={Uri.EscapeDataString(title)}&limit=30&offset=0";
-        var (body, root) = await GetJsonAsync(url, ct);
-        if (!root.TryGetProperty("result", out var result) || result.ValueKind != JsonValueKind.Array)
-        {
-            throw Unexpected(url, body);
-        }
-
         var results = new List<SourceSeriesResult>();
-        foreach (var item in result.EnumerateArray())
+        var seenCodes = new HashSet<string>();
+        var encodedTitle = Uri.EscapeDataString(title);
+        var offset = 0;
+
+        for (var page = 0; page < MaxPages; page++)
         {
-            var code = item.TryGetProperty("code", out var codeEl) ? codeEl.GetString() : null;
-            if (string.IsNullOrEmpty(code))
+            var url = $"api/search/keywords?keywords={encodedTitle}&limit={SearchPageSize}&offset={offset}";
+            var (body, root) = await GetJsonAsync(url, ct);
+            if (!root.TryGetProperty("result", out var result) || result.ValueKind != JsonValueKind.Array)
             {
-                continue;
+                throw Unexpected(url, body);
             }
 
-            var seriesTitle = item.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
-            results.Add(new SourceSeriesResult(code, seriesTitle ?? code, $"{BaseUrl}/detail/{code}", Cover(item)));
+            var pageCount = 0;
+            var added = 0;
+            foreach (var item in result.EnumerateArray())
+            {
+                pageCount++;
+                var code = item.TryGetProperty("code", out var codeEl) ? codeEl.GetString() : null;
+                if (string.IsNullOrEmpty(code) || !seenCodes.Add(code))
+                {
+                    continue;
+                }
+
+                added++;
+                var seriesTitle = item.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
+                results.Add(new SourceSeriesResult(code, seriesTitle ?? code, $"{BaseUrl}/detail/{code}", Cover(item)));
+            }
+
+            // A short page means the server has nothing left; a page that adds nothing new means
+            // the server is ignoring offset (or looping back around) and repeating itself, so
+            // walking further would only re-fetch what's already in results.
+            if (pageCount < SearchPageSize || added == 0)
+            {
+                break;
+            }
+
+            offset += pageCount;
         }
 
         return results;
@@ -122,10 +149,25 @@ public partial class ComicWalkerSource(IHttpClientFactory httpClientFactory) : I
 
             var id = episode.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
             var code = episode.TryGetProperty("code", out var codeEl) ? codeEl.GetString() : null;
-            var episodeTitle = episode.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
-            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(code) || string.IsNullOrEmpty(episodeTitle))
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(code))
             {
-                continue;
+                // Passed the type == "normal" && isActive gate, so this episode is eligible and
+                // should be downloadable. A missing id/code here is a broken response, not
+                // something to silently drop.
+                throw Unexpected(url, body);
+            }
+
+            var episodeTitle = episode.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
+            if (string.IsNullOrEmpty(episodeTitle))
+            {
+                // An empty title is a real (if rare) shape, unlike a missing id/code - fall back to
+                // something displayable instead of stopping the whole series sync over it.
+                var episodeNo = episode.TryGetProperty("internal", out var internalEl) &&
+                                 internalEl.TryGetProperty("episodeNo", out var noEl) &&
+                                 noEl.ValueKind == JsonValueKind.Number
+                    ? noEl.GetInt32().ToString(CultureInfo.InvariantCulture)
+                    : null;
+                episodeTitle = episodeNo ?? code;
             }
 
             var subTitle = episode.TryGetProperty("subTitle", out var subTitleEl) ? subTitleEl.GetString() : null;

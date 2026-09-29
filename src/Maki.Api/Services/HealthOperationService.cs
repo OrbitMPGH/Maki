@@ -28,6 +28,14 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
 {
     public static readonly SemaphoreSlim MutationGate = new(1);
     public static bool Terminal(string status) => status is "completed" or "failed" or "cancelled";
+
+    /// <summary>
+    /// Test seam only: invoked right after <c>File.Delete</c> in the delete branch of
+    /// <see cref="ApplyAsync"/>, before the DB cleanup that must survive a cancellation from that
+    /// point on. Lets a test cancel the caller's token at exactly the moment production code cannot
+    /// otherwise be interrupted at. Always null outside tests.
+    /// </summary>
+    internal Action? TestHookAfterFileDeleted;
     public static List<RepairCandidate> Candidates(HealthOperation op) => JsonSerializer.Deserialize<List<RepairCandidate>>(op.JournalJson, HealthScanService.Json) ?? [];
 
     public async Task<(HealthFile File, RootFolder Root, List<Chapter> Chapters)> ValidateAsync(int id, string version, CancellationToken ct, int? operationId = null)
@@ -148,7 +156,14 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                         throw;
                     }
                 }
-                await CompleteDeletionAsync(op, file, root, ct);
+                TestHookAfterFileDeleted?.Invoke();
+                // Past this point the archive is gone; a client disconnect or request cancellation
+                // must not stop the DB cleanup from finishing, or the chapter links point at nothing
+                // until the next restart's recovery pass. CancellationToken.None makes the cleanup
+                // itself uninterruptible; the catch is a second net for anything upstream that still
+                // throws OperationCanceledException, so recovery runs now instead of waiting.
+                try { await CompleteDeletionAsync(op, file, root, CancellationToken.None); }
+                catch (OperationCanceledException) { await RecoverAsync(CancellationToken.None); throw; }
                 return;
             }
             var original = HealthPaths.Resolve(root.Path, file.RelativePath);
@@ -266,8 +281,27 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         return old.Count != next.Count || old.Count == 0 || old.Zip(next).Any(p => p.First.RawHash != p.Second.RawHash);
     }
 
+    /// <summary>
+    /// Removes a cancelled operation's staging directory (candidate downloads, and the rollback
+    /// copy if apply got that far). Best-effort: an unavailable root just means the sweep on the
+    /// next startup gets another chance, the same as any other recovery path here.
+    /// </summary>
+    public async Task RemoveStagingAsync(HealthOperation op, CancellationToken ct)
+    {
+        var file = await db.HealthFiles.FindAsync([op.FileId], ct);
+        var root = file == null ? null : await db.RootFolders.FindAsync([file.RootFolderId], ct);
+        if (root == null || !Directory.Exists(root.Path)) return;
+        var staging = HealthPaths.Resolve(root.Path, $".maki/health/{op.Id}");
+        if (Directory.Exists(staging)) Directory.Delete(staging, true);
+    }
+
     public async Task RecoverAsync(CancellationToken ct)
     {
+        foreach (var op in await db.HealthOperations.Where(o => o.Status == "cancelled").ToListAsync(ct))
+        {
+            try { await RemoveStagingAsync(op, ct); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { }
+        }
         foreach (var op in await db.HealthOperations.Where(o => o.Status == "deleting").ToListAsync(ct))
         {
             var file = await db.HealthFiles.FindAsync([op.FileId], ct) ?? throw new IOException("Missing deletion journal file");
@@ -327,9 +361,8 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         db.HealthHistory.Add(new()
         {
             Kind = "delete", FileId = file.Id, UserId = op.UserId,
-            Message = file.Size < 0
-                ? $"Cleared the record for missing {file.RelativePath}; chapter records and Wanted flags preserved"
-                : $"Permanently deleted {file.RelativePath}; chapter records and Wanted flags preserved"
+            MessageKey = file.Size < 0 ? "health.history.deletedMissing" : "health.history.deletedFile",
+            ParamsJson = JsonSerializer.Serialize(new { path = file.RelativePath }),
         });
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);

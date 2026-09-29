@@ -1,5 +1,7 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Recommendations;
+using Maki.Metadata.Catalogue;
 using Maki.Metadata.MangaBaka;
 
 namespace Maki.Api.Services;
@@ -17,7 +19,10 @@ public sealed record LibraryRailRow(
     SeriesStatus Status,
     string? Type,
     int? TotalChapters,
-    DateTime Added);
+    DateTime Added,
+    string? AuthorStory = null,
+    string? AuthorArt = null,
+    string? Publisher = null);
 
 /// <summary>
 /// A catalogue filter evaluated against a library series' own metadata, for series the vector
@@ -86,6 +91,46 @@ public static class LibraryRailFilter
         }
 
         return f.MatchesNames(s.Genres.ToList(), s.Tags.ToList());
+    }
+
+    /// <summary>
+    /// The filter's creators against the series' own credit strings, for every library row: those
+    /// strings are on the series whether or not the index has it. Any credit matching passes, the
+    /// same union <see cref="CreditFilter"/> applies to the catalogue. Names compare by
+    /// <see cref="CatalogueText.RomanizationKey"/>, so "Ito Junji" still finds "Junji Ito".
+    /// </summary>
+    public static bool MatchesCredits(LibraryRailRow s, RecommendationFilters f) =>
+        f.Credits is not { Count: > 0 } credits || credits.Any(c => Credited(s, c));
+
+    private static bool Credited(LibraryRailRow s, CatalogueCredit credit)
+    {
+        var key = CatalogueText.RomanizationKey(credit.Name);
+        string?[] fields = credit.Role switch
+        {
+            CatalogueCredits.Author => [s.AuthorStory],
+            CatalogueCredits.Artist => [s.AuthorArt],
+            CatalogueCredits.Studio => [s.Publisher],
+            _ => [s.AuthorStory, s.AuthorArt, s.Publisher],
+        };
+
+        return key.Length > 0 && fields.Any(field => field is not null && Names(field).Any(name => name == key));
+    }
+
+    /// <summary>
+    /// The keys a comma-joined credit string could hold. Each part, and each part joined to the next:
+    /// the join cannot tell "Ito, Junji" (one name) from "Ito, Junji" (two people).
+    /// </summary>
+    private static IEnumerable<string> Names(string field)
+    {
+        var parts = field.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 0; i < parts.Length; i++)
+        {
+            yield return CatalogueText.RomanizationKey(parts[i]);
+            if (i + 1 < parts.Length)
+            {
+                yield return CatalogueText.RomanizationKey($"{parts[i]} {parts[i + 1]}");
+            }
+        }
     }
 
     /// <param name="lastRead">When the caller last touched each series, for <see cref="CustomRailSorts.Read"/>.</param>

@@ -111,7 +111,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
       <EmptyState
         compact
         title={t`Reading stats need Kavita`}
-        description={t`Reading stats need Kavita: connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way.`}
+        description={t`Connect it in Settings and Maki will start tracking chapters you read. Downloads and library changes are tracked either way.`}
       />
     )
   }

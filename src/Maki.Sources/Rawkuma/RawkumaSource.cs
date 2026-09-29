@@ -123,7 +123,7 @@ public class RawkumaSource(IHtmlFetcher fetcher, string? baseUrlOverride = null)
                 continue;
             }
 
-            var numberRaw = row.GetAttribute("data-chapter-number");
+            var numberRaw = row.GetAttribute("data-chapter-number")?.Trim();
             var number = decimal.TryParse(numberRaw, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var direct)
                 ? direct
                 : ChapterNumberParser.Parse(row.QuerySelector("span")?.TextContent.Trim()).Number;

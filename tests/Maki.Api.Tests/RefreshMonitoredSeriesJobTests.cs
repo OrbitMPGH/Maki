@@ -125,7 +125,7 @@ public class RefreshSmartGateTests : IDisposable
         mappings: new SourceMapping { SourceName = "fake", SourceSeriesId = "series", Url = "u", Enabled = true });
 
     /// <summary>The job resolves ChapterSyncService per series, so the scope has to supply one.</summary>
-    private IServiceScopeFactory ScopeFactoryWith(ISource source)
+    private IServiceScopeFactory ScopeFactoryWith(ISource source, IAppSettings? settings = null)
     {
         var services = new ServiceCollection();
         services.AddScoped(_ => _db.NewContext());
@@ -133,7 +133,7 @@ public class RefreshSmartGateTests : IDisposable
         services.AddSingleton(Sources.AllEnabled);
         services.AddSingleton(new SourceChapterListCache(
             TimeProvider.System, NullLogger<SourceChapterListCache>.Instance));
-        services.AddSingleton<IAppSettings>(new FakeAppSettings());
+        services.AddSingleton(settings ?? new FakeAppSettings());
         services.AddSingleton(_ => new DownloadQueueService(
             _db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance));
         services.AddLogging();
@@ -141,14 +141,16 @@ public class RefreshSmartGateTests : IDisposable
         return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 
-    private async Task<(List<Chapter> Chapters, int Queued)> RefreshAsync(NewChapterMonitorMode mode)
+    private async Task<(List<Chapter> Chapters, int Queued)> RefreshAsync(
+        NewChapterMonitorMode mode, int chapterCount = 2, IAppSettings? settings = null,
+        RecordingNotifications? notifications = null)
     {
         var seriesId = Seed(mode);
         var fake = new FakeSource { Name = "fake" };
         var source = new FakeSource
         {
             Name = "fake",
-            OnListChapters = _ => [fake.Chapter(1), fake.Chapter(2)]
+            OnListChapters = _ => [.. Enumerable.Range(1, chapterCount).Select(n => fake.Chapter(n))]
         };
 
         var registry = new SourceRegistry([source]);
@@ -157,7 +159,7 @@ public class RefreshSmartGateTests : IDisposable
             NullLogger<DownloadQueueService>.Instance);
 
         var job = new RefreshMonitoredSeriesJob(
-            ScopeFactoryWith(source), queue, new RecordingNotifications(), new RecordingInbox(),
+            ScopeFactoryWith(source, settings), queue, notifications ?? new RecordingNotifications(), new RecordingInbox(),
             _batches, Sources.AllEnabled, new TestLocalizer(), new TestUserLocaleResolver(),
             NullLogger<RefreshMonitoredSeriesJob>.Instance);
 
@@ -195,5 +197,36 @@ public class RefreshSmartGateTests : IDisposable
 
         Assert.All(chapters, c => Assert.False(c.Wanted));
         Assert.Equal(0, queued);
+    }
+
+    [Fact]
+    public async Task A_burst_past_the_threshold_is_held_but_stays_wanted()
+    {
+        var notifications = new RecordingNotifications();
+
+        var (chapters, queued) = await RefreshAsync(NewChapterMonitorMode.All, chapterCount: 6, notifications: notifications);
+
+        Assert.Equal(6, chapters.Count);
+        Assert.All(chapters, c => Assert.True(c.Wanted));
+        Assert.Equal(0, queued);
+        Assert.Contains("notify.chapters.held.body", Assert.Single(notifications.Sent).Message.Body);
+    }
+
+    [Fact]
+    public async Task A_burst_at_the_threshold_is_queued()
+    {
+        var (_, queued) = await RefreshAsync(NewChapterMonitorMode.All, chapterCount: 5);
+
+        Assert.Equal(5, queued);
+    }
+
+    [Fact]
+    public async Task A_zero_threshold_never_holds()
+    {
+        var settings = new FakeAppSettings().Set(SettingKeys.MonitoringBulkHoldThreshold, "0");
+
+        var (_, queued) = await RefreshAsync(NewChapterMonitorMode.All, chapterCount: 50, settings: settings);
+
+        Assert.Equal(50, queued);
     }
 }

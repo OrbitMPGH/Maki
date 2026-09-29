@@ -12,7 +12,9 @@ public record ParsedChapter(decimal? Number, int? Volume, bool IsOneShot);
 /// </summary>
 public static partial class ChapterNumberParser
 {
-    [GeneratedRegex(@"(?:\bch(?:apter)?\b\.?\s*)(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
+    // "Episode 12" is how WeebCentral labels webtoons; read as a one-shot, every episode of a series
+    // turned into its own unnumbered chapter.
+    [GeneratedRegex(@"(?:\b(?:ch(?:apter)?|ep(?:isode)?)\b\.?\s*)(\d+(?:\.\d+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex ChapterPattern();
 
     [GeneratedRegex(@"^\s*#?(\d+(?:\.\d+)?)\s*(?:[-:–].*)?$")]
@@ -44,9 +46,9 @@ public static partial class ChapterNumberParser
         if (volume is null)
         {
             var embedded = VolumePattern().Match(text);
-            if (embedded.Success)
+            if (embedded.Success && int.TryParse(embedded.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var embeddedVolume))
             {
-                volume = int.Parse(embedded.Groups[1].Value, CultureInfo.InvariantCulture);
+                volume = embeddedVolume;
             }
         }
 
@@ -92,6 +94,8 @@ public static partial class ChapterNumberParser
         }
 
         var match = VolumePattern().Match(text);
-        return match.Success ? int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) : null;
+        return match.Success && int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : null;
     }
 }

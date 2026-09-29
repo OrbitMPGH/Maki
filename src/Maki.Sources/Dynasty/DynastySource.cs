@@ -96,11 +96,13 @@ public partial class DynastySource(IHttpClientFactory httpClientFactory) : ISour
         var root = await GetJsonAsync($"series/{sourceSeriesId}.json", ct);
         RequireSeries(sourceSeriesId, root);
 
-        var taggings = new List<JsonElement>();
-        if (root.TryGetProperty("taggings", out var initial) && initial.ValueKind == JsonValueKind.Array)
+        if (!root.TryGetProperty("taggings", out var initial) || initial.ValueKind != JsonValueKind.Array)
         {
-            taggings.AddRange(initial.EnumerateArray());
+            throw new InvalidOperationException(
+                $"Dynasty Scans entry '{sourceSeriesId}' has a missing or non-array 'taggings'");
         }
+
+        var taggings = new List<JsonElement>(initial.EnumerateArray());
 
         // Only large doujin/anthology tags paginate; a plain series rarely does, but honour
         // total_pages when it shows up rather than silently truncating the chapter list.

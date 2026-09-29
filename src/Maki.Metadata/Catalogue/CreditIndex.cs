@@ -100,7 +100,14 @@ public sealed class CreditIndex
         _works = works;
         _workRoles = workRoles;
         _byKey = byKey;
+        MaxSeriesId = works.Length == 0 ? 0 : works.Max();
     }
+
+    /// <summary>
+    /// The highest MangaBaka id credited to anybody. MangaBaka numbers series as they are added, so
+    /// this is how far into the catalogue the index reaches, and anything above a previous value is new.
+    /// </summary>
+    public long MaxSeriesId { get; }
 
     public int NameCount => _names.Length;
 

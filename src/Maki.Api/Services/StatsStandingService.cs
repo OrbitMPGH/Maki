@@ -46,13 +46,24 @@ public class StatsStandingService(
     /// <param name="userId">Resolved through <see cref="UserViewResolver"/>; no permission check here.</param>
     public async Task<StatsStandingDto> GetAsync(int userId, CancellationToken ct)
     {
-        var key = $"standing:{currentUser.UserId}:{userId}";
+        var targetAllRootFolders = userId == currentUser.UserId
+            ? currentUser.AllRootFolders
+            : await db.Users.AsNoTracking().IgnoreQueryFilters()
+                .Where(u => u.Id == userId)
+                .Select(u => u.AllRootFolders)
+                .FirstOrDefaultAsync(ct);
+
+        // The series rows come from the caller's folders and the behaviour lists from the target's,
+        // so both grant sets are in the key: a revoked folder must not survive in the cache.
+        var callerAccess = ReadingBehaviourService.AccessKey(currentUser.AllRootFolders, currentUser.RootFolderIds);
+        var targetAccess = await behaviour.AccessKeyAsync(userId, targetAllRootFolders, ct);
+        var key = $"standing:{currentUser.UserId}:{callerAccess}:{userId}:{targetAccess}";
         if (cache.TryGetValue<StatsStandingDto>(key, out var hit) && hit is not null)
         {
             return hit;
         }
 
-        var readingBehaviour = await BehaviourAsync(userId, ct);
+        var readingBehaviour = await behaviour.GetAsync(userId, targetAllRootFolders, refresh: false, ct);
         var pace = readingBehaviour.MedianSecondsPerChapter;
 
         var series = await db.Series.AsNoTracking()
@@ -163,17 +174,6 @@ public class StatsStandingService(
     /// read off their account rather than borrowed from the admin asking, so the aggregate numbers
     /// are scoped to the target's own folders; only the named lists are trimmed to the caller's.
     /// </summary>
-    private async Task<ReadingBehaviour> BehaviourAsync(int userId, CancellationToken ct)
-    {
-        var allRootFolders = userId == currentUser.UserId
-            ? currentUser.AllRootFolders
-            : await db.Users.AsNoTracking().IgnoreQueryFilters()
-                .Where(u => u.Id == userId)
-                .Select(u => u.AllRootFolders)
-                .FirstOrDefaultAsync(ct);
-        return await behaviour.GetAsync(userId, allRootFolders, refresh: false, ct);
-    }
-
     /// <summary>
     /// Credits are comma-joined strings. Somebody credited for both story and art on one series
     /// counts that series once.

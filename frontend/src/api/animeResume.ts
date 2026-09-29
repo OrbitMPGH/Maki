@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
+import type { RecommendationItem } from './hooks'
 
 /**
  * What the anime-resume resolver worked out for one manga: which anime covers it, how far, and
@@ -33,9 +34,12 @@ export interface SeriesAnimeResume extends AnimeResume {
   unmarkedCount: number
 }
 
-/** One poster on Home's "Continue from the anime" rail. */
+/**
+ * One poster on Home's "Continue from the anime" rail. `seriesId` is null for a manga that is not
+ * in the library yet; `catalogue` is then its dump row, which is what the Discover modal opens.
+ */
 export interface HomeAnimeResumeItem {
-  seriesId: number
+  seriesId: number | null
   seriesTitle: string
   coverUrl: string | null
   animeTitle: string
@@ -44,6 +48,7 @@ export interface HomeAnimeResumeItem {
   coveredLabel: string | null
   resumeChapterId: number | null
   resumeChapterLabel: string | null
+  catalogue: RecommendationItem | null
 }
 
 /**
@@ -92,6 +97,26 @@ export function useApplyAnimeResume(seriesId: number) {
 }
 
 /**
+ * {@link useApplyAnimeResume} for a series id only known at call time: the Discover modal's Add
+ * ticks the anime off on the series it has just created. Nothing on the new series is cached yet,
+ * so only Home and the callouts need refreshing.
+ */
+export function useApplyAnimeResumeAfterAdd() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, coveredTo }: { seriesId: number; coveredTo?: number }) =>
+      api<ApplyAnimeResumeResult>(`/series/${seriesId}/anime-resume/apply`, {
+        method: 'POST',
+        body: JSON.stringify({ markWatched: true, coveredTo }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['home'] })
+      void queryClient.invalidateQueries({ queryKey: ['anime-resume'] })
+    },
+  })
+}
+
+/**
  * Dismisses the callout ("Not this anime?"), or undoes that with the same route's DELETE. The
  * server keeps it dismissed until the covered range changes, same idea as `useHideHomeReading`.
  */
@@ -107,7 +132,10 @@ export function useDismissAnimeResume(seriesId: number) {
   })
 }
 
-/** Home's "Continue from the anime" rail: series whose anime is done but the manga isn't caught up. */
+/**
+ * Home's "Continue from the anime" rail: series whose anime is done but the manga isn't caught up,
+ * library first, then manga the reader could add.
+ */
 export function useHomeFromAnime(limit = 12, enabled = true) {
   return useQuery({
     queryKey: ['home', 'from-anime', limit],

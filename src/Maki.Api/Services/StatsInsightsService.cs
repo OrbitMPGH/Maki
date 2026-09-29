@@ -247,7 +247,16 @@ public class StatsInsightsService(
                 .ToListAsync(ct);
             foreach (var r in removals)
             {
-                snapshots[r.SeriesKey!] = new SeriesFacts(ParseGenres(r.PayloadJson), null, null);
+                var snap = ParseSnapshot(r.PayloadJson);
+                // A legacy snapshot (no RootFolderId recorded) stays visible; one that names a
+                // folder outside the caller's own grants does not, same as a live series would.
+                if (snap?.RootFolderId is int rootFolderId &&
+                    !currentUser.AllRootFolders && !currentUser.RootFolderIds.Contains(rootFolderId))
+                {
+                    continue;
+                }
+
+                snapshots[r.SeriesKey!] = new SeriesFacts(snap?.Genres ?? [], null, null);
             }
         }
 
@@ -267,7 +276,10 @@ public class StatsInsightsService(
             }
         }
 
-        var libraryGenres = await db.Series.AsNoTracking().Select(s => s.Genres).ToListAsync(ct);
+        var libraryGenres = await db.Series.AsNoTracking()
+            .Where(s => s.Incognito != IncognitoMode.Full)
+            .Select(s => s.Genres)
+            .ToListAsync(ct);
 
         return Taste(weighted, libraryGenres);
     }
@@ -353,22 +365,24 @@ public class StatsInsightsService(
         return new TasteMixDto(lean, Named(types), Named(demographics), eraList);
     }
 
-    private static List<string> ParseGenres(string? payloadJson)
+    private static RemovedSnapshot? ParseSnapshot(string? payloadJson)
     {
         if (payloadJson is null)
         {
-            return [];
+            return null;
         }
 
         try
         {
-            return JsonSerializer.Deserialize<RemovedSnapshot>(payloadJson)?.Genres ?? [];
+            return JsonSerializer.Deserialize<RemovedSnapshot>(payloadJson);
         }
         catch (JsonException)
         {
-            return [];
+            return null;
         }
     }
 
-    private sealed record RemovedSnapshot([property: JsonPropertyName("genres")] List<string>? Genres);
+    private sealed record RemovedSnapshot(
+        [property: JsonPropertyName("genres")] List<string>? Genres,
+        [property: JsonPropertyName("rootFolderId")] int? RootFolderId);
 }

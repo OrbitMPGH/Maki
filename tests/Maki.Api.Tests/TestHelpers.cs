@@ -49,6 +49,17 @@ internal sealed class RecordingInbox() : InboxService(
     public override void RaiseForSeries(InboxEventType type, InboxMessage message, int seriesId) =>
         RaisedForSeries.Add((type, message, seriesId));
 
+    /// <summary>How many <see cref="RaiseOrThrowAsync"/> calls fail before they succeed, as a database write that errors would.</summary>
+    public int DurableRaiseFailures { get; set; }
+
+    public override Task RaiseOrThrowAsync(
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+    {
+        if (DurableRaiseFailures-- > 0) throw new InvalidOperationException("inbox write failed");
+        Raised.Add((type, message, audience));
+        return Task.CompletedTask;
+    }
+
     public override Task RaiseAsync(
         InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
     {
@@ -65,7 +76,9 @@ internal sealed class TestCurrentUser(
     int userId,
     string userName = "test",
     MakiPermission permissions = MakiPermission.Admin,
-    bool authenticated = true) : ICurrentUser
+    bool authenticated = true,
+    bool allRootFolders = true,
+    IReadOnlySet<int>? rootFolderIds = null) : ICurrentUser
 {
     // Defaults to true because almost every test wants a signed-in caller. Settable for the few
     // that care what happens to an anonymous request.
@@ -73,8 +86,8 @@ internal sealed class TestCurrentUser(
     public int UserId { get; } = userId;
     public string UserName { get; } = userName;
     public MakiPermission Permissions { get; } = permissions;
-    public bool AllRootFolders => true;
-    public IReadOnlySet<int> RootFolderIds => new HashSet<int>();
+    public bool AllRootFolders { get; } = allRootFolders;
+    public IReadOnlySet<int> RootFolderIds { get; } = rootFolderIds ?? new HashSet<int>();
     public string MaxContentRating => "erotica";
 }
 

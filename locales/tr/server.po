@@ -43,6 +43,16 @@ msgstr "Bu kod geçerli değil"
 msgid "error.account.invalidContentRating"
 msgstr "Derecelendirme şunlardan biri olmalı: {ratings}"
 
+#. JsonStringEnumConverter accepts the underlying numeric value of an enum as well as its name, so
+#. an undefined integer (e.g. "7") deserializes without error into a UserApiKeyScope value nothing
+#. names. Caught with Enum.IsDefined rather than a bigger allowed-scope list, since Opds already has
+#. its own dedicated refusal above.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That key scope is not valid
+#, fuzzy
+msgid "error.account.invalidScope"
+msgstr "Bu anahtarın izin kapsamı geçerli değil"
+
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Too many incorrect password attempts. Try again later.
@@ -81,6 +91,14 @@ msgstr "Mevcut ve yeni parola gerekli"
 #, fuzzy
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "İki adımlı doğrulama zaten etkin"
+
+#. Owner decision on #16: SSO delegates the second factor to the identity provider, so an
+#. OIDC-linked account cannot also enrol a local authenticator.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: This account signs in through single sign-on, which handles two-factor itself
+#, fuzzy
+msgid "error.account.twoFactorDelegatedToSso"
+msgstr "Bu hesap SSO üzerinden oturum açıyor; iki aşamalı doğrulamayı kimlik sağlayıcısı yönetiyor"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -305,6 +323,12 @@ msgid "error.chapter.noRootFolder"
 msgstr "Serinin kök klasörü yok"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Path belongs to another series' folder
+#, fuzzy
+msgid "error.chapter.pathInOtherSeries"
+msgstr "Yol başka bir serinin klasörüne ait"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
 #, fuzzy
 msgid "error.chapter.pathOutsideRoot"
@@ -519,6 +543,12 @@ msgstr "\"{title}\" indirilmiş dosyalarıyla birlikte zaten kitaplıkta. Başta
 #, fuzzy
 msgid "error.libraryImport.folderGone"
 msgstr "Klasör artık yok"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Invalid folder name
+#, fuzzy
+msgid "error.libraryImport.invalidFolderName"
+msgstr "Geçersiz klasör adı"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -1009,6 +1039,12 @@ msgstr "Bilinmeyen kaynak: {sourceName}"
 msgid "error.series.activeDownloadMove"
 msgstr "Serinin devam eden bir indirmesi var, taşımadan önce bitmesini bekleyin"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series has an active download. Wait for it to finish before relinking files.
+#, fuzzy
+msgid "error.series.activeDownloadRelink"
+msgstr "Serinin etkin bir indirmesi var. Dosyaları yeniden bağlamadan önce indirme tamamlanana kadar bekleyin."
+
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
@@ -1042,6 +1078,13 @@ msgstr "Hedef klasör zaten var: {folder}"
 msgid "error.series.filesNotMoved"
 msgstr "Dosyalar taşınmadı: {folder} mevcut değil. Önce dosyaları oraya taşıyın veya Maki'nin taşımasına izin verin."
 
+#. {folder} is a folder name inside the root folder and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself.
+#, fuzzy
+msgid "error.series.folderContainsLinks"
+msgstr "{folder} klasörü taşınamıyor: kendisi veya içeriği sembolik bağlantı ya da junction içeriyor. Bağlantıyı gerçek dosyalarla değiştirin veya klasörü kendiniz taşıyın."
+
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series folder moved from {from} to {to}
@@ -1072,6 +1115,14 @@ msgstr "Seri, meta veri sağlayıcısında bulunamadı"
 #, fuzzy
 msgid "error.series.metadataRefreshFailed"
 msgstr "Meta veri araması başarısız oldu, serinin sağlayıcı kimliği yok veya sağlayıcı hiçbir şey döndürmedi"
+
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not save the series move: {message}
+#, fuzzy
+msgid "error.series.moveSaveFailed"
+msgstr "Seri taşıma işlemi kaydedilemedi: {message}"
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
@@ -1177,6 +1228,13 @@ msgstr "Geçerli bölüm biçimi iki bölüme aynı dosya adını veriyor"
 #, fuzzy
 msgid "error.seriesRename.notFound"
 msgstr "Seri bulunamadı"
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+#, fuzzy
+msgid "error.seriesRename.planChanged"
+msgstr "Önizleme yüklendikten sonra yeniden adlandırma planı değişti. Yeni planı gözden geçirip tekrar deneyin."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -1629,6 +1687,12 @@ msgid "error.settings.downloadTimeoutRange"
 msgstr "İndirme zaman aşımı 0 (sınırsız) olmalı veya {min} ile {max} dakika arasında olmalı"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
+msgid "error.settings.bulkHoldRange"
+msgstr "Toplu bekletme 0 (kapalı) ile {max} bölüm arasında olmalı"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The upgrade scan hour must be between {min} and {max}
 msgid "error.settings.upgradesScanHourRange"
 msgstr ""
@@ -1979,6 +2043,12 @@ msgstr "Yayın yılı; bilinmiyorsa boş"
 msgid "error.system.backupMissingDb"
 msgstr "Yedekte maki.db yok. Bu bir Maki yedeği değil."
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database in this backup is damaged or is not a Maki database. Nothing was changed.
+#, fuzzy
+msgid "error.system.backupInvalidDb"
+msgstr "Bu yedekteki veritabanı hasarlı veya bir Maki veritabanı değil. Hiçbir şey değiştirilmedi."
+
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
@@ -1986,11 +2056,29 @@ msgstr "Yedekte maki.db yok. Bu bir Maki yedeği değil."
 msgid "error.system.backupTooNew"
 msgstr "Yedek daha yeni bir sürümden alınmış (bu derlemede \"{migration}\" geçişi bilinmiyor). Geri yüklemeden önce Maki'yi güncelle."
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
+#, fuzzy
+msgid "error.system.backupUnreadable"
+msgstr "Bu dosya okunabilir bir Maki yedeği değil. ZIP dosyası ya da manifest dosyası hasarlı. Hiçbir şey değiştirilmedi."
+
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
 #, fuzzy
 msgid "error.system.noFileUploaded"
 msgstr "Dosya yüklenmedi."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Another backup is being created right now. Try again in a moment.
+#, fuzzy
+msgid "error.system.backupInProgress"
+msgstr "Şu anda başka bir yedek oluşturuluyor. Birazdan tekrar deneyin."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Could not create the backup. Check the server logs for details.
+#, fuzzy
+msgid "error.system.backupFailed"
+msgstr "Yedek oluşturulamadı. Ayrıntılar için sunucu günlüklerini kontrol edin."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -2111,6 +2199,19 @@ msgstr "Yeni bölümler mevcut"
 #, fuzzy
 msgid "inbox.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# yeni bölüm indirme için kuyruğa alındı} other {# yeni bölüm indirme için kuyruğa alındı}}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: New chapters held back
+#, fuzzy
+msgid "inbox.chapters.held.title"
+msgstr "Yeni bölümler bekletildi"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
+msgid "inbox.chapters.held.body"
+msgstr "{series}: Bir kerede {count, plural, one {# yeni bölüm} other {# yeni bölüm}} bulundu ve otomatik olarak indirilmedi. Gerçekse seri sayfasından indirebilirsiniz."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2336,6 +2437,32 @@ msgstr "İçe aktarma listesi tamamlandı"
 #, fuzzy
 msgid "inbox.importList.finished.body"
 msgstr "{tracker}: {added, plural, one {# eklendi} other {# eklendi}}{requested, plural, =0 {} one {, # istendi} other {, # istendi}}{skipped, plural, =0 {} one {, # atlandı} other {, # atlandı}}{errors, plural, =0 {} one {, # hata} other {, # hata}}"
+
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from {creator}
+#, fuzzy
+msgid "inbox.followedRelease.title"
+msgstr "{creator} tarafından yeni"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {title} is new in the catalogue.
+#, fuzzy
+msgid "inbox.followedRelease.body"
+msgstr "{title} katalogda yeni."
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from creators you follow
+#, fuzzy
+msgid "inbox.followedReleases.title"
+msgstr "Takip ettiğiniz yaratıcılardan yeni"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
+msgid "inbox.followedReleases.body"
+msgstr "Katalogda {count, plural, one {# yeni başlık} other {# yeni başlık}} var."
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
@@ -2816,6 +2943,13 @@ msgstr "{series}: {count, plural, one {# yeni bölüm} other {# yeni bölüm}} m
 #, fuzzy
 msgid "notify.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# yeni bölüm} other {# yeni bölüm}} indirme için kuyruğa alındı"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
+msgid "notify.chapters.held.body"
+msgstr "{series}: Bir kerede {count, plural, one {# yeni bölüm} other {# yeni bölüm}} bulundu ve otomatik olarak indirilmedi. Gerçekse seri sayfasından indirebilirsiniz."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded
@@ -3434,6 +3568,18 @@ msgstr "{count, plural, one {# bölüm} other {# bölüm}} için değiştirme is
 #, fuzzy
 msgid "health.history.operationCompleted"
 msgstr "{kind} tamamlandı: {path}"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Permanently deleted {path}; chapter records and Wanted flags preserved
+#, fuzzy
+msgid "health.history.deletedFile"
+msgstr "{path} kalıcı olarak silindi; bölüm kayıtları ve İsteniyor işaretleri korundu"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Cleared the record for missing {path}; chapter records and Wanted flags preserved
+#, fuzzy
+msgid "health.history.deletedMissing"
+msgstr "Eksik {path} kaydı temizlendi; bölüm kayıtları ve İsteniyor işaretleri korundu"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

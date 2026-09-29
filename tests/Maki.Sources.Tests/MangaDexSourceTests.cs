@@ -67,6 +67,23 @@ public class MangaDexSourceTests
     }
 
     [Fact]
+    public async Task GetChapterVolumes_drops_a_number_whose_feed_entries_disagree_on_volume()
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["feed"] = FakeHttpClientFactory.Fixture("mangadex-feed-conflicting-volumes.json")
+        });
+
+        var volumes = await new MangaDexSource(factory).GetChapterVolumesAsync("a1c7c817");
+
+        // Chapter 1 disagrees (vol 1 vs vol 2 across languages) and must not be stamped with
+        // whichever volume happened to be seen first.
+        Assert.False(volumes.ContainsKey(1m));
+        // Chapter 2 is consistent across both entries and is kept.
+        Assert.Equal(1, volumes[2m]);
+    }
+
+    [Fact]
     public async Task Several_languages_are_repeated_into_one_request_and_tagged_individually()
     {
         var factory = new FakeHttpClientFactory(new()

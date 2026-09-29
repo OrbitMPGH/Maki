@@ -23,7 +23,6 @@ import { ConfirmDialog } from './ui/ConfirmDialog'
 import { relativeTime } from './ui/time'
 import { useLabel } from '../i18n-context'
 import { useAuth } from '../auth/AuthProvider'
-import { onErrorToast } from '../lib/errors'
 import { MONITOR_OPTIONS } from './series/SeriesActionsMenu'
 import {
   useIgnoreImportListSkip,
@@ -62,7 +61,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
   const { label, service, connected, prefs, lastRun } = tracker
 
   const save = (patch: Partial<ImportListTrackerPrefs>) =>
-    savePrefs.mutate({ service, ...prefs, ...patch }, { onError: onErrorToast })
+    savePrefs.mutate({ service, patch })
 
   const run = (full: boolean) =>
     runList.mutate(
@@ -75,12 +74,18 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
             })
             return
           }
+          if (result.dumpUnavailable) {
+            notifications.show({
+              color: 'var(--warn)',
+              message: t`Nothing imported: import lists need the local MangaBaka database.`,
+            })
+            return
+          }
           const { added, requested, skipped, errors } = result
           notifications.show({
             message: t`${added} added, ${requested} requested, ${skipped} skipped, ${errors} errors`,
           })
         },
-        onError: onErrorToast,
       },
     )
 
@@ -244,6 +249,9 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
 function LastRunLine({ lastRun }: { lastRun: NonNullable<ImportListTrackerDto['lastRun']> }) {
   const { added, requested, skipped, errors } = lastRun
   const when = relativeTime(lastRun.at)
+  if (lastRun.dumpUnavailable) {
+    return <Trans>Last run {when}: skipped, the local MangaBaka database is not downloaded yet</Trans>
+  }
   return errors > 0 ? (
     <Trans>
       Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors
@@ -289,7 +297,7 @@ function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel
             size="compact-xs"
             variant="default"
             loading={retry.isPending && retry.variables === id}
-            onClick={() => retry.mutate(id, { onError: onErrorToast })}
+            onClick={() => retry.mutate(id)}
           >
             <Trans>Un-ignore</Trans>
           </Button>
@@ -299,7 +307,7 @@ function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel
               size="compact-xs"
               variant="default"
               loading={retry.isPending && retry.variables === id}
-              onClick={() => retry.mutate(id, { onError: onErrorToast })}
+              onClick={() => retry.mutate(id)}
             >
               <Trans>Retry</Trans>
             </Button>
@@ -307,7 +315,7 @@ function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel
               size="compact-xs"
               variant="subtle"
               loading={ignore.isPending && ignore.variables === id}
-              onClick={() => ignore.mutate(id, { onError: onErrorToast })}
+              onClick={() => ignore.mutate(id)}
             >
               <Trans>Ignore</Trans>
             </Button>

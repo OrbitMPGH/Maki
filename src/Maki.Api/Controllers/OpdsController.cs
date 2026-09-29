@@ -276,19 +276,15 @@ public class OpdsController(
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
-        // Immutable and long-lived, matching the built-in reader: the archive does not change, and
-        // the size in the ETag guards against a re-import reusing the id. Worth knowing alongside
-        // progress tracking — a reader that re-reads from its own cache without revalidating
-        // reports nothing, so a re-read only starts registering again at the first page it has to
-        // actually fetch. Harmless in practice: completion is sticky, so nothing is lost, and the
-        // resume position catches up as soon as the reader moves past what it cached.
-        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
-
         var stream = await reader.OpenPageAsync(slice, entry, ct);
         if (stream is null)
         {
             return NotFound();
         }
+
+        // Revalidated rather than immutable: the page URL stays the same across a re-download, so
+        // only the ETag can tell a reader its cached copy is stale. The 304 above keeps that cheap.
+        Response.Headers.CacheControl = "private, no-cache";
 
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }

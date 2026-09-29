@@ -21,6 +21,16 @@ public class CbzReaderTests : IDisposable
         return path;
     }
 
+    // Regression: unpadded imported/adopted archives ("1.jpg" ... "10.jpg") used to sort
+    // lexically ("1.jpg", "10.jpg", "2.jpg"), reading page 10 right after page 1.
+    [Fact]
+    public void PageNames_orders_unpadded_names_numerically()
+    {
+        var path = WriteZip("unpadded.cbz", "10.jpg", "1.jpg", "2.jpg");
+
+        Assert.Equal(["1.jpg", "2.jpg", "10.jpg"], CbzReader.PageNames(path));
+    }
+
     [Fact]
     public void Opens_a_readable_entry()
     {

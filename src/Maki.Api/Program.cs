@@ -330,11 +330,14 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaDexLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
+    // Page and image clients fetch URLs the scraped site chose, so they may only reach public
+    // addresses (SSRF). Never give this handler to FlareSolverr, Kavita, qBittorrent or Prowlarr.
     builder.Services.AddHttpClient(PageDownloader.HttpClientName, client =>
-    {
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
-        client.Timeout = TimeSpan.FromMinutes(2);
-    });
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.Timeout = TimeSpan.FromMinutes(2);
+        })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
 
     // Scraped sites get a conservative 1 req/s each; a real browser UA avoids
     // trivial bot filtering on plain-HTML sites.
@@ -375,6 +378,10 @@ try
             .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
     }
 
+    // MangaDenizi fetches its own page images through this client.
+    builder.Services.AddHttpClient(MangaDeniziSource.HttpClientName)
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler);
+
     // GigaViewer page images: fetched and descrambled one at a time inside GetPagesAsync
     // (Data hatch), so a slightly higher rate than the 1 req/s HTML clients is fine.
     var gigaViewerImageLimiter = RateLimitingHandler.TokenBucket(2, TimeSpan.FromSeconds(1), burst: 4);
@@ -383,6 +390,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
         .AddHttpMessageHandler(() => new RateLimitingHandler(gigaViewerImageLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -621,6 +629,7 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(60);
         })
+        .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateHandler)
         .AddHttpMessageHandler(() => new RateLimitingHandler(cuuTruyenLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -747,6 +756,7 @@ try
     // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
     builder.Services.AddSingleton<InboxAudienceResolver>();
     builder.Services.AddSingleton<InboxService>();
+    builder.Services.AddSingleton<FollowedCreatorReleaseService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
     {
@@ -811,6 +821,7 @@ try
     builder.Services.AddScoped<SeriesIdentityRepairService>();
     builder.Services.AddScoped<ImportPathRepairService>();
     builder.Services.AddScoped<ChapterFileDuplicateRepairService>();
+    builder.Services.AddScoped<BaoziChapterRenumberRepairService>();
     builder.Services.AddScoped<ActivityStatsService>();
     builder.Services.AddScoped<UserViewResolver>();
     builder.Services.AddScoped<LibraryCompositionService>();
@@ -885,6 +896,7 @@ try
     builder.Services.AddSingleton<AnimeSignalSources>();
     builder.Services.AddSingleton<AnimeSignalSyncService>();
     builder.Services.AddScoped<AnimeResumeService>();
+    builder.Services.AddSingleton<AnimeResumePendingService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
@@ -1069,6 +1081,16 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
+        // New series from followed creators. Triggered after a dump install too; this daily run only
+        // covers an install whose trigger a restart swallowed.
+        q.AddJob<Maki.Api.Jobs.FollowedCreatorReleaseJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key)
+            .WithIdentity("followed-creator-releases-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
         q.AddJob<Maki.Api.Jobs.DiscoverCacheWarmJob>(j => j
@@ -1196,7 +1218,11 @@ try
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var pending = db.Database.GetPendingMigrations().ToList();
         BackupInfo? preMigrationBackup = null;
-        if (pending.Count > 0)
+
+        // A fresh install has nothing to protect yet, and the backup would query tables that no
+        // migration has created, logging an error on every first boot.
+        var freshDatabase = !db.Database.GetAppliedMigrations().Any();
+        if (pending.Count > 0 && !freshDatabase)
         {
             startupLog.LogInformation("{Count} pending migration(s); taking pre-migration backup", pending.Count);
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
@@ -1248,9 +1274,19 @@ try
         scope.ServiceProvider.GetRequiredService<ImportPathRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
+        // Rewrites any pre-existing bare-sub AspNetUserLogins rows for the oidc provider to the
+        // issuer-scoped key format. See OidcLoginIssuerRepairService.
+        scope.ServiceProvider.GetRequiredService<OidcLoginIssuerRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
         // Folds ChapterFile rows that name one file twice (re-run torrent imports). Before Quartz
         // so the completed-download poll cannot be inserting while this reads.
         scope.ServiceProvider.GetRequiredService<ChapterFileDuplicateRepairService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Renumbers Baozi Manhua chapters synced before chapter numbers came from the site's label
+        // instead of the zero-based chapter_slot. Same ordering reason as the duplicate repair above.
+        scope.ServiceProvider.GetRequiredService<BaoziChapterRenumberRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // The auth.* settings configure things built exactly once — the cookie's Secure policy, HSTS,

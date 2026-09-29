@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Maki.Sources.MangaDenizi;
 using SixLabors.ImageSharp;
@@ -113,6 +114,28 @@ public class MangaDeniziSourceTests
         });
     }
 
+    [Theory]
+    [InlineData("http://192.168.1.10/reader-images/p.webp")]
+    [InlineData("http://127.0.0.1:8990/api/v1/series")]
+    [InlineData("http://169.254.169.254/latest/meta-data/")]
+    [InlineData("file:///etc/passwd")]
+    public async Task GetPages_refuses_an_image_url_on_a_non_public_address(string imageUrl)
+    {
+        var factory = new FakeHttpClientFactory(
+            new()
+            {
+                ["reader/solo-leveling/000"] = $"{{\"pages\":[{{\"image_url\":\"{imageUrl}\"}}]}}"
+            },
+            new() { ["reader-images/"] = FakeHttpClientFactory.BinaryFixture("mangadenizi-page1.bin") });
+        var source = new MangaDeniziSource(factory);
+
+        var chapter = new SourceChapter(
+            "mangadenizi", "solo-leveling", "solo-leveling/000", "0", 0m, null, null, "tr", null);
+
+        await Assert.ThrowsAsync<BlockedDestinationException>(() => source.GetPagesAsync(chapter));
+        Assert.DoesNotContain(factory.Requests, r => r.StartsWith(imageUrl, StringComparison.OrdinalIgnoreCase));
+    }
+
     [Fact]
     public async Task GetPages_throws_ChapterLocked_when_the_reader_has_no_pages()
     {
@@ -141,6 +164,42 @@ public class MangaDeniziSourceTests
 
         // Never the raw scrambled bytes: nothing usable comes back from a call that throws.
         Assert.Contains("page.webp", ex.Message);
+    }
+
+    [Fact]
+    public async Task GetPages_throws_when_a_middle_page_has_no_image_url()
+    {
+        // Silently skipping the null page would package an incomplete chapter as successful.
+        var source = new MangaDeniziSource(new FakeHttpClientFactory(
+            new()
+            {
+                ["reader/solo-leveling/000"] = """
+                    { "pages": [
+                        { "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/001.webp" },
+                        { "image_url": null },
+                        { "image_url": "https://img.mangadenizi.net/reader-images/solo-leveling/000/003.webp" }
+                    ] }
+                    """
+            },
+            new() { ["reader-images/"] = FakeHttpClientFactory.BinaryFixture("mangadenizi-page1.bin") }));
+
+        var chapter = new SourceChapter(
+            "mangadenizi", "solo-leveling", "solo-leveling/000", "0", 0m, null, null, "tr", null);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.GetPagesAsync(chapter));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task ProcessPage_throws_when_grid_is_not_positive(int grid)
+    {
+        using var doc = JsonDocument.Parse(
+            "{\"image_url\":\"https://img.mangadenizi.net/page.webp\",\"scramble\":{\"method\":\"tiled-v1\",\"grid\":" + grid + ",\"seed\":1}}");
+        var raw = new byte[] { 1, 2, 3 };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => MangaDeniziSource.ProcessPageAsync(
+            raw, doc.RootElement, "https://img.mangadenizi.net/page.webp", CancellationToken.None));
     }
 
     [Fact]
@@ -311,6 +370,16 @@ public class MangaDeniziDescramblerTests
         using var descrambled = MangaDeniziDescrambler.Descramble(scrambled, grid, seed);
 
         AssertPixelsEqual(original, descrambled);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Descramble_throws_for_a_non_positive_grid(int grid)
+    {
+        using var image = CoordinateImage(10, 10);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => MangaDeniziDescrambler.Descramble(image, grid, 1u));
     }
 
     [Fact]

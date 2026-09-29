@@ -13,6 +13,24 @@ public record BackupManifest(string AppVersion, DateTime CreatedUtc, string? Las
 
 public record BackupInfo(string Name, long SizeBytes, BackupManifest Manifest);
 
+/// <summary>A backup refused at staging. <see cref="Key"/> is the catalogue key the API answers with.</summary>
+public sealed class BackupRestoreException(string key, object? args, string message)
+    : InvalidOperationException(message)
+{
+    public string Key { get; } = key;
+    public object? Args { get; } = args;
+}
+
+/// <summary>
+/// A backup that failed to write. <see cref="Key"/> distinguishes a name collision with a backup
+/// already in flight (recoverable by retrying) from every other IO failure (disk full, permission
+/// denied), which is not.
+/// </summary>
+public sealed class BackupCreateException(string key) : InvalidOperationException(key)
+{
+    public string Key { get; } = key;
+}
+
 /// <summary>
 /// Backup/restore for <c>{ConfigDir}</c>. A backup is a zip holding a consistent snapshot of
 /// <c>maki.db</c> plus <c>config.json</c> (credential material) and a manifest. Big/regenerable
@@ -47,7 +65,7 @@ public class BackupService(
         var lastMigration = (await db.Database.GetAppliedMigrationsAsync(ct)).LastOrDefault();
         var manifest = new BackupManifest(VersionInfo.Version, createdUtc, lastMigration, kind);
 
-        var name = $"maki-{createdUtc:yyyyMMdd-HHmmss}-{kind}.zip";
+        var name = $"maki-{createdUtc:yyyyMMdd-HHmmss-fff}-{kind}.zip";
         var zipPath = Path.Combine(paths.BackupDir, name);
         var snapshotPath = Path.Combine(paths.BackupDir, $".{Guid.NewGuid():N}.db.tmp");
 
@@ -65,6 +83,17 @@ public class BackupService(
                 await using var writer = new StreamWriter(manifestEntry.Open());
                 await writer.WriteAsync(JsonSerializer.Serialize(manifest, JsonOptions));
             }
+        }
+        catch (IOException ex)
+        {
+            logger.LogError(ex, "Failed to create {Kind} backup at {Path}", kind, zipPath);
+
+            // ZipFile.Open(..., Create) opens the target with FileMode.CreateNew, so an IOException
+            // whose target already exists (or whose HResult says so - ERROR_FILE_EXISTS) means a
+            // backup for this exact name is already in flight. Anything else - disk full, permission
+            // denied, a locked volume - is a real failure and must not be reported as a race.
+            var inProgress = File.Exists(zipPath) || ex.HResult == unchecked((int)0x80070050);
+            throw new BackupCreateException(inProgress ? "error.system.backupInProgress" : "error.system.backupFailed");
         }
         finally
         {
@@ -179,33 +208,140 @@ public class BackupService(
 
     private async Task StageAsync(Stream zipStream, CancellationToken ct)
     {
-        using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
-
-        var dbEntry = archive.GetEntry(DbEntry)
-            ?? throw new InvalidOperationException(localizer.Get("error.system.backupMissingDb"));
-
-        // Downgrade guard: refuse a backup whose schema is newer than this binary knows. Migrations
-        // are forward-only, so restoring a newer DB into an older build would leave it unmigratable.
-        var manifest = ReadManifestFromArchive(archive);
-        if (manifest?.LastMigration is { } last)
+        var parent = Path.GetDirectoryName(paths.RestorePendingDir)!;
+        var tempDir = Path.Combine(parent, $".restore-staging-{Guid.NewGuid():N}");
+        try
         {
-            var known = db.Database.GetMigrations().ToHashSet();
-            if (!known.Contains(last))
-                throw new InvalidOperationException(
-                    localizer.Get("error.system.backupTooNew", new { migration = last }));
+            ExtractAndValidate(zipStream, tempDir);
+            SwapIntoPending(tempDir, parent);
+        }
+        finally
+        {
+            TryDeleteDirectory(tempDir);
         }
 
-        if (Directory.Exists(paths.RestorePendingDir))
-            Directory.Delete(paths.RestorePendingDir, recursive: true);
-        Directory.CreateDirectory(paths.RestorePendingDir);
-
-        dbEntry.ExtractToFile(Path.Combine(paths.RestorePendingDir, DbEntry), overwrite: true);
-        archive.GetEntry(ConfigEntry)?.ExtractToFile(
-            Path.Combine(paths.RestorePendingDir, ConfigEntry), overwrite: true);
-
-        logger.LogWarning("Staged restore — will apply on next startup and then exit");
+        logger.LogWarning("Staged restore, will apply on next startup and then exit");
         await Task.CompletedTask;
     }
+
+    private void ExtractAndValidate(Stream zipStream, string tempDir)
+    {
+        var known = db.Database.GetMigrations().ToList();
+        var stagedDb = Path.Combine(tempDir, DbEntry);
+
+        try
+        {
+            using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
+
+            var dbEntry = archive.GetEntry(DbEntry) ?? throw Reject("error.system.backupMissingDb");
+
+            // Downgrade guard: refuse a backup whose schema is newer than this binary knows. Migrations
+            // are forward-only, so restoring a newer DB into an older build would leave it unmigratable.
+            var manifest = ReadManifestFromArchive(archive);
+            if (manifest?.LastMigration is { } last && !known.Contains(last))
+                throw Reject("error.system.backupTooNew", new { migration = last });
+
+            Directory.CreateDirectory(tempDir);
+            dbEntry.ExtractToFile(stagedDb, overwrite: true);
+            archive.GetEntry(ConfigEntry)?.ExtractToFile(Path.Combine(tempDir, ConfigEntry), overwrite: true);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or JsonException or NotSupportedException)
+        {
+            logger.LogWarning("Rejected restore: unreadable backup archive: {Error}", ex.Message);
+            throw Reject("error.system.backupUnreadable");
+        }
+
+        ValidateDatabase(stagedDb, known);
+    }
+
+    private void ValidateDatabase(string dbPath, IReadOnlyList<string> known)
+    {
+        string? lastApplied;
+        try
+        {
+            using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
+            conn.Open();
+
+            using (var check = conn.CreateCommand())
+            {
+                check.CommandText = "PRAGMA integrity_check";
+                var result = check.ExecuteScalar() as string;
+                if (!string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogWarning("Rejected restore: integrity_check reported {Result}", result);
+                    throw Reject("error.system.backupInvalidDb");
+                }
+            }
+
+            using (var exists = conn.CreateCommand())
+            {
+                exists.CommandText =
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '__EFMigrationsHistory'";
+                if (Convert.ToInt64(exists.ExecuteScalar()) == 0)
+                {
+                    logger.LogWarning("Rejected restore: no __EFMigrationsHistory table");
+                    throw Reject("error.system.backupInvalidDb");
+                }
+            }
+
+            using var history = conn.CreateCommand();
+            history.CommandText = "SELECT MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId DESC LIMIT 1";
+            lastApplied = history.ExecuteScalar() as string;
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogWarning("Rejected restore: staged database cannot be read: {Error}", ex.Message);
+            throw Reject("error.system.backupInvalidDb");
+        }
+
+        if (lastApplied is null)
+        {
+            logger.LogWarning("Rejected restore: __EFMigrationsHistory is empty");
+            throw Reject("error.system.backupInvalidDb");
+        }
+
+        if (known.Contains(lastApplied) || known.Count == 0)
+            return;
+
+        // No unknown migration id is accepted: this build has no squash handling, so a history
+        // predating everything it ships (as well as one running ahead of it) would migrate forward
+        // starting from Initial onto tables that already exist and crash-loop the restored instance.
+        // The manifest check above already refuses any unknown id as too new; match that here too.
+        if (string.CompareOrdinal(lastApplied, known[0]) < 0 || string.CompareOrdinal(lastApplied, known[^1]) > 0)
+            throw Reject("error.system.backupTooNew", new { migration = lastApplied });
+
+        logger.LogWarning("Rejected restore: unknown migration {Migration} in history", lastApplied);
+        throw Reject("error.system.backupInvalidDb");
+    }
+
+    /// <summary>Moves a validated staging dir into <see cref="AppPaths.RestorePendingDir"/>. An
+    /// existing pending restore is only removed once the new one is in place.</summary>
+    private void SwapIntoPending(string tempDir, string parent)
+    {
+        string? previous = null;
+        if (Directory.Exists(paths.RestorePendingDir))
+        {
+            previous = Path.Combine(parent, $".restore-previous-{Guid.NewGuid():N}");
+            Directory.Move(paths.RestorePendingDir, previous);
+        }
+
+        try
+        {
+            Directory.Move(tempDir, paths.RestorePendingDir);
+        }
+        catch
+        {
+            if (previous is not null)
+                Directory.Move(previous, paths.RestorePendingDir);
+            throw;
+        }
+
+        if (previous is not null)
+            TryDeleteDirectory(previous);
+    }
+
+    private BackupRestoreException Reject(string key, object? args = null) =>
+        new(key, args, localizer.Get(key, args));
 
     private static string KindFromName(string name)
     {
@@ -240,6 +376,19 @@ public class BackupService(
 
     private static BackupManifest FallbackManifest(FileInfo file) =>
         new("unknown", file.LastWriteTimeUtc, null, KindFromName(file.Name));
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch
+        {
+            // best-effort cleanup
+        }
+    }
 
     private static void TryDelete(string path)
     {

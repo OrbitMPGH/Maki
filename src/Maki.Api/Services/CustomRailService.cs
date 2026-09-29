@@ -83,7 +83,9 @@ public class CustomRailService(
 
     /// <summary>
     /// How many rows the rail could show, for the editor's live count. Null when there is no way to
-    /// tell: the catalogue sources need the search index for that.
+    /// tell: the catalogue sources need the search index for that, and Recommendations has no
+    /// catalogue count at all - it draws from the ranked pool, not a filtered scan, so a count here
+    /// would answer a question the source doesn't.
     /// </summary>
     public async Task<int?> CountAsync(CustomRailSpec spec, CancellationToken ct = default)
     {
@@ -93,9 +95,13 @@ public class CustomRailService(
             return (await LibraryAsync(spec, ct)).Count;
         }
 
+        if (spec.Source == CustomRailSources.Recommendations)
+        {
+            return null;
+        }
+
         var scoped = await hidden.ScopeAsync(RecommendationFilters.FromSpec(spec.Filters), user.MaxContentRating, ct);
-        // The recommender never returns an owned title, so its count leaves them out too.
-        var exclude = await ExclusionsAsync(spec.ExcludeOwned || spec.Source == CustomRailSources.Recommendations, ct);
+        var exclude = await ExclusionsAsync(spec.ExcludeOwned, ct);
         return await discover.CountAsync(new DiscoverFeedRequest(nameof(BrowseFeed.Popular), Filters: scoped), ct, exclude);
     }
 
@@ -131,7 +137,7 @@ public class CustomRailService(
             .AsNoTracking()
             .Select(s => new LibraryRailRow(
                 s.Id, s.MangaBakaId, s.Title, s.SortTitle, s.Genres, s.Tags, s.ContentRating, s.Year,
-                s.Status, s.Type, s.TotalChapters, s.Added))
+                s.Status, s.Type, s.TotalChapters, s.Added, s.AuthorStory, s.AuthorArt, s.Publisher))
             .ToListAsync(ct);
 
         // The index answers tags with their subtags and weights, and knows each title's score and
@@ -145,7 +151,8 @@ public class CustomRailService(
             index is not null && r.MangaBakaId is long id && index.TryGetRow(id, out var row) ? row : null;
 
         var matching = rows
-            .Where(r => RowOf(r) is int row ? index!.Matches(row, plan!) : LibraryRailFilter.MatchesLocal(r, filters))
+            .Where(r => LibraryRailFilter.MatchesCredits(r, filters) &&
+                (RowOf(r) is int row ? index!.Matches(row, plan!) : LibraryRailFilter.MatchesLocal(r, filters)))
             .ToList();
 
         var lastRead = spec.Sort == CustomRailSorts.Read

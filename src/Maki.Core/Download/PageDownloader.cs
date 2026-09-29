@@ -72,6 +72,7 @@ public class PageDownloader(
             // the cooldown, so honor it per page — not only when a worker picks up its next item.
             await cooldown.WaitAsync(sourceName, ct);
 
+            PublicAddressGuard.EnsureAllowed(page.Url);
             using var request = new HttpRequestMessage(HttpMethod.Get, page.Url);
             if (page.Headers != null)
             {

@@ -15,7 +15,6 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAppVersion, useUpdateStatus } from '../../api/hooks'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
-import { openCommandPalette } from '../../lib/commandPalette'
 
 const REPO_URL = 'https://github.com/OrbitMPGH/Maki'
 const STAR_DISMISSED_KEY = 'star-nudge-dismissed'
@@ -26,11 +25,6 @@ function readStarDismissed(): boolean {
   } catch {
     return false
   }
-}
-
-function isMac(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
 }
 
 export default function SidebarFooter() {
@@ -104,28 +98,16 @@ export default function SidebarFooter() {
 
       <HelpMenu version={tagged ? version : null} />
 
-      <div className="nav-footer-row">
-        {version ? (
+      {version && (
+        <div className="nav-footer-row">
           <VersionLabel
             version={version}
             unofficial={unofficial}
             latestVersion={updateAvailable ? latestVersion : null}
             isSkipped={isSkipped}
           />
-        ) : (
-          <span />
-        )}
-        <Tooltip label={t`Command palette`} withArrow>
-          <button
-            type="button"
-            className="nav-footer-kbd"
-            onClick={openCommandPalette}
-            aria-label={t`Command palette`}
-          >
-            {isMac() ? '⌘ K' : 'Ctrl K'}
-          </button>
-        </Tooltip>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

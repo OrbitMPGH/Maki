@@ -24,6 +24,7 @@ export type InboxEventType =
   | 'backupFinished'
   | 'sourceMatchFinished'
   | 'importListFinished'
+  | 'followedCreatorRelease'
   | 'chapterUpgraded'
   | 'upgradeRestoreFailed'
   | 'torrentProposalPending'
@@ -97,6 +98,7 @@ export const INBOX_CATEGORIES: {
     label: msg`Library`,
     types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished', 'importListFinished'],
   },
+  { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease'] },
   {
     id: 'downloads',
     label: msg`Downloads`,
@@ -144,6 +146,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   backupFinished: msg`Backup taken`,
   sourceMatchFinished: msg`Source matching finished`,
   importListFinished: msg`Import list finished`,
+  followedCreatorRelease: msg`New series from creators you follow`,
   chapterUpgraded: msg`Chapter upgraded`,
   upgradeRestoreFailed: msg`Upgrade restore failed`,
   torrentProposalPending: msg`Volume release proposed`,
@@ -157,6 +160,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
  */
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
   importListFinished: msg`A tracker list sync added or requested series.`,
+  followedCreatorRelease: msg`Checked after each nightly catalogue update. Follow someone from their creator page.`,
   chapterUpgraded: msg`A better release replaced a downloaded chapter's file.`,
   upgradeRestoreFailed: msg`A file could not be put back after a failed upgrade and is waiting in the trash folder.`,
   torrentProposalPending: msg`A torrent volume release could replace files in a series and is waiting for your decision.`,

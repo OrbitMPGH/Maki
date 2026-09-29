@@ -208,12 +208,7 @@ public class OpdsCatalogService(
 
         // Ordered in memory, not in SQL: Chapter.Number is a decimal stored as REAL, and one-shots
         // carry no number and must sort last rather than first on a null.
-        var ordered = all
-            .OrderBy(c => c.Number is null ? 1 : 0)
-            .ThenBy(c => c.Number)
-            .ThenBy(c => c.Volume)
-            .ThenBy(c => c.Id)
-            .ToList();
+        var ordered = ChapterOrder.Sort(all, c => c.Number, c => c.Volume, c => c.Id);
 
         var slice = ordered.Skip(page * ChapterPageSize).Take(ChapterPageSize).ToList();
         var entries = await ChapterEntriesAsync(

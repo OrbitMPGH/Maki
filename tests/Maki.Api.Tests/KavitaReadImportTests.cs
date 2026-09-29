@@ -1,6 +1,10 @@
+using System.Net;
+using System.Text;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
+using Maki.Core.Security;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -159,6 +163,95 @@ public sealed class KavitaReadImportTests : IDisposable
 
         using var after = _db.NewContext();
         Assert.False(after.ChapterProgress.Single().Completed);
+    }
+
+    // ---- RunAsync: a series whose volume fetch fails ----
+
+    private sealed class KavitaFakeHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (path.Contains("Plugin/authenticate"))
+            {
+                return Json(HttpStatusCode.OK, """{"token":"jwt"}""");
+            }
+
+            if (path.Contains("Series/all-v2"))
+            {
+                return Json(HttpStatusCode.OK,
+                    """[{"id":10,"name":"Imported Series","localizedName":null,"libraryId":1,"pages":10,"pagesRead":5}]""");
+            }
+
+            if (path.Contains("Series/volumes"))
+            {
+                // Simulates a Kavita call that fails mid-import, e.g. a timeout on one series.
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+
+        private static Task<HttpResponseMessage> Json(HttpStatusCode status, string json) =>
+            Task.FromResult(new HttpResponseMessage(status)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json"),
+            });
+    }
+
+    private sealed class FakeHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
+    }
+
+    private KavitaReadImportService BuildService(IServiceScopeFactory scopeFactory)
+    {
+        var settings = new SettingsService(scopeFactory);
+        var kavita = new KavitaClient(new FakeHttpClientFactory(new KavitaFakeHandler()));
+        return new KavitaReadImportService(
+            scopeFactory,
+            settings,
+            kavita,
+            new ExternalReadSyncService(scopeFactory),
+            new KavitaUserResolver(scopeFactory, settings),
+            NullLogger<KavitaReadImportService>.Instance);
+    }
+
+    [Fact]
+    public async Task A_series_whose_volume_fetch_fails_is_reported_rather_than_silently_skipped()
+    {
+        _db.SeedUser("admin", MakiPermission.Admin);
+        _db.SeedSeries("Imported Series");
+        _db.SetConfig(("kavita.url", "http://kavita.test"), ("kavita.apikey", "secret"));
+
+        var service = BuildService(_db.ScopeFactory());
+        Assert.True(service.Start());
+
+        for (var i = 0; i < 200 && service.State.Running; i++)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.False(service.State.Running);
+        var result = service.State.Result;
+        Assert.NotNull(result);
+        Assert.Equal(0, result!.SeriesMatched);
+        Assert.Equal(0, result.SeriesUnmatched);
+        Assert.Equal(1, result.SeriesFailed);
+        Assert.Equal(["Imported Series"], result.FailedTitles);
+    }
+
+    [Fact]
+    public void Start_clears_the_previous_runs_result_and_finished_time()
+    {
+        var service = BuildService(_db.ScopeFactory());
+        service.State.Result = new KavitaReadImportService.ImportResult(1, 2, 0, 0, []);
+        service.State.FinishedAt = DateTime.UtcNow;
+
+        Assert.True(service.Start());
+
+        Assert.Null(service.State.Result);
+        Assert.Null(service.State.FinishedAt);
     }
 
     private int Seed(params (decimal Number, bool Downloaded)[] chapters)

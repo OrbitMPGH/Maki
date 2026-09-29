@@ -205,6 +205,14 @@ export interface RecommendationFilters {
   contentRatings?: string[]
   /** Genre and tag rules, ANDed together. See {@link CatalogueRule}. */
   rules?: CatalogueRule[]
+  /** Creators and studios; a series credited to any one of them passes. */
+  credits?: CatalogueCredit[]
+}
+
+/** A creator or studio by name. `role` narrows it to one credit; omitted means any. */
+export interface CatalogueCredit {
+  name: string
+  role?: 'author' | 'artist' | 'studio' | null
 }
 
 /**
@@ -869,6 +877,7 @@ export const HOME_SECTIONS = [
   'jumpback',
   'fromanime',
   'recent',
+  'following',
   'recommended',
   'popular',
 ] as const
@@ -888,6 +897,7 @@ export const HOME_SECTION_LABELS: Record<HomeSectionKey, MessageDescriptor> = {
   recent: msg`Recently added`,
   jumpback: msg`Jump back in`,
   fromanime: msg`Continue from the anime`,
+  following: msg`New from creators you follow`,
   recommended: msg`You might like`,
   popular: msg`Currently popular`,
 }
@@ -911,6 +921,7 @@ export const DISCOVER_SECTIONS = [
   'hero',
   'taste',
   'recent',
+  'following',
   'sideinterests',
   'cohort',
   'trending',
@@ -924,6 +935,7 @@ export const DISCOVER_SECTION_LABELS: Record<DiscoverSectionKey, MessageDescript
   hero: msg`Spotlight`,
   taste: msg`Your taste`,
   recent: msg`Based on your recent activity`,
+  following: msg`New from creators you follow`,
   sideinterests: msg`Side interests`,
   cohort: msg`Readers like you`,
   trending: msg`Trending now`,
@@ -1009,17 +1021,31 @@ export function useUiSettings() {
   })
 }
 
+/**
+ * Optimistic so consecutive patches compose: two saves fired before the first response lands must
+ * not have the second one revert the first. `settings` is merged over whatever is in the cache at
+ * mutate time (not a render-captured snapshot), and rolled back on error.
+ */
 export function useSaveUiSettings() {
   const queryClient = useQueryClient()
+  const key = ['settings', 'ui']
   return useMutation({
     mutationFn: (settings: UiSettings) =>
       api<UiSettings>('/settings/ui', { method: 'PUT', body: JSON.stringify(settings) }),
-    onMutate: () => queryClient.getQueryData<UiSettings>(['settings', 'ui'])?.titleLanguage,
-    onSuccess: (saved, _settings, previousTitleLanguage) => {
-      queryClient.setQueryData(['settings', 'ui'], saved)
+    onMutate: async (settings) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<UiSettings>(key)
+      queryClient.setQueryData<UiSettings>(key, (old) => (old ? { ...old, ...settings } : settings))
+      return { previous }
+    },
+    onError: (_err, _settings, context) => {
+      if (context) queryClient.setQueryData(key, context.previous)
+    },
+    onSuccess: (saved, _settings, context) => {
+      queryClient.setQueryData(key, saved)
       // Titles are resolved server-side, so a language change only shows up on the next fetch.
       // Only then: reloading the whole library on every layout save is a lot of work for nothing.
-      if (saved.titleLanguage !== previousTitleLanguage) {
+      if (saved.titleLanguage !== context?.previous?.titleLanguage) {
         void queryClient.invalidateQueries({ queryKey: ['series'] })
       }
     },
@@ -1262,6 +1288,7 @@ export interface SearchDefaults {
   minRating?: number | null
   contentRatings?: string[] | null
   rules?: CatalogueRule[] | null
+  credits?: CatalogueCredit[] | null
 }
 
 /** The caller's saved Discover-search filters; an all-empty spec means they have none. */
@@ -1418,9 +1445,14 @@ export function useRecommendationIndex() {
   return useQuery({
     queryKey: ['recommendation-index'],
     queryFn: () => api<RecommendationIndexStatus>('/settings/recommendations'),
-    // Poll quickly while an index pass or a live model switch is running; back off when idle.
-    refetchInterval: (query) =>
-      query.state.data?.running || query.state.data?.modelSwitching ? 2000 : false,
+    // Poll quickly while an index pass or a live model switch is running, or while the server is
+    // still counting the catalogue in the background; back off when idle.
+    refetchInterval: (query) => {
+      const d = query.state.data
+      if (!d) return false
+      const counting = d.recommendableTotal === null && d.dumpPresent && d.embeddingModel !== 'off'
+      return d.running || d.modelSwitching || counting ? 2000 : false
+    },
   })
 }
 
@@ -1701,7 +1733,7 @@ export function useRelinkPlan(seriesId: number, options: RelinkOptions, enabled:
 export function useApplyRelink(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (request: RelinkOptions & { deleteSuperseded: boolean }) =>
+    mutationFn: (request: RelinkOptions & { deleteSuperseded: boolean; confirmedSuperseded: string[] }) =>
       api<RelinkResult>(`/series/${seriesId}/relink`, {
         method: 'POST',
         body: JSON.stringify(request),
@@ -2928,16 +2960,31 @@ export function useLibrarySettings() {
   })
 }
 
+/**
+ * Optimistic for the same reason as useSaveUiSettings: several optional fields are left out of a
+ * write to keep their stored value, so the cache is merged rather than replaced, and consecutive
+ * patches see each other's changes without waiting for a round trip.
+ */
 export function useSaveLibrarySettings() {
   const queryClient = useQueryClient()
+  const key = ['settings', 'library']
   return useMutation({
     mutationFn: (settings: LibrarySettings) =>
       api<LibrarySettings>('/settings/library', {
         method: 'PUT',
         body: JSON.stringify(settings),
       }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings', 'library'] })
+    onMutate: async (settings) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<LibrarySettings>(key)
+      queryClient.setQueryData<LibrarySettings>(key, (old) => (old ? { ...old, ...settings } : settings))
+      return { previous }
+    },
+    onError: (_err, _settings, context) => {
+      if (context) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key })
     },
   })
 }
@@ -2996,6 +3043,8 @@ export interface SeriesRenamePlan {
   conflicts: string[]
   folderChanged: boolean
   hasChanges: boolean
+  /** Sent back with the confirm so the server can refuse a plan that changed since this preview. */
+  fingerprint: string
 }
 
 export interface SeriesRenameResult {
@@ -3017,8 +3066,11 @@ export function useSeriesRenamePreview(seriesId: number, enabled: boolean) {
 export function useRenameSeries(seriesId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () =>
-      api<SeriesRenameResult>(`/series/${seriesId}/rename`, { method: 'POST' }),
+    mutationFn: (fingerprint: string) =>
+      api<SeriesRenameResult>(`/series/${seriesId}/rename`, {
+        method: 'POST',
+        body: JSON.stringify({ fingerprint }),
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId, 'rename-preview'] })
@@ -3075,6 +3127,8 @@ export interface DownloadSettings {
   itemTimeoutMinutes: number
   /** Hardlink completed torrents into the library where possible instead of copying them. */
   useHardlinks: boolean
+  /** More new chapters than this in one refresh are held back instead of queued. 0 means never hold. */
+  bulkHoldThreshold: number
 }
 
 export function useDownloadSettings() {
@@ -3375,9 +3429,7 @@ export function useScrobblePreferences() {
         `/scrobble/preferences/${service}`,
         { method: 'PUT', body: JSON.stringify({ reading, ratings, anime }) },
       ),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scrobble', 'status'] }),
   })
 }
 
@@ -3488,7 +3540,10 @@ export function useSaveImportListSettings() {
   return useMutation({
     mutationFn: (value: ImportListSettings) =>
       api<ImportListSettings>('/settings/importlists', { method: 'PUT', body: JSON.stringify(value) }),
-    onSuccess: (saved) => queryClient.setQueryData(['settings', 'importlists'], saved),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['settings', 'importlists'], saved)
+      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
+    },
   })
 }
 
@@ -3499,13 +3554,41 @@ export function useImportLists() {
   })
 }
 
+/**
+ * Each save sends the whole record, so two quick edits built from the same fetched prefs would
+ * undo each other. The patch goes into the cache straight away, saves run one at a time, and each
+ * one sends the cached record, which by then holds every edit made so far.
+ */
 export function useSaveImportListPrefs() {
   const queryClient = useQueryClient()
+  const key = ['importlists']
+  const mutationKey = ['importlists', 'prefs']
   return useMutation({
-    mutationFn: (value: ImportListTrackerPrefs & { service: string }) =>
-      api<void>('/importlists/prefs', { method: 'PUT', body: JSON.stringify(value) }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['importlists'] })
+    mutationKey,
+    scope: { id: 'importlists-prefs' },
+    mutationFn: ({ service, patch }: { service: string; patch: Partial<ImportListTrackerPrefs> }) => {
+      const current = queryClient
+        .getQueryData<ImportListsStatusDto>(key)
+        ?.trackers.find((t) => t.service === service)?.prefs
+      return api<void>('/importlists/prefs', {
+        method: 'PUT',
+        body: JSON.stringify({ service, ...current, ...patch }),
+      })
+    },
+    onMutate: async ({ service, patch }) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      queryClient.setQueryData<ImportListsStatusDto>(key, (data) =>
+        data && {
+          ...data,
+          trackers: data.trackers.map((t) => (t.service === service ? { ...t, prefs: { ...t.prefs, ...patch } } : t)),
+        },
+      )
+    },
+    onSettled: () => {
+      // Refetching while a later save is still queued would put the server's older copy back.
+      if (queryClient.isMutating({ mutationKey }) === 1) {
+        void queryClient.invalidateQueries({ queryKey: key })
+      }
     },
   })
 }
@@ -3809,7 +3892,11 @@ export interface ActivityStats {
 export function useActivityYears(userId?: number) {
   return useQuery({
     queryKey: ['stats', 'years', userId ?? 'me'],
-    queryFn: () => api<number[]>(`/stats/years${forUser(userId)}`),
+    queryFn: () =>
+      api<number[]>(
+        `/stats/years?utcOffsetMinutes=${new Date().getTimezoneOffset()}` +
+          (userId ? `&userId=${userId}` : ''),
+      ),
   })
 }
 
@@ -4088,6 +4175,9 @@ export function useCreateNotification() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
     },
+    // The modal's own onError already shows a toast; without this the global MutationCache
+    // handler shows a second one for the same failure.
+    meta: { silent: true },
   })
 }
 
@@ -4099,6 +4189,7 @@ export function useUpdateNotification() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'], exact: true })
     },
+    meta: { silent: true },
   })
 }
 
@@ -4119,5 +4210,6 @@ export function useTestNotification() {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+    meta: { silent: true },
   })
 }

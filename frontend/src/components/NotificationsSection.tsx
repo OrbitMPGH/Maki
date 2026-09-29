@@ -52,6 +52,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { Panel } from './ui/Panel'
+import { EmptyState } from './ui/EmptyState'
 import { useLabel } from '../i18n-context'
 
 interface EventField {
@@ -329,7 +330,7 @@ export function NotificationsSection() {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const { data: providers } = useNotificationProviders()
-  const { data: connections } = useNotifications()
+  const { data: connections, isError: connectionsError, refetch: refetchConnections } = useNotifications()
   const { data: tags } = useTags()
   const tagOptions = useTagOptions()
   const create = useCreateNotification()
@@ -408,7 +409,13 @@ export function NotificationsSection() {
         <Trans>Send events to chat apps, push services or a webhook. Each connection picks its own events.</Trans>
       </Text>
 
-      {connections && connections.length > 0 ? (
+      {connectionsError ? (
+        <EmptyState
+          title={t`Couldn't load notification connections`}
+          actionLabel={t`Retry`}
+          onAction={() => void refetchConnections()}
+        />
+      ) : connections && connections.length > 0 ? (
         <Table className="panel-table ops-table">
           <Table.Thead>
             <Table.Tr>

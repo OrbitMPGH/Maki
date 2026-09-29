@@ -1,5 +1,6 @@
 using Maki.Core.Entities;
 using Maki.Core.Paths;
+using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -203,12 +204,7 @@ public class ReaderService(
             .Select(c => new { c.Id, c.Number, c.Volume })
             .ToListAsync(ct);
 
-        var ordered = siblings
-            .OrderBy(c => c.Number is null ? 1 : 0)
-            .ThenBy(c => c.Number)
-            .ThenBy(c => c.Volume)
-            .ThenBy(c => c.Id)
-            .ToList();
+        var ordered = ChapterOrder.Sort(siblings, c => c.Number, c => c.Volume, c => c.Id);
 
         var at = ordered.FindIndex(c => c.Id == chapter.Id);
         return at < 0

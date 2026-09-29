@@ -317,6 +317,11 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ActiveChapterId")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("INTEGER")
+                        .HasComputedColumnSql("CASE WHEN \"Status\" IN (6, 7, 8) THEN NULL ELSE \"ChapterId\" END", false);
+
                     b.Property<int?>("ChapterId")
                         .HasColumnType("INTEGER");
 
@@ -387,6 +392,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ActiveChapterId")
+                        .IsUnique();
 
                     b.HasIndex("ChapterId");
 
@@ -2439,6 +2447,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<double?>("AnimeResumeDismissedAt")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("AnimeWatchPendingTo")
                         .HasColumnType("REAL");
 
                     b.Property<DateTime?>("HiddenFromHomeAt")

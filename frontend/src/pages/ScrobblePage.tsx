@@ -37,7 +37,6 @@ import {
 } from '../api/hooks'
 import { formatDateTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
-import { onErrorToast } from '../lib/errors'
 
 function fmtTime(iso: string | null | undefined): string {
   return iso ? formatDateTime(iso) : '-'
@@ -100,9 +99,7 @@ function ConnectionCard({ connection }: { connection: ScrobbleConnection }) {
               variant="default"
               loading={disconnect.isPending}
               onClick={() =>
-                disconnect.mutate(connection.service, {
-                  onError: onErrorToast,
-                })
+                disconnect.mutate(connection.service)
               }
             >
               <Trans>Disconnect</Trans>
@@ -134,7 +131,6 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           notifications.show({ message: data.message, color: 'var(--ok)' })
           setInput('')
         },
-        onError: onErrorToast,
       },
     )
   }
@@ -179,10 +175,7 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           variant="default"
           loading={ignore.isPending}
           onClick={() =>
-            ignore.mutate(
-              { kavitaSeriesId: item.kavitaSeriesId, service: item.service },
-              { onError: onErrorToast },
-            )
+            ignore.mutate({ kavitaSeriesId: item.kavitaSeriesId, service: item.service })
           }
         >
           <Trans>Ignore</Trans>

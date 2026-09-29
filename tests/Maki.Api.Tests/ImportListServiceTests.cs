@@ -305,6 +305,36 @@ public class ImportListServiceTests : IDisposable
         Assert.Equal(1, named!.Added);
     }
 
+    [Fact]
+    public async Task TickAsync_cancelled_mid_loop_does_not_stamp_LastRunAt()
+    {
+        var first = Adder();
+        var second = SeedUser("second", MakiPermission.AddSeries | MakiPermission.UseTrackers);
+        _tracker.Entries = [Entry("r1", mangaBaka: 101)];
+
+        using var cts = new CancellationTokenSource();
+        // Cancels once the loop reaches the second user, simulating a shutdown mid-tick. The first
+        // user's run must still have gone through, and the tick must stop rather than swallow the
+        // cancellation and stamp the gate as if it ran to completion.
+        _tracker.OnList = userId =>
+        {
+            if (userId == second)
+            {
+                cts.Cancel();
+            }
+        };
+
+        var appSettings = new FakeAppSettings();
+        var service = new ImportListService(
+            _scopes, appSettings, new UserSettingsStoreService(_scopes), [_tracker], _store, _inbox,
+            new TestUserLocaleResolver(), new TestLocalizer(), NullLogger<ImportListService>.Instance);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.TickAsync(cts.Token));
+
+        Assert.Equal(new int?[] { 101 }, LibraryIds());
+        Assert.Null(await appSettings.GetAsync(SettingKeys.ImportListLastRunAt));
+    }
+
     // ---- controller ----
 
     private ImportListsController Controller(int userId, bool allRootFolders = true)
@@ -474,6 +504,10 @@ public class ImportListServiceTests : IDisposable
         /// <summary>When set, <see cref="ListAsync"/> waits on it, so a run can be held open.</summary>
         public TaskCompletionSource? Hold { get; set; }
 
+        /// <summary>Called with the user id at the start of every <see cref="ListAsync"/> call, so a
+        /// test can cancel the run's token from inside the loop it is iterating.</summary>
+        public Action<int>? OnList { get; set; }
+
         public string Name => ServiceName;
         public string Label => "Fake";
         public bool UsesOAuth => false;
@@ -484,6 +518,8 @@ public class ImportListServiceTests : IDisposable
         public async Task<IReadOnlyList<RemoteListEntry>> ListAsync(
             int userId, IReadOnlyCollection<ScrobbleStatus> statuses, CancellationToken ct = default)
         {
+            OnList?.Invoke(userId);
+            ct.ThrowIfCancellationRequested();
             if (Hold is { } hold) await hold.Task;
             return [.. Entries.Where(e => statuses.Contains(e.Status))];
         }

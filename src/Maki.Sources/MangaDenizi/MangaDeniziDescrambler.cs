@@ -19,6 +19,11 @@ public static class MangaDeniziDescrambler
 
     public static Image<Rgb24> Descramble(Image<Rgb24> source, int grid, uint seed)
     {
+        if (grid < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(grid), grid, "Scramble grid must be at least 1");
+        }
+
         var width = source.Width;
         var height = source.Height;
         var l = Math.Max(1, Math.Min(grid, Math.Min(width, height)));

@@ -117,8 +117,14 @@ public class AnimeSignalSyncService(
             {
                 try
                 {
-                    await SyncUserAsync(userId, ct);
-                    completed++;
+                    var summary = await SyncUserAsync(userId, ct);
+                    // RunAsync reports a tracker failure in summary.Error rather than throwing, so a
+                    // non-throwing call is not the same as a completed sync - counting it here would
+                    // advance the 24-hour gate on the strength of an outage.
+                    if (summary.Error is null)
+                    {
+                        completed++;
+                    }
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
@@ -230,10 +236,10 @@ public class AnimeSignalSyncService(
         foreach (var source in sources)
         {
             var service = AnimeSignalSources.NameOf(source);
-            IReadOnlyList<AnimeListEntry> entries;
+            AnimeListResult result;
             try
             {
-                entries = await source.ListAnimeAsync(userId, ct);
+                result = await source.ListAnimeAsync(userId, ct);
             }
             catch (TrackerException ex)
             {
@@ -250,7 +256,28 @@ public class AnimeSignalSyncService(
             }
 
             fetchedAny = true;
+            var entries = result.Entries;
             fetched += entries.Count;
+
+            // The fetch above can take a while, and the reader can switch this tracker off while it
+            // is in flight. Re-checking here, right before anything is written, is what keeps a
+            // disabled tracker from being re-added for up to a day (ScrobbleController.SetPreferences
+            // deletes its rows the moment the reader flips the switch).
+            if (!await animeSources.EnabledForAsync(userId, service, ct))
+            {
+                var stale = await db.AnimeSignals
+                    .Where(x => x.UserId == userId && x.Service == service)
+                    .ToListAsync(ct);
+                if (stale.Count > 0)
+                {
+                    db.AnimeSignals.RemoveRange(stale);
+                    await db.SaveChangesAsync(ct);
+                    removed += stale.Count;
+                }
+
+                continue;
+            }
+
             var existing = await db.AnimeSignals
                 .Where(x => x.UserId == userId && x.Service == service)
                 .ToDictionaryAsync(x => x.AnimeId, ct);
@@ -292,13 +319,19 @@ public class AnimeSignalSyncService(
 
             // A row the tracker no longer lists, or now lists in a way Worth rejects, is treated the
             // same way: not stored. An empty or failed fetch threw above rather than reaching this.
-            var listed = entries.Where(Worth).Select(e => e.AnimeId).ToHashSet();
-            foreach (var row in existing.Where(x => !listed.Contains(x.Key)).Select(x => x.Value))
+            // Skipped entirely when the read was truncated: a row missing from a page that stopped
+            // short of the provider's own cap is not evidence the reader removed it, and pruning on
+            // that would delete rows that just sort past the cut.
+            if (!result.Truncated)
             {
-                if (row.Id != 0)
+                var listed = entries.Where(Worth).Select(e => e.AnimeId).ToHashSet();
+                foreach (var row in existing.Where(x => !listed.Contains(x.Key)).Select(x => x.Value))
                 {
-                    db.AnimeSignals.Remove(row);
-                    removed++;
+                    if (row.Id != 0)
+                    {
+                        db.AnimeSignals.Remove(row);
+                        removed++;
+                    }
                 }
             }
 

@@ -45,6 +45,7 @@ import type { SeriesDto } from '../../api/types'
 import { filtersFromSpec } from '../CatalogueFilters'
 import { CoverCard } from '../ui/CoverCard'
 import { DiscoverRailRow, EngineRailRow } from '../ui/DiscoverRail'
+import { EmptyState } from '../ui/EmptyState'
 import { SectionHeader } from '../ui/SectionHeader'
 import { useDensityPref } from '../ui/viewPrefs'
 import { CustomRailEditor, type CustomRailDraft } from './CustomRailEditor'
@@ -78,7 +79,7 @@ export function CustomRailSection({
     if (entry?.isIntersecting) setSeen(true)
   }, [entry?.isIntersecting])
 
-  const { data, isLoading } = useCustomRailItems(rail.id, limit, seen)
+  const { data, isLoading, isError, refetch } = useCustomRailItems(rail.id, limit, seen)
   const [editing, setEditing] = useState<{ rail?: CustomRail; draft?: CustomRailDraft } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
@@ -121,7 +122,7 @@ export function CustomRailSection({
         count={count || undefined}
         action={
           <Group gap={4} wrap="nowrap">
-            {!empty && !data?.unavailable && (
+            {!empty && !isError && !data?.unavailable && (
               <Button
                 variant="subtle"
                 size="xs"
@@ -167,6 +168,13 @@ export function CustomRailSection({
         <Text c="var(--ink-3)" size="sm">
           <Trans>This rail needs the local MangaBaka database, which is switched off or still downloading.</Trans>
         </Text>
+      ) : isError ? (
+        <EmptyState
+          compact
+          title={t`Couldn't load this rail`}
+          actionLabel={t`Retry`}
+          onAction={() => void refetch()}
+        />
       ) : empty ? (
         <Text c="var(--ink-3)" size="sm">
           <Trans>Nothing matches this rail right now.</Trans>
@@ -251,18 +259,33 @@ function LibraryRailRow({ ids }: { ids: number[] }) {
 
 /** Every series a library rail matches, as a grid. */
 function LibraryRailModal({ rail, onClose }: { rail: CustomRail; onClose: () => void }) {
-  const { data } = useCustomRailItems(rail.id, 500)
+  const { t } = useLingui()
+  const { data, isLoading, isError, refetch } = useCustomRailItems(rail.id, 500)
   const byId = useSeriesById()
   const readTracking = useReadTracking()
   const { cols } = useDensityPref('custom-rail-expand')
   const series = (data?.seriesIds ?? []).map((id) => byId.get(id)).filter((s): s is SeriesDto => s != null)
   return (
     <Modal opened onClose={onClose} fullScreen title={rail.name}>
-      <SimpleGrid cols={cols} spacing="md">
-        {series.map((s) => (
-          <CoverCard key={s.id} series={s} selectMode={false} selected={false} readTracking={readTracking} onToggle={noop} />
-        ))}
-      </SimpleGrid>
+      {isError ? (
+        <EmptyState
+          title={t`Couldn't load this rail`}
+          actionLabel={t`Retry`}
+          onAction={() => void refetch()}
+        />
+      ) : !data || isLoading ? (
+        <SimpleGrid cols={cols} spacing="md">
+          {Array.from({ length: 12 }, (_, i) => (
+            <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
+          ))}
+        </SimpleGrid>
+      ) : (
+        <SimpleGrid cols={cols} spacing="md">
+          {series.map((s) => (
+            <CoverCard key={s.id} series={s} selectMode={false} selected={false} readTracking={readTracking} onToggle={noop} />
+          ))}
+        </SimpleGrid>
+      )}
     </Modal>
   )
 }

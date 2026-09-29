@@ -34,10 +34,14 @@ public enum InboxEventType
     BackupFinished = 14,
     SourceMatchFinished = 15,
     ImportListFinished = 16,
-    ChapterUpgraded = 17,
-    UpgradeRestoreFailed = 18,
-    TorrentProposalPending = 19,
-    VolumeUpgraded = 20,
+
+    /// <summary>A creator or studio the user follows has a new series in the catalogue.</summary>
+    FollowedCreatorRelease = 17,
+
+    ChapterUpgraded = 18,
+    UpgradeRestoreFailed = 19,
+    TorrentProposalPending = 20,
+    VolumeUpgraded = 21,
 }
 
 /// <summary>

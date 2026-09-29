@@ -171,7 +171,7 @@ public class DownloadWorkerHostedService(
         }
     }
 
-    private async Task RecoverAsync(CancellationToken ct)
+    internal async Task RecoverAsync(CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -179,6 +179,7 @@ public class DownloadWorkerHostedService(
         // Only scraper items go through the page pipeline; torrent items are
         // tracked externally by CompletedDownloadJob and must keep their status.
         var pending = await db.DownloadQueue
+            .Include(q => q.SourceMapping)
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                         q.Status != QueueStatus.Completed &&
                         q.Status != QueueStatus.Failed &&
@@ -190,8 +191,19 @@ public class DownloadWorkerHostedService(
         var stillResolving = pending.Where(item => item.Status == QueueStatus.Resolving).ToList();
         var interrupted = pending.Except(stillResolving).ToList();
 
+        // RateLimited rows keep their status and NextAttempt, and their source's cooldown is put
+        // back, so a restart straight after a 429 doesn't hit the source again at once.
         foreach (var item in interrupted)
         {
+            if (item.Status == QueueStatus.RateLimited)
+            {
+                if (item.NextAttempt is { } until && item.SourceMapping is { } mapping)
+                {
+                    queue.RestoreCooldown(mapping.SourceName, until);
+                }
+                continue;
+            }
+
             item.Status = QueueStatus.Queued;
         }
 
@@ -238,8 +250,16 @@ public class DownloadWorkerHostedService(
                 return; // clean exit: the channel completed
             }
 
-            if (!queue.Reader.TryRead(out _))
+            if (workerId >= _concurrency || !queue.Reader.TryRead(out var signal))
             {
+                continue;
+            }
+
+            // Parked between the wait and the read: hand the wake-up back for a live worker rather
+            // than leaving its item for the next periodic poll.
+            if (workerId >= _concurrency)
+            {
+                await queue.SignalAsync(signal, ct);
                 continue;
             }
 

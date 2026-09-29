@@ -16,7 +16,8 @@ namespace Maki.Api.Services;
 /// genre/tag step needs an in-memory join against Series' JSON list columns anyway.
 /// </para>
 /// </summary>
-public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, TimeProvider clock)
+public class ActivityStatsService(
+    MakiDbContext db, IAppSettings appSettings, IUserSettingsStore userSettings, TimeProvider clock)
 {
     /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
     internal static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
@@ -35,31 +36,102 @@ public class ActivityStatsService(MakiDbContext db, IAppSettings appSettings, Ti
         db.StatsEvents.AsNoTracking().IgnoreQueryFilters()
             .Where(e => e.UserId == null || e.UserId == userId);
 
-    public async Task<List<int>> YearsAsync(int userId, CancellationToken ct)
+    /// <summary>
+    /// Same resolution as <see cref="StatsInsightsService.GetAsync"/>: the reader's stored zone
+    /// when they have one (correct across DST), else a fixed offset built from the browser's
+    /// current one.
+    /// </summary>
+    private async Task<TimeZoneInfo> ResolveZoneAsync(int userId, int utcOffsetMinutes, CancellationToken ct) =>
+        await UserTimeZone.TryResolveAsync(userSettings, userId, ct) ?? StatsInsightsService.FixedOffset(utcOffsetMinutes);
+
+    /// <summary>
+    /// No real-world zone shifts a timestamp across a year boundary by more than this; used to keep
+    /// the boundary checks in <see cref="YearsAsync"/> to a handful of rows either side of Jan 1
+    /// rather than a full-table scan.
+    /// </summary>
+    private static readonly TimeSpan MaxZoneShift = TimeSpan.FromHours(14);
+
+    /// <param name="utcOffsetMinutes">JS getTimezoneOffset() semantics, used only when the reader
+    /// has no stored time zone.</param>
+    /// <remarks>
+    /// Distinct UTC years come straight out of SQL (translated to <c>strftime('%Y', ...)</c>), which
+    /// is exact for every event except one within <see cref="MaxZoneShift"/> of a year boundary, the
+    /// only place a zone conversion can move a timestamp into the neighboring year. Those few rows,
+    /// and only those, are pulled into memory and converted for real.
+    /// </remarks>
+    public async Task<List<int>> YearsAsync(int userId, int utcOffsetMinutes, CancellationToken ct)
     {
-        return await EventsFor(userId)
-            .Select(e => e.Timestamp.Year)
-            .Distinct()
-            .OrderByDescending(y => y)
-            .ToListAsync(ct);
+        var zone = await ResolveZoneAsync(userId, utcOffsetMinutes, ct);
+        var utcYears = await EventsFor(userId).Select(e => e.Timestamp.Year).Distinct().ToListAsync(ct);
+
+        var years = new HashSet<int>();
+        var checkedBoundaries = new HashSet<DateTime>();
+
+        int LocalYear(DateTime utc) =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone).Year;
+
+        async Task CheckBoundaryAsync(DateTime boundaryUtc)
+        {
+            if (!checkedBoundaries.Add(boundaryUtc))
+            {
+                return;
+            }
+
+            var windowStart = boundaryUtc - MaxZoneShift;
+            var windowEnd = boundaryUtc + MaxZoneShift;
+            var nearBoundary = EventsFor(userId).Where(e => e.Timestamp >= windowStart && e.Timestamp < windowEnd);
+            if (!await nearBoundary.AnyAsync(ct))
+            {
+                return;
+            }
+
+            var timestamps = await nearBoundary.Select(e => e.Timestamp).ToListAsync(ct);
+            foreach (var t in timestamps)
+            {
+                years.Add(LocalYear(t));
+            }
+        }
+
+        foreach (var y in utcYears)
+        {
+            var yearStart = new DateTime(y, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var yearEnd = new DateTime(y + 1, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            // Any event far enough from both boundaries can't have shifted out of this UTC year, so
+            // its presence alone guarantees the year survives locally.
+            var hasDeepEvent = await EventsFor(userId).AnyAsync(
+                e => e.Timestamp >= yearStart + MaxZoneShift && e.Timestamp < yearEnd - MaxZoneShift, ct);
+            if (hasDeepEvent)
+            {
+                years.Add(y);
+            }
+
+            await CheckBoundaryAsync(yearStart);
+            await CheckBoundaryAsync(yearEnd);
+        }
+
+        return years.OrderByDescending(y => y).ToList();
     }
 
     /// <param name="userId">Whose year this is. Callers must have resolved it through
     /// <see cref="UserViewResolver"/> — this service does no permission checking of its own.</param>
-    /// <param name="utcOffsetMinutes">JS getTimezoneOffset() semantics: UTC − local, so
-    /// UTC+2 sends −120. Local time = UTC − offset.</param>
+    /// <param name="utcOffsetMinutes">JS getTimezoneOffset() semantics, used only when the reader
+    /// has no stored time zone.</param>
     public async Task<ActivityStatsDto> StatsAsync(
         int userId, DateOnly from, DateOnly to, int utcOffsetMinutes, CancellationToken ct)
     {
+        var zone = await ResolveZoneAsync(userId, utcOffsetMinutes, ct);
+
         // [from, to] are inclusive local dates; convert the window edges to UTC.
-        var utcStart = from.ToDateTime(TimeOnly.MinValue).AddMinutes(utcOffsetMinutes);
-        var utcEnd = to.AddDays(1).ToDateTime(TimeOnly.MinValue).AddMinutes(utcOffsetMinutes);
+        var utcStart = StatsInsightsService.ToUtc(from.ToDateTime(TimeOnly.MinValue), zone);
+        var utcEnd = StatsInsightsService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue), zone);
 
         var events = await EventsFor(userId)
             .Where(e => e.Timestamp >= utcStart && e.Timestamp < utcEnd)
             .ToListAsync(ct);
 
-        DateTime Local(DateTime utc) => utc.AddMinutes(-utcOffsetMinutes);
+        DateTime Local(DateTime utc) =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone);
 
         // Loaded up front because every list below wants a cover for it. One query either way —
         // the projection just carries three columns instead of two.

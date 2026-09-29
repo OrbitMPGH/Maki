@@ -75,13 +75,24 @@ public static class AnimeListFields
 public record AnimeRelatedManga(long? AniListMangaId, long? MalMangaId);
 
 /// <summary>
+/// One provider's whole anime list, plus whether the provider's own page cap cut it short.
+/// </summary>
+/// <param name="Truncated">
+/// True when the list hit the provider's page or offset cap before it ran out of pages (AniList
+/// 5,000 entries, MAL 20,000). A truncated read is missing whichever rows sort past the cap, so it
+/// must not be treated as "the reader removed those" - the anime signal sync skips stale-row
+/// deletion for a source that comes back truncated.
+/// </param>
+public record AnimeListResult(IReadOnlyList<AnimeListEntry> Entries, bool Truncated = false);
+
+/// <summary>
 /// A tracker that can also hand over the user's <em>anime</em> list. Separate from
 /// <see cref="IScrobbleTracker"/> because scrobbling is a two-way manga sync and this is a one-way
 /// read of a different medium: Kitsu and MangaBaka implement the first and not this.
 /// </summary>
 public interface IAnimeListSource
 {
-    Task<IReadOnlyList<AnimeListEntry>> ListAnimeAsync(int userId, CancellationToken ct = default);
+    Task<AnimeListResult> ListAnimeAsync(int userId, CancellationToken ct = default);
 
     /// <summary>
     /// The manga behind one anime, for providers whose list call cannot say. Null means the anime

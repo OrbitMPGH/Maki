@@ -284,6 +284,7 @@ public static class AuthServiceCollectionExtensions
         services.AddScoped<DataScope>();
 
         services.AddScoped<OidcSignInService>();
+        services.AddScoped<OidcLoginIssuerRepairService>();
 
         services.AddScoped<CurrentUserContext>();
         services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUserContext>());

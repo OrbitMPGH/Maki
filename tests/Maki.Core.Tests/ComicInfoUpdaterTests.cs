@@ -126,6 +126,46 @@ public class ComicInfoUpdaterTests : IDisposable
         Assert.Equal("Berserk", ReadComicInfo(path).Series);
     }
 
+    private static Series CompletedSeries(int? totalVolumes)
+    {
+        var series = TestSeries();
+        series.Status = SeriesStatus.Completed;
+        series.TotalChapters = 119;
+        series.TotalVolumes = totalVolumes;
+        return series;
+    }
+
+    [Fact]
+    public void Volume_file_counts_volumes()
+    {
+        var path = CreateCbz("Rough v12.cbz", comicInfoXml: null);
+
+        ComicInfoUpdater.UpdateFile(path, CompletedSeries(12), ReleaseNameParser.ParseFileName(path), null);
+
+        Assert.Equal("12", ReadComicInfo(path).CountSerialized);
+    }
+
+    [Fact]
+    public void Volume_file_omits_count_when_volume_total_unknown()
+    {
+        var path = CreateCbz("Rough v12.cbz", "<ComicInfo><Count>119</Count></ComicInfo>");
+
+        ComicInfoUpdater.UpdateFile(path, CompletedSeries(null), ReleaseNameParser.ParseFileName(path), null);
+
+        Assert.Null(ReadComicInfo(path).CountSerialized);
+    }
+
+    [Fact]
+    public void Chapter_file_counts_chapters()
+    {
+        var path = CreateCbz("Rough 119.cbz", comicInfoXml: null);
+        var chapter = new Chapter { Number = 119, Volume = 12, Language = "en" };
+
+        ComicInfoUpdater.UpdateFile(path, CompletedSeries(12), ReleaseNameParser.ParseFileName(path), chapter);
+
+        Assert.Equal("119", ReadComicInfo(path).CountSerialized);
+    }
+
     [Fact]
     public void Pages_survive_the_rewrite()
     {

@@ -23,7 +23,8 @@ public class ChapterSyncService(
     SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
     IAppSettings appSettings,
-    ILogger<ChapterSyncService> logger)
+    ILogger<ChapterSyncService> logger,
+    AnimeResumePendingService? animeResumePending = null)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
     public Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default) =>
@@ -93,6 +94,18 @@ public class ChapterSyncService(
                 foreach (var sc in sourceChapters)
                 {
                     var match = existing.FirstOrDefault(c => ChapterIdentity.Matches(c, sc));
+                    if (match is null && PromotableOneShot(existing, sc) is { } unnumbered)
+                    {
+                        // Stored as a one-shot titled by its label back when the parser could not
+                        // read that label ("Episode 12"). Numbering it in place keeps its file and
+                        // stops a second row being created, and downloaded, beside it.
+                        unnumbered.Number = sc.Number;
+                        unnumbered.NumberRaw = sc.NumberRaw;
+                        unnumbered.IsOneShot = false;
+                        unnumbered.Title = sc.Title;
+                        match = unnumbered;
+                    }
+
                     if (match is not null)
                     {
                         // Enrich rather than duplicate: a volume-aware source fills in
@@ -180,6 +193,11 @@ public class ChapterSyncService(
         }
 
         await db.SaveChangesAsync(ct);
+        if (newChapters.Count > 0 && animeResumePending is not null)
+        {
+            await animeResumePending.ApplyAsync(seriesId, ct);
+        }
+
         return newChapters.Select(c => c.Id).ToList();
     }
 
@@ -251,6 +269,15 @@ public class ChapterSyncService(
     /// the same chapter synced once with a volume ("Vol.4 Ch.27") and once
     /// without ("Ch.27"). Keeps the richest copy and deletes the rest.
     /// </summary>
+    internal static Chapter? PromotableOneShot(List<Chapter> existing, SourceChapter sc) =>
+        sc.Number is null || string.IsNullOrWhiteSpace(sc.NumberRaw)
+            ? null
+            : existing.FirstOrDefault(c =>
+                c.Number is null &&
+                c.IsOneShot &&
+                c.Language == sc.Language &&
+                string.Equals(c.Title?.Trim(), sc.NumberRaw.Trim(), StringComparison.OrdinalIgnoreCase));
+
     private void MergeDuplicates(List<Chapter> existing)
     {
         var groups = existing

@@ -54,6 +54,15 @@ public class AccountController(
         return !oidc.OidcOnly || user.Permissions.Grants(MakiPermission.Admin);
     }
 
+    /// <summary>
+    /// Whether this account has a linked, enabled single sign-on login. Feeds only the
+    /// <c>ssoDelegated</c> flag shown to the client; <see cref="PasswordLoginAvailableAsync"/> is
+    /// what actually gates enrolment, since a linked account with a working password login keeps
+    /// full access to 2FA.
+    /// </summary>
+    private async Task<bool> IsOidcLinkedAsync(MakiUser user) =>
+        oidc.Enabled && (await userManager.GetLoginsAsync(user)).Any(l => l.LoginProvider == AuthSchemes.Oidc);
+
     [HttpPost("password")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
@@ -99,12 +108,16 @@ public class AccountController(
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
 
+        var available = await PasswordLoginAvailableAsync(user);
         return Ok(new
         {
             enabled = user.TwoFactorEnabled,
             hasAuthenticator = await userManager.GetAuthenticatorKeyAsync(user) is { Length: > 0 },
             recoveryCodesLeft = await userManager.CountRecoveryCodesAsync(user),
-            available = await PasswordLoginAvailableAsync(user)
+            available,
+            // Only when enrolment is actually refused and SSO is why: a linked account that still
+            // has a working password login is not delegated, so the setup button stays.
+            ssoDelegated = !available && await IsOidcLinkedAsync(user)
         });
     }
 
@@ -126,7 +139,9 @@ public class AccountController(
 
         if (!await PasswordLoginAvailableAsync(user))
         {
-            return this.Conflict(localizer, "error.account.noPasswordLogin");
+            return this.Conflict(localizer, await IsOidcLinkedAsync(user)
+                ? "error.account.twoFactorDelegatedToSso"
+                : "error.account.noPasswordLogin");
         }
 
         // Always a fresh secret: reusing one across abandoned enrolment attempts means an old QR
@@ -157,7 +172,9 @@ public class AccountController(
 
         if (!await PasswordLoginAvailableAsync(user))
         {
-            return this.Conflict(localizer, "error.account.noPasswordLogin");
+            return this.Conflict(localizer, await IsOidcLinkedAsync(user)
+                ? "error.account.twoFactorDelegatedToSso"
+                : "error.account.noPasswordLogin");
         }
 
         var code = request.Code?.Replace(" ", string.Empty).Replace("-", string.Empty);
@@ -233,6 +250,13 @@ public class AccountController(
         if (request.Scope == UserApiKeyScope.Opds)
         {
             return this.Fail(localizer, "error.account.opdsKeyOnOpdsCard");
+        }
+
+        // JsonStringEnumConverter deserializes an undefined numeric value (e.g. "7") into the enum
+        // without complaint, and Full is the only scope this endpoint hands out.
+        if (request.Scope != UserApiKeyScope.Full)
+        {
+            return this.Fail(localizer, "error.account.invalidScope");
         }
 
         var secret = ApiKeyCrypto.Generate();

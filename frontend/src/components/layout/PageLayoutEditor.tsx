@@ -377,7 +377,19 @@ function SectionCard({
 }
 
 /** Shown while the saved layout is still loading, so the editor never starts from a guess. */
-export function PageLayoutEditorLoading() {
+export function PageLayoutEditorLoading({ failed, onExit }: { failed?: boolean; onExit: () => void }) {
+  if (failed) {
+    return (
+      <Group justify="center" py="xl" gap="sm">
+        <Text size="sm" c="dimmed">
+          <Trans>The layout could not be loaded.</Trans>
+        </Text>
+        <Button variant="default" size="xs" onClick={onExit}>
+          <Trans>Exit editing</Trans>
+        </Button>
+      </Group>
+    )
+  }
   return (
     <Group justify="center" py="xl">
       <Loader size="sm" />

@@ -5,11 +5,12 @@ namespace Maki.Data;
 /// the global query filters, so every user-owned table is scoped by construction rather than by each
 /// call site remembering to add a <c>WHERE UserId = …</c>.
 /// <para>
-/// A fresh instance is <b>unrestricted</b>, and it is narrowed in exactly one place:
-/// <c>CurrentUserMiddleware</c>, which runs for every request before authorization and calls
-/// <see cref="SetUser"/> for an authenticated caller or <see cref="SetNobody"/> for an anonymous one.
-/// Everything that is not a request — Quartz jobs, hosted services, the download workers, the
-/// scrobble tick — legitimately acts for every user and keeps the default.
+/// A fresh instance is <b>unrestricted</b> by default. Requests narrow it in exactly one place:
+/// <c>CurrentUserMiddleware</c>, which runs before authorization and calls <see cref="SetUser"/> for
+/// an authenticated caller or <see cref="SetNobody"/> for an anonymous one. Most non-request work,
+/// including Quartz jobs, hosted services, and the download workers, keeps the default instead. The
+/// scrobble tick is the exception: its per-user passes narrow a fresh scoped <c>DbContext</c> to one
+/// user at a time via <see cref="SetUser"/>.
 /// </para>
 /// <para>
 /// The default is deliberately <em>not</em> deny-all, and the reason is worth knowing before
@@ -20,8 +21,9 @@ namespace Maki.Data;
 /// safer and easier to audit than a default that is right for one of the two worlds.
 /// </para>
 /// <para>
-/// A background job that wants one user's rows asks for them explicitly — <c>UserSettingsStore</c>
-/// and the per-user loops in <c>ScrobbleService</c> all take an id — rather than mutating this.
+/// A background job that wants one user's rows opens a fresh scoped <c>DbContext</c> and narrows
+/// that instance's own scope, the way <c>UserSettingsStore</c> and the per-user loops in
+/// <c>ScrobbleService</c> both do, rather than mutating a scope anything else shares.
 /// </para>
 /// </summary>
 public sealed class DataScope

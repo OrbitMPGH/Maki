@@ -70,6 +70,25 @@ public class AnimeSignalGroupingTests
     }
 
     /// <summary>
+    /// A stale Planning row for a show the reader actually watched and scored on another tracker
+    /// must not drag the average toward it - the same rule MergeSeasons already applies across
+    /// seasons, here applied across the trackers that list the same anime.
+    /// </summary>
+    [Fact]
+    public void A_planning_row_on_one_tracker_does_not_dilute_a_completed_row_on_another()
+    {
+        var groups = AnimeSignalGrouping.Group(
+        [
+            Row("anilist", 101, AnimeWatchStatus.Completed, 9, malAnimeId: 55, mangaBakaId: 7),
+            Row("mal", 55, AnimeWatchStatus.Planning, 3, malAnimeId: 55, mangaBakaId: 7),
+        ]);
+
+        var group = Assert.Single(groups);
+        Assert.Equal(9, group.Score);
+        Assert.Equal(AnimeWatchStatus.Completed, group.Status);
+    }
+
+    /// <summary>
     /// Seasons of one show are one opinion about one manga, and a reader whose enthusiasm faded
     /// across four of them means the average, not the season they liked best.
     /// </summary>

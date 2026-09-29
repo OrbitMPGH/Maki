@@ -160,7 +160,15 @@ public sealed class MangaFireBrowser(
     /// </summary>
     public const string AllLanguages = "all";
 
-    public async Task<IReadOnlyList<string>> ChaptersAsync(string seriesId, string language, CancellationToken ct)
+    /// <summary>
+    /// Chapter list items, plus whether the returned list is confirmed to be in <paramref
+    /// name="language"/>: either it was already loaded in that language, or a switch to it
+    /// succeeded. When false (a switch was attempted and failed), the caller is looking at
+    /// whatever language was loaded before the attempt, not the one it asked for, so an unlabelled
+    /// item here must not be assumed to match the request.
+    /// </summary>
+    public async Task<(IReadOnlyList<string> Items, bool LanguageMatched)> ChaptersAsync(
+        string seriesId, string language, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
         try
@@ -222,6 +230,7 @@ public sealed class MangaFireBrowser(
                 // switch to it would wait for a response that never comes and time out.
                 var alreadyLoaded = language.Equals(loadedLanguage, StringComparison.OrdinalIgnoreCase) ||
                     (language.Equals(AllLanguages, StringComparison.OrdinalIgnoreCase) && loadedLanguage.Length == 0);
+                var languageMatched = alreadyLoaded;
                 if (!string.IsNullOrWhiteSpace(language) && !alreadyLoaded)
                 {
                     var switched = await SwitchLanguageAsync(page, language, loadedLanguage);
@@ -237,6 +246,7 @@ public sealed class MangaFireBrowser(
                         items.Clear();
                         lastPage = null;
                         await CollectAsync(switched);
+                        languageMatched = true;
                     }
                 }
 
@@ -256,7 +266,7 @@ public sealed class MangaFireBrowser(
                     await CollectAsync(await wait);
                 }
 
-                return (IReadOnlyList<string>)items.Values.ToList();
+                return ((IReadOnlyList<string>)items.Values.ToList(), languageMatched);
             }, ct);
         }
         finally

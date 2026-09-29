@@ -36,6 +36,10 @@ public class StatsController(
     private static readonly DateOnly EarliestDate = new(1900, 1, 1);
     private static readonly DateOnly LatestDate = new(9998, 12, 31);
 
+    // 14 hours either side, the widest real UTC offset. int.MinValue would overflow Math.Abs.
+    private static bool InvalidOffset(int utcOffsetMinutes) =>
+        utcOffsetMinutes < -14 * 60 || utcOffsetMinutes > 14 * 60;
+
     private IActionResult? InvalidWindow(DateOnly from, DateOnly to, int utcOffsetMinutes)
     {
         if (to < from)
@@ -48,7 +52,7 @@ public class StatsController(
             return this.Fail(localizer, "error.stats.dateOutOfRange");
         }
 
-        if (Math.Abs(utcOffsetMinutes) > 14 * 60)
+        if (InvalidOffset(utcOffsetMinutes))
         {
             return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
         }
@@ -56,16 +60,25 @@ public class StatsController(
         return null;
     }
 
-    /// <summary>Distinct years with recorded activity, newest first — for the year picker.</summary>
+    /// <summary>
+    /// Distinct years with recorded activity, newest first, bucketed in the reader's stored time
+    /// zone (or utcOffsetMinutes without one), for the year picker.
+    /// </summary>
     [HttpGet("years")]
-    public async Task<IActionResult> Years([FromQuery] int? userId, CancellationToken ct)
+    public async Task<IActionResult> Years(
+        [FromQuery] int utcOffsetMinutes, [FromQuery] int? userId, CancellationToken ct)
     {
         if (!userView.TryResolve(userId, out var target))
         {
             return Forbid();
         }
 
-        return Ok(await activity.YearsAsync(target, ct));
+        if (InvalidOffset(utcOffsetMinutes))
+        {
+            return this.Fail(localizer, "error.stats.utcOffsetOutOfRange");
+        }
+
+        return Ok(await activity.YearsAsync(target, utcOffsetMinutes, ct));
     }
 
     /// <summary>

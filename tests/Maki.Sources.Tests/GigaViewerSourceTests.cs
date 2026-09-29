@@ -249,6 +249,42 @@ public class GigaViewerSourceTests
         Assert.Contains(factory.Requests, url => url.Contains("aggregate_id=2550912965114108244"));
     }
 
+    public static TheoryData<string> OtherSites => ["comicdays", "tonarinoyj", "kuragebunch"];
+
+    private static GigaViewerSource SiteSource(string name, FakeHttpClientFactory factory) => name switch
+    {
+        "comicdays" => new ComicDaysSource(factory),
+        "tonarinoyj" => new TonarinoYjSource(factory),
+        "kuragebunch" => new KurageBunchSource(factory),
+        _ => throw new ArgumentOutOfRangeException(nameof(name))
+    };
+
+    [Theory]
+    [MemberData(nameof(OtherSites))]
+    public async Task EachSite_SearchesAndListsUnderItsOwnNameAndHost(string name)
+    {
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["search?q="] = FakeHttpClientFactory.Fixture("gigaviewer-search-classic.html"),
+            ["episode/12207421984255619382"] = FakeHttpClientFactory.Fixture("gigaviewer-episode.html"),
+            ["offset=0"] = FakeHttpClientFactory.Fixture("gigaviewer-episodes-statusnull.json"),
+            ["offset=1"] = "[]"
+        });
+        var source = SiteSource(name, factory);
+
+        Assert.Equal(name, source.Name);
+        Assert.Equal($"source-{name}", source.HttpClientName);
+        Assert.Equal("10834108156648240735",
+            source.ResolveSeriesIdFromUrl(new Uri($"{source.BaseUrl}/episode/10834108156648240735")));
+
+        var hit = Assert.Single(await source.SearchAsync("SPY"));
+        Assert.Equal("10834108156648240735", hit.SourceSeriesId);
+
+        var chapter = Assert.Single(await source.ListChaptersAsync("12207421984255619382"));
+        Assert.Equal(name, chapter.SourceName);
+        Assert.StartsWith(source.BaseUrl, chapter.Url);
+    }
+
     private static byte[] BuildSyntheticPagePng()
     {
         using var image = new Image<Rgba32>(64, 64);

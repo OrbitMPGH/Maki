@@ -15,6 +15,30 @@ namespace Maki.Api.Auth;
 /// </summary>
 public class AdminGuard(MakiDbContext db)
 {
+    // The check and the write that follows it are two statements, so two concurrent demotions could
+    // each see the other admin and both commit. Every check-then-save that can remove an admin holds
+    // this across both.
+    private static readonly SemaphoreSlim Gate = new(1, 1);
+
+    public static async Task<IDisposable> LockAsync(CancellationToken ct)
+    {
+        await Gate.WaitAsync(ct);
+        return new Releaser();
+    }
+
+    private sealed class Releaser : IDisposable
+    {
+        private int _released;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _released, 1) == 0)
+            {
+                Gate.Release();
+            }
+        }
+    }
+
     /// <summary>
     /// Whether <paramref name="userId"/> is the only account that can currently administer the
     /// instance — meaning demoting, disabling or deleting it must be refused.

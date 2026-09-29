@@ -1,3 +1,4 @@
+using System.Data;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
@@ -55,6 +56,12 @@ public class CustomRailsController(ILocalizer localizer, MakiDbContext db, Custo
             return this.Fail(localizer, "error.customRails.libraryHomeOnly");
         }
 
+        // Serializable maps to SQLite's "BEGIN IMMEDIATE": the write lock is taken up front, before
+        // the count below is even read, so a second concurrent Create blocks here instead of reading
+        // the same pre-insert count. A plain (deferred) transaction would let two requests both read
+        // 29 and both insert, so the count check alone cannot enforce the cap.
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+
         if (await Rails().CountAsync(ct) >= MaxRails)
         {
             return this.Fail(localizer, "error.customRails.tooMany", new { max = MaxRails });
@@ -70,6 +77,7 @@ public class CustomRailsController(ILocalizer localizer, MakiDbContext db, Custo
         };
         db.SavedFilters.Add(rail);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return Ok(ToDto(rail));
     }
 

@@ -42,6 +42,16 @@ public class ArchiveHealthAnalyzerTests : IDisposable
         Assert.Equal("a.png",result.Pages[0].Name);
         Assert.Equal(2,result.Pages.Count);
     }
+    // Regression: page order used to sort lexically, so an unpadded archive's 10.png reported
+    // right after 1.png, disagreeing with what CbzReader/VolumeChapterScanner actually read.
+    [Fact] public async Task Page_order_is_natural_not_lexical()
+    {
+        var path = Archive(("10.png",Png()),("1.png",Png()),("2.png",Png()));
+        var index = await ArchiveHealthAnalyzer.AnalyzeAsync(path);
+        Assert.Equal(["1.png","2.png","10.png"], index.Pages.Select(p=>p.Name));
+        var verified = await ArchiveHealthAnalyzer.AnalyzeAsync(path, default, null, null, verify: true);
+        Assert.Equal(["1.png","2.png","10.png"], verified.Pages.Select(p=>p.Name));
+    }
     [Fact] public async Task Indexing_takes_the_archive_at_its_word()
     {
         var path = Archive(("1.png",Png()),("2.png",Png()));
@@ -93,7 +103,7 @@ public class ArchiveHealthAnalyzerTests : IDisposable
     {
         var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.avif",new byte[256])), default, null, null, verify: true);
         Assert.Equal("partial",result.Status); Assert.NotNull(result.Hash);
-        Assert.DoesNotContain(result.Problems,p=>p.Severity=="error");
+        Assert.All(result.Problems,p=>Assert.Equal("info",p.Severity));
     }
     [Fact] public async Task Damaged_image_is_reported()
     {

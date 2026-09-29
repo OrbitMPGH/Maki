@@ -61,6 +61,20 @@ public class MangaPlusSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_throws_for_an_unmapped_non_null_language_id()
+    {
+        // Hand-built title_detailV3 body: Response{success=SuccessResult{titleDetailView=
+        // TitleDetailView{title=Title{language=8}}}}. 8 is the gap in MangaPlusLanguages' map
+        // (7=de, 9=vi). A title added by URL under this id must not silently become English.
+        var source = SourceFor(new()
+        {
+            ["title_detailV3"] = [0x0a, 0x06, 0x42, 0x04, 0x0a, 0x02, 0x38, 0x08]
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.ListChaptersAsync("100020"));
+    }
+
+    [Fact]
     public async Task GetSeries_reads_the_title_block_and_overview()
     {
         var detail = await WithDetail().GetSeriesAsync("100020");

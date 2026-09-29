@@ -235,12 +235,51 @@ public class SeriesRequestsControllerTests : IDisposable
         Assert.IsType<ConflictObjectResult>(second);
     }
 
+    /// <summary>
+    /// The partial unique index only covers Pending rows, so the pre-check has to answer for
+    /// Processing too: nothing about the index stops a second identical submit while the first is
+    /// claimed, and the request being worked on right now is exactly as much "already asked for" as
+    /// a plain pending one.
+    /// </summary>
+    [Fact]
+    public async Task A_second_identical_request_while_the_first_is_claimed_is_refused()
+    {
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default));
+
+        using (var db = _db.NewContext())
+        {
+            var request = await db.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == created.Id);
+            request.Status = SeriesRequestStatus.Processing;
+            request.ApprovalClaimedAtUtc = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        var second = await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default);
+
+        Assert.IsType<ConflictObjectResult>(second);
+    }
+
     [Fact]
     public async Task An_inverted_range_is_refused()
     {
         var result = await AsReader().Create(
             new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1", ChapterStart: 40, ChapterEnd: 10),
             default);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    /// <summary>
+    /// <c>Enum.TryParse</c> alone accepts any numeric string as long as it parses, defined member or
+    /// not. "999" is not a real <see cref="SeriesRequestKind"/>, and letting it through would create
+    /// a row no switch in the controller knows how to resolve.
+    /// </summary>
+    [Fact]
+    public async Task An_undefined_numeric_kind_is_refused()
+    {
+        var result = await AsReader().Create(new CreateSeriesRequestBody("999"), default);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -349,6 +388,74 @@ public class SeriesRequestsControllerTests : IDisposable
         var body = Assert.IsType<ConflictObjectResult>(second).Value;
         Assert.Equal("error.requests.alreadyResolved",
             body!.GetType().GetProperty("code")!.GetValue(body));
+    }
+
+    /// <summary>
+    /// The Chapters branch shares the same claim as NewSeries, but used to answer every lost claim
+    /// with "in progress" regardless of whether the request had actually been resolved already.
+    /// </summary>
+    [Fact]
+    public async Task Approving_an_already_approved_chapters_request_again_returns_already_resolved()
+    {
+        var seriesId = SeedSeriesWithChapters(1m, 2m);
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId), default));
+
+        await AsAdmin().Approve(created.Id, new ApproveSeriesRequestBody(), default);
+        var second = await AsAdmin().Approve(created.Id, new ApproveSeriesRequestBody(), default);
+
+        var body = Assert.IsType<ConflictObjectResult>(second).Value;
+        Assert.Equal("error.requests.alreadyResolved",
+            body!.GetType().GetProperty("code")!.GetValue(body));
+    }
+
+    /// <summary>
+    /// An exception out of <c>SeriesCreationService.CreateAsync</c> (a provider outage, here) used to
+    /// leave the request reading Processing for the whole 30-minute stale window, with the claim
+    /// never released.
+    /// </summary>
+    [Fact]
+    public async Task A_provider_failure_during_approval_releases_the_claim_and_leaves_the_request_pending()
+    {
+        var rootSeriesId = _db.SeedSeries();
+        int rootFolderId;
+        using (var db = _db.NewContext())
+            rootFolderId = (await db.Series.SingleAsync(s => s.Id == rootSeriesId)).RootFolderId;
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "111"), default));
+
+        _metadata.ThrowForProviderId = "111";
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            AsAdmin().Approve(created.Id, new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default));
+
+        using var db2 = _db.NewContext();
+        var request = await db2.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == created.Id);
+        Assert.Equal(SeriesRequestStatus.Pending, request.Status);
+        Assert.Null(request.ApprovalClaimedAtUtc);
+    }
+
+    /// <summary>
+    /// Somebody else added the exact same series between the request and the approval. The request is
+    /// genuinely satisfied and gets resolved as such, but it still has to point at the series that
+    /// landed, not leave <see cref="SeriesRequestDto.SeriesId"/> null.
+    /// </summary>
+    [Fact]
+    public async Task Approving_a_request_for_an_already_imported_series_still_links_it()
+    {
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "555"), default));
+
+        var existingSeriesId = _db.SeedSeries(configure: s => s.MangaBakaId = 555);
+        int rootFolderId;
+        using (var db = _db.NewContext())
+            rootFolderId = (await db.Series.SingleAsync(s => s.Id == existingSeriesId)).RootFolderId;
+
+        var approved = Body<SeriesRequestDto>(await AsAdmin().Approve(created.Id,
+            new ApproveSeriesRequestBody(RootFolderId: rootFolderId), default));
+
+        Assert.Equal("Approved", approved.Status);
+        Assert.Equal(existingSeriesId, approved.SeriesId);
     }
 
     [Fact]
@@ -502,6 +609,89 @@ public class SeriesRequestsControllerTests : IDisposable
             await AsAdmin().Edit(created.Id, new EditSeriesRequestBody(40, 10), default));
     }
 
+    /// <summary>
+    /// A request another admin is mid-approval on is not editable: writing a new range onto it would
+    /// either be silently lost by the approval that is about to overwrite it, or overwrite an
+    /// approval that already ran, depending on which admin's write lands last.
+    /// </summary>
+    [Fact]
+    public async Task Editing_a_claimed_request_conflicts()
+    {
+        var seriesId = SeedSeriesWithChapters(1m, 2m, 3m);
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId), default));
+
+        using (var db = _db.NewContext())
+        {
+            var request = await db.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == created.Id);
+            request.Status = SeriesRequestStatus.Processing;
+            request.ApprovalClaimedAtUtc = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        var result = await AsAdmin().Edit(created.Id, new EditSeriesRequestBody(1, 2), default);
+
+        // Claimed, not resolved: the old pre-check answered this with alreadyResolved before the
+        // conditional update ever ran, which is indistinguishable from a request somebody actually
+        // finished acting on. Another admin still mid-approval is a different situation for the
+        // caller (retry shortly vs. give up), so it needs its own code.
+        var body = Assert.IsType<ConflictObjectResult>(result).Value;
+        Assert.Equal("error.requests.approvalInProgress",
+            body!.GetType().GetProperty("code")!.GetValue(body));
+        using var check = _db.NewContext();
+        var unchanged = await check.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == created.Id);
+        Assert.Null(unchanged.ChapterStart);
+        Assert.Null(unchanged.ChapterEnd);
+    }
+
+    /// <summary>
+    /// Editing a range onto one another Pending request already holds collides with the partial
+    /// unique index the same way a fresh, identical submit would. The old code let the
+    /// <c>DbUpdateException</c> out of <c>ExecuteUpdateAsync</c> escape as an unhandled 500 instead
+    /// of answering with the same alreadyPending conflict a duplicate Create gets.
+    /// </summary>
+    [Fact]
+    public async Task Editing_a_range_onto_one_already_pending_for_the_same_series_conflicts()
+    {
+        // TestDb builds its schema with EnsureCreated, which never runs a migration and so never
+        // creates IX_SeriesRequests_Pending_Identity (raw SQL in the migration, not part of the EF
+        // model). Recreated here so this test exercises the same index production hits rather than a
+        // schema that can't reject anything.
+        using (var db = _db.NewContext())
+        {
+            await db.Database.ExecuteSqlRawAsync("""
+                CREATE UNIQUE INDEX IX_SeriesRequests_Pending_Identity
+                ON SeriesRequests (
+                    UserId,
+                    Kind,
+                    COALESCE(MetadataProviderId, ''),
+                    COALESCE(SeriesId, -1),
+                    COALESCE(ChapterStart, -1),
+                    COALESCE(ChapterEnd, -1)
+                )
+                WHERE Status = 0;
+                """);
+        }
+
+        var seriesId = SeedSeriesWithChapters(1m, 2m, 3m, 4m, 5m);
+
+        await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId, ChapterStart: 1, ChapterEnd: 2), default);
+        var second = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("Chapters", SeriesId: seriesId, ChapterStart: 3, ChapterEnd: 4), default));
+
+        var result = await AsAdmin().Edit(second.Id, new EditSeriesRequestBody(1, 2), default);
+
+        var body = Assert.IsType<ConflictObjectResult>(result).Value;
+        Assert.Equal("error.requests.alreadyPending",
+            body!.GetType().GetProperty("code")!.GetValue(body));
+        using var check = _db.NewContext();
+        var unchanged = await check.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == second.Id);
+        Assert.Equal(3m, unchanged.ChapterStart);
+        Assert.Equal(4m, unchanged.ChapterEnd);
+        Assert.Null(unchanged.EditedAt);
+    }
+
     /// <summary>The range on a resolved request records what was actually queued.</summary>
     [Fact]
     public async Task A_resolved_request_cannot_be_edited()
@@ -512,6 +702,37 @@ public class SeriesRequestsControllerTests : IDisposable
 
         Assert.IsType<ConflictObjectResult>(
             await AsAdmin().Edit(created.Id, new EditSeriesRequestBody(1, 10), default));
+    }
+
+    /// <summary>
+    /// The old Reject read Pending then saved on the tracked entity, so a Chapters approval that
+    /// completed in the meantime was silently overwritten and the requester was told it was declined
+    /// after it had actually been granted. Approved is written through a second context, landing
+    /// between Reject's existence check and its conditional write, rather than by running a whole
+    /// approval end to end: what's under test is the guard, not <c>Approve</c> itself.
+    /// </summary>
+    [Fact]
+    public async Task Rejecting_an_already_approved_request_is_refused()
+    {
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default));
+
+        using (var db = _db.NewContext())
+        {
+            var request = await db.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == created.Id);
+            request.Status = SeriesRequestStatus.Approved;
+            request.ResolvedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        var rejected = await AsAdmin().Reject(created.Id, new RejectSeriesRequestBody("Too late."), default);
+
+        var body = Assert.IsType<ConflictObjectResult>(rejected).Value;
+        Assert.Equal("error.requests.alreadyResolved",
+            body!.GetType().GetProperty("code")!.GetValue(body));
+        using var check = _db.NewContext();
+        Assert.Equal(SeriesRequestStatus.Approved,
+            (await check.SeriesRequests.IgnoreQueryFilters().SingleAsync(r => r.Id == created.Id)).Status);
     }
 
     [Fact]
@@ -590,17 +811,31 @@ public class SeriesRequestsControllerTests : IDisposable
     {
         public string Name => "fake";
 
+        /// <summary>
+        /// Set right before an approval to simulate a provider outage on the second lookup
+        /// (<see cref="SeriesCreationService.CreateAsync"/>'s own <c>GetAsync</c>) without also
+        /// breaking the first one <c>FillNewSeriesAsync</c> makes at request-creation time.
+        /// </summary>
+        public string? ThrowForProviderId { get; set; }
+
         public Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
             string query, string maxContentRating, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<MetadataSearchResult>>([]);
 
-        public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default) =>
-            Task.FromResult<SeriesMetadata?>(new SeriesMetadata
+        public Task<SeriesMetadata?> GetAsync(string providerId, CancellationToken ct = default)
+        {
+            if (providerId == ThrowForProviderId)
+            {
+                throw new InvalidOperationException("Provider unavailable.");
+            }
+
+            return Task.FromResult<SeriesMetadata?>(new SeriesMetadata
             {
                 ProviderId = providerId,
                 Title = $"Series {providerId}",
                 MangaBakaId = int.Parse(providerId),
                 Year = 2020,
             });
+        }
     }
 }

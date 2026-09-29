@@ -114,11 +114,15 @@ public class ImportListService(
                     logger.LogWarning(ex, "Import list run failed for user {UserId}", userId);
                 }
             }
+
+            // Only stamped once every user has been visited. A cancelled tick must not advance the
+            // gate, or a run cut short by shutdown would look like it ran to completion and the next
+            // scheduled tick would wait out the full interval before retrying.
+            await settings.SetAsync(SettingKeys.ImportListLastRunAt,
+                DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), CancellationToken.None);
         }
         finally
         {
-            await settings.SetAsync(SettingKeys.ImportListLastRunAt,
-                DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), CancellationToken.None);
             _tickLock.Release();
         }
     }

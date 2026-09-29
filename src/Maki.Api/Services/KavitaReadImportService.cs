@@ -33,7 +33,9 @@ public class KavitaReadImportService(
     KavitaUserResolver kavitaUser,
     ILogger<KavitaReadImportService> logger)
 {
-    public record ImportResult(int SeriesMatched, int ChaptersMarked, int SeriesUnmatched);
+    public record ImportResult(
+        int SeriesMatched, int ChaptersMarked, int SeriesUnmatched,
+        int SeriesFailed, IReadOnlyList<string> FailedTitles);
 
     /// <summary>
     /// A failure this service worded itself, as a catalogue key rather than rendered text: this is a
@@ -77,6 +79,8 @@ public class KavitaReadImportService(
         State.Running = true;
         State.ErrorKey = null;
         State.RawError = null;
+        State.Result = null;
+        State.FinishedAt = null;
         _ = Task.Run(async () =>
         {
             try
@@ -123,6 +127,7 @@ public class KavitaReadImportService(
         var kavitaSeries = await kavita.GetAllSeriesAsync(url, apiKey, ct);
 
         int matched = 0, marked = 0, unmatched = 0;
+        var failedTitles = new List<string>();
 
         foreach (var series in kavitaSeries)
         {
@@ -145,6 +150,7 @@ public class KavitaReadImportService(
             catch (Exception e)
             {
                 logger.LogWarning("Could not read Kavita progress for '{Title}': {Error}", title, e.Message);
+                failedTitles.Add(title);
                 continue;
             }
 
@@ -166,9 +172,9 @@ public class KavitaReadImportService(
         }
 
         logger.LogInformation(
-            "Kavita read import: {Matched} series matched, {Marked} chapters marked read, {Unmatched} unmatched",
-            matched, marked, unmatched);
-        return new ImportResult(matched, marked, unmatched);
+            "Kavita read import: {Matched} series matched, {Marked} chapters marked read, {Unmatched} unmatched, {Failed} failed",
+            matched, marked, unmatched, failedTitles.Count);
+        return new ImportResult(matched, marked, unmatched, failedTitles.Count, failedTitles);
     }
 
     /// <summary>Normalized title (and folder name) → local series id, for reverse-matching Kavita.</summary>

@@ -20,6 +20,13 @@ import { AnimeSignalsSection } from './AnimeSignalsSection'
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
 
 /**
+ * Mirrors `RecommendationFeedbackPolicy.AvoidRatingCeiling`: a rating at or below this pushes down
+ * titles close to it, the same as a thumbs down. 5 stays neutral. Keep the "How signals work" copy
+ * above and {@link useShelfPillInfo} reading the same number.
+ */
+const AVOID_RATING_CEILING = 4
+
+/**
  * What the reader's own actions did to their recommendations, on the Taste tab.
  *
  * Summary and recent feedback only. Anything that changes one title is in the Manage signals modal,
@@ -419,7 +426,9 @@ function useShelfPillInfo(item: ShelfPadItem) {
   if (item.kind === 'rated' && item.rating != null) {
     const label = t`★ ${formatRating(item.rating)} rated`
     if (item.rating >= 4.5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
-    if (item.rating <= 2) return { label, color: 'var(--danger)', phrase: t`pushes down titles close to it` }
+    if (item.rating <= AVOID_RATING_CEILING) {
+      return { label, color: 'var(--danger)', phrase: t`pushes down titles close to it` }
+    }
     return { label, color: 'var(--neutral)', phrase: t`neutral, seeds at shelf weight` }
   }
   if (item.kind === 'read') return { label: t`Read`, color: 'var(--info)', phrase: t`weighted by how far you got` }

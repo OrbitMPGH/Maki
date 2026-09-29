@@ -39,7 +39,7 @@ export function LinkFileToChaptersModal({
   file: SeriesFileDto | null
   onClose: () => void
 }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const opened = file !== null
   const { data: chapters, isLoading } = useChapters(seriesId)
   const link = useLinkChapters()
@@ -78,7 +78,7 @@ export function LinkFileToChaptersModal({
         (c.title ?? '').toLocaleLowerCase().includes(q) ||
         (c.numberRaw ?? '').toLocaleLowerCase().includes(q),
     )
-  }, [sorted, query])
+  }, [sorted, query, i18n.locale])
 
   const toggle = (id: number, shift: boolean) => {
     setSelected((prev) => {

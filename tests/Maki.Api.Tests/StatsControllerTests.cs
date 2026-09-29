@@ -18,4 +18,25 @@ public class StatsControllerTests
         var bad = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("error.stats.dateOutOfRange", bad.Value!.GetType().GetProperty("code")!.GetValue(bad.Value));
     }
+
+    [Fact]
+    public async Task Activity_rejects_an_offset_that_would_overflow_math_abs()
+    {
+        // Math.Abs(int.MinValue) throws OverflowException; the range check must not go through it.
+        var result = await Controller().Activity(
+            new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 2),
+            utcOffsetMinutes: int.MinValue, userId: null, CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("error.stats.utcOffsetOutOfRange", bad.Value!.GetType().GetProperty("code")!.GetValue(bad.Value));
+    }
+
+    [Fact]
+    public async Task Years_rejects_an_offset_that_would_overflow_math_abs()
+    {
+        var result = await Controller().Years(utcOffsetMinutes: int.MinValue, userId: null, CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("error.stats.utcOffsetOutOfRange", bad.Value!.GetType().GetProperty("code")!.GetValue(bad.Value));
+    }
 }

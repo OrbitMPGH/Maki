@@ -130,8 +130,18 @@ public class OlympusSource : ISource
         return null;
     }
 
-    public Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default) =>
-        _catalog.SearchAsync(title, FetchCatalogAsync, ct);
+    /// <summary>A forced refresh rebuilds <see cref="_slugById"/> but not the cached catalog, so each
+    /// hit's URL is rebuilt from the current map rather than trusting a possibly rotated slug.</summary>
+    public async Task<IReadOnlyList<SourceSeriesResult>> SearchAsync(string title, CancellationToken ct = default)
+    {
+        var results = await _catalog.SearchAsync(title, FetchCatalogAsync, ct);
+        var slugById = _slugById;
+        return results
+            .Select(r => slugById.TryGetValue(r.SourceSeriesId, out var slug) ? r with { Url = SeriesUrl(slug) } : r)
+            .ToList();
+    }
+
+    private string SeriesUrl(string slug) => $"{BaseUrl}/series/comic-{slug}";
 
     public async Task<SourceSeriesDetail> GetSeriesAsync(string sourceSeriesId, CancellationToken ct = default)
     {
@@ -145,7 +155,7 @@ public class OlympusSource : ISource
             ? sn.GetString()
             : null;
 
-        return new SourceSeriesDetail(sourceSeriesId, title, $"{BaseUrl}/series/comic-{slug}", cover, summary, status);
+        return new SourceSeriesDetail(sourceSeriesId, title, SeriesUrl(slug), cover, summary, status);
     }
 
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
@@ -348,7 +358,7 @@ public class OlympusSource : ISource
             var idString = id.Value.ToString(CultureInfo.InvariantCulture);
             var cover = row.TryGetProperty("cover", out var c) ? c.GetString() : null;
             slugById[idString] = slug;
-            results.Add(new SourceSeriesResult(idString, name, $"{BaseUrl}/series/comic-{slug}", cover));
+            results.Add(new SourceSeriesResult(idString, name, SeriesUrl(slug), cover));
         }
 
         _slugById = slugById;

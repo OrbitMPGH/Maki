@@ -14,7 +14,7 @@ namespace Maki.Sources.Manhuagui;
 /// </summary>
 public static partial class PackedScript
 {
-    [GeneratedRegex(@"\}\('(?<p>.*)',(?<a>\d+),(?<c>\d+),'(?<k>[A-Za-z0-9+/=]+)'\[", RegexOptions.Singleline)]
+    [GeneratedRegex(@"\}\('(?<p>.*?)',(?<a>\d+),(?<c>\d+),'(?<k>[A-Za-z0-9+/=]+)'\[", RegexOptions.Singleline)]
     private static partial Regex PackedCallRegex();
 
     [GeneratedRegex(@"\{.*\}", RegexOptions.Singleline)]

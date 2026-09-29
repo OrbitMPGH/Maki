@@ -45,6 +45,13 @@ public class DownloadQueueItem
     public int? ChapterId { get; set; }
     public Chapter? Chapter { get; set; }
 
+    /// <summary>
+    /// <see cref="ChapterId"/> while the item is active, null once it is Completed, Failed or
+    /// Cancelled. Computed by the database from the status, so no write path can forget it; its
+    /// unique index is what keeps a chapter to one active row.
+    /// </summary>
+    public int? ActiveChapterId { get; private set; }
+
     /// <summary>Null for items acquired via indexer releases instead of a scraper.</summary>
     public int? SourceMappingId { get; set; }
     public SourceMapping? SourceMapping { get; set; }

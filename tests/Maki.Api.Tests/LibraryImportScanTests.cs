@@ -2,6 +2,7 @@ using System.IO.Compression;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
+using Maki.Core.Security;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -29,13 +30,25 @@ public class LibraryImportScanTests : IDisposable
         }
     }
 
-    private async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId)
+    private async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId, ICurrentUser? currentUser = null)
     {
         await using var db = _db.NewContext();
         var service = new LibraryImportService(
             db, [_provider], null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            currentUser ?? new TestCurrentUser(1),
             NullLogger<LibraryImportService>.Instance);
         return await service.ScanAsync(rootFolderId);
+    }
+
+    private async Task<ImportResult> ImportAsync(
+        int rootFolderId, string folderName, ICurrentUser? currentUser = null)
+    {
+        await using var db = _db.NewContext();
+        var service = new LibraryImportService(
+            db, [_provider], null!, null!, null!, null!, null!, null!, null!, null!, null!, new TestLocalizer(),
+            currentUser ?? new TestCurrentUser(1),
+            NullLogger<LibraryImportService>.Instance);
+        return await service.ImportAsync(rootFolderId, new ImportRequestItem(folderName, "1"));
     }
 
     private int SeedRoot()
@@ -122,6 +135,100 @@ public class LibraryImportScanTests : IDisposable
         Assert.Null(fresh.ExistingSeriesId);
         // Only the new folder needed a provider search.
         Assert.Equal(["Monster"], _provider.Queries);
+    }
+
+    [Fact]
+    public async Task ScanRefusesARootFolderTheCallerHasNoGrantOn()
+    {
+        var root = SeedRoot();
+        var restricted = new RestrictedCurrentUser([2]);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ScanAsync(root, restricted));
+    }
+
+    [Fact]
+    public async Task ImportRefusesARootFolderTheCallerHasNoGrantOn()
+    {
+        var root = SeedRoot();
+        WriteComic("Monster", "Monster v01.cbz");
+        var restricted = new RestrictedCurrentUser([2]);
+
+        var result = await ImportAsync(root, "Monster", restricted);
+
+        Assert.False(result.Success);
+        Assert.Equal("error.series.rootFolderNotFound", result.Error);
+        Assert.True(File.Exists(Path.Combine(_root, "Monster", "Monster v01.cbz")));
+    }
+
+    [Theory]
+    [InlineData("...")]
+    [InlineData("....")]
+    [InlineData("... ")]
+    [InlineData(". .")]
+    public async Task ImportRefusesADotsAndSpacesFolderNameThatWindowsCollapsesToTheRoot(string folderName)
+    {
+        var root = SeedRoot();
+        WriteComic("Monster", "Monster v01.cbz");
+
+        var result = await ImportAsync(root, folderName);
+
+        Assert.False(result.Success);
+        Assert.Equal("error.libraryImport.invalidFolderName", result.Error);
+        Assert.True(File.Exists(Path.Combine(_root, "Monster", "Monster v01.cbz")));
+    }
+
+    [Fact]
+    public async Task ImportRefusesAFolderNameThatWalksOutOfTheRoot()
+    {
+        var root = SeedRoot();
+
+        var result = await ImportAsync(root, "../sibling");
+
+        Assert.False(result.Success);
+        Assert.Equal("error.libraryImport.invalidFolderName", result.Error);
+        Assert.False(Directory.Exists(Path.Combine(_root, "..", "sibling")));
+    }
+
+    [Fact]
+    public async Task ImportRefusesAFolderNameWithAnEmbeddedTraversal()
+    {
+        var root = SeedRoot();
+
+        var result = await ImportAsync(root, Path.Combine("a", "..", "..", "sibling"));
+
+        Assert.False(result.Success);
+        Assert.Equal("error.libraryImport.invalidFolderName", result.Error);
+    }
+
+    [Fact]
+    public async Task ImportRefusesAnAbsoluteFolderName()
+    {
+        var root = SeedRoot();
+        var absolute = Path.Combine(Path.GetTempPath(), "maki-import-outside-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(absolute);
+        try
+        {
+            var result = await ImportAsync(root, absolute);
+
+            Assert.False(result.Success);
+            Assert.Equal("error.libraryImport.invalidFolderName", result.Error);
+        }
+        finally
+        {
+            Directory.Delete(absolute, recursive: true);
+        }
+    }
+
+    /// <summary>An <see cref="ICurrentUser"/> granted only the listed root folders.</summary>
+    private sealed class RestrictedCurrentUser(IEnumerable<int> rootFolderIds) : ICurrentUser
+    {
+        public bool IsAuthenticated => true;
+        public int UserId => 1;
+        public string UserName => "test";
+        public MakiPermission Permissions => MakiPermission.ImportLibrary;
+        public bool AllRootFolders => false;
+        public IReadOnlySet<int> RootFolderIds { get; } = rootFolderIds.ToHashSet();
+        public string MaxContentRating => "erotica";
     }
 
     private sealed class CountingProvider : IMetadataProvider

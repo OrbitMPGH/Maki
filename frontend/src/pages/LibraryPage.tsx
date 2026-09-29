@@ -264,7 +264,7 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStored(LS_VIEW, ['grid', 'list'], 'grid'))
   const [density, setDensity] = useState<Density>(() => readStored(LS_DENSITY, ['compact', 'default', 'comfortable'], 'default'))
   const { data: series, isLoading, error, refetch: refetchSeries, isRefetching: isRefetchingSeries } = useSeries()
-  const { me } = useAuth()
+  const { me, can } = useAuth()
   const { data: rootFolders } = useRootFolders()
   const { data: tags } = useTags()
   const { data: savedFilters } = useSavedFilters()
@@ -678,9 +678,26 @@ export default function LibraryPage() {
     </Button>
   )
 
+  // A series that drops out of `visible` (filter change, bulk tag removal, ...) must drop out of
+  // `selected` too, or a later bulk action (Delete, optionally with files) still hits it even
+  // though it's no longer shown as selected.
+  useEffect(() => {
+    const visibleIds = new Set(visible.map((s) => s.id))
+    setSelected((prev) => {
+      if (prev.size === 0) return prev
+      let changed = false
+      const next = new Set<number>()
+      for (const id of prev) {
+        if (visibleIds.has(id)) next.add(id)
+        else changed = true
+      }
+      return changed ? next : prev
+    })
+  }, [visible])
+
   // Against the *filtered* set, not the whole library: "select all" under an active filter that
   // silently grabbed hidden series would make every bulk action a foot-gun.
-  const allSelected = selected.size > 0 && selected.size === visible.length
+  const allSelected = visible.length > 0 && visible.every((s) => selected.has(s.id))
   const selectedCount = selected.size
 
   // One hook serves both views: only one of the two wrappers is mounted at a time, and the ref
@@ -843,7 +860,7 @@ export default function LibraryPage() {
                 {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
                   setNotifyModalOpen(true),
                 )}
-                {bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
+                {can('Admin') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
                   setMoveModalOpen(true)

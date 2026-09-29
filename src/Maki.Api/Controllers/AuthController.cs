@@ -390,7 +390,7 @@ public class AuthController(
     /// </summary>
     [HttpGet("oidc/link")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    public IActionResult OidcLink()
+    public async Task<IActionResult> OidcLink()
     {
         if (!oidc.Enabled)
         {
@@ -402,7 +402,20 @@ public class AuthController(
             RedirectUri = "/api/v1/auth/oidc/link-complete"
         };
 
-        return Challenge(properties, AuthSchemes.Oidc);
+        // Not `return Challenge(...)`: see OidcChallenge above for why a deferred ChallengeResult
+        // would turn a synchronous provider error into an unhandled 500 instead of a page the user
+        // (already signed in, on the settings page) can read.
+        try
+        {
+            await HttpContext.ChallengeAsync(AuthSchemes.Oidc, properties);
+        }
+        catch (OpenIdConnectProtocolException ex)
+        {
+            logger.LogError(ex, "OIDC link challenge failed");
+            return LinkFailure("error.auth.ssoChallengeRejected");
+        }
+
+        return new EmptyResult();
     }
 
     /// <summary>
@@ -441,7 +454,8 @@ public class AuthController(
             return Unauthorized();
         }
 
-        var existing = await userManager.FindByLoginAsync(AuthSchemes.Oidc, subject);
+        var providerKey = OidcClaimMapper.ScopedProviderKey(oidc, subject);
+        var existing = await userManager.FindByLoginAsync(AuthSchemes.Oidc, providerKey);
         if (existing is not null && existing.Id != user.Id)
         {
             // Refused rather than re-linked: moving it here would silently strip the login from
@@ -453,7 +467,7 @@ public class AuthController(
         {
             var displayName = OidcClaimMapper.UserName(oidc, external.Principal.Claims.ToList(), subject);
             var result = await userManager.AddLoginAsync(
-                user, new UserLoginInfo(AuthSchemes.Oidc, subject, displayName));
+                user, new UserLoginInfo(AuthSchemes.Oidc, providerKey, displayName));
             if (!result.Succeeded)
             {
                 logger.LogWarning("Could not link single sign-on to {UserName}: {Errors}",

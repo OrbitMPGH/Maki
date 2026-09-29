@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using AngleSharp.Html.Parser;
+using Maki.Core.Http;
 using Maki.Core.Images;
 using Maki.Core.Sources;
 
@@ -329,6 +330,7 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
 
     private async Task<byte[]> FetchAndDescrambleAsync(string src, string episodeUrl, CancellationToken ct)
     {
+        PublicAddressGuard.EnsureAllowed(src);
         using var request = new HttpRequestMessage(HttpMethod.Get, src);
         request.Headers.Referrer = new Uri(episodeUrl);
         using var response = await ImageClient.SendAsync(request, ct);

@@ -7,6 +7,7 @@ using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Quality;
+using Maki.Core.Reading;
 using Maki.Core.Sources;
 using Maki.Core.Security;
 using Maki.Data;
@@ -46,7 +47,6 @@ public class ChapterController(
         var rows = await db.Chapters
             .Where(c => c.SeriesId == seriesId)
             .Include(c => c.ChapterFile)
-            .OrderBy(c => c.Number == null ? 1 : 0).ThenBy(c => c.Number).ThenBy(c => c.Volume)
             .Select(c => new
             {
                 c.Id,
@@ -91,7 +91,7 @@ public class ChapterController(
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
         // carry no volume metadata (parsing can't run inside the EF query, so it's
         // done here in memory over the materialized rows).
-        var chapters = rows.Select(c => new
+        var chapters = ChapterOrder.Sort(rows, c => c.Number, c => c.Volume, c => c.Id).Select(c => new
         {
             c.Id,
             c.SeriesId,
@@ -275,11 +275,40 @@ public class ChapterController(
         // onto the root folder. A bare Path.Combine accepts "..\.." and discards the root outright
         // for an absolute argument, so an EditMetadata holder could point a row at maki.db and a
         // DeleteSeries holder could then delete it. Resolve is the containment check; reject rather
-        // than sanitize, so nothing escaping ever reaches the database.
-        var absPath = LibraryPaths.Resolve(series.RootFolder.Path, request.RelativePath);
+        // than sanitize, so nothing escaping ever reaches the database. ResolveNoLinks also refuses a
+        // symlink or junction inside the series folder, which would lead out lexically unseen.
+        var absPath = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, request.RelativePath);
         if (absPath is null)
         {
             return this.Fail(localizer, "error.chapter.pathOutsideRoot");
+        }
+
+        // "./X/a.cbz" and "../Root/X/a.cbz" resolve inside the root but store a "." or ".." top
+        // folder, which SeriesFolders would then hand to rescan and relink as this series' folder.
+        var relativePath = Path.GetRelativePath(series.RootFolder.Path, absPath);
+        if (Path.IsPathRooted(relativePath) || relativePath == ".." ||
+            relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            LibraryPaths.TopFolder(relativePath) is "" or "." or "..")
+        {
+            return this.Fail(localizer, "error.chapter.pathOutsideRoot");
+        }
+
+        // Same exclusion SeriesFolders.ForAsync uses: a folder another series already owns never
+        // becomes this one's, manual link or not. Skipped when the top folder is this series' own
+        // folder: legacy data can have another series sharing that same FolderName, and linking
+        // into your own folder must not be refused over that.
+        if (LibraryPaths.TopFolder(relativePath) is { } topFolder &&
+            !LibraryPaths.FolderComparer.Equals(topFolder, series.FolderName))
+        {
+            var otherFolders = (await db.Series
+                    .Where(s => s.RootFolderId == series.RootFolderId && s.Id != series.Id)
+                    .Select(s => s.FolderName)
+                    .ToListAsync(ct))
+                .ToHashSet(LibraryPaths.FolderComparer);
+            if (otherFolders.Contains(topFolder))
+            {
+                return this.Fail(localizer, "error.chapter.pathInOtherSeries");
+            }
         }
 
         if (!System.IO.File.Exists(absPath))
@@ -288,13 +317,13 @@ public class ChapterController(
         }
 
         var file = await db.ChapterFiles
-            .FirstOrDefaultAsync(f => f.SeriesId == seriesId && f.RelativePath == request.RelativePath, ct);
+            .FirstOrDefaultAsync(f => f.SeriesId == seriesId && f.RelativePath == relativePath, ct);
         if (file is null)
         {
             file = new ChapterFile
             {
                 SeriesId = seriesId,
-                RelativePath = request.RelativePath,
+                RelativePath = relativePath,
                 Size = new FileInfo(absPath).Length,
                 SourceName = "Manual",
                 DateAdded = DateTime.UtcNow
@@ -368,6 +397,18 @@ public class ChapterController(
             .Distinct()
             .ToList();
 
+        // A manual link (see Link above) can point a second row, in this series or another, at the
+        // same physical file, so ChapterFileId alone can't tell if the file is still claimed elsewhere.
+        var filesInRoot = series?.RootFolderId is int rootFolderId
+            ? await (from f in db.ChapterFiles
+                     join s in db.Series on f.SeriesId equals s.Id
+                     where s.RootFolderId == rootFolderId
+                     select new { f.Id, f.RelativePath }).ToListAsync(ct)
+            : [];
+
+        // Collected here instead of deleted in place: rows are saved first, and only a successful
+        // save unlocks touching the filesystem.
+        var toDeleteFromDisk = new List<(string AbsPath, string RelativePath)>();
         foreach (var fileId in fileIds)
         {
             var stillReferenced = await db.Chapters
@@ -383,30 +424,30 @@ public class ChapterController(
                 continue;
             }
 
-            // Never File.Delete a bare Combine: a row written before the check in Link, or by any
-            // future path that skips it, would delete whatever it points at outside the library.
-            var absPath = series?.RootFolder is null
-                ? null
-                : LibraryPaths.Resolve(series.RootFolder.Path, file.RelativePath);
-            if (series?.RootFolder is not null && absPath is null)
-            {
-                logger.LogWarning("Refusing to delete {File}: resolves outside {Root}",
-                    file.RelativePath, series.RootFolder.Path);
-            }
+            // fileIds is this same batch: a row also being deleted here doesn't count as a claim,
+            // or two rows pointing at one file that are both removed would each see the other as
+            // still holding it and the file would never actually be deleted from disk.
+            var key = LibraryPaths.ComparisonKey(file.RelativePath);
+            var pathStillClaimed = filesInRoot.Any(f =>
+                f.Id != file.Id && !fileIds.Contains(f.Id) &&
+                LibraryPaths.FolderComparer.Equals(LibraryPaths.ComparisonKey(f.RelativePath), key));
 
-            if (absPath is not null)
+            if (!pathStillClaimed)
             {
-                try
+                // Never File.Delete a bare Combine: a row written before the check in Link, or by any
+                // future path that skips it, would delete whatever it points at outside the library.
+                var absPath = series?.RootFolder is null
+                    ? null
+                    : LibraryPaths.ResolveForDelete(series.RootFolder.Path, file.RelativePath);
+                if (series?.RootFolder is not null && absPath is null)
                 {
-                    System.IO.File.Delete(absPath);
+                    logger.LogWarning("Refusing to delete {File}: resolves outside {Root} or through a linked folder",
+                        file.RelativePath, series.RootFolder.Path);
                 }
-                catch (DirectoryNotFoundException)
+
+                if (absPath is not null)
                 {
-                    // Containing directory is already gone — the file is effectively deleted.
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    logger.LogWarning(ex, "Could not delete {File}, removing records anyway", file.RelativePath);
+                    toDeleteFromDisk.Add((absPath, file.RelativePath));
                 }
             }
 
@@ -416,6 +457,25 @@ public class ChapterController(
 
         db.Chapters.RemoveRange(chapters);
         await db.SaveChangesAsync(ct);
+
+        // Rows are already committed, so a failure here just orphans a file for Health's "unlinked"
+        // detection to pick up. Runs without the request's own cancellation token for that reason.
+        foreach (var (absPath, relativePath) in toDeleteFromDisk)
+        {
+            try
+            {
+                System.IO.File.Delete(absPath);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Containing directory is already gone, so the file is effectively deleted.
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogWarning(ex, "Could not delete {File}, removing records anyway", relativePath);
+            }
+        }
+
         return Ok(new { deleted = chapters.Count });
     }
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Maki.Core.Http;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using SixLabors.ImageSharp;
@@ -179,7 +180,8 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
             var imageUrl = GetString(pageEl, "image_url");
             if (string.IsNullOrEmpty(imageUrl))
             {
-                continue;
+                throw new InvalidOperationException(
+                    $"MangaDenizi page for chapter {chapterSlug} of {mangaSlug} has no usable image_url");
             }
 
             var raw = await FetchImageBytesAsync(imageUrl, ct);
@@ -224,6 +226,11 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         var grid = gridEl.GetInt32();
         var seed = seedEl.GetUInt32();
 
+        if (grid <= 0)
+        {
+            throw new InvalidOperationException($"Unexpected scramble grid {grid} for page {url}: must be positive");
+        }
+
         using var source = Image.Load<Rgb24>(raw);
         using var descrambled = MangaDeniziDescrambler.Descramble(source, grid, seed);
 
@@ -238,6 +245,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
 
     private async Task<byte[]> FetchImageBytesAsync(string url, CancellationToken ct)
     {
+        PublicAddressGuard.EnsureAllowed(url);
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Referrer = new Uri($"{BaseUrl}/");
         using var response = await Client.SendAsync(request, ct);

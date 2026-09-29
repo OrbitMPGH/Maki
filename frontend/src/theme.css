@@ -557,22 +557,6 @@ body {
   box-shadow: 0 0 8px color-mix(in srgb, var(--warn) 50%, transparent);
   flex-shrink: 0;
 }
-.nav-footer .nav-footer-kbd {
-  font-size: var(--type-label);
-  font-weight: var(--fw-semibold);
-  color: var(--ink-4);
-  border: 1px solid var(--border);
-  border-radius: var(--mantine-radius-xs);
-  padding: 1px 5px;
-  line-height: 1.4;
-  transition:
-    background-color var(--dur-base) var(--ease),
-    color var(--dur-base) var(--ease);
-}
-.nav-footer-kbd:hover {
-  color: var(--ink-hi);
-  background: var(--surface-hover);
-}
 .nav-card-wrap {
   position: relative;
 }

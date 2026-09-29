@@ -10,6 +10,7 @@ using Maki.Sources.GigaViewer;
 using Maki.Sources.WeebCentral;
 using Maki.Sources.Webtoons;
 using Maki.Sources.Toonily;
+using Maki.Sources.TopManhua;
 using Maki.Sources.MangaLib;
 using Maki.Sources.Dynasty;
 using Maki.Sources.AnimeSama;
@@ -368,6 +369,8 @@ public class ResolveSeriesIdFromUrlTests
     [InlineData("https://cuutruyen.net/mangas/not-a-number", null)]
     [InlineData("https://cuutruyen.net/", null)]
     [InlineData("https://example.com/mangas/2637", null)]
+    // The path must be anchored: "/mangas/" appearing later in the path (not at the start) is not a series URL.
+    [InlineData("https://cuutruyen.net/archive/mangas/2637", null)]
     public void CuuTruyen(string url, string? expected)
     {
         ISource source = new CuuTruyenSource(null!, Factory);
@@ -501,6 +504,19 @@ public class ResolveSeriesIdFromUrlTests
     public void TeamX(string url, string? expected)
     {
         ISource source = new TeamXSource(null!);
+        Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
+    }
+
+    [Theory]
+    [InlineData("https://www.topmanhua.fan/manhua/one-piece", "one-piece")]
+    [InlineData("https://www.topmanhua.fan/manhua/one-piece/", "one-piece")]
+    // A chapter URL adds a second segment and must not resolve as a series.
+    [InlineData("https://www.topmanhua.fan/manhua/one-piece/chapter-1", null)]
+    [InlineData("https://www.topmanhua.fan/?s=one+piece", null)]
+    [InlineData("https://example.com/manhua/one-piece", null)]
+    public void TopManhua(string url, string? expected)
+    {
+        ISource source = new TopManhuaSource(null!, null!);
         Assert.Equal(expected, source.ResolveSeriesIdFromUrl(new Uri(url)));
     }
 }

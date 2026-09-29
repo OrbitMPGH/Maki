@@ -162,6 +162,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
         string sourceSeriesId, CancellationToken ct = default)
     {
         var map = new Dictionary<decimal, int>();
+        var conflicted = new HashSet<decimal>();
         var offset = 0;
 
         while (true)
@@ -181,7 +182,17 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
                 var parsed = ChapterNumberParser.Parse(c.Attributes.Chapter, c.Attributes.Volume);
                 if (parsed is { Number: { } number, Volume: { } volume })
                 {
-                    map.TryAdd(number, volume);
+                    if (map.TryGetValue(number, out var existing))
+                    {
+                        if (existing != volume)
+                        {
+                            conflicted.Add(number);
+                        }
+                    }
+                    else
+                    {
+                        map[number] = volume;
+                    }
                 }
             }
 
@@ -190,6 +201,11 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             {
                 break;
             }
+        }
+
+        foreach (var number in conflicted)
+        {
+            map.Remove(number);
         }
 
         return map;

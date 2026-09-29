@@ -620,6 +620,8 @@ export interface ImportListRunSummary {
   requested: number
   skipped: number
   errors: number
+  /** Nothing ran because the local MangaBaka database is not downloaded yet. */
+  dumpUnavailable: boolean
 }
 
 export interface ImportListTrackerDto {
@@ -655,6 +657,7 @@ export interface ImportListRunResult {
   skipped: number
   alreadyPresent: number
   errors: number
+  dumpUnavailable: boolean
 }
 
 /**

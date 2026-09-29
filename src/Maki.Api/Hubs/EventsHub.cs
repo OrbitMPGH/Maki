@@ -151,12 +151,14 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// <summary>Per-folder progress while a library import runs. Stage is a machine key (see
     /// <see cref="Maki.Api.Services.ImportStage"/>), not display text; this reaches every admin
     /// connection at once and they don't share a language, so the client words it; current/total
-    /// are set for per-file stages; done/success/error mark completion.</summary>
+    /// are set for per-file stages; done/success/error mark completion. <paramref name="operationId"/>
+    /// is the id the client generated for this import run, so two admins importing at the same time
+    /// can tell their own run's events apart from each other's on the shared broadcast.</summary>
     public Task ImportProgress(
         string folderName, string stage, int? current = null, int? total = null,
-        bool done = false, bool success = false, string? error = null) =>
+        bool done = false, bool success = false, string? error = null, string? operationId = null) =>
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("importProgress",
-            new { folderName, stage, current, total, done, success, error });
+            new { folderName, stage, current, total, done, success, error, operationId });
 
     /// <summary>
     /// Somebody asked for a series or a chapter range. Admins only — they are the audience that can

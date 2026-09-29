@@ -3,8 +3,12 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Data;
+using Maki.Metadata.Catalogue;
+using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
+using Maki.Metadata.Tests;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -14,23 +18,30 @@ internal static class AnimeResumeFixture
 {
     public const string CoversToFive = "Chap 5 (S1)";
 
-    public static AnimeResumeService Service(TestDb db, MakiDbContext context, ReadingProgressGate gate)
+    public static AnimeResumeService Service(
+        TestDb db, MakiDbContext context, ReadingProgressGate gate, string? dumpPath = null)
     {
         var scopes = db.ScopeFactory();
         var progress = new ReadingProgressService(context, gate, NullLogger<ReadingProgressService>.Instance);
         var reader = new ReaderService(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             progress, InertKavitaPusher.For(scopes), new ReadingSessionService(context),
             NullLogger<ReaderService>.Instance);
+        var dump = new MangaBakaDumpOptions(dumpPath ?? "", Path.GetTempPath());
+        var store = new MangaBakaLocalStore(dump, new FakeAppSettings(), NullLogger<MangaBakaLocalStore>.Instance);
         var signals = new AnimeSignalSyncService(
             scopes,
             new AnimeSignalSources(null!, null!),
-            new MangaBakaLocalStore(
-                new MangaBakaDumpOptions("", Path.GetTempPath()), new FakeAppSettings(),
-                NullLogger<MangaBakaLocalStore>.Instance),
+            store,
             new FakeAppSettings(),
             new UserSettingsStoreService(scopes),
             NullLogger<AnimeSignalSyncService>.Instance);
-        return new AnimeResumeService(context, signals, reader, progress);
+        var user = new TestCurrentUser(context.Scope.UserId);
+        var hidden = new HiddenContentService(
+            new UserSettingsService(context, user),
+            new VectorIndexCache(new EmbeddingOptions("", "", "", EmbeddingModelProfile.Base), dump,
+                NullLogger<VectorIndexCache>.Instance),
+            new CatalogueIndexCache(dump, NullLogger<CatalogueIndexCache>.Instance));
+        return new AnimeResumeService(context, signals, reader, progress, store, user, hidden);
     }
 
     public static void OptIn(TestDb db, int userId) =>
@@ -405,6 +416,92 @@ public sealed class AnimeResumeServiceTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Equal(9, db.ReadingStates.Single(r => r.SeriesId == seriesId).MaxChapter);
+    }
+
+    [Fact]
+    public async Task Apply_before_any_chapters_exist_ticks_them_off_once_they_sync()
+    {
+        var seriesId = SeedWatchedSeries();
+
+        var (error, result) = await Service().ApplyAsync(seriesId, markWatched: true, null, CancellationToken.None);
+
+        Assert.Equal(AnimeResumeError.None, error);
+        Assert.Equal(0, result!.Updated);
+        using (var db = _db.NewContext())
+        {
+            Assert.Equal(5, db.UserSeriesStates.Single(s => s.SeriesId == seriesId).AnimeWatchPendingTo);
+        }
+
+        var chapters = AnimeResumeFixture.SeedChapters(_db, seriesId, 1, 2, 3, 4, 5, 6, 7);
+        await PendingService().ApplyAsync(seriesId, CancellationToken.None);
+
+        using var after = _db.NewContext();
+        var progress = after.ChapterProgress.Where(p => p.SeriesId == seriesId).ToDictionary(p => p.ChapterId);
+        foreach (var n in new[] { 1m, 2m, 3m, 4m, 5m })
+        {
+            Assert.True(progress[chapters[n]] is { UserId: User, Completed: true, Watched: true });
+        }
+        Assert.False(progress.ContainsKey(chapters[6m]));
+        Assert.Null(after.UserSeriesStates.Single(s => s.SeriesId == seriesId).AnimeWatchPendingTo);
+        Assert.Empty(after.StatsEvents.ToList());
+    }
+
+    [Fact]
+    public async Task Apply_with_chapters_to_tick_leaves_nothing_pending()
+    {
+        var seriesId = SeedWatchedSeries();
+        AnimeResumeFixture.SeedChapters(_db, seriesId, 1, 2, 3, 4, 5, 6);
+
+        await Service().ApplyAsync(seriesId, markWatched: true, null, CancellationToken.None);
+
+        using var db = _db.NewContext();
+        Assert.Null(db.UserSeriesStates.SingleOrDefault(s => s.SeriesId == seriesId)?.AnimeWatchPendingTo);
+    }
+
+    [Fact]
+    public async Task Rail_offers_unadded_manga_after_the_library_ones()
+    {
+        using var dump = new DumpDbBuilder();
+        dump.AddSeries(77, "Show", totalChapters: "40", animeStart: "Chap 1 (S1)", animeEnd: AnimeResumeFixture.CoversToFive);
+        dump.AddSeries(500, "Not added", totalChapters: "40", animeStart: "Chap 1 (S1)", animeEnd: "Chap 12 (S1)");
+        dump.AddSeries(501, "No anime range", totalChapters: "40");
+        dump.AddSeries(502, "Too explicit", totalChapters: "40", contentRating: "pornographic",
+            animeStart: "Chap 1 (S1)", animeEnd: "Chap 12 (S1)");
+        var seriesId = SeedWatchedSeries();
+        AnimeResumeFixture.SeedChapters(_db, seriesId, 1, 2, 3, 4, 5, 6);
+        foreach (var id in new long[] { 500, 501, 502 })
+        {
+            AnimeResumeFixture.SeedSignal(_db, User, animeId: id, mangaBakaId: id);
+        }
+
+        var context = _db.NewContext(User);
+        var items = await AnimeResumeFixture.Service(_db, context, _gate, dump.Path)
+            .RailAsync(12, CancellationToken.None);
+
+        Assert.Equal(2, items.Count);
+        Assert.Equal(seriesId, items[0].SeriesId);
+        Assert.Null(items[0].Catalogue);
+        Assert.Null(items[1].SeriesId);
+        Assert.Equal("500", items[1].Catalogue?.ProviderId);
+        Assert.Equal("Not added", items[1].SeriesTitle);
+        Assert.Equal(12m, items[1].CoveredTo);
+    }
+
+    private AnimeResumePendingService PendingService()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped(_ => _db.NewContext());
+        services.AddScoped(sp =>
+        {
+            var context = sp.GetRequiredService<MakiDbContext>();
+            return new ReaderService(context, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+                new ReadingProgressService(context, _gate, NullLogger<ReadingProgressService>.Instance),
+                InertKavitaPusher.For(_db.ScopeFactory()), new ReadingSessionService(context),
+                NullLogger<ReaderService>.Instance);
+        });
+        return new AnimeResumePendingService(
+            services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<AnimeResumePendingService>.Instance);
     }
 
     private int LinkDownloadedChapter(int seriesId, decimal number)

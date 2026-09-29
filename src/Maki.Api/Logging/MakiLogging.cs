@@ -65,6 +65,35 @@ public static class MakiLogging
     public static Microsoft.Extensions.Logging.ILogger CreateLogger(string category) =>
         new SerilogLoggerFactory(Log.Logger).CreateLogger(category);
 
+    /// <summary>
+    /// EF's migration warnings say how a migration was written (a PRAGMA outside a transaction, SQL
+    /// after a SQLite table rebuild), which an operator can do nothing about, and a fresh install
+    /// replays every migration and printed dozens. XmlKeyManager warns "no XML encryptor" on every
+    /// key write, and those keys sit unencrypted in ConfigDir on purpose (see
+    /// AuthServiceCollectionExtensions). Matched on the message so other warnings from the same
+    /// categories still surface.
+    /// </summary>
+    private static bool IsKnownBenign(LogEvent e)
+    {
+        if (e.Level != LogEventLevel.Warning ||
+            !e.Properties.TryGetValue("SourceContext", out var source) ||
+            source is not ScalarValue { Value: string category })
+        {
+            return false;
+        }
+
+        var template = e.MessageTemplate.Text;
+        return category switch
+        {
+            "Microsoft.EntityFrameworkCore.Migrations" =>
+                template.Contains("cannot be executed in a transaction", StringComparison.Ordinal) ||
+                template.Contains("while a rebuild of table", StringComparison.Ordinal),
+            "Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager" =>
+                template.Contains("No XML encryptor configured", StringComparison.Ordinal),
+            _ => false,
+        };
+    }
+
     private static Logger Build(AppPaths paths, LoggingOptions options)
     {
         return new LoggerConfiguration()
@@ -81,10 +110,14 @@ public static class MakiLogging
             //                                  OutboundHttpLoggingHandler, which logs one line.
             //   Quartz                  scheduler and thread pool boilerplate at every start. The
             //                           jobs themselves log under Maki.Api.Jobs.* and are unaffected.
+            //
+            // Two known-benign warnings are dropped by message below (see IsKnownBenign) rather than by
+            // flooring their categories, so anything else those categories report still gets through.
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
             .MinimumLevel.Override("Quartz", LogEventLevel.Warning)
+            .Filter.ByExcluding(IsKnownBenign)
             .Enrich.With<ComponentEnricher>()
             .WriteTo.Console(outputTemplate: ConsoleTemplate)
             .WriteTo.File(

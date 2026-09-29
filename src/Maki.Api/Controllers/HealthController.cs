@@ -385,7 +385,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             return this.Fail(localizer, "health.repair.pdfUnsupported");
         }
     });
-    public record BulkDelete(int[] FileIds, bool Confirmed);
+    public record BulkDelete(FileReview[] Files, bool Confirmed);
     /// <summary>
     /// Deletes several archives under one confirmation, each through the ordinary preview-then-apply
     /// path so nothing skips validation.
@@ -396,26 +396,32 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     /// count has cleared that bar. Every file is still validated individually, so one whose bytes
     /// changed since the review is refused and reported instead of taking the batch down with it.
     /// The cap is lower than the other bulk actions because this one cannot be undone.
+    /// <para>
+    /// Each entry carries the version the reviewer saw (the same shape a single-file review uses),
+    /// so a file rescanned or replaced while the modal was open is refused rather than deleted: the
+    /// server never substitutes its own current version for the one the caller reviewed.
+    /// </para>
     /// </remarks>
     [HttpPost("deletions/bulk")]
     public async Task<IActionResult> DeleteBulk(BulkDelete request, CancellationToken ct)
     {
         if (!request.Confirmed) return this.Fail(localizer, "error.health.confirmationRequired");
-        if (request.FileIds is not { Length: > 0 and <= 100 }) return this.Fail(localizer, "error.health.selectUpTo100");
-        var files = await db.HealthFiles.Where(f => request.FileIds.Contains(f.Id) && !f.Removed).ToListAsync(ct);
+        if (request.Files is not { Length: > 0 and <= 100 }) return this.Fail(localizer, "error.health.selectUpTo100");
+        var ids = request.Files.Select(f => f.FileId).ToArray();
+        var paths = await db.HealthFiles.Where(f => ids.Contains(f.Id)).ToDictionaryAsync(f => f.Id, f => f.RelativePath, ct);
         var deleted = 0;
         var failures = new List<object>();
-        foreach (var file in files)
+        foreach (var item in request.Files)
         {
             try
             {
-                var op = await operations.PreviewDeleteAsync(file.Id, file.Version, user.UserId, ct);
-                await operations.ApplyAsync(op.Id, file.Version, true, false, ct);
+                var op = await operations.PreviewDeleteAsync(item.FileId, item.Version, user.UserId, ct);
+                await operations.ApplyAsync(op.Id, item.Version, true, false, ct);
                 deleted++;
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
             {
-                failures.Add(new { file.Id, file.RelativePath, message = ex.Message });
+                failures.Add(new { Id = item.FileId, RelativePath = paths.GetValueOrDefault(item.FileId), message = ex.Message });
             }
         }
         db.HealthHistory.Add(new()
@@ -487,6 +493,11 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
                 foreach (var item in await db.DownloadQueue.Where(q => q.HealthOperationId == id && q.Status != QueueStatus.Completed).ToListAsync(ct))
                 { item.Status = QueueStatus.Cancelled; HttpContext.RequestServices.GetRequiredService<DownloadQueueService>().CancelWork(item.Id); }
                 await db.SaveChangesAsync(ct);
+                // Staged candidate archives (and any rollback copy) belong to this operation alone;
+                // nothing else will clean them up once it is cancelled. Best-effort - a missing root
+                // just leaves it for the startup sweep.
+                try { await operations.RemoveStagingAsync(op, ct); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { }
             }
             return Ok(Rendered(op));
         }

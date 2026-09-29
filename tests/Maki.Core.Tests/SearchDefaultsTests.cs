@@ -99,7 +99,25 @@ public class SearchDefaultsTests
 
         Assert.Equal(["Horror"], spec.Genres!);
         Assert.False(spec.IsEmpty);
-        Assert.Equal("""{"yearMin":null,"yearMax":null,"types":null,"statuses":null,"genres":["Horror"],"tags":null,"minChapters":null,"maxChapters":null,"minRating":null,"contentRatings":null,"rules":null}""",
+        Assert.Equal("""{"yearMin":null,"yearMax":null,"types":null,"statuses":null,"genres":["Horror"],"tags":null,"minChapters":null,"maxChapters":null,"minRating":null,"contentRatings":null,"rules":null,"credits":null}""",
             SearchDefaultsSpec.Serialize(spec));
+    }
+
+    [Fact]
+    public void Credits_normalize_their_role_and_drop_duplicates()
+    {
+        var spec = new SearchDefaultsSpec(Credits:
+        [
+            new("Junji Ito", "author"),
+            new(" junji ito ", "Author"),
+            new("Shueisha", "publisher"),
+            new("  ", "author"),
+            new("Someone", "nonsense"),
+        ]).Normalize();
+
+        Assert.False(spec.IsEmpty);
+        Assert.Equal(
+            [new("Junji Ito", "author"), new("Shueisha", "studio"), new Maki.Core.Recommendations.CatalogueCredit("Someone")],
+            spec.Credits!);
     }
 }

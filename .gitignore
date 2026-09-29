@@ -30,7 +30,7 @@ design-system/out/
 
 # Local import test data
 .devimport/
-frontend/.claude/launch.json
+**/.claude/launch.json
 TODO.md
 /.agents
 /.claude/skills
@@ -48,3 +48,6 @@ diff.txt
 /.simulated
 skills-lock.json
 /.showcase
+
+# Release checklist fixtures and test runs (scripts/release-test)
+/.release-test/

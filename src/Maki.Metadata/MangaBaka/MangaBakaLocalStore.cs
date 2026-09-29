@@ -798,7 +798,7 @@ public class MangaBakaLocalStore(
             }
         }
 
-        if (genreWeight.Count == 0 && tagWeight.Count == 0)
+        if (genreWeight.Count == 0 && tagWeight.Count == 0 && authors.Count == 0)
         {
             return [];
         }
@@ -980,6 +980,39 @@ public class MangaBakaLocalStore(
         }
 
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
+    }
+
+    /// <summary>
+    /// The anime range and chapter count for each id that has one, for resolving where an anime
+    /// ends on titles that are not in the library. Novels are left out, as in <see cref="GetDetailAsync"/>.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<long, MangaBakaAnimeCoverage>> GetAnimeCoverageAsync(
+        IReadOnlyList<long> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            return new Dictionary<long, MangaBakaAnimeCoverage>();
+        }
+
+        using var conn = Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"""
+            SELECT id, anime_start, anime_end, total_chapters
+            FROM series
+            WHERE id IN ({string.Join(",", ids.Take(MaxInlineIds).Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+              AND (anime_start IS NOT NULL OR anime_end IS NOT NULL)
+              AND (type IS NULL OR type <> 'novel')
+            """;
+
+        var byId = new Dictionary<long, MangaBakaAnimeCoverage>(ids.Count);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            byId[reader.GetInt64(0)] = new MangaBakaAnimeCoverage(
+                GetString(reader, 1), GetString(reader, 2), ParseCount(GetString(reader, 3)));
+        }
+
+        return byId;
     }
 
     /// <summary>

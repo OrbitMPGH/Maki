@@ -137,7 +137,7 @@ export function CustomRailForm({
   const [debouncedJson] = useDebouncedValue(specJson, 400)
   const countSpec = useMemo(() => JSON.parse(debouncedJson) as CustomRailSpec, [debouncedJson])
   const { data: count } = useCustomRailCount(
-    source === 'library' || discoverAvailable ? countSpec : null,
+    source === 'library' || (source !== 'recommendations' && discoverAvailable) ? countSpec : null,
   )
 
   const sourceOptions = SOURCES.map((value) => ({

@@ -43,6 +43,16 @@ msgstr "Dieser Code ist nicht gültig"
 msgid "error.account.invalidContentRating"
 msgstr "Die Bewertung muss eine der folgenden sein: {ratings}"
 
+#. JsonStringEnumConverter accepts the underlying numeric value of an enum as well as its name, so
+#. an undefined integer (e.g. "7") deserializes without error into a UserApiKeyScope value nothing
+#. names. Caught with Enum.IsDefined rather than a bigger allowed-scope list, since Opds already has
+#. its own dedicated refusal above.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: That key scope is not valid
+#, fuzzy
+msgid "error.account.invalidScope"
+msgstr "Der Scope dieses Schlüssels ist ungültig."
+
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Too many incorrect password attempts. Try again later.
@@ -81,6 +91,14 @@ msgstr "Das aktuelle und das neue Passwort sind erforderlich"
 #, fuzzy
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "Die Zwei-Faktor-Authentifizierung ist bereits aktiviert"
+
+#. Owner decision on #16: SSO delegates the second factor to the identity provider, so an
+#. OIDC-linked account cannot also enrol a local authenticator.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: This account signs in through single sign-on, which handles two-factor itself
+#, fuzzy
+msgid "error.account.twoFactorDelegatedToSso"
+msgstr "Dieses Konto meldet sich über Single Sign-On an. Der Identitätsanbieter übernimmt die Zwei-Faktor-Authentifizierung."
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 #. English: Turn on anime taste signals to use this
@@ -305,6 +323,12 @@ msgid "error.chapter.noRootFolder"
 msgstr "Serie hat keinen Stammordner"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: Path belongs to another series' folder
+#, fuzzy
+msgid "error.chapter.pathInOtherSeries"
+msgstr "Der Pfad gehört zum Ordner einer anderen Serie."
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Path is outside the series' root folder
 #, fuzzy
 msgid "error.chapter.pathOutsideRoot"
@@ -519,6 +543,12 @@ msgstr "„{title}“ ist bereits mit heruntergeladenen Dateien in der Bibliothe
 #, fuzzy
 msgid "error.libraryImport.folderGone"
 msgstr "Ordner existiert nicht mehr"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Invalid folder name
+#, fuzzy
+msgid "error.libraryImport.invalidFolderName"
+msgstr "Ungültiger Ordnername"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -1009,6 +1039,12 @@ msgstr "Unbekannte Quelle: {sourceName}"
 msgid "error.series.activeDownloadMove"
 msgstr "Die Serie hat einen aktiven Download. Warte, bis er abgeschlossen ist, bevor du sie verschiebst"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series has an active download. Wait for it to finish before relinking files.
+#, fuzzy
+msgid "error.series.activeDownloadRelink"
+msgstr "Für diese Serie läuft ein Download. Warte, bis er abgeschlossen ist, bevor du Dateien neu verknüpfst."
+
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: That add completed earlier and the series has since been removed. Add it again to create a new one.
@@ -1042,6 +1078,13 @@ msgstr "Zielordner ist bereits vorhanden: {folder}"
 msgid "error.series.filesNotMoved"
 msgstr "Dateien nicht verschoben: {folder} existiert nicht. Verschiebe die Dateien zuerst dorthin oder lass Maki sie verschieben."
 
+#. {folder} is a folder name inside the root folder and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself.
+#, fuzzy
+msgid "error.series.folderContainsLinks"
+msgstr "Kann {folder} nicht verschieben: Der Ordner ist ein symbolischer Link oder eine Junction oder enthält einen davon. Ersetze den Link durch die echten Dateien oder verschiebe den Ordner selbst."
+
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series folder moved from {from} to {to}
@@ -1072,6 +1115,14 @@ msgstr "Serie beim Metadatenanbieter nicht gefunden"
 #, fuzzy
 msgid "error.series.metadataRefreshFailed"
 msgstr "Metadatensuche fehlgeschlagen. Die Serie hat keine Anbieter-ID oder der Anbieter hat nichts zurückgegeben"
+
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Could not save the series move: {message}
+#, fuzzy
+msgid "error.series.moveSaveFailed"
+msgstr "Das Verschieben der Serie konnte nicht gespeichert werden: {message}"
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
@@ -1177,6 +1228,13 @@ msgstr "Das aktuelle Kapitelformat ergibt für zwei Kapitel denselben Dateinamen
 #, fuzzy
 msgid "error.seriesRename.notFound"
 msgstr "Serie nicht gefunden"
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+#. English: The rename plan changed since the preview was loaded. Review the new plan and try again.
+#, fuzzy
+msgid "error.seriesRename.planChanged"
+msgstr "Der Umbenennungsplan hat sich geändert, seit die Vorschau geladen wurde. Prüfe den neuen Plan und versuche es erneut."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -1629,6 +1687,12 @@ msgid "error.settings.downloadTimeoutRange"
 msgstr "Das Download-Timeout muss 0 (keine Begrenzung) oder zwischen {min} und {max} Minuten betragen"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Bulk hold must be between 0 (off) and {max} chapters
+#, fuzzy
+msgid "error.settings.bulkHoldRange"
+msgstr "Die Rückhalteschwelle muss zwischen 0 (aus) und {max} Kapiteln liegen"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 #. English: The upgrade scan hour must be between {min} and {max}
 msgid "error.settings.upgradesScanHourRange"
 msgstr ""
@@ -1979,6 +2043,12 @@ msgstr "Erscheinungsjahr; leer, wenn unbekannt"
 msgid "error.system.backupMissingDb"
 msgstr "Sicherung enthält keine maki.db. Das ist keine Maki-Sicherung."
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: The database in this backup is damaged or is not a Maki database. Nothing was changed.
+#, fuzzy
+msgid "error.system.backupInvalidDb"
+msgstr "Die Datenbank in diesem Backup ist beschädigt oder keine Maki-Datenbank. Es wurden keine Änderungen vorgenommen."
+
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
 #. English: Backup is from a newer version (migration "{migration}" unknown to this build). Upgrade Maki before restoring it.
@@ -1986,11 +2056,29 @@ msgstr "Sicherung enthält keine maki.db. Das ist keine Maki-Sicherung."
 msgid "error.system.backupTooNew"
 msgstr "Das Backup stammt aus einer neueren Version (Migration „{migration}“ ist diesem Build unbekannt). Aktualisiere Maki, bevor du es wiederherstellst."
 
+#: src/Maki.Api/Services/BackupService.cs
+#. English: This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed.
+#, fuzzy
+msgid "error.system.backupUnreadable"
+msgstr "Diese Datei ist kein lesbares Maki-Backup. Das ZIP-Archiv oder sein Manifest ist beschädigt. Es wurden keine Änderungen vorgenommen."
+
 #: src/Maki.Api/Controllers/SystemController.cs
 #. English: No file uploaded.
 #, fuzzy
 msgid "error.system.noFileUploaded"
 msgstr "Keine Datei hochgeladen."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Another backup is being created right now. Try again in a moment.
+#, fuzzy
+msgid "error.system.backupInProgress"
+msgstr "Gerade wird ein anderes Backup erstellt. Versuche es gleich noch einmal."
+
+#: src/Maki.Api/Services/BackupService.cs
+#. English: Could not create the backup. Check the server logs for details.
+#, fuzzy
+msgid "error.system.backupFailed"
+msgstr "Backup konnte nicht erstellt werden. Einzelheiten findest du in den Serverprotokollen."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -2111,6 +2199,19 @@ msgstr "Neue Kapitel verfügbar"
 #, fuzzy
 msgid "inbox.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# neues Kapitel zum Download eingereiht} other {# neue Kapitel zum Download eingereiht}}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: New chapters held back
+#, fuzzy
+msgid "inbox.chapters.held.title"
+msgstr "Neue Kapitel zurückgehalten"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
+msgid "inbox.chapters.held.body"
+msgstr "{series}: {count, plural, one {# neues Kapitel} other {# neue Kapitel}} auf einmal gefunden und nicht automatisch heruntergeladen. Lade sie auf der Serienseite herunter, falls sie echt sind."
 
 #: src/Maki.Api/Program.cs
 #. English: Pre-upgrade backup taken
@@ -2336,6 +2437,32 @@ msgstr "Listenimport abgeschlossen"
 #, fuzzy
 msgid "inbox.importList.finished.body"
 msgstr "{tracker}: {added, plural, one {# hinzugefügt} other {# hinzugefügt}}{requested, plural, =0 {} one {, # angefragt} other {, # angefragt}}{skipped, plural, =0 {} one {, # übersprungen} other {, # übersprungen}}{errors, plural, =0 {} one {, # Fehler} other {, # Fehler}}"
+
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from {creator}
+#, fuzzy
+msgid "inbox.followedRelease.title"
+msgstr "Neu von {creator}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {title} is new in the catalogue.
+#, fuzzy
+msgid "inbox.followedRelease.body"
+msgstr "{title} ist neu im Katalog."
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from creators you follow
+#, fuzzy
+msgid "inbox.followedReleases.title"
+msgstr "Neu von Creators, denen du folgst"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
+msgid "inbox.followedReleases.body"
+msgstr "{count, plural, one {# neuer Titel} other {# neue Titel}} im Katalog."
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
@@ -2816,6 +2943,13 @@ msgstr "{series}: {count, plural, one {# neues Kapitel} other {# neue Kapitel}} 
 #, fuzzy
 msgid "notify.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# neues Kapitel} other {# neue Kapitel}} zum Download eingereiht"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+#. English: {series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not downloaded automatically. Download them from the series page if they are real.
+#, fuzzy
+msgid "notify.chapters.held.body"
+msgstr "{series}: {count, plural, one {# neues Kapitel} other {# neue Kapitel}} auf einmal gefunden und nicht automatisch heruntergeladen. Lade sie auf der Serienseite herunter, falls sie echt sind."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 #. English: Chapter downloaded
@@ -3434,6 +3568,18 @@ msgstr "Ersatz für {count, plural, one {# Kapitel} other {# Kapitel}} angeforde
 #, fuzzy
 msgid "health.history.operationCompleted"
 msgstr "{kind} abgeschlossen: {path}"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Permanently deleted {path}; chapter records and Wanted flags preserved
+#, fuzzy
+msgid "health.history.deletedFile"
+msgstr "Datei {path} dauerhaft gelöscht; Kapitel-Datensätze und „Gewünscht“-Markierungen bleiben erhalten"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+#. English: Cleared the record for missing {path}; chapter records and Wanted flags preserved
+#, fuzzy
+msgid "health.history.deletedMissing"
+msgstr "Eintrag für die fehlende Datei {path} gelöscht; Kapitel-Datensätze und „Gewünscht“-Markierungen bleiben erhalten"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 #. English: Scan {scan}: {completed} of {total} files, {status}

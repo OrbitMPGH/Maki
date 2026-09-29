@@ -215,7 +215,8 @@ public class ReaderController(
             profileName = resolved.ProfileName,
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
-            seriesType = slice.Series.Type
+            seriesType = slice.Series.Type,
+            pageVersion = PageVersion(slice)
         });
     }
 
@@ -230,15 +231,11 @@ public class ReaderController(
 
         var entry = slice.Pages[slice.StartPage + page];
 
-        // The archive is immutable in practice, and the size guards against a re-import
-        // reusing the id, so the response can be cached hard.
         var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveSize}-{slice.StartPage + page}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
         }
-
-        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
         if (ComicFile.IsPdf(slice.ArchivePath))
         {
@@ -248,6 +245,7 @@ public class ReaderController(
                 return NotFound();
             }
 
+            SetPageCacheControl(slice);
             return PhysicalFile(cached, CbzReader.ContentType(entry), lastModified: null, entityTag: etag, enableRangeProcessing: false);
         }
 
@@ -257,8 +255,21 @@ public class ReaderController(
             return NotFound();
         }
 
+        SetPageCacheControl(slice);
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }
+
+    private static string PageVersion(ReaderService.ChapterSlice slice) => $"{slice.ChapterFileId}-{slice.ArchiveSize}";
+
+    /// <summary>
+    /// Page URLs are the same before and after a re-download, so a year-long immutable response is
+    /// only safe when the URL carries the manifest's <c>pageVersion</c> and it still matches the
+    /// file on disk. Anything else revalidates against the ETag.
+    /// </summary>
+    private void SetPageCacheControl(ReaderService.ChapterSlice slice) =>
+        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice)
+            ? "private, max-age=31536000, immutable"
+            : "private, no-cache";
 
     /// <summary>
     /// Full-size PDF page render, disk-cached alongside the thumbnail cache for the same chapter
@@ -295,10 +306,13 @@ public class ReaderController(
             {
                 System.IO.File.Move(tmp, cached, overwrite: true);
             }
-            catch (IOException) when (System.IO.File.Exists(cached))
+            catch (Exception moveError) when (moveError is IOException or UnauthorizedAccessException &&
+                                              System.IO.File.Exists(cached))
             {
                 // Another request already finished rendering the same page and has it open for
-                // reading; the bytes are deterministic, so the loser can just use what is there.
+                // reading (Windows refuses to replace an open file); the bytes are deterministic,
+                // so the loser can just use what is there.
+                System.IO.File.Delete(tmp);
             }
         }
         catch
@@ -322,7 +336,6 @@ public class ReaderController(
         var absoluteIndex = slice.StartPage + page;
         var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
         var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.jpg");
-        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
 
         if (!System.IO.File.Exists(cached))
         {
@@ -410,6 +423,7 @@ public class ReaderController(
             }
         }
 
+        SetPageCacheControl(slice);
         return PhysicalFile(cached, "image/jpeg");
     }
 

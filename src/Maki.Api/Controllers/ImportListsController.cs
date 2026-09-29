@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Maki.Api.Auth;
 using Maki.Api.Localization;
 using Maki.Api.Services;
@@ -27,6 +28,14 @@ public class ImportListsController(
     ICurrentUser currentUser) : ControllerBase
 {
     public const int SkippedLimit = 200;
+
+    /// <summary>
+    /// Guards the read-modify-write in <see cref="SetPrefs"/>: two trackers' toggles saved at once
+    /// both read the same <see cref="ImportListPrefs"/> blob, and whichever write lands second used
+    /// to overwrite the first tracker's change. Keyed by user, static because a controller instance
+    /// does not survive past the request.
+    /// </summary>
+    private static readonly ConcurrentDictionary<int, SemaphoreSlim> PrefsLocks = new();
 
     public record TrackerPrefsDto(
         bool Enabled, IReadOnlyList<string> Statuses, int? RootFolderId, bool Monitored,
@@ -116,10 +125,20 @@ public class ImportListsController(
             return this.Fail(localizer, "error.importLists.rootFolderNotVisible");
         }
 
-        var all = ImportListPrefs.Parse(await userSettings.GetAsync(SettingKeys.ImportListPrefs, ct));
-        all[service] = new ImportListTrackerPrefs(
-            request.Enabled, statuses, request.RootFolderId, request.Monitored, mode.ToString(), request.MaxPerRun);
-        await userSettings.SetAsync(SettingKeys.ImportListPrefs, ImportListPrefs.Serialize(all), ct);
+        var prefsLock = PrefsLocks.GetOrAdd(currentUser.UserId, _ => new SemaphoreSlim(1, 1));
+        await prefsLock.WaitAsync(ct);
+        try
+        {
+            var all = ImportListPrefs.Parse(await userSettings.GetAsync(SettingKeys.ImportListPrefs, ct));
+            all[service] = new ImportListTrackerPrefs(
+                request.Enabled, statuses, request.RootFolderId, request.Monitored, mode.ToString(), request.MaxPerRun);
+            await userSettings.SetAsync(SettingKeys.ImportListPrefs, ImportListPrefs.Serialize(all), ct);
+        }
+        finally
+        {
+            prefsLock.Release();
+        }
+
         return NoContent();
     }
 

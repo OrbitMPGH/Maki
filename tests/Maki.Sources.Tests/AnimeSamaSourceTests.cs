@@ -179,6 +179,22 @@ public class AnimeSamaSourceTests
     }
 
     [Fact]
+    public async Task ListChapters_throws_when_page_count_keys_are_sparse()
+    {
+        // {"1":5,"3":7} has 2 entries but keys 1 and 3, not 1 and 2 - BuildLabels' total check
+        // (labels.Count == counts.Count) would pass even though position 2 has no count and could
+        // never download. Keys must be exactly 1..counts.Count.
+        var source = new AnimeSamaSource(new FakeHtmlFetcher(new()
+        {
+            ["/catalogue/one-piece/scan/vf/"] = FakeHttpClientFactory.Fixture("animesama-scan-plain.html"),
+            ["get_nb_chap_et_img.php"] = """{"1":5,"3":7}"""
+        }));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => source.ListChaptersAsync("one-piece/scan/vf"));
+    }
+
+    [Fact]
     public async Task GetPages_throws_ChapterLocked_when_position_has_zero_pages()
     {
         // The plain-panel fixture (no active list script) falls back to labels 1..total, so a
@@ -259,5 +275,22 @@ public class AnimeSamaSourceTests
         Assert.Equal("0", labels[0]);
         Assert.Equal("1", labels[1]);
         Assert.Equal("201", labels[^1]);
+    }
+
+    [Fact]
+    public async Task BuildLabels_keeps_a_parenthesis_inside_a_quoted_label()
+    {
+        const string html = """
+            <html><body>
+            <script>
+                resetListe();creerListe(1, 2);newSP("Bonus (partie 1)");finirListe(3);
+            </script>
+            </body></html>
+            """;
+        var doc = await Parser.ParseDocumentAsync(html);
+
+        var labels = AnimeSamaSource.BuildLabels(doc, 4);
+
+        Assert.Equal(["1", "2", "Bonus (partie 1)", "3"], labels);
     }
 }

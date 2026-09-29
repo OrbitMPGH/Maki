@@ -33,6 +33,14 @@ msgstr "That code is not valid"
 msgid "error.account.invalidContentRating"
 msgstr "Rating must be one of: {ratings}"
 
+#. JsonStringEnumConverter accepts the underlying numeric value of an enum as well as its name, so
+#. an undefined integer (e.g. "7") deserializes without error into a UserApiKeyScope value nothing
+#. names. Caught with Enum.IsDefined rather than a bigger allowed-scope list, since Opds already has
+#. its own dedicated refusal above.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.invalidScope"
+msgstr "That key scope is not valid"
+
 #. The signed-in user typed their current password wrong too many times.
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.lockedOut"
@@ -59,6 +67,12 @@ msgstr "Current and new password are required"
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.twoFactorAlreadyEnabled"
 msgstr "Two-factor authentication is already enabled"
+
+#. Owner decision on #16: SSO delegates the second factor to the identity provider, so an
+#. OIDC-linked account cannot also enrol a local authenticator.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.twoFactorDelegatedToSso"
+msgstr "This account signs in through single sign-on, which handles two-factor itself"
 
 #: src/Maki.Api/Controllers/AnimeResumeController.cs
 msgid "error.animeResume.notEnabled"
@@ -217,6 +231,10 @@ msgid "error.chapter.noRootFolder"
 msgstr "Series has no root folder"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.pathInOtherSeries"
+msgstr "Path belongs to another series' folder"
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 msgid "error.chapter.pathOutsideRoot"
 msgstr "Path is outside the series' root folder"
 
@@ -365,6 +383,10 @@ msgstr "\"{title}\" is already in the library with downloaded files. Delete it f
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.folderGone"
 msgstr "Folder no longer exists"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.invalidFolderName"
+msgstr "Invalid folder name"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.metadataLookupFailed"
@@ -701,6 +723,10 @@ msgstr "Unknown source: {sourceName}"
 msgid "error.series.activeDownloadMove"
 msgstr "Series has an active download - wait for it to finish before moving"
 
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.activeDownloadRelink"
+msgstr "Series has an active download. Wait for it to finish before relinking files."
+
 #. The add went through on an earlier attempt and the series it created has since been deleted, so there is nothing to return.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.addResultGone"
@@ -724,6 +750,11 @@ msgstr "Destination folder already exists: {folder}"
 msgid "error.series.filesNotMoved"
 msgstr "Files not moved: {folder} doesn't exist. Move the files there first, or let Maki move them."
 
+#. {folder} is a folder name inside the root folder and is never translated.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.folderContainsLinks"
+msgstr "Can't move {folder}: it is or contains a symbolic link or junction. Replace the link with the real files, or move the folder yourself."
+
 #. Not an error: a plain confirmation carried in the move response's Warnings list.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.folderMoved"
@@ -744,6 +775,12 @@ msgstr "Series not found on metadata provider"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.metadataRefreshFailed"
 msgstr "Metadata lookup failed - series has no provider id or the provider returned nothing"
+
+#. {message} is an exception message and is never translated. The files already moved; only the
+#. database write failed, so the move is rolled back.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.moveSaveFailed"
+msgstr "Could not save the series move: {message}"
 
 #. The client reused a mutation id it had already sent with different add parameters.
 #. The add request carried an empty mutation id, which the retry-safe add path needs.
@@ -819,6 +856,11 @@ msgstr "The current chapter format gives two chapters the same file name"
 #: src/Maki.Api/Services/SeriesRenameService.cs
 msgid "error.seriesRename.notFound"
 msgstr "Series not found"
+
+#. Shown when the naming formats or metadata changed after the rename preview was loaded.
+#: src/Maki.Api/Services/SeriesRenameService.cs
+msgid "error.seriesRename.planChanged"
+msgstr "The rename plan changed since the preview was loaded. Review the new plan and try again."
 
 #. Shown when a client asks for a start page this build does not have.
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -1156,6 +1198,10 @@ msgid "error.settings.downloadTimeoutRange"
 msgstr "Download timeout must be 0 (no limit) or between {min} and {max} minutes"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.bulkHoldRange"
+msgstr "Bulk hold must be between 0 (off) and {max} chapters"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.upgradesScanHourRange"
 msgstr "The upgrade scan hour must be between {min} and {max}"
 
@@ -1401,14 +1447,30 @@ msgstr "Release year; blank when unknown"
 msgid "error.system.backupMissingDb"
 msgstr "Backup is missing maki.db. This is not a Maki backup."
 
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupInvalidDb"
+msgstr "The database in this backup is damaged or is not a Maki database. Nothing was changed."
+
 #. {migration} is the unrecognised EF migration name the backup's manifest carries.
 #: src/Maki.Api/Services/BackupService.cs
 msgid "error.system.backupTooNew"
 msgstr "Backup is from a newer version (migration \"{migration}\" unknown to this build). Upgrade Maki before restoring it."
 
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupUnreadable"
+msgstr "This file is not a readable Maki backup. The zip or its manifest is damaged. Nothing was changed."
+
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.noFileUploaded"
 msgstr "No file uploaded."
+
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupInProgress"
+msgstr "Another backup is being created right now. Try again in a moment."
+
+#: src/Maki.Api/Services/BackupService.cs
+msgid "error.system.backupFailed"
+msgstr "Could not create the backup. Check the server logs for details."
 
 #. Stands in for {series} when the notification names a series that has since been deleted.
 #: src/Maki.Api/Localization/InboxRenderer.cs
@@ -1497,6 +1559,17 @@ msgid "inbox.chapters.queued.body"
 msgstr ""
 "{series}: {count, plural, one {# new chapter queued for download} other {# new chapters queued "
 "for download}}"
+
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.held.title"
+msgstr "New chapters held back"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "inbox.chapters.held.body"
+msgstr ""
+"{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
+"downloaded automatically. Download them from the series page if they are real."
 
 #: src/Maki.Api/Program.cs
 msgid "inbox.backup.preUpgrade.title"
@@ -1682,6 +1755,24 @@ msgstr ""
 "{requested, plural, =0 {} other {, # requested}}"
 "{skipped, plural, =0 {} other {, # skipped}}"
 "{errors, plural, =0 {} one {, # error} other {, # errors}}"
+
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedRelease.title"
+msgstr "New from {creator}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedRelease.body"
+msgstr "{title} is new in the catalogue."
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedReleases.title"
+msgstr "New from creators you follow"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedReleases.body"
+msgstr "{count, plural, one {# new title} other {# new titles}} in the catalogue."
 
 #: src/Maki.Api/Services/UpdateCheckService.cs
 msgid "inbox.update.available.title"
@@ -2018,6 +2109,13 @@ msgstr "{series}: {count, plural, one {# new chapter} other {# new chapters}} av
 #: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
 msgid "notify.chapters.queued.body"
 msgstr "{series}: {count, plural, one {# new chapter} other {# new chapters}} queued for download"
+
+#. More new chapters turned up at once than the bulk hold setting allows, so none were queued.
+#: src/Maki.Api/Jobs/RefreshMonitoredSeriesJob.cs
+msgid "notify.chapters.held.body"
+msgstr ""
+"{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
+"downloaded automatically. Download them from the series page if they are real."
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "notify.chapter.downloaded.title"
@@ -2457,6 +2555,14 @@ msgstr "Replacement requested for {count, plural, one {# chapter} other {# chapt
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "health.history.operationCompleted"
 msgstr "{kind} completed: {path}"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.deletedFile"
+msgstr "Permanently deleted {path}; chapter records and Wanted flags preserved"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.deletedMissing"
+msgstr "Cleared the record for missing {path}; chapter records and Wanted flags preserved"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 msgid "health.history.scan"

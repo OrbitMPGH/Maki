@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using Maki.Core.Paths;
 using Maki.Core.Reading;
 using SharpCompress.Archives;
 
@@ -34,6 +35,17 @@ public static class ComicSourceScanner
     private static bool IsArchiveOrPdf(string path) => IsArchive(path) || ComicFile.IsPdf(path);
 
     /// <summary>
+    /// Whether the file is a zip container, judged by its leading bytes and never by its
+    /// extension. Scene releases carry ".cbz" on 7z and RAR data often enough that the name cannot
+    /// be trusted: opened as a zip such a file reads as empty and the import drops it, and placed
+    /// as it is it would be a CBZ no reader can open. Anything without a zip header goes to
+    /// SharpCompress, whose autodetect also covers the containers with no magic of their own (an
+    /// old-style tar), so the extension has nothing left to decide.
+    /// </summary>
+    internal static bool IsZipContainer(string path) =>
+        ArchiveSignature.Sniff(path) == ArchiveSignature.Container.Zip;
+
+    /// <summary>
     /// Every comic under <paramref name="contentPath"/>, one per produced file name.
     /// <para>
     /// The walk is recursive but the import is flat: everything lands in the series folder under
@@ -51,8 +63,7 @@ public static class ComicSourceScanner
         }
         else if (Directory.Exists(contentPath))
         {
-            foreach (var file in Directory
-                         .GetFiles(contentPath, "*", SearchOption.AllDirectories)
+            foreach (var file in LibraryPaths.EnumerateFilesNoLinks(contentPath)
                          .Where(IsArchiveOrPdf)
                          .OrderBy(f => f, StringComparer.Ordinal))
             {
@@ -80,7 +91,7 @@ public static class ComicSourceScanner
     public static string Describe(string contentPath)
     {
         string[] files = File.Exists(contentPath) ? [contentPath]
-            : Directory.Exists(contentPath) ? Directory.GetFiles(contentPath, "*", SearchOption.AllDirectories)
+            : Directory.Exists(contentPath) ? LibraryPaths.EnumerateFilesNoLinks(contentPath).ToArray()
             : [];
 
         var census = files
@@ -113,7 +124,8 @@ public static class ComicSourceScanner
             return [];
         }
 
-        var entries = Entries(path);
+        var isZip = IsZipContainer(path);
+        var entries = Entries(path, isZip);
         var pages = entries
             .Where(e => CbzReader.IsImage(e.Name))
             .Select(e => e.Name)
@@ -122,11 +134,13 @@ public static class ComicSourceScanner
 
         if (pages.Count > 0)
         {
-            var kind = System.IO.Path.GetExtension(path).Equals(".cbz", StringComparison.OrdinalIgnoreCase)
-                ? ComicSourceKind.Cbz
-                : ZipExtensions.Contains(System.IO.Path.GetExtension(path))
-                    ? ComicSourceKind.Zip
-                    : ComicSourceKind.Repack;
+            // Kind follows the bytes, not the name: a 7z called ".cbz" is a repack, and a zip
+            // called ".rar" is placed as it is. Only a real zip under the ".cbz" name is a CBZ.
+            var kind = !isZip
+                ? ComicSourceKind.Repack
+                : System.IO.Path.GetExtension(path).Equals(".cbz", StringComparison.OrdinalIgnoreCase)
+                    ? ComicSourceKind.Cbz
+                    : ComicSourceKind.Zip;
 
             return [new ComicSource(CbzName(path), kind, path, new FileInfo(path).Length, pages)];
         }
@@ -141,14 +155,13 @@ public static class ComicSourceScanner
     }
 
     private static IEnumerable<ComicSource> LooseImageFolders(string root) =>
-        Directory
-            .GetDirectories(root, "*", SearchOption.AllDirectories)
+        LibraryPaths.EnumerateDirectoriesNoLinks(root)
             .Append(root)
             .OrderBy(d => d, StringComparer.Ordinal)
             .Select(directory => new
             {
                 Directory = directory,
-                Files = Directory.GetFiles(directory).OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList()
+                Files = Directory.GetFiles(directory).Where(f => !LibraryPaths.IsLink(f)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList()
             })
             // A folder holding an archive or a PDF is that comic's, not a loose set: the images
             // beside it are as likely to be a cover or a sample as they are to be a chapter nobody
@@ -162,11 +175,11 @@ public static class ComicSourceScanner
                 x.Files.Where(CbzReader.IsImage).Select(System.IO.Path.GetFileName).ToList()!));
 
     /// <summary>Entry name and uncompressed size for every file in an archive; empty if unreadable.</summary>
-    internal static IReadOnlyList<(string Name, long Size)> Entries(string path)
+    internal static IReadOnlyList<(string Name, long Size)> Entries(string path, bool isZip)
     {
         try
         {
-            if (ZipExtensions.Contains(System.IO.Path.GetExtension(path)))
+            if (isZip)
             {
                 using var zip = ZipFile.OpenRead(path);
                 return zip.Entries
