@@ -2,7 +2,7 @@
 
 The poster card for the library grid: cover art is the hero, with a bottom scrim carrying the title, a download-progress bar and a have/total count.
 
-2:3 aspect, `radius-lg`, `border` outline on `surface`. On hover it lifts 4px, takes `border-strong` and `shadow-lg`, and the art scales to 1.05 (no lift under reduced motion). Selected in bulk mode: `brand` border plus a `brand-glow` halo.
+2:3 aspect, `radius-lg`, `border` outline on `surface`. On hover it lifts 4px, takes `border-strong` and `shadow-lg`, and the art scales to 1.05 (no lift under reduced motion). Selected in bulk mode: `brand` border plus a 1px `brand` ring, no glow.
 
 **Corners:** top left carries in-flight work (a badge in the status token, e.g. `info` for queued), a read-progress ring (`info`, `ok` when all read) and an unread count on the `brand` fill in `brand-on`. Top right carries the monitor eye (dimmed when monitored, clear eye-off when not), a muted-bell badge only when muted, and the publication status badge. Badges are 20px tall, `label` size, 700, uppercase, white on the status colour, except the unread count.
 

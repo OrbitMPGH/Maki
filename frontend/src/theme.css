@@ -6229,10 +6229,10 @@ body.reader-open {
   box-shadow: var(--shadow-card);
 }
 .figure-strip[data-variant='panel'] .figure-strip-item {
-  flex: 1 1 5.5rem;
+  flex: 1 1 4.5rem;
   align-content: end;
   gap: 2px;
-  padding: 14px 20px;
+  padding: 14px 16px;
 }
 .figure-strip[data-variant='panel'] .figure-strip-n {
   font-size: 27px;
@@ -6256,7 +6256,9 @@ body.reader-open {
 .figure-strip-middle:last-child {
   border-right: 0;
 }
-@media (max-width: 56.25em) {
+/* Under the page's wide breakpoint the seven figures and the level no longer share a row: the level
+   takes a full row of its own rather than orphaning the last two figures. */
+@media (max-width: 75em) {
   .figure-strip-middle {
     flex: 1 1 100%;
     border-right: 0;

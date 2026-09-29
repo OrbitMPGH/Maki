@@ -1,27 +1,27 @@
-Maki is a self-hosted manga collection manager: add a series once and it keeps it complete. The interface is content-first and cinematic: a near-black ground, cover art as the hero, one accent colour, and everything else quiet so the covers carry the colour.
+Maki is a self-hosted manga collection manager: add a series once and it keeps it complete. The interface is content-first and cinematic: the ground is a warm near-black with a green cast (nori), the ink is cream, and the accent is the mascot's blush. The chrome takes its colour from the mark, and everything else stays quiet so the covers carry the colour.
 
 ## Voice and copy
 
 - Write plain, direct sentences, the way a developer explains something to a teammate. Say what happens: "Add series", "Refresh the catalogue", "Browse the catalogue", never "Submit" or "OK".
-- Sentence case everywhere: buttons, titles, menu items. Uppercase only through the `label` style (figure labels, stat labels, cover badges), and let CSS do it.
+- Sentence case everywhere: buttons, titles, menu items. Uppercase only through the `label` style (figure labels, stat labels, cover badges), and let CSS do it. Badges in Settings read as words and stay sentence case.
 - Address the reader as "you" and the product as "Maki": "Maki finds its chapters and keeps it complete." No "we".
 - Empty states are statements, not apologies: "No series yet", "No chapters read in this period.", "Queue is empty". Follow with one line on what would fill it and at most one action.
 - Explain a consequence in a short clause after a colon: "Sliding: a failed sign-in resets the timer." "No change: this title was already in that state."
 - No em dashes. No emoji in UI copy. No filler words ("seamless", "robust", "leverage") and no "it's not just X, it's Y".
-- Every string is translated (Maki ships in fourteen languages). A status Maki has no word for is shown exactly as the server sent it rather than guessed at.
+- Every string is translated (Maki ships in eleven languages). A status Maki has no word for is shown exactly as the server sent it rather than guessed at.
 
 ## Colour
 
-**One accent, near-black ground.** `brand` is the only accent. It marks progress, selection, focus and the one primary action. Everything else is surfaces and ink. Covers bring their own colour; the chrome stays out of their way.
+**One accent, warm near-black ground.** `brand` is the only accent. It marks progress, selection, focus and the one primary action. Everything else is surfaces and cream-tinted ink. Covers bring their own colour; the chrome stays out of their way.
 
-**Themes.** Six presets, matching the app's picker: `Blush` (the default dark scheme), `Light`, and four dark accent swaps, `Indigo`, `Rose`, `Emerald` and `Amber`. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Light keeps the blush accent.
+**Themes.** Six presets, matching the app's picker: `Blush` (the default dark scheme and the default accent), `Light`, and four dark accent swaps, `Indigo`, `Rose`, `Emerald` and `Amber`. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Blush is pale, so on dark it fills with a near-black label. Light keeps blush, deepened so it holds a white label, on warm paper surfaces.
 
 **The layer ladder.** Build every screen from these, in order of height:
-- `app-bg`: the page ground. In dark, `body` also carries two faint radial washes of brand indigo at the top corners (12% and 10%); that is the only gradient in the chrome.
+- `app-bg`: the page ground. `body` carries two faint radial washes at the top corners: a warm cream one at the top left and one tinted with the current `brand` at the top right (5% in dark, 6% in Light). Over both sits a fixed paper grain at 4.5% opacity (3% in Light), behind the app and off under `prefers-reduced-transparency`. Those are the only gradients on the ground.
 - `surface`: the default layer. Every Card, Paper and `Panel` sits here.
 - `surface-2`: one step up. Tag chips, inputs at rest.
 - `surface-raised`: overlays (modals, drawers, menus, popovers). Dark elevates by lightening (it aliases `surface-2`); light elevates by staying white and casting `shadow-raised`. Never assume one direction reads in both.
-- `surface-sunken`: recessed wells. `app-bg` in dark, grey `#eceef6` in light.
+- `surface-sunken`: recessed wells. `app-bg` in dark, paper `#ebe9e2` in light.
 - `surface-hover` for hover fills on rows and chips.
 
 Borders are 1px `border`; hovered or emphasised edges take `border-strong`; row dividers inside tables use `hairline`.
@@ -40,11 +40,12 @@ Content ratings run green to red on purpose: Safe `ok`, Suggestive `suggestive`,
 
 ## Type
 
-Two families. **Bricolage Grotesque** (`display`) is for titles only: a series, a page or the product naming itself. **Inter** (`sans`) sets everything that is read or operated. Bricolage has no Cyrillic or CJK, so those titles fall through to Inter by the stack. Inter runs with character variants `cv02 cv03 cv04 cv11` and antialiasing on.
+Two families. **Bricolage Grotesque** (`display`) is for titles and figures: a series, a page, the product naming itself, and the headline numbers. **Inter** (`sans`) sets everything that is read or operated. Bricolage has no Cyrillic or CJK, so those titles fall through to Inter by the stack. Inter runs with character variants `cv02 cv03 cv04 cv11` and antialiasing on.
 
 - Display: `display` (series hero, Rewind), `route`, `page-title` (every `PageHeader`), `section-title` (every `SectionHeader`), `wordmark`. All at 700 with -0.025em tracking (-0.02em for section titles).
 - Headings: `h1` to `h4`, Mantine's Title scale (1.9rem 800, 1.5rem 800, 1.2rem 700, 1rem 700).
 - Roles: pick the tier by what the text is, not how big you want it. `body` (0.875rem) is the default. `meta` for chips and status words, `micro` for counts and table headers, `label` for uppercase labels over figures, `badge-text` for the smallest badges. `figure` and `stat-value` for numbers.
+- Figures (strips, stat tiles, the hero figures and the level) set in the display face through the `.figure` class: 700, -0.02em, tabular. Sizes stay per call site. Their labels are uppercase at 0.05em tracking.
 - The same scale is exposed as CSS variables (`type-display` through `type-badge`); the three largest are fluid `clamp()` values. If no tier fits, the scale gains a tier; call sites never get an off-scale size.
 - Weights come from six steps: `fw-regular` 400, `fw-medium` 500, `fw-semibold` 600, `fw-strong` 650, `fw-bold` 700, `fw-heavy` 800. A weight between two steps belongs on one of them.
 - Any count, ratio or date shown next to another uses tabular figures (the `.tnum` class).
@@ -53,6 +54,11 @@ Two families. **Bricolage Grotesque** (`display`) is for titles only: a series, 
 ## Space and layout
 
 - Spacing is Mantine's default scale: `spacing-xs` 10px, `spacing-sm` 12px, `spacing-md` 16px, `spacing-lg` 20px, `spacing-xl` 32px. Panels and modals pad at `spacing-lg`; stat tiles and operational pages at `spacing-md`; a `SectionHeader` sits `spacing-xl` below the previous section and `spacing-sm` above its content.
+- `SectionHeader`: the count is plain tabular text in `ink-4` (no pill), the rule is a flat 1px `border`, and the action is a `subtle` button in `ink-3` that can end in a chevron.
+- `FigureStrip` has a `panel` variant for a page's headline row: a shadowed `surface` card with 27px figures, and an optional middle cell between them (Home puts the level there). `StatTile` has no coloured rail and no icon; the number carries it.
+- `EmptyState` takes a `mood` for the inline form: the mascot at 56px beside the text (asleep for an empty queue or list, pleased when nothing is left to deal with, asking when it needs something from you). Page-level `art` states are unchanged.
+- `CoverCard` shows its monitor eye and mute bell only on hover or focus where there is a real pointer, and always on touch. A library with fewer than 12 series ends its grid in a dashed add cell.
+- Settings sections put the title in the display face and its explanation above the panel; the panel holds only the fields, and the content column is no longer capped.
 - Standard pages cap at `content-wide` (72rem); reading text at `content-prose` (42rem). Editorial sections breathe by `section-space`.
 - Three page styles: standard, editorial (more air), operational (denser: tables at 40px rows, panels at `spacing-md`).
 - The hero band (cover art bleeding behind glass) is reserved for the series page, the Discover modal, sign-in and Rewind. Never hang a panel or a band beside a `PageHeader`.
@@ -62,7 +68,7 @@ Two families. **Bricolage Grotesque** (`display`) is for titles only: a series, 
 - Radii, smallest to largest: `radius-2xs` 2px (tiny marks), `radius-xs` 4px (small thumbnails, keys), `radius-sm`/`radius-control` 6px (badges, checkboxes), `radius-chip` 7px (tag chips, squarer than a pill), `radius-thumb` 8px (row thumbnails), `radius-md`/`radius-surface` 9px (buttons, inputs, strips), `radius-hero` 12px (hero posters, glass panels, the brand-mark tile), `radius-lg`/`radius-overlay` 13px (cards, panels, covers, modals, overlays), `radius-xl` 20px (large hero surfaces).
 - Anything with round ends, whatever its height, takes `radius-pill`: progress bars and their fills, cover badges, seeds. Never set a radius of half the height by hand.
 - No other radius. A value between two steps belongs on one of them.
-- Borders, not shadows. A `Panel` has a border and no shadow; when it needs emphasis it gets a 2px accent edge (`brand`, a status token, or `border-strong`), not a drop shadow.
+- Panels carry a border and the 1px `shadow-card` in both schemes. When one needs emphasis it gets a 2px accent edge (`brand`, a status token, or `border-strong`). No glows anywhere: a selected or active thing takes a flat ring or fill, never a blurred halo.
 - Shadows only where they read: `shadow-lg` under a hovered cover card, `shadow-raised` for the light theme's floating layer (none in dark, where a shadow on near-black is invisible).
 - Modals: centred, `radius-lg`, `spacing-lg` padding, a 3px blur over a 55% scrim, a sectioned header over a hairline with only the body scrolling.
 
@@ -75,21 +81,23 @@ Two families. **Bricolage Grotesque** (`display`) is for titles only: a series, 
 ## Focus and states
 
 - Focus: a solid 2px `brand` outline at 2px offset.
-- Selected: `brand` border plus a soft `brand-glow` halo (cover cards), or brand at 10% behind a table row.
+- Selected: `brand` border plus a 1px `brand` ring (cover cards, series rows), or brand at 10% behind a table row. A brand ring, not a glow.
+- Nav active: a flat fill of brand at 14% with a 2px `brand` bar at the left edge.
 - Active chip: `brand` border, brand at 35% fill, `ink-hi` text.
 - Loading: skeletons in place of the content, keeping labels and icons in place and blanking only the numbers, so a count never reads as zero before it arrives. No page-level spinners.
 - Text selection highlights in `brand-glow`.
+- Dirty: a Settings section with unsaved edits takes the `brand` panel edge and shows Save and Discard beside an "Unsaved" marker in its heading row; both disappear once it matches what is saved.
 
 ## Iconography
 
 - Icons are **Tabler Icons** (`@tabler/icons-react`), outline style. 20px at stroke 1.8 to 1.9 in headers and tiles; 16px in buttons; 11 to 12px inside cover badges.
-- Icons inherit `currentColor`: an icon in a `SectionHeader` is `brand-fg`, in a `StatTile` the tile's accent, in a badge white. The SVGs in the Icons group are the raw Tabler files, drawn in `currentColor`, so they show black where they are displayed as images.
+- Icons inherit `currentColor`: an icon in a `SectionHeader` is `brand-fg`, in a badge white. The SVGs in the Icons group are the raw Tabler files, drawn in `currentColor`, so they show black where they are displayed as images.
 - A status always pairs its colour with an icon or a word (the status helpers return both).
 - No emoji in the interface.
 
 ## Logo
 
-The mark is a maki roll with a face: a cream body (`mark-cream`), nori bands top and bottom (`mark-nori`), outlined and featured in `mark-ink`, with `mark-blush` cheeks. In the navbar it sits in a 44px `brand-mark` tile (brand at 16% over `surface-2`, a brand-tinted border, `radius-hero`) beside the wordmark "Maki" set in `wordmark` and an uppercase `label` line, "Manga manager", in `ink-3`. The mark's colours are fixed; never recolour it to the accent.
+The mark is a maki roll with a face: a cream body (`mark-cream`), nori bands top and bottom (`mark-nori`), outlined and featured in `mark-ink`, with `mark-blush` cheeks. In the navbar it sits in a 44px `brand-mark` tile (brand at 16% over `surface-2`, a brand-tinted border, `radius-hero`) beside the wordmark "Maki" set in `wordmark` and an uppercase `label` line, "Manga manager", in `ink-3`. The mark has four moods that change only the eyes and mouth: awake (the default, and what the navbar uses), asleep (closed eyes and two small z's in `ink-3`), asking (a raised brow and a small o mouth) and pleased (happy eyes and a wide smile). The mark's colours are fixed in every mood; never recolour it to the accent.
 
 ## Not synced
 
