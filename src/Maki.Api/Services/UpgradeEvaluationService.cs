@@ -5,6 +5,7 @@ using Maki.Core.Entities;
 using Maki.Core.Quality;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Services;
 
@@ -107,10 +108,18 @@ public sealed class UpgradeEvaluator
 /// Resolves which upgrade profile applies to a series (its own pin, else the instance default) and
 /// scores its files. Read only: nothing here writes to the database or touches a file.
 /// </summary>
-public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityService quality)
+public class UpgradeEvaluationService(
+    MakiDbContext db, ChapterFileQualityService quality, IMemoryCache? cache = null)
 {
     public const int DefaultPageSize = 50;
     public const int MaxPageSize = 200;
+
+    /// <summary>
+    /// How long an evaluated cutoff-unmet list is reused across page requests. Profile and format
+    /// edits, measurements, pins, trust changes and visibility are all in the key; a rename waits
+    /// this out.
+    /// </summary>
+    private static readonly TimeSpan CutoffCacheFor = TimeSpan.FromSeconds(60);
 
     /// <summary>
     /// The evaluator for one series, or null when it resolves to no profile. One query reads the pin,
@@ -212,8 +221,6 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
         }
 
         var formats = await db.QualityFormats.AsNoTracking().ToListAsync(ct);
-        var regexes = new RegexCache();
-        var evaluators = profiles.Values.ToDictionary(p => p.Id, p => new UpgradeEvaluator(p, formats, quality, regexes));
 
         var query = db.Chapters.AsNoTracking()
             .Where(c => c.ChapterFileId != null && c.ChapterFile!.MeasuredAtUtc != null && !c.ChapterFile.Trusted);
@@ -226,6 +233,43 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
         {
             query = query.Where(c => c.Series!.UpgradeProfileId != null);
         }
+
+        if (cache is null)
+        {
+            return await EvaluateRowsAsync(query, profiles, defaultId, formats, ct);
+        }
+
+        // An aggregate over the same rows, run under the same filters: far cheaper than loading and
+        // scoring them, and it moves when a file is measured, trusted, removed, re-pinned or hidden.
+        var stamp = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                Measured = g.Max(c => c.ChapterFile!.MeasuredAtUtc),
+                Pins = g.Sum(c => (long)(c.Series!.UpgradeProfileId ?? 0)),
+            })
+            .FirstOrDefaultAsync(ct);
+        var key = (Kind: "cutoff-unmet", db.Scope.UserId, db.Scope.Unrestricted, db.Scope.AllRootFolders, seriesId,
+            defaultId,
+            Profiles: string.Join(',', profiles.Values.OrderBy(p => p.Id).Select(p => $"{p.Id}:{p.Version}")),
+            Formats: string.Join(',', formats.OrderBy(f => f.Id).Select(f => $"{f.Id}:{f.Version}")),
+            stamp?.Count, stamp?.Measured, stamp?.Pins);
+        if (cache.TryGetValue(key, out List<Unmet>? hit) && hit is not null)
+        {
+            return hit;
+        }
+
+        var rows = await EvaluateRowsAsync(query, profiles, defaultId, formats, ct);
+        cache.Set(key, rows, CutoffCacheFor);
+        return rows;
+    }
+
+    private async Task<List<Unmet>> EvaluateRowsAsync(IQueryable<Chapter> query,
+        Dictionary<int, UpgradeProfile> profiles, int? defaultId, List<QualityFormat> formats, CancellationToken ct)
+    {
+        var regexes = new RegexCache();
+        var evaluators = profiles.Values.ToDictionary(p => p.Id, p => new UpgradeEvaluator(p, formats, quality, regexes));
 
         var chapters = await query
             .Select(c => new

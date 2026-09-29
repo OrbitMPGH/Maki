@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
@@ -131,42 +132,72 @@ public class MalTracker(
         }, ct);
     }
 
-    private async Task RefreshAsync(int userId, CancellationToken ct)
-    {
-        var token = await tokens.GetAsync(userId, Name, ct);
-        if (token?.RefreshToken is null)
-        {
-            throw new TrackerException("MAL is not connected");
-        }
+    // MAL refresh tokens are single use, so two refreshes racing with the same one leave the loser
+    // with a rejection for a token the winner has already replaced. Serialised per user and service,
+    // with the stored token re-read once the lock is held.
+    private static readonly ConcurrentDictionary<(int UserId, string Service), SemaphoreSlim> RefreshLocks = new();
 
-        var client = httpClientFactory.CreateClient(HttpClientName);
-        HttpResponseMessage response;
+    /// <param name="seenAccessToken">
+    /// The access token the caller found stale. When the stored one differs by the time the lock is
+    /// held, another caller already refreshed and there is nothing left to do.
+    /// </param>
+    private async Task RefreshAsync(int userId, string seenAccessToken, CancellationToken ct)
+    {
+        var gate = RefreshLocks.GetOrAdd((userId, Name), _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
         try
         {
-            response = await client.PostAsync($"{options.MalOAuthUrl}/token", new FormUrlEncodedContent(
-                new Dictionary<string, string>
+            var token = await tokens.GetAsync(userId, Name, ct);
+            if (token?.RefreshToken is null)
+            {
+                throw new TrackerException("MAL is not connected");
+            }
+
+            if (token.AccessToken != seenAccessToken)
+            {
+                return;
+            }
+
+            var sent = token.RefreshToken;
+            var client = httpClientFactory.CreateClient(HttpClientName);
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.PostAsync($"{options.MalOAuthUrl}/token", new FormUrlEncodedContent(
+                    new Dictionary<string, string>
+                    {
+                        ["client_id"] = await ClientIdAsync(ct),
+                        ["client_secret"] = await ClientSecretAsync(ct),
+                        ["grant_type"] = "refresh_token",
+                        ["refresh_token"] = sent,
+                    }), ct);
+            }
+            catch (HttpRequestException e)
+            {
+                // network hiccup: keep the stored token, just fail this attempt
+                throw new TrackerException($"MAL token refresh request failed: {e.Message}", e);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // Only the token that was actually rejected is dropped; one stored since (an OAuth
+                // reconnect mid-refresh) is still good.
+                if ((await tokens.GetAsync(userId, Name, ct))?.RefreshToken == sent)
                 {
-                    ["client_id"] = await ClientIdAsync(ct),
-                    ["client_secret"] = await ClientSecretAsync(ct),
-                    ["grant_type"] = "refresh_token",
-                    ["refresh_token"] = token.RefreshToken,
-                }), ct);
-        }
-        catch (HttpRequestException e)
-        {
-            // network hiccup: keep the stored token, just fail this attempt
-            throw new TrackerException($"MAL token refresh request failed: {e.Message}", e);
-        }
+                    await tokens.DeleteAsync(userId, Name, ct);
+                }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            await tokens.DeleteAsync(userId, Name, ct);
-            throw new TrackerException(
-                $"MAL token refresh failed ({(int)response.StatusCode}) — reconnect the account");
-        }
+                throw new TrackerException(
+                    $"MAL token refresh failed ({(int)response.StatusCode}), reconnect the account");
+            }
 
-        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        await StoreTokenAsync(userId, body, ct);
+            using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            await StoreTokenAsync(userId, body, ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     // ---- API ----
@@ -178,7 +209,7 @@ public class MalTracker(
                     ?? throw new TrackerException("MAL is not connected");
         if (token.ExpiresAt is { } expires && expires < DateTime.UtcNow.AddHours(1))
         {
-            await RefreshAsync(userId, ct);
+            await RefreshAsync(userId, token.AccessToken, ct);
             token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
         }
 
@@ -207,7 +238,7 @@ public class MalTracker(
             {
                 if ((int)response.StatusCode == 401 && attempt == 0)
                 {
-                    await RefreshAsync(userId, ct);
+                    await RefreshAsync(userId, token.AccessToken, ct);
                     token = await tokens.GetAsync(userId, Name, ct) ?? throw new TrackerException("MAL is not connected");
                     continue;
                 }

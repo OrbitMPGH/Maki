@@ -91,10 +91,21 @@ export interface AuthEvent {
 
 export const ME_QUERY_KEY = ['auth', 'me'] as const
 
+// The server stores this as the user's zone when none is set yet, so streaks use local days
+// before anybody opens Progress settings.
+function browserTimeZoneHeader(): Record<string, string> {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    return zone ? { 'X-Maki-TimeZone': zone } : {}
+  } catch {
+    return {}
+  }
+}
+
 export function useMe(enabled = true) {
   return useQuery({
     queryKey: ME_QUERY_KEY,
-    queryFn: () => api<Me>('/auth/me'),
+    queryFn: () => api<Me>('/auth/me', { headers: browserTimeZoneHeader() }),
     enabled,
     // A 401 here is the normal signed-out state, not a transient failure, so retrying it just delays
     // the login screen.

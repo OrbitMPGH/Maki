@@ -523,8 +523,8 @@ public class ReaderController(
         return Ok(new { chapterId = id, completed = false });
     }
 
-    /// <summary>Largest set one call will act on. Bounds the per-chapter <c>read</c> pass, which
-    /// has to open each chapter's archive to learn its page count.</summary>
+    /// <summary>Largest set one call will act on. Bounds the <c>read</c> pass, which still opens
+    /// the archive of any chapter whose page count was never measured.</summary>
     internal const int MaxBulkChapters = 2000;
 
     /// <summary>
@@ -565,30 +565,13 @@ public class ReaderController(
             return Ok(new { updated = await reader.MarkWatchedAsync(visible, ct) });
         }
 
-        var updated = 0;
-        foreach (var chapterId in visible)
+        if (state == "unread")
         {
-            if (state == "unread")
-            {
-                await reader.ClearProgressAsync(chapterId, ct);
-                updated++;
-                continue;
-            }
-
-            // Same path as MarkRead: a real read needs the slice to know where the last page is.
-            // No time — ticking chapters off a table is not a sitting with them.
-            var slice = await reader.SliceAsync(chapterId, ct);
-            if (slice is null)
-            {
-                continue;
-            }
-
-            await reader.SaveProgressAsync(
-                slice, slice.PageCount - 1, completed: true, ReaderService.TimeReport.None, ct);
-            updated++;
+            await reader.ClearProgressAsync(visible, ct);
+            return Ok(new { updated = visible.Count });
         }
 
-        return Ok(new { updated });
+        return Ok(new { updated = await reader.MarkReadAsync(visible, ct) });
     }
 
     /// <summary>

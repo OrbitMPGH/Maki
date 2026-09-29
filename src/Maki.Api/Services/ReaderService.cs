@@ -336,61 +336,88 @@ public class ReaderService(
         row.UnreadAt = null;
         row.Watched = false;
         row.UpdatedAt = now;
-        await db.SaveChangesAsync(ct);
+
+        // Flush on completion too: the leftover under the threshold is time spent on this chapter,
+        // and waiting for a threshold that will never be crossed again would lose it for good. The
+        // threshold assumes another report is coming. On the write that says the sitting is over,
+        // none is: a chapter left unfinished would otherwise hold its last few minutes until it
+        // was completed, which for an abandoned one is never.
+        if (justCompleted || time.Final || row.ReadSeconds - row.ReportedSeconds >= ReadingTimeFlushSeconds)
+        {
+            StageReadingTime(row, slice.Series);
+        }
+
+        var sessionStaged = await StageSessionAsync(slice.Series, reportedSeconds, justCompleted, now, ct);
+        await SaveWithSessionAsync(sessionStaged, ct);
 
         if (justCompleted)
         {
-            // Flush first: the leftover under the threshold is time spent on this chapter, and
-            // waiting for a threshold that will never be crossed again would lose it for good.
-            await FlushReadingTimeAsync(row, slice.Series, ct);
             await OnChapterCompletedAsync(slice.Series, chapter, ct);
         }
-        // The threshold assumes another report is coming. On the write that says the sitting is
-        // over, none is: a chapter left unfinished would otherwise hold its last few minutes
-        // until it was completed, which for an abandoned one is never.
-        else if (time.Final || row.ReadSeconds - row.ReportedSeconds >= ReadingTimeFlushSeconds)
-        {
-            await FlushReadingTimeAsync(row, slice.Series, ct);
-        }
 
-        await RecordSessionAsync(slice.Series, reportedSeconds, justCompleted, now, ct);
         return justCompleted;
     }
 
-    // Last, and never fatal: a sitting is a side stat, so a failure here must not cost the
-    // completion events above.
-    private async Task RecordSessionAsync(Series series, int seconds, bool completedChapter,
+    // Never fatal: a sitting is a side stat, so a failure here must not cost the progress write
+    // or the completion events.
+    private async Task<bool> StageSessionAsync(Series series, int seconds, bool completedChapter,
         DateTime now, CancellationToken ct)
     {
         if (series.Incognito == IncognitoMode.Full || (seconds <= 0 && !completedChapter))
         {
-            return;
+            return false;
         }
 
         try
         {
-            await sessions.RecordAsync(UserId, seconds, completedChapter, now, ct);
+            return await sessions.StageAsync(UserId, seconds, completedChapter, now, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             logger.LogWarning(e, "Recording reading session for user {UserId} failed", UserId);
-            // Drop the half-written row so the next SaveChanges on this context does not retry it.
-            foreach (var entry in db.ChangeTracker.Entries<ReadingSession>().ToList())
-            {
-                entry.State = EntityState.Detached;
-            }
+            DetachSessions();
+            return false;
         }
     }
 
     /// <summary>
-    /// Appends the chapter's unreported reading time to the stats log and marks it reported.
+    /// One commit for the progress row, its reading time and the sitting. When the sitting was part
+    /// of it and the save fails for any reason other than the insert race the caller retries, the
+    /// sitting is dropped and the rest saved again.
+    /// </summary>
+    private async Task SaveWithSessionAsync(bool sessionStaged, CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception e) when (sessionStaged && e is not OperationCanceledException &&
+                                  !(e is DbUpdateException u && IsUniqueViolation(u)))
+        {
+            logger.LogWarning(e, "Recording reading session for user {UserId} failed", UserId);
+            DetachSessions();
+            await db.SaveChangesAsync(ct);
+        }
+    }
+
+    private void DetachSessions()
+    {
+        foreach (var entry in db.ChangeTracker.Entries<ReadingSession>().ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+
+    /// <summary>
+    /// Stages the chapter's unreported reading time for the stats log and marks it reported. The
+    /// caller saves.
     /// <para>
     /// The marker advances even for a fully-incognito series, which emits nothing: leaving the
     /// seconds unreported would bank them, and taking the series back out of incognito would then
     /// dump the whole hidden backlog into Rewind on the next page turn.
     /// </para>
     /// </summary>
-    private async Task FlushReadingTimeAsync(ChapterProgress row, Series series, CancellationToken ct)
+    private void StageReadingTime(ChapterProgress row, Series series)
     {
         var unreported = row.ReadSeconds - row.ReportedSeconds;
         if (unreported <= 0)
@@ -415,8 +442,6 @@ public class ReaderService(
                 Value = unreported
             });
         }
-
-        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -521,6 +546,107 @@ public class ReaderService(
     }
 
     /// <summary>
+    /// Bulk "mark read" from the chapter table. Silent, the same way <see cref="MarkWatchedAsync"/>
+    /// is: ticking chapters off a table is not reading them today, so there is no
+    /// <c>ChaptersRead</c> event, no reading time and no Kavita push, and the mark rises through
+    /// <see cref="ReadingProgressService.ImportSilentAsync"/> so the next genuine read counts one.
+    /// <para>
+    /// Page counts come from the file's measured count when the file backs only this chapter, and
+    /// from the archive slice otherwise. A chapter with neither is skipped, like the reader would.
+    /// </para>
+    /// </summary>
+    public async Task<int> MarkReadAsync(IReadOnlyList<int> chapterIds, CancellationToken ct)
+    {
+        if (chapterIds.Count == 0)
+        {
+            return 0;
+        }
+
+        var chapters = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                c.Id,
+                c.SeriesId,
+                MeasuredPages = c.ChapterFile!.PageCount,
+                SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
+            })
+            .ToListAsync(ct);
+        if (chapters.Count == 0)
+        {
+            return 0;
+        }
+
+        var ids = chapters.Select(c => c.Id).ToList();
+        var existing = await db.ChapterProgress
+            .Where(p => ids.Contains(p.ChapterId))
+            .ToDictionaryAsync(p => p.ChapterId, ct);
+
+        var now = DateTime.UtcNow;
+        var read = 0;
+        var changed = new HashSet<int>();
+        foreach (var chapter in chapters)
+        {
+            existing.TryGetValue(chapter.Id, out var row);
+            if (row is { Completed: true, Watched: false })
+            {
+                read++;
+                continue;
+            }
+
+            var pageCount = !chapter.SharesFile && chapter.MeasuredPages is > 0 and var measured
+                ? measured
+                : (await SliceAsync(chapter.Id, ct))?.PageCount;
+            if (pageCount is not > 0)
+            {
+                continue;
+            }
+
+            if (row is null)
+            {
+                row = new ChapterProgress
+                {
+                    SeriesId = chapter.SeriesId,
+                    ChapterId = chapter.Id,
+                    StartedAt = now
+                };
+                db.ChapterProgress.Add(row);
+            }
+
+            row.PageIndex = pageCount.Value - 1;
+            row.PageCount = pageCount.Value;
+            row.Completed = true;
+            row.Watched = false;
+            row.External = false;
+            row.UnreadAt = null;
+            row.UpdatedAt = now;
+            changed.Add(chapter.SeriesId);
+            read++;
+        }
+
+        if (changed.Count == 0)
+        {
+            return read;
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var titles = await db.Series
+            .Where(s => changed.Contains(s.Id))
+            .Select(s => new { s.Id, s.Title })
+            .ToDictionaryAsync(s => s.Id, s => s.Title, ct);
+
+        foreach (var seriesId in changed)
+        {
+            var (maxChapter, maxVolume) = await RecomputeMarksAsync(seriesId, ct);
+            await progress.ImportSilentAsync(UserId, seriesId, kavitaSeriesId: null,
+                titles.GetValueOrDefault(seriesId, string.Empty), maxChapter, maxVolume, ct);
+        }
+
+        return read;
+    }
+
+    /// <summary>
     /// Marks a chapter unread: clears the position and completion, and leaves a
     /// <see cref="ChapterProgress.UnreadAt"/> tombstone behind rather than deleting the row.
     /// <para>
@@ -556,6 +682,31 @@ public class ReaderService(
         row.PageIndex = 0;
         row.UnreadAt = now;
         row.UpdatedAt = now;
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// <see cref="ClearProgressAsync(int, CancellationToken)"/> over a set, in one tracked batch and
+    /// one commit. Tracked for the same reason the single version is.
+    /// </summary>
+    public async Task ClearProgressAsync(IReadOnlyList<int> chapterIds, CancellationToken ct)
+    {
+        var rows = await db.ChapterProgress.Where(p => chapterIds.Contains(p.ChapterId)).ToListAsync(ct);
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        foreach (var row in rows)
+        {
+            row.Completed = false;
+            row.Watched = false;
+            row.PageIndex = 0;
+            row.UnreadAt = now;
+            row.UpdatedAt = now;
+        }
+
         await db.SaveChangesAsync(ct);
     }
 

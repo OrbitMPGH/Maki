@@ -1,6 +1,8 @@
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
+using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
@@ -58,13 +60,25 @@ public class AuthController(
         Unauthorized(new { code = key, error = localizer.Get(key) });
 
     [HttpGet("me")]
-    public async Task<IActionResult> Me(CancellationToken ct)
+    public async Task<IActionResult> Me(
+        [FromHeader(Name = "X-Maki-TimeZone")] string? timeZone,
+        [FromServices] IUserSettingsStore userSettings,
+        CancellationToken ct)
     {
         var user = await db.Users.AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == currentUser.UserId, ct);
         if (user is null)
         {
             return AuthUnauthorized("error.auth.unauthorized");
+        }
+
+        try
+        {
+            await UserTimeZone.SeedAsync(userSettings, user.Id, timeZone, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Seeding the time zone for user {UserId} failed", user.Id);
         }
 
         var oidcLogin = await OidcLoginAsync(user);

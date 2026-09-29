@@ -107,9 +107,11 @@ public class ReadingProgressService(
         }, ct);
 
     /// <summary>
-    /// Records progress made in the built-in reader. Unlike the Kavita path there is no silent
-    /// baseline: a native row starts at zero and the very first read emits its delta, because
-    /// nothing here predates Maki — the reading demonstrably just happened in it.
+    /// Records progress made in the built-in reader. Callers invoke this once per genuine
+    /// completion, so the chapter delta counts genuine completions above the stored mark rather
+    /// than the numeric gap: opening chapter 151 of a series added mid-way, or skipping from 5 to
+    /// 100, is one chapter read, not a hundred. A first native read baselines silently at the
+    /// highest completed chapter below the new mark, as the Kavita path does, and emits one.
     /// </summary>
     public async Task<Marks> TrackNativeAsync(int userId, int seriesId, string title,
         double maxChapter, double maxVolume, CancellationToken ct) =>
@@ -123,6 +125,7 @@ public class ReadingProgressService(
             // between reads and the next delta would be measured against a lower mark — the same
             // chapters counted twice into Rewind. The furthest mark also caps the delta.
             var state = await PickAsync(userId, seriesId, ct);
+            var completed = await CompletedNumbersAsync(userId, seriesId, ct);
 
             if (state is null)
             {
@@ -132,7 +135,8 @@ public class ReadingProgressService(
                     KavitaSeriesId = null,
                     SeriesId = seriesId,
                     Title = title,
-                    MaxChapter = 0,
+                    MaxChapter = completed.Where(c => c.Number < maxChapter)
+                        .Select(c => c.Number).DefaultIfEmpty(0).Max(),
                     MaxVolume = 0,
                     LastProgressAt = now,
                     UpdatedAt = now
@@ -140,8 +144,39 @@ public class ReadingProgressService(
                 db.ReadingStates.Add(state);
             }
 
-            return await AdvanceAsync(userId, state, title, seriesId, maxChapter, maxVolume, now, ct);
+            var oldMark = state.MaxChapter;
+            var genuine = completed
+                .Where(c => c.Genuine && c.Number > oldMark && c.Number <= maxChapter)
+                .Select(c => c.Number)
+                .Distinct()
+                .Count();
+
+            return await AdvanceAsync(userId, state, title, seriesId, maxChapter, maxVolume, now, ct,
+                nativeCompletions: genuine);
         }, ct);
+
+    private readonly record struct CompletedNumber(double Number, bool Genuine);
+
+    /// <summary>
+    /// The user's completed, numbered chapters of a series. Genuine means read in Maki's own reader:
+    /// not watched, not observed in Kavita, and not an import (those carry <c>PageCount = 0</c>).
+    /// </summary>
+    private async Task<List<CompletedNumber>> CompletedNumbersAsync(int userId, int seriesId,
+        CancellationToken ct)
+    {
+        var rows = await (
+                from p in db.ChapterProgress.IgnoreQueryFilters()
+                join c in db.Chapters.IgnoreQueryFilters() on p.ChapterId equals c.Id
+                where p.UserId == userId && p.SeriesId == seriesId && p.Completed && c.Number != null
+                select new { c.Number, p.Watched, p.External, p.PageCount })
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return rows
+            .Select(r => new CompletedNumber((double)r.Number!.Value,
+                !r.Watched && !r.External && r.PageCount > 0))
+            .ToList();
+    }
 
     /// <summary>
     /// Merges progress that was made <em>elsewhere, before now</em> — the one-off import of read
@@ -262,12 +297,18 @@ public class ReadingProgressService(
 
     /// <summary>Forward-only advance of an existing row, emitting the read events it implies.</summary>
     private async Task<Marks> AdvanceAsync(int userId, ReadingState state, string title, int? seriesId,
-        double maxChapter, double maxVolume, DateTime now, CancellationToken ct)
+        double maxChapter, double maxVolume, DateTime now, CancellationToken ct, int? nativeCompletions = null)
     {
         // Forward-only: Kavita rescans, boundary refinement shifts, mark-unread and re-reads in
         // the built-in reader can all move the number backwards — never let that spike (or
         // negate) the stats.
         var chapterDelta = (int)Math.Floor(maxChapter) - (int)Math.Floor(state.MaxChapter);
+        // A native call is itself one completion, so it counts at least one even when the row that
+        // raised the mark is not visible here, and never more than the whole-chapter gap.
+        if (nativeCompletions is int native && chapterDelta > 0)
+        {
+            chapterDelta = Math.Clamp(native, 1, chapterDelta);
+        }
         var volumeDelta = (int)Math.Floor(maxVolume) - (int)Math.Floor(state.MaxVolume);
         var fullIncognito = await IsFullIncognitoAsync(seriesId ?? state.SeriesId, ct);
         var seriesKey = await SeriesKeyAsync(seriesId ?? state.SeriesId, title, ct);

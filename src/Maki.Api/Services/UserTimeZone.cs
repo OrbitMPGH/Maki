@@ -24,6 +24,37 @@ public static class UserTimeZone
         await TryResolveAsync(userSettings, userId, ct) ?? TimeZoneInfo.Utc;
 
     /// <summary>
+    /// Stores the browser's zone when the user has none yet, so streaks and goals use local days
+    /// from the first session rather than only after somebody opens Progress settings. Never
+    /// overwrites a stored zone, and ignores an id this host does not know.
+    /// </summary>
+    public static async Task SeedAsync(
+        IUserSettingsStore userSettings, int userId, string? browserZone, CancellationToken ct = default)
+    {
+        var id = browserZone?.Trim();
+        if (string.IsNullOrEmpty(id) || id.Length > 64 || !IsKnown(id) ||
+            !string.IsNullOrWhiteSpace(await userSettings.GetAsync(userId, SettingKeys.UserTimeZone, ct)))
+        {
+            return;
+        }
+
+        await userSettings.SetAsync(userId, SettingKeys.UserTimeZone, id, ct);
+    }
+
+    private static bool IsKnown(string id)
+    {
+        try
+        {
+            TimeZoneInfo.FindSystemTimeZoneById(id);
+            return true;
+        }
+        catch (Exception e) when (e is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// The user's stored time zone, or null when none is stored or the stored id is unknown here.
     /// For callers that have a better fallback than UTC, such as the browser's current offset.
     /// </summary>

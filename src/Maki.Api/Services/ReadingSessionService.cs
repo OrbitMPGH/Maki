@@ -31,9 +31,22 @@ public class ReadingSessionService(MakiDbContext db)
     public async Task RecordAsync(int userId, int seconds, bool completedChapter, DateTime nowUtc,
         CancellationToken ct)
     {
+        if (await StageAsync(userId, seconds, completedChapter, nowUtc, ct))
+        {
+            await db.SaveChangesAsync(ct);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="RecordAsync"/> without the save, so the reader can commit the sitting together with
+    /// the progress write. Returns whether anything was staged.
+    /// </summary>
+    public async Task<bool> StageAsync(int userId, int seconds, bool completedChapter, DateTime nowUtc,
+        CancellationToken ct)
+    {
         if (seconds <= 0 && !completedChapter)
         {
-            return;
+            return false;
         }
 
         // Explicit user and no filters: the ambient scope is not always the reader's own.
@@ -46,7 +59,7 @@ public class ReadingSessionService(MakiDbContext db)
         var landed = Stitch(latest, userId, seconds, completedChapter, nowUtc);
         if (landed is null)
         {
-            return;
+            return false;
         }
 
         if (!ReferenceEquals(landed, latest))
@@ -54,7 +67,7 @@ public class ReadingSessionService(MakiDbContext db)
             db.ReadingSessions.Add(landed);
         }
 
-        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     /// <summary>

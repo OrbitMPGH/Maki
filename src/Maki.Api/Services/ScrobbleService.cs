@@ -35,8 +35,14 @@ public class ScrobbleService(
 {
     public const int DefaultIntervalMinutes = 30;
 
-    /// <summary>Polite pacing between remote API calls (AniList is the strictest at ~30/min).</summary>
+    /// <summary>Polite pacing between remote API calls.</summary>
     private static readonly TimeSpan Pace = TimeSpan.FromSeconds(1.2);
+
+    /// <summary>AniList is the strictest, at about 30 calls a minute.</summary>
+    private static readonly TimeSpan AniListPace = TimeSpan.FromSeconds(2);
+
+    private static TimeSpan PaceFor(IScrobbleTracker tracker) =>
+        tracker is AniListTracker ? AniListPace : Pace;
 
     private readonly IScrobbleTracker[] _trackers = [anilist, mal, mangaBaka, kitsu];
     private readonly SemaphoreSlim _syncLock = new(1, 1);
@@ -292,7 +298,17 @@ public class ScrobbleService(
         foreach (var userId in users.Order())
         {
             ct.ThrowIfCancellationRequested();
-            summaries.Add(await SyncUserAsync(userId, kavitaUrl, kavitaKey, userId == kavitaUserId, ct));
+            try
+            {
+                summaries.Add(await SyncUserAsync(userId, kavitaUrl, kavitaKey, userId == kavitaUserId, ct));
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                // One user's bad data must not stop everybody else's scrobbling until the next tick.
+                logger.LogError(e, "Scrobble sync failed for user {UserId}", userId);
+                await AddKeyedLogAsync(userId, "error", "", "", "scrobble.log.syncCrashed", null, ct);
+                summaries.Add($"user {userId}: failed");
+            }
         }
 
         var summary = string.Join(" | ", summaries);
@@ -380,6 +396,13 @@ public class ScrobbleService(
         var planToRead = await userSettings.GetAsync(userId, SettingKeys.ScrobblePlanToRead, ct) == "true";
         var libraryIndex = await BuildLibraryIndexAsync(userId, allRootFolders, ct);
 
+        var matchedIds = seriesList
+            .Select(s => MatchLocal(libraryIndex, s)?.Id)
+            .OfType<int>()
+            .ToHashSet();
+        var boundarySource = await LoadVolumeBoundarySourceAsync(userId, allRootFolders, matchedIds, ct);
+        var finishedOneShots = await FinishedOneShotsAsync(userId, allRootFolders, ct);
+
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
 
         foreach (var series in seriesList)
@@ -422,15 +445,11 @@ public class ScrobbleService(
             // Kavita only reports one pagesRead counter for the whole thing. Refine the
             // chapter number using the page positions where each chapter starts inside
             // that archive, so a partially-read volume still advances scrobbling.
-            var localKey = ScrobbleMatching.NormalizeTitle(title);
-            if (!libraryIndex.TryGetValue(localKey, out var localSeries) && series.LocalizedName is { } alt)
-            {
-                libraryIndex.TryGetValue(ScrobbleMatching.NormalizeTitle(alt), out localSeries);
-            }
+            var localSeries = MatchLocal(libraryIndex, series);
 
             if (localSeries is not null)
             {
-                var boundaries = await VolumeBoundariesAsync(userId, allRootFolders, localSeries.Id, ct);
+                var boundaries = VolumeBoundaries(boundarySource, localSeries.Id);
                 if (boundaries.Count > 0)
                 {
                     maxChapter = VolumeChapterProgress.Refine(volumesRaw, boundaries, maxChapter);
@@ -478,6 +497,11 @@ public class ScrobbleService(
 
             var chapter = (int)Math.Floor(merged.MaxChapter);
             var volume = (int)Math.Floor(merged.MaxVolume);
+            var finished = localSeries is not null && finishedOneShots.Contains(localSeries.Id);
+            if (finished)
+            {
+                chapter = Math.Max(chapter, 1);
+            }
 
             ScrobbleStatus? fallbackStatus = null;
             if (chapter <= 0 && volume <= 0)
@@ -574,7 +598,7 @@ public class ScrobbleService(
                 {
                     var changed = await PushAsync(userId, tracker, remoteId,
                         new PushTarget(series.Id, localSeries?.Id, title), chapter, volume,
-                        fallbackStatus, ct);
+                        fallbackStatus, ct, finished);
                     if (changed)
                     {
                         updates++;
@@ -601,7 +625,7 @@ public class ScrobbleService(
                         tracker.Name, 0, 0, "", e.Message, ct);
                 }
 
-                await Task.Delay(Pace, ct);
+                await Task.Delay(PaceFor(tracker), ct);
             }
         }
 
@@ -675,6 +699,8 @@ public class ScrobbleService(
                 .ToList();
         }
 
+        var finishedOneShots = await FinishedOneShotsAsync(userId, await AllRootFoldersAsync(userId, ct), ct);
+
         int updates = 0, errors = 0, skipped = 0;
 
         foreach (var row in rows)
@@ -682,15 +708,21 @@ public class ScrobbleService(
             ct.ThrowIfCancellationRequested();
             var chapter = (int)Math.Floor(row.MaxChapter);
             var volume = (int)Math.Floor(row.MaxVolume);
-            await PushNativeRowAsync(userId, row, chapter, volume, null, trackers, ct, Counters);
+            await PushNativeRowAsync(userId, row, chapter, volume, null, trackers, ct, Counters,
+                finishedOneShots.Contains(row.SeriesId));
         }
 
+        // A one-shot never raises MaxChapter, so a finished one sits here with the unstarted series.
         var planToRead = await userSettings.GetAsync(userId, SettingKeys.ScrobblePlanToRead, ct) == "true";
-        if (planToRead)
+        foreach (var row in zeroProgress)
         {
-            foreach (var row in zeroProgress)
+            ct.ThrowIfCancellationRequested();
+            if (finishedOneShots.Contains(row.SeriesId))
             {
-                ct.ThrowIfCancellationRequested();
+                await PushNativeRowAsync(userId, row, 0, 0, null, trackers, ct, Counters, finished: true);
+            }
+            else if (planToRead)
+            {
                 await PushNativeRowAsync(userId, row, 0, 0, ScrobbleStatus.PlanToRead, trackers, ct, Counters);
             }
         }
@@ -708,8 +740,14 @@ public class ScrobbleService(
     /// <summary>Pushes one native-pass row to every eligible tracker; reports outcomes via <paramref name="report"/>.</summary>
     private async Task PushNativeRowAsync(
         int userId, NativeProgress row, int chapter, int volume, ScrobbleStatus? fallbackStatus,
-        List<IScrobbleTracker> trackers, CancellationToken ct, Action<bool, bool, bool> report)
+        List<IScrobbleTracker> trackers, CancellationToken ct, Action<bool, bool, bool> report,
+        bool finished = false)
     {
+        if (finished)
+        {
+            chapter = Math.Max(chapter, 1);
+        }
+
         foreach (var tracker in trackers)
         {
             if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
@@ -741,7 +779,7 @@ public class ScrobbleService(
             var target = new PushTarget(null, row.SeriesId, row.Title);
             try
             {
-                if (await PushAsync(userId, tracker, remoteId, target, chapter, volume, fallbackStatus, ct))
+                if (await PushAsync(userId, tracker, remoteId, target, chapter, volume, fallbackStatus, ct, finished))
                 {
                     report(true, false, false);
                 }
@@ -755,7 +793,7 @@ public class ScrobbleService(
                 await SaveStateAsync(userId, target, tracker.Name, 0, 0, "", e.Message, ct);
             }
 
-            await Task.Delay(Pace, ct);
+            await Task.Delay(PaceFor(tracker), ct);
         }
     }
 
@@ -774,17 +812,23 @@ public class ScrobbleService(
     /// <summary>Forward-only update of one tracker. Returns true when a write happened.</summary>
     private async Task<bool> PushAsync(
         int userId, IScrobbleTracker tracker, string remoteId, PushTarget target,
-        int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct)
+        int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct, bool finished = false)
     {
         var title = target.Title;
         var entry = await tracker.GetEntryAsync(userId, remoteId, ct);
-        var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus);
+        var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus, finished);
 
         if (!plan.Write)
         {
             await SaveStateAsync(userId, target, tracker.Name, plan.Chapter, plan.Volume,
                 StatusName(plan.RecordStatus), null, ct);
             return false;
+        }
+
+        // A write is a second call right after the read; the other trackers tolerate that.
+        if (tracker is AniListTracker)
+        {
+            await Task.Delay(AniListPace, ct);
         }
 
         await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, plan.PushStatus, ct);
@@ -894,7 +938,7 @@ public class ScrobbleService(
                     "scrobble.log.ratingPushFailed", new { detail = e.Message }, ct);
             }
 
-            await Task.Delay(Pace, ct);
+            await Task.Delay(PaceFor(tracker), ct);
         }
 
         return synced;
@@ -969,7 +1013,7 @@ public class ScrobbleService(
                             title, service, e.Message);
                     }
 
-                    await Task.Delay(Pace, CancellationToken.None);
+                    await Task.Delay(PaceFor(tracker), CancellationToken.None);
                 }
             }
             catch (Exception e)
@@ -1137,61 +1181,95 @@ public class ScrobbleService(
         return index;
     }
 
+    private static LibraryIds? MatchLocal(
+        Dictionary<string, LibraryIds> libraryIndex, KavitaClient.KavitaSeriesSummary series)
+    {
+        if (!libraryIndex.TryGetValue(ScrobbleMatching.NormalizeTitle(series.Name ?? ""), out var local) &&
+            series.LocalizedName is { } alt)
+        {
+            libraryIndex.TryGetValue(ScrobbleMatching.NormalizeTitle(alt), out local);
+        }
+
+        return local;
+    }
+
     /// <summary>
-    /// Page boundaries of every multi-chapter volume archive belonging to one Maki
-    /// series, keyed by volume number. Only archives where several <see cref="Chapter"/>
-    /// rows share one <see cref="ChapterFile"/> (import/rescan grouped them) qualify —
-    /// Maki's own per-chapter downloads need no refinement. Results are cached per
-    /// ChapterFileId and re-scanned only when the file's size changes.
+    /// What <see cref="VolumeBoundaries"/> needs from the database, for every matched series at once:
+    /// the files several chapters share, grouped by series, and the root folder each such series
+    /// lives in. Loaded once per Kavita pass rather than three queries per series per tick.
     /// </summary>
-    private async Task<Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>> VolumeBoundariesAsync(
-        int userId, bool allRootFolders, int seriesId, CancellationToken ct)
+    private sealed record VolumeBoundarySource(
+        ILookup<int, int> SharedFilesBySeries,
+        Dictionary<int, (string RelativePath, long Size)> Files,
+        Dictionary<int, string> RootPaths);
+
+    private async Task<VolumeBoundarySource> LoadVolumeBoundarySourceAsync(
+        int userId, bool allRootFolders, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         db.Scope.SetUser(userId, allRootFolders);
-        var chapters = await db.Chapters.AsNoTracking()
-            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+
+        var chapterFiles = await db.Chapters.AsNoTracking()
+            .Where(c => seriesIds.Contains(c.SeriesId) && c.ChapterFileId != null)
+            .Select(c => new { c.SeriesId, FileId = c.ChapterFileId!.Value })
             .ToListAsync(ct);
 
-        var result = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>();
+        var shared = chapterFiles
+            .GroupBy(c => c.FileId)
+            .Where(g => g.Count() > 1)
+            .Select(g => (SeriesId: g.First().SeriesId, FileId: g.Key))
+            .ToList();
+        var sharedFileIds = shared.Select(x => x.FileId).ToList();
+        var sharedSeriesIds = shared.Select(x => x.SeriesId).Distinct().ToList();
 
-        var fileIds = chapters.Select(g => g.ChapterFileId).ToList();
-        var files = await db.ChapterFiles.AsNoTracking()
-            .Where(f => fileIds.Contains(f.Id))
-            .Select(f => new { f.Id, f.RelativePath, f.Size })
-            .ToDictionaryAsync(f => f.Id, ct);
-        var rootFolderPath = await db.Series.AsNoTracking()
-            .Where(s => s.Id == seriesId)
-            .Select(s => s.RootFolder!.Path)
-            .FirstOrDefaultAsync(ct);
-        if (string.IsNullOrEmpty(rootFolderPath))
+        var files = sharedFileIds.Count == 0
+            ? []
+            : await db.ChapterFiles.AsNoTracking()
+                .Where(f => sharedFileIds.Contains(f.Id))
+                .Select(f => new { f.Id, f.RelativePath, f.Size })
+                .ToDictionaryAsync(f => f.Id, f => (f.RelativePath, f.Size), ct);
+        var roots = sharedSeriesIds.Count == 0
+            ? []
+            : await db.Series.AsNoTracking()
+                .Where(s => sharedSeriesIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.RootFolder!.Path })
+                .ToDictionaryAsync(s => s.Id, s => s.Path, ct);
+
+        return new VolumeBoundarySource(shared.ToLookup(x => x.SeriesId, x => x.FileId), files, roots);
+    }
+
+    /// <summary>
+    /// Page boundaries of every multi-chapter volume archive belonging to one Maki
+    /// series, keyed by volume number. Only archives where several <see cref="Chapter"/>
+    /// rows share one <see cref="ChapterFile"/> (import/rescan grouped them) qualify;
+    /// Maki's own per-chapter downloads need no refinement. Results are cached per
+    /// ChapterFileId and re-scanned only when the file's size changes.
+    /// </summary>
+    private Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries> VolumeBoundaries(
+        VolumeBoundarySource source, int seriesId)
+    {
+        var result = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>();
+        if (!source.RootPaths.TryGetValue(seriesId, out var rootFolderPath) || string.IsNullOrEmpty(rootFolderPath))
         {
             return result;
         }
-        
-        var groups = chapters
-            .GroupBy(c => c.ChapterFileId!.Value)
-            .Where(g => g.Count() > 1)
-            .Select(g => new
-            {
-                ChapterFileId = g.Key,
-                Volumes = files.Where(x => x.Key == g.Key)
-                    .Select(x => ChapterController.VolumeFileLabel(x.Value.RelativePath)).Distinct().ToList(),
-            })
-            .ToList();
 
-        foreach (var group in groups)
+        foreach (var fileId in source.SharedFilesBySeries[seriesId])
         {
-            // A volume-range file (chapters spanning several volume numbers) has no
-            // single Kavita "volume" to attach page boundaries to — skip it.
-            if (group.Volumes.Count != 1 || !int.TryParse(group.Volumes[0], out var volumeNumber) ||
-                !files.TryGetValue(group.ChapterFileId, out var file))
+            if (!source.Files.TryGetValue(fileId, out var file))
             {
                 continue;
             }
 
-            if (_volumeBoundaryCache.TryGetValue(group.ChapterFileId, out var cached) && cached.Size == file.Size)
+            // A volume-range file (chapters spanning several volume numbers) has no
+            // single Kavita "volume" to attach page boundaries to — skip it.
+            if (!int.TryParse(ChapterController.VolumeFileLabel(file.RelativePath), out var volumeNumber))
+            {
+                continue;
+            }
+
+            if (_volumeBoundaryCache.TryGetValue(fileId, out var cached) && cached.Size == file.Size)
             {
                 result[volumeNumber] = cached.Boundaries;
                 continue;
@@ -1205,11 +1283,43 @@ public class ScrobbleService(
             }
 
             var entry = new VolumeChapterProgress.ChapterFileBoundaries(totalPages, boundaries);
-            _volumeBoundaryCache[group.ChapterFileId] = (file.Size, entry);
+            _volumeBoundaryCache[fileId] = (file.Size, entry);
             result[volumeNumber] = entry;
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// One-shots the user has finished: series whose downloaded chapters are all one-shots, every one
+    /// of them completed. A one-shot never raises <see cref="ReadingState.MaxChapter"/>, so this is the
+    /// only way the planner learns it is done. A lone numbered chapter is left out on purpose: it
+    /// already raises the mark, and on an ongoing series it is just the first chapter.
+    /// </summary>
+    private async Task<HashSet<int>> FinishedOneShotsAsync(int userId, bool allRootFolders, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        db.Scope.SetUser(userId, allRootFolders);
+
+        var readSeries = db.ChapterProgress
+            .Where(p => p.UserId == userId && p.Completed)
+            .Select(p => p.SeriesId);
+        var chapters = await db.Chapters.AsNoTracking()
+            .Where(c => c.ChapterFileId != null && readSeries.Contains(c.SeriesId))
+            .Select(c => new
+            {
+                c.SeriesId,
+                OneShot = c.IsOneShot || c.Number == null,
+                Read = db.ChapterProgress.Any(p => p.UserId == userId && p.ChapterId == c.Id && p.Completed),
+            })
+            .ToListAsync(ct);
+
+        return chapters
+            .GroupBy(c => c.SeriesId)
+            .Where(g => g.All(c => c.OneShot && c.Read))
+            .Select(g => g.Key)
+            .ToHashSet();
     }
 
     /// <summary>

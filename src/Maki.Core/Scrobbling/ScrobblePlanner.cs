@@ -27,9 +27,18 @@ public static class ScrobblePlanner
     /// Status to list a not-yet-listed series under when there is no scrobbable
     /// progress (plan-to-read sync); null when that behavior is off.
     /// </param>
+    /// <param name="finished">
+    /// Every chapter of a one-shot is read. A one-shot has no number to raise the chapter mark to,
+    /// so without this it could never reach Completed; it pushes Completed with at least chapter 1.
+    /// </param>
     public static ScrobblePlan Decide(
-        RemoteEntry entry, int chapter, int volume, ScrobbleStatus? fallbackStatus = null)
+        RemoteEntry entry, int chapter, int volume, ScrobbleStatus? fallbackStatus = null, bool finished = false)
     {
+        if (finished)
+        {
+            chapter = Math.Max(chapter, 1);
+        }
+
         if (chapter <= 0 && volume <= 0)
         {
             // No scrobbable progress: only add the series to the list if it isn't
@@ -46,7 +55,7 @@ public static class ScrobblePlanner
         var newCh = Math.Max(chapter, entry.ProgressChapter);
         var newVol = Math.Max(volume, entry.ProgressVolume);
 
-        var completed = false;
+        var completed = finished;
         if (entry.TotalChapters is > 0 && newCh >= entry.TotalChapters)
         {
             completed = true;

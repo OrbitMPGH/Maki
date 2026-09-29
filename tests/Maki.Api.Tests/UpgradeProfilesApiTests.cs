@@ -431,6 +431,39 @@ public sealed class UpgradeProfilesApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Cutoff_unmet_reuses_its_evaluation_until_the_library_changes()
+    {
+        var profile = SeedProfile("Strict", QualityTier.Official);
+        var pinned = _db.SeedSeries("Pinned", configure: s => s.UpgradeProfileId = profile);
+        var low = SeedFile(pinned, 1, QualityTier.Aggregator);
+        SeedFile(pinned, 2, QualityTier.Aggregator);
+        using var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+
+        using (var db = _db.NewContext())
+        {
+            Assert.Equal(2, (await new UpgradeEvaluationService(db, TestQuality.Create(), cache)
+                .CutoffUnmetAsync(null, 1, 50, default)).Total);
+            Assert.Equal(2, (await new UpgradeEvaluationService(db, TestQuality.Create(), cache)
+                .CutoffUnmetAsync(null, 2, 1, default)).Total);
+        }
+
+        using (var db = _db.NewContext())
+        {
+            db.ChapterFiles.Single(f => f.Id == low).Trusted = true;
+            db.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var page = await new UpgradeEvaluationService(db, TestQuality.Create(), cache)
+                .CutoffUnmetAsync(null, 1, 50, default);
+            Assert.Equal(1, page.Total);
+            Assert.DoesNotContain(page.Rows, r => r.FileId == low);
+        }
+    }
+
+    [Fact]
     public async Task Cutoff_unmet_hides_series_in_root_folders_the_caller_cannot_see()
     {
         var profile = SeedProfile();

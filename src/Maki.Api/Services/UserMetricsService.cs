@@ -74,7 +74,10 @@ public class UserMetricsService(
 
     private async Task<UserMetrics> ComputeAsync(int userId, CancellationToken ct)
     {
-        var tz = await TimeZoneForAsync(userId, ct);
+        // Without a stored zone the clock-based unlocks would be judged on UTC and never revoked, so
+        // they wait until one is stored. They read the whole history, so nothing is lost by waiting.
+        var stored = await UserTimeZone.TryResolveAsync(userSettings, userId, ct);
+        var tz = stored ?? TimeZoneInfo.Utc;
 
         // One row per event type. Sum and Count are both taken because they mean different things per
         // type: ChaptersRead carries a delta in Value, SeriesFinished is one row per event.
@@ -125,10 +128,10 @@ public class UserMetricsService(
             LongestSeriesFinished = await LongestFinishedAsync(userId, ct),
             SeriesFullyRead = await FullyReadAsync(userId, ct),
 
-            ReadAfterMidnight = events.Any(e => HourIn(e.Timestamp, tz, 1, 4)),
-            ReadAtDawn = events.Any(e => HourIn(e.Timestamp, tz, 5, 7)),
+            ReadAfterMidnight = stored is not null && events.Any(e => HourIn(e.Timestamp, tz, 1, 4)),
+            ReadAtDawn = stored is not null && events.Any(e => HourIn(e.Timestamp, tz, 5, 7)),
             ResumedAbandonedSeries = ResumedAfterGap(events),
-            ReadOnNewYearsDay = days.Any(d => d.Date is { Month: 1, Day: 1 }),
+            ReadOnNewYearsDay = stored is not null && days.Any(d => d.Date is { Month: 1, Day: 1 }),
 
             LibrarySeries = await db.Series.IgnoreQueryFilters().LongCountAsync(ct),
             ChaptersDownloaded = await db.StatsEvents.IgnoreQueryFilters()

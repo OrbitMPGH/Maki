@@ -16,6 +16,39 @@ public class ScrobblePlannerTests
     }
 
     [Fact]
+    public void AFinishedOneShotPushesCompletedAtChapterOne()
+    {
+        // A one-shot never raises the chapter mark, so without the finished signal it stays at 0
+        // and an existing entry would never be touched again.
+        var entry = new RemoteEntry(Status: ScrobbleStatus.PlanToRead);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, finished: true);
+
+        Assert.True(plan.Write);
+        Assert.Equal(1, plan.Chapter);
+        Assert.Equal(ScrobbleStatus.Completed, plan.PushStatus);
+    }
+
+    [Fact]
+    public void AFinishedOneShotAlreadyCompletedIsLeftAlone()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 1, Status: ScrobbleStatus.Completed, TotalChapters: 1);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, finished: true);
+
+        Assert.False(plan.Write);
+        Assert.Equal(ScrobbleStatus.Completed, plan.RecordStatus);
+    }
+
+    [Fact]
+    public void AnUnfinishedOneShotStillOnlyListsWhenNotOnTheList()
+    {
+        var entry = new RemoteEntry(Status: ScrobbleStatus.Reading);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0);
+
+        Assert.False(plan.Write);
+        Assert.Equal(ScrobbleStatus.Reading, plan.RecordStatus);
+    }
+
+    [Fact]
     public void NeverLowersRemoteProgress()
     {
         // Remote is further along than Kavita: pushed value is max(remote, kavita),
