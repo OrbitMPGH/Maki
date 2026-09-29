@@ -150,12 +150,8 @@ function NotificationRow({
       onClick={() => onOpen(item)}
       px="sm"
       py={8}
-      style={{
-        // Unread rows carry a leading accent rather than a different background: the dropdown is
-        // short enough that a wash of colour on most rows reads as an error state.
-        borderLeft: `2px solid ${item.read ? 'transparent' : 'var(--mantine-color-brand-6)'}`,
-      }}
       className="inbox-row"
+      data-read={String(item.read)}
     >
       <Group gap="xs" wrap="nowrap" align="flex-start">
         <Box mt={2}>

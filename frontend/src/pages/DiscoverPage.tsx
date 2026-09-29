@@ -599,7 +599,7 @@ function RecommendedTab() {
       </Group>
 
       <Collapse expanded={customizeOpen}>
-        <Panel p="md" mb="md">
+        <Panel p="md" mb="md" className="discover-recommended-customize" edge="brand" edgeSide="left">
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}

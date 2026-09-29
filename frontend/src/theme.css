@@ -1665,6 +1665,9 @@ body::before {
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(18px) saturate(0.85);
 }
+.series-hero-glass-panel {
+  border-left: 3px solid var(--brand);
+}
 .discover-hero-strip-label {
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
@@ -6230,6 +6233,7 @@ body.reader-open {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
+  border-top: 2px solid var(--brand);
   box-shadow: var(--shadow-card);
 }
 .figure-strip[data-variant='panel'] .figure-strip-item {
@@ -6594,6 +6598,10 @@ body.reader-open {
     border-radius: 0;
     box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
   }
+  /* A brand rule along the top of a sticky bar reads as a progress bar. */
+  .mantine-Paper-root.library-index.panel[data-edge] {
+    border-top-width: 0;
+  }
   .library-toolbar,
   .library-selection-bar {
     padding: 0.625rem var(--mantine-spacing-lg);
@@ -6637,9 +6645,6 @@ body.reader-open {
 
 /* --- series page (ported from redesignv2) --- */
 
-/* Series detail page: accent-edge panel grammar, ported from redesignv2.
-   Append into frontend/src/theme.css (not touched directly by this agent). */
-
 .series-detail-surface .series-detail-synopsis,
 .series-detail-surface .series-detail-source-panel,
 .series-detail-surface .series-detail-metadata-panel,
@@ -6678,18 +6683,27 @@ body.reader-open {
   border-right: 0;
 }
 
+/* Scheme prefix out-specifies the blanket Paper surface rule, like the layer-* classes. */
+[data-mantine-color-scheme] .discover-recommended-customize {
+  border-top-color: var(--border-strong);
+  border-bottom-color: var(--border-strong);
+  border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+
 .series-detail-chapter-toolbar {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-.series-detail-chapter-selection {
+/* Scheme prefix so the tint outranks the blanket Paper surface rule. */
+[data-mantine-color-scheme] .series-detail-chapter-selection {
   border-left: 2px solid var(--brand);
   border-right: 0;
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
   background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
-.series-detail-chapter-hint,
-.series-files-hint {
+[data-mantine-color-scheme] .series-detail-chapter-hint,
+[data-mantine-color-scheme] .series-files-hint {
   border-left: 2px solid var(--warn);
   border-right: 0;
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
@@ -6867,6 +6881,16 @@ body.reader-open {
 }
 .inbox-record[data-read='false'] {
   background: color-mix(in srgb, var(--brand-glow) 24%, transparent);
+}
+/* The bell's row has no record around it, so it carries the edge itself. The dropdown skips the
+   unread wash: on a short list, colour on most rows reads as an error state. */
+.inbox-record[data-read='true'],
+.inbox-row[data-read='true'] {
+  border-left: 2px solid transparent;
+}
+.inbox-record[data-read='false'],
+.inbox-row[data-read='false'] {
+  border-left: 2px solid var(--brand);
 }
 .inbox-row:focus-visible {
   position: relative;

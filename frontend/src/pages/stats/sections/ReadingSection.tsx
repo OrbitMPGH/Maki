@@ -44,7 +44,7 @@ function daysInRange({ from, to }: DateRange): number {
 function ReadingSkeleton() {
   return (
     <Stack gap="lg" aria-hidden>
-      <Panel p={0}>
+      <Panel p={0} edge="brand">
         <div className="stats-figures">
           {[58, 72, 50, 64, 80, 68].map((width) => (
             <div className="stats-figure" key={width}>
@@ -237,7 +237,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
         primeStartHour={primeStartHour}
       />
       <Stack gap="lg">
-        <Panel p={0}>
+        <Panel p={0} edge="brand">
           <div className="stats-figures">
             {figures.map((f) => (
               <div className="stats-figure" key={f.key}>
