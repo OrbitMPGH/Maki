@@ -178,8 +178,9 @@ public class UpgradesController(
     }
 
     /// <summary>
-    /// With a chapter or a series: scans it now and answers with what happened. With neither: queues the
-    /// library-wide scan (admin only) and answers 202 straight away, since that one can take minutes.
+    /// With a chapter: scans it now and answers with what happened. With a series: queues a scan of it
+    /// and answers 202, since probing a whole series can take minutes. With neither: queues the
+    /// library-wide scan (admin only) and answers 202.
     /// </summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("scan")]
@@ -215,17 +216,25 @@ public class UpgradesController(
                 return this.NotFoundMessage(localizer, "error.upgrades.chapterHasNoFile");
             }
         }
-        else if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        else if (request.SeriesId is { } seriesId)
         {
-            return NotFound();
+            if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+            {
+                return NotFound();
+            }
+
+            if (UpgradeScanService.IsRunning)
+            {
+                return this.Conflict(localizer, "error.upgrades.scanRunning");
+            }
+
+            await UpgradeScanJob.TriggerSeriesAsync(schedulerFactory, logger, seriesId);
+            return Accepted(new { started = true });
         }
 
         try
         {
-            var result = request.ChapterId is { } id
-                ? await scans.ScanChapterAsync(id, user.UserId, ct)
-                : await scans.ScanSeriesAsync(request.SeriesId!.Value, ct);
-            return Ok(UpgradeScanResultDto.From(result));
+            return Ok(UpgradeScanResultDto.From(await scans.ScanChapterAsync(request.ChapterId!.Value, user.UserId, ct)));
         }
         catch (UpgradeScanBusyException)
         {

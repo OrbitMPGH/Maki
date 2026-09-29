@@ -641,8 +641,9 @@ public class ChapterController(
 
     /// <summary>
     /// What a re-download needs to replace the chapter's file through the upgrade gate instead of
-    /// overwriting it. Null for a chapter without a file, and for one whose file also backs other
-    /// chapters (a volume): that one still downloads to its own path beside the volume.
+    /// overwriting it. Null for a chapter without a file, for one whose file also backs other
+    /// chapters (a volume), and for a file the packaged zip cannot stand in for (a PDF): those still
+    /// download to their own path.
     /// </summary>
     private async Task<UpgradeInfo?> ReplaceInfoAsync(
         int chapterId, string sourceName, UpgradeEvaluator? evaluator, CancellationToken ct)
@@ -656,7 +657,7 @@ public class ChapterController(
                 Shared = db.Chapters.Count(o => o.ChapterFileId == c.ChapterFileId) > 1
             })
             .FirstOrDefaultAsync(ct);
-        if (row is null || row.Shared)
+        if (row is null || row.Shared || !UpgradeTrash.IsReplaceable(row.File.RelativePath))
         {
             return null;
         }

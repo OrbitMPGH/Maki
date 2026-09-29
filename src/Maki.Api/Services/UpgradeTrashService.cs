@@ -34,11 +34,7 @@ public static class UpgradeTrash
         }
     }
 
-    /// <summary>
-    /// <c>.maki-trash/&lt;seriesId&gt;/&lt;prefix&gt;-&lt;name&gt;</c>, relative to the root with forward
-    /// slashes. A number goes after the prefix when that name is already taken, since a file upgraded
-    /// twice inside the retention window would otherwise collide with its own earlier copy.
-    /// </summary>
+    /// <summary><c>.maki-trash/&lt;seriesId&gt;/&lt;prefix&gt;-&lt;name&gt;</c>, numbered when a file upgraded twice would collide.</summary>
     public static string NewRelativePath(string rootPath, int seriesId, string prefix, string name)
     {
         var folder = $"{FolderName}/{seriesId.ToString(CultureInfo.InvariantCulture)}";
@@ -56,12 +52,8 @@ public static class UpgradeTrash
         Path.GetExtension(relativePath).ToLowerInvariant() is ".cbz" or ".zip";
 
     /// <summary>
-    /// A rename into the trash, retried three times with a short back-off because the reader or Kavita
-    /// may be holding the file for a moment. False when it still failed; the source is then untouched.
-    /// <para>
-    /// A rename keeps the file's old timestamps, so the moved file's write time is set to now: that is
-    /// what the purge ages trash by. Metadata only, so a hardlinked copy keeps its bytes.
-    /// </para>
+    /// A rename into the trash, retried because the reader or Kavita may hold the file for a moment.
+    /// False leaves the source untouched. The write time is set to now since the purge ages trash by it.
     /// </summary>
     public static async Task<bool> MoveIntoTrashAsync(string from, string to, ILogger logger, CancellationToken ct)
     {
@@ -122,10 +114,7 @@ public static class UpgradeHistoryStates
             LibraryPaths.Resolve(root, trash) is { } path && File.Exists(path)));
     }
 
-    /// <summary>
-    /// The same for torrent replacement groups: reverted once every row is, and revertible while none
-    /// is and every row's trash file is still there.
-    /// </summary>
+    /// <summary>The same per torrent replacement group: revertible while no row is reverted and every trash file exists.</summary>
     public static async Task<Dictionary<Guid, Maki.Api.Dtos.UpgradeHistoryState>> LoadGroupsAsync(
         MakiDbContext db, IReadOnlyCollection<Guid> groupIds, CancellationToken ct)
     {
@@ -154,7 +143,9 @@ public static class UpgradeHistoryStates
 /// <summary>Reports and purges what <see cref="UpgradeTrash"/> holds.</summary>
 public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogger<UpgradeTrashService> logger)
 {
-    public async Task<(long Bytes, int Files)> SizeAsync(CancellationToken ct)
+    public Task<(long Bytes, int Files)> SizeAsync(CancellationToken ct) => SizeAsync(db, ct);
+
+    public static async Task<(long Bytes, int Files)> SizeAsync(MakiDbContext db, CancellationToken ct)
     {
         // A reverted group points every row at the one volume copy it put aside, so count paths, not rows.
         var rows = await db.UpgradeHistory.AsNoTracking()
@@ -165,11 +156,7 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
         return (files.Sum(), files.Count);
     }
 
-    /// <summary>
-    /// Deletes trash older than <c>upgrades.trashRetentionDays</c>: files history rows still point at
-    /// (clearing those rows' <c>TrashPath</c>), then anything else under a root's trash folder, then
-    /// the series folders that leaves empty. Returns how many files went.
-    /// </summary>
+    /// <summary>Deletes trash older than <c>upgrades.trashRetentionDays</c>, referenced or not, and returns the count.</summary>
     public async Task<int> PurgeAsync(CancellationToken ct)
     {
         var options = await UpgradeOptions.LoadAsync(settings, ct);

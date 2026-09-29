@@ -521,10 +521,6 @@ msgstr "{count, plural, other {보관 파일 #개를 영구 삭제하는 것을 
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {영향을 받는 #개 시리즈 표시}}"
 
-#: src/api/upgrades.ts
-msgid "{count} {label}"
-msgstr ""
-
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -579,10 +575,6 @@ msgstr "{emptied, plural, other {파일 #개 유지}}"
 #, fuzzy
 msgid "{enabledCount, plural, one {# enabled} other {# enabled}}"
 msgstr "{enabledCount, plural, other {#개 활성화}}"
-
-#: src/api/upgrades.ts
-msgid "{enqueued, plural, one {# upgrade queued} other {# upgrades queued}}"
-msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -976,10 +968,6 @@ msgstr "취향에서 제외 유지됨 {pushingDown}개"
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, other {백그라운드에서 시리즈 #개 자동 일치 중.}}"
-
-#: src/api/upgrades.ts
-msgid "{queuedText} - skipped {skippedText}"
-msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

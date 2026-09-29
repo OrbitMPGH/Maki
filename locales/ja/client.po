@@ -521,10 +521,6 @@ msgstr "{count, plural, other {アーカイブ#件を完全に削除すること
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, other {影響のあるシリーズを#件表示}}"
 
-#: src/api/upgrades.ts
-msgid "{count} {label}"
-msgstr ""
-
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -579,10 +575,6 @@ msgstr "{emptied, plural, other {その#件のファイルを保持}}"
 #, fuzzy
 msgid "{enabledCount, plural, one {# enabled} other {# enabled}}"
 msgstr "{enabledCount, plural, other {# 件有効}}"
-
-#: src/api/upgrades.ts
-msgid "{enqueued, plural, one {# upgrade queued} other {# upgrades queued}}"
-msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -976,10 +968,6 @@ msgstr "{pushingDown}件を好みから除外中"
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, other {バックグラウンドで#シリーズを自動照合しています。}}"
-
-#: src/api/upgrades.ts
-msgid "{queuedText} - skipped {skippedText}"
-msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

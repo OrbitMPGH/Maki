@@ -148,14 +148,14 @@ public class HealthMonitor(MakiDbContext db, HealthCheckService legacy, IAppSett
             {
                 // Replaced files count against the same disk as the library, so they only matter
                 // once a root folder's drive is already running low.
-                var trash = await db.UpgradeHistory.Where(h => h.TrashPath != null).Select(h => h.TrashBytes).ToListAsync(ct);
-                if (trash.Count > 0)
+                var (trashBytes, trashFiles) = await UpgradeTrashService.SizeAsync(db, ct);
+                if (trashFiles > 0)
                 {
                     var upgradeOptions = await UpgradeOptions.LoadAsync(settings, ct);
                     Add(UpgradeTrashId, "storage", rootDiskLow ? "warning" : "healthy", "health.check.upgradeTrash", new
                     {
-                        gib = Math.Round(trash.Sum() / Math.Pow(1024, 3), 2),
-                        files = trash.Count,
+                        gib = Math.Round(trashBytes / Math.Pow(1024, 3), 2),
+                        files = trashFiles,
                         days = upgradeOptions.TrashRetentionDays,
                     }, "/activity?tab=upgrades");
                 }

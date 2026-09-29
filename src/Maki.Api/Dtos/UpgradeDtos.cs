@@ -89,7 +89,6 @@ public record CutoffUnmetPageDto(IReadOnlyList<CutoffUnmetRowDto> Rows, int Tota
 /// </param>
 /// <param name="LastScanDate">Local date (yyyy-MM-dd) of the last daily scan, or null.</param>
 public record UpgradeSummaryDto(
-    int CutoffUnmet,
     bool ProfilesConfigured,
     long TrashBytes = 0,
     int TrashFiles = 0,

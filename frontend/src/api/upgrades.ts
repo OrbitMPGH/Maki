@@ -145,7 +145,6 @@ export interface CutoffUnmetPageDto {
 }
 
 export interface UpgradesSummaryDto {
-  cutoffUnmet: number
   profilesConfigured: boolean
   /** Bytes currently held in every root's `.maki-trash`, from reverted-or-not upgrade history rows. */
   trashBytes: number
@@ -346,32 +345,6 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
 /** `LABELS[x] ?? x`: a code this build has no case for renders as-is rather than disappearing. */
 export function upgradeReasonLabel(renderLabel: (m: MessageDescriptor) => string, code: string): string {
   return renderLabel(UPGRADE_REASON_LABELS[code as UpgradeReasonCode | UpgradeSkipReasonCode] ?? code)
-}
-
-/**
- * One line for a finished `UpgradeScanResultDto`: how many were queued, and, since a run mostly
- * skips things, the skipped counts by reason so "Scan finished" isn't the only feedback an admin
- * gets when nothing got enqueued.
- */
-export function upgradeScanResultText(
-  renderLabel: (m: MessageDescriptor) => string,
-  result: UpgradeScanResultDto,
-): string {
-  const { enqueued } = result
-  const queuedText = plural(enqueued, { one: '# upgrade queued', other: '# upgrades queued' })
-  const skippedEntries = Object.entries(result.skipped).filter(([, count]) => count > 0)
-  if (skippedEntries.length === 0) return queuedText
-  const entryTexts = skippedEntries.map(([code, count]) => {
-    const label = upgradeReasonLabel(renderLabel, code)
-    return now`${count} ${label}`
-  })
-  // Locale-aware "a, b and c" where available; a plain comma join is an acceptable fallback rather
-  // than another translated string for something this incidental.
-  const skippedText =
-    typeof Intl.ListFormat === 'function'
-      ? new Intl.ListFormat(i18n.locale || undefined).format(entryTexts)
-      : entryTexts.join(', ')
-  return now`${queuedText} - skipped ${skippedText}`
 }
 
 export interface NumberRangeDto {
@@ -785,13 +758,8 @@ export function useSetFileTrusted() {
   )
 }
 
-/** A library-wide scan starts in the background; a single series' scan runs synchronously. */
-export function isUpgradeScanStarted(result: UpgradeScanResultDto | { started: true }): result is { started: true } {
-  return 'started' in result
-}
-
 /**
- * Runs a library-wide scan (no `seriesId`) or a single series' scan. Both write the series' last-scan
+ * Starts a library-wide scan (no `seriesId`) or a single series' scan in the background. Both write the series' last-scan
  * columns, so `series` and `chapters` are invalidated alongside the usual upgrade views: the Details
  * tab's "Last upgrade scan" line and the chapter list's quality badges can change from either kind of
  * run, not just from a chapter-level upgrade.
@@ -800,7 +768,7 @@ export function useRunUpgradeScan() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (seriesId?: number) =>
-      api<UpgradeScanResultDto | { started: true }>('/upgrades/scan', {
+      api<{ started: true }>('/upgrades/scan', {
         method: 'POST',
         body: JSON.stringify({ seriesId: seriesId ?? null }),
       }),

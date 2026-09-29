@@ -634,6 +634,22 @@ public class TorrentImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task An_upgrade_plan_lists_only_the_files_its_verdict_replaces()
+    {
+        var (series, item) = SeedLibrary();
+        SplitIntoTwoVolumes(series.Id);
+        MakeUpgrade(series, item, rows => rows.Where(IsLateChapterFile).ToList().ForEach(f => f.Trusted = true));
+        WriteDownload("Berserk v01 (Digital) (1r0n).cbz", 1, 2, 3);
+        WriteDownload("Berserk v02 (Digital) (1r0n).cbz", 4, 5, 6);
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Assert.Equal(3, plan.Files.Single(f => f.FileName.Contains("v01")).Replaces.Count);
+        Assert.Empty(plan.Files.Single(f => f.FileName.Contains("v02")).Replaces);
+        Assert.Equal(3, plan.ReplacedFileCount);
+    }
+
+    [Fact]
     public async Task An_upgrade_for_one_language_never_links_a_chapter_of_another()
     {
         var (series, item) = SeedLibrary();

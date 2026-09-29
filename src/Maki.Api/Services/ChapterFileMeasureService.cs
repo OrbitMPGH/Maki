@@ -4,12 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-/// <summary>
-/// Measures every <c>ChapterFile</c> that has never been measured: rows written before the quality
-/// columns existed, and imports, adoptions and relinks, which stamp a tier but never open the
-/// archive. Runs from <c>ChapterFileMeasureJob</c>. Measuring only reads the archive, so the
-/// reader's cached page lists stay valid and nothing is invalidated.
-/// </summary>
+/// <summary>Measures every <c>ChapterFile</c> that has never been measured. Read only, so the reader cache stays valid.</summary>
 public class ChapterFileMeasureService(
     MakiDbContext db, ChapterFileQualityService quality, ILogger<ChapterFileMeasureService> logger)
 {
@@ -18,7 +13,6 @@ public class ChapterFileMeasureService(
 
     private static readonly SemaphoreSlim Gate = new(1);
 
-    /// <summary>Pause between files so a large library does not keep the disk busy for the whole pass.</summary>
     internal TimeSpan DelayBetweenFiles { get; set; } = TimeSpan.FromMilliseconds(100);
 
     /// <returns>false when a pass is already running, so this call did nothing.</returns>
@@ -33,8 +27,7 @@ public class ChapterFileMeasureService(
         var skipped = 0;
         try
         {
-            // A cursor rather than re-querying from the start: a file that is not on disk stays
-            // unmeasured, and would otherwise come back at the head of every batch.
+            // A cursor, since a file missing from disk stays unmeasured and would head every batch.
             var lastId = 0;
             while (true)
             {
@@ -80,10 +73,7 @@ public class ChapterFileMeasureService(
                     var (kind, group) = quality.ResolveProvenance(file, chapterByFile.GetValueOrDefault(file.Id));
                     quality.Stamp(file, path, kind, group, SampleSize, ct);
 
-                    // Conditional on the row still being the one that was read: it may have been
-                    // deleted, re-pointed at another path, or measured by a download since. None is
-                    // an error; the write just matches nothing. Its own token, so a file measured
-                    // before a cancellation is kept.
+                    // Matches nothing if a download re-pointed or measured the row since it was read.
                     await db.ChapterFiles.IgnoreQueryFilters()
                         .Where(f => f.Id == file.Id && f.RelativePath == file.RelativePath && f.MeasuredAtUtc == null)
                         .ExecuteUpdateAsync(set => set
@@ -129,11 +119,7 @@ public class ChapterFileMeasureService(
         return true;
     }
 
-    /// <summary>
-    /// Unmeasured rows under a root folder that is present. Counted in SQL without touching the
-    /// files, so a file missing from a present root still counts; a missing root (an unmounted
-    /// share) contributes nothing.
-    /// </summary>
+    /// <summary>Unmeasured rows under a root folder that is present; an unmounted share counts nothing.</summary>
     public static async Task<int> CountPendingAsync(MakiDbContext db, CancellationToken ct)
     {
         var byRoot = await db.ChapterFiles.IgnoreQueryFilters()

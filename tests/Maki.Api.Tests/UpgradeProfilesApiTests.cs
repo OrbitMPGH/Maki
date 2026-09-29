@@ -26,6 +26,24 @@ public sealed class UpgradeProfilesApiTests : IDisposable
 
     private static UpgradeEvaluationService Evaluation(MakiDbContext db) => new(db, TestQuality.Create());
 
+    [Fact]
+    public void A_candidate_is_never_scored_on_the_current_files_name()
+    {
+        var penalty = new QualityFormat
+        {
+            Id = 1, Name = "LowQ",
+            Conditions = [new FormatCondition(FormatConditionType.ReleaseNameMatches, @"\[LowQ\]", Required: true, Negate: false)]
+        };
+        var profile = new UpgradeProfile { Name = "P", FormatScores = [new FormatScore(1, -50)] };
+        UpgradeProfileDefaults.Normalise(profile);
+        var evaluator = new UpgradeEvaluator(profile, [penalty], TestQuality.Create());
+
+        var candidate = evaluator.CandidateFor("Somewhere", null, "[LowQ] Series c001.cbz", 20, 1200, "jpg", null, "en");
+
+        Assert.Null(candidate.ReleaseName);
+        Assert.Equal(0, evaluator.Score(candidate).Score);
+    }
+
     private static SeriesController Series(MakiDbContext db) =>
         new(new TestLocalizer(), db, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
             null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!);
@@ -358,7 +376,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         Assert.Equal("Strict", row.ProfileName);
         Assert.False(row.Quality.CutoffMet);
         Assert.Equal(0, row.Quality.Score);
-        Assert.Equal(new UpgradeSummaryDto(1, true), summary);
+        Assert.Equal(new UpgradeSummaryDto(true), summary);
     }
 
     [Fact]
@@ -420,7 +438,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         var summary = await Evaluation(db).SummaryAsync(default);
 
         Assert.Empty(page.Rows);
-        Assert.Equal(new UpgradeSummaryDto(0, false), summary);
+        Assert.Equal(new UpgradeSummaryDto(false), summary);
     }
 
     [Fact]

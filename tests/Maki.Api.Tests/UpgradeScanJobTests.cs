@@ -22,13 +22,16 @@ public class UpgradeScanJobTests : IDisposable
 
     public void Dispose() => _world.Dispose();
 
-    private async Task RunJobAsync(bool force, Maki.Data.MakiDbContext? db = null)
+    private Task RunJobAsync(bool force, Maki.Data.MakiDbContext? db = null) =>
+        RunJobAsync(force ? new JobDataMap { [UpgradeScanJob.ForceKey] = true } : null, db);
+
+    private async Task RunJobAsync(JobDataMap? data, Maki.Data.MakiDbContext? db = null)
     {
         using var own = _world.Db.NewContext();
         using var batches = _world.Batches();
         var job = new UpgradeScanJob(_world.Scanner(db ?? own, batches), _world.Settings, TimeProvider.System,
             NullLogger<UpgradeScanJob>.Instance);
-        await job.Execute(new TestJobContext(force ? new JobDataMap { [UpgradeScanJob.ForceKey] = true } : null));
+        await job.Execute(new TestJobContext(data));
     }
 
     private int UpgradeRows()
@@ -58,6 +61,15 @@ public class UpgradeScanJobTests : IDisposable
         await RunJobAsync(force: true);
 
         Assert.Equal(1, UpgradeRows());
+    }
+
+    [Fact]
+    public async Task A_series_run_scans_that_series_with_the_switch_off_and_leaves_the_marker()
+    {
+        await RunJobAsync(new JobDataMap { [UpgradeScanJob.SeriesKey] = _world.SeriesId });
+
+        Assert.Equal(1, UpgradeRows());
+        Assert.Null(await _world.Settings.GetAsync(SettingKeys.UpgradesLastScanDate));
     }
 
     [Fact]

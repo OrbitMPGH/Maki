@@ -521,10 +521,6 @@ msgstr "{count, plural, one {Potwierdzam trwałe usunięcie # archiwum.} few {Po
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Pokaż # serię objętą zmianą} few {Pokaż # serie objęte zmianą} many {Pokaż # serii objętych zmianą} other {Pokaż # serii objętych zmianą}}"
 
-#: src/api/upgrades.ts
-msgid "{count} {label}"
-msgstr ""
-
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -579,10 +575,6 @@ msgstr "{emptied, plural, one {Zachowaj ten plik} few {Zachowaj te # pliki} many
 #, fuzzy
 msgid "{enabledCount, plural, one {# enabled} other {# enabled}}"
 msgstr "{enabledCount, plural, one {włączono #} few {włączono #} many {włączono #} other {włączono #}}"
-
-#: src/api/upgrades.ts
-msgid "{enqueued, plural, one {# upgrade queued} other {# upgrades queued}}"
-msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -976,10 +968,6 @@ msgstr "{pushingDown} wykluczonych z Twojego profilu gustu"
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Automatyczne dopasowywanie # serii w tle.} few {Automatyczne dopasowywanie # serii w tle.} many {Automatyczne dopasowywanie # serii w tle.} other {Automatyczne dopasowywanie # serii w tle.}}"
-
-#: src/api/upgrades.ts
-msgid "{queuedText} - skipped {skippedText}"
-msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

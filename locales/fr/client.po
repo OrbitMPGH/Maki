@@ -521,10 +521,6 @@ msgstr "{count, plural, one {Je confirme la suppression définitive de # archive
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Afficher la série concernée (#)} many {Afficher les # séries concernées} other {Afficher les # séries concernées}}"
 
-#: src/api/upgrades.ts
-msgid "{count} {label}"
-msgstr ""
-
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -579,10 +575,6 @@ msgstr "{emptied, plural, one {Conserver ce fichier} many {Conserver ces # fichi
 #, fuzzy
 msgid "{enabledCount, plural, one {# enabled} other {# enabled}}"
 msgstr "{enabledCount, plural, one {# activée} many {# activées} other {# activées}}"
-
-#: src/api/upgrades.ts
-msgid "{enqueued, plural, one {# upgrade queued} other {# upgrades queued}}"
-msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -976,10 +968,6 @@ msgstr "{pushingDown} exclus de vos goûts"
 #, fuzzy
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Mise en correspondance automatique de # série en arrière-plan.} many {Mise en correspondance automatique de # séries en arrière-plan.} other {Mise en correspondance automatique de # séries en arrière-plan.}}"
-
-#: src/api/upgrades.ts
-msgid "{queuedText} - skipped {skippedText}"
-msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy

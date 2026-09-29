@@ -60,7 +60,8 @@ public sealed class UpgradeEvaluator
 
     /// <summary>
     /// A copy that is not a library file yet: listing data, a probe or a freshly packaged archive.
-    /// Unknown measurements stay null. <paramref name="fileName"/> is the name it would be stored under.
+    /// Unknown measurements stay null. <paramref name="fileName"/> is the name it would be stored under,
+    /// which is the current file's name, so it only feeds the tier and never stands in for a release name.
     /// </summary>
     public QualityCandidate CandidateFor(
         string sourceName, string? group, string fileName, int? pageCount, int? medianWidth, string? imageFormat,
@@ -69,7 +70,7 @@ public sealed class UpgradeEvaluator
         var kind = _quality.KindOf(sourceName);
         return new QualityCandidate(
             QualityTierResolver.Resolve(kind, null, fileName, isVolume: false),
-            sourceName, kind, group, fileName, pageCount, medianWidth, imageFormat, sizeBytes, language);
+            sourceName, kind, group, null, pageCount, medianWidth, imageFormat, sizeBytes, language);
     }
 
     public static QualitySnapshot Snapshot(ChapterFile file, int score) => new()
@@ -152,7 +153,7 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
-        var (rows, _) = await EvaluateAsync(seriesId, ct);
+        var rows = await EvaluateAsync(seriesId, ct);
         var ordered = rows
             .OrderBy(r => r.SortTitle, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.SeriesTitle, StringComparer.OrdinalIgnoreCase)
@@ -166,25 +167,19 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
         return new CutoffUnmetPageDto(ordered, rows.Count, page, pageSize);
     }
 
-    public async Task<UpgradeSummaryDto> SummaryAsync(CancellationToken ct)
-    {
-        var (rows, configured) = await EvaluateAsync(null, ct);
-        return new UpgradeSummaryDto(rows.Count, configured);
-    }
+    /// <summary>Only whether profiles apply anywhere; the unmet count is the cutoff-unmet page's total.</summary>
+    public async Task<UpgradeSummaryDto> SummaryAsync(CancellationToken ct) =>
+        new((await ResolutionAsync(ct)).Configured);
 
     private sealed record Unmet(string SortTitle, string SeriesTitle, decimal? ChapterNumber, CutoffUnmetRowDto Dto);
 
-    /// <summary>
-    /// One row per measured file whose resolved profile says its cutoff is unmet, labelled with the
-    /// lowest-numbered chapter it backs. Visibility comes from the query filters on Chapter, Series and
-    /// ChapterFile, so a caller never sees a file in a root folder they have no grant for.
-    /// </summary>
-    private async Task<(List<Unmet> Rows, bool Configured)> EvaluateAsync(int? seriesId, CancellationToken ct)
+    private async Task<(Dictionary<int, UpgradeProfile> Profiles, int? DefaultId, bool Configured)> ResolutionAsync(
+        CancellationToken ct)
     {
         var profiles = await db.UpgradeProfiles.AsNoTracking().ToDictionaryAsync(p => p.Id, ct);
         if (profiles.Count == 0)
         {
-            return ([], false);
+            return (profiles, null, false);
         }
 
         var defaultId = ParseId(await db.AppConfig
@@ -199,9 +194,20 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
         var configured = defaultId is not null
             ? await db.Series.AnyAsync(ct)
             : await db.Series.AnyAsync(s => s.UpgradeProfileId != null, ct);
+        return (profiles, defaultId, configured);
+    }
+
+    /// <summary>
+    /// One row per measured file whose resolved profile says its cutoff is unmet, labelled with the
+    /// lowest-numbered chapter it backs. Visibility comes from the query filters on Chapter, Series and
+    /// ChapterFile, so a caller never sees a file in a root folder they have no grant for.
+    /// </summary>
+    private async Task<List<Unmet>> EvaluateAsync(int? seriesId, CancellationToken ct)
+    {
+        var (profiles, defaultId, configured) = await ResolutionAsync(ct);
         if (!configured)
         {
-            return ([], false);
+            return [];
         }
 
         var formats = await db.QualityFormats.AsNoTracking().ToListAsync(ct);
@@ -281,7 +287,7 @@ public class UpgradeEvaluationService(MakiDbContext db, ChapterFileQualityServic
                 QualityNames.Tier(evaluator.Profile.Cutoff))));
         }
 
-        return (rows, true);
+        return rows;
     }
 
     public static int? ParseId(string? value) =>

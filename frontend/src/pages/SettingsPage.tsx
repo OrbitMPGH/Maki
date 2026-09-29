@@ -64,8 +64,6 @@ import { ReadingProfilesSection } from '../components/settings/ReadingProfilesSe
 import { ProgressSection } from '../components/settings/ProgressSection'
 import { QualityFormatsSection, UpgradeProfilesSection } from '../components/settings/UpgradeProfilesSection'
 import {
-  isUpgradeScanStarted,
-  upgradeScanResultText,
   useUpgradeProfiles,
   useRunUpgradeScan,
   useSaveUpgradeSettings,
@@ -1329,7 +1327,6 @@ const BYTES_PER_MB = 1024 * 1024
 
 function UpgradesSettingsSection() {
   const { t } = useLingui()
-  const renderLabel = useLabel()
   const { data: settings } = useUpgradeSettings()
   const { data: profiles } = useUpgradeProfiles()
   const save = useSaveUpgradeSettings()
@@ -1529,11 +1526,9 @@ function UpgradesSettingsSection() {
           loading={scan.isPending}
           onClick={() =>
             scan.mutate(undefined, {
-              onSuccess: (result) => {
+              onSuccess: () => {
                 notifications.show({
-                  message: isUpgradeScanStarted(result)
-                    ? now`Scan started`
-                    : upgradeScanResultText(renderLabel, result),
+                  message: now`Scan started`,
                   color: 'var(--ok)',
                 })
               },

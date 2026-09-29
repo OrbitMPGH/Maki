@@ -60,7 +60,7 @@ public class UpgradeRevertServiceTests : IDisposable
         Assert.Equal(80, file.MedianWidth);
         Assert.Equal(4, file.PageCount);
         Assert.Equal(_original.Length, file.Size);
-        Assert.Null(file.ReplacedAtUtc);
+        Assert.NotNull(file.ReplacedAtUtc);
         Assert.Equal("[Group] Series 001", file.ReleaseName);
         Assert.Equal("abc123", file.ReleaseHash);
 

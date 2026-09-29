@@ -276,8 +276,9 @@ public class TorrentImportService(
                 }
             }
 
+            // With a displaceable set the linker leaves every other file its chapters, so only those count.
             var replaces = covered
-                .Where(c => c.ChapterFileId != null)
+                .Where(c => c.ChapterFileId is { } fileId && (displaceable.Count == 0 || displaceable.Contains(fileId)))
                 .GroupBy(c => c.ChapterFileId!.Value)
                 .Select(g =>
                 {
@@ -417,7 +418,7 @@ public class TorrentImportService(
         // actually supersedes can be told apart from ones that were already spare.
         var backedBefore = await db.Chapters
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null)
-            .Select(c => new BackedChapter(c.Id, c.Number, c.ChapterFileId!.Value))
+            .Select(c => new BackedChapter(c.Id, c.Number, c.Language, c.ChapterFileId!.Value))
             .ToListAsync(ct);
         var upgrade = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson);
 
@@ -553,7 +554,7 @@ public class TorrentImportService(
         }
     }
 
-    private sealed record BackedChapter(int ChapterId, decimal? Number, int FileId);
+    private sealed record BackedChapter(int ChapterId, decimal? Number, string? Language, int FileId);
 
     private async Task<List<ChapterFile>> ImportedRowsAsync(Series series, IReadOnlyList<string> importedPaths, CancellationToken ct)
     {
@@ -635,10 +636,11 @@ public class TorrentImportService(
                 row.Id.ToString(CultureInfo.InvariantCulture), Path.GetFileName(row.RelativePath));
             var trashPath = LibraryPaths.Resolve(rootPath, trashRelative)!;
 
-            var beforeScore = evaluator?.Evaluate(row, null) is { } current ? current.Score.Score : 0;
+            var beforeScore = evaluator?.Evaluate(row, backed[0].Language) is { } current ? current.Score.Score : 0;
             if (!afterByFile.TryGetValue(replacementId, out var after))
             {
-                after = await AfterSnapshotAsync(rootPath, replacementId, releaseInfo, evaluator, CancellationToken.None);
+                after = await AfterSnapshotAsync(rootPath, replacementId, backed[0].Language, releaseInfo, evaluator,
+                    CancellationToken.None);
                 afterByFile[replacementId] = after;
             }
 
@@ -689,7 +691,8 @@ public class TorrentImportService(
     }
 
     private async Task<QualitySnapshot> AfterSnapshotAsync(
-        string rootPath, int fileId, ReleaseInfo? releaseInfo, UpgradeEvaluator? evaluator, CancellationToken ct)
+        string rootPath, int fileId, string? language, ReleaseInfo? releaseInfo, UpgradeEvaluator? evaluator,
+        CancellationToken ct)
     {
         var file = await db.ChapterFiles.FirstOrDefaultAsync(f => f.Id == fileId, ct);
         if (file is null)
@@ -698,7 +701,7 @@ public class TorrentImportService(
         }
 
         var snapshot = UpgradeEvaluator.Snapshot(file,
-            evaluator?.Score(evaluator.CandidateFor(file, null)).Score ?? 0);
+            evaluator?.Score(evaluator.CandidateFor(file, language)).Score ?? 0);
         snapshot.ReleaseHash = releaseInfo?.TorrentHash ?? file.ReleaseHash;
         if (LibraryPaths.Resolve(rootPath, file.RelativePath) is { } path && File.Exists(path))
         {

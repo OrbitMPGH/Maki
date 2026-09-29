@@ -8,7 +8,8 @@ namespace Maki.Api.Jobs;
 /// Runs the upgrade scan once per local day, at or after <c>upgrades.scanHour</c>. Fires every 15
 /// minutes and checks the <c>upgrades.lastScanDate</c> marker rather than being rescheduled whenever
 /// the hour changes, the same shape as the health scan. <c>force=true</c> in the job data skips the
-/// global switch, the hour and the marker, for the library-wide "Scan now".
+/// global switch, the hour and the marker, for the library-wide "Scan now". <c>seriesId</c> scans that
+/// one series instead, for the series page's "Scan for upgrades", and leaves the marker alone.
 /// </summary>
 [DisallowConcurrentExecution]
 public class UpgradeScanJob(
@@ -16,10 +17,29 @@ public class UpgradeScanJob(
 {
     public static readonly JobKey Key = new("upgrade-scan");
     public const string ForceKey = "force";
+    public const string SeriesKey = "seriesId";
 
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
+        if (context.MergedJobDataMap.TryGetIntValue(SeriesKey, out var seriesId))
+        {
+            try
+            {
+                await scans.ScanSeriesAsync(seriesId, ct);
+            }
+            catch (UpgradeScanBusyException)
+            {
+                logger.LogDebug("Upgrade scan of series {SeriesId} skipped; one is already running", seriesId);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Upgrade scan of series {SeriesId} failed", seriesId);
+            }
+
+            return;
+        }
+
         var force = context.MergedJobDataMap.TryGetBooleanValue(ForceKey, out var forced) && forced;
         var options = await UpgradeOptions.LoadAsync(settings, ct);
 
@@ -53,12 +73,19 @@ public class UpgradeScanJob(
     }
 
     /// <summary>Queues a forced library-wide scan without waiting for it. False when it could not be queued.</summary>
-    public static async Task<bool> TriggerAsync(ISchedulerFactory schedulerFactory, ILogger logger)
+    public static Task<bool> TriggerAsync(ISchedulerFactory schedulerFactory, ILogger logger) =>
+        TriggerAsync(schedulerFactory, logger, new JobDataMap { [ForceKey] = true });
+
+    /// <summary>Queues a scan of one series without waiting for it. False when it could not be queued.</summary>
+    public static Task<bool> TriggerSeriesAsync(ISchedulerFactory schedulerFactory, ILogger logger, int seriesId) =>
+        TriggerAsync(schedulerFactory, logger, new JobDataMap { [SeriesKey] = seriesId });
+
+    private static async Task<bool> TriggerAsync(ISchedulerFactory schedulerFactory, ILogger logger, JobDataMap data)
     {
         try
         {
             var scheduler = await schedulerFactory.GetScheduler();
-            await scheduler.TriggerJob(Key, new JobDataMap { [ForceKey] = true });
+            await scheduler.TriggerJob(Key, data);
             return true;
         }
         catch (Exception ex)

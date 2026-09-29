@@ -43,10 +43,8 @@ import {
   useRetryQueueItem,
 } from '../api/hooks'
 import {
-  isUpgradeScanStarted,
   isVolumeSearchStarted,
   upgradeReasonLabel,
-  upgradeScanResultText,
   volumeSearchResultText,
   useCutoffUnmet,
   useRevertUpgrade,
@@ -257,9 +255,9 @@ export default function ActivityPage() {
 
   const runUpgradeScan = () =>
     runScan.mutate(undefined, {
-      onSuccess: (result) => {
+      onSuccess: () => {
         notifications.show({
-          message: isUpgradeScanStarted(result) ? now`Scan started` : upgradeScanResultText(renderLabel, result),
+          message: now`Scan started`,
           color: 'var(--ok)',
         })
       },

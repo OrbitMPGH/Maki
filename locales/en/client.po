@@ -433,10 +433,6 @@ msgstr "{count, plural, one {I confirm permanent deletion of # archive.} other {
 msgid "{count, plural, one {Show # affected series} other {Show # affected series}}"
 msgstr "{count, plural, one {Show # affected series} other {Show # affected series}}"
 
-#: src/api/upgrades.ts
-msgid "{count} {label}"
-msgstr "{count} {label}"
-
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
 msgstr "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -480,10 +476,6 @@ msgstr "{emptied, plural, one {Keep that file} other {Keep those # files}}"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{enabledCount, plural, one {# enabled} other {# enabled}}"
 msgstr "{enabledCount, plural, one {# enabled} other {# enabled}}"
-
-#: src/api/upgrades.ts
-msgid "{enqueued, plural, one {# upgrade queued} other {# upgrades queued}}"
-msgstr "{enqueued, plural, one {# upgrade queued} other {# upgrades queued}}"
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "{eta} left"
@@ -803,10 +795,6 @@ msgstr "{pushingDown} kept out of your taste"
 #: src/pages/LibraryPage.tsx
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
-
-#: src/api/upgrades.ts
-msgid "{queuedText} - skipped {skippedText}"
-msgstr "{queuedText} - skipped {skippedText}"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{rated} rated"

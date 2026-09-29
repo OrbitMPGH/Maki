@@ -106,9 +106,7 @@ import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import {
-  isUpgradeScanStarted,
   isVolumeSearchStarted,
-  upgradeScanResultText,
   volumeSearchResultText,
   useRunUpgradeScan,
   useSetFileTrusted,
@@ -1277,8 +1275,8 @@ export default function SeriesDetailPage() {
 
   const scanSeriesForUpgrades = () =>
     runUpgradeScan.mutate(seriesId, {
-      onSuccess: (result) => {
-        notify.ok(isUpgradeScanStarted(result) ? staticT`Scan started` : upgradeScanResultText(renderLabel, result))
+      onSuccess: () => {
+        notify.ok(staticT`Scan started`)
       },
       onError: (error) => {
         notify.err(

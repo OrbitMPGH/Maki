@@ -272,10 +272,10 @@ public class ChapterDownloadProcessor(
                 .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
                 .Select(l => l.Group)
                 .FirstOrDefaultAsync(ct);
-            // Not cancellable: the archive is already in the library, and stopping partway through
-            // measuring it only delays the row that records it.
+            // Not cancellable: the archive is already in the library. Sampled like the backfill, since the
+            // pages were validated moments ago and a full second read would only repeat that work.
             quality.Stamp(chapterFile, finalPath, source.Kind, linkGroup ?? ChapterFileQualityService.SiteGroup(source),
-                sampleSize: 0, CancellationToken.None);
+                ChapterFileMeasureService.SampleSize, CancellationToken.None);
 
             // Only a chapter the library didn't already have counts. A re-download replaces bytes
             // at a path that was already there, so recording it again inflates the instance's

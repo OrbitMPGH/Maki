@@ -97,6 +97,24 @@ public class ChapterReplaceTests : IDisposable
     }
 
     [Fact]
+    public async Task Download_from_on_a_pdf_queues_a_plain_download()
+    {
+        var (chapterId, fileId) = _world.Chapter(1);
+        using (var seed = _world.Db.NewContext())
+        {
+            var file = seed.ChapterFiles.Single(f => f.Id == fileId);
+            file.RelativePath = Path.ChangeExtension(file.RelativePath, ".pdf");
+            seed.SaveChanges();
+        }
+
+        using var db = _world.Db.NewContext();
+        await Controller(db, MakiPermission.Admin).DownloadFrom(
+            chapterId, new DownloadChapterFromRequest(_world.OfficialMappingId), Evaluation(db), CancellationToken.None);
+
+        Assert.Null(Row(chapterId).UpgradeInfoJson);
+    }
+
+    [Fact]
     public async Task Download_from_stores_the_replacement_on_a_row_it_re_pins()
     {
         var (chapterId, fileId) = _world.Chapter(1);

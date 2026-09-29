@@ -79,16 +79,15 @@ public class UpgradesControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task A_series_scan_needs_only_download_permission()
+    public async Task A_series_scan_needs_only_download_permission_and_runs_as_a_job()
     {
         _world.Chapter(1);
 
         var result = await ScanAsync(new UpgradeScanRequest(_world.SeriesId), MakiPermission.DownloadChapters);
 
-        var dto = Assert.IsType<UpgradeScanResultDto>(Assert.IsType<OkObjectResult>(result).Value);
-        Assert.Equal(1, dto.Enqueued);
-        Assert.Empty(dto.Candidates);
-        Assert.Null(dto.QueuedFromMappingId);
+        Assert.IsType<AcceptedResult>(result);
+        Assert.Equal(1, _scheduler.Calls);
+        Assert.Empty(_world.Http.Requested);
     }
 
     [Theory]

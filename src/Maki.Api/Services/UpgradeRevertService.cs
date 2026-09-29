@@ -18,11 +18,7 @@ public enum UpgradeRevertError
     MoveFailed
 }
 
-/// <summary>
-/// Puts an upgraded chapter's previous file back. The upgraded copy goes into the trash in its place,
-/// so the revert can itself be purged on the normal schedule, and the candidate is memoised as
-/// <c>reverted_by_user</c> so the next scan does not queue the same copy again.
-/// </summary>
+/// <summary>Puts an upgraded chapter's previous file back and trashes the upgraded copy in its place.</summary>
 public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives, ILogger<UpgradeRevertService> logger)
 {
     public async Task<(UpgradeHistory? Row, UpgradeRevertError Error)> RevertAsync(int historyId, int? userId, CancellationToken ct)
@@ -124,10 +120,10 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
         file.SourceChapterId = before.SourceChapterId;
         file.ReleaseName = before.ReleaseName;
         file.ReleaseHash = before.ReleaseHash;
-        // A copy that was never measured stays unmeasured, so the backfill measures it rather than
-        // every evaluator reading nulls as measured values.
+        // Never measured stays unmeasured, so the backfill picks it up.
         file.MeasuredAtUtc = before.PageCount is null && before.MedianWidth is null ? null : now;
-        file.ReplacedAtUtc = null;
+        // The swap back starts the quiet period too, or the next scan replaces what the user restored.
+        file.ReplacedAtUtc = now;
 
         history.RevertedAtUtc = now;
         history.TrashPath = hadCurrent ? asideRelative : null;
