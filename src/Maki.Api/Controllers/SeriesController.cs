@@ -22,6 +22,7 @@ using Maki.Data.Identity;
 using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Controllers;
 
@@ -354,9 +355,10 @@ public class SeriesController(
             .GroupBy(m => m.SeriesId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // Grouped in SQL to one row per (series, source) before crossing the wire, scoped to these series for the same reason as the tag read above.
+        // Grouped in SQL to one row per (series, source) before crossing the wire. The ChapterFile
+        // query filter already scopes this to visible series, so no explicit Series check here.
         var fileSourcesBySeries = (await db.ChapterFiles
-                .Where(f => f.SourceName != "" && db.Series.Any(s => s.Id == f.SeriesId))
+                .Where(f => f.SourceName != "")
                 .GroupBy(f => new { f.SeriesId, f.SourceName })
                 .Select(g => g.Key)
                 .ToListAsync(ct))
@@ -463,7 +465,8 @@ public class SeriesController(
     /// visible and volume compilations show the chapters they were mapped to.
     /// </summary>
     [HttpGet("{id:int}/files")]
-    public async Task<IActionResult> Files(int id, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
+    public async Task<IActionResult> Files(int id, [FromServices] UpgradeEvaluationService upgrades,
+        [FromServices] IMemoryCache cache, CancellationToken ct)
     {
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == id, ct);
         if (series is null)
@@ -500,7 +503,8 @@ public class SeriesController(
         // finds its file. Case-sensitive filesystems allow two files whose paths differ only in
         // case; they collapse to one entry here, so keep the first and don't throw.
         var diskByRelPath = new Dictionary<string, (string RelPath, string AbsPath)>(StringComparer.OrdinalIgnoreCase);
-        foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
+        var folders = await SeriesFolders.ForAsync(db, series, ct);
+        foreach (var folder in folders)
         {
             var seriesDir = Path.Combine(series.RootFolder.Path, folder);
             if (!Directory.Exists(seriesDir))
@@ -515,6 +519,9 @@ public class SeriesController(
                 diskByRelPath.TryAdd(LibraryPaths.ComparisonKey(relPath), (relPath, f));
             }
         }
+
+        SeriesFilesSummary.Remember(cache, id, series.RootFolder.Path, folders,
+            records.Select(r => new SeriesFilesSummary.FileRecord(r.Id, r.RelativePath)), diskByRelPath.Keys);
 
         var files = new List<SeriesFileDto>();
         var seenRelPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -575,6 +582,22 @@ public class SeriesController(
             .OrderBy(f => f.SortKey is null)
             .ThenBy(f => f.SortKey)
             .ThenBy(f => f.RelativePath, StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// The Files tab count and the unlinked-files banner, so opening a series does not need the full
+    /// listing above. See <see cref="SeriesFilesSummary"/> for how its folder walk is cached.
+    /// </summary>
+    [HttpGet("{id:int}/files/summary")]
+    public async Task<IActionResult> FilesSummary(int id, [FromServices] IMemoryCache cache, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        var summary = await SeriesFilesSummary.ForAsync(db, cache, id, ct);
+        return summary is null ? this.Fail(localizer, "error.series.noRootFolder") : Ok(summary);
     }
 
     /// <summary>

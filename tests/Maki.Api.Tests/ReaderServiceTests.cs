@@ -132,6 +132,27 @@ public sealed class ReaderServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PageSliceMatchesTheFullSlice()
+    {
+        var (_, chapters) = SeedFromCbz("vol2.cbz",
+            ["S - c001 - p001.png", "S - c002 - p001.png", "S - c002 - p002.png"],
+            [(1m, 2), (2m, 2)]);
+
+        var reader = Reader();
+        foreach (var chapterId in chapters.Values)
+        {
+            var full = await reader.SliceAsync(chapterId, CancellationToken.None);
+            var slim = await reader.PageSliceAsync(chapterId, CancellationToken.None);
+
+            Assert.NotNull(full);
+            Assert.Equal(
+                new ReaderService.PageSlice(chapterId, full.ChapterFileId, full.ArchivePath, full.ArchiveSize,
+                    full.Pages, full.StartPage, full.PageCount),
+                slim);
+        }
+    }
+
+    [Fact]
     public async Task ChapterWithoutAMarkerFallsBackToTheWholeArchive()
     {
         // Chapter 9 is linked to the file but no page names mention it — serving everything

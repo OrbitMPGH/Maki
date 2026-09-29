@@ -78,10 +78,64 @@ public class ReaderService(
             return null;
         }
 
-        var (start, count) = SliceBounds(info, row.Chapter, row.SharesFile);
+        var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
 
         return new ChapterSlice(
             row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count);
+    }
+
+    /// <summary>Just what serving one page or thumbnail needs: no Chapter or Series entity.</summary>
+    public record PageSlice(
+        int ChapterId,
+        int ChapterFileId,
+        string ArchivePath,
+        long ArchiveSize,
+        IReadOnlyList<string> Pages,
+        int StartPage,
+        int PageCount);
+
+    /// <summary>
+    /// <see cref="SliceAsync"/> for the page, thumbnail and OPDS page endpoints, which run hundreds
+    /// of times per chapter and read nothing off the chapter or series. Projects the few columns
+    /// those need instead of materialising every Series column and its JSON converters per page.
+    /// Same null cases as <see cref="SliceAsync"/>.
+    /// </summary>
+    public async Task<PageSlice?> PageSliceAsync(int chapterId, CancellationToken ct)
+    {
+        var row = await db.Chapters
+            .AsNoTracking()
+            .Where(c => c.Id == chapterId && c.ChapterFileId != null)
+            .Select(c => new
+            {
+                c.Number,
+                File = c.ChapterFile == null
+                    ? null
+                    : new { c.ChapterFile.Id, c.ChapterFile.RelativePath, c.ChapterFile.Size },
+                RootPath = c.Series!.RootFolder!.Path,
+                SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (row?.File is not { } file || string.IsNullOrEmpty(row.RootPath))
+        {
+            return null;
+        }
+
+        var absolute = LibraryPaths.Resolve(row.RootPath, file.RelativePath);
+        if (absolute is null || !File.Exists(absolute))
+        {
+            logger.LogWarning("Chapter {ChapterId} file is missing: {Path}", chapterId, file.RelativePath);
+            return null;
+        }
+
+        var info = await archives.GetAsync(file.Id, file.Size, absolute, ct);
+        if (info.Pages.Count == 0)
+        {
+            return null;
+        }
+
+        var (start, count) = SliceBounds(info, row.Number, row.SharesFile);
+        return new PageSlice(chapterId, file.Id, absolute, file.Size, info.Pages, start, count);
     }
 
     /// <summary>
@@ -139,7 +193,7 @@ public class ReaderService(
                 continue;
             }
 
-            var (start, count) = SliceBounds(info, row.Chapter, row.SharesFile);
+            var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
             slices[row.Chapter.Id] = new ChapterSlice(
                 row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count);
         }
@@ -151,6 +205,10 @@ public class ReaderService(
     public Task<Stream?> OpenPageAsync(ChapterSlice slice, string entryName, CancellationToken ct) =>
         archives.OpenPageAsync(slice.ArchivePath, entryName, ct);
 
+    /// <inheritdoc cref="OpenPageAsync(ChapterSlice, string, CancellationToken)"/>
+    public Task<Stream?> OpenPageAsync(PageSlice slice, string entryName, CancellationToken ct) =>
+        archives.OpenPageAsync(slice.ArchivePath, entryName, ct);
+
     /// <summary>
     /// The page range a chapter occupies. A volume/compilation CBZ backs several chapters, and
     /// the only ground truth for where each begins is the chapter markers embedded in the page
@@ -158,9 +216,9 @@ public class ReaderService(
     /// a guessed range — showing extra pages is recoverable, silently skipping them is not.
     /// </summary>
     private static (int Start, int Count) SliceBounds(
-        ReaderArchiveCache.ArchiveInfo info, Chapter chapter, bool sharesFile)
+        ReaderArchiveCache.ArchiveInfo info, decimal? chapterNumber, bool sharesFile)
     {
-        if (!sharesFile || chapter.Number is not { } number || info.Boundaries.Count == 0)
+        if (!sharesFile || chapterNumber is not { } number || info.Boundaries.Count == 0)
         {
             return (0, info.Pages.Count);
         }

@@ -119,6 +119,7 @@ public sealed class OpdsControllerTests : IDisposable
             catalog: null!,
             access: new OpdsAccessService(db, TimeProvider.System),
             reader: null!,
+            progressWriter: null!,
             db: db,
             paths: _paths,
             localizer: new TestLocalizer(),

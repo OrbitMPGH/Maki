@@ -857,6 +857,7 @@ try
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
+    builder.Services.AddSingleton<OpdsProgressWriter>().AddHostedService(sp => sp.GetRequiredService<OpdsProgressWriter>());
 
     builder.Services.AddHttpClient(Maki.Core.Indexers.ProwlarrClient.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(100)) // aggregated searches fan out to indexers

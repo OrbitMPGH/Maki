@@ -111,6 +111,9 @@ public record QueueItemDto(
 
 public record QueueHistoryDto(IReadOnlyList<QueueItemDto> Items, int Total, int Page, int PageSize);
 
+/// <param name="Active">Items still working: everything not settled, failed or parked for an import decision.</param>
+public record QueueSummaryDto(int Active, int AwaitingImport, int Failed);
+
 /// <summary>What to do with a download parked as <see cref="QueueStatus.AwaitingImport"/>.</summary>
 public enum ImportDecision
 {

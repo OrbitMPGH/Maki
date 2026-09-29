@@ -299,6 +299,12 @@ export interface SeriesFileDto {
   quality: ChapterFileQualityDto | null
 }
 
+/** The series page's Files tab count and unlinked banner, without the full listing. */
+export interface SeriesFilesSummaryDto {
+  count: number
+  unlinkedOnDisk: number
+}
+
 export interface SeriesScrobbleServiceDto {
   service: string
   label: string
@@ -379,6 +385,13 @@ export interface QueueHistoryDto {
   total: number
   page: number
   pageSize: number
+}
+
+/** Whole-queue counts for the Activity badge. `active` excludes failed and parked items. */
+export interface QueueSummaryDto {
+  active: number
+  awaitingImport: number
+  failed: number
 }
 
 /** An existing library file a downloaded file would leave backing nothing. */

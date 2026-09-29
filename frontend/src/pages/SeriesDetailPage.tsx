@@ -90,7 +90,7 @@ import {
   useToggleChapterWanted,
   useUnlinkChapters,
   useDeleteChapters,
-  useQueue, useSeriesFiles,
+  useQueue, useSeriesFilesSummary,
   useRecommendationDetail,
 } from '../api/hooks'
 import {
@@ -383,7 +383,7 @@ export default function SeriesDetailPage() {
   const readTracking = useReadTracking()
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
-  const { data: files} = useSeriesFiles(seriesId, true)
+  const { data: filesSummary } = useSeriesFilesSummary(seriesId)
   const setRead = useSetChapterRead(seriesId)
   // Only worth asking once there is an anime to have finished, and only meaningful with read
   // tracking on: the callout's own "Read ch. N" action needs somewhere to record progress.
@@ -690,10 +690,7 @@ export default function SeriesDetailPage() {
 
   // What "Download all wanted" would actually queue, so the button can say so rather than making
   // the user open the Chapters tab to find out.
-  const unlinkedFilesOnDisk = useMemo(
-      () => (files ?? []).filter((f) => f.onDisk && f.status !== 'linked').length,
-      [files],
-  )
+  const unlinkedFilesOnDisk = filesSummary?.unlinkedOnDisk ?? 0
   const missingWanted = useMemo(
       () => (chapters ?? []).filter((c) => c.wanted && !c.hasFile && !queueByChapterId.has(c.id)).length,
       [chapters, queueByChapterId],
@@ -1751,7 +1748,7 @@ export default function SeriesDetailPage() {
                 </Tabs.Tab>
                 <Tabs.Tab value="files">
                   <Trans>Files</Trans>
-                  <span className="series-tab-count tnum">{files ? files.length : "?"}</span>
+                  <span className="series-tab-count tnum">{filesSummary ? filesSummary.count : "?"}</span>
                 </Tabs.Tab>
               </Tabs.List>
             }

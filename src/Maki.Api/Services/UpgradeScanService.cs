@@ -144,6 +144,15 @@ public class UpgradeScanService(
             {
                 ct.ThrowIfCancellationRequested();
                 await ScanSeriesCoreAsync(seriesId, options, disabled, run, ct);
+
+                // One context serves the whole library pass. Without this every series' memo rows
+                // stay tracked, and each later SaveChanges runs DetectChanges over all of them. The
+                // memo stays tracked within a series because UpgradeAttempts.UpsertAsync looks in
+                // Local before it queries.
+                if (onlySeries is null)
+                {
+                    db.ChangeTracker.Clear();
+                }
             }
 
             if (onlySeries is null)

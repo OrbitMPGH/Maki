@@ -4,6 +4,7 @@ using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Services;
 
@@ -30,8 +31,15 @@ public record OpdsAccess(bool TrackProgress, int UserId, bool AllRootFolders);
 /// fresh scope and DbContext per key, three round trips where this needs one.
 /// </para>
 /// </summary>
-public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
+public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCache? cache = null)
 {
+    /// <summary>
+    /// How long a resolved token is reused. A streaming reader resolves once per page, so this turns
+    /// a chapter's worth of lookups into one. Only successes are kept, so enabling the catalogue or
+    /// minting a key works at once; revoking a key or disabling the catalogue takes up to this long.
+    /// </summary>
+    private static readonly TimeSpan CacheFor = TimeSpan.FromSeconds(30);
+
     /// <summary>
     /// How stale a key's <c>LastUsedAt</c> may get. A prefetching reader would otherwise turn one
     /// chapter into a write per page.
@@ -51,6 +59,12 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
         }
 
         var hash = ApiKeyCrypto.Hash(token);
+        var cacheKey = (typeof(OpdsAccess), hash);
+        if (cache?.TryGetValue(cacheKey, out OpdsAccess? cached) == true)
+        {
+            return cached;
+        }
+
         var match = await db.UserApiKeys
             .Where(k => k.KeyHash == hash && k.RevokedAt == null && k.Scope == UserApiKeyScope.Opds)
             .Join(db.Users, k => k.UserId, u => u.Id, (k, u) => new
@@ -105,6 +119,8 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock)
                 .ExecuteUpdateAsync(s => s.SetProperty(k => k.LastUsedAt, now), ct);
         }
 
-        return new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
+        var access = new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
+        cache?.Set(cacheKey, access, CacheFor);
+        return access;
     }
 }

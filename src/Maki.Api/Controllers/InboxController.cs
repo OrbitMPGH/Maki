@@ -37,9 +37,10 @@ public record InboxPageDto(IReadOnlyList<InboxItemDto> Items, int Unread, int? N
 /// <summary>
 /// The signed-in user's notification inbox.
 /// <para>
-/// No <c>[Authorize]</c> attribute and no explicit <c>UserId ==</c> anywhere: the fail-closed
+/// No <c>[Authorize]</c> attribute and no access check of its own: the fail-closed
 /// <c>FallbackPolicy</c> already requires sign-in, and the global query filter on
-/// <see cref="UserNotification"/> narrows every read to the caller. Same posture as
+/// <see cref="UserNotification"/> narrows every read to the caller (the hot reads repeat it through
+/// <see cref="UserScopedQuery"/>, for the index, not for access). Same posture as
 /// <see cref="ReadingProfilesController"/>. Nothing here is admin-gated — an inbox nobody but its
 /// owner can read needs no second gate, and there is deliberately no way to read somebody else's
 /// (unlike stats, where an admin genuinely needs to; a notification carries no library fact an
@@ -81,7 +82,7 @@ public class InboxController(
     {
         take = Math.Clamp(take, 1, MaxTake);
 
-        var query = db.UserNotifications.AsQueryable();
+        var query = db.UserNotifications.OwnedByScopeUser(db);
 
         if (before is { } cursor)
         {
@@ -241,7 +242,7 @@ public class InboxController(
     }
 
     private Task<int> UnreadAsync(CancellationToken ct) =>
-        db.UserNotifications.CountAsync(n => n.ReadAt == null, ct);
+        db.UserNotifications.OwnedByScopeUser(db).CountAsync(n => n.ReadAt == null, ct);
 
     /// <summary>
     /// Matches the camelCase key the DTOs and the preference spec use, so a client filters by the

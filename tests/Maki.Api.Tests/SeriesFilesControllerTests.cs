@@ -7,6 +7,7 @@ using Maki.Core.Tests;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -349,5 +350,67 @@ public sealed class SeriesFilesControllerTests : IDisposable
             seriesId, new SeriesController.RelinkRequest(null, null, DeleteSuperseded: false), CancellationToken.None);
 
         Assert.Equal(409, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
+    }
+
+    private static SeriesFilesSummaryDto Summary(IActionResult result) =>
+        Assert.IsType<SeriesFilesSummaryDto>(Assert.IsType<OkObjectResult>(result).Value);
+
+    [Fact]
+    public async Task Files_summary_matches_the_listing_and_rewalks_only_when_the_records_change()
+    {
+        var (seriesId, _, _, from, _) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        using var db = _db.NewContext(userId: 1);
+
+        // Two records on disk and one untracked file, none linked by a chapter.
+        var first = Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None));
+        Assert.Equal(new SeriesFilesSummaryDto(3, 3), first);
+
+        // Linking is read fresh every time; only the folder walk is cached.
+        using (var seed = _db.NewContext())
+        {
+            var file = seed.ChapterFiles.Single(f => f.SeriesId == seriesId && f.RelativePath.StartsWith("Berserk"));
+            seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 1, ChapterFileId = file.Id });
+            seed.SaveChanges();
+        }
+
+        Assert.Equal(new SeriesFilesSummaryDto(3, 2),
+            Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None)));
+
+        // A file dropped in by hand changes no record, so the cached walk stands.
+        var dropped = Path.Combine("Berserk", "Berserk Ch.3.cbz");
+        Write(Path.Combine(from, dropped));
+        Assert.Equal(new SeriesFilesSummaryDto(3, 2),
+            Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None)));
+
+        // Importing it adds a record, which is what every import, rescan, relink and delete does.
+        using (var seed = _db.NewContext())
+        {
+            seed.ChapterFiles.Add(new ChapterFile { SeriesId = seriesId, RelativePath = dropped, DateAdded = DateTime.UtcNow });
+            seed.SaveChanges();
+        }
+
+        Assert.Equal(new SeriesFilesSummaryDto(4, 3),
+            Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None)));
+    }
+
+    [Fact]
+    public async Task The_full_listing_refreshes_the_summary_walk()
+    {
+        var (seriesId, _, _, from, _) = SeedTwoFolderSeries(Path.Combine(_temp, "b"));
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        using var db = _db.NewContext(userId: 1);
+        Assert.Equal(3, Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None)).Count);
+
+        Write(Path.Combine(from, "Berserk", "Berserk Ch.9.cbz"));
+        var listing = await Controller(db).Files(
+            seriesId, new UpgradeEvaluationService(db, TestQuality.Create()), cache, CancellationToken.None);
+        var files = Assert.IsAssignableFrom<IEnumerable<Maki.Api.Dtos.SeriesFileDto>>(
+            Assert.IsType<OkObjectResult>(listing).Value).ToList();
+
+        var summary = Summary(await Controller(db).FilesSummary(seriesId, cache, CancellationToken.None));
+        Assert.Equal(files.Count, summary.Count);
+        Assert.Equal(files.Count(f => f.OnDisk && f.Status != "linked"), summary.UnlinkedOnDisk);
+        Assert.Equal(4, summary.Count);
     }
 }

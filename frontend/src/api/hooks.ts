@@ -32,11 +32,13 @@ import type {
   ImportDecision,
   ImportDecisionResultDto,
   QueueHistoryDto,
+  QueueSummaryDto,
   TorrentImportPlanDto,
   RootFolder,
   SavedFilterDto,
   SeriesDto,
   SeriesFileDto,
+  SeriesFilesSummaryDto,
   SeriesScrobbleDto,
   SourceMappingDto,
   TagDto,
@@ -1547,10 +1549,31 @@ export function useChapters(seriesId: number) {
 }
 
 export function useSeriesFiles(seriesId: number, enabled = true) {
+  const queryClient = useQueryClient()
   return useQuery({
     queryKey: ['series-files', seriesId],
-    queryFn: () => api<SeriesFileDto[]>(`/series/${seriesId}/files`),
+    queryFn: async () => {
+      const files = await api<SeriesFileDto[]>(`/series/${seriesId}/files`)
+      // The full listing just walked the folder, so the tab count and banner follow it.
+      queryClient.setQueryData<SeriesFilesSummaryDto>(['series-files', seriesId, 'summary'], {
+        count: files.length,
+        unlinkedOnDisk: files.filter((f) => f.onDisk && f.status !== 'linked').length,
+      })
+      return files
+    },
     enabled,
+    meta: { inlineNotFound: true },
+  })
+}
+
+/**
+ * Keyed under ['series-files', seriesId] so every invalidation of the listing refreshes it too.
+ * Opening a series reads this instead of the listing, which walks the folder on disk.
+ */
+export function useSeriesFilesSummary(seriesId: number) {
+  return useQuery({
+    queryKey: ['series-files', seriesId, 'summary'],
+    queryFn: () => api<SeriesFilesSummaryDto>(`/series/${seriesId}/files/summary`),
     meta: { inlineNotFound: true },
   })
 }
@@ -1935,6 +1958,15 @@ export function useQueue(page = 1, pageSize = 200) {
   return useQuery({
     queryKey: ['queue', page, pageSize],
     queryFn: () => api<QueueHistoryDto>(`/queue?page=${page}&pageSize=${pageSize}`),
+    refetchInterval: 10_000,
+  })
+}
+
+/** Per-status counts for the shell badge, so it doesn't poll a whole queue page. */
+export function useQueueSummary() {
+  return useQuery({
+    queryKey: ['queue-summary'],
+    queryFn: () => api<QueueSummaryDto>('/queue/summary'),
     refetchInterval: 10_000,
   })
 }

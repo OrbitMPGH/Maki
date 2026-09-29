@@ -96,6 +96,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         // hidden one.
         var recent = await db.ChapterProgress
             .AsNoTracking()
+            .OwnedByScopeUser(db)
             .Where(p => !p.Watched)
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)

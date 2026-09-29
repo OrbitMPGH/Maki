@@ -12,7 +12,8 @@ namespace Maki.Api.Services;
 /// reader's own progress meter all render the same number for the same series, and three hand-written
 /// copies of the condition drift the first time one of them changes — the failure that reads as a
 /// series showing "0 read" on its own page while the grid draws a half-full ring. The rows are
-/// already narrowed to the caller by the global query filter, so there is no user predicate here.
+/// already narrowed to the caller by the global query filter; <see cref="UserScopedQuery"/> only
+/// repeats that narrowing so SQLite can use the UserId index.
 /// </para>
 /// <para>
 /// Deliberately not derived from <c>ReadingState.MaxChapter</c>: that mark is forward-only and covers
@@ -31,7 +32,7 @@ namespace Maki.Api.Services;
 public static class ReadCounts
 {
     public static IQueryable<ChapterProgress> Read(MakiDbContext db) =>
-        db.ChapterProgress.Where(p => p.Completed &&
+        db.ChapterProgress.OwnedByScopeUser(db).Where(p => p.Completed &&
             db.Chapters.Any(c => c.Id == p.ChapterId && c.ChapterFileId != null));
 
     /// <summary>

@@ -43,21 +43,16 @@ public class QueueController(
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled);
 
         var total = await query.CountAsync(ct);
-        var items = await query
-            .Include(q => q.SourceMapping)
-            .Include(q => q.Chapter)
-            .Include(q => q.Series)
-            .OrderBy(q => q.SortOrder)
-            .ThenBy(q => q.QueuedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var rows = await Rows(query
+                .OrderBy(q => q.SortOrder)
+                .ThenBy(q => q.QueuedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize))
             .ToListAsync(ct);
 
-        var dtos = items
-            .Where(q => q.Series != null)
-            .Select(q => QueueItemDto.FromEntity(
-                q, q.Chapter, q.Series!,
-                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?")))
+        var dtos = rows
+            .Where(r => r.Series != null)
+            .Select(r => QueueItemDto.FromEntity(r.Item, r.Chapter, r.Series!, r.SourceName))
             .ToList();
 
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
@@ -75,14 +70,14 @@ public class QueueController(
             .Where(q => q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled);
 
         var total = await query.CountAsync(ct);
-        var items = await query
-            .Include(q => q.SourceMapping)
-            .Include(q => q.Chapter)
-            .Include(q => q.Series)
-            .OrderByDescending(q => q.CompletedAt ?? q.QueuedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        // Id breaks ties so rows sharing a timestamp cannot repeat or vanish between pages.
+        var rows = await Rows(query
+                .OrderByDescending(q => q.CompletedAt ?? q.QueuedAt)
+                .ThenByDescending(q => q.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize))
             .ToListAsync(ct);
+        var items = rows.Select(r => r.Item).ToList();
 
         var historyIds = items
             .Where(q => q.UpgradeInfoJson != null && !TorrentUpgradeInfo.IsTorrent(q.UpgradeInfoJson))
@@ -96,18 +91,60 @@ public class QueueController(
             .ToList();
         var groups = await UpgradeHistoryStates.LoadGroupsAsync(db, groupIds, ct);
 
-        var dtos = items
-            .Where(q => q.Series != null)
-            .Select(q => QueueItemDto.FromEntity(
-                q, q.Chapter, q.Series!,
-                q.SourceMapping?.SourceName ?? (q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"),
-                TorrentUpgradeInfo.Parse(q.UpgradeInfoJson) is { } torrent
+        var dtos = rows
+            .Where(r => r.Series != null)
+            .Select(r => QueueItemDto.FromEntity(
+                r.Item, r.Chapter, r.Series!, r.SourceName,
+                TorrentUpgradeInfo.Parse(r.Item.UpgradeInfoJson) is { } torrent
                     ? torrent.HistoryGroupId is { } groupId ? groups.GetValueOrDefault(groupId) : null
-                    : UpgradeInfo.Parse(q.UpgradeInfoJson)?.HistoryId is { } historyId ? upgrades.GetValueOrDefault(historyId) : null))
+                    : UpgradeInfo.Parse(r.Item.UpgradeInfoJson)?.HistoryId is { } historyId ? upgrades.GetValueOrDefault(historyId) : null))
             .ToList();
 
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
+
+    /// <summary>
+    /// Per-status counts for the shell's Activity badge, which polls every few seconds and needs two
+    /// numbers, not a page of rows. Counts the whole queue, where the list endpoint is paged.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> Summary(CancellationToken ct)
+    {
+        var counts = await db.DownloadQueue
+            .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled)
+            .GroupBy(q => q.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Status, x => x.Count, ct);
+
+        return Ok(new QueueSummaryDto(
+            Active: counts.Where(kv => kv.Key is not (QueueStatus.Failed or QueueStatus.AwaitingImport)).Sum(kv => kv.Value),
+            AwaitingImport: counts.GetValueOrDefault(QueueStatus.AwaitingImport),
+            Failed: counts.GetValueOrDefault(QueueStatus.Failed)));
+    }
+
+    private sealed record QueueRow(DownloadQueueItem Item, Chapter? Chapter, Series? Series, string SourceName);
+
+    /// <summary>
+    /// The columns a <see cref="QueueItemDto"/> is built from, untracked. Including the navigations
+    /// instead loaded every Series column (and its JSON converters) for a title.
+    /// </summary>
+    private static IQueryable<QueueRow> Rows(IQueryable<DownloadQueueItem> query) =>
+        query.AsNoTracking().Select(q => new QueueRow(
+            q,
+            q.Chapter == null
+                ? null
+                : new Chapter
+                {
+                    Id = q.Chapter.Id,
+                    Number = q.Chapter.Number,
+                    Volume = q.Chapter.Volume,
+                    Title = q.Chapter.Title,
+                    IsOneShot = q.Chapter.IsOneShot,
+                },
+            q.Series == null ? null : new Series { Id = q.Series.Id, Title = q.Series.Title },
+            q.SourceMapping != null
+                ? q.SourceMapping.SourceName
+                : q.Protocol == AcquisitionProtocol.Torrent ? "torrent" : "?"));
 
     /// <summary>
     /// Sets the manual dispatch order for the active queue. <c>OrderedIds</c> is the full list of active

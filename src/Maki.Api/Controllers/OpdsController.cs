@@ -42,6 +42,7 @@ public class OpdsController(
     OpdsCatalogService catalog,
     OpdsAccessService access,
     ReaderService reader,
+    OpdsProgressWriter progressWriter,
     Maki.Data.MakiDbContext db,
     Maki.Api.Configuration.AppPaths paths,
     ILocalizer localizer,
@@ -243,7 +244,8 @@ public class OpdsController(
     /// Fetching a page also records reading progress (unless <c>opds.trackprogress</c> is off),
     /// through the same <see cref="ReaderService.SaveProgressAsync"/> every other reader path uses
     /// — which is what makes an OPDS read show up in the library, in Rewind and at the trackers.
-    /// PSE has no write-back call, so the page fetch is the only signal there is.
+    /// PSE has no write-back call, so the page fetch is the only signal there is. The write itself
+    /// happens in <see cref="OpdsProgressWriter"/>, after the bytes are on their way.
     /// </para>
     /// </summary>
     [HttpGet("chapter/{chapterId:int}/page/{page:int}")]
@@ -254,7 +256,7 @@ public class OpdsController(
             return NotFound();
         }
 
-        var slice = await reader.SliceAsync(chapterId, ct);
+        var slice = await reader.PageSliceAsync(chapterId, ct);
         if (slice is null || page < 0 || page >= slice.PageCount)
         {
             return NotFound();
@@ -266,7 +268,7 @@ public class OpdsController(
         // reporting progress exactly where the reader already has pages in hand.
         if (settings.TrackProgress)
         {
-            await RecordPageAsync(slice, page, ct);
+            progressWriter.Enqueue(settings.UserId, settings.AllRootFolders, slice.ChapterId, page, slice.PageCount);
         }
 
         var entry = slice.Pages[slice.StartPage + page];
@@ -287,29 +289,6 @@ public class OpdsController(
         Response.Headers.CacheControl = "private, no-cache";
 
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
-    }
-
-    /// <summary>
-    /// Records a streamed page as progress. The completion rule — and the one place it deviates
-    /// from the built-in reader's — lives in <see cref="OpdsProgressPolicy"/>.
-    /// </summary>
-    private async Task RecordPageAsync(ReaderService.ChapterSlice slice, int page, CancellationToken ct)
-    {
-        try
-        {
-            var existing = await reader.ProgressAsync(slice.Chapter.Id, ct);
-            var completed = OpdsProgressPolicy.CompletionFor(existing is not null, page, slice.PageCount);
-            // No reading time: a page fetch says a page was asked for, not that anybody was
-            // looking at it, and readers that prefetch would bill a whole chapter in one burst.
-            await reader.SaveProgressAsync(slice, page, completed, ReaderService.TimeReport.None, ct);
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            // Progress is a side effect of serving the page; never fail the page over it. Client
-            // disconnects are excluded so an abandoned prefetch isn't logged as a problem.
-            logger.LogWarning(e, "OPDS progress write failed for chapter {ChapterId} page {Page}",
-                slice.Chapter.Id, page);
-        }
     }
 
     private OpdsContext Context(string token) => new(Request.PathBase.Value ?? string.Empty, token);

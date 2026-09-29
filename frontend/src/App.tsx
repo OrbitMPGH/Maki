@@ -26,7 +26,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-r
 import {
   useHealth,
   useMetadataSettings,
-  useQueue,
+  useQueueSummary,
   useSetupStatus,
   useUiSettings,
 } from './api/hooks'
@@ -43,7 +43,6 @@ import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import SidebarFooter from './components/layout/SidebarFooter'
 import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
-import { isQueueActive, needsImportReview } from './components/ui/status'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { EmptyState } from './components/ui/EmptyState'
@@ -210,11 +209,11 @@ function HealthButton() {
 
 function ActivityButton() {
   const { t } = useLingui()
-  const { data: queue } = useQueue()
-  const active = queue?.items.filter((q) => isQueueActive(q.status)).length ?? 0
+  const { data: summary } = useQueueSummary()
+  const active = summary?.active ?? 0
   // A download waiting on an import decision outranks work in progress: progress finishes on its
   // own, this does not, and the count is the only thing telling anyone it is there.
-  const review = queue?.items.filter((q) => needsImportReview(q.status)).length ?? 0
+  const review = summary?.awaitingImport ?? 0
   const count = review > 0 ? review : active
   return (
     <Tooltip

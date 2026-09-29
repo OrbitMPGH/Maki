@@ -216,14 +216,14 @@ public class ReaderController(
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
             seriesType = slice.Series.Type,
-            pageVersion = PageVersion(slice)
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveSize)
         });
     }
 
     [HttpGet("chapter/{id:int}/page/{page:int}")]
     public async Task<IActionResult> Page(int id, int page, CancellationToken ct)
     {
-        var slice = await reader.SliceAsync(id, ct);
+        var slice = await reader.PageSliceAsync(id, ct);
         if (slice is null || page < 0 || page >= slice.PageCount)
         {
             return NotFound();
@@ -259,15 +259,15 @@ public class ReaderController(
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }
 
-    private static string PageVersion(ReaderService.ChapterSlice slice) => $"{slice.ChapterFileId}-{slice.ArchiveSize}";
+    private static string PageVersion(int chapterFileId, long archiveSize) => $"{chapterFileId}-{archiveSize}";
 
     /// <summary>
     /// Page URLs are the same before and after a re-download, so a year-long immutable response is
     /// only safe when the URL carries the manifest's <c>pageVersion</c> and it still matches the
     /// file on disk. Anything else revalidates against the ETag.
     /// </summary>
-    private void SetPageCacheControl(ReaderService.ChapterSlice slice) =>
-        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice)
+    private void SetPageCacheControl(ReaderService.PageSlice slice) =>
+        Response.Headers.CacheControl = Request.Query["v"] == PageVersion(slice.ChapterFileId, slice.ArchiveSize)
             ? "private, max-age=31536000, immutable"
             : "private, no-cache";
 
@@ -278,7 +278,7 @@ public class ReaderController(
     /// cache's per-directory eviction (missing ChapterFile row, stale archive size) without
     /// colliding with the thumbnail's own <c>{ArchiveSize}-{index}.jpg</c> name.
     /// </summary>
-    private async Task<string?> GetOrRenderFullPageAsync(ReaderService.ChapterSlice slice, int absoluteIndex, string entry, CancellationToken ct)
+    private async Task<string?> GetOrRenderFullPageAsync(ReaderService.PageSlice slice, int absoluteIndex, string entry, CancellationToken ct)
     {
         var dir = Path.Combine(paths.ReaderCacheDir, slice.ChapterFileId.ToString());
         var cached = Path.Combine(dir, $"{slice.ArchiveSize}-{absoluteIndex}.full.jpg");
@@ -327,7 +327,7 @@ public class ReaderController(
     [HttpGet("chapter/{id:int}/thumb/{page:int}")]
     public async Task<IActionResult> Thumbnail(int id, int page, CancellationToken ct)
     {
-        var slice = await reader.SliceAsync(id, ct);
+        var slice = await reader.PageSliceAsync(id, ct);
         if (slice is null || page < 0 || page >= slice.PageCount)
         {
             return NotFound();
