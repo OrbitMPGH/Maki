@@ -6,6 +6,8 @@ using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Inbox;
 using Maki.Core.Notifications;
+using Maki.Core.Security;
+using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
 
@@ -22,6 +24,10 @@ public class LibraryImportController(
     EventBroadcaster events,
     NotificationService notifications,
     IUserLocaleResolver locales,
+    IRequestLocale locale,
+    ICurrentUser currentUser,
+    DataScope dataScope,
+    IServiceScopeFactory scopeFactory,
     InboxService inbox,
     ISchedulerFactory schedulerFactory,
     ILogger<LibraryImportController> logger) : ControllerBase
@@ -34,12 +40,19 @@ public class LibraryImportController(
         int RootFolderId, List<ImportRequestItem> Items, bool UpdateComicInfo = true, string? OperationId = null);
 
     /// <summary>
-    /// Ceiling on one request's batch. Each item is imported serially and can involve a metadata
-    /// lookup plus rewriting every CBZ in the folder, so an unbounded list means an HTTP call that
-    /// runs for many minutes and dies to a proxy timeout with no usable response. The client sends
-    /// batches of this size; live progress still arrives over SignalR either way.
+    /// Ceiling on one request's batch. Each item can involve a metadata lookup, a source search
+    /// and rewriting every CBZ in the folder, so an unbounded list means an HTTP call that runs for
+    /// many minutes and dies to a proxy timeout with no usable response. The client sends batches
+    /// of this size; live progress still arrives over SignalR either way.
     /// </summary>
     public const int MaxItemsPerRequest = 50;
+
+    /// <summary>
+    /// Folders imported at once. Most of an import is waiting on source sites, and each site's rate
+    /// limiter caps request starts rather than requests in flight, so a few folders overlap well.
+    /// Kept low because the ComicInfo rewrite is disk-bound and many libraries live on a NAS.
+    /// </summary>
+    public const int MaxConcurrentImports = 4;
 
     [HttpGet("scan")]
     public async Task<IActionResult> Scan([FromQuery] int rootFolderId, CancellationToken ct)
@@ -71,40 +84,42 @@ public class LibraryImportController(
                 new { count = request.Items.Count, max = MaxItemsPerRequest });
         }
 
-        var results = new List<ImportResult>();
-        foreach (var item in request.Items)
-        {
-            ImportResult result;
-            try
-            {
-                result = await importService.ImportAsync(
-                    request.RootFolderId, item, request.UpdateComicInfo, request.OperationId, ct);
-            }
-            catch (Exception ex)
-            {
-                result = new ImportResult(item.FolderName, false, ex.Message);
-            }
+        // Read before the fan-out: both go through this request's DbContext, which the parallel
+        // imports below must not touch.
+        var notifyLocale = await locales.DefaultAsync(ct);
+        var requestLocale = locale.Locale;
 
-            results.Add(result);
-            await events.ImportProgress(item.FolderName, result.Success ? ImportStage.Imported : ImportStage.Failed,
-                done: true, success: result.Success, error: result.Error, operationId: request.OperationId);
-
-            if (result.Success)
+        var results = new ImportResult[request.Items.Count];
+        await Parallel.ForEachAsync(
+            LibraryImportService.ImportLanes(request.Items),
+            new ParallelOptions { MaxDegreeOfParallelism = MaxConcurrentImports, CancellationToken = ct },
+            async (lane, laneCt) =>
             {
-                var locale = await locales.DefaultAsync(ct);
-                notifications.Dispatch(NotificationEventType.ImportCompleted, new NotificationMessage(
-                    NotificationEventType.ImportCompleted,
-                    Title: localizer.GetFor(locale, "notify.import.completed.title"),
-                    Body: localizer.GetFor(locale, "notify.import.completed.body",
-                        new { folder = item.FolderName })));
-            }
-        }
+                foreach (var index in lane)
+                {
+                    var item = request.Items[index];
+                    var result = await ImportInOwnScopeAsync(request, item, requestLocale, laneCt);
+                    results[index] = result;
+                    await events.ImportProgress(item.FolderName,
+                        result.Success ? ImportStage.Imported : ImportStage.Failed,
+                        done: true, success: result.Success, error: result.Error, operationId: request.OperationId);
+
+                    if (result.Success)
+                    {
+                        notifications.Dispatch(NotificationEventType.ImportCompleted, new NotificationMessage(
+                            NotificationEventType.ImportCompleted,
+                            Title: localizer.GetFor(notifyLocale, "notify.import.completed.title"),
+                            Body: localizer.GetFor(notifyLocale, "notify.import.completed.body",
+                                new { folder = item.FolderName })));
+                    }
+                }
+            });
 
         // One inbox row for the whole request, not one per folder: the client batches 50 at a time,
         // and 50 rows saying the same thing is not a notification, it is a flood. The outbound
         // per-folder Dispatch above is left alone — a chat channel is a log, an inbox is not.
         var imported = results.Count(r => r.Success);
-        var failed = results.Count - imported;
+        var failed = results.Length - imported;
         inbox.Raise(InboxEventType.ImportFinished, new InboxMessage(
                 Key: failed == 0 ? "inbox.libraryImport.finished" : "inbox.libraryImport.finishedWithErrors",
                 Params: InboxMessage.Args(new { imported, failed }),
@@ -119,5 +134,36 @@ public class LibraryImportController(
         }
 
         return Ok(results);
+    }
+
+    /// <summary>
+    /// One folder in a scope of its own, since a DbContext cannot be shared between the parallel
+    /// imports. A fresh scope starts out anonymous and unfiltered, so the request's user, data
+    /// scope and language are copied in: the import has to see exactly the series this caller sees.
+    /// </summary>
+    private async Task<ImportResult> ImportInOwnScopeAsync(
+        ImportRequest request, ImportRequestItem item, string requestLocale, CancellationToken ct)
+    {
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var services = scope.ServiceProvider;
+            services.GetRequiredService<CurrentUserContext>().Set(
+                currentUser.UserId, currentUser.UserName, currentUser.Permissions,
+                currentUser.AllRootFolders, currentUser.RootFolderIds, currentUser.MaxContentRating);
+            if (!dataScope.Unrestricted)
+            {
+                services.GetRequiredService<DataScope>().SetUser(dataScope.UserId, dataScope.AllRootFolders);
+            }
+
+            services.GetRequiredService<RequestLocaleContext>().SetRequested(requestLocale, null);
+
+            return await services.GetRequiredService<LibraryImportService>().ImportAsync(
+                request.RootFolderId, item, request.UpdateComicInfo, request.OperationId, ct);
+        }
+        catch (Exception ex)
+        {
+            return new ImportResult(item.FolderName, false, ex.Message);
+        }
     }
 }

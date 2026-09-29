@@ -240,7 +240,11 @@ public class LibraryImportScanTests : IDisposable
         public Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(
             string query, string maxContentRating, CancellationToken ct = default)
         {
-            Queries.Add(query);
+            lock (Queries)
+            {
+                Queries.Add(query);
+            }
+
             return Task.FromResult<IReadOnlyList<MetadataSearchResult>>([]);
         }
 

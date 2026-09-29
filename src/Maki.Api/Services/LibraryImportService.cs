@@ -85,6 +85,44 @@ public class LibraryImportService(
     ICurrentUser currentUser,
     ILogger<LibraryImportService> logger)
 {
+    /// <summary>
+    /// Held from "is the target folder free?" through the move. Imports run in parallel, and two of
+    /// them standardizing to the same name must not both be told it is free.
+    /// </summary>
+    private static readonly SemaphoreSlim FolderMoveLock = new(1, 1);
+
+    /// <summary>
+    /// Splits a request into groups the import can run side by side. Items naming the same series
+    /// or the same folder share a group and run in request order: the series lookup and the folder
+    /// move are check-then-act, so two such items in parallel could both add the series or both
+    /// adopt the folder, where one after the other the second sees the first's result.
+    /// </summary>
+    public static List<List<int>> ImportLanes(IReadOnlyList<ImportRequestItem> items)
+    {
+        var parent = Enumerable.Range(0, items.Count).ToArray();
+        int Find(int i) => parent[i] == i ? i : parent[i] = Find(parent[i]);
+
+        var byProvider = new Dictionary<string, int>(StringComparer.Ordinal);
+        var byFolder = new Dictionary<string, int>(LibraryPaths.FolderComparer);
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (!byProvider.TryAdd(items[i].MetadataProviderId, i))
+            {
+                parent[Find(i)] = Find(byProvider[items[i].MetadataProviderId]);
+            }
+
+            if (!byFolder.TryAdd(items[i].FolderName, i))
+            {
+                parent[Find(i)] = Find(byFolder[items[i].FolderName]);
+            }
+        }
+
+        return Enumerable.Range(0, items.Count)
+            .GroupBy(Find)
+            .Select(g => g.ToList())
+            .ToList();
+    }
+
     public async Task<List<ImportScanCandidate>> ScanAsync(int rootFolderId, CancellationToken ct = default)
     {
         if (!currentUser.AllRootFolders && !currentUser.RootFolderIds.Contains(rootFolderId))
@@ -121,61 +159,76 @@ public class LibraryImportService(
         }
 
         var provider = metadataProviders.First();
-        var candidates = new List<ImportScanCandidate>();
+        var dirs = Directory.GetDirectories(rootFolder.Path)
+            .Order()
+            .Where(dir =>
+            {
+                var folderName = Path.GetFileName(dir);
+                return !folderName.StartsWith('.') && !claimed.Contains(folderName) && !LibraryPaths.IsLink(dir);
+            })
+            .ToList();
+        var candidates = new ImportScanCandidate?[dirs.Count];
 
-        foreach (var dir in Directory.GetDirectories(rootFolder.Path).OrderBy(d => d))
+        // Listing a folder's archives and searching its title are independent per folder and touch
+        // no DbContext, so a large root does not have to pay for them one at a time.
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, dirs.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = ScanConcurrency, CancellationToken = ct },
+            async (index, itemCt) =>
+                candidates[index] = await ScanFolderAsync(dirs[index], provider, withoutFiles, itemCt));
+
+        return candidates.OfType<ImportScanCandidate>().ToList();
+    }
+
+    private const int ScanConcurrency = 4;
+
+    private async Task<ImportScanCandidate?> ScanFolderAsync(
+        string dir, IMetadataProvider provider, IReadOnlyDictionary<string, Series> withoutFiles,
+        CancellationToken ct)
+    {
+        var folderName = Path.GetFileName(dir);
+        var comics = ComicSourceScanner.Scan(dir);
+        var existing = withoutFiles.GetValueOrDefault(folderName);
+        if (existing is not null && comics.Count == 0)
         {
-            var folderName = Path.GetFileName(dir);
-            if (folderName.StartsWith('.') || claimed.Contains(folderName) || LibraryPaths.IsLink(dir))
-            {
-                continue;
-            }
-
-            var comics = ComicSourceScanner.Scan(dir);
-            var existing = withoutFiles.GetValueOrDefault(folderName);
-            if (existing is not null && comics.Count == 0)
-            {
-                // The empty folder Maki made when the series was added: nothing here to import.
-                continue;
-            }
-
-            var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
-            var cleanedTitle = ReleaseNameParser.CleanFolderTitle(folderName);
-
-            IReadOnlyList<MetadataSearchResult> matches = [];
-            if (existing?.MangaBakaId is { } mangaBakaId)
-            {
-                // Importing matches the series by provider id, so offering anything else would
-                // add a second copy instead of filling this one.
-                matches =
-                [
-                    new MetadataSearchResult(mangaBakaId.ToString(CultureInfo.InvariantCulture), existing.Title,
-                        null, existing.Year, existing.Status, null, null)
-                ];
-            }
-            else
-            {
-                try
-                {
-                    // Deliberately unfiltered: this names folders that are already sitting in the
-                    // caller's own root folder, so a ceiling here hides nothing they cannot already see
-                    // and would instead leave those folders permanently unmatchable, with nothing on
-                    // screen to say why. The ceiling governs discovering new series, not adopting files.
-                    matches = (await provider.SearchAsync(cleanedTitle, ContentRating.Pornographic, ct))
-                        .Take(5)
-                        .ToList();
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Metadata search failed for {Title}", cleanedTitle);
-                }
-            }
-
-            candidates.Add(new ImportScanCandidate(
-                folderName, cleanedTitle, comics.Count, recognized, matches, existing?.Id));
+            // The empty folder Maki made when the series was added: nothing here to import.
+            return null;
         }
 
-        return candidates;
+        var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
+        var cleanedTitle = ReleaseNameParser.CleanFolderTitle(folderName);
+
+        IReadOnlyList<MetadataSearchResult> matches = [];
+        if (existing?.MangaBakaId is { } mangaBakaId)
+        {
+            // Importing matches the series by provider id, so offering anything else would
+            // add a second copy instead of filling this one.
+            matches =
+            [
+                new MetadataSearchResult(mangaBakaId.ToString(CultureInfo.InvariantCulture), existing.Title,
+                    null, existing.Year, existing.Status, null, null)
+            ];
+        }
+        else
+        {
+            try
+            {
+                // Deliberately unfiltered: this names folders that are already sitting in the
+                // caller's own root folder, so a ceiling here hides nothing they cannot already see
+                // and would instead leave those folders permanently unmatchable, with nothing on
+                // screen to say why. The ceiling governs discovering new series, not adopting files.
+                matches = (await provider.SearchAsync(cleanedTitle, ContentRating.Pornographic, ct))
+                    .Take(5)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Metadata search failed for {Title}", cleanedTitle);
+            }
+        }
+
+        return new ImportScanCandidate(
+            folderName, cleanedTitle, comics.Count, recognized, matches, existing?.Id);
     }
 
     public async Task<ImportResult> ImportAsync(
@@ -252,14 +305,23 @@ public class LibraryImportService(
             !string.Equals(item.FolderName, standardName, StringComparison.Ordinal))
         {
             targetDir = Path.Combine(rootFolder.Path, standardName);
-            if (Directory.Exists(targetDir))
+            await FolderMoveLock.WaitAsync(ct);
+            try
             {
-                return new ImportResult(item.FolderName, false,
-                    localizer.Get("error.libraryImport.renameTargetExists", new { name = standardName }));
+                if (Directory.Exists(targetDir))
+                {
+                    return new ImportResult(item.FolderName, false,
+                        localizer.Get("error.libraryImport.renameTargetExists", new { name = standardName }));
+                }
+
+                await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
+                Directory.Move(sourceDir, targetDir);
+            }
+            finally
+            {
+                FolderMoveLock.Release();
             }
 
-            await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
-            Directory.Move(sourceDir, targetDir);
             logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
             seriesFolderName = standardName;
         }
@@ -338,19 +400,27 @@ public class LibraryImportService(
             !string.Equals(item.FolderName, standardName, StringComparison.Ordinal))
         {
             targetDir = Path.Combine(rootFolder.Path, standardName);
-            if (Directory.Exists(targetDir))
+            await FolderMoveLock.WaitAsync(ct);
+            try
             {
-                // The series' standardized folder already exists (e.g. an empty folder created
-                // when it was added) — fold the scanned folder's files into it.
-                await events.ImportProgress(item.FolderName, ImportStage.MergingFolder, operationId: operationId);
-                MergeDirectory(sourceDir, targetDir);
-                logger.LogInformation("Merged '{Old}' into existing '{New}'", item.FolderName, standardName);
+                if (Directory.Exists(targetDir))
+                {
+                    // The series' standardized folder already exists (e.g. an empty folder created
+                    // when it was added) — fold the scanned folder's files into it.
+                    await events.ImportProgress(item.FolderName, ImportStage.MergingFolder, operationId: operationId);
+                    MergeDirectory(sourceDir, targetDir);
+                    logger.LogInformation("Merged '{Old}' into existing '{New}'", item.FolderName, standardName);
+                }
+                else
+                {
+                    await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
+                    Directory.Move(sourceDir, targetDir);
+                    logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
+                }
             }
-            else
+            finally
             {
-                await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
-                Directory.Move(sourceDir, targetDir);
-                logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, standardName);
+                FolderMoveLock.Release();
             }
 
             seriesFolderName = standardName;
