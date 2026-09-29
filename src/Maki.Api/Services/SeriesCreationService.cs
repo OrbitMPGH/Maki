@@ -4,6 +4,8 @@ using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Notifications;
+using Maki.Core.Paths;
+using Maki.Core.Reading;
 using Maki.Data;
 using Maki.Data.Identity;
 using System.Security.Cryptography;
@@ -155,6 +157,11 @@ public class SeriesCreationService(
             return SeriesCreationResult.Failed(SeriesCreationError.MetadataNotFound);
         }
 
+        // Held from the check below through the insert: an import or an import list can be adding
+        // the same work at this moment, and MangaBakaId has no unique index to stop the second copy.
+        using var providerLock = metadata.MangaBakaId is int lockId
+            ? await SeriesLocks.ProviderIdAsync(lockId, ct)
+            : null;
         if (metadata.MangaBakaId is int existingId)
         {
             var existing = await db.Series
@@ -186,7 +193,12 @@ public class SeriesCreationService(
                 series.ContentRating);
         series.RootFolderId = rootFolder.Id;
         series.UpgradeProfileId = upgradeProfileId;
-        series.FolderName = await naming.BuildSeriesFolderNameAsync(series, ct);
+        // Two series in one folder rescan each other's files and delete them with their own, and a
+        // folder that already holds comics belongs to whatever put them there.
+        var otherFolders = await SeriesFoldersInRootAsync(db, rootFolder.Id, null, ct);
+        series.FolderName = FreeFolderName(
+            await naming.BuildSeriesFolderNameAsync(series, ct), series.MangaBakaId,
+            name => !otherFolders.Contains(name) && !HoldsComics(rootFolder.Path, name));
         series.SourceMatchPending = deferSourceMatching;
 
         await using var creationTransaction = clientMutationId is not null && attributedUserId is > 0
@@ -229,6 +241,8 @@ public class SeriesCreationService(
             await db.SaveChangesAsync(ct);
             await creationTransaction.CommitAsync(ct);
         }
+
+        providerLock?.Dispose();
 
         await NotifyAddedAsync(series, originatingRequest, ct);
 
@@ -314,6 +328,60 @@ public class SeriesCreationService(
         }
 
         return new SeriesCreationResult(series, null, warnings);
+    }
+
+    /// <summary>The <see cref="Series.FolderName"/> of every series in the root but one, compared the way the host does.</summary>
+    internal static async Task<HashSet<string>> SeriesFoldersInRootAsync(
+        MakiDbContext db, int rootFolderId, int? exceptSeriesId, CancellationToken ct) =>
+        (await db.Series
+            .Where(s => s.RootFolderId == rootFolderId && s.Id != exceptSeriesId)
+            .Select(s => s.FolderName)
+            .ToListAsync(ct))
+        .ToHashSet(LibraryPaths.FolderComparer);
+
+    /// <summary>
+    /// <paramref name="wanted"/> when it is free, otherwise the first free one of <c>wanted [mb-id]</c>,
+    /// <c>wanted (2)</c>, <c>wanted (3)</c> and so on.
+    /// </summary>
+    internal static string FreeFolderName(string wanted, int? mangaBakaId, Func<string, bool> isFree)
+    {
+        if (isFree(wanted))
+        {
+            return wanted;
+        }
+
+        if (mangaBakaId is { } id && isFree($"{wanted} [mb-{id}]"))
+        {
+            return $"{wanted} [mb-{id}]";
+        }
+
+        for (var n = 2; n < 100; n++)
+        {
+            if (isFree($"{wanted} ({n})"))
+            {
+                return $"{wanted} ({n})";
+            }
+        }
+
+        return $"{wanted} ({Guid.NewGuid().ToString("N")[..8]})";
+    }
+
+    /// <summary>
+    /// True when the folder exists and has a comic anywhere below it. A folder that cannot be read
+    /// counts as holding one: the answer decides whether a new series may call it its own.
+    /// </summary>
+    internal static bool HoldsComics(string rootPath, string folderName)
+    {
+        try
+        {
+            return LibraryPaths.ResolveNoLinks(rootPath, folderName) is not { } dir
+                ? Directory.Exists(Path.Combine(rootPath, folderName))
+                : Directory.Exists(dir) && LibraryPaths.EnumerateFilesNoLinks(dir).Any(ComicFile.IsComic);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return true;
+        }
     }
 
     private async Task NotifyAddedAsync(Series series, SeriesRequest? request, CancellationToken ct)

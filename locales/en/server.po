@@ -195,6 +195,10 @@ msgid "error.auth.usernameRequired"
 msgstr "Username is required"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+msgid "error.chapter.activeDownloadDelete"
+msgstr "One of these chapters is downloading right now. Wait for it to finish before deleting."
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 msgid "error.chapter.alreadyDownloading"
 msgstr "Chapter is already downloading, try again once it finishes"
 
@@ -381,12 +385,25 @@ msgid "error.libraryImport.alreadyInLibrary"
 msgstr "\"{title}\" is already in the library with downloaded files. Delete it first if you want to re-import from scratch."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.failed"
+msgstr "Import failed. The server log has the details."
+
+#: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.folderGone"
 msgstr "Folder no longer exists"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.folderOwnedByOtherSeries"
+msgstr "This folder already belongs to another series in the library"
+
+#: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.invalidFolderName"
 msgstr "Invalid folder name"
+
+#. A warning on a finished import. {count} is a number of files; {folder} is the scanned folder's name, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.mergeLeftFiles"
+msgstr "{count} files stayed in \"{folder}\" because the series folder already has files with the same names"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.metadataLookupFailed"
@@ -396,10 +413,24 @@ msgstr "Metadata lookup failed"
 msgid "error.libraryImport.noItemsToImport"
 msgstr "No items to import"
 
+#. A warning on a finished import.
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.noSourceMatch"
+msgstr "No source matched this series. Link one from the series page so the imported files can be matched to chapters."
+
+#. {title} is the series title, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+msgid "error.libraryImport.partial"
+msgstr "\"{title}\" was only partly imported. Open the series and run Rescan to pick up the rest."
+
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 msgid "error.libraryImport.renameTargetExists"
 msgstr "Cannot rename: \"{name}\" already exists in the root folder"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+msgid "error.libraryImport.rootUnavailable"
+msgstr "The root folder could not be read. Check that it is mounted and that Maki can access it."
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -748,6 +779,10 @@ msgid "error.search.unknownSource"
 msgstr "Unknown source: {sourceName}"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.activeDownloadDelete"
+msgstr "Series has a download in progress. Wait for it to finish before deleting."
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.activeDownloadMove"
 msgstr "Series has an active download - wait for it to finish before moving"
 
@@ -832,6 +867,10 @@ msgstr "Series has no root folder"
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.rootFolderNotFound"
 msgstr "Root folder not found"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.rootUnavailable"
+msgstr "The series' root folder could not be read, so nothing was changed. Check that it is mounted, then rescan."
 
 #. Shown when a client sends an unrecognized IncognitoMode name. Distinct from
 #. error.series.unknownMonitorMode and error.series.unknownNotificationMode, which share this

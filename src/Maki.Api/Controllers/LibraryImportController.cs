@@ -68,6 +68,12 @@ public class LibraryImportController(
             // minting a near-duplicate: same English, same meaning, just a different caller.
             return this.Fail(localizer, "error.series.rootFolderNotFound");
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // An unmounted share or a root the process cannot list.
+            logger.LogWarning(ex, "Could not scan root folder {RootFolderId}", rootFolderId);
+            return this.Fail(localizer, "error.libraryImport.rootUnavailable");
+        }
     }
 
     [HttpPost("import")]
@@ -123,7 +129,8 @@ public class LibraryImportController(
         inbox.Raise(InboxEventType.ImportFinished, new InboxMessage(
                 Key: failed == 0 ? "inbox.libraryImport.finished" : "inbox.libraryImport.finishedWithErrors",
                 Params: InboxMessage.Args(new { imported, failed }),
-                Level: failed == 0 ? NotificationLevel.Info :
+                // An import that matched no source still succeeded, but nothing it adopted is linked yet.
+                Level: failed == 0 ? results.Any(r => r.Warnings is { Count: > 0 }) ? NotificationLevel.Warning : NotificationLevel.Info :
                     imported > 0 ? NotificationLevel.Warning : NotificationLevel.Error,
                 Url: "/import"),
             InboxAudience.Admins);
@@ -163,7 +170,8 @@ public class LibraryImportController(
         }
         catch (Exception ex)
         {
-            return new ImportResult(item.FolderName, false, ex.Message);
+            logger.LogError(ex, "Import of '{Folder}' failed", item.FolderName);
+            return new ImportResult(item.FolderName, false, localizer.Get("error.libraryImport.failed"));
         }
     }
 }

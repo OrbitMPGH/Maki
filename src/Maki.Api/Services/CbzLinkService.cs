@@ -1,4 +1,5 @@
 ﻿using Maki.Core.ComicInfo;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
@@ -9,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecognized);
+public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecognized, bool RootUnavailable = false);
 
 /// <summary>
 /// Shared logic for adopting CBZ files that Maki didn't download page-by-page
@@ -21,7 +22,7 @@ public record RescanResult(int NewFiles, int Relinked, int Removed, int Unrecogn
 public class CbzLinkService(
     MakiDbContext db, SourceRegistry sources, KavitaScanService kavitaScans,
     StatsEventService stats, ReaderArchiveCache archives, SourceAvailability sourceAvailability,
-    ChapterFileQualityService quality, ILogger<CbzLinkService> logger)
+    ChapterFileQualityService quality, IAppSettings settings, ILogger<CbzLinkService> logger)
 {
     /// <param name="files">Absolute paths of CBZ files, already inside the series folder.</param>
     /// <param name="seriesDir">Absolute path of the series folder (for relative paths).</param>
@@ -151,7 +152,9 @@ public class CbzLinkService(
                 }
             }
 
-            if (updateComicInfo)
+            // The rewrite swaps a new archive over the name, which would turn a hardlinked file (a
+            // seeding torrent, an import's zip) into a second full copy.
+            if (updateComicInfo && !HardLinks.IsShared(file))
             {
                 StandardizeComicInfo(file, series, parsed, matched.Count == 1 ? matched[0] : null, chapterFile);
             }
@@ -200,6 +203,18 @@ public class CbzLinkService(
     {
         var rootFolder = series.RootFolder
             ?? throw new InvalidOperationException("Series has no root folder loaded");
+        using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+        // An unmounted share looks exactly like every file having been deleted, so a missing root
+        // changes nothing, and step 1 below keeps the rows of any folder it could not list.
+        var folders = await SeriesFolders.ForAsync(db, series, ct);
+        if (!Directory.Exists(rootFolder.Path))
+        {
+            logger.LogWarning("Skipping rescan of '{Title}': root folder {Root} is not reachable",
+                series.Title, rootFolder.Path);
+            return new RescanResult(0, 0, 0, 0, RootUnavailable: true);
+        }
+
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var dbFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
         var volumeFileIds = dbFiles
@@ -208,7 +223,8 @@ public class CbzLinkService(
             .ToHashSet();
 
         var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
-        foreach (var folder in await SeriesFolders.ForAsync(db, series, ct))
+        var readableFolders = new HashSet<string>(LibraryPaths.FolderComparer);
+        foreach (var folder in folders)
         {
             // A symlink or junction anywhere below the root would have adoption read, and the
             // ComicInfo rewrite modify, archives outside the library.
@@ -220,13 +236,21 @@ public class CbzLinkService(
             onDisk.AddRange(LibraryPaths.EnumerateFilesNoLinks(seriesDir)
                 .Where(ComicFile.IsComic)
                 .Select(f => (seriesDir, f, Path.Combine(folder, Path.GetRelativePath(seriesDir, f)))));
+            readableFolders.Add(folder);
         }
 
-        var diskRelPaths = onDisk.Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var diskRelPaths = onDisk
+            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // 1. Files deleted from disk: drop the record, free the chapters.
+        // 1. Files deleted from disk: drop the record, free the chapters. Only rows whose folder
+        // was actually listed: a folder that is not there says nothing about the files in it.
         var removed = 0;
-        foreach (var dbFile in dbFiles.Where(f => !diskRelPaths.Contains(f.RelativePath)).ToList())
+        foreach (var dbFile in dbFiles
+                     .Where(f => LibraryPaths.TopFolder(f.RelativePath) is { } top
+                         ? readableFolders.Contains(top) && !diskRelPaths.Contains(LibraryPaths.ComparisonKey(f.RelativePath))
+                         : !File.Exists(LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(f.RelativePath))))
+                     .ToList())
         {
             foreach (var chapter in chapters.Where(c => c.ChapterFileId == dbFile.Id))
             {
@@ -265,7 +289,7 @@ public class CbzLinkService(
                 continue;
             }
 
-            var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, dbFile.RelativePath);
+            var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(dbFile.RelativePath));
             var matched = LinkChapters(chapters, parsed, dbFile.Id, absolutePath, volumeFileIds);
             if (matched.Count == 0 && parsed.IsVolume)
             {
@@ -289,7 +313,7 @@ public class CbzLinkService(
         var volumeFilesOnDisk = dbFiles
             .Select(f => (
                 f.Id,
-                AbsolutePath: LibraryPaths.ResolveNoLinks(rootFolder.Path, f.RelativePath),
+                AbsolutePath: LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(f.RelativePath)),
                 Parsed: ReleaseNameParser.ParseFileName(f.RelativePath)))
             .Where(f => f.AbsolutePath is not null)
             .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
@@ -299,14 +323,19 @@ public class CbzLinkService(
         await db.SaveChangesAsync(ct);
 
         // 3. Files on disk we have no record of yet.
-        var knownRelPaths = dbFiles.Select(f => f.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var newFiles = onDisk.Where(f => !knownRelPaths.Contains(f.RelativePath)).ToList();
+        var knownRelPaths = dbFiles
+            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var newFiles = onDisk.Where(f => !knownRelPaths.Contains(LibraryPaths.ComparisonKey(f.RelativePath))).ToList();
         var linkedNew = 0;
         var unrecognized = 0;
+        var writeComicInfo = newFiles.Count > 0 &&
+                             await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false";
         foreach (var group in newFiles.GroupBy(f => f.SeriesDir))
         {
             var (linked, skipped) = await LinkFilesAsync(
-                series, group.Key, group.Select(f => f.AbsolutePath), "rescan", ct: ct);
+                series, group.Key, group.Select(f => f.AbsolutePath), "rescan",
+                updateComicInfo: writeComicInfo, ct: ct);
             linkedNew += linked;
             unrecognized += skipped;
         }

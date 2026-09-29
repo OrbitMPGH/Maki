@@ -184,6 +184,45 @@ public static class LibraryPaths
     public static string ComparisonKey(string relativePath) =>
         relativePath.Replace('\\', '/').TrimStart('/');
 
+    /// <summary>
+    /// True when two paths name one directory on disk. A case-insensitive filesystem (Windows, or an
+    /// SMB mount under Docker) answers to <c>chainsaw man</c> and <c>Chainsaw Man</c> alike, so
+    /// comparing the strings, or asking whether the second exists, cannot tell a second folder from
+    /// the first one under another spelling. The parent's listing can: a case-sensitive filesystem
+    /// holding two such folders lists both names.
+    /// </summary>
+    public static bool IsSameDirectory(string a, string b)
+    {
+        var fullA = Path.TrimEndingDirectorySeparator(Path.GetFullPath(a));
+        var fullB = Path.TrimEndingDirectorySeparator(Path.GetFullPath(b));
+        if (string.Equals(fullA, fullB, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (!string.Equals(fullA, fullB, StringComparison.OrdinalIgnoreCase) ||
+            !Directory.Exists(fullA) || !Directory.Exists(fullB))
+        {
+            return false;
+        }
+
+        var parent = Path.GetDirectoryName(fullB);
+        if (parent is null)
+        {
+            return true;
+        }
+
+        var nameA = Path.GetFileName(fullA);
+        var nameB = Path.GetFileName(fullB);
+        if (string.Equals(nameA, nameB, StringComparison.Ordinal))
+        {
+            return IsSameDirectory(Path.GetDirectoryName(fullA)!, parent);
+        }
+
+        var listed = Directory.EnumerateDirectories(parent).Select(Path.GetFileName).ToList();
+        return !(listed.Contains(nameA, StringComparer.Ordinal) && listed.Contains(nameB, StringComparer.Ordinal));
+    }
+
     /// <summary>Folder names compare the way the host's filesystem does.</summary>
     public static StringComparer FolderComparer { get; } =
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;

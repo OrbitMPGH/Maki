@@ -36,6 +36,7 @@ public class LibraryImportServiceMaterializeTests : IDisposable
     {
         var service = new LibraryImportService(
             null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            null!, null!, null!,
             NullLogger<LibraryImportService>.Instance);
 
         var method = typeof(LibraryImportService)

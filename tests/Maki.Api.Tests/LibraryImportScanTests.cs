@@ -36,6 +36,7 @@ public class LibraryImportScanTests : IDisposable
         var service = new LibraryImportService(
             db, [_provider], null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
             currentUser ?? new TestCurrentUser(1),
+            new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
             NullLogger<LibraryImportService>.Instance);
         return await service.ScanAsync(rootFolderId);
     }
@@ -47,6 +48,7 @@ public class LibraryImportScanTests : IDisposable
         var service = new LibraryImportService(
             db, [_provider], null!, null!, null!, null!, null!, null!, null!, null!, null!, new TestLocalizer(),
             currentUser ?? new TestCurrentUser(1),
+            new RecordingNotifications(), new TestUserLocaleResolver(), new TestLocalizer(),
             NullLogger<LibraryImportService>.Instance);
         return await service.ImportAsync(rootFolderId, new ImportRequestItem(folderName, "1"));
     }

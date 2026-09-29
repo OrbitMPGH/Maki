@@ -50,6 +50,7 @@ public class SplitSeriesFolderTests : IDisposable
             new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             new SourceAvailability(_settings, registry),
             TestQuality.Create(registry),
+            _settings,
             NullLogger<CbzLinkService>.Instance);
     }
 

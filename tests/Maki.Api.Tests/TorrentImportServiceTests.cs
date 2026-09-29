@@ -61,6 +61,7 @@ public class TorrentImportServiceTests : IDisposable
             archives,
             new SourceAvailability(_settings, registry),
             TestQuality.Create(registry),
+            _settings,
             NullLogger<CbzLinkService>.Instance);
         var rename = new SeriesRenameService(
             db, new NamingService(_settings), scans, new TestLocalizer(), NullLogger<SeriesRenameService>.Instance);

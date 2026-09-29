@@ -269,6 +269,11 @@ msgid "error.auth.usernameRequired"
 msgstr "사용자 이름이 필요합니다"
 
 #: src/Maki.Api/Controllers/ChapterController.cs
+#. English: One of these chapters is downloading right now. Wait for it to finish before deleting.
+msgid "error.chapter.activeDownloadDelete"
+msgstr ""
+
+#: src/Maki.Api/Controllers/ChapterController.cs
 #. English: Chapter is already downloading, try again once it finishes
 #, fuzzy
 msgid "error.chapter.alreadyDownloading"
@@ -539,16 +544,32 @@ msgid "error.libraryImport.alreadyInLibrary"
 msgstr "\"{title}\"은(는) 다운로드한 파일이 있는 상태로 이미 라이브러리에 있습니다. 처음부터 다시 가져오려면 먼저 삭제하세요."
 
 #: src/Maki.Api/Services/LibraryImportService.cs
+#. English: Import failed. The server log has the details.
+msgid "error.libraryImport.failed"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Folder no longer exists
 #, fuzzy
 msgid "error.libraryImport.folderGone"
 msgstr "폴더가 더 이상 없습니다"
 
 #: src/Maki.Api/Services/LibraryImportService.cs
+#. English: This folder already belongs to another series in the library
+msgid "error.libraryImport.folderOwnedByOtherSeries"
+msgstr ""
+
+#: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Invalid folder name
 #, fuzzy
 msgid "error.libraryImport.invalidFolderName"
 msgstr "폴더 이름이 올바르지 않습니다."
+
+#. A warning on a finished import. {count} is a number of files; {folder} is the scanned folder's name, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: {count} files stayed in "{folder}" because the series folder already has files with the same names
+msgid "error.libraryImport.mergeLeftFiles"
+msgstr ""
 
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Metadata lookup failed
@@ -562,12 +583,29 @@ msgstr "메타데이터를 조회하지 못했습니다"
 msgid "error.libraryImport.noItemsToImport"
 msgstr "가져올 항목이 없습니다"
 
+#. A warning on a finished import.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: No source matched this series. Link one from the series page so the imported files can be matched to chapters.
+msgid "error.libraryImport.noSourceMatch"
+msgstr ""
+
+#. {title} is the series title, not translated.
+#: src/Maki.Api/Services/LibraryImportService.cs
+#. English: "{title}" was only partly imported. Open the series and run Rescan to pick up the rest.
+msgid "error.libraryImport.partial"
+msgstr ""
+
 #. {name} is the standardized folder name Maki would rename to, not translated.
 #: src/Maki.Api/Services/LibraryImportService.cs
 #. English: Cannot rename: "{name}" already exists in the root folder
 #, fuzzy
 msgid "error.libraryImport.renameTargetExists"
 msgstr "이름을 바꿀 수 없습니다. 루트 폴더에 \"{name}\"이(가) 이미 있습니다"
+
+#: src/Maki.Api/Controllers/LibraryImportController.cs
+#. English: The root folder could not be read. Check that it is mounted and that Maki can access it.
+msgid "error.libraryImport.rootUnavailable"
+msgstr ""
 
 #. {count} is how many items were sent; {max} is the per-request limit.
 #: src/Maki.Api/Controllers/LibraryImportController.cs
@@ -1069,6 +1107,11 @@ msgid "error.search.unknownSource"
 msgstr "알 수 없는 소스: {sourceName}"
 
 #: src/Maki.Api/Controllers/SeriesController.cs
+#. English: Series has a download in progress. Wait for it to finish before deleting.
+msgid "error.series.activeDownloadDelete"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SeriesController.cs
 #. English: Series has an active download - wait for it to finish before moving
 #, fuzzy
 msgid "error.series.activeDownloadMove"
@@ -1191,6 +1234,11 @@ msgstr "시리즈에 루트 폴더가 없습니다"
 #, fuzzy
 msgid "error.series.rootFolderNotFound"
 msgstr "루트 폴더를 찾을 수 없습니다"
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+#. English: The series' root folder could not be read, so nothing was changed. Check that it is mounted, then rescan.
+msgid "error.series.rootUnavailable"
+msgstr ""
 
 #. Shown when a client sends an unrecognized IncognitoMode name. Distinct from
 #. error.series.unknownMonitorMode and error.series.unknownNotificationMode, which share this

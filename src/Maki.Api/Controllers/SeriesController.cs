@@ -232,7 +232,7 @@ public class SeriesController(
         }
 
         var result = await cbzLinkService.RescanSeriesAsync(series, ct);
-        return Ok(result);
+        return result.RootUnavailable ? this.Fail(localizer, "error.series.rootUnavailable") : Ok(result);
     }
 
     /// <summary>
@@ -599,8 +599,13 @@ public class SeriesController(
             .Where(f => f.SeriesId == id && relativePaths.Contains(f.RelativePath))
             .ToListAsync(ct);
 
+        // The Files tab also lists comics on disk that have no record (never adopted), and those
+        // are what this dialog is most often used to clean up.
+        var (strayDeleted, strayFailed) = await DeleteStrayFilesAsync(
+            series, relativePaths.Except(files.Select(f => f.RelativePath), StringComparer.Ordinal).ToList(), ct);
+
         if (files.Count == 0)
-            return Ok(new { deleted = 0 });
+            return Ok(new { deleted = strayDeleted, failed = strayFailed });
 
         var fileIds = files.Select(f => f.Id).ToList();
         var linkedByFileId = (await db.Chapters
@@ -608,8 +613,8 @@ public class SeriesController(
                 .ToListAsync(ct))
             .ToLookup(c => c.ChapterFileId!.Value);
 
-        var deleted = 0;
-        var failed = 0;
+        var deleted = strayDeleted;
+        var failed = strayFailed;
         foreach (var file in files)
         {
             // Resolve, never a bare Combine: RelativePath is stored data, and a row that escapes the
@@ -650,6 +655,63 @@ public class SeriesController(
 
         await db.SaveChangesAsync(ct);
         return Ok(new { deleted, failed });
+    }
+
+    /// <summary>
+    /// Deletes requested paths that have no record: only a comic, only inside one of this series'
+    /// folders, never through a link, and never a path another series has a record for.
+    /// </summary>
+    private async Task<(int Deleted, int Failed)> DeleteStrayFilesAsync(
+        Series series, List<string> relativePaths, CancellationToken ct)
+    {
+        if (relativePaths.Count == 0)
+        {
+            return (0, 0);
+        }
+
+        var rootPath = series.RootFolder!.Path;
+        var folders = await SeriesFolders.ForAsync(db, series, ct);
+        var spellings = relativePaths
+            .SelectMany(p => new[] { p, p.Replace('\\', '/'), p.Replace('/', '\\') })
+            .Distinct()
+            .ToList();
+        var recorded = (await db.ChapterFiles
+                .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == series.RootFolderId) &&
+                            spellings.Contains(f.RelativePath))
+                .Select(f => f.RelativePath)
+                .ToListAsync(ct))
+            .Select(LibraryPaths.ComparisonKey)
+            .ToHashSet(LibraryPaths.FolderComparer);
+
+        var deleted = 0;
+        var failed = 0;
+        foreach (var path in relativePaths)
+        {
+            var key = LibraryPaths.ComparisonKey(path);
+            var absolute = LibraryPaths.ResolveForDelete(rootPath, key);
+            if (recorded.Contains(key) || absolute is null || !ComicFile.IsComic(absolute) ||
+                LibraryPaths.TopFolder(key) is not { } top || !folders.Contains(top, LibraryPaths.FolderComparer) ||
+                !System.IO.File.Exists(absolute))
+            {
+                logger.LogWarning("Refusing to delete {File}: not an unrecorded comic in the folders of series {SeriesId}",
+                    path, series.Id);
+                failed++;
+                continue;
+            }
+
+            try
+            {
+                System.IO.File.Delete(absolute);
+                deleted++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogWarning(ex, "Could not delete {File}, skipping", path);
+                failed++;
+            }
+        }
+
+        return (deleted, failed);
     }
 
     private static string? ParsedLabel(ParsedReleaseFile parsed)
@@ -968,72 +1030,19 @@ public class SeriesController(
             return NotFound();
         }
 
-        if (series.RootFolder != null)
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
+
+        // A worker holding one of its downloads would recreate the folder and drop a file into it
+        // after the row is gone.
+        if (await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.SeriesId == id, ct))
         {
-            var folder = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, series.FolderName);
-            if (folder is null && LibraryPaths.Resolve(series.RootFolder.Path, series.FolderName) is { } linked
-                && Directory.Exists(linked))
-            {
-                logger.LogWarning("Leaving {Folder} on disk: it is or sits under a symbolic link or junction", linked);
-            }
-
-            if (folder is not null && Directory.Exists(folder))
-            {
-                if (deleteFiles)
-                {
-                    Directory.Delete(folder, recursive: true);
-                }
-                else if (!Directory.EnumerateFileSystemEntries(folder).Any())
-                {
-                    Directory.Delete(folder, recursive: false);
-                }
-            }
-
-            // Folders this series only has some files in (a keep-new-standard import's original
-            // folder). Only the files it tracks go, never the whole folder.
-            var extraFolders = (await SeriesFolders.ForAsync(db, series, ct)).Skip(1).ToList();
-            if (extraFolders.Count > 0)
-            {
-                if (deleteFiles)
-                {
-                    var paths = await db.ChapterFiles.Where(f => f.SeriesId == id)
-                        .Select(f => f.RelativePath).ToListAsync(ct);
-                    foreach (var path in paths)
-                    {
-                        if (LibraryPaths.TopFolder(path) is { } top && extraFolders.Contains(top, LibraryPaths.FolderComparer)
-                            && LibraryPaths.ResolveForDelete(series.RootFolder.Path, LibraryPaths.ComparisonKey(path)) is { } absolute
-                            && System.IO.File.Exists(absolute))
-                        {
-                            System.IO.File.Delete(absolute);
-                        }
-                    }
-                }
-
-                foreach (var extra in extraFolders)
-                {
-                    var extraPath = LibraryPaths.ResolveNoLinks(series.RootFolder.Path, extra);
-                    if (extraPath is not null && Directory.Exists(extraPath) && !Directory.EnumerateFileSystemEntries(extraPath).Any())
-                    {
-                        Directory.Delete(extraPath, recursive: false);
-                    }
-                }
-            }
-
-            // Replaced copies from upgrades. Their history rows go with the series, so nothing could
-            // restore them afterwards.
-            var trash = UpgradeTrash.SeriesFolder(series.RootFolder.Path, series.Id);
-            if (Directory.Exists(trash))
-            {
-                try
-                {
-                    Directory.Delete(trash, recursive: true);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    logger.LogWarning(ex, "Could not delete upgrade trash for removed series {SeriesId}", id);
-                }
-            }
+            return this.Conflict(localizer, "error.series.activeDownloadDelete");
         }
+
+        // Worked out while the rows that say what to delete still exist, and carried out after the
+        // row is gone: a locked file must not leave half a folder deleted behind a series that is
+        // still listed.
+        var diskPlan = series.RootFolder is null ? null : await PlanSeriesDiskDeleteAsync(series, deleteFiles, ct);
 
         // Snapshot before the hard delete: the event row must outlive the series (FK is severed
         // to NULL), so it carries the title, the genre/tag lists the aggregation needs later, and
@@ -1077,6 +1086,11 @@ public class SeriesController(
         }
         db.Series.Remove(series);
         await db.SaveChangesAsync(ct);
+        if (diskPlan is not null)
+        {
+            DeleteSeriesFromDisk(diskPlan, id);
+        }
+
         // Still on somebody's tracker list, so an import list would add it straight back otherwise.
         if (series.MangaBakaId is int removedMangaBakaId)
         {
@@ -1099,6 +1113,123 @@ public class SeriesController(
             SeriesTitle: title,
             SeriesTagIds: tagIds));
         return NoContent();
+    }
+
+    /// <param name="Folder">The series' own folder, when it resolves without passing a link.</param>
+    /// <param name="RemoveFolderWhole">Delete <paramref name="Folder"/> recursively.</param>
+    /// <param name="Files">Single files to delete, for folders the series does not own outright.</param>
+    /// <param name="PruneIfEmpty">Folders removed only if nothing is left in them.</param>
+    private sealed record SeriesDiskPlan(
+        string? Folder, bool RemoveFolderWhole, List<string> Files, List<string> PruneIfEmpty, string Trash);
+
+    private async Task<SeriesDiskPlan> PlanSeriesDiskDeleteAsync(Series series, bool deleteFiles, CancellationToken ct)
+    {
+        var rootPath = series.RootFolder!.Path;
+        var folder = LibraryPaths.ResolveNoLinks(rootPath, series.FolderName);
+        if (folder is null && LibraryPaths.Resolve(rootPath, series.FolderName) is { } linked
+            && Directory.Exists(linked))
+        {
+            logger.LogWarning("Leaving {Folder} on disk: it is or sits under a symbolic link or junction", linked);
+        }
+
+        // Older data can give two series one folder. A recursive delete of it would take the other
+        // series' files too, so then only the files this series tracks go.
+        var shared = (await SeriesCreationService.SeriesFoldersInRootAsync(db, series.RootFolderId, series.Id, ct))
+            .Contains(series.FolderName);
+        if (!shared)
+        {
+            var pattern = series.FolderName.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
+            shared = (await db.ChapterFiles
+                    .Where(f => f.SeriesId != series.Id &&
+                                db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == series.RootFolderId) &&
+                                EF.Functions.Like(f.RelativePath, pattern, @"\"))
+                    .Select(f => f.RelativePath)
+                    .ToListAsync(ct))
+                .Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), series.FolderName));
+        }
+
+        if (shared)
+        {
+            logger.LogWarning("Folder {Folder} is shared with another series; deleting only the files series {SeriesId} tracks",
+                series.FolderName, series.Id);
+        }
+
+        // Folders this series only has some files in (a keep-new-standard import's original
+        // folder). Only the files it tracks go, never the whole folder.
+        var extraFolders = (await SeriesFolders.ForAsync(db, series, ct)).Skip(1).ToList();
+        var partialFolders = shared ? extraFolders.Append(series.FolderName).ToList() : extraFolders;
+        var files = new List<string>();
+        if (deleteFiles)
+        {
+            var paths = await db.ChapterFiles.Where(f => f.SeriesId == series.Id)
+                .Select(f => f.RelativePath).ToListAsync(ct);
+            files.AddRange(paths
+                .Where(p => LibraryPaths.TopFolder(p) is { } top && partialFolders.Contains(top, LibraryPaths.FolderComparer))
+                .Select(p => LibraryPaths.ResolveForDelete(rootPath, LibraryPaths.ComparisonKey(p)))
+                .OfType<string>());
+        }
+
+        var removeWhole = deleteFiles && !shared && folder is not null;
+        var prune = extraFolders
+            .Select(extra => LibraryPaths.ResolveNoLinks(rootPath, extra))
+            .OfType<string>()
+            .ToList();
+        if (!removeWhole && folder is not null)
+        {
+            prune.Add(folder);
+        }
+
+        // Replaced copies from upgrades. Their history rows go with the series, so nothing could
+        // restore them afterwards.
+        return new SeriesDiskPlan(folder, removeWhole, files, prune, UpgradeTrash.SeriesFolder(rootPath, series.Id));
+    }
+
+    /// <summary>
+    /// Best effort: the row is already gone, so a file that is locked or a folder that cannot be
+    /// read is logged and left for Health's unlinked scan rather than failing the request.
+    /// </summary>
+    private void DeleteSeriesFromDisk(SeriesDiskPlan plan, int seriesId)
+    {
+        void Attempt(string path, Action delete)
+        {
+            try
+            {
+                delete();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogWarning(ex, "Could not delete {Path} for removed series {SeriesId}", path, seriesId);
+            }
+        }
+
+        if (plan is { RemoveFolderWhole: true, Folder: { } folder } && Directory.Exists(folder))
+        {
+            Attempt(folder, () => Directory.Delete(folder, recursive: true));
+        }
+
+        foreach (var file in plan.Files)
+        {
+            if (System.IO.File.Exists(file))
+            {
+                Attempt(file, () => System.IO.File.Delete(file));
+            }
+        }
+
+        foreach (var dir in plan.PruneIfEmpty)
+        {
+            Attempt(dir, () =>
+            {
+                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
+                {
+                    Directory.Delete(dir, recursive: false);
+                }
+            });
+        }
+
+        if (Directory.Exists(plan.Trash))
+        {
+            Attempt(plan.Trash, () => Directory.Delete(plan.Trash, recursive: true));
+        }
     }
 
     /// <param name="MoveFiles">
@@ -1135,6 +1266,8 @@ public class SeriesController(
         {
             return this.Fail(localizer, "error.series.alreadyInRootFolder");
         }
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
 
         var destination = await db.RootFolders.FindAsync([request.RootFolderId], ct);
         if (destination is null)

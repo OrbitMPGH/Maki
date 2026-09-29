@@ -368,14 +368,30 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.differentSeries");
         }
 
+        var deletingIds = chapters.Select(c => c.Id).ToList();
+
+        // A worker holding one of these would package into the folder after the row is gone.
+        if (await SeriesLocks.InFlight(db.DownloadQueue)
+                .AnyAsync(q => q.ChapterId != null && deletingIds.Contains(q.ChapterId.Value), ct))
+        {
+            return this.Conflict(localizer, "error.chapter.activeDownloadDelete");
+        }
+
         var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
-        var deletingIds = chapters.Select(c => c.Id).ToHashSet();
 
         var fileIds = chapters
             .Where(c => c.ChapterFileId != null)
             .Select(c => c.ChapterFileId!.Value)
-            .Distinct()
-            .ToList();
+            .ToHashSet();
+        var fileIdList = fileIds.ToList();
+        var stillReferenced = (await db.Chapters
+                .Where(c => c.ChapterFileId != null && fileIdList.Contains(c.ChapterFileId.Value) &&
+                            !deletingIds.Contains(c.Id))
+                .Select(c => c.ChapterFileId!.Value)
+                .Distinct()
+                .ToListAsync(ct))
+            .ToHashSet();
+        var batchFiles = await db.ChapterFiles.Where(f => fileIdList.Contains(f.Id)).ToListAsync(ct);
 
         // A manual link (see Link above) can point a second row, in this series or another, at the
         // same physical file, so ChapterFileId alone can't tell if the file is still claimed elsewhere.
@@ -386,33 +402,25 @@ public class ChapterController(
                      select new { f.Id, f.RelativePath }).ToListAsync(ct)
             : [];
 
+        // fileIds is this same batch: a row also being deleted here doesn't count as a claim,
+        // or two rows pointing at one file that are both removed would each see the other as
+        // still holding it and the file would never actually be deleted from disk.
+        var claimedPaths = filesInRoot
+            .Where(f => !fileIds.Contains(f.Id))
+            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
+            .ToHashSet(LibraryPaths.FolderComparer);
+
         // Collected here instead of deleted in place: rows are saved first, and only a successful
         // save unlocks touching the filesystem.
         var toDeleteFromDisk = new List<(string AbsPath, string RelativePath)>();
-        foreach (var fileId in fileIds)
+        foreach (var file in batchFiles)
         {
-            var stillReferenced = await db.Chapters
-                .AnyAsync(c => c.ChapterFileId == fileId && !deletingIds.Contains(c.Id), ct);
-            if (stillReferenced)
+            if (stillReferenced.Contains(file.Id))
             {
                 continue;
             }
 
-            var file = await db.ChapterFiles.FindAsync([fileId], ct);
-            if (file is null)
-            {
-                continue;
-            }
-
-            // fileIds is this same batch: a row also being deleted here doesn't count as a claim,
-            // or two rows pointing at one file that are both removed would each see the other as
-            // still holding it and the file would never actually be deleted from disk.
-            var key = LibraryPaths.ComparisonKey(file.RelativePath);
-            var pathStillClaimed = filesInRoot.Any(f =>
-                f.Id != file.Id && !fileIds.Contains(f.Id) &&
-                LibraryPaths.FolderComparer.Equals(LibraryPaths.ComparisonKey(f.RelativePath), key));
-
-            if (!pathStillClaimed)
+            if (!claimedPaths.Contains(LibraryPaths.ComparisonKey(file.RelativePath)))
             {
                 // Never File.Delete a bare Combine: a row written before the check in Link, or by any
                 // future path that skips it, would delete whatever it points at outside the library.

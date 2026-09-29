@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Core.Entities;
+using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,16 @@ public class HealthScanService(MakiDbContext db)
         var roots = await db.RootFolders.OrderBy(r => r.Id).ToListAsync(ct);
         var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         var trackedLocations = await db.ChapterFiles.Join(db.Series, f => f.SeriesId, s => s.Id, (f, s) => new { s.RootFolderId, f.RelativePath }).ToListAsync(ct);
+        // Full paths of every tracked file, per root, for "does another root claim this file?"
+        // (nested roots). Stored paths are keyed by LibraryPaths.ComparisonKey throughout: a row
+        // written under Docker holds "/" where a Windows scan builds "\", and the two are one file.
+        var rootPathById = roots.ToDictionary(r => r.Id, r => r.Path);
+        var trackedFullPaths = trackedLocations
+            .Where(t => rootPathById.ContainsKey(t.RootFolderId))
+            .GroupBy(t => t.RootFolderId)
+            .ToDictionary(g => g.Key, g => g
+                .Select(t => Path.GetFullPath(Path.Combine(rootPathById[g.Key], LibraryPaths.ComparisonKey(t.RelativePath))))
+                .ToHashSet(seen.Comparer));
         var files = new List<HealthFile>();
         var retired = new List<int>();
         foreach (var root in roots)
@@ -46,22 +57,45 @@ public class HealthScanService(MakiDbContext db)
             {
                 HealthPaths.Resolve(root.Path, ".maki-health-check");
                 if (!Directory.Exists(root.Path)) throw new IOException("Root folder unavailable");
-                var tracked = await db.ChapterFiles.Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id)).ToListAsync(ct);
-                var knownFiles = await db.HealthFiles.Where(f => f.RootFolderId == root.Id).ToListAsync(ct);
-                var paths = new HashSet<string>(tracked.Select(f => f.RelativePath), seen.Comparer);
-                foreach (var known in knownFiles.Where(f => !f.Removed)) paths.Add(known.RelativePath);
+                var tracked = await db.ChapterFiles.AsNoTracking()
+                    .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id))
+                    .Where(f => scan.SeriesId == null || f.SeriesId == scan.SeriesId)
+                    .ToListAsync(ct);
+                // A series scan only ever reports that series' tracked files, so it needs only the
+                // inventory rows for them; a row still unlinked from the last full sweep is matched
+                // by path, in either separator, or a second row would be created for the same file.
+                var trackedSpellings = scan.SeriesId == null
+                    ? []
+                    : tracked.SelectMany(f => new[] { f.RelativePath, f.RelativePath.Replace('\\', '/'), f.RelativePath.Replace('/', '\\') })
+                        .Distinct().ToList();
+                var knownFiles = await db.HealthFiles
+                    .Where(f => f.RootFolderId == root.Id)
+                    .Where(f => scan.SeriesId == null || f.SeriesId == scan.SeriesId || trackedSpellings.Contains(f.RelativePath))
+                    .ToListAsync(ct);
+                var trackedByKey = new Dictionary<string, ChapterFile>(seen.Comparer);
+                foreach (var f in tracked.OrderBy(f => f.Id)) trackedByKey.TryAdd(LibraryPaths.ComparisonKey(f.RelativePath), f);
+                var knownByKey = knownFiles
+                    .GroupBy(f => LibraryPaths.ComparisonKey(f.RelativePath), seen.Comparer)
+                    .ToDictionary(g => g.Key, g => g.OrderBy(f => f.Removed).ThenBy(f => f.Id).ToList(), seen.Comparer);
+                var paths = new HashSet<string>(trackedByKey.Keys, seen.Comparer);
+                foreach (var known in knownFiles.Where(f => !f.Removed)) paths.Add(LibraryPaths.ComparisonKey(known.RelativePath));
                 // Series and selected-file scans do not enumerate unrelated unlinked archives.
                 if (scan.SeriesId == null && selected.Length == 0)
-                    foreach (var path in HealthPaths.Archives(root.Path)) paths.Add(Path.GetRelativePath(root.Path, path));
-                foreach (var relative in paths)
+                    foreach (var path in HealthPaths.Archives(root.Path)) paths.Add(LibraryPaths.ComparisonKey(Path.GetRelativePath(root.Path, path)));
+                foreach (var key in paths)
                 {
                     ct.ThrowIfCancellationRequested();
-                    var absolute = HealthPaths.Resolve(root.Path, relative);
-                    var trackedFile = tracked.FirstOrDefault(f => seen.Comparer.Equals(f.RelativePath, relative));
-                    if (trackedFile == null && trackedLocations.Any(t => t.RootFolderId != root.Id && roots.Any(r => r.Id == t.RootFolderId && seen.Comparer.Equals(Path.GetFullPath(Path.Combine(r.Path, t.RelativePath)), absolute)))) continue;
+                    var relative = key.Replace('/', Path.DirectorySeparatorChar);
+                    var absolute = HealthPaths.Resolve(root.Path, key);
+                    var trackedFile = trackedByKey.GetValueOrDefault(key);
+                    if (trackedFile == null && trackedFullPaths.Any(t => t.Key != root.Id && t.Value.Contains(absolute))) continue;
                     if (!seen.Add(absolute)) continue;
                     if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
-                    var file = knownFiles.FirstOrDefault(f => seen.Comparer.Equals(f.RelativePath, relative));
+                    var sameFile = knownByKey.GetValueOrDefault(key);
+                    var file = sameFile?[0];
+                    // A row stored with the other host's separator is one this host cannot open.
+                    if (sameFile is [var only] && !OperatingSystem.IsWindows() && only.RelativePath.Contains('\\'))
+                        only.RelativePath = relative;
                     if (selected.Length > 0 && (file == null || !selected.Contains(file.Id))) continue;
                     // Gone from disk with no record pointing at it: Maki deleted it itself (relink,
                     // chapter delete, rename) or the owner did. There is nothing left to report on.
