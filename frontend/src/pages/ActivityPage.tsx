@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
   Anchor,
@@ -21,8 +21,11 @@ import {
   IconArrowBarToUp,
   IconArrowDown,
   IconArrowUp,
+  IconChevronDown,
+  IconChevronRight,
   IconHistory,
   IconRefresh,
+  IconSearch,
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
@@ -41,14 +44,19 @@ import {
 } from '../api/hooks'
 import {
   isUpgradeScanStarted,
+  isVolumeSearchStarted,
   upgradeReasonLabel,
   upgradeScanResultText,
+  volumeSearchResultText,
   useCutoffUnmet,
   useRevertUpgrade,
+  useRevertUpgradeGroup,
   useRunUpgradeScan,
+  useTorrentProposals,
   useUpgradeHistory,
   useUpgradeSettings,
   useUpgradesSummary,
+  useVolumeSearch,
   QUALITY_TIER_LABELS,
 } from '../api/upgrades'
 import type {
@@ -61,6 +69,7 @@ import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { ImportReviewModal } from '../components/ImportReviewModal'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
+import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -127,8 +136,39 @@ function upgradeTransitionLabel(
   renderLabel: (m: MessageDescriptor) => string,
   sourceLabel: (key: string) => string,
   upgrade: UpgradeQueueInfoDto,
-): string {
-  return snapshotTransitionText(renderLabel, sourceLabel, upgrade.before, upgrade.after ?? upgrade.predicted)
+): string | null {
+  const { before, replacedFiles } = upgrade
+  const target = upgrade.after ?? upgrade.predicted
+  if (before && target) return snapshotTransitionText(renderLabel, sourceLabel, before, target)
+  if (replacedFiles != null) return plural(replacedFiles, { one: 'Replaces # file', other: 'Replaces # files' })
+  return null
+}
+
+interface UpgradeHistoryEntry {
+  key: string
+  groupId: string | null
+  rows: UpgradeHistoryRowDto[]
+}
+
+/** Rows that share a `groupId` are one volume replacement; the list itself is flat. */
+function groupUpgradeHistory(rows: UpgradeHistoryRowDto[]): UpgradeHistoryEntry[] {
+  const entries: UpgradeHistoryEntry[] = []
+  const byGroup = new Map<string, UpgradeHistoryEntry>()
+  for (const row of rows) {
+    if (!row.groupId) {
+      entries.push({ key: `row-${row.id}`, groupId: null, rows: [row] })
+      continue
+    }
+    const existing = byGroup.get(row.groupId)
+    if (existing) {
+      existing.rows.push(row)
+      continue
+    }
+    const entry = { key: `group-${row.groupId}`, groupId: row.groupId, rows: [row] }
+    byGroup.set(row.groupId, entry)
+    entries.push(entry)
+  }
+  return entries
 }
 
 function upgradeReasonText(renderLabel: (m: MessageDescriptor) => string, reason: string | null): string | null {
@@ -161,7 +201,10 @@ export default function ActivityPage() {
   const canManageQueue = can('ManageDownloadQueue')
   const isAdmin = can('Admin')
   const revertUpgrade = useRevertUpgrade()
+  const revertGroup = useRevertUpgradeGroup()
   const runScan = useRunUpgradeScan()
+  const runVolumeSearch = useVolumeSearch()
+  const canDownload = can('DownloadChapters')
 
   // URL-synced like SeriesDetailPage's chapters/files/details tabs, so a link to Activity can point
   // straight at Upgrades and a refresh doesn't bounce back to Queue.
@@ -199,6 +242,18 @@ export default function ActivityPage() {
     upgradesTabActive,
   )
   const upgradeHistoryPageCount = upgradeHistory ? Math.ceil(upgradeHistory.total / UPGRADE_HISTORY_PAGE_SIZE) : 0
+  const historyEntries = useMemo(() => groupUpgradeHistory(upgradeHistory?.rows ?? []), [upgradeHistory])
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const toggleGroup = (groupId: string) =>
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(groupId)) next.add(groupId)
+      return next
+    })
+  // The proposals list is small, unlike the cutoff evaluation behind the summary, so the tab badge
+  // can be live while Queue is showing.
+  const { data: proposals } = useTorrentProposals(undefined, canDownload)
+  const pendingProposals = proposals?.length ?? 0
 
   const runUpgradeScan = () =>
     runScan.mutate(undefined, {
@@ -219,19 +274,40 @@ export default function ActivityPage() {
       },
     })
 
-  const revertUpgradeRow = (historyId: number) =>
-    revertUpgrade.mutate(historyId, {
+  const onRevertError = (error: unknown) => {
+    const code = error instanceof ApiError ? error.code : null
+    const message =
+      code === 'error.upgrades.alreadyReverted'
+        ? now`This upgrade was already reverted`
+        : code === 'error.upgrades.trashGone'
+          ? now`The trashed copy of this file is gone`
+          : code === 'error.upgrades.notLatest'
+            ? now`A newer upgrade has replaced this file since`
+            : code === 'error.upgrades.revertMoveFailed'
+              ? now`A file could not be moved back, nothing was changed`
+              : now`Could not revert this upgrade`
+    notifications.show({ message, color: 'var(--danger)' })
+  }
+
+  const revertUpgradeRow = (historyId: number) => revertUpgrade.mutate(historyId, { onError: onRevertError })
+  const revertGroupRow = (groupId: string) => revertGroup.mutate(groupId, { onError: onRevertError })
+
+  const runUpgradeVolumeSearch = () =>
+    runVolumeSearch.mutate(undefined, {
+      onSuccess: (result) => {
+        notifications.show({
+          message: isVolumeSearchStarted(result) ? now`Volume search started` : volumeSearchResultText(renderLabel, result),
+          color: 'var(--ok)',
+        })
+      },
       onError: (error) => {
-        const code = error instanceof ApiError ? error.code : null
-        const message =
-          code === 'error.upgrades.alreadyReverted'
-            ? now`This upgrade was already reverted`
-            : code === 'error.upgrades.trashGone'
-              ? now`The trashed copy of this file is gone`
-              : code === 'error.upgrades.notLatest'
-                ? now`A newer upgrade has replaced this file since`
-                : now`Could not revert this upgrade`
-        notifications.show({ message, color: 'var(--danger)' })
+        notifications.show({
+          message:
+            error instanceof ApiError && error.status === 409
+              ? now`A scan is already running`
+              : now`Couldn't start the volume search`,
+          color: 'var(--danger)',
+        })
       },
     })
 
@@ -307,7 +383,10 @@ export default function ActivityPage() {
       >
         <Tabs.List mb="md">
           <Tabs.Tab value="queue"><Trans>Queue</Trans></Tabs.Tab>
-          <Tabs.Tab value="upgrades"><Trans>Upgrades</Trans></Tabs.Tab>
+          <Tabs.Tab value="upgrades">
+            <Trans>Upgrades</Trans>
+            {pendingProposals > 0 && <span className="series-tab-count tnum">{pendingProposals}</span>}
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="queue">
@@ -370,6 +449,7 @@ export default function ActivityPage() {
                     [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
                   const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
                   const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
+                  const transitionText = q.upgrade ? upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade) : null
                   return (
                     <Table.Tr key={q.id}>
                       <Table.Td>
@@ -409,9 +489,9 @@ export default function ActivityPage() {
                                 </Badge>
                               )}
                             </Group>
-                            {q.upgrade && (
+                            {transitionText && (
                               <Text size="xs" c="var(--ink-3)">
-                                {upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade)}
+                                {transitionText}
                               </Text>
                             )}
                           </Stack>
@@ -611,7 +691,10 @@ export default function ActivityPage() {
                       const visual = queueStatusVisual(q.status)
                       const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
                       const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
-                      const showRevert = q.upgrade?.outcome === 'applied' && q.upgrade.historyId != null
+                      const transitionText = q.upgrade ? upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade) : null
+                      const showRevert =
+                        q.upgrade?.outcome === 'applied' &&
+                        (q.upgrade.historyId != null || q.upgrade.historyGroupId != null)
                       return (
                         <Table.Tr key={q.id}>
                           <Table.Td>
@@ -643,9 +726,9 @@ export default function ActivityPage() {
                                   </Badge>
                                 )}
                               </Group>
-                              {q.upgrade && (
+                              {transitionText && (
                                 <Text size="xs" c="var(--ink-3)">
-                                  {upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade)}
+                                  {transitionText}
                                 </Text>
                               )}
                             </Stack>
@@ -675,8 +758,12 @@ export default function ActivityPage() {
                                     variant="subtle"
                                     color="var(--neutral)"
                                     disabled={!q.upgrade!.trashAvailable}
-                                    loading={revertUpgrade.isPending}
-                                    onClick={() => revertUpgradeRow(q.upgrade!.historyId!)}
+                                    loading={revertUpgrade.isPending || revertGroup.isPending}
+                                    onClick={() =>
+                                      q.upgrade!.historyGroupId
+                                        ? revertGroupRow(q.upgrade!.historyGroupId)
+                                        : revertUpgradeRow(q.upgrade!.historyId!)
+                                    }
                                     aria-label={t`Revert this upgrade`}
                                   >
                                     <IconArrowBackUp size={16} />
@@ -718,9 +805,14 @@ export default function ActivityPage() {
                     const trashSize = formatBytes(upgradesSummary.trashBytes)
                     const trashFilesText = plural(upgradesSummary.trashFiles, { one: '# file', other: '# files' })
                     const retentionDays = upgradeSettings?.trashRetentionDays
+                    const lastVolumeSearchText = upgradesSummary.lastVolumeSearchDate
+                      ? formatDate(upgradesSummary.lastVolumeSearchDate)
+                      : t`never`
                     return (
                       <>
                         <Trans>Last library scan: {lastScanText}</Trans>
+                        {' · '}
+                        <Trans>Last volume search: {lastVolumeSearchText}</Trans>
                         {' · '}
                         <Trans>Trash: {trashSize} across {trashFilesText}</Trans>
                         {retentionDays != null && (
@@ -734,18 +826,41 @@ export default function ActivityPage() {
                   })()}
                 </Text>
                 {isAdmin && (
-                  <Button
-                    size="xs"
-                    variant="default"
-                    leftSection={<IconRefresh size={14} />}
-                    loading={runScan.isPending}
-                    disabled={upgradesSummary.scanRunning}
-                    onClick={runUpgradeScan}
-                  >
-                    {upgradesSummary.scanRunning ? <Trans>Scan running…</Trans> : <Trans>Scan now</Trans>}
-                  </Button>
+                  <Group gap="xs">
+                    <Button
+                      size="xs"
+                      variant="default"
+                      leftSection={<IconSearch size={14} />}
+                      loading={runVolumeSearch.isPending}
+                      disabled={upgradesSummary.scanRunning}
+                      onClick={runUpgradeVolumeSearch}
+                    >
+                      <Trans>Search volumes now</Trans>
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="default"
+                      leftSection={<IconRefresh size={14} />}
+                      loading={runScan.isPending}
+                      disabled={upgradesSummary.scanRunning}
+                      onClick={runUpgradeScan}
+                    >
+                      {upgradesSummary.scanRunning ? <Trans>Scan running…</Trans> : <Trans>Scan now</Trans>}
+                    </Button>
+                  </Group>
                 )}
               </Group>
+
+              {proposals && proposals.length > 0 && (
+                <Stack gap="sm">
+                  <Title order={4}>
+                    <Trans>Volume releases waiting for you</Trans>
+                  </Title>
+                  {proposals.map((proposal) => (
+                    <TorrentProposalCard key={proposal.id} proposal={proposal} />
+                  ))}
+                </Stack>
+              )}
 
               <Stack gap="sm">
                 <Title order={4}>
@@ -774,60 +889,155 @@ export default function ActivityPage() {
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
-                            {upgradeHistory.rows.map((row) => (
-                              <Table.Tr key={row.id}>
-                                <Table.Td>
-                                  <Text
-                                    component={Link}
-                                    to={`/series/${row.seriesId}`}
-                                    size="sm"
-                                    fw={600}
-                                    c="brand.4"
-                                    lineClamp={1}
-                                  >
-                                    {row.seriesTitle}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text size="sm" className="tnum">
-                                    {upgradeHistoryChapterLabel(row)}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text size="sm" c="var(--ink-3)">
-                                    {snapshotTransitionText(renderLabel, sourceLabel, row.before, row.after)}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td data-priority="low">
-                                  <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
-                                    {formatDateTime(row.createdAt)}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  {row.revertedAt ? (
-                                    <Text size="xs" c="var(--ink-3)">
-                                      <Trans>Reverted</Trans>
-                                    </Text>
-                                  ) : (
-                                    <Tooltip
-                                      label={row.trashAvailable ? t`Revert this upgrade` : t`The trashed copy is gone`}
-                                      withArrow
-                                    >
-                                      <ActionIcon
-                                        variant="subtle"
-                                        color="var(--neutral)"
-                                        disabled={!row.trashAvailable}
-                                        loading={revertUpgrade.isPending}
-                                        onClick={() => revertUpgradeRow(row.id)}
-                                        aria-label={t`Revert this upgrade`}
+                            {historyEntries.map((entry) => {
+                              const [first] = entry.rows
+                              const { groupId } = entry
+                              if (!groupId) {
+                                return (
+                                  <Table.Tr key={entry.key}>
+                                    <Table.Td>
+                                      <Text
+                                        component={Link}
+                                        to={`/series/${first.seriesId}`}
+                                        size="sm"
+                                        fw={600}
+                                        c="brand.4"
+                                        lineClamp={1}
                                       >
-                                        <IconArrowBackUp size={16} />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  )}
-                                </Table.Td>
-                              </Table.Tr>
-                            ))}
+                                        {first.seriesTitle}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      <Text size="sm" className="tnum">
+                                        {upgradeHistoryChapterLabel(first)}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      <Text size="sm" c="var(--ink-3)">
+                                        {snapshotTransitionText(renderLabel, sourceLabel, first.before, first.after)}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td data-priority="low">
+                                      <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
+                                        {formatDateTime(first.createdAt)}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      {first.revertedAt ? (
+                                        <Text size="xs" c="var(--ink-3)">
+                                          <Trans>Reverted</Trans>
+                                        </Text>
+                                      ) : (
+                                        <Tooltip
+                                          label={first.trashAvailable ? t`Revert this upgrade` : t`The trashed copy is gone`}
+                                          withArrow
+                                        >
+                                          <ActionIcon
+                                            variant="subtle"
+                                            color="var(--neutral)"
+                                            disabled={!first.trashAvailable}
+                                            loading={revertUpgrade.isPending}
+                                            onClick={() => revertUpgradeRow(first.id)}
+                                            aria-label={t`Revert this upgrade`}
+                                          >
+                                            <IconArrowBackUp size={16} />
+                                          </ActionIcon>
+                                        </Tooltip>
+                                      )}
+                                    </Table.Td>
+                                  </Table.Tr>
+                                )
+                              }
+                              const expanded = expandedGroups.has(groupId)
+                              const fileCount = Math.max(first.groupSize, entry.rows.length)
+                              const filesText = plural(fileCount, { one: '# file', other: '# files' })
+                              const { fileName } = first
+                              const reverted = entry.rows.every((r) => r.revertedAt)
+                              const revertable = entry.rows.every((r) => r.trashAvailable)
+                              return (
+                                <Fragment key={entry.key}>
+                                  <Table.Tr>
+                                    <Table.Td>
+                                      <Text
+                                        component={Link}
+                                        to={`/series/${first.seriesId}`}
+                                        size="sm"
+                                        fw={600}
+                                        c="brand.4"
+                                        lineClamp={1}
+                                      >
+                                        {first.seriesTitle}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      <Group gap={4} wrap="nowrap">
+                                        <ActionIcon
+                                          variant="subtle"
+                                          color="var(--neutral)"
+                                          size="sm"
+                                          onClick={() => toggleGroup(groupId)}
+                                          aria-label={expanded ? t`Hide replaced files` : t`Show replaced files`}
+                                          aria-expanded={expanded}
+                                        >
+                                          {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                                        </ActionIcon>
+                                        <Text size="sm" style={{ wordBreak: 'break-all' }}>
+                                          <Trans>{fileName} replaced {filesText}</Trans>
+                                        </Text>
+                                      </Group>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      <Text size="sm" c="var(--ink-3)">
+                                        {snapshotLabel(renderLabel, sourceLabel, first.after)}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td data-priority="low">
+                                      <Text size="xs" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
+                                        {formatDateTime(first.createdAt)}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      {reverted ? (
+                                        <Text size="xs" c="var(--ink-3)">
+                                          <Trans>Reverted</Trans>
+                                        </Text>
+                                      ) : (
+                                        <Tooltip
+                                          label={revertable ? t`Revert this upgrade` : t`The trashed copy is gone`}
+                                          withArrow
+                                        >
+                                          <ActionIcon
+                                            variant="subtle"
+                                            color="var(--neutral)"
+                                            disabled={!revertable}
+                                            loading={revertGroup.isPending}
+                                            onClick={() => revertGroupRow(groupId)}
+                                            aria-label={t`Revert this upgrade`}
+                                          >
+                                            <IconArrowBackUp size={16} />
+                                          </ActionIcon>
+                                        </Tooltip>
+                                      )}
+                                    </Table.Td>
+                                  </Table.Tr>
+                                  {expanded &&
+                                    entry.rows.map((row) => (
+                                      <Table.Tr key={row.id}>
+                                        <Table.Td />
+                                        <Table.Td colSpan={2}>
+                                          <Text size="xs" c="var(--ink-3)" className="tnum">
+                                            {upgradeHistoryChapterLabel(row)}
+                                            {' · '}
+                                            {snapshotLabel(renderLabel, sourceLabel, row.before)}
+                                          </Text>
+                                        </Table.Td>
+                                        <Table.Td data-priority="low" />
+                                        <Table.Td />
+                                      </Table.Tr>
+                                    ))}
+                                </Fragment>
+                              )
+                            })}
                           </Table.Tbody>
                         </Table>
                       </Table.ScrollContainer>

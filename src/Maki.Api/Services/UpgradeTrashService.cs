@@ -121,6 +121,34 @@ public static class UpgradeHistoryStates
             r.RevertedAtUtc is null && r.TrashPath is { } trash && r.RootPath is { } root &&
             LibraryPaths.Resolve(root, trash) is { } path && File.Exists(path)));
     }
+
+    /// <summary>
+    /// The same for torrent replacement groups: reverted once every row is, and revertible while none
+    /// is and every row's trash file is still there.
+    /// </summary>
+    public static async Task<Dictionary<Guid, Maki.Api.Dtos.UpgradeHistoryState>> LoadGroupsAsync(
+        MakiDbContext db, IReadOnlyCollection<Guid> groupIds, CancellationToken ct)
+    {
+        if (groupIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.UpgradeHistory.AsNoTracking()
+            .Where(h => h.GroupId != null && groupIds.Contains(h.GroupId.Value))
+            .Select(h => new
+            {
+                GroupId = h.GroupId!.Value,
+                h.RevertedAtUtc,
+                h.TrashPath,
+                RootPath = db.Series.Where(s => s.Id == h.SeriesId).Select(s => s.RootFolder!.Path).FirstOrDefault()
+            })
+            .ToListAsync(ct);
+        return rows.GroupBy(r => r.GroupId).ToDictionary(g => g.Key, g => new Maki.Api.Dtos.UpgradeHistoryState(
+            g.All(r => r.RevertedAtUtc is not null),
+            g.All(r => r.RevertedAtUtc is null && r.TrashPath is { } trash && r.RootPath is { } root &&
+                       LibraryPaths.Resolve(root, trash) is { } path && File.Exists(path))));
+    }
 }
 
 /// <summary>Reports and purges what <see cref="UpgradeTrash"/> holds.</summary>
@@ -128,11 +156,13 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
 {
     public async Task<(long Bytes, int Files)> SizeAsync(CancellationToken ct)
     {
+        // A reverted group points every row at the one volume copy it put aside, so count paths, not rows.
         var rows = await db.UpgradeHistory.AsNoTracking()
             .Where(h => h.TrashPath != null)
-            .Select(h => h.TrashBytes)
+            .Select(h => new { h.SeriesId, h.TrashPath, h.TrashBytes })
             .ToListAsync(ct);
-        return (rows.Sum(), rows.Count);
+        var files = rows.GroupBy(r => (r.SeriesId, r.TrashPath)).Select(g => g.Max(r => r.TrashBytes)).ToList();
+        return (files.Sum(), files.Count);
     }
 
     /// <summary>
@@ -159,8 +189,11 @@ public class UpgradeTrashService(MakiDbContext db, IAppSettings settings, ILogge
             {
                 try
                 {
-                    File.Delete(path);
-                    purged++;
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                        purged++;
+                    }
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {

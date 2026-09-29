@@ -32,10 +32,15 @@ public class CbzLinkService(
     /// only chapters nothing backs yet, so an adopted archive can never quietly orphan the file a
     /// chapter is being read from today.
     /// </param>
+    /// <param name="displaceableFileIds">
+    /// The only existing files these may take chapters off, volume files included. Without it a
+    /// volume may displace single-chapter files but never another volume; a torrent upgrade passes the
+    /// files its verdict said it replaces.
+    /// </param>
     public async Task<(int Linked, int Unrecognized)> LinkFilesAsync(
         Series series, string seriesDir, IEnumerable<string> files, string sourceName,
         Func<int, int, Task>? progress = null, bool updateComicInfo = true, string? releaseName = null,
-        bool replaceExisting = true, CancellationToken ct = default)
+        bool replaceExisting = true, CancellationToken ct = default, IReadOnlySet<int>? displaceableFileIds = null)
     {
         var chapters = await db.Chapters.Where(c => c.SeriesId == series.Id).ToListAsync(ct);
         var volumeFileIds = await VolumeFileIdsAsync(series.Id, ct);
@@ -114,12 +119,13 @@ public class CbzLinkService(
             }
             else
             {
-                matched = LinkChapters(chapters, parsed, chapterFile.Id, volumeFileIds, replaceExisting);
+                matched = LinkChapters(chapters, parsed, chapterFile.Id, volumeFileIds, replaceExisting, displaceableFileIds);
                 if (matched.Count == 0 && parsed.IsVolume)
                 {
                     // No volume metadata to range-match against — read the chapters the
                     // compilation actually contains from its page file names.
-                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, volumeFileIds, replaceExisting);
+                    matched = LinkVolumeByContents(chapters, parsed, file, chapterFile.Id, volumeFileIds, replaceExisting,
+                        displaceableFileIds);
                 }
 
                 if (parsed.IsVolume)
@@ -149,13 +155,13 @@ public class CbzLinkService(
         if (unlinkedVolumeFiles.Count > 0 && await TryBackfillChapterVolumesAsync(series, chapters, ct))
         {
             linked += unlinkedVolumeFiles.Count(
-                x => LinkChapters(chapters, x.Parsed, x.Record.Id, volumeFileIds, replaceExisting).Count > 0);
+                x => LinkChapters(chapters, x.Parsed, x.Record.Id, volumeFileIds, replaceExisting, displaceableFileIds).Count > 0);
         }
 
         // A volume file that range-matched some chapters can still contain others the
         // provider assigned to a different volume (compilation vs provider boundaries
         // disagree). Link any still-missing chapter its page markers prove it contains.
-        linked += FillVolumeContents(chapters, volumeFiles, volumeFileIds, replaceExisting);
+        linked += FillVolumeContents(chapters, volumeFiles, volumeFileIds, replaceExisting, displaceableFileIds);
 
         linked += await LinkLoneFileAsync(series, chapters, ct);
         await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
@@ -511,9 +517,14 @@ public class CbzLinkService(
         .Select(f => f.Id)
         .ToHashSet();
 
-    /// <summary>Whether a volume file may take this chapter: it is free or sits on a single-chapter file.</summary>
-    private static bool VolumeMayTake(Chapter chapter, HashSet<int> volumeFileIds, bool replaceExisting) =>
-        chapter.ChapterFileId is null || (replaceExisting && !volumeFileIds.Contains(chapter.ChapterFileId.Value));
+    /// <summary>
+    /// Whether a volume file may take this chapter: it is free or sits on a single-chapter file. With a
+    /// displaceable set, only the files in it may lose a chapter, volume or not.
+    /// </summary>
+    private static bool VolumeMayTake(
+        Chapter chapter, HashSet<int> volumeFileIds, bool replaceExisting, IReadOnlySet<int>? displaceable = null) =>
+        chapter.ChapterFileId is not { } fileId ||
+        (replaceExisting && (displaceable?.Contains(fileId) ?? !volumeFileIds.Contains(fileId)));
 
     /// <summary>
     /// Links a volume/compilation CBZ to the chapters it actually contains by reading the
@@ -523,7 +534,7 @@ public class CbzLinkService(
     /// </summary>
     private List<Chapter> LinkVolumeByContents(
         List<Chapter> chapters, ParsedReleaseFile parsed, string cbzPath, int chapterFileId,
-        HashSet<int> volumeFileIds, bool replaceExisting = true)
+        HashSet<int> volumeFileIds, bool replaceExisting = true, IReadOnlySet<int>? displaceable = null)
     {
         var numbers = VolumeChapterScanner.ScanCbz(cbzPath);
         if (numbers.Count == 0)
@@ -535,7 +546,7 @@ public class CbzLinkService(
         foreach (var number in numbers)
         {
             var match = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
-                        ?? chapters.FirstOrDefault(c => c.Number == number && VolumeMayTake(c, volumeFileIds, replaceExisting));
+                        ?? chapters.FirstOrDefault(c => c.Number == number && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable));
             if (match != null && !targets.Contains(match))
             {
                 targets.Add(match);
@@ -570,7 +581,7 @@ public class CbzLinkService(
     /// </summary>
     private int FillVolumeContents(
         List<Chapter> chapters, IEnumerable<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)> files,
-        HashSet<int> volumeFileIds, bool replaceExisting)
+        HashSet<int> volumeFileIds, bool replaceExisting, IReadOnlySet<int>? displaceable = null)
     {
         var linked = 0;
         foreach (var (fileId, path, parsed) in files)
@@ -585,7 +596,8 @@ public class CbzLinkService(
             {
                 var chapter = chapters.FirstOrDefault(c => c.Number == number && c.ChapterFileId == null)
                               ?? chapters.FirstOrDefault(c =>
-                                  c.Number == number && c.ChapterFileId != fileId && VolumeMayTake(c, volumeFileIds, replaceExisting));
+                                  c.Number == number && c.ChapterFileId != fileId &&
+                                  VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable));
                 if (chapter != null)
                 {
                     chapter.ChapterFileId = fileId;
@@ -613,7 +625,7 @@ public class CbzLinkService(
     /// </param>
     private static List<Chapter> LinkChapters(
         List<Chapter> chapters, ParsedReleaseFile parsed, int chapterFileId, HashSet<int> volumeFileIds,
-        bool replaceExisting = true)
+        bool replaceExisting = true, IReadOnlySet<int>? displaceable = null)
     {
         List<Chapter> targets = [];
         if (parsed.IsChapter)
@@ -622,7 +634,8 @@ public class CbzLinkService(
             var match = chapters.FirstOrDefault(c => c.Number == parsed.Number && c.ChapterFileId == null)
                         ?? (replaceExisting
                             ? chapters.FirstOrDefault(c =>
-                                c.Number == parsed.Number && !volumeFileIds.Contains(c.ChapterFileId!.Value))
+                                c.Number == parsed.Number && c.ChapterFileId is { } fileId &&
+                                (displaceable?.Contains(fileId) ?? !volumeFileIds.Contains(fileId)))
                             : null);
             if (match != null)
             {
@@ -634,7 +647,7 @@ public class CbzLinkService(
             var end = parsed.VolumeEnd ?? parsed.Volume;
             targets = chapters
                 .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
-                            && VolumeMayTake(c, volumeFileIds, replaceExisting))
+                            && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable))
                 .ToList();
         }
 

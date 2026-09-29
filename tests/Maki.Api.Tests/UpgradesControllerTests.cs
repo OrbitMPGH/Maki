@@ -4,6 +4,7 @@ using Maki.Api.Auth;
 using Maki.Api.Controllers;
 using Maki.Api.Dtos;
 using Maki.Api.Services;
+using Maki.Core.Entities;
 using Maki.Core.Quality;
 using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -127,6 +128,154 @@ public class UpgradesControllerTests : IDisposable
         Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("error.upgrades.scanTargetAmbiguous", Code(result));
         Assert.Empty(_world.Http.Requested);
+    }
+
+    private readonly FakeReleases _releases = new();
+
+    private UpgradesController Controller(Maki.Data.MakiDbContext db) =>
+        new(new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), db, new TestLocalizer(),
+            NullLogger<UpgradesController>.Instance);
+
+    private TorrentUpgradeService Torrents(Maki.Data.MakiDbContext db) => new(db,
+        new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
+        TimeProvider.System, NullLogger<TorrentUpgradeService>.Instance);
+
+    private int Proposal(int seriesId, string guid, Maki.Core.Entities.TorrentProposalStatus status =
+        Maki.Core.Entities.TorrentProposalStatus.Pending)
+    {
+        using var db = _world.Db.NewContext();
+        var release = FakeReleases.Release("Series v01 (Digital) (1r0n)", guid: guid);
+        var row = new Maki.Core.Entities.TorrentProposal
+        {
+            SeriesId = seriesId, ReleaseGuid = guid, Title = release.Title, Indexer = release.Indexer,
+            ReleaseInfoJson = JsonSerializer.Serialize(release, QualitySnapshot.Json), Status = status,
+            SpanJson = JsonSerializer.Serialize(new Maki.Core.Parsing.ReleaseSpan(new Maki.Core.Parsing.NumberRange(1, 1), []),
+                QualitySnapshot.Json),
+            ReasonsJson = "[\"over_budget\"]", UpgradeCount = 3, CreatedAtUtc = DateTime.UtcNow
+        };
+        db.TorrentProposals.Add(row);
+        db.SaveChanges();
+        return row.Id;
+    }
+
+    [Fact]
+    public async Task Proposals_are_listed_only_for_series_the_caller_can_see()
+    {
+        var hidden = _world.Db.SeedSeries("Hidden");
+        Proposal(_world.SeriesId, "mine");
+        Proposal(hidden, "theirs");
+        Proposal(_world.SeriesId, "gone", Maki.Core.Entities.TorrentProposalStatus.Dismissed);
+        var userId = _world.Db.SeedUser("reader", MakiPermission.DownloadChapters, allRootFolders: false);
+        using (var db = _world.Db.NewContext())
+        {
+            db.UserRootFolders.Add(new Maki.Data.Identity.UserRootFolder
+            {
+                UserId = userId, RootFolderId = db.Series.Single(s => s.Id == _world.SeriesId).RootFolderId
+            });
+            db.SaveChanges();
+        }
+
+        using var scoped = _world.Db.NewContext(userId, allRootFolders: false);
+        var result = await Controller(scoped).Proposals(null, "pending", CancellationToken.None);
+
+        var dto = Assert.Single(Assert.IsType<List<TorrentProposalDto>>(Assert.IsType<OkObjectResult>(result).Value));
+        Assert.Equal(_world.SeriesId, dto.SeriesId);
+        Assert.Equal("pending", dto.Status);
+        Assert.Equal("volume", dto.Tier);
+        Assert.Equal(1, dto.Span.VolumeStart);
+        Assert.Equal(["over_budget"], dto.Reasons);
+
+        using var all = _world.Db.NewContext();
+        var summary = Assert.IsType<UpgradeSummaryDto>(Assert.IsType<OkObjectResult>(
+            await Controller(scoped).Summary(new UpgradeTrashService(all, _world.Settings, NullLogger<UpgradeTrashService>.Instance),
+                _world.Settings, CancellationToken.None)).Value);
+        Assert.Equal(1, summary.PendingProposals);
+    }
+
+    [Fact]
+    public async Task Grabbing_a_proposal_queues_it_as_the_users_upgrade_and_accepts_it()
+    {
+        _world.Chapter(1);
+        var id = Proposal(_world.SeriesId, "g");
+        using var db = _world.Db.NewContext();
+        var user = new TestCurrentUser(5, permissions: MakiPermission.DownloadChapters);
+
+        var result = await Controller(db).GrabProposal(id, Torrents(db), user, CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        var grab = Assert.Single(_releases.Grabs);
+        Assert.Equal(DownloadOrigin.Upgrade, grab.Origin);
+        Assert.Equal(5, grab.UserId);
+        Assert.Equal(id, TorrentUpgradeInfo.Parse(grab.Info)!.ProposalId);
+        using var check = _world.Db.NewContext();
+        var row = check.TorrentProposals.Single(p => p.Id == id);
+        Assert.Equal(Maki.Core.Entities.TorrentProposalStatus.Accepted, row.Status);
+        Assert.Equal(1001, row.QueueItemId);
+        Assert.Equal(5, row.ResolvedByUserId);
+
+        var again = await Controller(db).GrabProposal(id, Torrents(db), user, CancellationToken.None);
+        Assert.Equal("error.upgrades.proposalResolved", Code(again));
+        var missing = await Controller(db).GrabProposal(id + 99, Torrents(db), user, CancellationToken.None);
+        Assert.IsType<NotFoundObjectResult>(missing);
+        Assert.Equal("error.upgrades.proposalNotFound", Code(missing));
+    }
+
+    [Fact]
+    public async Task Dismissing_a_proposal_resolves_it_once()
+    {
+        var id = Proposal(_world.SeriesId, "g");
+        using var db = _world.Db.NewContext();
+        var user = new TestCurrentUser(5, permissions: MakiPermission.DownloadChapters);
+
+        Assert.IsType<NoContentResult>(await Controller(db).DismissProposal(id, Torrents(db), user, CancellationToken.None));
+        var again = await Controller(db).DismissProposal(id, Torrents(db), user, CancellationToken.None);
+        Assert.IsType<ConflictObjectResult>(again);
+        Assert.IsType<NotFoundObjectResult>(await Controller(db).DismissProposal(id + 99, Torrents(db), user, CancellationToken.None));
+
+        using var check = _world.Db.NewContext();
+        Assert.Equal(Maki.Core.Entities.TorrentProposalStatus.Dismissed, check.TorrentProposals.Single().Status);
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Theory]
+    [InlineData(MakiPermission.DownloadChapters, true, false)]
+    [InlineData(MakiPermission.DownloadChapters, false, false)]
+    [InlineData(MakiPermission.Admin, false, true)]
+    public async Task The_volume_search_permission_matrix(MakiPermission permissions, bool withSeries, bool allowed)
+    {
+        using var db = _world.Db.NewContext();
+        var request = new VolumeSearchRequest(withSeries ? _world.SeriesId : null);
+
+        var result = await Controller(db).VolumeSearch(request, Torrents(db), _scheduler,
+            new TestCurrentUser(1, permissions: permissions), CancellationToken.None);
+
+        if (withSeries)
+        {
+            var dto = Assert.IsType<SeriesVolumeSearchResultDto>(Assert.IsType<OkObjectResult>(result).Value);
+            // The manual search skips the instance switches, so the missing Prowlarr is what stops it.
+            Assert.Equal(VolumeSearchReasons.NoProwlarr, dto.Reason);
+        }
+        else if (allowed)
+        {
+            Assert.IsType<AcceptedResult>(result);
+            Assert.Equal(1, _scheduler.Calls);
+        }
+        else
+        {
+            Assert.IsType<ForbidResult>(result);
+            Assert.Equal(0, _scheduler.Calls);
+        }
+    }
+
+    [Fact]
+    public async Task A_volume_search_for_a_missing_series_is_a_404()
+    {
+        using var db = _world.Db.NewContext();
+
+        var result = await Controller(db).VolumeSearch(new VolumeSearchRequest(_world.SeriesId + 50), Torrents(db),
+            _scheduler, new TestCurrentUser(1, permissions: MakiPermission.DownloadChapters), CancellationToken.None);
+
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]

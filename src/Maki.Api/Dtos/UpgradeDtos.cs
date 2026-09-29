@@ -1,4 +1,5 @@
 using Maki.Core.Entities;
+using Maki.Core.Parsing;
 using Maki.Core.Quality;
 
 namespace Maki.Api.Dtos;
@@ -93,7 +94,9 @@ public record UpgradeSummaryDto(
     long TrashBytes = 0,
     int TrashFiles = 0,
     string? LastScanDate = null,
-    bool ScanRunning = false);
+    bool ScanRunning = false,
+    int PendingProposals = 0,
+    string? LastVolumeSearchDate = null);
 
 /// <param name="Tier">Lowercase <see cref="QualityTier"/> name.</param>
 public record QualitySnapshotDto(
@@ -115,24 +118,46 @@ public record QualitySnapshotDto(
 /// <summary>Where an applied upgrade's history row stands, for the queue's Revert button.</summary>
 public record UpgradeHistoryState(bool Reverted, bool TrashAvailable);
 
-/// <param name="Outcome">pending, applied or rejected.</param>
+/// <param name="Outcome">pending, applied or rejected; a torrent row may also read parked.</param>
 /// <param name="Reason">A reason code when rejected, worded by the client.</param>
+/// <param name="Before">Null for a torrent row, which replaces several files at once.</param>
 /// <param name="Reverted">The applied upgrade has since been reverted.</param>
 /// <param name="TrashAvailable">The replaced copy is still in the trash, so a revert can happen.</param>
 /// <param name="Force">A user picked this copy to replace the file, rather than the upgrader.</param>
+/// <param name="HistoryGroupId">A torrent row's history group once applied.</param>
+/// <param name="ReplacedFiles">How many library files a torrent row replaces; 0 for a scraper row.</param>
 public record UpgradeQueueInfoDto(
     string Outcome,
     string? Reason,
-    QualitySnapshotDto Before,
-    QualitySnapshotDto Predicted,
+    QualitySnapshotDto? Before,
+    QualitySnapshotDto? Predicted,
     QualitySnapshotDto? After,
     int? HistoryId,
     bool Reverted,
     bool TrashAvailable,
-    bool Force)
+    bool Force,
+    string? HistoryGroupId = null,
+    int ReplacedFiles = 0)
 {
-    public static UpgradeQueueInfoDto? From(string? json, UpgradeHistoryState? history = null) =>
-        UpgradeInfo.Parse(json) is { } info
+    public static UpgradeQueueInfoDto? From(string? json, UpgradeHistoryState? history = null)
+    {
+        if (TorrentUpgradeInfo.Parse(json) is { } torrent)
+        {
+            return new UpgradeQueueInfoDto(
+                torrent.Outcome,
+                null,
+                null,
+                null,
+                null,
+                null,
+                history?.Reverted ?? false,
+                history?.TrashAvailable ?? false,
+                false,
+                torrent.HistoryGroupId?.ToString(),
+                torrent.ReplacedFileIds.Count);
+        }
+
+        return UpgradeInfo.Parse(json) is { } info
             ? new UpgradeQueueInfoDto(
                 info.Outcome,
                 info.Reason,
@@ -144,9 +169,13 @@ public record UpgradeQueueInfoDto(
                 history?.TrashAvailable ?? false,
                 info.Force)
             : null;
+    }
 }
 
+/// <param name="FileName">The file as it is now; for a grouped row, the volume file that replaced it.</param>
 /// <param name="TrashAvailable">The replaced copy is still on disk, so the upgrade can be reverted.</param>
+/// <param name="GroupId">Shared by the rows of one torrent replacement, which revert together.</param>
+/// <param name="GroupSize">Rows in that group; 1 for an ungrouped row.</param>
 public record UpgradeHistoryRowDto(
     int Id,
     int SeriesId,
@@ -162,7 +191,9 @@ public record UpgradeHistoryRowDto(
     long TrashBytes,
     bool TrashAvailable,
     DateTime CreatedAt,
-    DateTime? RevertedAt);
+    DateTime? RevertedAt,
+    string? GroupId = null,
+    int GroupSize = 1);
 
 public record UpgradeHistoryPageDto(IReadOnlyList<UpgradeHistoryRowDto> Rows, int Total, int Page, int PageSize);
 
@@ -186,6 +217,36 @@ public record UpgradeScanResultDto(
 /// <param name="SeriesId">Scan one series. Leave both ids out to scan the library.</param>
 /// <param name="ChapterId">Scan one chapter and report every candidate.</param>
 public record UpgradeScanRequest(int? SeriesId, int? ChapterId = null);
+
+public record NumberRangeDto(decimal Start, decimal End);
+
+/// <param name="WholeSeries">A digital pack naming no volumes or chapters, taken to cover the whole series.</param>
+public record ReleaseSpanDto(decimal? VolumeStart, decimal? VolumeEnd, IReadOnlyList<NumberRangeDto> Chapters, bool WholeSeries)
+{
+    public static ReleaseSpanDto From(ReleaseSpan span, bool wholeSeries = false) => new(
+        span.Volumes?.Start, span.Volumes?.End,
+        [.. span.ChapterSegments.Select(s => new NumberRangeDto(s.Start, s.End))], wholeSeries);
+}
+
+/// <param name="Tier">Lowercase <see cref="QualityTier"/> name.</param>
+/// <param name="Status">pending, accepted, dismissed or expired.</param>
+public record TorrentProposalDto(
+    int Id, int SeriesId, string SeriesTitle, string Title, string Indexer, long SizeBytes, ReleaseSpanDto Span,
+    IReadOnlyList<string> Reasons, int UpgradeCount, int AlreadyMetCount, int SkippedCount, int MissingCount,
+    int UnknownCount, int Score, string Tier, string Status, DateTime CreatedAtUtc, DateTime? ResolvedAtUtc,
+    int? QueueItemId);
+
+/// <param name="Verdict">ignore, proposal or autoGrab.</param>
+/// <param name="Tier">Lowercase <see cref="QualityTier"/> name.</param>
+public record ReleaseParsedDto(
+    ReleaseSpanDto Span, string Tier, int Score, string Verdict, IReadOnlyList<string> Reasons, int UpgradeCount,
+    int AlreadyMetCount, int MissingCount, bool TitleMatched);
+
+/// <param name="Reason">A <c>not_eligible_*</c> code, <c>search_failed</c> or <c>grab_failed</c>; null when it searched.</param>
+public record SeriesVolumeSearchResultDto(bool Searched, int ResultCount, int? Grabbed, int? ProposalId, string? Reason);
+
+/// <param name="SeriesId">Search one series now. Leave it out to run the volume search job.</param>
+public record VolumeSearchRequest(int? SeriesId);
 
 public record SetTrustedRequest(bool Trusted);
 

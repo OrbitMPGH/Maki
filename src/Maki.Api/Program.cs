@@ -794,6 +794,7 @@ try
     builder.Services.AddScoped<UpgradeScanService>();
     builder.Services.AddScoped<UpgradeRevertService>();
     builder.Services.AddScoped<UpgradeTrashService>();
+    builder.Services.AddScoped<TorrentUpgradeService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
@@ -1144,6 +1145,16 @@ try
             .WithIdentity("upgrade-scan-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(15).RepeatForever()));
+
+        // Torrent volume search, same marker shape as the upgrade scan, an hour after it.
+        q.AddJob<Maki.Api.Jobs.UpgradeVolumeSearchJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.UpgradeVolumeSearchJob.Key)
+            .StoreDurably());
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.UpgradeVolumeSearchJob.Key)
+            .WithIdentity("upgrade-volume-search-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(40))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(30).RepeatForever()));
 
         // GitHub releases poll, daily. Stable key so settings can trigger a check on demand.
         q.AddJob<Maki.Api.Jobs.CheckForUpdatesJob>(j => j

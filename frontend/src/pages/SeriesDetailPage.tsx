@@ -105,11 +105,15 @@ import { altTitleLabel, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import {
   isUpgradeScanStarted,
+  isVolumeSearchStarted,
   upgradeScanResultText,
+  volumeSearchResultText,
   useRunUpgradeScan,
   useSetFileTrusted,
+  useTorrentProposals,
   useUpgradeChapterNow,
   useUpgradeProfiles,
+  useVolumeSearch,
 } from '../api/upgrades'
 import type { UpgradeScanResultDto } from '../api/upgrades'
 import { ApiError } from '../api/client'
@@ -125,6 +129,7 @@ import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { TagBuckets } from '../components/TagBuckets'
 import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
 import { ReleaseSearchModal } from '../components/ReleaseSearchModal'
+import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
@@ -416,6 +421,7 @@ export default function SeriesDetailPage() {
   const setFileTrusted = useSetFileTrusted()
   const upgradeChapterNow = useUpgradeChapterNow()
   const runUpgradeScan = useRunUpgradeScan()
+  const runVolumeSearch = useVolumeSearch()
   const [upgradeNowResult, setUpgradeNowResult] = useState<UpgradeScanResultDto | null>(null)
   const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
   const setIncognito = useSetIncognito()
@@ -461,6 +467,9 @@ export default function SeriesDetailPage() {
   const { can } = useAuth()
   const canDownload = can('DownloadChapters')
   const canLinkFiles = can('EditMetadata')
+  const pendingProposalId = series?.pendingProposalId ?? null
+  const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
+  const pendingProposal = seriesProposals?.find((p) => p.id === pendingProposalId) ?? null
   const createRequest = useCreateSeriesRequest()
   // Already in cache: the sources section below this page fetches the same query. Two enabled
   // mappings is the floor for "find better copy" having anything to show.
@@ -1217,6 +1226,19 @@ export default function SeriesDetailPage() {
         )
       },
     })
+  const searchSeriesVolumes = () =>
+    runVolumeSearch.mutate(seriesId, {
+      onSuccess: (result) => {
+        notify.ok(isVolumeSearchStarted(result) ? staticT`Volume search started` : volumeSearchResultText(renderLabel, result))
+      },
+      onError: (error) => {
+        notify.err(
+            error instanceof ApiError && error.status === 409
+                ? staticT`A scan is already running`
+                : staticT`Couldn't start the volume search`,
+        )
+      },
+    })
   const wantedFilterCount = chapters?.filter(chapterFilters.wanted).length ?? 0
   const missingFilterCount = chapters?.filter(chapterFilters.missing).length ?? 0
   const downloadedFilterCount = chapters?.filter(chapterFilters.downloaded).length ?? 0
@@ -1553,6 +1575,8 @@ export default function SeriesDetailPage() {
                         )
                     }
                     onScanUpgrades={scanSeriesForUpgrades}
+                    searchingVolumes={runVolumeSearch.isPending}
+                    onSearchVolumes={searchSeriesVolumes}
                     canRemove={can('DeleteSeries')}
                     onRemove={() => setDeleteSeriesModalOpen(true)}
                 />
@@ -2027,6 +2051,10 @@ export default function SeriesDetailPage() {
                     </Group>
                   </Group>
                 </Paper>
+            )}
+
+            {!selectMode && canDownload && pendingProposal && (
+                <TorrentProposalCard proposal={pendingProposal} banner />
             )}
 
             {selectMode && (

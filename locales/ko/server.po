@@ -1523,6 +1523,29 @@ msgstr ""
 msgid "error.upgrades.chapterHasNoFile"
 msgstr ""
 
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: That volume release proposal does not exist
+msgid "error.upgrades.proposalNotFound"
+msgstr ""
+
+#. {detail} is the torrent client's or Prowlarr's own error text, shown as it is.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: Could not grab the release: {detail}
+msgid "error.upgrades.grabFailed"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: That volume release proposal was already grabbed, dismissed or expired
+msgid "error.upgrades.proposalResolved"
+msgstr ""
+
+#. A torrent volume that would replace library files was measured after it downloaded and held
+#. back for review. {file} is the file name, shown as it is. {reason} is a code, never shown.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: {file} was held back for review: {reason, select, fewer_pages {it has fewer pages than the files it would replace} other {its pages could not be measured}}
+msgid "error.upgrades.volumeGuard"
+msgstr ""
+
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: You cannot delete your own account
 #, fuzzy
@@ -1629,6 +1652,26 @@ msgstr ""
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Trash retention must be between {min} and {max} days
 msgid "error.settings.upgradesTrashRetentionDaysRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: The automatic grab size limit cannot be negative
+msgid "error.settings.upgradesTorrentAutoGrabMaxBytesRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Missing chapters per volume must be between {min} and {max}
+msgid "error.settings.upgradesVolumeMissingToleranceRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Volume searches per run must be between {min} and {max}
+msgid "error.settings.upgradesVolumeSearchesPerRunRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Proposal expiry must be between {min} and {max} days
+msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -2204,6 +2247,40 @@ msgstr ""
 #: src/Maki.Api/Services/DownloadBatchNotifier.cs
 #. English: {series}: {count, plural, one {# chapter replaced with a better copy} other {# chapters replaced with a better copy}}
 msgid "inbox.upgrade.batch.body"
+msgstr ""
+
+#: src/Maki.Api/Services/TorrentUpgradeService.cs
+#. English: Volume release available
+msgid "inbox.upgrade.torrentProposal.title"
+msgstr ""
+
+#. {size} is an already worded file size, such as "480 MB".
+#: src/Maki.Api/Services/TorrentUpgradeService.cs
+#. English: Volume release available for {series}: replaces {replaced, plural, one {# file} other {# files}}, adds {missing, plural, one {# chapter} other {# chapters}}, {size}
+msgid "inbox.upgrade.torrentProposal.body"
+msgstr ""
+
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: Volume upgraded
+msgid "inbox.upgrade.volume.title"
+msgstr ""
+
+#. {fileName} is the imported volume file's name, shown as it is.
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: {fileName} replaced {replaced, plural, one {# file} other {# files}} in {series}
+msgid "inbox.upgrade.volume.body"
+msgstr ""
+
+#. {value} is a number already formatted for the reader, in megabytes.
+#: src/Maki.Api/Localization/InboxRenderer.cs
+#. English: {value} MB
+msgid "inbox.size.megabytes"
+msgstr ""
+
+#. {value} is a number already formatted for the reader, in gigabytes.
+#: src/Maki.Api/Localization/InboxRenderer.cs
+#. English: {value} GB
+msgid "inbox.size.gigabytes"
 msgstr ""
 
 #: src/Maki.Api/Services/DownloadBatchNotifier.cs

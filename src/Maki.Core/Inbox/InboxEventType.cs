@@ -36,6 +36,8 @@ public enum InboxEventType
     ImportListFinished = 16,
     ChapterUpgraded = 17,
     UpgradeRestoreFailed = 18,
+    TorrentProposalPending = 19,
+    VolumeUpgraded = 20,
 }
 
 /// <summary>

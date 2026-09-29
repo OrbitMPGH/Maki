@@ -2,6 +2,7 @@ import { msg } from '@lingui/core/macro'
 import { t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { QueueItemDto, QueueOrigin } from './types'
+import { upgradeReasonLabel } from './upgrades'
 
 const QUEUE_ORIGINS: QueueOrigin[] = [
   'unknown',
@@ -61,6 +62,7 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.torrentMissing': msg`The torrent never appeared in qBittorrent`,
   'error.download.upgradeTargetGone': msg`The file this upgrade was meant to replace is gone`,
   'error.download.upgradeMoveFailed': msg`The old file could not be moved aside for the upgrade`,
+  'error.upgrades.volumeGuard': msg`Held back for review, {file}: {reason}`,
 }
 
 /**
@@ -95,5 +97,10 @@ export function queueErrorMessage(
   // A key this build has no case for: newer server, older page. Its own English is on the row only
   // when it was never keyed, so there is nothing better to show than nothing.
   if (!label) return item.errorMessage
-  return render(item.errorParams ? { ...label, values: item.errorParams } : label)
+  if (!item.errorParams) return render(label)
+  const values =
+    item.errorKey === 'error.upgrades.volumeGuard'
+      ? { ...item.errorParams, reason: upgradeReasonLabel(render, String(item.errorParams.reason ?? '')) }
+      : item.errorParams
+  return render({ ...label, values })
 }

@@ -217,7 +217,16 @@ public class CompletedDownloadJob(
             return;
         }
 
-        if (plan.HasConflicts)
+        var decision = await importer.DecideUnattendedAsync(item, series, contentPath!, plan, ct);
+        if (decision.Guard is { } failure)
+        {
+            logger.LogInformation("Upgrade torrent '{Title}' held back for review: {File} is {Reason}",
+                item.Title, failure.File, failure.Reason);
+            return;
+        }
+
+        var skipFiles = decision.SkipFiles;
+        if (decision.Park)
         {
             item.Status = QueueStatus.AwaitingImport;
             item.ClearError();
@@ -234,7 +243,7 @@ public class CompletedDownloadJob(
         // names out of every volume archive in the download, and the answer cannot have changed
         // between the conflict check above and this line.
         var outcome = await importer.ImportAsync(
-            item, series, contentPath, TorrentImportMode.Replace, ct, plan);
+            item, series, contentPath, TorrentImportMode.Replace, ct, plan, skipFiles);
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;

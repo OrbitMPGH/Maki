@@ -133,6 +133,8 @@ export interface SeriesDto {
   upgradeProfileId: number | null
   /** Null when this series has never been scanned for upgrades, by any of the three entry points. */
   lastUpgradeScan: { at: string; probed: number; queued: number } | null
+  /** Id of the series' pending torrent volume proposal, if any. */
+  pendingProposalId: number | null
 }
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
@@ -385,6 +387,9 @@ export interface ImportPlanFileDto {
   chapters: string[]
   newChapters: string[]
   replaces: ImportPlanExistingDto[]
+  /** Only meaningful when the plan `isUpgrade`. */
+  upgradeCount: number
+  alreadyMetCount: number
 }
 
 export interface TorrentImportPlanDto {
@@ -397,6 +402,10 @@ export interface TorrentImportPlanDto {
   hasConflicts: boolean
   newChapterCount: number
   replacedFileCount: number
+  /** True when the download came from the upgrader or a proposal; drives the skip checkboxes. */
+  isUpgrade: boolean
+  /** File names whose chapters are all at cutoff already; pre-ticked as Skip when `isUpgrade`. */
+  suggestedSkips: string[]
 }
 
 /** Matches the server's `ImportDecision`; sent verbatim. */

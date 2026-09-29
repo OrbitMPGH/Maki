@@ -66,6 +66,9 @@ public class Series
     public int? LastUpgradeScanProbed { get; set; }
     public int? LastUpgradeScanQueued { get; set; }
 
+    /// <summary>When the torrent volume search last queried Prowlarr for this series.</summary>
+    public DateTime? LastVolumeSearchUtc { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;

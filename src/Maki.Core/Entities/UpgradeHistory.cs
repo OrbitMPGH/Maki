@@ -25,6 +25,17 @@ public class UpgradeHistory
     public string? TrashPath { get; set; }
 
     public long TrashBytes { get; set; }
+
+    /// <summary>Shared by every file one torrent import superseded, so they revert together.</summary>
+    public Guid? GroupId { get; set; }
+
+    /// <summary>
+    /// For a grouped row, serialised <c>VolumeReplacementDetail</c>: the superseded file's path, the
+    /// chapters it backed and the file that took them. Its <c>ChapterFile</c> row is gone, so a revert
+    /// has nothing else to rebuild it from.
+    /// </summary>
+    public string? DetailJson { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? RevertedAtUtc { get; set; }
 }

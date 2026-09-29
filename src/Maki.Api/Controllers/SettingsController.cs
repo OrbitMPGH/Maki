@@ -138,7 +138,12 @@ public class SettingsController(
         int MaxProbesPerRun = 50,
         int QuietPeriodDays = 7,
         int TrashRetentionDays = 14,
-        bool ScanIncognito = true);
+        bool ScanIncognito = true,
+        bool VolumeSearch = true,
+        long TorrentAutoGrabMaxBytes = UpgradeOptions.DefaultAutoGrabMaxBytes,
+        int VolumeMissingTolerance = 3,
+        int VolumeSearchesPerRun = 10,
+        int ProposalExpiryDays = 30);
     public record BackupSettings(int Retention);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -843,7 +848,9 @@ public class SettingsController(
         }
 
         return Ok(new UpgradeSettings(options.Enabled, defaultId, options.ScanHour, options.MaxPerDay,
-            options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito));
+            options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito,
+            options.VolumeSearch, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance,
+            options.VolumeSearchesPerRun, options.ProposalExpiryDays));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -880,6 +887,26 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.upgradesTrashRetentionDaysRange", new { min = 0, max = 365 });
         }
 
+        if (request.TorrentAutoGrabMaxBytes < 0)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTorrentAutoGrabMaxBytesRange");
+        }
+
+        if (request.VolumeMissingTolerance is < 0 or > 50)
+        {
+            return this.Fail(localizer, "error.settings.upgradesVolumeMissingToleranceRange", new { min = 0, max = 50 });
+        }
+
+        if (request.VolumeSearchesPerRun is < 1 or > 200)
+        {
+            return this.Fail(localizer, "error.settings.upgradesVolumeSearchesPerRunRange", new { min = 1, max = 200 });
+        }
+
+        if (request.ProposalExpiryDays is < 1 or > 365)
+        {
+            return this.Fail(localizer, "error.settings.upgradesProposalExpiryDaysRange", new { min = 1, max = 365 });
+        }
+
         await settings.SetAsync(SettingKeys.UpgradesEnabled, request.Enabled ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.UpgradesDefaultProfileId,
             request.DefaultProfileId?.ToString(CultureInfo.InvariantCulture), ct);
@@ -892,6 +919,15 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.UpgradesTrashRetentionDays,
             request.TrashRetentionDays.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.UpgradesScanIncognito, request.ScanIncognito ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeSearch, request.VolumeSearch ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesTorrentAutoGrabMaxBytes,
+            request.TorrentAutoGrabMaxBytes.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeMissingTolerance,
+            request.VolumeMissingTolerance.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesVolumeSearchesPerRun,
+            request.VolumeSearchesPerRun.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesProposalExpiryDays,
+            request.ProposalExpiryDays.ToString(CultureInfo.InvariantCulture), ct);
         return Ok(request);
     }
 

@@ -14,6 +14,7 @@ import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
+import type { ReleaseParsedDto } from './upgrades'
 import type {
   AddSeriesRequest,
   ChapterDto,
@@ -1936,10 +1937,10 @@ export function useImportPlan(id: number | null) {
 export function useSettleImport() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, mode }: { id: number; mode: ImportDecision }) =>
+    mutationFn: ({ id, mode, skipFiles }: { id: number; mode: ImportDecision; skipFiles?: string[] }) =>
       api<ImportDecisionResultDto | void>(`/queue/${id}/import`, {
         method: 'POST',
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, skipFiles }),
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
@@ -2719,9 +2720,14 @@ export interface ReleaseDto {
   infoUrl: string | null
 }
 
+export interface ReleaseRowDto extends ReleaseDto {
+  /** Null when the series has no upgrade profile. */
+  parsed: ReleaseParsedDto | null
+}
+
 export interface ReleaseSearchResult {
   query: string
-  releases: ReleaseDto[]
+  releases: ReleaseRowDto[]
 }
 
 export function useReleaseSearch(seriesId: number, enabled: boolean, query?: string) {

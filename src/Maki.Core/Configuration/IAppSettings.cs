@@ -347,6 +347,24 @@ public static class SettingKeys
     /// <summary>Local date (yyyy-MM-dd) the daily upgrade scan last ran, written by <c>UpgradeScanJob</c>.</summary>
     public const string UpgradesLastScanDate = "upgrades.lastScanDate";
 
+    /// <summary>"false" turns off the weekly torrent search for volume releases. Default on.</summary>
+    public const string UpgradesVolumeSearch = "upgrades.volumeSearch";
+
+    /// <summary>Largest torrent (bytes) the volume search grabs without asking. Default 500 MiB.</summary>
+    public const string UpgradesTorrentAutoGrabMaxBytes = "upgrades.torrentAutoGrabMaxBytes";
+
+    /// <summary>Chapters a volume may add that the library lacks and still be grabbed without asking (0..50, default 3).</summary>
+    public const string UpgradesVolumeMissingTolerance = "upgrades.volumeMissingTolerance";
+
+    /// <summary>Series one volume search run queries (1..200, default 10).</summary>
+    public const string UpgradesVolumeSearchesPerRun = "upgrades.volumeSearchesPerRun";
+
+    /// <summary>Days a pending torrent proposal waits before it expires (1..365, default 30).</summary>
+    public const string UpgradesProposalExpiryDays = "upgrades.proposalExpiryDays";
+
+    /// <summary>Local date (yyyy-MM-dd) the volume search last ran, written by <c>UpgradeVolumeSearchJob</c>.</summary>
+    public const string UpgradesLastVolumeSearchDate = "upgrades.lastVolumeSearchDate";
+
     /// <summary>
     /// Id of the <see cref="Entities.UpgradeProfile"/> a series without its own pin resolves to.
     /// Absent means no default, and such a series has no profile at all.

@@ -1261,6 +1261,8 @@ function DownloadSection() {
   )
 }
 
+const BYTES_PER_MB = 1024 * 1024
+
 function UpgradesSettingsSection() {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -1276,6 +1278,11 @@ function UpgradesSettingsSection() {
   const [quietPeriodDays, setQuietPeriodDays] = useState<number | string>(7)
   const [trashRetentionDays, setTrashRetentionDays] = useState<number | string>(14)
   const [scanIncognito, setScanIncognito] = useState(true)
+  const [volumeSearch, setVolumeSearch] = useState(true)
+  const [autoGrabMb, setAutoGrabMb] = useState<number | string>(500)
+  const [volumeMissingTolerance, setVolumeMissingTolerance] = useState<number | string>(3)
+  const [volumeSearchesPerRun, setVolumeSearchesPerRun] = useState<number | string>(10)
+  const [proposalExpiryDays, setProposalExpiryDays] = useState<number | string>(30)
 
   useEffect(() => {
     if (settings) {
@@ -1287,8 +1294,15 @@ function UpgradesSettingsSection() {
       setQuietPeriodDays(settings.quietPeriodDays)
       setTrashRetentionDays(settings.trashRetentionDays)
       setScanIncognito(settings.scanIncognito)
+      setVolumeSearch(settings.volumeSearch)
+      setAutoGrabMb(settings.torrentAutoGrabMaxBytes / BYTES_PER_MB)
+      setVolumeMissingTolerance(settings.volumeMissingTolerance)
+      setVolumeSearchesPerRun(settings.volumeSearchesPerRun)
+      setProposalExpiryDays(settings.proposalExpiryDays)
     }
   }, [settings])
+
+  const autoGrabBytes = Math.round(Number(autoGrabMb) * BYTES_PER_MB)
 
   const dirty =
     settings !== undefined &&
@@ -1299,7 +1313,12 @@ function UpgradesSettingsSection() {
       Number(maxProbesPerRun) !== settings.maxProbesPerRun ||
       Number(quietPeriodDays) !== settings.quietPeriodDays ||
       Number(trashRetentionDays) !== settings.trashRetentionDays ||
-      scanIncognito !== settings.scanIncognito)
+      scanIncognito !== settings.scanIncognito ||
+      volumeSearch !== settings.volumeSearch ||
+      autoGrabBytes !== settings.torrentAutoGrabMaxBytes ||
+      Number(volumeMissingTolerance) !== settings.volumeMissingTolerance ||
+      Number(volumeSearchesPerRun) !== settings.volumeSearchesPerRun ||
+      Number(proposalExpiryDays) !== settings.proposalExpiryDays)
 
   return (
     <Panel>
@@ -1389,6 +1408,57 @@ function UpgradesSettingsSection() {
         onChange={(e) => setScanIncognito(e.currentTarget.checked)}
         mb="md"
       />
+      <Switch
+        label={t`Search torrents for volume releases`}
+        description={t`Looks for volume packs that could replace single-chapter files when a series' profile aims for volumes. Needs Prowlarr.`}
+        checked={volumeSearch}
+        onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Group grow mb="md" align="flex-start">
+        <NumberInput
+          label={t`Auto-grab size limit (MB)`}
+          description={t`Larger releases become proposals you approve by hand.`}
+          min={0}
+          max={102400}
+          decimalScale={0}
+          clampBehavior="strict"
+          value={autoGrabMb}
+          onChange={setAutoGrabMb}
+          disabled={!volumeSearch}
+        />
+        <NumberInput
+          label={t`Missing chapters allowed per volume`}
+          description={t`Auto-grab only when a volume adds this many chapters or fewer that you don't have.`}
+          min={0}
+          max={50}
+          clampBehavior="strict"
+          value={volumeMissingTolerance}
+          onChange={setVolumeMissingTolerance}
+          disabled={!volumeSearch}
+        />
+      </Group>
+      <Group grow mb="md" align="flex-start">
+        <NumberInput
+          label={t`Volume searches per run`}
+          min={1}
+          max={200}
+          clampBehavior="strict"
+          value={volumeSearchesPerRun}
+          onChange={setVolumeSearchesPerRun}
+          disabled={!volumeSearch}
+        />
+        <NumberInput
+          label={t`Proposal expiry (days)`}
+          description={t`A proposal nobody answers is dropped after this long.`}
+          min={1}
+          max={365}
+          clampBehavior="strict"
+          value={proposalExpiryDays}
+          onChange={setProposalExpiryDays}
+          disabled={!volumeSearch}
+        />
+      </Group>
       <Group justify="space-between" mt="md">
         <Button
           variant="default"
@@ -1431,6 +1501,11 @@ function UpgradesSettingsSection() {
                 quietPeriodDays: Number(quietPeriodDays),
                 trashRetentionDays: Number(trashRetentionDays),
                 scanIncognito,
+                volumeSearch,
+                torrentAutoGrabMaxBytes: autoGrabBytes,
+                volumeMissingTolerance: Number(volumeMissingTolerance),
+                volumeSearchesPerRun: Number(volumeSearchesPerRun),
+                proposalExpiryDays: Number(proposalExpiryDays),
               },
               { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
             )

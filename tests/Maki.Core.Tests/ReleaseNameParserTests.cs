@@ -182,6 +182,32 @@ public class ReleaseNameParserTests
         Assert.False(parsed.IsRecognized);
     }
 
+    [Theory]
+    [InlineData("My Series c049.1-057 (Digital) (1r0n).cbz", 49.1, 57)]
+    [InlineData("My Series ch 1-100.cbz", 1, 100)]
+    [InlineData("My Series Ch. 001-010.cbz", 1, 10)]
+    [InlineData("My Series c001-c010.cbz", 1, 10)]
+    public void A_chapter_range_fills_number_end(string file, double number, double numberEnd)
+    {
+        var parsed = ReleaseNameParser.ParseFileName(file);
+        Assert.True(parsed.IsChapter);
+        Assert.Equal((decimal)number, parsed.Number);
+        Assert.Equal((decimal)numberEnd, parsed.NumberEnd);
+    }
+
+    // Maki's own names put " - " before the chapter title, and a title can start with a number.
+    [Theory]
+    [InlineData("Berserk Vol.3 Ch.24.cbz", 24)]
+    [InlineData("My Series Ch.10 - 15 Years Later.cbz", 10)]
+    [InlineData("My Series c010-005.cbz", 10)]
+    [InlineData("Dandadan 148 (2024) (Digital) (1r0n).cbz", 148)]
+    public void A_single_chapter_has_no_number_end(string file, double number)
+    {
+        var parsed = ReleaseNameParser.ParseFileName(file);
+        Assert.Equal((decimal)number, parsed.Number);
+        Assert.Null(parsed.NumberEnd);
+    }
+
     [Fact]
     public void A_name_with_no_brackets_has_no_tags()
     {

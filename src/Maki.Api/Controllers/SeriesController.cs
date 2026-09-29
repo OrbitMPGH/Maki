@@ -878,12 +878,18 @@ public class SeriesController(
             id, estimateTotal, readRows, estimateMode, ct);
 
         var userState = await UserStateForAsync(id, ct);
+        var pendingProposalId = await db.TorrentProposals
+            .Where(p => p.SeriesId == id && p.Status == TorrentProposalStatus.Pending)
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .Select(p => (int?)p.Id)
+            .FirstOrDefaultAsync(ct);
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
             rating: userState.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
             notificationMode: userState.NotificationMode,
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
+            PendingProposalId = pendingProposalId,
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(

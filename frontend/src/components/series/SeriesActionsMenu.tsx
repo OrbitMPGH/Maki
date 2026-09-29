@@ -10,6 +10,7 @@ import {
     IconPhoto,
     IconRefresh,
     IconScan,
+    IconSearch,
     IconSparkles,
     IconTrash,
 } from '@tabler/icons-react'
@@ -49,6 +50,7 @@ export function SeriesActionsMenu({
                                       upgradeProfiles,
                                       canScanUpgrades,
                                       scanningUpgrades,
+                                      searchingVolumes,
                                       busy,
                                       onRefreshChapters,
                                       onRefreshMetadata,
@@ -60,6 +62,7 @@ export function SeriesActionsMenu({
                                       onSetNotify,
                                       onSetUpgradeProfile,
                                       onScanUpgrades,
+                                      onSearchVolumes,
                                       canRemove,
                                       onRemove,
                                   }: {
@@ -72,6 +75,7 @@ export function SeriesActionsMenu({
     /** DownloadChapters: gates the "Scan for upgrades" item, same permission as "Upgrade now". */
     canScanUpgrades: boolean
     scanningUpgrades: boolean
+    searchingVolumes: boolean
     busy: boolean
     onRefreshChapters: () => void
     onRefreshMetadata: () => void
@@ -83,6 +87,7 @@ export function SeriesActionsMenu({
     onSetNotify: (mode: string) => void
     onSetUpgradeProfile: (upgradeProfileId: number | null) => void
     onScanUpgrades: () => void
+    onSearchVolumes: () => void
     canRemove: boolean
     onRemove: () => void
 }) {
@@ -269,6 +274,16 @@ export function SeriesActionsMenu({
                         onClick={onScanUpgrades}
                     >
                         <Trans>Scan for upgrades</Trans>
+                    </Menu.Item>
+                )}
+
+                {canScanUpgrades && (
+                    <Menu.Item
+                        leftSection={searchingVolumes ? <Loader size={14} /> : <IconSearch size={16} />}
+                        disabled={searchingVolumes}
+                        onClick={onSearchVolumes}
+                    >
+                        <Trans>Search volume releases</Trans>
                     </Menu.Item>
                 )}
 

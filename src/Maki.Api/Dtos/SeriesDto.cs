@@ -184,6 +184,9 @@ public record SeriesDto(
     /// <summary>The last upgrade scan pass over this series, or null when it has never been scanned.</summary>
     public LastUpgradeScanDto? LastUpgradeScan { get; init; }
 
+    /// <summary>The series' pending torrent volume proposal, filled only by the detail endpoint.</summary>
+    public int? PendingProposalId { get; init; }
+
     /// <summary>
     /// Where the UI fetches a series' poster. That route is one of the two API-key middleware
     /// carve-outs, so a plain <c>&lt;img src&gt;</c> loads it without a header.

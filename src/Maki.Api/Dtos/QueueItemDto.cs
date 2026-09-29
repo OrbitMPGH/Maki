@@ -124,7 +124,8 @@ public enum ImportDecision
     Reject
 }
 
-public record ImportDecisionDto(ImportDecision Mode);
+/// <param name="SkipFiles">Downloaded file names to leave out, for Replace and SkipExisting.</param>
+public record ImportDecisionDto(ImportDecision Mode, IReadOnlyList<string>? SkipFiles = null);
 
 public record ImportDecisionResultDto(int Imported, int Linked, int Skipped, int Deleted);
 

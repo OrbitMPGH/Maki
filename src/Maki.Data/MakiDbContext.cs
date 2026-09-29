@@ -89,6 +89,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<QualityFormat> QualityFormats => Set<QualityFormat>();
     public DbSet<UpgradeAttempt> UpgradeAttempts => Set<UpgradeAttempt>();
     public DbSet<UpgradeHistory> UpgradeHistory => Set<UpgradeHistory>();
+    public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
 
     public override int SaveChanges()
     {
@@ -493,9 +494,19 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(h => _scope.Unrestricted || Series.Any(s => s.Id == h.SeriesId));
             e.HasIndex(h => new { h.SeriesId, h.CreatedAtUtc });
             e.HasIndex(h => h.ChapterFileId);
+            e.HasIndex(h => h.GroupId);
             e.HasOne<Series>().WithMany().HasForeignKey(h => h.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Chapter>().WithMany().HasForeignKey(h => h.ChapterId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne<ChapterFile>().WithMany().HasForeignKey(h => h.ChapterFileId).OnDelete(DeleteBehavior.Cascade);
+            // No FK to ChapterFile: a torrent replacement removes the superseded file's row and its
+            // history has to outlive it so the group can be reverted.
+        });
+
+        modelBuilder.Entity<TorrentProposal>(e =>
+        {
+            e.HasQueryFilter(p => _scope.Unrestricted || Series.Any(s => s.Id == p.SeriesId));
+            e.HasIndex(p => new { p.SeriesId, p.Status });
+            e.HasIndex(p => new { p.SeriesId, p.ReleaseGuid }).IsUnique();
+            e.HasOne<Series>().WithMany().HasForeignKey(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AppConfigEntry>(e =>

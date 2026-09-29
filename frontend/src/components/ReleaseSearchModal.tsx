@@ -1,9 +1,20 @@
-import { Alert, Badge, Button, Center, Group, Loader, Modal, Table, Text, TextInput } from '@mantine/core'
+import { Alert, Badge, Button, Center, Group, Loader, Modal, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useGrabRelease, useReleaseSearch } from '../api/hooks'
+import {
+  QUALITY_TIER_COLOR,
+  QUALITY_TIER_LABELS,
+  SPAN_VERDICT_COLOR,
+  SPAN_VERDICT_LABELS,
+  proposalCountsText,
+  proposalReasonLabel,
+  releaseSpanText,
+  spanVerdictKey,
+} from '../api/upgrades'
+import { useLabel } from '../i18n-context'
 
 function formatSize(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB']
@@ -26,6 +37,7 @@ export function ReleaseSearchModal({
   onClose: () => void
 }) {
   const { t } = useLingui()
+  const renderLabel = useLabel()
   const [input, setInput] = useState('')
   const [manualQuery, setManualQuery] = useState<string | undefined>(undefined)
   const { data, isFetching, error } = useReleaseSearch(seriesId, opened, manualQuery)
@@ -98,12 +110,16 @@ export function ReleaseSearchModal({
               <Table.Th><Trans>Indexer</Trans></Table.Th>
               <Table.Th><Trans>Size</Trans></Table.Th>
               <Table.Th><Trans>Seeds</Trans></Table.Th>
+              <Table.Th><Trans>Upgrade</Trans></Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {releases.map((r) => {
-              const { title, indexer, infoUrl, size, seeders } = r
+              const { parsed, ...release } = r
+              const { title, indexer, infoUrl, size, seeders } = release
+              const spanText = parsed ? releaseSpanText(parsed.span) : null
+              const verdictKey = parsed ? spanVerdictKey(parsed) : null
               return (
                 <Table.Tr key={r.guid}>
                   <Table.Td>
@@ -116,6 +132,11 @@ export function ReleaseSearchModal({
                         title
                       )}
                     </Text>
+                    {spanText && (
+                      <Text size="xs" c="var(--ink-3)">
+                        {spanText}
+                      </Text>
+                    )}
                   </Table.Td>
                   <Table.Td>
                     <Badge size="sm" variant="light">
@@ -131,13 +152,41 @@ export function ReleaseSearchModal({
                     </Text>
                   </Table.Td>
                   <Table.Td>
+                    {parsed && verdictKey && (
+                      <Tooltip
+                        withArrow
+                        multiline
+                        maw={320}
+                        label={
+                          <Stack gap={2}>
+                            <Text size="xs">{proposalCountsText(parsed)}</Text>
+                            {parsed.reasons.map((code) => (
+                              <Text key={code} size="xs">
+                                {proposalReasonLabel(renderLabel, code)}
+                              </Text>
+                            ))}
+                          </Stack>
+                        }
+                      >
+                        <Group gap={4} wrap="nowrap">
+                          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[parsed.tier]}>
+                            {renderLabel(QUALITY_TIER_LABELS[parsed.tier])}
+                          </Badge>
+                          <Badge size="sm" variant="light" color={SPAN_VERDICT_COLOR[verdictKey]}>
+                            {renderLabel(SPAN_VERDICT_LABELS[verdictKey])}
+                          </Badge>
+                        </Group>
+                      </Tooltip>
+                    )}
+                  </Table.Td>
+                  <Table.Td>
                     <Button
                       size="compact-xs"
                       variant="light"
                       loading={grab.isPending && grab.variables?.release.guid === r.guid}
                       onClick={() =>
                         grab.mutate(
-                          { seriesId, release: r },
+                          { seriesId, release },
                           {
                             onSuccess: () => {
                               notifications.show({

@@ -153,6 +153,10 @@ export interface UpgradesSummaryDto {
   /** yyyy-MM-dd local, or null if the scan has never run. */
   lastScanDate: string | null
   scanRunning: boolean
+  /** Pending torrent proposals the caller may see. */
+  pendingProposals: number
+  /** yyyy-MM-dd local, or null if the volume search job has never run. */
+  lastVolumeSearchDate: string | null
 }
 
 export interface UpgradeSettings {
@@ -168,6 +172,12 @@ export interface UpgradeSettings {
   trashRetentionDays: number
   /** Whether a series with any incognito mode other than Off (`ScrobbleOnly` or `Full`) is scanned at all. */
   scanIncognito: boolean
+  volumeSearch: boolean
+  /** Bytes on the wire; the settings page shows MB. */
+  torrentAutoGrabMaxBytes: number
+  volumeMissingTolerance: number
+  volumeSearchesPerRun: number
+  proposalExpiryDays: number
 }
 
 /** A file's release tier and archive stats at one point in time, as carried on a queue/history row. */
@@ -183,20 +193,25 @@ export interface QualitySnapshotDto {
   score: number
 }
 
-export type UpgradeOutcome = 'pending' | 'applied' | 'rejected'
+export type UpgradeOutcome = 'pending' | 'applied' | 'parked' | 'rejected'
 
 /** `QueueItemDto.upgrade`: only set for a row whose `origin` is 'upgrade'. */
 export interface UpgradeQueueInfoDto {
   outcome: UpgradeOutcome
   /** A reason code from `UPGRADE_REASON_LABELS`, set once the outcome is 'rejected'. */
   reason: string | null
-  before: QualitySnapshotDto
+  /** Null on a torrent volume upgrade, which has no single file to compare. */
+  before: QualitySnapshotDto | null
   /** What the probe expected before the full download measured it. */
-  predicted: QualitySnapshotDto
+  predicted: QualitySnapshotDto | null
   /** Filled once the full download has been measured. */
   after: QualitySnapshotDto | null
   /** Set once the outcome is 'applied'; drives the Revert action. */
   historyId: number | null
+  /** Set instead of `historyId` on an applied torrent volume replacement; reverts as one group. */
+  historyGroupId: string | null
+  /** Number of library files a torrent volume upgrade replaces; absent on a chapter upgrade. */
+  replacedFiles?: number
   /** Set once this upgrade has been reverted; the Revert action becomes "Reverted" instead. */
   reverted: boolean
   /** Whether the trashed original this row would restore is still on disk. */
@@ -227,6 +242,10 @@ export interface UpgradeHistoryRowDto {
   trashAvailable: boolean
   createdAt: string
   revertedAt: string | null
+  /** Shared by every row of one torrent volume replacement; null for a chapter upgrade. */
+  groupId: string | null
+  /** Rows in the whole group, which can exceed the rows on this page. */
+  groupSize: number
 }
 
 export interface UpgradeHistoryPageDto {
@@ -353,6 +372,179 @@ export function upgradeScanResultText(
       ? new Intl.ListFormat(i18n.locale || undefined).format(entryTexts)
       : entryTexts.join(', ')
   return now`${queuedText} - skipped ${skippedText}`
+}
+
+export interface NumberRangeDto {
+  start: number
+  end: number
+}
+
+export interface ReleaseSpanDto {
+  volumeStart: number | null
+  volumeEnd: number | null
+  chapters: NumberRangeDto[]
+  /** A pack that names no volumes or chapters and covers the whole series. */
+  wholeSeries: boolean
+}
+
+export interface TorrentProposalDto {
+  id: number
+  seriesId: number
+  seriesTitle: string
+  title: string
+  indexer: string
+  sizeBytes: number
+  span: ReleaseSpanDto
+  /** Codes from `PROPOSAL_REASON_LABELS`. */
+  reasons: string[]
+  upgradeCount: number
+  alreadyMetCount: number
+  skippedCount: number
+  missingCount: number
+  unknownCount: number
+  score: number
+  tier: QualityTierName
+  /** pending | accepted | dismissed | expired */
+  status: string
+  createdAtUtc: string
+  resolvedAtUtc: string | null
+  queueItemId: number | null
+}
+
+export type SpanVerdictName = 'ignore' | 'proposal' | 'autoGrab'
+
+/** `parsed` on a release search row, null when the series has no upgrade profile. */
+export interface ReleaseParsedDto {
+  span: ReleaseSpanDto
+  tier: QualityTierName
+  score: number
+  verdict: SpanVerdictName
+  reasons: string[]
+  upgradeCount: number
+  alreadyMetCount: number
+  missingCount: number
+  titleMatched: boolean
+}
+
+export interface SeriesVolumeSearchResultDto {
+  searched: boolean
+  resultCount: number
+  /** Queue item id of an auto-grabbed release. */
+  grabbed: number | null
+  proposalId: number | null
+  /** `not_eligible_<why>` when the series was not searched. */
+  reason: string | null
+}
+
+export const PROPOSAL_REASON_LABELS: Record<string, MessageDescriptor> = {
+  adds_missing_chapters: msg`Adds chapters you don't have yet`,
+  over_budget: msg`Larger than the auto-grab size limit`,
+  volume_span_unknown: msg`Its volumes aren't mapped to your chapters yet`,
+  unknown_chapters: msg`Covers chapters Maki doesn't know about`,
+  title_uncertain: msg`The title might be a different series`,
+  nothing_to_upgrade: msg`Nothing in it beats what you have`,
+  no_span: msg`No volume or chapter range in the title`,
+  no_profile: msg`No quality profile`,
+  whole_series_pack: msg`Whole-series pack, needs your call`,
+  trailing_number: msg`Release number may be a sequel, not a chapter`,
+  upgrades_disabled: msg`Automatic upgrades are off, needs your call`,
+}
+
+/** `LABELS[x] ?? x`, same as `upgradeReasonLabel`. */
+export function proposalReasonLabel(renderLabel: (m: MessageDescriptor) => string, code: string): string {
+  return renderLabel(PROPOSAL_REASON_LABELS[code] ?? code)
+}
+
+export type SpanVerdictKey = SpanVerdictName | 'titleUncertain'
+
+export const SPAN_VERDICT_LABELS: Record<SpanVerdictKey, MessageDescriptor> = {
+  autoGrab: msg`Auto-grab`,
+  proposal: msg`Proposal`,
+  ignore: msg`Not an upgrade`,
+  titleUncertain: msg`Title uncertain`,
+}
+
+export const SPAN_VERDICT_COLOR: Record<SpanVerdictKey, string> = {
+  autoGrab: 'var(--ok)',
+  proposal: 'var(--brand)',
+  ignore: 'var(--neutral)',
+  titleUncertain: 'var(--warn)',
+}
+
+export function spanVerdictKey(parsed: ReleaseParsedDto): SpanVerdictKey {
+  return parsed.verdict === 'ignore' && !parsed.titleMatched ? 'titleUncertain' : parsed.verdict
+}
+
+function numberRangeText(start: number, end: number): string {
+  return start === end ? String(start) : now`${start} to ${end}`
+}
+
+/** "Volumes 1 to 6 + chapters 49.1 to 57", or null for a title with no range in it. */
+export function releaseSpanText(span: ReleaseSpanDto): string | null {
+  const { volumeStart, volumeEnd } = span
+  const parts: string[] = []
+  if (volumeStart != null && volumeEnd != null) {
+    const range = numberRangeText(volumeStart, volumeEnd)
+    parts.push(volumeStart === volumeEnd ? now`Volume ${range}` : now`Volumes ${range}`)
+  }
+  if (span.chapters.length > 0) {
+    const ranges = span.chapters.map((c) => numberRangeText(c.start, c.end)).join(', ')
+    const single = span.chapters.length === 1 && span.chapters[0].start === span.chapters[0].end
+    parts.push(single ? now`chapter ${ranges}` : now`chapters ${ranges}`)
+  }
+  if (parts.length === 0) return span.wholeSeries ? now`Whole series` : null
+  if (parts.length === 1) return parts[0]
+  const [volumesText, chaptersText] = parts
+  return now`${volumesText} + ${chaptersText}`
+}
+
+/** "Replaces 10 files, adds 47 chapters you don't have and 3 already at cutoff". */
+export function proposalCountsText(counts: {
+  upgradeCount: number
+  alreadyMetCount: number
+  missingCount: number
+}): string {
+  const { upgradeCount, alreadyMetCount, missingCount } = counts
+  const parts = [plural(upgradeCount, { one: 'Replaces # file', other: 'Replaces # files' })]
+  if (missingCount > 0) {
+    parts.push(
+      plural(missingCount, { one: "adds # chapter you don't have", other: "adds # chapters you don't have" }),
+    )
+  }
+  if (alreadyMetCount > 0) parts.push(now`${alreadyMetCount} already at cutoff`)
+  return typeof Intl.ListFormat === 'function'
+    ? new Intl.ListFormat(i18n.locale || undefined).format(parts)
+    : parts.join(', ')
+}
+
+const NOT_ELIGIBLE_LABELS: Record<string, MessageDescriptor> = {
+  not_eligible_disabled: msg`Volume search is turned off`,
+  not_eligible_no_profile: msg`This series has no quality profile`,
+  not_eligible_cutoff: msg`This series' profile doesn't aim for volume releases`,
+  not_eligible_nothing_below_cutoff: msg`Every file already meets the cutoff`,
+  not_eligible_pending_proposal: msg`A proposal is already waiting for this series`,
+  not_eligible_incognito: msg`Incognito series are excluded`,
+  not_eligible_no_prowlarr: msg`Prowlarr isn't configured`,
+  not_eligible_not_found: msg`Series not found`,
+  not_eligible_recent: msg`This series was searched in the last week`,
+  not_eligible_profile_disabled: msg`Upgrades are turned off in this series' profile`,
+}
+
+/** One line for a finished manual volume search. */
+export function volumeSearchResultText(
+  renderLabel: (m: MessageDescriptor) => string,
+  result: SeriesVolumeSearchResultDto,
+): string {
+  if (result.grabbed != null) return now`Queued a volume release`
+  if (result.proposalId != null) return now`Proposal created`
+  if (result.reason === 'search_failed') return now`Prowlarr search failed`
+  if (result.reason === 'grab_failed') return now`Could not queue the release`
+  if (!result.searched) {
+    const label = result.reason ? NOT_ELIGIBLE_LABELS[result.reason] : undefined
+    return label ? renderLabel(label) : now`This series isn't eligible for a volume search`
+  }
+  if (result.resultCount === 0) return now`No releases found`
+  return now`Nothing worth grabbing in the results`
 }
 
 export function useUpgradeProfiles() {
@@ -521,6 +713,67 @@ export function useRevertUpgrade() {
   return useUpgradeMutation((historyId: number) =>
     api<UpgradeHistoryRowDto>(`/upgrades/history/${historyId}/revert`, { method: 'POST' }),
   )
+}
+
+export function useRevertUpgradeGroup() {
+  return useUpgradeMutation((groupId: string) =>
+    api<unknown>(`/upgrades/history/group/${groupId}/revert`, { method: 'POST' }),
+  )
+}
+
+export function useTorrentProposals(seriesId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['upgrades', 'proposals', seriesId],
+    queryFn: () =>
+      api<TorrentProposalDto[]>(
+        `/upgrades/proposals?status=pending${seriesId != null ? `&seriesId=${seriesId}` : ''}`,
+      ),
+    enabled,
+  })
+}
+
+function useProposalMutation(action: 'grab' | 'dismiss') {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id }: { id: number; seriesId: number }) =>
+      api<{ queueItemId: number } | void>(`/upgrades/proposals/${id}/${action}`, { method: 'POST' }),
+    onSuccess: (_result, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+    },
+  })
+}
+
+export function useGrabProposal() {
+  return useProposalMutation('grab')
+}
+
+export function useDismissProposal() {
+  return useProposalMutation('dismiss')
+}
+
+/** A series search runs synchronously and returns its result; the library-wide job answers `{ started: true }`. */
+export function useVolumeSearch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId?: number) =>
+      api<SeriesVolumeSearchResultDto | { started: true }>('/upgrades/volume-search', {
+        method: 'POST',
+        body: JSON.stringify({ seriesId: seriesId ?? null }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+export function isVolumeSearchStarted(
+  result: SeriesVolumeSearchResultDto | { started: true },
+): result is { started: true } {
+  return 'started' in result
 }
 
 export function useSetFileTrusted() {

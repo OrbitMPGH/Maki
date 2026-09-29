@@ -26,6 +26,8 @@ export type InboxEventType =
   | 'importListFinished'
   | 'chapterUpgraded'
   | 'upgradeRestoreFailed'
+  | 'torrentProposalPending'
+  | 'volumeUpgraded'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -98,7 +100,14 @@ export const INBOX_CATEGORIES: {
   {
     id: 'downloads',
     label: msg`Downloads`,
-    types: ['chapterDownloaded', 'downloadFailed', 'chapterUpgraded', 'upgradeRestoreFailed'],
+    types: [
+      'chapterDownloaded',
+      'downloadFailed',
+      'chapterUpgraded',
+      'upgradeRestoreFailed',
+      'torrentProposalPending',
+      'volumeUpgraded',
+    ],
   },
   { id: 'progress', label: msg`Progress`, types: ['achievementUnlocked', 'levelUp'] },
   {
@@ -137,6 +146,8 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   importListFinished: msg`Import list finished`,
   chapterUpgraded: msg`Chapter upgraded`,
   upgradeRestoreFailed: msg`Upgrade restore failed`,
+  torrentProposalPending: msg`Volume release proposed`,
+  volumeUpgraded: msg`Volume upgraded`,
 }
 
 /**
@@ -148,6 +159,8 @@ export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDesc
   importListFinished: msg`A tracker list sync added or requested series.`,
   chapterUpgraded: msg`A better release replaced a downloaded chapter's file.`,
   upgradeRestoreFailed: msg`A file could not be put back after a failed upgrade and is waiting in the trash folder.`,
+  torrentProposalPending: msg`A torrent volume release could replace files in a series and is waiting for your decision.`,
+  volumeUpgraded: msg`A volume release replaced several chapter files in a series.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */
