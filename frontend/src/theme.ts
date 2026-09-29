@@ -43,8 +43,8 @@ const blush: MantineColorsTuple = [
   '#ffe0e9',
   '#f9c3d3',
   '#f2a2bb',
-  '#eb90ad',
-  '#e2768f',
+  '#ee7fa4',
+  '#e86d96',
   '#c4476e',
   '#b8436a',
   '#953556',
@@ -96,23 +96,23 @@ export const accents: Record<string, MantineColorsTuple> = { blush, indigo: bran
 // Warm near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
 // 4 = borders, 2 = dimmed text, 0 = primary text.
 const dark: MantineColorsTuple = [
-  '#c4bfb3',
+  '#c6c2b8',
   '#a8a398',
   '#8c877d',
   '#5c5a52',
-  '#2a2f2a',
-  '#1f231f',
-  '#181b18',
+  '#2e332e',
+  '#222622',
+  '#1b1e1b',
   '#0e100e',
   '#0a0c0a',
   '#060706',
 ]
 
 // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
-// Blush is pale in dark, so it fills at shade 3 with dark text; light takes shade 6 with white.
+// Blush fills at shade 4 in dark with dark text; light takes shade 6 with white.
 const primaryShades = new Map<MantineColorsTuple, { light: number; dark: number }>([
   [rose, { light: 6, dark: 6 }],
-  [blush, { light: 6, dark: 3 }],
+  [blush, { light: 6, dark: 4 }],
 ])
 
 /**

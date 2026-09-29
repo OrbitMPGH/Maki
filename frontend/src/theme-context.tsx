@@ -25,7 +25,7 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-  { id: 'blush', label: msg`Blush`, accent: 'blush', scheme: 'dark', swatch: '#f2a2bb' },
+  { id: 'blush', label: msg`Blush`, accent: 'blush', scheme: 'dark', swatch: '#ee7fa4' },
   { id: 'indigo', label: msg`Indigo`, accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
   { id: 'rose', label: msg`Rose`, accent: 'rose', scheme: 'dark', swatch: '#f52069' },
   { id: 'emerald', label: msg`Emerald`, accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },

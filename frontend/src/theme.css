@@ -4,17 +4,17 @@
 
 :root {
   --app-bg: #0e100e;
-  --surface: #181b18;
-  --surface-2: #1f231f;
-  --surface-hover: #252a25;
-  --border: #2a2f2a;
-  --border-strong: #3a403a;
+  --surface: #1b1e1b;
+  --surface-2: #222622;
+  --surface-hover: #282d28;
+  --border: #2e332e;
+  --border-strong: #3e453e;
 
   /* Text hierarchy used by the series page. */
-  --ink-hi: #f3eee2;
-  --ink: #ddd8cc;
-  --ink-2: #c4bfb3;
-  --ink-3: #9f9a8f;
+  --ink-hi: #f7f4ee;
+  --ink: #e2ded4;
+  --ink-2: #c6c2b8;
+  --ink-3: #a09c93;
   --ink-4: #86827b;
   --hairline: var(--border);
   --mantine-color-dimmed: var(--ink-3);
@@ -32,13 +32,13 @@
   --tier-6: #d64f7f;
   --tier-6-soft: color-mix(in srgb, var(--tier-6) 15%, transparent);
 
-  --brand: #f2a2bb;
-  --brand-hover: #eb90ad;
+  --brand: #ee7fa4;
+  --brand-hover: #e86d96;
   --brand-on: #2a1219;
   --brand-fg: #f5b6c8;
   /* Brand text that sits on cover art under a dark scrim, which stays dark in the light theme too. */
   --brand-fg-on-art: var(--brand-fg);
-  --brand-glow: rgba(242, 162, 187, 0.3);
+  --brand-glow: rgba(238, 127, 164, 0.3);
 
   --ok: #3fb950;
   --ok-on: #071a10;
