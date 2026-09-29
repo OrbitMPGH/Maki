@@ -20,6 +20,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui/PageHeader'
+import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { statusToken, trackerConnectionVisual, trackerStatusVisual } from '../components/ui/status'
 import { StatusDot } from '../components/ui/StatusDot'
@@ -362,9 +363,9 @@ export default function ScrobblePage() {
           </Table.ScrollContainer>
         </Panel>
       ) : (
-        <Text size="sm" c="var(--ink-3)" mb="lg">
-          <Trans>No syncs yet.</Trans>
-        </Text>
+        <Box mb="lg">
+          <EmptyState compact mood="asleep" title={t`No syncs yet.`} />
+        </Box>
       )}
 
       <Title order={4} mb="sm">

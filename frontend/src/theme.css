@@ -789,12 +789,28 @@ body::before {
   }
 }
 .nav-section-label {
-  font-size: var(--type-label);
+  font-size: 10.5px;
   font-weight: var(--fw-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-4);
   padding: 0 11px;
+}
+.nav-count {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
+  text-align: right;
+}
+.count-indicator > .mantine-Indicator-indicator {
+  background-image: none;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+.count-indicator[data-tone='brand'] > .mantine-Indicator-indicator {
+  background: var(--brand);
+  color: var(--brand-on);
 }
 
 /* --- Cover / poster cards ------------------------------------------------ */
@@ -830,6 +846,21 @@ body::before {
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
   box-shadow: 0 0 0 1px var(--brand);
+}
+.library-add-cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 2 / 3;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--mantine-radius-lg);
+  background: transparent;
+  color: var(--ink-4);
+  text-decoration: none;
+  transition: background-color var(--dur-base) var(--ease);
+}
+.library-add-cell:hover,
+.library-add-cell:focus-visible {
+  background: var(--surface-hover);
 }
 .cover-poster {
   position: relative;
@@ -935,6 +966,22 @@ body::before {
   background: #000;
   opacity: 0.7;
 }
+/* Monitor eye and mute bell on a poster: revealed on hover or keyboard focus with a pointer,
+   always shown on touch. Only the two small chips fade, never the card. */
+@media (hover: hover) {
+  .cover-corner-right > .cover-badge-circle {
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease);
+  }
+  .cover-card:hover .cover-corner-right > .cover-badge-circle,
+  .cover-card:focus-within .cover-corner-right > .cover-badge-circle {
+    opacity: 0.9;
+  }
+  .cover-card:hover .cover-corner-right > .cover-badge-circle[data-dim],
+  .cover-card:focus-within .cover-corner-right > .cover-badge-circle[data-dim] {
+    opacity: 0.7;
+  }
+}
 /* Unread count / all-read marker. The progress ring beside these is easy to miss at grid
    density; a number is not, and it is the one thing you scan a library for. */
 .cover-badge-unread {
@@ -942,8 +989,8 @@ body::before {
   justify-content: center;
   padding: 0 6px;
   font-variant-numeric: tabular-nums;
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
+  background: var(--brand);
+  color: var(--brand-on);
 }
 .cover-badge-read {
   background: var(--ok);
@@ -1176,91 +1223,6 @@ body::before {
   border: 0;
   cursor: pointer;
   background: transparent;
-}
-
-.home-glance {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
-}
-.home-glance > * {
-  flex: 1 1 250px;
-  min-width: 0;
-}
-/* Progression carries a ring and five figures where the others carry three, so it asks for more of
-   the row before anything wraps. */
-.home-glance > .home-glance-wide {
-  flex: 1.7 1 430px;
-}
-/* The progression half links to Stats as one target, the way its card used to. */
-.home-glance-progress {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--mantine-spacing-md);
-  color: inherit;
-  text-decoration: none;
-}
-/* Tighter than the series band's, where the same figures have a whole band to spread across. */
-.home-glance .hero-stats {
-  --hero-stat-pad: 14px;
-}
-
-/* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
-   up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
-   instead, which the short uppercase labels take without complaint. */
-.home-figures {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-}
-.home-figure {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  padding-right: 14px;
-}
-.home-figure:last-child {
-  padding-right: 0;
-}
-.home-figure + .home-figure {
-  padding-left: 14px;
-  border-left: 1px solid var(--border-strong);
-}
-/* Too narrow for one row, the shrinking columns ran the uppercase labels into each other. Two
-   columns instead, with the hairline only between the pair on each line. Four figures need more
-   room than three, hence the two thresholds. */
-.home-glance > :not(.home-glance-wide) {
-  container-type: inline-size;
-}
-@container (max-width: 23rem) {
-  .home-figures:has(> :nth-child(4)) {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--mantine-spacing-sm);
-  }
-  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(even) {
-    padding-right: 0;
-  }
-}
-@container (max-width: 14rem) {
-  .home-figures {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--mantine-spacing-sm);
-  }
-  .home-figures > .home-figure:nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .home-figures > .home-figure:nth-child(even) {
-    padding-right: 0;
-  }
 }
 
 /* --- Home dashboard rails ------------------------------------------------ */
@@ -3527,25 +3489,33 @@ body::before {
 }
 .section-header-count {
   flex-shrink: 0;
-  padding: 1px 8px;
-  border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
-  color: var(--brand-fg);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-strong);
+  color: var(--ink-4);
+  font-size: var(--type-meta);
 }
 .section-header-rule {
   flex: 1;
   min-width: 24px;
   height: 1px;
-  background: linear-gradient(
-    to right,
-    color-mix(in srgb, var(--brand) 32%, transparent),
-    var(--hairline) 60%
-  );
+  background: var(--border);
 }
 .section-header-action {
+  display: flex;
   flex-shrink: 0;
+  align-items: center;
+}
+.section-header-action .mantine-Button-root[data-variant='subtle'] {
+  --button-color: var(--ink-3);
+  --button-hover: var(--surface-hover);
+}
+/* Drawn inside the button so it shares the hit area, whatever element the caller passed. */
+.section-header-action[data-chevron] .mantine-Button-inner::after {
+  content: '';
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6l-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 /* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
@@ -3573,6 +3543,10 @@ body::before {
   color: var(--ink-2);
   font-size: var(--type-body);
   font-weight: var(--fw-semibold);
+}
+.empty-state-mark {
+  display: flex;
+  flex: none;
 }
 
 /* The whole page is empty: centred in what's left of the viewport, over a picture of covers. */
@@ -4096,13 +4070,6 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 .stat-tile {
   position: relative;
   overflow: hidden;
-}
-.stat-accent {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
 }
 
 /* --- Misc ---------------------------------------------------------------- */
@@ -6251,6 +6218,58 @@ body.reader-open {
   font-weight: var(--fw-semibold);
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* The page-headline strip: a shadowed card whose cells wrap. `.figure-strip-middle` is a caller's
+   own cell (Home's level) between two runs of figures, fenced by a rule on each side. */
+.figure-strip[data-variant='panel'] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  box-shadow: var(--shadow-card);
+}
+.figure-strip[data-variant='panel'] .figure-strip-item {
+  flex: 1 1 5.5rem;
+  align-content: end;
+  gap: 2px;
+  padding: 14px 20px;
+}
+.figure-strip[data-variant='panel'] .figure-strip-n {
+  font-size: 27px;
+  line-height: 1;
+}
+.figure-strip[data-variant='panel'] .figure-strip-l {
+  font-size: 10.5px;
+}
+.figure-strip-middle {
+  display: grid;
+  flex: 0 0 auto;
+  align-content: center;
+  min-width: 228px;
+  padding: 14px 22px;
+  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+.figure-strip-middle:first-child {
+  border-left: 0;
+}
+.figure-strip-middle:last-child {
+  border-right: 0;
+}
+@media (max-width: 56.25em) {
+  .figure-strip-middle {
+    flex: 1 1 100%;
+    border-right: 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .figure-strip-middle:first-child {
+    border-top: 0;
+  }
+  .figure-strip-middle:last-child {
+    border-bottom: 0;
+  }
 }
 
 .status-dot {

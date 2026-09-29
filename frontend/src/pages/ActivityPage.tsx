@@ -403,6 +403,7 @@ export default function ActivityPage() {
       ) : queueItems.length === 0 ? (
         <EmptyState
           compact
+          mood="asleep"
           title={t`Nothing in the queue`}
           description={t`Queued and downloading chapters show up here. Trigger a search from a series page or the library.`}
         />

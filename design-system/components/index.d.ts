@@ -95,6 +95,8 @@ export declare function EmptyState(props: {
   compact?: boolean
   /** The whole page is empty: centred, over empty cover slots or a lone blank cover. */
   art?: 'shelf' | 'missing'
+  /** The mascot beside the text of the inline form. */
+  mood?: 'asleep' | 'asking' | 'pleased'
   code?: string
   headingOrder?: 1 | 2
   actionIcon?: ReactNode

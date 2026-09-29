@@ -1595,6 +1595,15 @@ export default function LibraryPage() {
                 onToggle={toggle}
               />
             ))}
+            {!selectMode && visible.length < 12 && (
+              <Link
+                to="/add"
+                className="library-add-cell"
+                aria-label={can('AddSeries') ? t`Add a series` : t`Request series`}
+              >
+                <IconPlus size={24} aria-hidden />
+              </Link>
+            )}
           </SimpleGrid>
         </div>
       )}

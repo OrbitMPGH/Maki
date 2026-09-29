@@ -7,18 +7,21 @@ import type { Icon } from '@tabler/icons-react'
  * section scale: it ties the title to its action and gives a run of rails a line to read down.
  *
  * Shared by Discover, the series page's related rail and the Home dashboard, which is why `count`
- * is optional: Home's rails already say how many items they hold by showing them.
+ * is optional: Home's rails already say how many items they hold by showing them. `chevron` adds the
+ * trailing arrow for a single text action that opens a bigger view.
  */
 export function SectionHeader({
   icon: SectionIcon,
   title,
   count,
   action,
+  chevron,
 }: {
   icon: Icon
   title: string
   count?: number
   action?: React.ReactNode
+  chevron?: boolean
 }) {
   return (
     <div className="section-header">
@@ -28,7 +31,11 @@ export function SectionHeader({
       </Title>
       {count != null && <span className="section-header-count tnum">{count}</span>}
       <span className="section-header-rule" aria-hidden />
-      {action && <div className="section-header-action">{action}</div>}
+      {action && (
+        <div className="section-header-action" data-chevron={chevron || undefined}>
+          {action}
+        </div>
+      )}
     </div>
   )
 }
