@@ -376,6 +376,10 @@ msgstr "{applied, plural, other {已导入 # 个评分}}"
 msgid "{beforeLabel} to {afterLabel}"
 msgstr ""
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "{bestName} is already tried first, so nothing needs to change."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
@@ -415,6 +419,10 @@ msgstr "{chapterCount, plural, other {# 个章节}}"
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} 章"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -543,6 +551,10 @@ msgstr "{decade}年代"
 #, fuzzy
 msgid "{deletedCount} deleted, {failedCount} refused:"
 msgstr "已删除 {deletedCount} 个，拒绝 {failedCount} 个："
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "{done} of {probes} chapter samples. The order below updates once it finishes."
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -977,6 +989,10 @@ msgstr "{pushingDown} 个被排除在品味之外"
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, other {正在后台自动匹配 # 个系列。}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{rated} rated"
@@ -1192,6 +1208,10 @@ msgstr "{sourceName}已在“设置 → 来源”中关闭。此系列的设置�
 #, fuzzy
 msgid "{sourceName} publishes one language per series, so there is nothing to filter."
 msgstr "{sourceName}的每个系列只提供一种语言，因此无需筛选。"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -2558,6 +2578,10 @@ msgstr "动画在第{0}章结束"
 msgid "Anime you've watched"
 msgstr "你看过的动画"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -3169,6 +3193,10 @@ msgstr "按钮标签"
 #, fuzzy
 msgid "By an author you read"
 msgstr "由你读过的作者创作"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "By measured quality, downloads would try {bestName} first. With manual priority, {currentName} goes first now."
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -4450,6 +4478,10 @@ msgstr "无法连接到 {label}。"
 msgid "Couldn't run the scan"
 msgstr ""
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Couldn't sample"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -5260,6 +5292,10 @@ msgstr "下载中……"
 #, fuzzy
 msgid "Downloads"
 msgstr "下载"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Downloads now try {bestName} first."
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
@@ -7250,6 +7286,10 @@ msgstr "Kavita 的阅读进度归属于一个 Maki 账户，而这个账户不�
 msgid "Keep a local copy of MangaBaka"
 msgstr "在本地保存 MangaBaka 数据副本"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Keep as is"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Keep editing"
@@ -7264,6 +7304,10 @@ msgstr "保留文件夹名称，新下载内容也放在那里"
 #, fuzzy
 msgid "Keep folder name, but put new downloads in a Maki standard folder"
 msgstr "保留文件夹名称，但将新下载内容放入 Maki 标准文件夹"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Keep manual priority, but renumber it to follow the measured order."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -8252,6 +8296,10 @@ msgstr ""
 msgid "Measure sources when a series is added"
 msgstr ""
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Measured {measured} of {total} sources"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher."
 msgstr ""
@@ -8260,8 +8308,16 @@ msgstr ""
 msgid "Measured quality"
 msgstr ""
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Measuring {done}/{planned}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
-msgid "Measuring {scoutDone}/{scoutPlanned}"
+#~ msgid "Measuring {scoutDone}/{scoutPlanned}"
+#~ msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Measuring…"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -9421,6 +9477,10 @@ msgstr "不再推荐"
 msgid "Not run yet"
 msgstr "尚未运行"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Not sampled"
+msgstr ""
+
 #: src/api/upgrades.ts
 msgid "Not sampled: this source's recent chapters wouldn't score higher"
 msgstr ""
@@ -9465,6 +9525,10 @@ msgstr "备注（可选）"
 #, fuzzy
 msgid "Nothing close enough. Try describing it differently, or use fewer words."
 msgstr "没有足够接近的内容。请换一种描述方式，或减少字数。"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Nothing could be measured, so the download order is unchanged."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 msgid "Nothing downloaded falls short of the quality profile assigned to it."
@@ -11544,6 +11608,10 @@ msgstr "正在重命名文件夹"
 msgid "Reopen"
 msgstr "重新打开"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Reorder priority to match"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Repair"
@@ -12232,6 +12300,10 @@ msgstr "汉化组"
 #, fuzzy
 msgid "Scanning folder…"
 msgstr "正在扫描文件夹……"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scanning for upgrades…"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14163,6 +14235,10 @@ msgstr ""
 msgid "The trashed copy of this file is gone"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan could not run. The server log has the details."
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "The whole catalogue"
@@ -14365,6 +14441,22 @@ msgstr ""
 
 #: src/api/upgrades.ts
 msgid "This series' profile doesn't aim for volume releases"
+msgstr ""
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source did not serve the sampled pages. It may be down or have changed."
+msgstr ""
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source is rate-limiting Maki right now. Try again later."
+msgstr ""
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source lists none of the sampled chapters."
+msgstr ""
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source needs FlareSolverr. Check it is set up in Settings."
 msgstr ""
 
 #: src/components/SourceCompareModal.tsx
@@ -15117,6 +15209,10 @@ msgstr ""
 msgid "Upgrade restore failed"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"
 msgstr ""
@@ -15204,6 +15300,10 @@ msgstr "使用动画影响推荐品味"
 #, fuzzy
 msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "至少使用 {MIN_PASSWORD_LENGTH} 个字符"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Use best quality first"
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -15529,6 +15629,10 @@ msgstr "卷文件将接收目前仍关联到单个文件的章节"
 #, fuzzy
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "与 {fromLabel} 至 {toLabel} 相比"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Waiting"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Http;
 using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
@@ -8,10 +9,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
+/// <param name="State">"waiting", "measuring", "done", "failed" (nothing measured), or "skipped" (no chapter to sample).</param>
+/// <param name="Problem">Why the last failed sample failed: "cooldown" (the source is rate-limiting us) or "failed".</param>
+public sealed record ScoutSourceProgress(int MappingId, string State, int Planned, int Done, int Measured, string? Problem);
+
 /// <param name="Probes">Chapter samples planned across every source.</param>
 /// <param name="Done">Samples attempted so far, measured or not.</param>
 /// <param name="Measured">Samples that produced a measurement.</param>
-public sealed record ScoutSnapshot(bool Running, int Probes, int Done, int Measured, DateTime StartedAtUtc, DateTime? FinishedAtUtc);
+/// <param name="Chapters">The chapters being sampled, as their source labels, in reading order.</param>
+public sealed record ScoutSnapshot(
+    bool Running, int Probes, int Done, int Measured, DateTime StartedAtUtc, DateTime? FinishedAtUtc,
+    IReadOnlyList<string> Chapters, IReadOnlyList<ScoutSourceProgress> Sources);
 
 /// <summary>
 /// Measures every linked source of one series on the same few chapters, so its source order is
@@ -25,6 +33,7 @@ public sealed class SourceScoutService(
     SourceRegistry registry,
     SourceAvailability availability,
     SourceProbeService probes,
+    IDownloadCooldown cooldowns,
     ILogger<SourceScoutService> logger)
 {
     public const int ChaptersPerSource = 3;
@@ -35,16 +44,40 @@ public sealed class SourceScoutService(
     private readonly ConcurrentDictionary<int, Job> _jobs = new();
     private readonly SemaphoreSlim _gate = new(MaxConcurrentSeries);
 
+    private sealed class SourceState(int mappingId, int planned)
+    {
+        public int MappingId { get; } = mappingId;
+        public int Planned { get; } = planned;
+        public int Done;
+        public int Measured;
+        public volatile bool Started;
+        public volatile string? Problem;
+
+        public ScoutSourceProgress Snapshot()
+        {
+            var state = Planned == 0 ? "skipped"
+                : Done >= Planned ? (Measured > 0 ? "done" : "failed")
+                : Started ? "measuring"
+                : "waiting";
+            return new ScoutSourceProgress(MappingId, state, Planned, Done, Measured, Problem);
+        }
+    }
+
     private sealed class Job
     {
         public required DateTime StartedAtUtc { get; init; }
-        public int Probes;
-        public int Done;
-        public int Measured;
+        public volatile IReadOnlyList<SourceState> Sources = [];
+        public volatile IReadOnlyList<string> Chapters = [];
         public volatile bool Running = true;
         public DateTime? FinishedAtUtc;
 
-        public ScoutSnapshot Snapshot() => new(Running, Probes, Done, Measured, StartedAtUtc, FinishedAtUtc);
+        public ScoutSnapshot Snapshot()
+        {
+            var sources = Sources;
+            return new ScoutSnapshot(Running, sources.Sum(s => s.Planned), sources.Sum(s => s.Done),
+                sources.Sum(s => s.Measured), StartedAtUtc, FinishedAtUtc, Chapters,
+                [.. sources.Select(s => s.Snapshot())]);
+        }
     }
 
     public ScoutSnapshot? Snapshot(int seriesId) => _jobs.TryGetValue(seriesId, out var job) ? job.Snapshot() : null;
@@ -122,6 +155,8 @@ public sealed class SourceScoutService(
         var disabled = await availability.DisabledAsync(ct);
         var mappings = (await db.SourceMappings.AsNoTracking()
                 .Where(m => m.SeriesId == seriesId && m.Enabled)
+                .OrderBy(m => m.Priority)
+                .ThenBy(m => m.Id)
                 .ToListAsync(ct))
             .Where(m => !disabled.Contains(m.SourceName) && registry.Find(m.SourceName) is not null)
             .ToList();
@@ -140,15 +175,22 @@ public sealed class SourceScoutService(
                 .Where(l => l.SourceMappingId == m.Id && picks.Contains(l.ChapterId))
                 .DistinctBy(l => l.ChapterId)
                 .ToList()))
-            .Where(p => p.Links.Count > 0)
             .ToList();
-        job.Probes = plan.Sum(p => p.Links.Count);
+        var states = plan.ToDictionary(p => p.Mapping.Id, p => new SourceState(p.Mapping.Id, p.Links.Count));
+        job.Chapters = [.. links
+            .Where(l => picks.Contains(l.ChapterId))
+            .DistinctBy(l => l.ChapterId)
+            .OrderBy(l => l.Chapter!.Number ?? decimal.MaxValue)
+            .Select(l => l.Chapter!.NumberRaw ?? l.Chapter.Number?.ToString() ?? "?")];
+        job.Sources = [.. states.Values];
 
         using var writes = new SemaphoreSlim(1);
-        await Parallel.ForEachAsync(plan,
+        await Parallel.ForEachAsync(plan.Where(p => p.Links.Count > 0),
             new ParallelOptions { MaxDegreeOfParallelism = MaxParallelSources, CancellationToken = ct },
             async (entry, token) =>
             {
+                var state = states[entry.Mapping.Id];
+                state.Started = true;
                 var source = registry.Find(entry.Mapping.SourceName)!;
                 foreach (var link in entry.Links)
                 {
@@ -168,7 +210,11 @@ public sealed class SourceScoutService(
                             entry.Mapping.SourceName, chapter.NumberRaw);
                     }
 
-                    if (probe is not null)
+                    if (probe is null)
+                    {
+                        state.Problem = cooldowns.Remaining(entry.Mapping.SourceName) > TimeSpan.Zero ? "cooldown" : "failed";
+                    }
+                    else
                     {
                         long? size = probe.SampledPages > 0 ? probe.SampleBytes / probe.SampledPages * probe.PageCount : null;
                         await writes.WaitAsync(token);
@@ -184,14 +230,15 @@ public sealed class SourceScoutService(
                             writes.Release();
                         }
 
-                        Interlocked.Increment(ref job.Measured);
+                        Interlocked.Increment(ref state.Measured);
                     }
 
-                    Interlocked.Increment(ref job.Done);
+                    Interlocked.Increment(ref state.Done);
                 }
             });
 
+        var snapshot = job.Snapshot();
         logger.LogInformation("Measured {Measured} of {Probes} chapter samples across {Sources} sources of series {SeriesId}",
-            job.Measured, job.Probes, plan.Count, seriesId);
+            snapshot.Measured, snapshot.Probes, plan.Count, seriesId);
     }
 }

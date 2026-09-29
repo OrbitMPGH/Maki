@@ -25,12 +25,14 @@ public class UpgradeScanJobTests : IDisposable
     private Task RunJobAsync(bool force, Maki.Data.MakiDbContext? db = null) =>
         RunJobAsync(force ? new JobDataMap { [UpgradeScanJob.ForceKey] = true } : null, db);
 
+    private readonly UpgradeScanTracker _tracker = new();
+
     private async Task RunJobAsync(JobDataMap? data, Maki.Data.MakiDbContext? db = null)
     {
         using var own = _world.Db.NewContext();
         using var batches = _world.Batches();
         var job = new UpgradeScanJob(_world.Scanner(db ?? own, batches), _world.Settings, TimeProvider.System,
-            NullLogger<UpgradeScanJob>.Instance);
+            NullLogger<UpgradeScanJob>.Instance, _tracker);
         await job.Execute(new TestJobContext(data));
     }
 
@@ -70,6 +72,10 @@ public class UpgradeScanJobTests : IDisposable
 
         Assert.Equal(1, UpgradeRows());
         Assert.Null(await _world.Settings.GetAsync(SettingKeys.UpgradesLastScanDate));
+        var status = _tracker.Status(_world.SeriesId)!;
+        Assert.Equal(("done", 1, 1), (status.State, status.Probed, status.Queued));
+        Assert.True(status.ChaptersChecked > 0);
+        Assert.NotNull(status.FinishedAtUtc);
     }
 
     [Fact]

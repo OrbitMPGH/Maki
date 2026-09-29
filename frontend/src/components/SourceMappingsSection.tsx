@@ -50,9 +50,11 @@ import {
   useSourceMatchProgress,
   useSources,
   useSourceSearch,
+  useReorderMappings,
   useUpdateMapping,
   type SourceOrderMode,
 } from '../api/hooks'
+import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
 import type { SourceMappingDto } from '../api/types'
 import { useMeasureSources, useSetSourceOrderMode, useSourceOrder, type SourceQualityDto } from '../api/upgrades'
 import { useAuth } from '../auth/AuthProvider'
@@ -99,9 +101,29 @@ export function SourceMappingsSection({
   const measureSources = useMeasureSources(seriesId)
   const scout = sourceOrder?.scout
   const scouting = scout?.running ?? false
-  const scoutDone = scout?.done ?? 0
   const scoutPlanned = scout?.probes ?? 0
   const scoutMeasured = scout?.measured ?? 0
+  const reorderMappings = useReorderMappings()
+  const seenKey = `maki:scout-seen:${seriesId}`
+  const [seenScout, setSeenScout] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(seenKey)
+    } catch {
+      return null
+    }
+  })
+  const dismissScout = () => {
+    const finished = scout?.finishedAtUtc ?? null
+    setSeenScout(finished)
+    try {
+      if (finished) localStorage.setItem(seenKey, finished)
+    } catch {
+      // Private mode or blocked storage: the card just comes back on the next visit.
+    }
+  }
+  const showScoutResult = !!scout && !scout.running && !!scout.finishedAtUtc && seenScout !== scout.finishedAtUtc
+  const scoutProgressFor = (mappingId: number) =>
+    scouting || showScoutResult ? scout?.sources.find((s) => s.mappingId === mappingId) : undefined
   const qualities = sourceOrder?.sources
   const byQuality = sourceOrder?.mode === 'quality'
   const orderedMappings = useMemo(() => {
@@ -314,18 +336,12 @@ export function SourceMappingsSection({
               <Button
                 size="xs"
                 variant="default"
-                leftSection={<IconRuler size={14} />}
-                disabled={matching || (mappings?.length ?? 0) === 0}
+                leftSection={scouting ? <Loader size={12} /> : <IconRuler size={14} />}
+                disabled={matching || scouting || (mappings?.length ?? 0) === 0}
                 loading={measureSources.isPending}
-                onClick={() => !scouting && measureSources.mutate()}
+                onClick={() => measureSources.mutate()}
               >
-                {scouting ? (
-                  <Trans>
-                    Measuring {scoutDone}/{scoutPlanned}
-                  </Trans>
-                ) : (
-                  <Trans>Measure</Trans>
-                )}
+                {scouting ? <Trans>Measuring…</Trans> : <Trans>Measure</Trans>}
               </Button>
             </Box>
           </Tooltip>
@@ -364,6 +380,28 @@ export function SourceMappingsSection({
             )}
           </Text>
         </Group>
+      )}
+
+      {sourceOrder && scouting && <MeasureProgress order={sourceOrder} />}
+      {sourceOrder && showScoutResult && (
+        <MeasureResult
+          order={sourceOrder}
+          label={(id) => sourceLabel(mappings?.find((m) => m.id === id)?.sourceName ?? '')}
+          needsFlareSolverr={(id) => {
+            const name = mappings?.find((m) => m.id === id)?.sourceName
+            return sources?.find((s) => s.name === name)?.needsFlareSolverr ?? false
+          }}
+          busy={setOrderMode.isPending || reorderMappings.isPending}
+          onUseQuality={() => setOrderMode.mutate('quality', { onSuccess: dismissScout })}
+          onReorder={() => {
+            const rest = sourceOrder.order.filter((id) => !sourceOrder.qualityOrder.includes(id))
+            reorderMappings.mutate(
+              { seriesId, orderedMappingIds: [...sourceOrder.qualityOrder, ...rest] },
+              { onSuccess: dismissScout },
+            )
+          }}
+          onDismiss={dismissScout}
+        />
       )}
 
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
@@ -470,7 +508,17 @@ export function SourceMappingsSection({
                   </Tooltip>
                 </Table.Td>
                 <Table.Td>
-                  <MappingQuality quality={qualities?.find((q) => q.mappingId === m.id)} />
+                  {(() => {
+                    const progress = scoutProgressFor(m.id)
+                    return progress && progress.state !== 'done' ? (
+                      <ScoutCell
+                        progress={progress}
+                        needsFlareSolverr={sources?.find((s) => s.name === m.sourceName)?.needsFlareSolverr ?? false}
+                      />
+                    ) : (
+                      <MappingQuality quality={qualities?.find((q) => q.mappingId === m.id)} />
+                    )
+                  })()}
                 </Table.Td>
                 <Table.Td>
                   <Tooltip

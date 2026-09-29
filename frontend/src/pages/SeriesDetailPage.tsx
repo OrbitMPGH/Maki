@@ -113,6 +113,7 @@ import {
   useSetFileTrusted,
   useTorrentProposals,
   useUpgradeChapterNow,
+  useSeriesUpgradeScanStatus,
   useUpgradeProfiles,
   useVolumeSearch,
 } from '../api/upgrades'
@@ -440,6 +441,52 @@ export default function SeriesDetailPage() {
   const setFileTrusted = useSetFileTrusted()
   const upgradeChapterNow = useUpgradeChapterNow()
   const runUpgradeScan = useRunUpgradeScan()
+  const { data: scanStatus } = useSeriesUpgradeScanStatus(seriesId)
+  const scanning = scanStatus?.state === 'queued' || scanStatus?.state === 'running'
+  const scanWasRunning = useRef(false)
+
+  // The scan runs as a background job, so its end is only seen by polling its status: say how it
+  // went and pull the new "last upgrade scan" line and any queued upgrades onto the page.
+  useEffect(() => {
+    if (!scanStatus) return
+    if (scanStatus.state === 'queued' || scanStatus.state === 'running') {
+      scanWasRunning.current = true
+      return
+    }
+    if (!scanWasRunning.current) return
+    scanWasRunning.current = false
+    void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+    void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+    const { queued, chaptersChecked } = scanStatus
+    if (scanStatus.state === 'done') {
+      notifications.show({
+        color: 'var(--ok)',
+        message:
+          chaptersChecked === 0
+            ? staticT`Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters.`
+            : queued > 0
+            ? plural(queued, {
+                one: 'Upgrade scan finished: # better copy queued',
+                other: 'Upgrade scan finished: # better copies queued',
+              })
+            : plural(chaptersChecked, {
+                one: 'Upgrade scan finished: no better copies for the # chapter checked',
+                other: 'Upgrade scan finished: no better copies for the # chapters checked',
+              }),
+      })
+    } else if (scanStatus.state === 'busy') {
+      notifications.show({
+        color: 'var(--warn)',
+        message: staticT`Another upgrade scan was already running, so this one did not run. Try again once it finishes.`,
+      })
+    } else {
+      notifications.show({
+        color: 'var(--danger)',
+        message: staticT`The upgrade scan could not run. The server log has the details.`,
+      })
+    }
+  }, [scanStatus, queryClient, seriesId])
   const runVolumeSearch = useVolumeSearch()
   const [upgradeNowResult, setUpgradeNowResult] = useState<UpgradeScanResultDto | null>(null)
   const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
@@ -1598,7 +1645,7 @@ export default function SeriesDetailPage() {
                     upgradeProfileId={series.upgradeProfileId}
                     upgradeProfiles={upgradeProfiles ?? []}
                     canScanUpgrades={canDownload}
-                    scanningUpgrades={runUpgradeScan.isPending}
+                    scanningUpgrades={runUpgradeScan.isPending || scanning}
                     busy={refresh.isPending || refreshMetadata.isPending || rescan.isPending}
                     onRefreshChapters={() =>
                         refresh.mutate(seriesId, {
@@ -1842,7 +1889,12 @@ export default function SeriesDetailPage() {
                   />
                   <Divider my="md" color="var(--hairline)" />
                   <Text size="xs" c="var(--ink-3)">
-                    {series.lastUpgradeScan ? (
+                    {scanning ? (
+                        <Group gap={6} component="span" wrap="nowrap">
+                          <Loader size={10} />
+                          <Trans>Scanning for upgrades…</Trans>
+                        </Group>
+                    ) : series.lastUpgradeScan ? (
                         (() => {
                           const at = formatDate(series.lastUpgradeScan.at)
                           const { probed, queued } = series.lastUpgradeScan

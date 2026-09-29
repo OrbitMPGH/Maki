@@ -233,6 +233,9 @@ public class SourceMappingController(
         var disabled = await sourceAvailability.DisabledAsync(ct);
         var usable = mappings.Where(m => m.Enabled && !disabled.Contains(m.SourceName)).ToList();
         var order = await sourceOrder.OrderAsync(db, seriesId, usable, ct);
+        var qualityOrder = order.Mode == SourceOrderMode.Quality
+            ? order
+            : await sourceOrder.OrderAsync(db, seriesId, usable, ct, SourceOrderMode.Quality);
         var rest = mappings.Except(usable).OrderBy(m => m.Priority).ThenBy(m => m.Id);
         return Ok(new SourceOrderDto(
             order.SeriesMode is { } own ? SourceOrderService.Name(own) : null,
@@ -240,7 +243,8 @@ public class SourceMappingController(
             SourceOrderService.Name(order.Mode),
             [.. order.Ordered.Concat(rest).Select(m => m.Id)],
             [.. estimates.Select(e => SourceQualityDto.From(e.Key, e.Value, profile, now))],
-            scout.Snapshot(seriesId)));
+            scout.Snapshot(seriesId),
+            [.. qualityOrder.Ordered.Select(m => m.Id)]));
     }
 
     public record ScoutRequest(int SeriesId);

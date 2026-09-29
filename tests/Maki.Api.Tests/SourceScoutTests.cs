@@ -14,7 +14,7 @@ public class SourceScoutTests : IDisposable
     public void Dispose() => _world.Dispose();
 
     private SourceScoutService Scout() => new(
-        _world.Db.ScopeFactory(), _world.Registry, _world.Availability, _world.Probes(),
+        _world.Db.ScopeFactory(), _world.Registry, _world.Availability, _world.Probes(), _world.Queue,
         NullLogger<SourceScoutService>.Instance);
 
     private List<SourceQualitySample> Samples()
@@ -43,7 +43,10 @@ public class SourceScoutTests : IDisposable
         Assert.Equal(3, aggChapters.Select(id => chapters.IndexOf(id) / 3).Distinct().Count());
         Assert.All(samples.Where(s => s.SourceMappingId == _world.AggMappingId), s => Assert.Equal(700, s.MedianWidth));
         Assert.All(samples.Where(s => s.SourceMappingId == _world.OfficialMappingId), s => Assert.Equal(1600, s.MedianWidth));
-        Assert.Equal(new ScoutSnapshotCounts(6, 6, 6), Counts(scout.Snapshot(_world.SeriesId)!));
+        var snapshot = scout.Snapshot(_world.SeriesId)!;
+        Assert.Equal(new ScoutSnapshotCounts(6, 6, 6), Counts(snapshot));
+        Assert.Equal(3, snapshot.Chapters.Count);
+        Assert.All(snapshot.Sources, s => Assert.Equal(("done", 3, 3), (s.State, s.Planned, s.Measured)));
     }
 
     [Fact]
@@ -58,7 +61,31 @@ public class SourceScoutTests : IDisposable
 
         var sample = Assert.Single(Samples());
         Assert.Equal(_world.OfficialMappingId, sample.SourceMappingId);
-        Assert.Equal(new ScoutSnapshotCounts(2, 2, 1), Counts(scout.Snapshot(_world.SeriesId)!));
+        var snapshot = scout.Snapshot(_world.SeriesId)!;
+        Assert.Equal(new ScoutSnapshotCounts(2, 2, 1), Counts(snapshot));
+        var agg = Assert.Single(snapshot.Sources, s => s.MappingId == _world.AggMappingId);
+        Assert.Equal(("failed", "failed"), (agg.State, agg.Problem));
+        Assert.Equal("done", Assert.Single(snapshot.Sources, s => s.MappingId == _world.OfficialMappingId).State);
+    }
+
+    [Fact]
+    public async Task A_source_listing_none_of_the_picked_chapters_is_reported_as_skipped()
+    {
+        _world.Seed();
+        _world.OfficialPages = UpgradeWorld.InlinePages(20, 1600);
+        var (chapterId, _) = _world.Chapter(1, withFile: false);
+        using (var db = _world.Db.NewContext())
+        {
+            db.ChapterSourceLinks.RemoveRange(db.ChapterSourceLinks.Where(l => l.SourceMappingId == _world.AggMappingId));
+            db.SaveChanges();
+        }
+
+        var scout = Scout();
+        await scout.RunNowAsync(_world.SeriesId, CancellationToken.None);
+
+        var agg = Assert.Single(scout.Snapshot(_world.SeriesId)!.Sources, s => s.MappingId == _world.AggMappingId);
+        Assert.Equal(("skipped", 0), (agg.State, agg.Planned));
+        Assert.Equal(chapterId, Assert.Single(Samples()).ChapterId);
     }
 
     [Theory]

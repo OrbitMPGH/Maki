@@ -556,6 +556,8 @@ export interface SourceOrderDto {
   sources: SourceQualityDto[]
   /** The latest source measurement run since the server started, or null. */
   scout: ScoutSnapshot | null
+  /** Enabled mapping ids as best quality first would order them, whatever the mode. */
+  qualityOrder: number[]
 }
 
 export interface ScoutSnapshot {
@@ -567,6 +569,42 @@ export interface ScoutSnapshot {
   measured: number
   startedAtUtc: string
   finishedAtUtc: string | null
+  /** The chapters being sampled, as their labels, in reading order. */
+  chapters: string[]
+  sources: ScoutSourceProgress[]
+}
+
+export interface ScoutSourceProgress {
+  mappingId: number
+  /** `skipped`: the source lists none of the sampled chapters. `failed`: nothing could be measured. */
+  state: 'waiting' | 'measuring' | 'done' | 'failed' | 'skipped'
+  planned: number
+  done: number
+  measured: number
+  /** Why the last failed sample failed: `cooldown` when the source is rate-limiting, else `failed`. */
+  problem: 'cooldown' | 'failed' | null
+}
+
+/** The latest scan of one series asked for since the server started. */
+export interface SeriesScanStatus {
+  state: 'queued' | 'running' | 'done' | 'busy' | 'failed'
+  queuedAtUtc: string
+  finishedAtUtc: string | null
+  chaptersChecked: number
+  probed: number
+  queued: number
+}
+
+export function useSeriesUpgradeScanStatus(seriesId: number) {
+  return useQuery({
+    queryKey: ['upgrade-scan-status', seriesId],
+    queryFn: async () =>
+      (await api<SeriesScanStatus | undefined>(`/upgrades/scan/status?seriesId=${seriesId}`)) ?? null,
+    refetchInterval: (query) => {
+      const state = query.state.data?.state
+      return state === 'queued' || state === 'running' ? 2000 : false
+    },
+  })
 }
 
 export function useSourceOrder(seriesId: number) {
@@ -859,6 +897,7 @@ export function useRunUpgradeScan() {
       void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['upgrade-scan-status'] })
     },
   })
 }

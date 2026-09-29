@@ -13,7 +13,8 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class UpgradeScanJob(
-    UpgradeScanService scans, IAppSettings settings, TimeProvider time, ILogger<UpgradeScanJob> logger) : IJob
+    UpgradeScanService scans, IAppSettings settings, TimeProvider time, ILogger<UpgradeScanJob> logger,
+    UpgradeScanTracker? tracker = null) : IJob
 {
     public static readonly JobKey Key = new("upgrade-scan");
     public const string ForceKey = "force";
@@ -24,16 +25,19 @@ public class UpgradeScanJob(
         var ct = context.CancellationToken;
         if (context.MergedJobDataMap.TryGetIntValue(SeriesKey, out var seriesId))
         {
+            tracker?.Running(seriesId);
             try
             {
-                await scans.ScanSeriesAsync(seriesId, ct);
+                tracker?.Finished(seriesId, await scans.ScanSeriesAsync(seriesId, ct));
             }
             catch (UpgradeScanBusyException)
             {
+                tracker?.Ended(seriesId, "busy");
                 logger.LogDebug("Upgrade scan of series {SeriesId} skipped; one is already running", seriesId);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                tracker?.Ended(seriesId, "failed");
                 logger.LogError(ex, "Upgrade scan of series {SeriesId} failed", seriesId);
             }
 

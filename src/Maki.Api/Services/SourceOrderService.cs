@@ -35,8 +35,10 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
             .FirstOrDefaultAsync(ct)) ?? SourceOrderMode.Manual;
 
     /// <summary>Best first. <paramref name="mappings"/> are the candidates the caller already filtered.</summary>
+    /// <param name="force">Order under this mode whatever the series is set to, to show what switching would do.</param>
     public async Task<SourceOrderResult> OrderAsync(
-        MakiDbContext db, int seriesId, IReadOnlyCollection<SourceMapping> mappings, CancellationToken ct)
+        MakiDbContext db, int seriesId, IReadOnlyCollection<SourceMapping> mappings, CancellationToken ct,
+        SourceOrderMode? force = null)
     {
         var seriesMode = await db.Series.AsNoTracking()
             .Where(s => s.Id == seriesId)
@@ -44,7 +46,7 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
             .FirstOrDefaultAsync(ct);
         var defaultMode = await DefaultModeAsync(db, ct);
         var manual = mappings.OrderBy(m => m.Priority).ThenBy(m => m.Id).ToList();
-        if ((seriesMode ?? defaultMode) != SourceOrderMode.Quality || mappings.Count == 0)
+        if ((force ?? seriesMode ?? defaultMode) != SourceOrderMode.Quality || mappings.Count == 0)
         {
             return new SourceOrderResult(seriesMode, defaultMode, manual, new Dictionary<int, QualityScore>());
         }
