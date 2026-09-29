@@ -421,10 +421,6 @@ msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} b."
 
 #: src/pages/SeriesDetailPage.tsx
-#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-#~ msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 msgstr ""
 
@@ -4120,12 +4116,6 @@ msgstr ""
 #, fuzzy
 msgid "Concurrent chapter downloads"
 msgstr "Eş zamanlı bölüm indirmeleri"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-#~ msgstr "eş zamanlı, işçiler, yeniden dene, azami deneme, bekleme süresi, smart download, okunmamış tetikleyici"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -8332,10 +8322,6 @@ msgstr ""
 #: src/components/SourceMeasurePanel.tsx
 msgid "Measuring {done}/{planned}"
 msgstr ""
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "Measuring {scoutDone}/{scoutPlanned}"
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Measuring…"
@@ -15231,11 +15217,6 @@ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-#~ msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 msgstr ""
 
@@ -15246,10 +15227,6 @@ msgstr ""
 #: src/pages/SeriesDetailPage.tsx
 msgid "Upgrade scan finished with nothing to check"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"
@@ -15281,14 +15258,6 @@ msgstr ""
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades files Maki knows nothing about, then stops"
 msgstr ""
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades off"
-#~ msgstr ""
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades on"
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades until chapters are covered by a digital volume"

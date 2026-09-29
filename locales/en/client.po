@@ -354,10 +354,6 @@ msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} ch"
 
 #: src/pages/SeriesDetailPage.tsx
-#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-#~ msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-
-#: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 
@@ -3402,11 +3398,6 @@ msgstr "Compression weight"
 #: src/pages/SettingsPage.tsx
 msgid "Concurrent chapter downloads"
 msgstr "Concurrent chapter downloads"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
-#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-#~ msgstr "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -6888,10 +6879,6 @@ msgstr "Measured quality"
 #: src/components/SourceMeasurePanel.tsx
 msgid "Measuring {done}/{planned}"
 msgstr "Measuring {done}/{planned}"
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "Measuring {scoutDone}/{scoutPlanned}"
-#~ msgstr "Measuring {scoutDone}/{scoutPlanned}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Measuring…"
@@ -12596,11 +12583,6 @@ msgstr "Upgrade now"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-#~ msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 
@@ -12611,10 +12593,6 @@ msgstr "Upgrade restore failed"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Upgrade scan finished with nothing to check"
 msgstr "Upgrade scan finished with nothing to check"
-
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
-#~ msgstr "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"
@@ -12646,14 +12624,6 @@ msgstr "Upgrades enabled"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades files Maki knows nothing about, then stops"
 msgstr "Upgrades files Maki knows nothing about, then stops"
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades off"
-#~ msgstr "Upgrades off"
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades on"
-#~ msgstr "Upgrades on"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades until chapters are covered by a digital volume"

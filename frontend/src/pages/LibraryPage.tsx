@@ -1704,7 +1704,7 @@ export default function LibraryPage() {
                 onToggle={toggle}
               />
             ))}
-            {!selectMode && visible.length < 12 && (
+            {!selectMode && (series?.length ?? 0) < 12 && (
               <Link
                 to="/add"
                 className="library-add-cell"
