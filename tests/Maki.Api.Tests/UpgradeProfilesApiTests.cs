@@ -344,6 +344,32 @@ public sealed class UpgradeProfilesApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Bulk_pin_sets_and_clears_many_series_at_once_and_rejects_an_unknown_profile()
+    {
+        var id = SeedProfile();
+        var first = _db.SeedSeries("First");
+        var second = _db.SeedSeries("Second");
+        using var db = _db.NewContext();
+        var controller = Series(db);
+
+        var rejected = await controller.SetUpgradeProfileBulk(new([first, second], id + 100), default);
+        var set = await controller.SetUpgradeProfileBulk(new([first, second, 999_999], id), default);
+
+        Assert.Equal("error.upgrades.profileNotFound", Code(rejected));
+        var body = ((OkObjectResult)set).Value!;
+        Assert.Equal(2, body.GetType().GetProperty("updated")!.GetValue(body));
+        using (var check = _db.NewContext())
+        {
+            Assert.All(check.Series.ToList(), s => Assert.Equal(id, s.UpgradeProfileId));
+        }
+
+        await controller.SetUpgradeProfileBulk(new([first], null), default);
+        using var cleared = _db.NewContext();
+        Assert.Null(cleared.Series.Single(s => s.Id == first).UpgradeProfileId);
+        Assert.Equal(id, cleared.Series.Single(s => s.Id == second).UpgradeProfileId);
+    }
+
+    [Fact]
     public async Task Adding_a_series_rejects_an_unknown_profile_before_creating_anything()
     {
         using var db = _db.NewContext();

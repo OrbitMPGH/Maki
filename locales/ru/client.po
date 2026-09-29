@@ -1422,6 +1422,10 @@ msgid "{updated, plural, one {Notifications updated for # series} other {Notific
 msgstr "{updated, plural, one {Для # серии обновлены уведомления} few {Для # серий обновлены уведомления} many {Для # серий обновлены уведомления} other {Для # серии обновлены уведомления}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 msgstr "{updated, plural, one {Добавлены теги для # серии} few {Добавлены теги для # серий} many {Добавлены теги для # серий} other {Добавлены теги для # серии}}"
@@ -4692,6 +4696,10 @@ msgstr "Дней активности"
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Определяет, когда заканчивается день чтения, что учитывается в сериях и ежедневных целях."
 
+#: src/pages/LibraryPage.tsx
+msgid "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
@@ -5768,6 +5776,10 @@ msgstr "Не удалось сохранить значение по умолч�
 #, fuzzy
 msgid "Failed to save filter: {detail}"
 msgstr "Не удалось сохранить фильтр: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to set the quality profile: {detail}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7110,6 +7122,7 @@ msgstr "Установка базы данных метаданных"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Instance default"
 msgstr ""
 
@@ -10687,6 +10700,7 @@ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Quality profile"
 msgstr ""
 
@@ -12866,6 +12880,10 @@ msgstr "Настроить мониторинг для {selectedCount} сери�
 #, fuzzy
 msgid "Set notifications for {selectedCount} series"
 msgstr "Настроить уведомления для {selectedCount} серий"
+
+#: src/pages/LibraryPage.tsx
+msgid "Set quality profile for {selectedCount} series"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

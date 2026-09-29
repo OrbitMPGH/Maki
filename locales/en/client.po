@@ -1171,6 +1171,10 @@ msgid "{updated, plural, one {Notifications updated for # series} other {Notific
 msgstr "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
+msgstr "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
+
+#: src/pages/LibraryPage.tsx
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 msgstr "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 
@@ -3873,6 +3877,10 @@ msgstr "Days active"
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Decides when your reading day ends, which is what streaks and daily goals count against."
 
+#: src/pages/LibraryPage.tsx
+msgid "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
+msgstr "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
+
 #: src/pages/SettingsPage.tsx
 msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
 msgstr "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
@@ -4756,6 +4764,10 @@ msgstr "Failed to save default: {detail}"
 #: src/pages/LibraryPage.tsx
 msgid "Failed to save filter: {detail}"
 msgstr "Failed to save filter: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to set the quality profile: {detail}"
+msgstr "Failed to set the quality profile: {detail}"
 
 #: src/pages/LibraryPage.tsx
 msgid "Failed to tag: {detail}"
@@ -5863,6 +5875,7 @@ msgstr "Installing metadata database"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Instance default"
 msgstr "Instance default"
 
@@ -8823,6 +8836,7 @@ msgstr "Quality formats"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Quality profile"
 msgstr "Quality profile"
 
@@ -10631,6 +10645,10 @@ msgstr "Set monitoring for {selectedCount} series"
 #: src/pages/LibraryPage.tsx
 msgid "Set notifications for {selectedCount} series"
 msgstr "Set notifications for {selectedCount} series"
+
+#: src/pages/LibraryPage.tsx
+msgid "Set quality profile for {selectedCount} series"
+msgstr "Set quality profile for {selectedCount} series"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Set to <0>0</0> to disable lockout."

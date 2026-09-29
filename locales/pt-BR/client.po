@@ -1422,6 +1422,10 @@ msgid "{updated, plural, one {Notifications updated for # series} other {Notific
 msgstr "{updated, plural, one {Notificações atualizadas para # série} many {Notificações atualizadas para # séries}other {Notificações atualizadas para # séries}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 msgstr "{updated, plural, one {Marcada com tags # série} many {Marcadas com tags # séries}other {Marcadas com tags # séries}}"
@@ -4692,6 +4696,10 @@ msgstr "Dias ativos"
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Define quando seu dia de leitura termina, que é o que as sequências e as metas diárias usam."
 
+#: src/pages/LibraryPage.tsx
+msgid "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
@@ -5768,6 +5776,10 @@ msgstr "Falha ao salvar o padrão: {detail}"
 #, fuzzy
 msgid "Failed to save filter: {detail}"
 msgstr "Falha ao salvar o filtro: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to set the quality profile: {detail}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7110,6 +7122,7 @@ msgstr "Instalando banco de dados de metadados"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Instance default"
 msgstr ""
 
@@ -10687,6 +10700,7 @@ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Quality profile"
 msgstr ""
 
@@ -12866,6 +12880,10 @@ msgstr "Definir monitoramento para {selectedCount} séries"
 #, fuzzy
 msgid "Set notifications for {selectedCount} series"
 msgstr "Definir notificações para {selectedCount} séries"
+
+#: src/pages/LibraryPage.tsx
+msgid "Set quality profile for {selectedCount} series"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

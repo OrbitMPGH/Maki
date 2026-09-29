@@ -193,6 +193,8 @@ export interface LibraryFilterSpec {
   fileSources?: string[] | null
   /** "any" | "all" */
   fileSourceMatch: string
+  /** "all", "default" (no pin of its own), or a quality profile id as a string. Absent on older presets. */
+  qualityProfile?: string
 }
 
 export interface SavedFilterDto {

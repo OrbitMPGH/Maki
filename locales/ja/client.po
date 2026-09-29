@@ -1422,6 +1422,10 @@ msgid "{updated, plural, one {Notifications updated for # series} other {Notific
 msgstr "{updated, plural, other {#シリーズの通知を更新}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
 msgstr "{updated, plural, other {#シリーズにタグ付け}}"
@@ -4692,6 +4696,10 @@ msgstr "活動日数"
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "読書日の終了時刻を決めます。連続記録と毎日の目標はこれを基準に数えます。"
 
+#: src/pages/LibraryPage.tsx
+msgid "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
@@ -5768,6 +5776,10 @@ msgstr "デフォルトの保存に失敗しました: {detail}"
 #, fuzzy
 msgid "Failed to save filter: {detail}"
 msgstr "フィルターを保存できませんでした: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to set the quality profile: {detail}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -7110,6 +7122,7 @@ msgstr "メタデータデータベースをインストール中"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Instance default"
 msgstr ""
 
@@ -10687,6 +10700,7 @@ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Quality profile"
 msgstr ""
 
@@ -12866,6 +12880,10 @@ msgstr "{selectedCount}シリーズの監視を設定"
 #, fuzzy
 msgid "Set notifications for {selectedCount} series"
 msgstr "{selectedCount}シリーズの通知を設定"
+
+#: src/pages/LibraryPage.tsx
+msgid "Set quality profile for {selectedCount} series"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy

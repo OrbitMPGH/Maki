@@ -70,7 +70,8 @@ public class LibraryFiltersControllerTests : IDisposable
             ContentRatings: ["safe"],
             Sources: ["mangadex", "asura"], SourceMatch: "all",
             SourceState: "hasDisabled",
-            FileSources: ["mangapill"], FileSourceMatch: "any");
+            FileSources: ["mangapill"], FileSourceMatch: "any",
+            QualityProfile: "7");
 
         await Controller().Create(new SaveFilterRequest("Broken sources", spec), CancellationToken.None);
         var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
@@ -80,6 +81,7 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Equal("all", listed.Spec.SourceMatch);
         Assert.Equal("hasDisabled", listed.Spec.SourceState);
         Assert.Equal(["mangapill"], listed.Spec.FileSources);
+        Assert.Equal("7", listed.Spec.QualityProfile);
     }
 
     [Fact]
@@ -123,6 +125,7 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.FileSources);
         Assert.Equal("all", listed.Spec.SourceState);
         Assert.Equal("any", listed.Spec.SourceMatch);
+        Assert.Equal("all", listed.Spec.QualityProfile);
         // Same reasoning for the chapter window: null ends mean "unbounded", and a 0 would
         // silently turn an old preset into a filter with a real lower bound.
         Assert.Null(listed.Spec.ChapterMin);
