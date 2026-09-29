@@ -156,6 +156,8 @@ public class HousekeepingJob(
 
         await PruneInboxAsync(ct);
 
+        // 0x10002: consider every table, not only the ones this pooled connection happened to query.
+        await db.Database.ExecuteSqlRawAsync("PRAGMA optimize=0x10002;", ct);
         await db.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);", ct);
 
         // Microsoft.Data.Sqlite pools native handles per connection string with no upper bound, and

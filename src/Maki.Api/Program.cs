@@ -61,6 +61,8 @@ using Maki.Sources.Rawkuma;
 using Maki.Sources.TeamX;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Serilog;
@@ -1148,6 +1150,11 @@ try
             .WithIdentity(Maki.Api.Jobs.ImageCacheRebuildJob.Key)
             .StoreDurably());
 
+        // Same shape: only the Build button in recommendation settings runs it.
+        q.AddJob<Maki.Api.Jobs.EmbeddingIndexJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.EmbeddingIndexJob.Key)
+            .StoreDurably());
+
         // Measures chapter files nothing has opened yet. Also fired after library and torrent
         // imports; the timer catches anything those triggers missed. First run at +15, clear of the
         // artifact builds in the first minutes after startup.
@@ -1212,6 +1219,19 @@ try
         options.HttpMessageHandlerBuilderActions.Add(handlerBuilder =>
             handlerBuilder.AdditionalHandlers.Add(
                 handlerBuilder.Services.GetRequiredService<OutboundHttpLoggingHandler>())));
+
+    // Images, archives and the SignalR event stream are not in the default MIME list, so they pass
+    // through untouched. Fastest because most of it is JSON built per request, where CPU matters more
+    // than the last few percent of size.
+    builder.Services.AddResponseCompression(o =>
+    {
+        o.EnableForHttps = true;
+        o.Providers.Add<BrotliCompressionProvider>();
+        o.Providers.Add<GzipCompressionProvider>();
+        o.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/atom+xml"]);
+    });
+    builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+    builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
     var app = builder.Build();
 
@@ -1302,6 +1322,10 @@ try
         // options on the first request.
         app.Services.GetRequiredService<AuthRuntimeOptions>()
             .LoadAsync(db, CancellationToken.None).GetAwaiter().GetResult();
+
+        // Anything read before the migration and the marker-gated repairs above may have changed
+        // under the settings cache.
+        app.Services.GetRequiredService<SettingsService>().Invalidate();
     }
 
     var authOptions = app.Services.GetRequiredService<AuthRuntimeOptions>();
@@ -1411,8 +1435,20 @@ try
     // renders nothing at all — a blank screen with no way to sign in and nothing in the log but a
     // row of 401s. Only a deployment serving the SPA from wwwroot sees it; behind the Vite dev
     // server, which serves its own assets, everything looks fine.
+    //
+    // Vite fingerprints everything under /assets, so those never change under a URL. index.html
+    // must be revalidated every time, or a browser keeps the old shell after an upgrade and its
+    // lazy chunks point at hashes that no longer exist.
+    var spaFiles = new StaticFileOptions
+    {
+        OnPrepareResponse = c => c.Context.Response.Headers.CacheControl =
+            c.Context.Request.Path.StartsWithSegments("/assets")
+                ? "public, max-age=31536000, immutable"
+                : "no-cache"
+    };
+    app.UseResponseCompression();
     app.UseDefaultFiles();
-    app.UseStaticFiles();
+    app.UseStaticFiles(spaFiles);
 
     app.UseRateLimiter();
 
@@ -1469,7 +1505,7 @@ try
     // registers a real endpoint, so the authorization fallback policy would otherwise 401 every deep
     // link (/library, /login) on a fresh browser. index.html carries no data; the app fetches
     // /auth/me and routes itself to the login screen on a 401.
-    app.MapFallbackToFile("index.html").AllowAnonymous();
+    app.MapFallbackToFile("index.html", spaFiles).AllowAnonymous();
 
     app.Run();
 }

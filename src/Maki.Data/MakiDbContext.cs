@@ -143,6 +143,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
     }
 
+    // Here rather than at the AddDbContext call so the design-time factory and every test that
+    // builds its own options get the same connection pragmas as the app.
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+        optionsBuilder.AddInterceptors(SqlitePragmaInterceptor.Instance);
+
     private sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
         v => v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : v,
         v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
@@ -163,6 +168,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // automatic scanning is on, so without an index it is a full HealthFiles scan per candidate
         // ChapterFile, forever.
         modelBuilder.Entity<HealthFile>().HasIndex(x => x.ChapterFileId);
+        modelBuilder.Entity<HealthFile>().HasIndex(x => x.SeriesId);
         modelBuilder.Entity<HealthFileVersion>().HasIndex(x => x.FileId);
         modelBuilder.Entity<HealthFinding>().HasIndex(x => new { x.FileId, x.Version, x.Kind }).IsUnique();
         modelBuilder.Entity<HealthScan>().HasIndex(x => x.Status);
@@ -423,6 +429,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Chapter numbers have at most 3 decimal places, well within double precision.
             e.Property(c => c.Number).HasConversion<double?>();
             e.HasIndex(c => new { c.SeriesId, c.Number, c.Volume, c.Language });
+            // Covers the library list's per-series tallies, so they never touch the table rows.
+            e.HasIndex(c => new { c.SeriesId, c.ChapterFileId, c.Wanted });
             e.HasOne(c => c.ChapterFile).WithMany().HasForeignKey(c => c.ChapterFileId).OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -430,7 +438,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         {
             e.HasQueryFilter(f => _scope.Unrestricted || Series.Any(s => s.Id == f.SeriesId));
 
-            e.HasIndex(f => f.SeriesId);
+            // Also serves every plain SeriesId lookup, and the library list's GROUP BY SeriesId, SourceName.
+            e.HasIndex(f => new { f.SeriesId, f.SourceName });
 
             // Home's "recently added" rail is an ORDER BY DateAdded DESC LIMIT n; without this it
             // is a full scan plus a sort of every file in the library on every landing-page load.
@@ -474,6 +483,15 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             // Covers ClaimNextAsync's filter and sort (Protocol, Status, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
             e.HasIndex(q => new { q.Protocol, q.Status, q.SortOrder, q.QueuedAt });
+
+            // The active queue page, ORDER BY SortOrder, QueuedAt. SQLite only uses a partial index
+            // when the query repeats its filter term, and EF renders that page's two != checks as
+            // exactly this NOT IN, in this order.
+            e.HasIndex(q => new { q.SortOrder, q.QueuedAt })
+                .HasFilter($"\"Status\" NOT IN ({(int)QueueStatus.Completed}, {(int)QueueStatus.Cancelled})");
+            // MAX(SortOrder) on every enqueue spans settled rows too, which the partial index omits.
+            e.HasIndex(q => q.SortOrder);
+            e.HasIndex(q => q.HealthOperationId);
 
             // One active row per chapter. SQLite allows any number of NULLs in a unique index, so
             // settled rows never collide.

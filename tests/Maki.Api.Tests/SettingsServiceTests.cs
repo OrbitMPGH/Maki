@@ -83,4 +83,32 @@ public class SettingsServiceTests : IDisposable
         Assert.Equal("2", await _settings.GetAsync("b"));
         Assert.Equal(2, RowCount());
     }
+
+    [Fact]
+    public async Task A_write_replaces_a_cached_value_and_a_cached_miss()
+    {
+        Assert.Null(await _settings.GetAsync("naming.format"));
+
+        await _settings.SetAsync("naming.format", "one");
+        Assert.Equal("one", await _settings.GetAsync("naming.format"));
+
+        await _settings.SetAsync("naming.format", "two");
+        Assert.Equal("two", await _settings.GetAsync("naming.format"));
+
+        await _settings.SetAsync("naming.format", null);
+        Assert.Null(await _settings.GetAsync("naming.format"));
+    }
+
+    [Fact]
+    public async Task A_write_behind_the_service_shows_only_after_invalidate()
+    {
+        await _settings.SetAsync("naming.format", "one");
+        Assert.Equal("one", await _settings.GetAsync("naming.format"));
+
+        _db.SetConfig(("naming.format", "two"));
+        Assert.Equal("one", await _settings.GetAsync("naming.format"));
+
+        _settings.Invalidate();
+        Assert.Equal("two", await _settings.GetAsync("naming.format"));
+    }
 }
