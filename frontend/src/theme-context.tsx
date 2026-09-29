@@ -107,7 +107,10 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     if (bg && meta) meta.setAttribute('content', bg)
   }, [preset.accent, scheme])
 
-  const mantineTheme = useMemo(() => createAppTheme(accents[preset.accent]), [preset.accent])
+  const mantineTheme = useMemo(
+    () => createAppTheme(accents[preset.accent], scheme),
+    [preset.accent, scheme],
+  )
   const value = useMemo(
     () => ({ themeId, setThemeId, presets: THEME_PRESETS }),
     [themeId, setThemeId],

@@ -138,7 +138,7 @@ const accentPalette = Object.fromEntries(
 )
 const baseShade = /primaryShade:\s*\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}/.exec(themeTs)
 const shadeOverrides = Object.fromEntries(
-  [...themeTs.matchAll(/accent === (\w+)\s*\?\s*\(\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}/g)].map(([, pal, light, dark]) => [
+  [...themeTs.matchAll(/\[(\w+),\s*\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}\]/g)].map(([, pal, light, dark]) => [
     pal,
     { light: +light, dark: +dark },
   ]),

@@ -2,12 +2,15 @@ import {
   Badge,
   Button,
   Card,
+  type MantineColorScheme,
   type MantineColorsTuple,
   type MantineThemeOverride,
   Modal,
   Paper,
   Table,
+  type VariantColorsResolver,
   createTheme,
+  defaultVariantColorsResolver,
 } from '@mantine/core'
 import type { ReactNode } from 'react'
 
@@ -105,17 +108,35 @@ const dark: MantineColorsTuple = [
   '#060706',
 ]
 
-/** Builds the Mantine theme for a given accent palette (defaults to blush). */
-export function createAppTheme(accent: MantineColorsTuple = blush) {
-  // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
-  // Blush is pale in dark, so it fills at shade 3 with dark text; light takes shade 6 with white.
-  const primaryShade =
-    accent === rose
-      ? ({ light: 6, dark: 6 } as const)
-      : accent === blush
-        ? ({ light: 6, dark: 3 } as const)
-        : themeBase.primaryShade
-  return createTheme({ ...themeBase, primaryShade, colors: { brand: accent, dark } })
+// Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
+// Blush is pale in dark, so it fills at shade 3 with dark text; light takes shade 6 with white.
+const primaryShades = new Map<MantineColorsTuple, { light: number; dark: number }>([
+  [rose, { light: 6, dark: 6 }],
+  [blush, { light: 6, dark: 3 }],
+])
+
+/**
+ * Text on a brand fill comes from `--brand-on` (theme.css), which theme.css already sets per accent
+ * and per scheme. Mantine's own resolver judges lightness from the light-scheme shade whatever
+ * scheme is active, so blush's pale dark fill would otherwise get white labels.
+ */
+const variantColorResolver: VariantColorsResolver = (input) => {
+  const resolved = defaultVariantColorsResolver(input)
+  const isBrand = !input.color || input.color === 'brand' || input.color === input.theme.primaryColor
+  if (input.variant === 'filled' && isBrand) return { ...resolved, color: 'var(--brand-on)' }
+  return resolved
+}
+
+/**
+ * Builds the Mantine theme for a given accent palette (defaults to blush) and the active scheme.
+ * The primary shade is pinned to a single number for that scheme: Mantine reads the light shade
+ * when it picks contrast colours for checkboxes, radios and pagination, so a per-scheme object
+ * would judge the dark fill by the light one.
+ */
+export function createAppTheme(accent: MantineColorsTuple = blush, scheme: MantineColorScheme = 'dark') {
+  const shades = primaryShades.get(accent) ?? (themeBase.primaryShade as { light: number; dark: number })
+  const primaryShade = (scheme === 'light' ? shades.light : shades.dark) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+  return createTheme({ ...themeBase, primaryShade, variantColorResolver, colors: { brand: accent, dark } })
 }
 
 const themeBase: MantineThemeOverride = {
