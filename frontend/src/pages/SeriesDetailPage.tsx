@@ -36,6 +36,7 @@ import {
 } from '@mantine/core'
 import {
   IconAlertTriangle,
+  IconArrowLeft,
   IconBook,
   IconChevronDown,
   IconCircleCheck,
@@ -1251,12 +1252,21 @@ export default function SeriesDetailPage() {
 
   if (!series) {
     return (
-        <EmptyState
-            title={t`Series not found`}
-            description={t`It may have been removed from the library.`}
-            actionLabel={t`Back to library`}
-            actionTo="/library"
-        />
+        <SurfaceFrame width="full" pageStyle="editorial">
+          <EmptyState
+              art="missing"
+              headingOrder={1}
+              code={`#${id}`}
+              title={t`Series not found`}
+              description={t`It may have been removed from the library.`}
+              actionLabel={t`Back to library`}
+              actionTo="/library"
+              actionIcon={<IconArrowLeft size={16} />}
+              secondaryActionLabel={can('AddSeries') ? t`Search MangaBaka` : undefined}
+              secondaryActionTo="/add"
+              secondaryActionIcon={<IconSearch size={16} />}
+          />
+        </SurfaceFrame>
     )
   }
 

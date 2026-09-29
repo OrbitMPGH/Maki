@@ -147,6 +147,7 @@ export default function CreatorPage() {
       <SurfaceFrame width="full" pageStyle="editorial">
         <PageHeader title={t`Creator`} />
         <EmptyState
+          art="missing"
           title={t`Not a valid creator name`}
           description={t`This link is missing the creator's name.`}
           actionLabel={t`Back to Discover`}
@@ -163,6 +164,7 @@ export default function CreatorPage() {
         <PageHeader title={decoded} />
         {notFound ? (
           <EmptyState
+            art="missing"
             title={t`No such creator`}
             description={t`Nobody by that name is credited in the local MangaBaka database.`}
             actionLabel={t`Back to Discover`}

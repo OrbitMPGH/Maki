@@ -6737,6 +6737,11 @@ msgstr ""
 msgid "Import"
 msgstr "가져오기"
 
+#: src/pages/HomePage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Import a folder"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Import archive"
@@ -11414,6 +11419,8 @@ msgstr "요청 해결됨"
 #: src/components/RequestForm.tsx
 #: src/nav.ts
 #: src/pages/AddSeriesPage.tsx
+#: src/pages/HomePage.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Request series"
 msgstr "시리즈 요청"
@@ -12194,6 +12201,10 @@ msgstr "장르 및 태그 검색"
 #, fuzzy
 msgid "Search genres, tags or groups like Character Traits"
 msgstr "장르, 태그 또는 Character Traits 같은 그룹 검색"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Search MangaBaka"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

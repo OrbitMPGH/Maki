@@ -6737,6 +6737,11 @@ msgstr ""
 msgid "Import"
 msgstr "インポート"
 
+#: src/pages/HomePage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Import a folder"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Import archive"
@@ -11414,6 +11419,8 @@ msgstr "リクエストが解決しました"
 #: src/components/RequestForm.tsx
 #: src/nav.ts
 #: src/pages/AddSeriesPage.tsx
+#: src/pages/HomePage.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Request series"
 msgstr "シリーズを依頼"
@@ -12194,6 +12201,10 @@ msgstr "ジャンルとタグを検索"
 #, fuzzy
 msgid "Search genres, tags or groups like Character Traits"
 msgstr "ジャンル、タグ、または「性格特性」などのグループを検索"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Search MangaBaka"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

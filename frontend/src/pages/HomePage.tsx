@@ -10,12 +10,14 @@ import {
   IconDeviceTv,
   IconDownload,
   IconFlame,
+  IconFolderDown,
   IconLayoutDashboard,
   IconPlayerPlay,
   IconPlus,
   IconSparkles,
 } from '@tabler/icons-react'
 import { useHomeFromAnime } from '../api/animeResume'
+import { useAuth } from '../auth/AuthProvider'
 import {
   HOME_HERO_DEFAULTS,
   useDiscover,
@@ -90,6 +92,7 @@ export default function HomePage() {
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
   const { editing, enter: enterEditing, exit: exitEditing } = useLayoutEditMode()
+  const { can } = useAuth()
 
   // Opposite default to the nav's in App.tsx on purpose: there, assuming "available" while the
   // settings load stops the Discover tab flickering in and out. Here it would fire two requests
@@ -232,14 +235,20 @@ export default function HomePage() {
   }
 
   if (!seriesLoading && !hasLibrary) {
+    // No header actions: the empty state carries "Add series" itself, and there is no layout to edit.
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
-        {header}
+        <PageHeader title={t`Home`} description={t`Pick up where you left off.`} />
         <EmptyState
+          art="shelf"
           title={t`Nothing in your library yet`}
           description={t`Add a series and Maki will start tracking chapters for it. This page fills up as you read and download.`}
-          actionLabel={t`Add series`}
+          actionLabel={can('AddSeries') ? t`Add series` : t`Request series`}
           actionTo="/add"
+          actionIcon={<IconPlus size={16} />}
+          secondaryActionLabel={can('ImportLibrary') ? t`Import a folder` : undefined}
+          secondaryActionTo="/import"
+          secondaryActionIcon={<IconFolderDown size={16} />}
         />
       </SurfaceFrame>
     )

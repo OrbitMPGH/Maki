@@ -27,6 +27,7 @@ import {
   IconEye,
   IconFileText,
   IconFilter,
+  IconFolderDown,
   IconFolderSymlink,
   IconLayoutGrid,
   IconLayoutList,
@@ -1559,10 +1560,15 @@ export default function LibraryPage() {
       )}
       {series && series.length === 0 && (
         <EmptyState
+          art="shelf"
           title={t`Your library is empty`}
           description={t`Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically.`}
-          actionLabel={t`Add a series`}
+          actionLabel={can('AddSeries') ? t`Add a series` : t`Request series`}
           actionTo="/add"
+          actionIcon={<IconPlus size={16} />}
+          secondaryActionLabel={can('ImportLibrary') ? t`Import a folder` : undefined}
+          secondaryActionTo="/import"
+          secondaryActionIcon={<IconFolderDown size={16} />}
         />
       )}
       {series && series.length > 0 && visible.length === 0 && (

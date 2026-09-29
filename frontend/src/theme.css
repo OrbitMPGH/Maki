@@ -122,6 +122,7 @@
 .series-hero-title,
 .page-header .mantine-Title-root,
 .auth-panel-title,
+.empty-state--page .empty-state-title,
 .brand-wordmark {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
@@ -3532,6 +3533,171 @@ body {
   color: var(--ink-2);
   font-size: var(--type-body);
   font-weight: var(--fw-semibold);
+}
+
+/* The whole page is empty: centred in what's left of the viewport, over a picture of covers. */
+.empty-state--page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(26rem, 64vh, 40rem);
+  padding: var(--mantine-spacing-xl) var(--mantine-spacing-md);
+  text-align: center;
+}
+.empty-state--page .empty-state-title {
+  margin-top: var(--mantine-spacing-xl);
+  font-size: var(--type-feature);
+  line-height: 1.15;
+}
+.empty-state--page .empty-state-description {
+  max-width: 28rem;
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: var(--type-body);
+  line-height: 1.55;
+}
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--mantine-spacing-sm);
+  margin-top: var(--mantine-spacing-lg);
+}
+
+.empty-shelf {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.empty-shelf-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.empty-shelf-slot[data-depth='2'] {
+  opacity: 0.3;
+}
+.empty-shelf-slot[data-depth='1'] {
+  opacity: 0.6;
+}
+.empty-shelf-slot[data-depth='0'] {
+  transform: translateY(-10px);
+}
+.empty-shelf-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 104px;
+  aspect-ratio: 2 / 3;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-overlay);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.empty-shelf-slot[data-depth='1'] .empty-shelf-cover {
+  width: 112px;
+}
+.empty-shelf-slot[data-depth='0'] .empty-shelf-cover {
+  width: 132px;
+  border-color: color-mix(in srgb, var(--brand) 65%, transparent);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 6%, transparent);
+  transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+}
+a.empty-shelf-slot:hover .empty-shelf-cover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+.empty-shelf-plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  color: var(--brand-fg);
+}
+.empty-shelf-line {
+  width: 76%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+.empty-shelf-line + .empty-shelf-line {
+  width: 50%;
+}
+.empty-shelf-slot[data-depth='0'] .empty-shelf-line {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.empty-shelf-slot[data-depth='0'] .empty-shelf-line + .empty-shelf-line {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+@media (max-width: 36em) {
+  .empty-shelf {
+    gap: 12px;
+  }
+  .empty-shelf-slot[data-depth='2'] {
+    display: none;
+  }
+  .empty-shelf-slot[data-depth='1'] .empty-shelf-cover {
+    width: 88px;
+  }
+  .empty-shelf-slot[data-depth='0'] .empty-shelf-cover {
+    width: 108px;
+  }
+}
+
+.empty-missing {
+  position: relative;
+  width: 220px;
+  height: 240px;
+}
+.empty-missing-cover {
+  position: absolute;
+  top: 12px;
+  left: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  box-sizing: border-box;
+  width: 144px;
+  aspect-ratio: 2 / 3;
+  border: 1.5px dashed color-mix(in srgb, var(--ink-4) 55%, transparent);
+  border-radius: var(--radius-overlay);
+  background: var(--surface);
+  transform: rotate(-4deg);
+}
+.empty-missing-cover[data-back] {
+  top: 10px;
+  left: 44px;
+  border-color: var(--border-strong);
+  opacity: 0.45;
+  transform: rotate(7deg);
+}
+.empty-missing-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink-4);
+}
+.empty-missing-code {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--ink-4);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-micro);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Series detail panels -------------------------------------------------- */

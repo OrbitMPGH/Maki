@@ -17,6 +17,7 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import {
   IconAlertTriangle,
+  IconArrowLeft,
   IconDownload,
   IconHeartbeat,
 } from '@tabler/icons-react'
@@ -87,10 +88,13 @@ function NotFoundPage() {
   const { t } = useLingui()
   return (
     <EmptyState
+      art="missing"
+      headingOrder={1}
       title={t`Page not found`}
       description={t`Nothing lives at this address. The link may be old or mistyped.`}
       actionLabel={t`Go to start page`}
       actionTo="/"
+      actionIcon={<IconArrowLeft size={16} />}
     />
   )
 }

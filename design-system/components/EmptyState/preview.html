@@ -1,4 +1,4 @@
-<!-- @dsCard group="Feedback" height=210 -->
+<!-- @dsCard group="Feedback" height=760 -->
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>EmptyState preview</title></head>
@@ -12,6 +12,21 @@
   <div class="empty-state" data-compact>
     <div class="empty-state-title">Queue is empty</div>
     <div class="empty-state-description">Nothing is waiting to download.</div>
+  </div>
+  <div class="empty-state empty-state--page" style="min-height:0">
+    <div class="empty-shelf" aria-hidden="true">
+      <div class="empty-shelf-slot" data-depth="2"><span class="empty-shelf-cover"></span><span class="empty-shelf-line"></span><span class="empty-shelf-line"></span></div>
+      <div class="empty-shelf-slot" data-depth="1"><span class="empty-shelf-cover"></span><span class="empty-shelf-line"></span><span class="empty-shelf-line"></span></div>
+      <div class="empty-shelf-slot" data-depth="0"><span class="empty-shelf-cover"><span class="empty-shelf-plus"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" aria-hidden="true"><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg></span></span><span class="empty-shelf-line"></span><span class="empty-shelf-line"></span></div>
+      <div class="empty-shelf-slot" data-depth="1"><span class="empty-shelf-cover"></span><span class="empty-shelf-line"></span><span class="empty-shelf-line"></span></div>
+      <div class="empty-shelf-slot" data-depth="2"><span class="empty-shelf-cover"></span><span class="empty-shelf-line"></span><span class="empty-shelf-line"></span></div>
+    </div>
+    <div class="empty-state-title">Nothing in your library yet</div>
+    <div class="empty-state-description">Add a series and Maki will start tracking chapters for it. This page fills up as you read and download.</div>
+    <div class="empty-state-actions">
+      <button class="mk-button" data-size="md">Add series</button>
+      <button class="mk-button" data-variant="default" data-size="md">Import a folder</button>
+    </div>
   </div>
 </div>
 </body>

@@ -5541,6 +5541,11 @@ msgstr "Image formats"
 msgid "Import"
 msgstr "Import"
 
+#: src/pages/HomePage.tsx
+#: src/pages/LibraryPage.tsx
+msgid "Import a folder"
+msgstr "Import a folder"
+
 #: src/pages/HealthPage.tsx
 msgid "Import archive"
 msgstr "Import archive"
@@ -9395,6 +9400,8 @@ msgstr "Request resolved"
 #: src/components/RequestForm.tsx
 #: src/nav.ts
 #: src/pages/AddSeriesPage.tsx
+#: src/pages/HomePage.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Request series"
 msgstr "Request series"
 
@@ -10042,6 +10049,10 @@ msgstr "Search genres and tags"
 #: src/components/TagBrowserModal.tsx
 msgid "Search genres, tags or groups like Character Traits"
 msgstr "Search genres, tags or groups like Character Traits"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Search MangaBaka"
+msgstr "Search MangaBaka"
 
 #: src/pages/LibraryPage.tsx
 msgid "Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically."

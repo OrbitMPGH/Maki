@@ -93,6 +93,14 @@ export declare function EmptyState(props: {
   actionTo?: string
   onAction?: () => void
   compact?: boolean
+  /** The whole page is empty: centred, over empty cover slots or a lone blank cover. */
+  art?: 'shelf' | 'missing'
+  code?: string
+  headingOrder?: 1 | 2
+  actionIcon?: ReactNode
+  secondaryActionLabel?: string
+  secondaryActionTo?: string
+  secondaryActionIcon?: ReactNode
 }): JSX.Element
 
 /** Poster card for the library grid. `series` is the API's SeriesDto. */

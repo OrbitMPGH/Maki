@@ -308,7 +308,7 @@ for (const n of new Set(allNames.filter((n, i) => allNames.indexOf(n) !== i))) w
 const CLASSES = new RegExp(
   String.raw`(^|[\s,>+~(])\.(` +
     [
-      String.raw`brand-mark\b`, 'brand-wordmark', String.raw`panel\b`, 'section-header', 'status-dot', 'empty-state',
+      String.raw`brand-mark\b`, 'brand-wordmark', String.raw`panel\b`, 'section-header', 'status-dot', 'empty-state', 'empty-shelf', 'empty-missing',
       'figure-strip', 'stat-tile', 'stat-accent', String.raw`tag-chips?\b`, 'tag-chip-body', 'tag-dot',
       String.raw`cover-(card|poster|placeholder|scrim|corners?|badge|ring|meta|title|progress-row|bar|count|check)`,
       String.raw`tip\b`, String.raw`discover-(card|card-action|rating|corner|meta|reason|sub|sub-status|rail|rail-item)\b`,
