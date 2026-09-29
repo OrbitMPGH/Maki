@@ -2126,6 +2126,22 @@ export function useSetSeriesNotificationMode() {
  * Applies one notification mode across many series in one request (Library bulk bar). A real
  * endpoint rather than a loop over the per-series one: the selection can run to hundreds.
  */
+/** Pins every given series to a quality profile, or clears the pin with null. */
+export function useBulkSetUpgradeProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, upgradeProfileId }: { seriesIds: number[]; upgradeProfileId: number | null }) =>
+      api<{ updated: number }>('/series/upgradeprofile/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, upgradeProfileId }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+    },
+  })
+}
+
 export function useBulkSetSeriesNotificationMode() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -41,6 +41,7 @@ public class UpgradesControllerTests : IDisposable
     }
 
     private readonly RecordingSchedulerFactory _scheduler = new();
+    private readonly UpgradeScanTracker _tracker = new();
 
     private async Task<IActionResult> ScanAsync(UpgradeScanRequest? request, MakiPermission permissions)
     {
@@ -49,7 +50,7 @@ public class UpgradesControllerTests : IDisposable
         var controller = new UpgradesController(new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), db,
             new TestLocalizer(), NullLogger<UpgradesController>.Instance);
         return await controller.Scan(request, _world.Scanner(db, batches), _scheduler,
-            new TestCurrentUser(1, permissions: permissions), CancellationToken.None);
+            new TestCurrentUser(1, permissions: permissions), _tracker, CancellationToken.None);
     }
 
     private static string Code(IActionResult result) =>
@@ -88,6 +89,8 @@ public class UpgradesControllerTests : IDisposable
         Assert.IsType<AcceptedResult>(result);
         Assert.Equal(1, _scheduler.Calls);
         Assert.Empty(_world.Http.Requested);
+        // This fake scheduler refuses the trigger, so the series page must hear the scan never ran.
+        Assert.Equal("failed", _tracker.Status(_world.SeriesId)!.State);
     }
 
     [Theory]

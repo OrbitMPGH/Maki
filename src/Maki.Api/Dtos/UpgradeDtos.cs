@@ -15,6 +15,7 @@ public record FormatScoreDto(int FormatId, int Score);
 public record UpgradeProfileDto(
     int Id,
     string Name,
+    string? Description,
     IReadOnlyList<ProfileTierDto> Tiers,
     string Cutoff,
     bool UpgradesEnabled,
@@ -31,6 +32,7 @@ public record UpgradeProfileDto(
     public static UpgradeProfileDto From(UpgradeProfile p, int seriesCount) => new(
         p.Id,
         p.Name,
+        p.Description,
         [.. p.Tiers.Select(t => new ProfileTierDto(QualityNames.Tier(t.Tier), t.Allowed))],
         QualityNames.Tier(p.Cutoff),
         p.UpgradesEnabled,
@@ -56,7 +58,8 @@ public record UpgradeProfileWriteDto(
     int PageTolerancePercent,
     bool AllowReplacingUnknown,
     int ResolutionWeight = 0,
-    int CompressionWeight = 0);
+    int CompressionWeight = 0,
+    string? Description = null);
 
 /// <param name="Type">camelCase <see cref="FormatConditionType"/> name, e.g. <c>minWidth</c>.</param>
 public record FormatConditionDto(string Type, string Value, bool Required, bool Negate);
@@ -125,9 +128,10 @@ public record QualitySnapshotDto(
 /// <param name="SeriesMode">"manual", "quality", or null to follow <paramref name="DefaultMode"/>.</param>
 /// <param name="Order">Mapping ids in the order a download tries them; disabled mappings last.</param>
 /// <param name="Scout">The latest source measurement run for the series since startup, or null.</param>
+/// <param name="QualityOrder">Enabled mapping ids as best quality first would order them, whatever the mode.</param>
 public record SourceOrderDto(
     string? SeriesMode, string DefaultMode, string Mode, IReadOnlyList<int> Order, IReadOnlyList<SourceQualityDto> Sources,
-    ScoutSnapshot? Scout);
+    ScoutSnapshot? Scout, IReadOnlyList<int> QualityOrder);
 
 /// <summary>One source mapping's measured track record for a series.</summary>
 /// <param name="BitsPerPixel">JPG-equivalent median, see <see cref="MeasuredQuality"/>.</param>

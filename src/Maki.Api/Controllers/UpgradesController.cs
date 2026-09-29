@@ -28,6 +28,19 @@ public class UpgradesController(
     UpgradeEvaluationService upgrades, MakiDbContext db, ILocalizer localizer, ILogger<UpgradesController> logger)
     : ControllerBase
 {
+    /// <summary>The latest scan of one series asked for since startup; 204 when there is none.</summary>
+    [HttpGet("scan/status")]
+    public async Task<IActionResult> ScanStatus(
+        [FromQuery] int seriesId, [FromServices] UpgradeScanTracker tracker, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        return tracker.Status(seriesId) is { } status ? Ok(status) : NoContent();
+    }
+
     [HttpGet("cutoff-unmet")]
     public async Task<IActionResult> CutoffUnmet(
         [FromQuery] int? seriesId, [FromQuery] int page = 1,
@@ -186,7 +199,8 @@ public class UpgradesController(
     [HttpPost("scan")]
     public async Task<IActionResult> Scan(
         [FromBody] UpgradeScanRequest? request, [FromServices] UpgradeScanService scans,
-        [FromServices] ISchedulerFactory schedulerFactory, [FromServices] ICurrentUser user, CancellationToken ct)
+        [FromServices] ISchedulerFactory schedulerFactory, [FromServices] ICurrentUser user,
+        [FromServices] UpgradeScanTracker tracker, CancellationToken ct)
     {
         if (request is { SeriesId: not null, ChapterId: not null })
         {
@@ -228,7 +242,12 @@ public class UpgradesController(
                 return this.Conflict(localizer, "error.upgrades.scanRunning");
             }
 
-            await UpgradeScanJob.TriggerSeriesAsync(schedulerFactory, logger, seriesId);
+            tracker.Queued(seriesId);
+            if (!await UpgradeScanJob.TriggerSeriesAsync(schedulerFactory, logger, seriesId))
+            {
+                tracker.Ended(seriesId, "failed");
+            }
+
             return Accepted(new { started = true });
         }
 

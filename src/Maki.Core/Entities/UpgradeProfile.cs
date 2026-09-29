@@ -12,6 +12,9 @@ public class UpgradeProfile
     public int Id { get; set; }
     public string Name { get; set; } = "";
 
+    /// <summary>What choosing this profile does and costs, in the admin's words. Shown wherever profiles are picked.</summary>
+    public string? Description { get; set; }
+
     /// <summary>Highest priority first. Holds every <see cref="QualityTier"/> exactly once after <see cref="UpgradeProfileDefaults.Normalise"/>.</summary>
     public List<ProfileTier> Tiers { get; set; } = [];
 

@@ -41,6 +41,8 @@ export interface FormatScoreDto {
 export interface UpgradeProfileDto {
   id: number
   name: string
+  /** What choosing this profile does and costs. Null when the admin left it blank. */
+  description: string | null
   /** Highest priority first. */
   tiers: ProfileTierDto[]
   cutoff: QualityTierName
@@ -313,6 +315,7 @@ export type UpgradeSkipReasonCode =
   | 'probe_budget'
   | 'daily_cap'
   | 'unsupported_file'
+  | 'no_other_source'
   /** `ComparePanelQualityDto.reason` on a series with no upgrade profile; never a scan bucket. */
   | 'no_profile'
   | 'upgrades_disabled'
@@ -341,6 +344,7 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
   shared_file: msg`Shares a file with another chapter`,
   queued: msg`Already queued`,
   memoised: msg`Already checked recently`,
+  no_other_source: msg`No other source lists it`,
   probe_budget: msg`Ran out of probes for this run`,
   daily_cap: msg`Daily upgrade cap reached`,
   unsupported_file: msg`Unsupported file type`,
@@ -352,6 +356,18 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
 /** `LABELS[x] ?? x`: a code this build has no case for renders as-is rather than disappearing. */
 export function upgradeReasonLabel(renderLabel: (m: MessageDescriptor) => string, code: string): string {
   return renderLabel(UPGRADE_REASON_LABELS[code as UpgradeReasonCode | UpgradeSkipReasonCode] ?? code)
+}
+
+/** Why a scan passed chapters or candidates over, most common first: "Label (3) · Label (1)". */
+export function scanReasonSummary(
+  renderLabel: (m: MessageDescriptor) => string,
+  skipped: Record<string, number> | null | undefined,
+): string {
+  return Object.entries(skipped ?? {})
+    .filter(([, count]) => count > 0)
+    .sort(([, a], [, b]) => b - a)
+    .map(([code, count]) => `${upgradeReasonLabel(renderLabel, code)} (${i18n.number(count)})`)
+    .join(' · ')
 }
 
 export interface NumberRangeDto {
@@ -554,6 +570,8 @@ export interface SourceOrderDto {
   sources: SourceQualityDto[]
   /** The latest source measurement run since the server started, or null. */
   scout: ScoutSnapshot | null
+  /** Enabled mapping ids as best quality first would order them, whatever the mode. */
+  qualityOrder: number[]
 }
 
 export interface ScoutSnapshot {
@@ -565,6 +583,44 @@ export interface ScoutSnapshot {
   measured: number
   startedAtUtc: string
   finishedAtUtc: string | null
+  /** The chapters being sampled, as their labels, in reading order. */
+  chapters: string[]
+  sources: ScoutSourceProgress[]
+}
+
+export interface ScoutSourceProgress {
+  mappingId: number
+  /** `skipped`: the source lists none of the sampled chapters. `failed`: nothing could be measured. */
+  state: 'waiting' | 'measuring' | 'done' | 'failed' | 'skipped'
+  planned: number
+  done: number
+  measured: number
+  /** Why the last failed sample failed: `cooldown` when the source is rate-limiting, else `failed`. */
+  problem: 'cooldown' | 'failed' | null
+}
+
+/** The latest scan of one series asked for since the server started. */
+export interface SeriesScanStatus {
+  state: 'queued' | 'running' | 'done' | 'busy' | 'failed'
+  queuedAtUtc: string
+  finishedAtUtc: string | null
+  chaptersChecked: number
+  probed: number
+  queued: number
+  /** Reason code to count, once done. */
+  skipped: Record<string, number> | null
+}
+
+export function useSeriesUpgradeScanStatus(seriesId: number) {
+  return useQuery({
+    queryKey: ['upgrade-scan-status', seriesId],
+    queryFn: async () =>
+      (await api<SeriesScanStatus | undefined>(`/upgrades/scan/status?seriesId=${seriesId}`)) ?? null,
+    refetchInterval: (query) => {
+      const state = query.state.data?.state
+      return state === 'queued' || state === 'running' ? 2000 : false
+    },
+  })
 }
 
 export function useSourceOrder(seriesId: number) {
@@ -857,6 +913,7 @@ export function useRunUpgradeScan() {
       void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+      void queryClient.invalidateQueries({ queryKey: ['upgrade-scan-status'] })
     },
   })
 }

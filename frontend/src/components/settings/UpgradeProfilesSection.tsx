@@ -13,6 +13,7 @@ import {
   Table,
   Text,
   TextInput,
+  Textarea,
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -25,7 +26,8 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { t as now } from '@lingui/core/macro'
+import { msg, t as now } from '@lingui/core/macro'
+import type { MessageDescriptor } from '@lingui/core'
 import {
   FORMAT_CONDITION_TYPE_LABELS,
   FORMAT_CONDITION_TYPES,
@@ -60,8 +62,18 @@ import { useLabel } from '../../i18n-context'
 /** Highest priority first, matches `UpgradeProfileDefaults.DefaultOrder` on the server. */
 const DEFAULT_TIER_ORDER: QualityTierName[] = ['volume', 'official', 'scanlator', 'aggregator', 'unknown']
 
+/** How far a profile upgrades, in words, per cutoff tier. Descriptors, rendered at the call site. */
+const CUTOFF_SUMMARIES: Record<QualityTierName, MessageDescriptor> = {
+  unknown: msg`Upgrades files Maki knows nothing about, then stops`,
+  aggregator: msg`Upgrades until each chapter has any known copy`,
+  scanlator: msg`Upgrades until each chapter is from a scanlator or an official source`,
+  official: msg`Upgrades until each chapter is from an official source`,
+  volume: msg`Upgrades until chapters are covered by a digital volume`,
+}
+
 const DEFAULT_PROFILE: UpgradeProfileInput = {
   name: '',
+  description: null,
   tiers: DEFAULT_TIER_ORDER.map((tier) => ({ tier, allowed: true })),
   cutoff: 'aggregator',
   upgradesEnabled: false,
@@ -167,24 +179,23 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
   const remove = useDeleteUpgradeProfile()
   const [confirming, setConfirming] = useState(false)
   const { name, seriesCount } = profile
-  const cutoffLabel = renderLabel(QUALITY_TIER_LABELS[profile.cutoff])
 
   return (
     <Card withBorder radius="sm" padding="xs">
-      <Group justify="space-between" wrap="nowrap">
+      <Group justify="space-between" wrap="nowrap" align="flex-start">
         <div style={{ minWidth: 0 }}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={600} fz="sm" truncate>
-              {name}
+          <Text fw={600} fz="sm" truncate>
+            {name}
+          </Text>
+          <Text fz="xs" fw={500} c={profile.upgradesEnabled ? 'var(--ok)' : 'var(--ink-3)'}>
+            {profile.upgradesEnabled ? renderLabel(CUTOFF_SUMMARIES[profile.cutoff]) : <Trans>Never upgrades</Trans>}
+          </Text>
+          {profile.description && (
+            <Text fz="xs" c="var(--ink-2)" mt={2}>
+              {profile.description}
             </Text>
-            <Badge size="xs" variant="light">
-              <Trans>Cutoff: {cutoffLabel}</Trans>
-            </Badge>
-            <Badge size="xs" variant="outline" color={profile.upgradesEnabled ? 'var(--ok)' : 'var(--neutral)'}>
-              {profile.upgradesEnabled ? <Trans>Upgrades on</Trans> : <Trans>Upgrades off</Trans>}
-            </Badge>
-          </Group>
-          <Text fz="xs" c="var(--ink-3)">
+          )}
+          <Text fz="xs" c="var(--ink-3)" mt={2}>
             <Plural value={seriesCount} one="# series" other="# series" />
           </Text>
         </div>
@@ -268,6 +279,7 @@ function ProfileEditor({
   const { t } = useLingui()
   const renderLabel = useLabel()
   const [name, setName] = useState(initial.name)
+  const [description, setDescription] = useState(initial.description ?? '')
   const [tiers, setTiers] = useState<ProfileTierDto[]>(initial.tiers)
   const [cutoff, setCutoff] = useState<QualityTierName>(initial.cutoff)
   const [upgradesEnabled, setUpgradesEnabled] = useState(initial.upgradesEnabled)
@@ -294,6 +306,15 @@ function ProfileEditor({
         value={name}
         maxLength={60}
         onChange={(e) => setName(e.currentTarget.value)}
+      />
+      <Textarea
+        label={t`Description`}
+        description={t`What picking this profile does, shown in the profile list.`}
+        value={description}
+        maxLength={300}
+        autosize
+        minRows={2}
+        onChange={(e) => setDescription(e.currentTarget.value)}
       />
 
       <div>
@@ -467,6 +488,7 @@ function ProfileEditor({
           onClick={() =>
             onSubmit({
               name: name.trim(),
+              description: description.trim() || null,
               tiers,
               cutoff,
               upgradesEnabled,

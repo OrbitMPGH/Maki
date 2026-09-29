@@ -272,7 +272,8 @@ public record SeriesDto(
     {
         UpgradeProfileId = s.UpgradeProfileId,
         LastUpgradeScan = s.LastUpgradeScanUtc is { } at
-            ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0)
+            ? new LastUpgradeScanDto(at, s.LastUpgradeScanProbed ?? 0, s.LastUpgradeScanQueued ?? 0,
+                s.LastUpgradeScanChecked, LastUpgradeScanDto.ParseSkips(s.LastUpgradeScanSkipsJson))
             : null
     };
 
@@ -302,7 +303,27 @@ public record SeriesDto(
 /// </param>
 public record SeriesOperationDto(Guid Id, string State, int SeriesId, long SignalRevision);
 
-public record LastUpgradeScanDto(DateTime At, int Probed, int Queued);
+/// <param name="Checked">Null for scans recorded before it was kept.</param>
+/// <param name="Skipped">Reason code to count, see <c>UpgradeScanResult.Skipped</c>.</param>
+public record LastUpgradeScanDto(DateTime At, int Probed, int Queued, int? Checked, IReadOnlyDictionary<string, int> Skipped)
+{
+    public static IReadOnlyDictionary<string, int> ParseSkips(string? json)
+    {
+        if (string.IsNullOrEmpty(json))
+        {
+            return new Dictionary<string, int>();
+        }
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(json) ?? new Dictionary<string, int>();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return new Dictionary<string, int>();
+        }
+    }
+}
 
 public record AddSeriesRequest(
     string MetadataProviderId,

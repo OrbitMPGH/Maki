@@ -316,6 +316,10 @@ msgstr "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgid "{beforeLabel} to {afterLabel}"
 msgstr "{beforeLabel} to {afterLabel}"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "{bestName} is already tried first, so nothing needs to change."
+msgstr "{bestName} is already tried first, so nothing needs to change."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{biggestDayCount, plural, one {# chapter} other {# chapters}}"
@@ -348,6 +352,14 @@ msgstr "{chapterCount, plural, one {# chapter} other {# chapters}}"
 #: src/pages/DiscoverPage.tsx
 msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} ch"
+
+#: src/pages/SeriesDetailPage.tsx
+#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+#~ msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
+msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{chaptersCount, plural, one {# affected chapter} other {# affected chapters}}"
@@ -452,6 +464,10 @@ msgstr "{decade}s"
 #: src/pages/HealthPage.tsx
 msgid "{deletedCount} deleted, {failedCount} refused:"
 msgstr "{deletedCount} deleted, {failedCount} refused:"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "{done} of {probes} chapter samples. The order below updates once it finishes."
+msgstr "{done} of {probes} chapter samples. The order below updates once it finishes."
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "{downloaded} of {total}"
@@ -808,6 +824,10 @@ msgstr "{pushingDown} kept out of your taste"
 msgid "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 msgstr "{queued, plural, one {Auto-matching # series in the background.} other {Auto-matching # series in the background.}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
+msgstr "{queued, plural, one {Upgrade scan finished: # better copy queued} other {Upgrade scan finished: # better copies queued}}"
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "{rated} rated"
 msgstr "{rated} rated"
@@ -986,6 +1006,10 @@ msgstr "{sourceName} is switched off in Settings → Sources. This series' setti
 #: src/components/SourceMappingsSection.tsx
 msgid "{sourceName} publishes one language per series, so there is nothing to filter."
 msgstr "{sourceName} publishes one language per series, so there is nothing to filter."
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
+msgstr "{sources, plural, one {Measuring # source on chapters {chapters}} other {Measuring # sources on chapters {chapters}}}"
 
 #: src/components/MetadataDumpProgress.tsx
 msgid "{speed}/s"
@@ -1173,6 +1197,10 @@ msgstr "{unsavedCount, plural, one {A card on this tab has changes that are not 
 #: src/pages/LibraryPage.tsx
 msgid "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
 msgstr "{updated, plural, one {Notifications updated for # series} other {Notifications updated for # series}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
+msgstr "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
@@ -2112,6 +2140,10 @@ msgstr "Anime ends at ch. {0}"
 msgid "Anime you've watched"
 msgstr "Anime you've watched"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
+msgstr "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 msgid "any"
@@ -2616,6 +2648,10 @@ msgstr "Button label"
 #: src/components/ui/DiscoverRail.tsx
 msgid "By an author you read"
 msgstr "By an author you read"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "By measured quality, downloads would try {bestName} first. With manual priority, {currentName} goes first now."
+msgstr "By measured quality, downloads would try {bestName} first. With manual priority, {currentName} goes first now."
 
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "By status"
@@ -3672,6 +3708,10 @@ msgstr "Couldn't reach {label}."
 msgid "Couldn't run the scan"
 msgstr "Couldn't run the scan"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Couldn't sample"
+msgstr "Couldn't sample"
+
 #: src/pages/ActivityPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/SettingsPage.tsx
@@ -3840,7 +3880,6 @@ msgstr "Cutoff unmet"
 msgid "Cutoff unmet ({cutoffUnmetFilterCount})"
 msgstr "Cutoff unmet ({cutoffUnmetFilterCount})"
 
-#: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Cutoff: {cutoffLabel}"
 msgstr "Cutoff: {cutoffLabel}"
@@ -3881,6 +3920,10 @@ msgstr "Days active"
 #: src/components/settings/ProgressSection.tsx
 msgid "Decides when your reading day ends, which is what streaks and daily goals count against."
 msgstr "Decides when your reading day ends, which is what streaks and daily goals count against."
+
+#: src/pages/LibraryPage.tsx
+msgid "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
+msgstr "Decides which copies of these series get upgraded and, in best-quality source order, which source their downloads try first. Instance default clears each series' own choice."
 
 #: src/pages/SettingsPage.tsx
 msgid "Decimal chapters (10.5, x.1) stay listed but are never downloaded or counted in the chapter total. Covers specials released later too."
@@ -4060,6 +4103,10 @@ msgstr "Demographic"
 #: src/pages/DiscoverPage.tsx
 msgid "Describe what you're after, a title, or author:\"Junji Ito\""
 msgstr "Describe what you're after, a title, or author:\"Junji Ito\""
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Description"
+msgstr "Description"
 
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -4341,6 +4388,10 @@ msgstr "Downloading…"
 #: src/pages/SettingsPage.tsx
 msgid "Downloads"
 msgstr "Downloads"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Downloads now try {bestName} first."
+msgstr "Downloads now try {bestName} first."
 
 #: src/pages/SettingsPage.tsx
 msgid "Downloads the next chapters of a series when you're down to a few unread. Checks every five minutes against progress from Kavita or the built-in reader. Turn it on per series in its monitoring options."
@@ -4762,6 +4813,10 @@ msgstr "Failed to save default: {detail}"
 #: src/pages/LibraryPage.tsx
 msgid "Failed to save filter: {detail}"
 msgstr "Failed to save filter: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to set the quality profile: {detail}"
+msgstr "Failed to set the quality profile: {detail}"
 
 #: src/pages/LibraryPage.tsx
 msgid "Failed to tag: {detail}"
@@ -5869,6 +5924,7 @@ msgstr "Installing metadata database"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Instance default"
 msgstr "Instance default"
 
@@ -5891,6 +5947,10 @@ msgstr "Issuer URL"
 #: src/pages/SeriesDetailPage.tsx
 msgid "It may have been removed from the library."
 msgstr "It may have been removed from the library."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "It needs a quality profile and downloaded chapters."
+msgstr "It needs a quality profile and downloaded chapters."
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/SettingsPage.tsx
@@ -5973,6 +6033,10 @@ msgstr "Kavita's reading belongs to one Maki account, and it isn't yours. An adm
 msgid "Keep a local copy of MangaBaka"
 msgstr "Keep a local copy of MangaBaka"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Keep as is"
+msgstr "Keep as is"
+
 #: src/pages/SettingsPage.tsx
 msgid "Keep editing"
 msgstr "Keep editing"
@@ -5984,6 +6048,10 @@ msgstr "Keep folder name, and put new downloads there too"
 #: src/pages/SettingsPage.tsx
 msgid "Keep folder name, but put new downloads in a Maki standard folder"
 msgstr "Keep folder name, but put new downloads in a Maki standard folder"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Keep manual priority, but renumber it to follow the measured order."
+msgstr "Keep manual priority, but renumber it to follow the measured order."
 
 #: src/components/SetupWizard.tsx
 msgid "Keep the name, download into a new standard folder"
@@ -6157,6 +6225,10 @@ msgstr "Last sign-in"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Last synced {synced}"
 msgstr "Last synced {synced}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Last upgrade scan: {at}, {checked, plural, one {# chapter checked} other {# chapters checked}}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
+msgstr "Last upgrade scan: {at}, {checked, plural, one {# chapter checked} other {# chapters checked}}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
@@ -6801,6 +6873,10 @@ msgstr "Measure"
 msgid "Measure sources when a series is added"
 msgstr "Measure sources when a series is added"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Measured {measured} of {total} sources"
+msgstr "Measured {measured} of {total} sources"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher."
 msgstr "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JPG equivalent. Sharper, less compressed pages score higher."
@@ -6809,9 +6885,17 @@ msgstr "Measured on a sample library, not yet on yours: {bpp} bits per pixel, JP
 msgid "Measured quality"
 msgstr "Measured quality"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Measuring {done}/{planned}"
+msgstr "Measuring {done}/{planned}"
+
 #: src/components/SourceMappingsSection.tsx
-msgid "Measuring {scoutDone}/{scoutPlanned}"
-msgstr "Measuring {scoutDone}/{scoutPlanned}"
+#~ msgid "Measuring {scoutDone}/{scoutPlanned}"
+#~ msgstr "Measuring {scoutDone}/{scoutPlanned}"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Measuring…"
+msgstr "Measuring…"
 
 #: src/components/CatalogueFilters.tsx
 msgid "Mecha"
@@ -7220,6 +7304,10 @@ msgstr "Never run."
 msgid "Never scanned for upgrades"
 msgstr "Never scanned for upgrades"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Never upgrades"
+msgstr "Never upgrades"
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/settings/AccountSection.tsx
 msgid "New"
@@ -7480,6 +7568,10 @@ msgstr "No one else on this instance has opted in yet."
 #: src/pages/HealthPage.tsx
 msgid "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
 msgstr "No other file backs {lowerLabel}. Nothing has to be compared: importing adopts this archive and links it to the chapter."
+
+#: src/api/upgrades.ts
+msgid "No other source lists it"
+msgstr "No other source lists it"
 
 #: src/components/SetupWizard.tsx
 msgid "No outside tools connected. That's fine, sources download on their own."
@@ -7766,6 +7858,10 @@ msgstr "Not recommended again"
 msgid "Not run yet"
 msgstr "Not run yet"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Not sampled"
+msgstr "Not sampled"
+
 #: src/api/upgrades.ts
 msgid "Not sampled: this source's recent chapters wouldn't score higher"
 msgstr "Not sampled: this source's recent chapters wouldn't score higher"
@@ -7802,6 +7898,10 @@ msgstr "Note (optional)"
 #: src/components/CatalogueBrowser.tsx
 msgid "Nothing close enough. Try describing it differently, or use fewer words."
 msgstr "Nothing close enough. Try describing it differently, or use fewer words."
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Nothing could be measured, so the download order is unchanged."
+msgstr "Nothing could be measured, so the download order is unchanged."
 
 #: src/pages/ActivityPage.tsx
 msgid "Nothing downloaded falls short of the quality profile assigned to it."
@@ -8422,6 +8522,10 @@ msgstr "Parsed"
 msgid "Partial"
 msgstr "Partial"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Passed over: {reasons}"
+msgstr "Passed over: {reasons}"
+
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
@@ -8825,6 +8929,7 @@ msgstr "Quality formats"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Quality profile"
 msgstr "Quality profile"
 
@@ -9523,6 +9628,10 @@ msgstr "Renaming folder"
 msgid "Reopen"
 msgstr "Reopen"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Reorder priority to match"
+msgstr "Reorder priority to match"
+
 #: src/pages/HealthPage.tsx
 msgid "Repair"
 msgstr "Repair"
@@ -10102,6 +10211,10 @@ msgstr "Scanlator"
 msgid "Scanning folder…"
 msgstr "Scanning folder…"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scanning for upgrades…"
+msgstr "Scanning for upgrades…"
+
 #: src/pages/HealthPage.tsx
 msgid "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
 msgstr "Scanning is almost entirely image decoding. Raise it to sweep the library faster, lower it to leave the CPU alone."
@@ -10634,6 +10747,10 @@ msgstr "Set monitoring for {selectedCount} series"
 #: src/pages/LibraryPage.tsx
 msgid "Set notifications for {selectedCount} series"
 msgstr "Set notifications for {selectedCount} series"
+
+#: src/pages/LibraryPage.tsx
+msgid "Set quality profile for {selectedCount} series"
+msgstr "Set quality profile for {selectedCount} series"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Set to <0>0</0> to disable lockout."
@@ -11682,6 +11799,10 @@ msgstr "The trashed copy is gone"
 msgid "The trashed copy of this file is gone"
 msgstr "The trashed copy of this file is gone"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan could not run. The server log has the details."
+msgstr "The upgrade scan could not run. The server log has the details."
+
 #: src/pages/DiscoverPage.tsx
 msgid "The whole catalogue"
 msgstr "The whole catalogue"
@@ -11849,6 +11970,22 @@ msgstr "This series was searched in the last week"
 #: src/api/upgrades.ts
 msgid "This series' profile doesn't aim for volume releases"
 msgstr "This series' profile doesn't aim for volume releases"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source did not serve the sampled pages. It may be down or have changed."
+msgstr "This source did not serve the sampled pages. It may be down or have changed."
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source is rate-limiting Maki right now. Try again later."
+msgstr "This source is rate-limiting Maki right now. Try again later."
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source lists none of the sampled chapters."
+msgstr "This source lists none of the sampled chapters."
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "This source needs FlareSolverr. Check it is set up in Settings."
+msgstr "This source needs FlareSolverr. Check it is set up in Settings."
 
 #: src/components/SourceCompareModal.tsx
 msgid "This source's images don't match the others, usually a different edition or scanlation. Its pages are shown as served, so the rows don't line up with the other columns."
@@ -12471,6 +12608,14 @@ msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, o
 msgid "Upgrade restore failed"
 msgstr "Upgrade restore failed"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Upgrade scan finished with nothing to check"
+msgstr "Upgrade scan finished with nothing to check"
+
+#: src/pages/SeriesDetailPage.tsx
+#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
+#~ msgstr "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"
 msgstr "Upgrade until score"
@@ -12499,12 +12644,32 @@ msgid "Upgrades enabled"
 msgstr "Upgrades enabled"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Upgrades off"
-msgstr "Upgrades off"
+msgid "Upgrades files Maki knows nothing about, then stops"
+msgstr "Upgrades files Maki knows nothing about, then stops"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Upgrades on"
-msgstr "Upgrades on"
+#~ msgid "Upgrades off"
+#~ msgstr "Upgrades off"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+#~ msgid "Upgrades on"
+#~ msgstr "Upgrades on"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until chapters are covered by a digital volume"
+msgstr "Upgrades until chapters are covered by a digital volume"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter has any known copy"
+msgstr "Upgrades until each chapter has any known copy"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter is from a scanlator or an official source"
+msgstr "Upgrades until each chapter is from a scanlator or an official source"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Upgrades until each chapter is from an official source"
+msgstr "Upgrades until each chapter is from an official source"
 
 #: src/api/hooks.ts
 msgid "Upload failed: {status}"
@@ -12532,6 +12697,10 @@ msgstr "Use anime for recommendation taste"
 #: src/pages/SetupAccountPage.tsx
 msgid "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgstr "Use at least {MIN_PASSWORD_LENGTH} characters"
+
+#: src/components/SourceMeasurePanel.tsx
+msgid "Use best quality first"
+msgstr "Use best quality first"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Use for taste"
@@ -12805,6 +12974,10 @@ msgstr "Volumes that hold chapters still read from single files"
 msgid "vs {fromLabel} to {toLabel}"
 msgstr "vs {fromLabel} to {toLabel}"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Waiting"
+msgstr "Waiting"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Waiting for the MangaBaka snapshot to download first."
 msgstr "Waiting for the MangaBaka snapshot to download first."
@@ -12900,6 +13073,10 @@ msgstr "What happens to chapters released later"
 #: src/components/settings/NotificationPrefsSection.tsx
 msgid "What lands in your bell. These settings only affect you."
 msgstr "What lands in your bell. These settings only affect you."
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "What picking this profile does, shown in the profile list."
+msgstr "What picking this profile does, shown in the profile list."
 
 #: src/components/discover/discoverSectionDefs.ts
 msgid "What readers who finished the same series as you went on to finish."

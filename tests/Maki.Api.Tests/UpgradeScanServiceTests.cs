@@ -1,3 +1,4 @@
+using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
@@ -18,6 +19,14 @@ public class UpgradeScanServiceTests : IDisposable
         using var db = _world.Db.NewContext();
         using var batches = _world.Batches();
         return await _world.Scanner(db, batches).ScanSeriesAsync(_world.SeriesId, CancellationToken.None);
+    }
+
+    /// <summary>The daily scan's rules: quiet period and memo both apply.</summary>
+    private async Task<UpgradeScanResult> DailyScanAsync()
+    {
+        using var db = _world.Db.NewContext();
+        using var batches = _world.Batches();
+        return await _world.Scanner(db, batches).ScanAllAsync(CancellationToken.None, ignoreGlobalSwitch: true);
     }
 
     private List<DownloadQueueItem> Queue()
@@ -123,7 +132,7 @@ public class UpgradeScanServiceTests : IDisposable
             }
         });
 
-        var result = await ScanAsync();
+        var result = await DailyScanAsync();
 
         Assert.Equal(0, result.Enqueued);
         Assert.Equal(1, result.Skipped[reason]);
@@ -215,9 +224,9 @@ public class UpgradeScanServiceTests : IDisposable
         _world.OfficialPages = UpgradeWorld.UrlPages(5);
         _world.Chapter(1);
 
-        var first = await ScanAsync();
+        var first = await DailyScanAsync();
         var requests = _world.Http.Requested.Count;
-        var second = await ScanAsync();
+        var second = await DailyScanAsync();
 
         Assert.Equal(1, first.CandidatesProbed);
         Assert.Equal(1, first.Skipped[UpgradeReasons.FewerPages]);
@@ -228,6 +237,47 @@ public class UpgradeScanServiceTests : IDisposable
         Assert.Equal(UpgradeReasons.FewerPages, attempt.Reason);
         Assert.True(attempt.Probed);
         Assert.Empty(Queue());
+    }
+
+    [Fact]
+    public async Task A_scan_asked_for_by_hand_looks_again_at_memoised_and_quiet_chapters()
+    {
+        _world.Seed();
+        _world.OfficialPages = UpgradeWorld.UrlPages(5);
+        _world.Chapter(1);
+        _world.Chapter(2, file: f => f.DateAdded = DateTime.UtcNow.AddDays(-1));
+
+        var daily = await DailyScanAsync();
+        var manual = await ScanAsync();
+
+        Assert.Equal(1, daily.CandidatesProbed);
+        Assert.Equal(1, daily.Skipped[UpgradeReasons.QuietPeriod]);
+        Assert.Equal(2, manual.CandidatesProbed);
+        Assert.False(manual.Skipped.ContainsKey("memoised"));
+        Assert.False(manual.Skipped.ContainsKey(UpgradeReasons.QuietPeriod));
+    }
+
+    [Fact]
+    public async Task The_series_keeps_why_its_last_scan_passed_chapters_over()
+    {
+        _world.Seed();
+        _world.Chapter(1, file: f => f.Trusted = true);
+        var (onlyOwnSource, _) = _world.Chapter(2);
+        using (var db = _world.Db.NewContext())
+        {
+            db.ChapterSourceLinks.RemoveRange(
+                db.ChapterSourceLinks.Where(l => l.ChapterId == onlyOwnSource && l.SourceMappingId == _world.OfficialMappingId));
+            db.SaveChanges();
+        }
+
+        var result = await ScanAsync();
+
+        Assert.Equal(0, result.CandidatesProbed);
+        Assert.Equal(1, result.Skipped[UpgradeReasons.NoOtherSource]);
+        using var check = _world.Db.NewContext();
+        var scan = SeriesDto.FromEntity(check.Series.Single()).LastUpgradeScan!;
+        Assert.Equal(2, scan.Checked);
+        Assert.Equal(new Dictionary<string, int> { ["trusted"] = 1, [UpgradeReasons.NoOtherSource] = 1 }, scan.Skipped);
     }
 
     [Fact]

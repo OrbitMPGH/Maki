@@ -71,7 +71,12 @@ public record LibraryFilterSpec(
     /// <summary>Source keys the series' downloaded files came from (<see cref="Maki.Api.Dtos.SeriesDto.FileSources"/>).</summary>
     List<string>? FileSources = null,
     /// <summary>"any" or "all" — see <see cref="TagMatch"/>.</summary>
-    string FileSourceMatch = "any");
+    string FileSourceMatch = "any",
+    /// <summary>
+    /// "all", "default" (no pin of its own, so the instance default applies), or a quality profile id
+    /// as a string (<see cref="Maki.Api.Dtos.SeriesDto.UpgradeProfileId"/>).
+    /// </summary>
+    string QualityProfile = "all");
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 

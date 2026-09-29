@@ -3,6 +3,7 @@ using System;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    partial class MakiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929064848_UpgradeProfileDescription")]
+    partial class UpgradeProfileDescription
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -1566,17 +1569,11 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("LastMetadataRefresh")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("LastUpgradeScanChecked")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int?>("LastUpgradeScanProbed")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("LastUpgradeScanQueued")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("LastUpgradeScanSkipsJson")
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("LastUpgradeScanUtc")
                         .HasColumnType("TEXT");

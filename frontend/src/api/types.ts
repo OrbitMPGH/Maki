@@ -132,7 +132,14 @@ export interface SeriesDto {
   /** Upgrade profile pinned to this series, or null to fall back to the instance default. */
   upgradeProfileId: number | null
   /** Null when this series has never been scanned for upgrades, by any of the three entry points. */
-  lastUpgradeScan: { at: string; probed: number; queued: number } | null
+  /** `checked` is null for scans recorded before it was kept; `skipped` maps a reason code to a count. */
+  lastUpgradeScan: {
+    at: string
+    probed: number
+    queued: number
+    checked: number | null
+    skipped: Record<string, number>
+  } | null
   /** Id of the series' pending torrent volume proposal, if any. */
   pendingProposalId: number | null
 }
@@ -193,6 +200,8 @@ export interface LibraryFilterSpec {
   fileSources?: string[] | null
   /** "any" | "all" */
   fileSourceMatch: string
+  /** "all", "default" (no pin of its own), or a quality profile id as a string. Absent on older presets. */
+  qualityProfile?: string
 }
 
 export interface SavedFilterDto {

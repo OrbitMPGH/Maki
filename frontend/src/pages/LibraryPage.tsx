@@ -25,6 +25,7 @@ import {
   IconBookmark,
   IconDeviceFloppy,
   IconEye,
+  IconStars,
   IconFileText,
   IconFilter,
   IconFolderDown,
@@ -59,6 +60,7 @@ import {
   missingCount,
   useAutoMatchSources,
   useBulkSetSeriesNotificationMode,
+  useBulkSetUpgradeProfile,
   useBulkTag,
   useDeleteSavedFilter,
   useLibraryStats,
@@ -68,6 +70,7 @@ import {
   useSeries,
   useTags,
 } from '../api/hooks'
+import { useUpgradeProfiles } from '../api/upgrades'
 import { useReadTracking } from '../api/reader'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
@@ -198,7 +201,11 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   sourceState: 'all',
   fileSources: [],
   fileSourceMatch: 'any',
+  qualityProfile: 'all',
 }
+
+/** Quality profile filter value for series with no pin of their own. */
+const DEFAULT_PROFILE_FILTER = 'default'
 
 const SOURCE_STATE_VALUES = ['all', 'none', 'hasDisabled', 'noneEnabled', 'hasEnabled'] as const
 
@@ -248,6 +255,7 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   // ComicInfo is the file format's name and is deliberately absent: the fallback shows the key.
   Delete: msg`Delete`,
   'Set monitoring': msg`Set monitoring`,
+  'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
 }
 
@@ -274,6 +282,8 @@ export default function LibraryPage() {
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
   const bulkNotifications = useBulkSetSeriesNotificationMode()
+  const bulkUpgradeProfile = useBulkSetUpgradeProfile()
+  const { data: upgradeProfiles } = useUpgradeProfiles()
   const autoMatch = useAutoMatchSources()
   const readTracking = useReadTracking()
   const stats = useLibraryStats()
@@ -317,6 +327,7 @@ export default function LibraryPage() {
   const [sourceState, setSourceState] = usePageState(`${MEM}:source-state`, 'all')
   const [fileSourceFilter, setFileSourceFilter] = usePageState<string[]>(`${MEM}:file-sources`, [])
   const [fileSourceMatch, setFileSourceMatch] = usePageState(`${MEM}:file-source-match`, 'any')
+  const [qualityProfileFilter, setQualityProfileFilter] = usePageState(`${MEM}:quality-profile`, 'all')
   const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
@@ -333,6 +344,8 @@ export default function LibraryPage() {
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [autoMatchModalOpen, setAutoMatchModalOpen] = useState(false)
   const [monitorModalOpen, setMonitorModalOpen] = useState(false)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [bulkProfile, setBulkProfile] = useState<string>(DEFAULT_PROFILE_FILTER)
   const [monitorMode, setMonitorMode] = useState('All')
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
   const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
@@ -369,6 +382,13 @@ export default function LibraryPage() {
     }
     if (monitoredFilter !== 'all') {
       list = list.filter((s) => s.monitored === (monitoredFilter === 'monitored'))
+    }
+    if (qualityProfileFilter !== 'all') {
+      list = list.filter((s) =>
+        qualityProfileFilter === DEFAULT_PROFILE_FILTER
+          ? s.upgradeProfileId == null
+          : String(s.upgradeProfileId) === qualityProfileFilter,
+      )
     }
     if (completeness !== 'all') {
       list = list.filter((s) => (completeness === 'behind' ? missingCount(s) > 0 : missingCount(s) <= 0))
@@ -409,7 +429,7 @@ export default function LibraryPage() {
     series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
-    chapterMin, chapterMax, chapterMode,
+    chapterMin, chapterMax, chapterMode, qualityProfileFilter,
   ])
 
   const statusOptions = useMemo(() => {
@@ -494,6 +514,7 @@ export default function LibraryPage() {
     sourceState,
     fileSources: fileSourceFilter,
     fileSourceMatch,
+    qualityProfile: qualityProfileFilter,
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -522,6 +543,7 @@ export default function LibraryPage() {
     setSourceState(merged.sourceState)
     setFileSourceFilter(merged.fileSources ?? [])
     setFileSourceMatch(merged.fileSourceMatch)
+    setQualityProfileFilter(merged.qualityProfile ?? 'all')
     setSort(merged.sort)
     setActiveFilterId(id)
   }
@@ -539,7 +561,8 @@ export default function LibraryPage() {
     (contentRatingFilter.length > 0 ? 1 : 0) +
     (sourceFilter.length > 0 ? 1 : 0) +
     (sourceState !== 'all' ? 1 : 0) +
-    (fileSourceFilter.length > 0 ? 1 : 0)
+    (fileSourceFilter.length > 0 ? 1 : 0) +
+    (qualityProfileFilter !== 'all' ? 1 : 0)
 
   const filtersActive = query.trim() !== '' || activeFilterCount > 0
 
@@ -861,6 +884,10 @@ export default function LibraryPage() {
                 {bulkBtn('Notifications', <Trans>Notifications</Trans>, <IconBell size={15} />, () =>
                   setNotifyModalOpen(true),
                 )}
+                {bulkBtn('Quality profile', <Trans>Quality profile</Trans>, <IconStars size={15} />, () => {
+                  setBulkProfile(DEFAULT_PROFILE_FILTER)
+                  setProfileModalOpen(true)
+                })}
                 {can('Admin') && bulkBtn('Move', <Trans>Move</Trans>, <IconFolderSymlink size={15} />, () => {
                   setMoveTarget(null)
                   setMoveFiles(true)
@@ -1093,6 +1120,17 @@ export default function LibraryPage() {
             ]}
             value={monitoredFilter}
             onChange={(v) => setMonitoredFilter(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <Select
+            label={t`Quality profile`}
+            data={[
+              { value: 'all', label: t`Any` },
+              { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+              ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+            ]}
+            value={qualityProfileFilter}
+            onChange={(v) => setQualityProfileFilter(v ?? 'all')}
             comboboxProps={{ withinPortal: true }}
           />
           <Select
@@ -1434,6 +1472,77 @@ export default function LibraryPage() {
                 }),
               )
             }}
+          >
+            <Trans>Apply</Trans>
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        title={t`Set quality profile for ${selectedCount} series`}
+      >
+        <Text size="sm" mb="md">
+          <Trans>
+            Decides which copies of these series get upgraded and, in best-quality source order, which
+            source their downloads try first. Instance default clears each series' own choice.
+          </Trans>
+        </Text>
+        <Select
+          data={[
+            { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+            ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+          ]}
+          value={bulkProfile}
+          onChange={(v) => setBulkProfile(v ?? DEFAULT_PROFILE_FILTER)}
+          allowDeselect={false}
+          comboboxProps={{ withinPortal: true }}
+          mb="xs"
+        />
+        {(() => {
+          const description = upgradeProfiles?.find((p) => String(p.id) === bulkProfile)?.description
+          return description ? (
+            <Text size="xs" c="var(--ink-3)" mb="lg">
+              {description}
+            </Text>
+          ) : (
+            <div style={{ height: 'var(--mantine-spacing-lg)' }} />
+          )
+        })()}
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setProfileModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            loading={bulkUpgradeProfile.isPending}
+            onClick={() =>
+              bulkUpgradeProfile.mutate(
+                {
+                  seriesIds: [...selected],
+                  upgradeProfileId: bulkProfile === DEFAULT_PROFILE_FILTER ? null : Number(bulkProfile),
+                },
+                {
+                  onSuccess: ({ updated }) => {
+                    setProfileModalOpen(false)
+                    notifications.show({
+                      color: 'var(--ok)',
+                      message: plural(updated, {
+                        one: 'Quality profile set for # series',
+                        other: 'Quality profile set for # series',
+                      }),
+                    })
+                  },
+                  onError: (err) => {
+                    const detail = err instanceof Error ? err.message : String(err)
+                    notifications.show({
+                      color: 'var(--danger)',
+                      message: now`Failed to set the quality profile: ${detail}`,
+                    })
+                  },
+                },
+              )
+            }
           >
             <Trans>Apply</Trans>
           </Button>

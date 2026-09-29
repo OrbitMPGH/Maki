@@ -1588,6 +1588,31 @@ public class SeriesController(
         return Ok(new { upgradeProfileId = series.UpgradeProfileId });
     }
 
+    /// <param name="UpgradeProfileId">Null clears every pin so the series follow the instance default.</param>
+    public record BulkUpgradeProfileRequest(List<int>? SeriesIds, int? UpgradeProfileId);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("upgradeprofile/bulk")]
+    public async Task<IActionResult> SetUpgradeProfileBulk([FromBody] BulkUpgradeProfileRequest request, CancellationToken ct)
+    {
+        if (request.UpgradeProfileId is { } profileId && !await db.UpgradeProfiles.AnyAsync(p => p.Id == profileId, ct))
+        {
+            return this.Fail(localizer, "error.upgrades.profileNotFound");
+        }
+
+        // Resolved through db.Series, like the notification bulk: ids outside the caller's root
+        // folders are dropped by the query filter instead of written.
+        var wanted = (request.SeriesIds ?? []).Distinct().ToList();
+        var series = await db.Series.Where(s => wanted.Contains(s.Id)).ToListAsync(ct);
+        foreach (var s in series)
+        {
+            s.UpgradeProfileId = request.UpgradeProfileId;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { updated = series.Count });
+    }
+
     public record IncognitoRequest(string Mode);
 
     /// <summary>
