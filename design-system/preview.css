@@ -118,7 +118,7 @@ button, input, select, textarea { font: inherit; }
   background: var(--surface);
 }
 .stat-label { color: var(--ink-3); font-size: var(--type-micro); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: 0.05em; }
-.stat-value { margin-top: 6px; color: var(--ink-hi); font-size: 26px; font-weight: var(--fw-heavy); line-height: 1.1; }
+.stat-value { margin-top: 6px; color: var(--ink-hi); font-size: 26px; font-weight: var(--fw-bold); line-height: 1.1; }
 .stat-hint { margin-top: 4px; color: var(--ink-3); font-size: var(--type-micro); }
 .stat-delta { margin-top: 4px; font-size: var(--type-micro); font-weight: var(--fw-semibold); }
 .stat-icon { width: 20px; height: 20px; opacity: 0.9; }

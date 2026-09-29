@@ -3,19 +3,19 @@
    ========================================================================== */
 
 :root {
-  --app-bg: #0b0d13;
-  --surface: #161922;
-  --surface-2: #1b1f2a;
-  --surface-hover: #20242f;
-  --border: #262b36;
-  --border-strong: #333947;
+  --app-bg: #0e100e;
+  --surface: #181b18;
+  --surface-2: #1f231f;
+  --surface-hover: #252a25;
+  --border: #2a2f2a;
+  --border-strong: #3a403a;
 
   /* Text hierarchy used by the series page. */
-  --ink-hi: #f1f3f5;
-  --ink: #dee2e6;
-  --ink-2: #c7cad4;
-  --ink-3: #a6adbb;
-  --ink-4: #9098a8;
+  --ink-hi: #f3eee2;
+  --ink: #ddd8cc;
+  --ink-2: #c4bfb3;
+  --ink-3: #9f9a8f;
+  --ink-4: #86827b;
   --hairline: var(--border);
   --mantine-color-dimmed: var(--ink-3);
   --rating: #f5c518;
@@ -32,13 +32,13 @@
   --tier-6: #d64f7f;
   --tier-6-soft: color-mix(in srgb, var(--tier-6) 15%, transparent);
 
-  --brand: #6d7dff;
-  --brand-hover: #5c6cf0;
-  --brand-on: #ffffff;
-  --brand-fg: #b8c1ff;
+  --brand: #f2a2bb;
+  --brand-hover: #eb90ad;
+  --brand-on: #2a1219;
+  --brand-fg: #f5b6c8;
   /* Brand text that sits on cover art under a dark scrim, which stays dark in the light theme too. */
   --brand-fg-on-art: var(--brand-fg);
-  --brand-glow: rgba(109, 125, 255, 0.35);
+  --brand-glow: rgba(242, 162, 187, 0.3);
 
   --ok: #3fb950;
   --ok-on: #071a10;
@@ -146,7 +146,15 @@
 
 /* --- Selectable accents -------------------------------------------------- */
 /* The Mantine `brand` colour is swapped in JS (theme-context); these keep the custom
-   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide. */
+   CSS tokens (glows, nav rail, brand mark) in sync so accent changes are visible app-wide.
+   Blush is the default and lives in :root. */
+:root[data-accent='indigo'] {
+  --brand: #6d7dff;
+  --brand-hover: #5c6cf0;
+  --brand-on: #ffffff;
+  --brand-glow: rgba(109, 125, 255, 0.35);
+  --brand-fg: #b8c1ff;
+}
 :root[data-accent='rose'] {
   --brand: #f52069;
   --brand-hover: #e0175c;
@@ -171,19 +179,22 @@
 
 /* --- Light theme --------------------------------------------------------- */
 :root[data-theme='light'] {
-  --app-bg: #f3f4fa;
-  --surface: #ffffff;
-  --surface-2: #f7f8fc;
-  --surface-hover: #eceef6;
-  --border: #e3e6f0;
-  --border-strong: #ccd1e0;
-  --ink-hi: #111420;
-  --ink: #252a38;
-  --ink-2: #3d4454;
-  --ink-3: #4a5162;
-  --ink-4: #606879;
-  --brand-fg: #4553e6;
-  --brand-fg-on-art: #b8c1ff;
+  --app-bg: #f1efe9;
+  --surface: #fffefb;
+  --surface-2: #f4f2ec;
+  --surface-hover: #ebe9e2;
+  --border: #dedbd2;
+  --border-strong: #c9c5ba;
+  --ink-hi: #181815;
+  --ink: #2a2a26;
+  --ink-2: #454540;
+  --ink-3: #55554f;
+  --ink-4: #66665f;
+  --brand: #c4476e;
+  --brand-hover: #b8436a;
+  --brand-on: #ffffff;
+  --brand-fg: #b8496b;
+  --brand-fg-on-art: #f5b6c8;
   --ok: #237b36;
   --ok-on: #ffffff;
   --warn: #876000;
@@ -201,32 +212,42 @@
   --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
   --surface-raised: #ffffff;
-  --surface-sunken: #eceef6;
+  --surface-sunken: #ebe9e2;
   --border-raised: var(--border);
   --shadow-raised:
     0 6px 20px -8px rgba(20, 24, 40, 0.18),
     0 2px 5px -2px rgba(20, 24, 40, 0.1);
 }
+:root[data-theme='light'][data-accent='indigo'] {
+  --brand: #6d7dff;
+  --brand-hover: #5c6cf0;
+  --brand-on: #ffffff;
+  --brand-fg: #4553e6;
+  --brand-fg-on-art: #b8c1ff;
+}
 [data-theme='light'] body {
   background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.1), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(120, 110, 220, 0.08), transparent 55%);
+    radial-gradient(900px 480px at 6% -8%, rgba(255, 255, 255, 0.5), transparent 60%),
+    radial-gradient(760px 420px at 96% -4%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 58%);
+}
+[data-theme='light'] body::before {
+  opacity: 0.03;
 }
 [data-theme='light'] .app-navbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
+  background: linear-gradient(180deg, rgba(255, 254, 251, 0.75), rgba(244, 242, 236, 0.75));
   border-right: 1px solid var(--border);
 }
 [data-theme='light'] .app-header {
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 254, 251, 0.78);
   border-bottom: 1px solid var(--border);
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
-  color: #4a5162;
+  color: var(--ink-3);
 }
 [data-theme='light'] .nav-link:hover,
 [data-theme='light'] .nav-link[data-active='true'] {
-  color: #111420;
+  color: var(--ink-hi);
 }
 /* The exclusions live in :where() so they add no specificity. Written as a plain
    :not() chain this selector quietly beats every later override, including the
@@ -247,14 +268,31 @@ body,
 }
 
 body {
+  isolation: isolate;
   background-color: var(--app-bg);
   background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.12), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(63, 46, 128, 0.1), transparent 55%);
+    radial-gradient(900px 480px at 6% -8%, rgba(243, 238, 226, 0.055), transparent 60%),
+    radial-gradient(760px 420px at 96% -4%, color-mix(in srgb, var(--brand) 5%, transparent), transparent 58%);
   background-attachment: fixed;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+/* Paper grain: fixed and under the app (body is isolated), never on a scrolling element. No blend
+   mode, which would push the whole page into an offscreen blend group for no visible change. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-transparency: reduce) {
+  body::before {
+    display: none;
+  }
 }
 
 :root[data-mantine-color-scheme='dark'],
@@ -330,6 +368,14 @@ body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
+/* Headline numbers: figure strips, stat tiles, the hero figures, the level. Sizes stay per call site. */
+.figure {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
 
 /* --- Scrollbars ---------------------------------------------------------- */
 * {
@@ -347,7 +393,7 @@ body {
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #444b5c;
+  background: #4a504a;
   background-clip: content-box;
 }
 
@@ -361,11 +407,11 @@ body {
    costing a full-height composited layer on every scrolled frame. The header keeps its blur;
    there content genuinely passes underneath. */
 .app-navbar {
-  background: linear-gradient(180deg, rgba(22, 25, 34, 0.6), rgba(11, 13, 19, 0.6));
+  background: linear-gradient(180deg, rgba(24, 27, 24, 0.6), rgba(14, 16, 14, 0.6));
   border-right: 1px solid var(--border);
 }
 .app-header {
-  background: rgba(11, 13, 19, 0.72);
+  background: rgba(14, 16, 14, 0.72);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -461,15 +507,11 @@ body {
 }
 .nav-link:hover {
   background: var(--surface-hover);
-  color: #fff;
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true'] {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--brand) 20%, transparent),
-    color-mix(in srgb, var(--brand) 6%, transparent)
-  );
-  color: #fff;
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--ink-hi);
 }
 .nav-link[data-active='true']::before {
   content: '';
@@ -477,11 +519,10 @@ body {
   left: -5px;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
+  width: 2px;
   height: 18px;
   border-radius: var(--radius-pill);
   background: var(--brand);
-  box-shadow: 0 0 10px var(--brand-glow);
 }
 .nav-link .nav-icon {
   opacity: 0.75;
@@ -532,7 +573,7 @@ body {
   font-weight: 600;
   color: var(--ink-3);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
@@ -555,7 +596,6 @@ body {
   height: 6px;
   border-radius: 50%;
   background: var(--warn);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--warn) 50%, transparent);
   flex-shrink: 0;
 }
 .nav-card-wrap {
@@ -789,7 +829,7 @@ body {
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
-  box-shadow: 0 0 0 1px var(--brand), 0 12px 30px -10px var(--brand-glow);
+  box-shadow: 0 0 0 1px var(--brand);
 }
 .cover-poster {
   position: relative;
@@ -3087,7 +3127,7 @@ body {
   color: var(--ink-4);
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.09em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -4079,18 +4119,18 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   height: 8px;
   border-radius: 50%;
   background: var(--ok);
-  box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.5);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
   animation: pulse 1.8s infinite;
 }
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.45);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 7px rgba(63, 185, 80, 0);
+    box-shadow: 0 0 0 3px transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0);
+    box-shadow: 0 0 0 1px transparent;
   }
 }
 
@@ -4207,7 +4247,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   color: var(--ink-4);
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.09em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -5639,7 +5679,7 @@ body.reader-open {
 }
 .series-row[data-selected='true'] {
   border-color: var(--brand);
-  box-shadow: 0 0 0 1px var(--brand), 0 6px 16px -6px var(--brand-glow);
+  box-shadow: 0 0 0 1px var(--brand);
 }
 
 .row-check {
@@ -6209,7 +6249,7 @@ body.reader-open {
   color: var(--ink-4);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -6235,10 +6275,10 @@ body.reader-open {
 }
 @keyframes status-dot-pulse {
   0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dot) 60%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--dot) 40%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 6px transparent;
+    box-shadow: 0 0 0 3px transparent;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -6375,6 +6415,11 @@ body.reader-open {
 .settings-content {
   width: 100%;
   max-width: 51.25rem;
+}
+/* Settings pills read as words (profile names, "Cutoff: Scanlator"), so sentence case. */
+.settings-content .mantine-Badge-root {
+  text-transform: none;
+  letter-spacing: 0;
 }
 .settings-layout {
   display: grid;
@@ -6557,7 +6602,7 @@ body.reader-open {
 /* --- Panel: shared accent-edge panel grammar (components/ui/Panel.tsx) --- */
 
 .panel {
-  box-shadow: none;
+  box-shadow: var(--shadow-card);
 }
 .panel[data-edge] {
   --panel-edge: var(--border-strong);
@@ -6903,7 +6948,7 @@ body.reader-open {
 }
 .continue-tile-poster:hover {
   border-color: var(--brand);
-  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85), 0 0 12px var(--brand-glow);
+  box-shadow: 0 18px 38px -14px rgba(0, 0, 0, 0.85);
 }
 .continue-tile-poster:hover img {
   transform: scale(1.04);

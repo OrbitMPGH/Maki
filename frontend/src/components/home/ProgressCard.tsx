@@ -16,7 +16,7 @@ function Figure({
 }) {
   return (
     <div className="hero-stat">
-      <span className="hero-stat-n tnum">
+      <span className="hero-stat-n figure">
         {FigIcon && (
           <FigIcon size={16} style={{ color: 'var(--brand)', marginRight: 5, verticalAlign: -2 }} />
         )}
@@ -53,7 +53,7 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
           roundCaps
           sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
           label={
-            <Text ta="center" fw={700} fz={11} className="tnum" c="var(--ink-hi)">
+            <Text ta="center" fz={11} className="figure" c="var(--ink-hi)">
               {level.level}
             </Text>
           }

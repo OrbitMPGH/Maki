@@ -217,7 +217,7 @@ export function DiscoverHero({
                     style={{ '--band': `var(--${band.token})` } as CSSProperties}
                   >
                     <IconStar size={18} />
-                    <span className="hero-score-n tnum">{(score / 10).toFixed(1)}</span>
+                    <span className="hero-score-n figure">{(score / 10).toFixed(1)}</span>
                   </span>
                 )}
                 {score != null && figures.length > 0 && (
@@ -227,7 +227,7 @@ export function DiscoverHero({
                   <div className="hero-stats">
                     {figures.map((f) => (
                       <div key={f.id} className="hero-stat">
-                        <span className="hero-stat-n tnum">{f.value}</span>
+                        <span className="hero-stat-n figure">{f.value}</span>
                         <span className="hero-stat-l">{f.label}</span>
                       </div>
                     ))}

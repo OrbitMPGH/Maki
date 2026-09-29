@@ -29,12 +29,12 @@ export function FigureStrip({
       {figures.map((f) => (
         <div className="figure-strip-item" key={f.label} data-zero={(!loading && f.value === 0) || undefined}>
           {loading ? (
-            <div className="figure-strip-n">
+            <div className="figure-strip-n figure">
               <Skeleton h="0.8em" w="2.4em" my="0.125em" />
             </div>
           ) : (
             <span
-              className="figure-strip-n tnum"
+              className="figure-strip-n figure"
               style={f.tone && f.value > 0 ? { color: `var(--${f.tone})` } : undefined}
             >
               {formatNumber(f.value)}

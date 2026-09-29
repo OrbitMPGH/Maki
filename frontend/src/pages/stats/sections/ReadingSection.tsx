@@ -242,7 +242,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
             {figures.map((f) => (
               <div className="stats-figure" key={f.key}>
                 <div className="stats-figure-value">
-                  <span className="stats-figure-n tnum">{f.value}</span>
+                  <span className="stats-figure-n figure">{f.value}</span>
                   {f.delta !== undefined && (
                     <span
                       className="stats-figure-delta tnum"

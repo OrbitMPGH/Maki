@@ -101,8 +101,11 @@ const lightVars = propsOf(":root[data-theme='light']")
 const presets = [...themeContext.matchAll(/\{\s*id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*accent:\s*'(\w+)',\s*scheme:\s*'(\w+)'/g)]
   .map(([, id, label, accent, scheme]) => ({ id, label, accent, scheme }))
   .filter((p) => p.scheme !== 'system')
+// The default accent lives in :root with no [data-accent] block; its dark preset is the `dark` theme.
+const defaultId = /const DEFAULT_ID = '(\w+)'/.exec(themeContext)?.[1]
+const defaultAccent = presets.find((p) => p.id === defaultId)?.accent ?? 'indigo'
 const themes = presets.map((p) => ({
-  id: p.scheme === 'light' ? 'light' : p.accent === 'indigo' ? 'dark' : p.accent,
+  id: p.scheme === 'light' ? 'light' : p.accent === defaultAccent ? 'dark' : p.accent,
   name: p.label,
   accent: p.accent,
   scheme: p.scheme,
@@ -112,7 +115,7 @@ if (!themes.length) throw new Error('No theme presets found in theme-context.tsx
 
 const varsFor = (theme) => {
   const v = new Map(rootVars)
-  const over = theme.scheme === 'light' ? lightVars : theme.accent === 'indigo' ? new Map() : propsOf(`:root[data-accent='${theme.accent}']`)
+  const over = theme.scheme === 'light' ? lightVars : propsOf(`:root[data-accent='${theme.accent}']`)
   for (const [k, val] of over) v.set(k, val)
   return v
 }
@@ -134,7 +137,12 @@ const accentPalette = Object.fromEntries(
   }),
 )
 const baseShade = /primaryShade:\s*\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}/.exec(themeTs)
-const shadeOverride = /accent === (\w+) \? \(\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}/.exec(themeTs)
+const shadeOverrides = Object.fromEntries(
+  [...themeTs.matchAll(/accent === (\w+)\s*\?\s*\(\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}/g)].map(([, pal, light, dark]) => [
+    pal,
+    { light: +light, dark: +dark },
+  ]),
+)
 const autoContrast = /autoContrast:\s*true/.test(themeTs)
 const luminanceThreshold = Number(/luminanceThreshold:\s*([\d.]+)/.exec(themeTs)?.[1] ?? 0.3)
 const tsString = (key) => /* the value is single-quoted in theme.ts */ new RegExp(`${key}:\\s*'([^']+)'`).exec(themeTs)?.[1]
@@ -231,7 +239,7 @@ for (const [name, value] of rootVars) {
 // autoContrast picks for it.
 const primaryOf = (t, step = 0) => {
   const pal = accentPalette[t.accent]
-  const s = shadeOverride && shadeOverride[1] === pal ? { light: +shadeOverride[2], dark: +shadeOverride[3] } : { light: +baseShade[1], dark: +baseShade[2] }
+  const s = shadeOverrides[pal] ?? { light: +baseShade[1], dark: +baseShade[2] }
   return palettes[pal][s[t.scheme === 'light' ? 'light' : 'dark'] + step]
 }
 const glowAt = colours.findIndex((c) => c.name === 'brand-glow')
@@ -313,7 +321,7 @@ const CLASSES = new RegExp(
       String.raw`cover-(card|poster|placeholder|scrim|corners?|badge|ring|meta|title|progress-row|bar|count|check)`,
       String.raw`tip\b`, String.raw`discover-(card|card-action|rating|corner|meta|reason|sub|sub-status|rail|rail-item)\b`,
       'engine-', 'series-row', String.raw`row-(check|cover|cover-placeholder|body|header|title|year|description|progress|bar)\b`,
-      'surface-frame', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`tnum\b`,
+      'surface-frame', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`tnum\b`, String.raw`figure\b`,
     ].join('|') +
     ')',
 )

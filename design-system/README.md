@@ -14,7 +14,7 @@ Maki is a self-hosted manga collection manager: add a series once and it keeps i
 
 **One accent, near-black ground.** `brand` is the only accent. It marks progress, selection, focus and the one primary action. Everything else is surfaces and ink. Covers bring their own colour; the chrome stays out of their way.
 
-**Themes.** Five presets, matching the app's picker: `Indigo` (the default dark scheme), `Light`, and three dark accent swaps, `Rose`, `Emerald` and `Amber`. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Light keeps the indigo accent.
+**Themes.** Six presets, matching the app's picker: `Blush` (the default dark scheme), `Light`, and four dark accent swaps, `Indigo`, `Rose`, `Emerald` and `Amber`. The accent themes change only the brand group (`brand`, `brand-hover`, `brand-on`, `brand-fg`, `brand-fg-on-art`, `brand-glow`, `primary`, `primary-hover`, `primary-on`); surfaces, ink and status stay those of dark. Light keeps the blush accent.
 
 **The layer ladder.** Build every screen from these, in order of height:
 - `app-bg`: the page ground. In dark, `body` also carries two faint radial washes of brand indigo at the top corners (12% and 10%); that is the only gradient in the chrome.

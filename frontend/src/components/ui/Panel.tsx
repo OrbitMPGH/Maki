@@ -15,8 +15,8 @@ export interface PanelProps
 }
 
 /**
- * The house panel: bordered, `radius="lg"`, `p="lg"`, no shadow, with the optional accent edge
- * that stands in for one. Everything else passes through to Mantine `Paper`.
+ * The house panel: bordered, `radius="lg"`, `p="lg"`, the 1px card shadow, and the optional
+ * accent edge for emphasis. Everything else passes through to Mantine `Paper`.
  */
 export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
   { edge, edgeSide = 'top', className, p = 'lg', ...rest },

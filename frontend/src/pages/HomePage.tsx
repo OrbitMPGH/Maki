@@ -494,7 +494,7 @@ function LibraryFigure({
 }) {
   return (
     <div className="home-figure">
-      <span className="hero-stat-n tnum" style={tone ? { color: `var(--${tone})` } : undefined}>
+      <span className="hero-stat-n figure" style={tone ? { color: `var(--${tone})` } : undefined}>
         {formatNumber(value)}
       </span>
       <span className="hero-stat-l">{label}</span>
