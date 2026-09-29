@@ -4,8 +4,10 @@ using Maki.Api.Dtos;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
 using Maki.Core.Recommendations;
+using Maki.Core.Security;
 using Maki.Data;
 using Maki.Data.Identity;
+using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
@@ -13,6 +15,21 @@ namespace Maki.Api.Services;
 public enum AnimeResumeError { None, SeriesNotFound, NotEnabled, Unavailable }
 
 public record AnimeResumeApplyResult(int Updated, int? ResumeChapterId, decimal CoveredTo);
+
+/// <summary>One card on Home's "Continue from the anime" rail.</summary>
+/// <param name="SeriesId">The library copy, or null for a manga nobody has added yet.</param>
+/// <param name="Catalogue">The dump row behind a card with no library copy, which is what the Discover modal opens.</param>
+public record HomeAnimeResumeItem(
+    int? SeriesId,
+    string SeriesTitle,
+    string? CoverUrl,
+    string AnimeTitle,
+    double? Score,
+    decimal CoveredTo,
+    string? CoveredLabel,
+    int? ResumeChapterId,
+    string? ResumeChapterLabel,
+    MangaBakaRecommendation? Catalogue = null);
 
 /// <summary>
 /// "Start where the anime ended": joins the reader's anime list against a series' anime coverage
@@ -23,7 +40,10 @@ public class AnimeResumeService(
     MakiDbContext db,
     AnimeSignalSyncService signals,
     ReaderService reader,
-    ReadingProgressService progress)
+    ReadingProgressService progress,
+    MangaBakaLocalStore catalogue,
+    ICurrentUser currentUser,
+    HiddenContentService hidden)
 {
     private int UserId => db.Scope.UserId;
 
@@ -128,8 +148,9 @@ public class AnimeResumeService(
     }
 
     /// <summary>
-    /// Library series whose anime the reader finished and whose reading has not caught up with it.
-    /// Once they have read or watched past the frontier, Jump back in covers the series instead.
+    /// Series whose anime the reader finished and whose reading has not caught up with it: library
+    /// series first, then manga nobody has added yet. Once they have read or watched past the
+    /// frontier, Jump back in covers the series instead.
     /// </summary>
     public async Task<IReadOnlyList<HomeAnimeResumeItem>> RailAsync(int limit, CancellationToken ct)
     {
@@ -146,6 +167,23 @@ public class AnimeResumeService(
             .ToList();
         if (candidates.Count == 0) return [];
 
+        var library = await LibraryRailAsync(rows, candidates, ct);
+        if (library.Count >= limit) return library.Take(limit).ToList();
+
+        // Every root folder, not just the reader's: a copy they cannot see still makes an add fail.
+        var owned = (await db.Series.IgnoreQueryFilters().AsNoTracking()
+            .Where(s => s.MangaBakaId != null && candidates.Contains(s.MangaBakaId.Value))
+            .Select(s => s.MangaBakaId!.Value)
+            .ToListAsync(ct)).ToHashSet();
+        var unowned = candidates.Where(id => !owned.Contains(id)).Select(id => (long)id).ToList();
+        var fromCatalogue = await CatalogueRailAsync(rows, unowned, ct);
+
+        return library.Concat(fromCatalogue).Take(limit).ToList();
+    }
+
+    private async Task<List<HomeAnimeResumeItem>> LibraryRailAsync(
+        List<AnimeSignalRow> rows, List<int> candidates, CancellationToken ct)
+    {
         var series = await SeriesQuery(s => s.MangaBakaId != null && candidates.Contains(s.MangaBakaId.Value))
             .ToListAsync(ct);
         if (series.Count == 0) return [];
@@ -189,13 +227,61 @@ public class AnimeResumeService(
                 library.Resume is { } r ? ChapterLabel.For(r.Number, r.Volume, r.Title, r.IsOneShot) : null));
         }
 
-        return items
+        return Ranked(items);
+    }
+
+    /// <summary>
+    /// Manga the reader has not added whose anime they finished, resolved off the dump's anime range
+    /// the same way the Discover modal does. Hidden and "not interested" titles stay out, and the
+    /// content ceiling applies through the card lookup.
+    /// </summary>
+    private async Task<List<HomeAnimeResumeItem>> CatalogueRailAsync(
+        List<AnimeSignalRow> rows, List<long> ids, CancellationToken ct)
+    {
+        if (ids.Count == 0 || !await catalogue.IsAvailableAsync(ct)) return [];
+
+        var suppressed = await RecommendationFeedbackService.SuppressedAsync(db, UserId, ct);
+        var isHidden = await hidden.PredicateAsync(ct);
+        ids = ids.Where(id => !suppressed.Contains(id) && isHidden?.Invoke(id) != true).ToList();
+        if (ids.Count == 0) return [];
+
+        var rowsByManga = rows.ToLookup(r => r.MangaBakaId!.Value);
+        var resolved = new Dictionary<long, AnimeResume>();
+        foreach (var (id, coverage) in await catalogue.GetAnimeCoverageAsync(ids, ct))
+        {
+            var resume = AnimeResumeResolver.Resolve(
+                AnimeSignalGrouping.Watched(rowsByManga[id].ToList()),
+                AnimeCoverage.Parse(coverage.AnimeStart, coverage.AnimeEnd),
+                coverage.TotalChapters);
+            if (resume is not null) resolved[id] = resume;
+        }
+        if (resolved.Count == 0) return [];
+
+        var cards = await catalogue.GetByIdsAsync(
+            resolved.Keys.ToList(), ContentRating.Allowed(currentUser.MaxContentRating), ct);
+        return Ranked(cards.Select(card =>
+        {
+            var resume = resolved[long.Parse(card.ProviderId)];
+            return new HomeAnimeResumeItem(
+                null,
+                card.Title,
+                card.ThumbUrlHiDpi ?? card.ThumbUrl ?? card.CoverUrl,
+                resume.AnimeTitle,
+                resume.Score,
+                resume.CoveredTo,
+                resume.CoveredLabel,
+                null,
+                null,
+                card);
+        }));
+    }
+
+    private static List<HomeAnimeResumeItem> Ranked(IEnumerable<HomeAnimeResumeItem> items) =>
+        items
             .OrderBy(i => i.Score is null ? 1 : 0)
             .ThenByDescending(i => i.Score)
             .ThenBy(i => i.SeriesTitle, StringComparer.CurrentCultureIgnoreCase)
-            .Take(limit)
             .ToList();
-    }
 
     /// <summary>
     /// Ticks chapters up to the frontier off as watched, then raises the reading high-water mark to
@@ -215,15 +301,42 @@ public class AnimeResumeService(
         var coveredTo = Math.Clamp(coveredToOverride ?? resume.CoveredTo, 1, upper);
 
         var updated = 0;
+        var nothingToTick = false;
         if (markWatched)
         {
             var library = Library(coveredTo, chapters!, await CompletedAsync([series!.Id], ct));
             var ids = library.UnmarkedIds.Take(ReaderController.MaxBulkChapters).ToList();
             updated = await reader.MarkWatchedAsync(ids, ct);
+            nothingToTick = chapters!.Count == 0;
         }
 
         await progress.ImportSilentAsync(UserId, series!.Id, kavitaSeriesId: null, series.Title,
             (double)coveredTo, 0, ct);
+        await SetPendingAsync(series.Id, nothingToTick ? coveredTo : null, ct);
+
+        if (nothingToTick)
+        {
+            // Source matching can save the first chapters between the read above and the marker
+            // landing, after which nothing would ever apply it.
+            var latest = await ChaptersAsync([series.Id], ct);
+            if (latest.Count > 0)
+            {
+                chapters = latest;
+                var late = Library(coveredTo, latest, await CompletedAsync([series.Id], ct));
+                try
+                {
+                    updated = await reader.MarkWatchedAsync(
+                        late.UnmarkedIds.Take(ReaderController.MaxBulkChapters).ToList(), ct);
+                }
+                catch (DbUpdateException)
+                {
+                    // The pending applier ticked the same chapters first and won the unique index.
+                    db.ChangeTracker.Clear();
+                }
+
+                await SetPendingAsync(series.Id, null, ct);
+            }
+        }
 
         var resumeChapter = ResumeAfter(coveredTo, chapters!);
         return (AnimeResumeError.None, new AnimeResumeApplyResult(updated, resumeChapter?.Id, coveredTo));
@@ -246,6 +359,29 @@ public class AnimeResumeService(
         state.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return AnimeResumeError.None;
+    }
+
+    /// <summary>
+    /// Records, or clears, a watched mark with no chapters to land on yet. A fresh add has none
+    /// until source matching finishes; <see cref="AnimeResumePendingService"/> applies it then.
+    /// </summary>
+    private async Task SetPendingAsync(int seriesId, decimal? pendingTo, CancellationToken ct)
+    {
+        var state = await db.UserSeriesStates.FirstOrDefaultAsync(s => s.SeriesId == seriesId, ct);
+        if (state is null)
+        {
+            if (pendingTo is null) return;
+            state = new UserSeriesState { SeriesId = seriesId };
+            db.UserSeriesStates.Add(state);
+        }
+        else if (state.AnimeWatchPendingTo == (double?)pendingTo)
+        {
+            return;
+        }
+
+        state.AnimeWatchPendingTo = (double?)pendingTo;
+        state.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task<AnimeResumeError> UndismissAsync(int seriesId, CancellationToken ct)

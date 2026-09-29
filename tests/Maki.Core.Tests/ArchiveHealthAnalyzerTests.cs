@@ -103,7 +103,7 @@ public class ArchiveHealthAnalyzerTests : IDisposable
     {
         var result = await ArchiveHealthAnalyzer.AnalyzeAsync(Archive(("1.avif",new byte[256])), default, null, null, verify: true);
         Assert.Equal("partial",result.Status); Assert.NotNull(result.Hash);
-        Assert.DoesNotContain(result.Problems,p=>p.Severity=="error");
+        Assert.All(result.Problems,p=>Assert.Equal("info",p.Severity));
     }
     [Fact] public async Task Damaged_image_is_reported()
     {

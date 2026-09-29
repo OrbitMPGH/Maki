@@ -2118,6 +2118,9 @@ namespace Maki.Data.Migrations
                     b.Property<double?>("AnimeResumeDismissedAt")
                         .HasColumnType("REAL");
 
+                    b.Property<double?>("AnimeWatchPendingTo")
+                        .HasColumnType("REAL");
+
                     b.Property<DateTime?>("HiddenFromHomeAt")
                         .HasColumnType("TEXT");
 

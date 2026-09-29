@@ -23,6 +23,7 @@ import { api } from '../api/client'
 import { useLibrarySettings, useRootFolders } from '../api/hooks'
 import { useHubEvent } from '../api/signalr'
 import { useLabel } from '../i18n-context'
+import { randomUUID } from '../lib/uuid'
 import type { MetadataSearchResult } from '../api/types'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -314,7 +315,7 @@ export default function ImportPage() {
                   rootFolderId: Number(rootFolderId),
                   items: selectedItems,
                   updateComicInfo,
-                  operationId: crypto.randomUUID(),
+                  operationId: randomUUID(),
                 })
               }
             }}

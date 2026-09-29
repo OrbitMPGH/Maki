@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-See [README.md](README.md) for overview.
+See [README.md](README.md) for overview. Before a release, or when asked to smoke-test one, work through [docs/release-checklist.md](docs/release-checklist.md).
 
 Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you touch matching files: `auth.md`, `series-matching.md`, `reader-progress.md`, `recommendations.md`, `opds.md`, `downloads.md`, `stats-notifications.md`, `i18n.md`, `infra.md`, `design-system.md`. `distribution/CLAUDE.md` and `src/Maki.Sources/CLAUDE.md` are separate nested files, same deal.
 
@@ -28,6 +28,8 @@ No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", 
 - State (SQLite, logs, covers, page cache, `config.json`, data-protection keys) resolves via `MAKI_CONFIG_DIR`, falling back to `/config` in Docker or `%APPDATA%\Maki` on Windows. In dev, set `MAKI_CONFIG_DIR=$PWD/.devconfig` to avoid touching the real library/DB. `.claude/launch.json`'s `backend` preset uses the **real** APPDATA config — use `backend-dev` for anything destructive.
 - `src/Maki.Api/wwwroot/` must exist or startup throws `DirectoryNotFoundException` before any app code runs. Produced by the frontend build; a fresh clone that only ran the backend needs it created by hand.
 - Frontend type-checking is `npx tsc -b`, **not** `npx tsc --noEmit`: root `tsconfig.json` is `"files": []` plus project references, so `--noEmit` checks nothing and exits 0 on a broken tree.
+
+- **Self-hosters reach the SPA over plain HTTP on the LAN, which is not a secure context.** `crypto.randomUUID`, `navigator.clipboard`, and `crypto.subtle` are undefined there and throw at the call site (issue #104: the Import button silently did nothing). Use `randomUUID()` from `frontend/src/lib/uuid.ts` and `copyText()` from `frontend/src/lib/clipboard.ts`, never the raw APIs. `localhost` in dev is secure, so this never shows up locally. `npm run check:secure-context` (a CI step) fails on any raw use outside those helpers; add new secure-context APIs to `scripts/frontend/check-secure-context.mjs`.
 
 ## Non-obvious domain facts
 

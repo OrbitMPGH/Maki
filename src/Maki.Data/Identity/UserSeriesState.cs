@@ -69,5 +69,12 @@ public class UserSeriesState : IUserOwned
     /// </summary>
     public double? AnimeResumeDismissedAt { get; set; }
 
+    /// <summary>
+    /// The chapter number this reader asked to mark watched from the anime before the series had
+    /// any chapter rows, which is every add from the catalogue. The chapter sync that first brings
+    /// chapters up to it ticks them off and clears it.
+    /// </summary>
+    public double? AnimeWatchPendingTo { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }

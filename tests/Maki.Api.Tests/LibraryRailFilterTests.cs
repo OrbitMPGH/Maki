@@ -15,9 +15,10 @@ public class LibraryRailFilterTests
     private static LibraryRailRow Row(
         int id = 1, string title = "Series", string[]? genres = null, string[]? tags = null,
         string? contentRating = "safe", int? year = 2020, SeriesStatus status = SeriesStatus.Ongoing,
-        string? type = "manga", int? totalChapters = 50, DateTime? added = null, long? mangaBakaId = null) =>
+        string? type = "manga", int? totalChapters = 50, DateTime? added = null, long? mangaBakaId = null,
+        string? authorStory = null, string? authorArt = null, string? publisher = null) =>
         new(id, mangaBakaId, title, title.ToLowerInvariant(), genres ?? [], tags ?? [], contentRating,
-            year, status, type, totalChapters, added ?? DateTime.UtcNow);
+            year, status, type, totalChapters, added ?? DateTime.UtcNow, authorStory, authorArt, publisher);
 
     [Fact]
     public void A_null_content_rating_fails_a_filter_that_constrains_it()
@@ -136,5 +137,19 @@ public class LibraryRailFilterTests
 
         Assert.Equal([2, 1], LibraryRailFilter.Order(rows, null, new Dictionary<int, DateTime>(), _ => null));
         Assert.Equal([2, 1], LibraryRailFilter.Order(rows, "not-a-sort", new Dictionary<int, DateTime>(), _ => null));
+    }
+
+    [Fact]
+    public void Credits_match_the_series_own_names_in_any_spelling_order()
+    {
+        var row = Row(authorStory: "Ito, Junji", authorArt: "Kentaro Miura", publisher: "Shueisha");
+
+        Assert.True(LibraryRailFilter.MatchesCredits(row, new RecommendationFilters(Credits: [new("Junji Ito")])));
+        Assert.True(LibraryRailFilter.MatchesCredits(row, new RecommendationFilters(Credits: [new("MIURA Kentaro", "artist")])));
+        Assert.False(LibraryRailFilter.MatchesCredits(row, new RecommendationFilters(Credits: [new("Kentaro Miura", "author")])));
+        Assert.True(LibraryRailFilter.MatchesCredits(row, new RecommendationFilters(Credits:
+            [new("Nobody"), new("Shueisha", "studio")])));
+        Assert.False(LibraryRailFilter.MatchesCredits(row, new RecommendationFilters(Credits: [new("Nobody")])));
+        Assert.True(LibraryRailFilter.MatchesCredits(row, RecommendationFilters.None));
     }
 }

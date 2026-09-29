@@ -36,6 +36,11 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # Self-hosters open the app over plain HTTP on a LAN address, where crypto.randomUUID and
+      # navigator.clipboard are undefined. It works on localhost, so it only surfaces after release.
+      - name: No secure-context-only APIs outside their helpers
+        run: npm run check:secure-context
+
       # Catches a new t/<Trans> whose English was never extracted, and a key hand-added to
       # en/server.po but never propagated. Either way the string compiles and renders in English
       # while being absent from thirteen catalogues, with nothing to say so. Diffing the whole tree

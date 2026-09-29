@@ -535,7 +535,7 @@ public class DiscoverService(
         IReadOnlyList<long> page;
         if (await vectorIndex.GetAsync(ct) is { } index)
         {
-            var plan = index.Plan(request.Filters) with { CreditMask = index.BuildRowMask(works) };
+            var plan = index.Plan(request.Filters).RestrictTo(index.BuildRowMask(works));
             page = OrderRows(index, plan, request.Sort, offset, limit);
         }
         else

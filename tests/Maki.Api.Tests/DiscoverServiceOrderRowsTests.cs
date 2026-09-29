@@ -111,6 +111,21 @@ public class DiscoverServiceOrderRowsTests
         Assert.Equal([102L, 101L, 100L], ordered);
     }
 
+    [Fact]
+    public void Credit_ids_narrow_the_plan_and_an_empty_set_matches_nothing()
+    {
+        var index = Build(ids: [100, 101, 102], popularity: [1, 2, 3]);
+
+        var plan = index.Plan(new Maki.Metadata.MangaBaka.RecommendationFilters(CreditIds: [102, 100, 999]));
+        Assert.Equal([100L, 102L], DiscoverService.OrderRows(index, plan, BrowseSort.Popular, 0, 10));
+
+        var narrowed = plan.RestrictTo(index.BuildRowMask([100L, 101L]));
+        Assert.Equal([100L], DiscoverService.OrderRows(index, narrowed, BrowseSort.Popular, 0, 10));
+
+        var none = index.Plan(new Maki.Metadata.MangaBaka.RecommendationFilters(CreditIds: []));
+        Assert.Empty(DiscoverService.OrderRows(index, none, BrowseSort.Popular, 0, 10));
+    }
+
     /// <summary>Builds a minimal index over unit vectors, ids by position.</summary>
     private static VectorIndex Build(
         long[] ids, int[]? startDays = null, int[]? years = null, float[]? ratings = null, int[]? popularity = null)

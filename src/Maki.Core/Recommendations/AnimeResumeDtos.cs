@@ -49,15 +49,3 @@ public record SeriesAnimeResumeDto(
     string? ResumeChapterLabel,
     bool ResumeDownloaded,
     int UnmarkedCount);
-
-/// <summary>One card on Home's "Start where the anime ended" rail.</summary>
-public record HomeAnimeResumeItem(
-    int SeriesId,
-    string SeriesTitle,
-    string? CoverUrl,
-    string AnimeTitle,
-    double? Score,
-    decimal CoveredTo,
-    string? CoveredLabel,
-    int? ResumeChapterId,
-    string? ResumeChapterLabel);

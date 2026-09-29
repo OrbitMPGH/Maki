@@ -34,7 +34,8 @@ public record SearchDefaultsSpec(
     int? MaxChapters = null,
     double? MinRating = null,
     IReadOnlyList<string>? ContentRatings = null,
-    IReadOnlyList<Maki.Core.Recommendations.CatalogueRule>? Rules = null)
+    IReadOnlyList<Maki.Core.Recommendations.CatalogueRule>? Rules = null,
+    IReadOnlyList<Maki.Core.Recommendations.CatalogueCredit>? Credits = null)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -59,7 +60,8 @@ public record SearchDefaultsSpec(
         (Types?.Count ?? 0) == 0 && (Statuses?.Count ?? 0) == 0 &&
         (Genres?.Count ?? 0) == 0 && (Tags?.Count ?? 0) == 0 &&
         MinChapters is null && MaxChapters is null &&
-        MinRating is null && (ContentRatings?.Count ?? 0) == 0 && (Rules?.Count ?? 0) == 0;
+        MinRating is null && (ContentRatings?.Count ?? 0) == 0 && (Rules?.Count ?? 0) == 0 &&
+        (Credits?.Count ?? 0) == 0;
 
     /// <summary>
     /// Clamps a client-supplied spec into the ranges the panel can actually produce, so a
@@ -74,6 +76,7 @@ public record SearchDefaultsSpec(
         MinRating = MinRating is double r ? Math.Clamp(r, 0, 100) : null,
         ContentRatings = TrimNames(ContentRatings),
         Rules = Maki.Core.Recommendations.CatalogueRules.Normalize(Rules),
+        Credits = Maki.Core.Recommendations.CatalogueCredits.Normalize(Credits),
     };
 
     private static IReadOnlyList<string>? TrimNames(IReadOnlyList<string>? values)

@@ -756,6 +756,7 @@ try
     // NotificationService is one — the raise sites are jobs, hosted services and other singletons.
     builder.Services.AddSingleton<InboxAudienceResolver>();
     builder.Services.AddSingleton<InboxService>();
+    builder.Services.AddSingleton<FollowedCreatorReleaseService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
     {
@@ -886,6 +887,7 @@ try
     builder.Services.AddSingleton<AnimeSignalSources>();
     builder.Services.AddSingleton<AnimeSignalSyncService>();
     builder.Services.AddScoped<AnimeResumeService>();
+    builder.Services.AddSingleton<AnimeResumePendingService>();
 
     // Read before the host is built, unlike the rest of auth.*, because whether the OpenID Connect
     // scheme is registered at all is decided here. See OidcRuntimeOptions.Load.
@@ -1070,6 +1072,16 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(7))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
 
+        // New series from followed creators. Triggered after a dump install too; this daily run only
+        // covers an install whose trigger a restart swallowed.
+        q.AddJob<Maki.Api.Jobs.FollowedCreatorReleaseJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key)
+            .WithIdentity("followed-creator-releases-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever()));
+
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).
         q.AddJob<Maki.Api.Jobs.DiscoverCacheWarmJob>(j => j
@@ -1162,7 +1174,11 @@ try
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         var pending = db.Database.GetPendingMigrations().ToList();
         BackupInfo? preMigrationBackup = null;
-        if (pending.Count > 0)
+
+        // A fresh install has nothing to protect yet, and the backup would query tables that no
+        // migration has created, logging an error on every first boot.
+        var freshDatabase = !db.Database.GetAppliedMigrations().Any();
+        if (pending.Count > 0 && !freshDatabase)
         {
             startupLog.LogInformation("{Count} pending migration(s); taking pre-migration backup", pending.Count);
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()

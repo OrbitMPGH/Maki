@@ -54,10 +54,29 @@ public class HostStartupTests : IDisposable
 
     public HostStartupTests()
     {
+        EnsureWebRoot();
         _configDir = Path.Combine(Path.GetTempPath(), "maki-hoststartup-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_configDir);
         _previousConfigDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR");
         Environment.SetEnvironmentVariable("MAKI_CONFIG_DIR", _configDir);
+    }
+
+    /// <summary>
+    /// wwwroot is gitignored and holds the built SPA, so a checkout that never built the frontend
+    /// (CI's backend job) has none, and the host warns about it on every boot. An empty one is
+    /// enough.
+    /// </summary>
+    private static void EnsureWebRoot()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        {
+            var api = Path.Combine(dir.FullName, "src", "Maki.Api");
+            if (File.Exists(Path.Combine(api, "Maki.Api.csproj")))
+            {
+                Directory.CreateDirectory(Path.Combine(api, "wwwroot"));
+                return;
+            }
+        }
     }
 
     public void Dispose()
@@ -91,6 +110,36 @@ public class HostStartupTests : IDisposable
         Assert.NotNull(services.GetRequiredService<Maki.Api.Services.RecommendationService>());
         Assert.NotNull(services.GetRequiredService<Maki.Api.Services.RecentActivityRailService>());
         Assert.NotNull(services.GetRequiredService<Maki.Api.Services.SimilarSeriesService>());
+    }
+
+    /// <summary>
+    /// First boot against an empty config dir. The pre-migration backup used to run here too and
+    /// query AppConfig before any migration had created it, and replaying every migration printed
+    /// a wall of EF authoring warnings.
+    /// </summary>
+    [Fact]
+    public void Host_FirstBootOnAnEmptyConfigDir_LogsNoErrorsOrWarnings_AndTakesNoBackup()
+    {
+        using (var factory = new WebApplicationFactory<Program>())
+        {
+            _ = factory.Services;
+        }
+
+        var backupDir = Path.Combine(_configDir, "backups");
+        Assert.Empty(Directory.Exists(backupDir) ? Directory.GetFiles(backupDir, "*-auto.zip") : []);
+
+        var noisy = Directory.GetFiles(Path.Combine(_configDir, "logs"), "*.log")
+            .SelectMany(ReadShared)
+            .Where(line => line.Contains("[ERR]") || line.Contains("[WRN]"))
+            .ToList();
+        Assert.Empty(noisy);
+    }
+
+    private static IEnumerable<string> ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd().Split('\n');
     }
 
     /// <summary>

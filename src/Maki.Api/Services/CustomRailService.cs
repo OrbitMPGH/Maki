@@ -137,7 +137,7 @@ public class CustomRailService(
             .AsNoTracking()
             .Select(s => new LibraryRailRow(
                 s.Id, s.MangaBakaId, s.Title, s.SortTitle, s.Genres, s.Tags, s.ContentRating, s.Year,
-                s.Status, s.Type, s.TotalChapters, s.Added))
+                s.Status, s.Type, s.TotalChapters, s.Added, s.AuthorStory, s.AuthorArt, s.Publisher))
             .ToListAsync(ct);
 
         // The index answers tags with their subtags and weights, and knows each title's score and
@@ -151,7 +151,8 @@ public class CustomRailService(
             index is not null && r.MangaBakaId is long id && index.TryGetRow(id, out var row) ? row : null;
 
         var matching = rows
-            .Where(r => RowOf(r) is int row ? index!.Matches(row, plan!) : LibraryRailFilter.MatchesLocal(r, filters))
+            .Where(r => LibraryRailFilter.MatchesCredits(r, filters) &&
+                (RowOf(r) is int row ? index!.Matches(row, plan!) : LibraryRailFilter.MatchesLocal(r, filters)))
             .ToList();
 
         var lastRead = spec.Sort == CustomRailSorts.Read

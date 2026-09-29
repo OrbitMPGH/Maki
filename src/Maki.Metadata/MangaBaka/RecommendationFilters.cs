@@ -32,7 +32,13 @@ public record RecommendationFilters(
     /// <summary>The viewer's never-show list, set by the server from their settings and never
     /// taken from a request. Separate from <see cref="Rules"/> because an exact title search
     /// bypasses the rules but must still honour this.</summary>
-    IReadOnlyList<CatalogueTerm>? Hidden = null)
+    IReadOnlyList<CatalogueTerm>? Hidden = null,
+    /// <summary>Creators and publishers, any of whom a series must be credited to. Resolved into
+    /// <see cref="CreditIds"/> by the server before any scan reads the filters.</summary>
+    IReadOnlyList<CatalogueCredit>? Credits = null,
+    /// <summary><see cref="Credits"/> resolved to MangaBaka ids, server-set like <see cref="Hidden"/>.
+    /// Empty means the named people exist nowhere, which matches nothing.</summary>
+    IReadOnlyList<long>? CreditIds = null)
 {
     public static readonly RecommendationFilters None = new();
 
@@ -60,7 +66,8 @@ public record RecommendationFilters(
             spec.MaxChapters,
             NonEmpty(spec.Tags),
             NonEmpty(spec.ContentRatings),
-            NonEmpty(spec.Rules));
+            NonEmpty(spec.Rules),
+            Credits: NonEmpty(spec.Credits));
     }
 
     /// <summary>
@@ -151,6 +158,14 @@ public record RecommendationFilters(
             var name = $"${prefix}_h{i.ToString(CultureInfo.InvariantCulture)}";
             parts.Add($"({alias}.genres IS NULL OR {alias}.genres NOT LIKE {name})");
             cmd.Parameters.AddWithValue(name, $"%\"{hiddenGenres[i].Name}\"%");
+        }
+
+        // One JSON parameter rather than an IN-list: a publisher's works run to thousands of ids,
+        // past what a parameter list should carry.
+        if (CreditIds is not null)
+        {
+            parts.Add($"{alias}.id IN (SELECT value FROM json_each(${prefix}_cid))");
+            cmd.Parameters.AddWithValue($"${prefix}_cid", System.Text.Json.JsonSerializer.Serialize(CreditIds));
         }
 
         AppendIn(cmd, parts, alias, "type", Types, $"{prefix}_t");

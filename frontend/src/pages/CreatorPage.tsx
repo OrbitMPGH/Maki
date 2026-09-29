@@ -9,19 +9,19 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
-import { msg } from '@lingui/core/macro'
+import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import type { MessageDescriptor } from '@lingui/core'
 import {
   useCreator,
   useRootFolders,
   useSeriesIdLookup,
   type BrowseSort,
+  type CatalogueCredit,
   type RecommendationFilters,
   type RecommendationItem,
 } from '../api/hooks'
 import { ApiError } from '../api/client'
+import { useFollowToggle } from '../api/following'
 import {
   CatalogueFilterActions,
   CatalogueFilters,
@@ -29,6 +29,7 @@ import {
   useCatalogueFilters,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
+import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -45,16 +46,6 @@ const PAGE_SIZE = 60
 const MAX_WORKS = 600
 
 /**
- * Descriptors, not strings: this table is built once when the module loads, so a rendered string
- * here would be stuck in whichever language was active at that moment. Render with `useLabel()`.
- */
-const ROLE_LABELS: Record<string, MessageDescriptor> = {
-  author: msg`Story`,
-  artist: msg`Art`,
-  studio: msg`Studio`,
-}
-
-/**
  * One author, artist or studio and everything they are credited on.
  *
  * A route rather than a modal. Junji Ito has around eighty works and Shueisha has twelve thousand,
@@ -67,8 +58,12 @@ export default function CreatorPage() {
   const renderLabel = useLabel()
   const sortOptions = useBrowseSortOptions()
   const { name = '' } = useParams()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const role = searchParams.get('role')
+  // A follow notification links here with the new series' MangaBaka id. It may be too new to be
+  // rated, and unrated series are not in the searchable part of the catalogue this page lists, so
+  // it opens as the detail card rather than waiting for a card on the grid to click.
+  const openId = searchParams.get('open')
   // React Router already decodes path params, so this is the name as typed. Decoding it again
   // throws URIError on a name carrying a literal '%' ("100% Orange"), which blanks the page, and
   // silently rewrites one where the '%' happens to be followed by two hex digits.
@@ -122,8 +117,27 @@ export default function CreatorPage() {
   )
 
   const { data, isFetching, error, refetch } = useCreator(decoded.length > 0 ? request : null)
+  // Followed under the catalogue's own spelling, and the role the page was opened for: following
+  // Shueisha from its studio page must not also follow a person who happens to share the name.
+  const followRole = role === 'author' || role === 'artist' || role === 'studio' ? role : null
+  const followCredit: CatalogueCredit | null = data ? { name: data.name, role: followRole } : null
+  const follow = useFollowToggle(followCredit)
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
+
+  useEffect(() => {
+    if (!openId || !/^\d+$/.test(openId)) return
+    setDetailItem(stubItem(openId))
+  }, [openId])
+
+  const closeDetail = () => {
+    setDetailItem(null)
+    if (openId) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('open')
+      setSearchParams(next, { replace: true })
+    }
+  }
 
   const items = data?.items ?? []
   const canLoadMore = items.length >= PAGE_SIZE * pages && items.length < MAX_WORKS
@@ -181,9 +195,25 @@ export default function CreatorPage() {
         }
         actions={
           <Group gap="xs">
+            {data && (
+              <Button
+                variant={follow.following ? 'light' : 'default'}
+                leftSection={follow.following ? <IconBellCheck size={16} /> : <IconBell size={16} />}
+                loading={follow.pending}
+                disabled={!follow.ready}
+                onClick={follow.toggle}
+                title={
+                  follow.following
+                    ? t`Stop showing their new titles on Home and Discover`
+                    : t`Show their newest titles in a rail on Home and Discover`
+                }
+              >
+                {follow.following ? t`Following` : t`Follow`}
+              </Button>
+            )}
             {(data?.roles ?? []).map((r) => (
               <TagChip key={r} size="sm">
-                {renderLabel(ROLE_LABELS[r] ?? r)}
+                {renderLabel(CREDIT_ROLE_LABELS[r] ?? r)}
               </TagChip>
             ))}
           </Group>
@@ -287,8 +317,30 @@ export default function CreatorPage() {
         item={detailItem}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
-        onClose={() => setDetailItem(null)}
+        onClose={closeDetail}
       />
     </SurfaceFrame>
   )
+}
+
+/** Enough of a card for the detail modal, which loads everything else by id. */
+function stubItem(providerId: string): RecommendationItem {
+  return {
+    providerId,
+    title: '',
+    coverUrl: null,
+    thumbUrl: null,
+    thumbUrlHiDpi: null,
+    year: null,
+    description: null,
+    status: '',
+    rating: null,
+    totalChapters: null,
+    matchedGenres: [],
+    matchedTags: [],
+    authorMatch: false,
+    relationKind: null,
+    relatedToTitle: null,
+    becauseOfTitle: null,
+  }
 }

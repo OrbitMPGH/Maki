@@ -79,6 +79,23 @@ public class InboxService(
     public virtual async Task RaiseAsync(
         InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
     {
+        try
+        {
+            await RaiseOrThrowAsync(type, message, audience, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not raise inbox notification {Event}", type);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="RaiseAsync"/> without the catch, for a caller that must know the rows were written
+    /// before it records that the work is done.
+    /// </summary>
+    public virtual async Task RaiseOrThrowAsync(
+        InboxEventType type, InboxMessage message, InboxAudience audience, CancellationToken ct = default)
+    {
         if (type == InboxEventType.Unknown)
         {
             return;
@@ -94,78 +111,80 @@ public class InboxService(
             return;
         }
 
-        try
+        var recipients = await audiences.ResolveAsync(audience, ct);
+        if (recipients.Count == 0)
         {
-            var recipients = await audiences.ResolveAsync(audience, ct);
-            if (recipients.Count == 0)
-            {
-                return;
-            }
+            return;
+        }
 
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
-            // One query for every recipient's prefs row rather than a scope+query per recipient
-            // (recipients.Count can be every admin, or every tracker of a popular series).
-            var prefsByUser = await db.UserSettings
-                .AsNoTracking()
-                .Where(s => recipients.Contains(s.UserId) && s.Key == SettingKeys.NotificationsInbox)
-                .ToDictionaryAsync(s => s.UserId, s => s.Value, ct);
+        // One query for every recipient's prefs row rather than a scope+query per recipient
+        // (recipients.Count can be every admin, or every tracker of a popular series).
+        var prefsByUser = await db.UserSettings
+            .AsNoTracking()
+            .Where(s => recipients.Contains(s.UserId) && s.Key == SettingKeys.NotificationsInbox)
+            .ToDictionaryAsync(s => s.UserId, s => s.Value, ct);
 
-            var specByUser = recipients.ToDictionary(
-                userId => userId,
-                userId => InboxPrefsSpec.Parse(prefsByUser.GetValueOrDefault(userId)));
+        var specByUser = recipients.ToDictionary(
+            userId => userId,
+            userId => InboxPrefsSpec.Parse(prefsByUser.GetValueOrDefault(userId)));
 
-            var wanted = recipients.Where(userId => specByUser[userId].Wants(type)).ToList();
+        var wanted = recipients.Where(userId => specByUser[userId].Wants(type)).ToList();
+
+        if (wanted.Count == 0)
+        {
+            return;
+        }
+
+        // The per-series layer runs second on purpose: it only ever removes recipients, so a
+        // type switched off globally cannot be switched back on by pinning one series to All.
+        if (message.SeriesId is { } seriesId)
+        {
+            wanted = await FilterBySeriesModeAsync(db, type, wanted, seriesId, specByUser, ct);
 
             if (wanted.Count == 0)
             {
                 return;
             }
+        }
 
-            // The per-series layer runs second on purpose: it only ever removes recipients, so a
-            // type switched off globally cannot be switched back on by pinning one series to All.
-            if (message.SeriesId is { } seriesId)
-            {
-                wanted = await FilterBySeriesModeAsync(db, type, wanted, seriesId, specByUser, ct);
+        // English written alongside the key, from the same scope this raise already opened.
+        // Not a translation: it is what a reader sees if a key ever leaves the catalogue, and it
+        // keeps every row readable in logs and in an admin's database without a render step.
+        var renderer = scope.ServiceProvider.GetRequiredService<InboxRenderer>();
+        var seriesTitle = message.SeriesId is { } sid
+            ? await db.Series.AsNoTracking()
+                .Where(x => x.Id == sid).Select(x => x.Title).FirstOrDefaultAsync(ct)
+            : null;
+        var (englishTitle, englishBody) = renderer.Render(
+            SupportedLanguages.Default, message.Key, InboxRenderer.Serialize(message.Params),
+            message.UnkeyedTitle ?? string.Empty, message.UnkeyedBody ?? string.Empty, seriesTitle);
 
-                if (wanted.Count == 0)
-                {
-                    return;
-                }
-            }
+        var now = time.GetUtcNow().UtcDateTime;
+        var rows = wanted.Select(userId => new UserNotification
+        {
+            UserId = userId,
+            Type = type,
+            Level = message.Level,
+            MessageKey = message.Key,
+            ParamsJson = InboxRenderer.Serialize(message.Params),
+            Title = englishTitle,
+            Body = englishBody,
+            SeriesId = message.SeriesId,
+            ChapterId = message.ChapterId,
+            Url = message.Url,
+            CreatedAt = now,
+        }).ToList();
 
-            // English written alongside the key, from the same scope this raise already opened.
-            // Not a translation: it is what a reader sees if a key ever leaves the catalogue, and it
-            // keeps every row readable in logs and in an admin's database without a render step.
-            var renderer = scope.ServiceProvider.GetRequiredService<InboxRenderer>();
-            var seriesTitle = message.SeriesId is { } sid
-                ? await db.Series.AsNoTracking()
-                    .Where(x => x.Id == sid).Select(x => x.Title).FirstOrDefaultAsync(ct)
-                : null;
-            var (englishTitle, englishBody) = renderer.Render(
-                SupportedLanguages.Default, message.Key, InboxRenderer.Serialize(message.Params),
-                message.UnkeyedTitle ?? string.Empty, message.UnkeyedBody ?? string.Empty, seriesTitle);
+        db.UserNotifications.AddRange(rows);
+        await db.SaveChangesAsync(ct);
 
-            var now = time.GetUtcNow().UtcDateTime;
-            var rows = wanted.Select(userId => new UserNotification
-            {
-                UserId = userId,
-                Type = type,
-                Level = message.Level,
-                MessageKey = message.Key,
-                ParamsJson = InboxRenderer.Serialize(message.Params),
-                Title = englishTitle,
-                Body = englishBody,
-                SeriesId = message.SeriesId,
-                ChapterId = message.ChapterId,
-                Url = message.Url,
-                CreatedAt = now,
-            }).ToList();
-
-            db.UserNotifications.AddRange(rows);
-            await db.SaveChangesAsync(ct);
-
+        // The rows are saved by here, so a push that fails is only a missed toast. It must not
+        // surface as a failed raise to a caller that retries on failure and would write them twice.
+        try
+        {
             // Pushed after the save so the id is real and a client that reloads instead of patching
             // its cache sees the same row it was just told about. One grouped count rather than one
             // per recipient — a popular series can resolve to every account on the instance.
@@ -193,7 +212,7 @@ public class InboxService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Could not raise inbox notification {Event}", type);
+            logger.LogWarning(ex, "Saved inbox notification {Event} but could not push it", type);
         }
     }
 

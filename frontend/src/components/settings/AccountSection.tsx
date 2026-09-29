@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Code,
-  CopyButton,
   Divider,
   Group,
   Modal,
@@ -38,6 +37,7 @@ import { getInitialize } from '../../api/client'
 import { formatDateTime } from '../../format'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { Panel } from '../ui/Panel'
+import { useCopyText } from '../ui/useCopyText'
 
 /**
  * Self-service account management: password, two-factor, API keys, sessions.
@@ -216,6 +216,8 @@ function TwoFactorCard() {
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
   const [disablePassword, setDisablePassword] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const keyCopy = useCopyText()
+  const codesCopy = useCopyText()
 
   useEffect(() => {
     if (!enrolling) {
@@ -330,13 +332,14 @@ function TwoFactorCard() {
           )}
           <Group gap="xs">
             <Code>{enrolling?.sharedKey}</Code>
-            <CopyButton value={enrolling?.sharedKey ?? ''}>
-              {({ copied, copy }) => (
-                <Button size="xs" variant="default" onClick={copy} leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}>
-                  {copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-                </Button>
-              )}
-            </CopyButton>
+            <Button
+              size="xs"
+              variant="default"
+              onClick={() => void keyCopy.copy(enrolling?.sharedKey ?? '')}
+              leftSection={keyCopy.copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+            >
+              {keyCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+            </Button>
           </Group>
           <TextInput
             label={t`Code from your app`}
@@ -377,13 +380,9 @@ function TwoFactorCard() {
             </Trans>
           </Alert>
           <Code block>{recoveryCodes?.join('\n')}</Code>
-          <CopyButton value={recoveryCodes?.join('\n') ?? ''}>
-            {({ copied, copy }) => (
-              <Button variant="default" onClick={copy}>
-                {copied ? <Trans>Copied</Trans> : <Trans>Copy codes</Trans>}
-              </Button>
-            )}
-          </CopyButton>
+          <Button variant="default" onClick={() => void codesCopy.copy(recoveryCodes?.join('\n') ?? '')}>
+            {codesCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy codes</Trans>}
+          </Button>
         </Stack>
       </Modal>
     </Stack>
@@ -399,6 +398,7 @@ function ApiKeysCard() {
   const [name, setName] = useState('')
   const [created, setCreated] = useState<CreatedApiKey | null>(null)
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
+  const secretCopy = useCopyText()
   const revokingName = revoking?.name ?? ''
 
   // The OPDS feed token is a key row too, but it is minted, shown and rotated on the OPDS card.
@@ -503,13 +503,9 @@ function ApiKeysCard() {
           <Code block style={{ wordBreak: 'break-all' }}>
             {created?.secret}
           </Code>
-          <CopyButton value={created?.secret ?? ''}>
-            {({ copied, copy }) => (
-              <Button variant="default" onClick={copy}>
-                {copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-              </Button>
-            )}
-          </CopyButton>
+          <Button variant="default" onClick={() => void secretCopy.copy(created?.secret ?? '')}>
+            {secretCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+          </Button>
         </Stack>
       </Modal>
 

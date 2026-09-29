@@ -477,6 +477,23 @@ public class RecommendationController(
         return Ok(spec);
     }
 
+    /// <summary>The creators and studios the caller follows.</summary>
+    [HttpGet("discover/following")]
+    public async Task<IActionResult> GetFollowing(CancellationToken ct) =>
+        Ok(FollowedCreatorsSpec.Parse(await userSettings.GetAsync(SettingKeys.DiscoverFollowing, ct)));
+
+    /// <summary>Replaces the caller's follow list. Per user and needs no permission. An empty list deletes the row.</summary>
+    [HttpPut("discover/following")]
+    public async Task<IActionResult> SetFollowing([FromBody] FollowedCreatorsSpec request, CancellationToken ct)
+    {
+        var spec = (request ?? FollowedCreatorsSpec.Empty).Normalize();
+        await userSettings.SetAsync(
+            SettingKeys.DiscoverFollowing,
+            spec.IsEmpty ? null : FollowedCreatorsSpec.Serialize(spec),
+            ct);
+        return Ok(spec);
+    }
+
     /// <summary>
     /// "Readers like you also finished": the second per-user rail on Discover. Fetched separately
     /// from <c>GET discover</c> for the same reason the recent-activity one is — those rails are
@@ -504,7 +521,7 @@ public class RecommendationController(
             };
         }
 
-        if (await hidden.TermsAsync(ct) is { Count: > 0 })
+        if (filters is not null || await hidden.TermsAsync(ct) is { Count: > 0 })
         {
             filters = await hidden.ApplyAsync(filters ?? RecommendationFilters.None, ct);
         }

@@ -2494,8 +2494,8 @@ msgstr "Zinwentaryzowane archiwa"
 msgid "Arrange Home and Discover on the pages themselves: pick which sections show, drag them into order and add your own rails. Turn Home off if you don't read in Maki: the tab disappears and Library becomes the start page."
 msgstr "Układ Startu i Odkrywania zmienisz bezpośrednio na tych stronach: wybierz widoczne sekcje, przeciągnij je, aby zmienić kolejność, i dodaj własne sekcje. Jeśli nie czytasz w Maki, wyłącz Start: karta zniknie, a stroną początkową zostanie Biblioteka."
 
+#: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Art"
@@ -3482,6 +3482,11 @@ msgstr "Sprawdź aktualizacje"
 msgid "Check now"
 msgstr "Sprawdź teraz"
 
+#: src/api/inbox.ts
+#, fuzzy
+msgid "Checked after each nightly catalogue update. Follow someone from their creator page."
+msgstr "Sprawdzane po każdej nocnej aktualizacji katalogu. Zacznij kogoś obserwować na stronie jego twórcy."
+
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
 msgid "Checking for a new metadata snapshot"
@@ -4051,6 +4056,11 @@ msgstr "Uszkodzone"
 msgid "Could not build a plan for this series."
 msgstr "Nie udało się utworzyć planu dla tej serii."
 
+#: src/components/ui/useCopyText.ts
+#, fuzzy
+msgid "Could not copy to the clipboard. Select the text and copy it by hand."
+msgstr "Nie udało się skopiować do schowka. Zaznacz tekst i skopiuj go ręcznie."
+
 #. placeholder {0}: String(error)
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -4225,6 +4235,16 @@ msgstr "Twórca"
 #, fuzzy
 msgid "Creators"
 msgstr "Twórcy"
+
+#: src/components/CreditPicker.tsx
+#, fuzzy
+msgid "Creators and studios"
+msgstr "Twórcy i studia"
+
+#: src/components/discover/FollowingRail.tsx
+#, fuzzy
+msgid "Creators you follow"
+msgstr "Obserwowani twórcy"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -4610,6 +4630,7 @@ msgstr "ID kanału Discord"
 msgid "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerts, events, notifications, outbound, tags, requests, series added, series removed, manual match"
 msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, slack, mattermost, alerty, zdarzenia, powiadomienia, wychodzące, tagi, prośby, dodana seria, usunięta seria, ręczne dopasowanie"
 
+#: src/api/inbox.ts
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
@@ -5225,6 +5246,11 @@ msgstr "Wszystko inne"
 msgid "Everything is passing. Turn on Show passing to see all {totalChecks, plural, one {# check} other {# checks}}."
 msgstr "Wszystko przechodzi pomyślnie. Włącz Pokaż zaliczone, aby zobaczyć wszystkie {totalChecks, plural, one {# sprawdzenie} few {# sprawdzenia} many {# sprawdzeń} other {# sprawdzenia}}."
 
+#: src/components/discover/FollowingRail.tsx
+#, fuzzy
+msgid "Everything they have in the catalogue is already in your library."
+msgstr "Wszystko, co mają w katalogu, jest już w Twojej bibliotece."
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Everything you own"
@@ -5673,6 +5699,16 @@ msgstr "Ścieżka folderu"
 #, fuzzy
 msgid "Folders are renamed to the English title and their comic files are linked to chapters."
 msgstr "Foldery zostaną przemianowane na angielski tytuł, a zawarte w nich pliki komiksów zostaną powiązane z rozdziałami."
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Follow"
+msgstr "Obserwuj"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Following"
+msgstr "Obserwujesz"
 
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -6534,11 +6570,6 @@ msgstr "Incognito: {incognito}"
 #, fuzzy
 msgid "Incognito: {mode}"
 msgstr "Incognito: {mode}"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "Incomplete"
-msgstr "Niekompletne"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -7414,6 +7445,11 @@ msgstr "Maki mówi w Twoim języku"
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 msgstr "Interfejs Maki jest teraz przetłumaczony na {languageCount} języków. Wybierz swój tutaj lub zmień go w dowolnym momencie w Ustawieniach, Język."
 
+#: src/components/discover/FollowingRail.tsx
+#, fuzzy
+msgid "Manage"
+msgstr "Zarządzaj"
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Manage queue"
@@ -7503,6 +7539,7 @@ msgstr "Przypisano do"
 msgid "Mark all read"
 msgstr "Oznacz wszystkie jako przeczytane"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
 msgid "Mark ch. 1 to {coveredTo} watched"
@@ -8112,6 +8149,12 @@ msgstr "Nowe rozdziały pobrane automatycznie w ciągu ostatnich 30 dni."
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "Tutaj trafiają nowe rozdziały, ukończone pobrania i odblokowane osiągnięcia."
 
+#: src/api/hooks.ts
+#: src/components/discover/FollowingRail.tsx
+#, fuzzy
+msgid "New from creators you follow"
+msgstr "Nowości od obserwowanych twórców"
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -8143,6 +8186,11 @@ msgstr "Nowa seria"
 msgid "New series defaults"
 msgstr "Domyślne ustawienia nowych serii"
 
+#: src/api/inbox.ts
+#, fuzzy
+msgid "New series from creators you follow"
+msgstr "Nowe serie od obserwowanych twórców"
+
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "New tag…"
@@ -8159,6 +8207,11 @@ msgstr "nowa wersja, sprawdź aktualizacje, wydanie, github"
 #, fuzzy
 msgid "Newest"
 msgstr "Najnowsze"
+
+#: src/pages/SeriesDetailPage.tsx
+#, fuzzy
+msgid "Newest first"
+msgstr "Od najnowszych"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8323,6 +8376,7 @@ msgstr "Brak dopasowania"
 
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/CreditPicker.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -9019,6 +9073,11 @@ msgstr "OK"
 #, fuzzy
 msgid "Oldest"
 msgstr "Najstarsze"
+
+#: src/pages/SeriesDetailPage.tsx
+#, fuzzy
+msgid "Oldest first"
+msgstr "Od najstarszych"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
@@ -11303,6 +11362,11 @@ msgstr "Szukaj (Ctrl+K)"
 msgid "Search by chapter number or title"
 msgstr "Szukaj po numerze rozdziału lub tytule"
 
+#: src/components/CreditPicker.tsx
+#, fuzzy
+msgid "Search by name"
+msgstr "Szukaj po nazwie"
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Search by title, description, or author:\"Junji Ito\""
@@ -11893,6 +11957,7 @@ msgstr "Pokaż mniej"
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -11929,6 +11994,11 @@ msgstr "Pokazuj serie czytania"
 #, fuzzy
 msgid "Show source text"
 msgstr "Pokaż tekst źródła"
+
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Show their newest titles in a rail on Home and Discover"
+msgstr "Pokaż ich najnowsze tytuły w sekcji na Starcie i w Odkrywaniu"
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -12196,6 +12266,16 @@ msgstr "Sortuj"
 #, fuzzy
 msgid "Sort by"
 msgstr "Sortuj według"
+
+#: src/pages/SeriesDetailPage.tsx
+#, fuzzy
+msgid "Sort newest first"
+msgstr "Sortuj od najnowszych"
+
+#: src/pages/SeriesDetailPage.tsx
+#, fuzzy
+msgid "Sort oldest first"
+msgstr "Sortuj od najstarszych"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -12467,6 +12547,11 @@ msgstr "Nadal wczesny dostęp na {source}, Maki sprawdzi ponownie później"
 msgid "Still going"
 msgstr "Nadal czytane"
 
+#: src/pages/CreatorPage.tsx
+#, fuzzy
+msgid "Stop showing their new titles on Home and Discover"
+msgstr "Przestań pokazywać ich nowe tytuły na Starcie i w Odkrywaniu"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Stopped before finishing"
@@ -12477,8 +12562,8 @@ msgstr "Przerwane przed ukończeniem"
 msgid "Storage, metadata, download clients and integrations for your Maki instance."
 msgstr "Przechowywanie, metadane, klienty pobierania i integracje dla Twojej instancji Maki."
 
+#: src/components/CreditPicker.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/pages/CreatorPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Story"
@@ -12494,7 +12579,7 @@ msgstr "Seria"
 msgid "Stuck downloads"
 msgstr "Zablokowane pobrania"
 
-#: src/pages/CreatorPage.tsx
+#: src/components/CreditPicker.tsx
 #, fuzzy
 msgid "Studio"
 msgstr "Studio"
@@ -12867,6 +12952,12 @@ msgstr "Najwyższa dozwolona ocena treści w wyszukiwaniu, Odkrywaniu i rekomend
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "Najpopularniejsze tytuły z katalogu MangaBaka."
 
+#: src/components/discover/discoverSectionDefs.ts
+#: src/components/home/homeSectionDefs.ts
+#, fuzzy
+msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
+msgstr "Najnowsze tytuły od twórców i studiów, które obserwujesz. Puste, dopóki nikogo nie zaczniesz obserwować."
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "The odd one out"
@@ -13231,6 +13322,11 @@ msgstr "Daj kciuk w górę lub w dół, ukryj albo odrzuć rekomendację, a poja
 msgid "Tick every chapter contained in this file. An omnibus or compilation usually covers a range: click the first chapter, then shift-click the last."
 msgstr "Zaznacz każdy rozdział zawarty w tym pliku. Wydanie zbiorcze lub kompilacja zwykle obejmuje zakres: kliknij pierwszy rozdział, a następnie kliknij ostatni z wciśniętym klawiszem Shift."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+#, fuzzy
+msgid "Ticks them off as soon as the chapter list arrives. Watched chapters don't count toward your reading stats."
+msgstr "Zaznacza je od razu, gdy pojawi się lista rozdziałów. Obejrzane rozdziały nie liczą się do statystyk czytania."
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -13305,6 +13401,11 @@ msgstr "Wyszukiwanie po tytule"
 #, fuzzy
 msgid "Titles"
 msgstr "Tytuły"
+
+#: src/components/CreditPicker.tsx
+#, fuzzy
+msgid "Titles credited to any of them."
+msgstr "Tytuły, przy których figuruje którykolwiek z nich."
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -13579,6 +13680,7 @@ msgstr "Typ"
 msgid "Type mix"
 msgstr "Podział według typu"
 
+#: src/components/CreditPicker.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Type to search…"
@@ -13637,6 +13739,16 @@ msgstr "Nie udało się cofnąć: {0}"
 #, fuzzy
 msgid "Undone"
 msgstr "Cofnięto"
+
+#: src/components/discover/FollowingRail.tsx
+#, fuzzy
+msgid "Unfollow"
+msgstr "Przestań obserwować"
+
+#: src/components/discover/FollowingRail.tsx
+#, fuzzy
+msgid "Unfollow {name}"
+msgstr "Przestań obserwować: {name}"
 
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
@@ -14035,6 +14147,7 @@ msgstr "Wietnamski"
 msgid "View {title}"
 msgstr "Zobacz {title}"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View & add"
@@ -14045,6 +14158,7 @@ msgstr "Zobacz i dodaj"
 msgid "View activity"
 msgstr "Zobacz aktywność"
 
+#: src/components/home/AnimeResumeRail.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "View and add {title}"
@@ -14539,6 +14653,11 @@ msgstr "Obejrzałeś anime {animeTitle} ({coveredLabel}). Prawdopodobnie obejmuj
 #, fuzzy
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "Obejrzałeś anime {animeTitle}. Obejmuje ono rozdziały do {coveredTo}. Zacznij czytać od rozdz. {resumeAt}."
+
+#: src/components/discover/FollowingRail.tsx
+#, fuzzy
+msgid "You follow nobody yet. Open a creator or studio and press Follow."
+msgstr "Nikogo jeszcze nie obserwujesz. Otwórz twórcę lub studio i naciśnij Obserwuj."
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy

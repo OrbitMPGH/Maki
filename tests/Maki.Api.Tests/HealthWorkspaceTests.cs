@@ -113,6 +113,18 @@ public class HealthWorkspaceTests : IDisposable
         await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,verify);
         return file;
     }
+    [Fact] public async Task Partial_analysis_is_a_hint_not_a_finding()
+    {
+        using var db=fixture.NewContext();
+        var folder=new RootFolder { Path=root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
+        var name=$"{Guid.NewGuid():N}.cbz";
+        using (var zip=ZipFile.Open(Path.Combine(root,name),ZipArchiveMode.Create)) { using var stream=zip.CreateEntry("1.avif").Open(); stream.Write(new byte[256]); }
+        var file=new HealthFile { RootFolderId=folder.Id,RelativePath=name }; db.HealthFiles.Add(file); await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(file,root,true,default,0,true);
+        Assert.Equal("partial",file.Status);
+        Assert.Contains(HealthScanService.Analysis(file).Problems,p=>p.Kind=="incomplete");
+        Assert.DoesNotContain(db.HealthFindings,f=>f.FileId==file.Id&&f.Kind=="incomplete");
+    }
     [Fact] public async Task A_replacement_needs_a_source_whether_or_not_one_was_named()
     {
         using var db=fixture.NewContext(); var file=await Seed(db,true); var service=Operations(db);

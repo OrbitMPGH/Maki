@@ -1523,6 +1523,24 @@ msgstr ""
 "{skipped, plural, =0 {} other {, # skipped}}"
 "{errors, plural, =0 {} one {, # error} other {, # errors}}"
 
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedRelease.title"
+msgstr "New from {creator}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedRelease.body"
+msgstr "{title} is new in the catalogue."
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedReleases.title"
+msgstr "New from creators you follow"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+msgid "inbox.followedReleases.body"
+msgstr "{count, plural, one {# new title} other {# new titles}} in the catalogue."
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 msgid "inbox.update.available.title"
 msgstr "Update available"

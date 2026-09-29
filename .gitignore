@@ -48,3 +48,6 @@ diff.txt
 /.simulated
 skills-lock.json
 /.showcase
+
+# Release checklist fixtures and test runs (scripts/release-test)
+/.release-test/

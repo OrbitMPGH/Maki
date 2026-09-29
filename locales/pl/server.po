@@ -2164,6 +2164,32 @@ msgstr "Import listy zakończony"
 msgid "inbox.importList.finished.body"
 msgstr "{tracker}: {added, plural, one {dodano # serię} few {dodano # serie} many {dodano # serii} other {dodano # serii}}{requested, plural, =0 {} one {, zgłoszono # prośbę} few {, zgłoszono # prośby} many {, zgłoszono # próśb} other {, zgłoszono # prośby}}{skipped, plural, =0 {} one {, pominięto # serię} few {, pominięto # serie} many {, pominięto # serii} other {, pominięto # serii}}{errors, plural, =0 {} one {, # błąd} few {, # błędy} many {, # błędów} other {, # błędu}}"
 
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from {creator}
+#, fuzzy
+msgid "inbox.followedRelease.title"
+msgstr "Nowość od {creator}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {title} is new in the catalogue.
+#, fuzzy
+msgid "inbox.followedRelease.body"
+msgstr "Nowość w katalogu: {title}."
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from creators you follow
+#, fuzzy
+msgid "inbox.followedReleases.title"
+msgstr "Nowości od obserwowanych twórców"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
+msgid "inbox.followedReleases.body"
+msgstr "{count, plural, one {# nowy tytuł} few {# nowe tytuły} many {# nowych tytułów} other {# nowego tytułu}} w katalogu."
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
 #, fuzzy

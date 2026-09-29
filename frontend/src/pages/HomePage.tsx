@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Box, Button, Group, Paper } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
@@ -47,6 +47,7 @@ import { reconcileLayout, sectionVisible } from '../components/layout/pageLayout
 import { HOME_LAYOUT_CONFIG, HOME_SECTION_DEFS } from '../components/home/homeSectionDefs'
 import { useReadTracking } from '../api/reader'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
+import { FollowingRail } from '../components/discover/FollowingRail'
 import { ContinueLead, CONTINUE_LEAD_MAX } from '../components/home/ContinueLead'
 import { ContinueRail } from '../components/home/ContinueRail'
 import type { ReadingRailKind } from '../components/home/ReadingCardMenu'
@@ -137,6 +138,7 @@ export default function HomePage() {
 
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const navigate = useNavigate()
 
   const continueReading = reading?.continueReading ?? []
   const jumpBackIn = reading?.jumpBackIn ?? []
@@ -195,7 +197,7 @@ export default function HomePage() {
             railLimit={RAIL_SIZE}
             unavailable={(key) =>
               !discoverAvailable &&
-              (key === 'recommended' || key === 'popular' ||
+              (key === 'recommended' || key === 'popular' || key === 'following' ||
                 (isRailKey(key) && homeRails.find((r) => r.id === railIdOf(key))?.spec.source !== 'library'))
                 ? msg`Needs the local MangaBaka database`
                 : null
@@ -344,9 +346,19 @@ export default function HomePage() {
       fromAnime && fromAnime.length > 0 && (
         <>
           <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
-          <AnimeResumeRail items={fromAnime} />
+          <AnimeResumeRail items={fromAnime} onOpen={setDetailItem} />
         </>
       )
+    ),
+
+    following: (
+      <FollowingRail
+        enabled={needsDiscover && on('following')}
+        limit={RAIL_SIZE}
+        seriesIdFor={seriesIdFor}
+        onOpen={setDetailItem}
+        onShowMore={(rail) => navigate('/discover', { state: { expandFollowing: rail } })}
+      />
     ),
 
     recommended: recommendations.isLoading ? (

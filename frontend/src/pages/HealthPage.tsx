@@ -95,7 +95,7 @@ const tone = (status: string) =>
       ? 'warn'
       : ['healthy', 'complete', 'completed', 'resolved', 'ok'].includes(status)
         ? 'ok'
-        : ['running', 'applying', 'deleting', 'downloading'].includes(status)
+        : ['running', 'applying', 'deleting', 'downloading', 'info'].includes(status)
           ? 'info'
           : 'neutral'
 
@@ -138,7 +138,6 @@ const FINDING_LABEL: Record<string, MessageDescriptor> = {
   duplicate: msg`Duplicate`,
   unlinked: msg`Not linked`,
   sizeMismatch: msg`Size mismatch`,
-  incomplete: msg`Incomplete`,
   ambiguousNames: msg`Ambiguous names`,
 }
 
@@ -153,10 +152,10 @@ const HISTORY_KIND_LABEL: Record<string, MessageDescriptor> = {
   transition: msg`Status change`,
 }
 
-function Status({ value }: { value: string }) {
+function Status({ value, hint }: { value: string; hint?: boolean }) {
   const renderLabel = useLabel()
   return (
-    <StatusDot tone={tone(value)} live={value === 'running'}>
+    <StatusDot tone={hint ? 'info' : tone(value)} live={value === 'running'}>
       {renderLabel(STATUS_LABEL[value] ?? value)}
     </StatusDot>
   )
@@ -527,7 +526,7 @@ export default function HealthPage() {
                             </Table.Td>
                             <Table.Td>{bytes(file.size, t`Missing`)}</Table.Td>
                             <Table.Td>
-                              <Status value={file.status} />
+                              <Status value={file.status} hint={file.status === 'partial'} />
                             </Table.Td>
                             <Table.Td>
                               <Group gap={4}>
@@ -1024,6 +1023,13 @@ function FileReview({
                 <Text size="xs" c="var(--ink-4)" mt={4} style={{ overflowWrap: 'anywhere' }}>
                   SHA-256: {data.file.contentHash ?? <Trans>Unavailable</Trans>}
                 </Text>
+                {data.analysis.problems
+                  .filter((p) => p.kind === 'incomplete')
+                  .map((p, i) => (
+                    <Text key={i} size="xs" c="var(--info)" mt={4}>
+                      {p.message}
+                    </Text>
+                  ))}
                 <Text size="sm" c="var(--ink-3)" mt="sm">
                   <Trans>Affected chapters:</Trans>{' '}
                   {data.chapters.map((c) => c.number ?? c.title ?? c.id).join(', ') || <Trans>None linked</Trans>}

@@ -64,4 +64,49 @@ public class RecommendationFiltersTests
         var (clause, _) = Build(new RecommendationFilters(MinRating: 50));
         Assert.StartsWith(" AND ", clause);
     }
+
+    [Fact]
+    public void CreditIds_narrow_the_scan_to_those_series()
+    {
+        Assert.Equal([2L, 4L], Run(new RecommendationFilters(CreditIds: [2, 4, 99])));
+    }
+
+    [Fact]
+    public void Empty_CreditIds_match_nothing()
+    {
+        Assert.Empty(Run(new RecommendationFilters(CreditIds: [])));
+    }
+
+    [Fact]
+    public void FromSpec_carries_the_credits()
+    {
+        var filters = RecommendationFilters.FromSpec(
+            new Maki.Core.Configuration.SearchDefaultsSpec(Credits: [new("Junji Ito", "author")]));
+
+        Assert.Equal([new Maki.Core.Recommendations.CatalogueCredit("Junji Ito", "author")], filters.Credits!);
+        Assert.Null(filters.CreditIds);
+    }
+
+    /// <summary>Executes the clause over a four-row table, so the SQL itself is under test.</summary>
+    private static List<long> Run(RecommendationFilters f)
+    {
+        using var conn = new SqliteConnection("Data Source=:memory:");
+        conn.Open();
+        using (var setup = conn.CreateCommand())
+        {
+            setup.CommandText = "CREATE TABLE d (id INTEGER); INSERT INTO d VALUES (1), (2), (3), (4);";
+            setup.ExecuteNonQuery();
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT id FROM d WHERE 1 = 1" + f.BuildClause(cmd, "d") + " ORDER BY id";
+        var ids = new List<long>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            ids.Add(reader.GetInt64(0));
+        }
+
+        return ids;
+    }
 }

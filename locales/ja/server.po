@@ -2164,6 +2164,32 @@ msgstr "リストのインポートが完了しました"
 msgid "inbox.importList.finished.body"
 msgstr "{tracker}: {added, plural, other {# 件追加}}{requested, plural, =0 {} other {、# 件リクエスト}}{skipped, plural, =0 {} other {、# 件スキップ}}{errors, plural, =0 {} other {、# 件のエラー}}"
 
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from {creator}
+#, fuzzy
+msgid "inbox.followedRelease.title"
+msgstr "{creator}の新着"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {title} is new in the catalogue.
+#, fuzzy
+msgid "inbox.followedRelease.body"
+msgstr "{title}がカタログに追加されました。"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from creators you follow
+#, fuzzy
+msgid "inbox.followedReleases.title"
+msgstr "フォロー中のクリエイターの新着"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
+msgid "inbox.followedReleases.body"
+msgstr "カタログに{count, plural, other {#件の新作品}}があります。"
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
 #, fuzzy

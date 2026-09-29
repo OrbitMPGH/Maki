@@ -2164,6 +2164,32 @@ msgstr "Импорт списка завершён"
 msgid "inbox.importList.finished.body"
 msgstr "{tracker}: {added, plural, one {# добавлена} few {# добавлены} many {# добавлено} other {# добавлено}}{requested, plural, =0 {} one {, # запрошена} few {, # запрошены} many {, # запрошено} other {, # запрошено}}{skipped, plural, =0 {} one {, # пропущена} few {, # пропущены} many {, # пропущено} other {, # пропущено}}{errors, plural, =0 {} one {, # ошибка} few {, # ошибки} many {, # ошибок} other {, # ошибки}}"
 
+#. {creator} is a person's or studio's name from the catalogue and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from {creator}
+#, fuzzy
+msgid "inbox.followedRelease.title"
+msgstr "Новое от {creator}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {title} is new in the catalogue.
+#, fuzzy
+msgid "inbox.followedRelease.body"
+msgstr "Новинка в каталоге: {title}."
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: New from creators you follow
+#, fuzzy
+msgid "inbox.followedReleases.title"
+msgstr "Новое от создателей, на которых вы подписаны"
+
+#: src/Maki.Api/Services/FollowedCreatorReleaseService.cs
+#. English: {count, plural, one {# new title} other {# new titles}} in the catalogue.
+#, fuzzy
+msgid "inbox.followedReleases.body"
+msgstr "{count, plural, one {# новое произведение} few {# новых произведения} many {# новых произведений} other {# новых произведения}} в каталоге."
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #. English: Update available
 #, fuzzy

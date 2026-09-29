@@ -23,7 +23,8 @@ public class ChapterSyncService(
     SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
     IAppSettings appSettings,
-    ILogger<ChapterSyncService> logger)
+    ILogger<ChapterSyncService> logger,
+    AnimeResumePendingService? animeResumePending = null)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
     public Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default) =>
@@ -191,6 +192,11 @@ public class ChapterSyncService(
         }
 
         await db.SaveChangesAsync(ct);
+        if (newChapters.Count > 0 && animeResumePending is not null)
+        {
+            await animeResumePending.ApplyAsync(seriesId, ct);
+        }
+
         return newChapters.Select(c => c.Id).ToList();
     }
 

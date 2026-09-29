@@ -24,6 +24,7 @@ export type InboxEventType =
   | 'backupFinished'
   | 'sourceMatchFinished'
   | 'importListFinished'
+  | 'followedCreatorRelease'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -93,6 +94,7 @@ export const INBOX_CATEGORIES: {
     label: msg`Library`,
     types: ['newChapterAvailable', 'smartDownloadQueued', 'sourceMatchFinished', 'importListFinished'],
   },
+  { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease'] },
   { id: 'downloads', label: msg`Downloads`, types: ['chapterDownloaded', 'downloadFailed'] },
   { id: 'progress', label: msg`Progress`, types: ['achievementUnlocked', 'levelUp'] },
   {
@@ -129,6 +131,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   backupFinished: msg`Backup taken`,
   sourceMatchFinished: msg`Source matching finished`,
   importListFinished: msg`Import list finished`,
+  followedCreatorRelease: msg`New series from creators you follow`,
 }
 
 /**
@@ -138,6 +141,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
  */
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
   importListFinished: msg`A tracker list sync added or requested series.`,
+  followedCreatorRelease: msg`Checked after each nightly catalogue update. Follow someone from their creator page.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

@@ -10,10 +10,12 @@ import {
   allowedContentRatings,
   BROWSE_SORTS,
   CONTENT_RATING_LABELS,
+  type CatalogueCredit,
   type CatalogueRule,
   type RecommendationFilters,
 } from '../api/hooks'
 import { TermFilters, useTermFilters } from './CatalogueRules'
+import { CreditPicker } from './CreditPicker'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
 
@@ -147,6 +149,7 @@ export interface CatalogueFilterSpec {
   minRating?: number | null
   contentRatings?: string[] | null
   rules?: CatalogueRule[] | null
+  credits?: CatalogueCredit[] | null
 }
 
 /**
@@ -167,12 +170,13 @@ export function filtersFromSpec(spec: CatalogueFilterSpec): RecommendationFilter
   if (spec.minRating != null) f.minRating = spec.minRating
   if (spec.contentRatings?.length) f.contentRatings = spec.contentRatings
   if (spec.rules?.length) f.rules = spec.rules
+  if (spec.credits?.length) f.credits = spec.credits
   return f
 }
 
 /**
- * The catalogue constraints every Discover surface shares — genres, tags, type, status, chapter
- * count, year and rating. Kept in a hook so the sliders' "no constraint" positions and the 0–10 to
+ * The catalogue constraints every Discover surface shares — genres, tags, creators, type, status,
+ * chapter count, year and rating. Kept in a hook so the sliders' "no constraint" positions and the 0–10 to
  * 0–100 rating conversion are written once: a filter that says `minRating: 7` where the dump stores
  * 70 silently matches everything, and that is not a mistake worth being able to make twice.
  *
@@ -207,6 +211,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     at('content-ratings'),
     initial?.contentRatings ?? [],
   )
+  const [credits, setCredits] = usePageState<CatalogueCredit[]>(at('credits'), initial?.credits ?? [])
 
   const isCustomized =
     terms.isCustomized ||
@@ -217,7 +222,8 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     minRating > 0 ||
     chapters[0] > CHAPTER_MIN ||
     chapters[1] < CHAPTER_MAX ||
-    contentRatings.length > 0
+    contentRatings.length > 0 ||
+    credits.length > 0
 
   // Only constrained fields are sent: a slider parked at its end is "no constraint", not a bound,
   // and sending it would drop every row whose year or chapter count the dump doesn't know.
@@ -232,6 +238,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     if (chapters[1] < CHAPTER_MAX) f.maxChapters = chapters[1]
     if (minRating > 0) f.minRating = minRating * 10 // slider is 0–10, the dump's rating is 0–100
     if (contentRatings.length) f.contentRatings = contentRatings
+    if (credits.length) f.credits = credits
     return f
   }
 
@@ -248,8 +255,9 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     setChapters([CHAPTER_MIN, CHAPTER_MAX])
     setMinRating(0)
     setContentRatings([])
+    setCredits([])
     // Every setter here is a `useState` setter, page-backed or not, so this stays stable.
-  }, [resetTerms, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
+  }, [resetTerms, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings, setCredits])
 
   // Seeds the panel from a stored spec once it arrives. `initial` cannot do this: the saved
   // default is fetched, so it is undefined on the render that runs the state initializers. Stable
@@ -262,7 +270,8 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
     setChapters([f.minChapters ?? CHAPTER_MIN, f.maxChapters ?? CHAPTER_MAX])
     setMinRating((f.minRating ?? 0) / 10) // stored on the dump's 0–100 scale, the slider is 0–10
     setContentRatings(f.contentRatings ?? [])
-  }, [hydrateTerms, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings])
+    setCredits(f.credits ?? [])
+  }, [hydrateTerms, setTypes, setStatuses, setYears, setChapters, setMinRating, setContentRatings, setCredits])
 
   return {
     isCustomized,
@@ -277,6 +286,7 @@ export function useCatalogueFilters(initial?: RecommendationFilters, scope?: str
       chapters, setChapters,
       minRating, setMinRating,
       contentRatings, setContentRatings,
+      credits, setCredits,
     },
   }
 }
@@ -305,6 +315,7 @@ export function CatalogueFilters({
     chapters, setChapters,
     minRating, setMinRating,
     contentRatings, setContentRatings,
+    credits, setCredits,
   } = controls
 
   // Only ratings at or below the signed-in user's own ceiling: picking one they can't see would
@@ -327,6 +338,7 @@ export function CatalogueFilters({
   return (
     <Stack gap="lg">
       <TermFilters controls={terms} />
+      <CreditPicker value={credits} onChange={setCredits} />
       <SimpleGrid cols={cols} spacing="lg">
         <MultiSelect
           label={t`Type`}

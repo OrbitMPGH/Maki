@@ -538,6 +538,15 @@ public static class SettingKeys
     /// </summary>
     public const string DiscoverHidden = "discover.hidden";
 
+    /// <summary>Per user: followed creators and studios, as a <see cref="FollowedCreatorsSpec"/> JSON blob.</summary>
+    public const string DiscoverFollowing = "discover.following";
+
+    /// <summary>
+    /// Instance: the highest MangaBaka id the follow check has already looked at. Series above it are
+    /// new to the catalogue. Unset means the check has never run, and its first pass only records this.
+    /// </summary>
+    public const string DiscoverFollowingWatermark = "discover.following.watermark";
+
     // Scrobbling (Kavita reading progress → AniList / MyAnimeList / MangaBaka)
     public const string ScrobbleAniListClientId = "scrobble.anilistclientid";
     public const string ScrobbleAniListClientSecret = "scrobble.anilistclientsecret";
