@@ -24,6 +24,9 @@ namespace Maki.Api.Auth;
 /// </summary>
 public sealed class AntiforgeryCookieFilter(ILocalizer localizer, IAntiforgery antiforgery) : IAsyncAuthorizationFilter
 {
+    /// <summary>Matches <c>AntiforgeryOptions.HeaderName</c> in <c>AddMakiAuth</c> and the SPA's client.</summary>
+    public const string HeaderName = "X-XSRF-TOKEN";
+
     private static readonly HashSet<string> SafeMethods =
         new(StringComparer.OrdinalIgnoreCase) { "GET", "HEAD", "OPTIONS", "TRACE" };
 
@@ -49,17 +52,32 @@ public sealed class AntiforgeryCookieFilter(ILocalizer localizer, IAntiforgery a
             return;
         }
 
+        // The header only, never the __RequestVerificationToken form field ASP.NET would otherwise
+        // fall back to. Another app on the same host is same-site, so it can read the XSRF-TOKEN
+        // cookie and post it in a plain HTML form, which needs no CORS preflight. A custom header
+        // does, and a cross-origin page cannot pass one. The SPA never posts a form.
+        if (string.IsNullOrEmpty(request.Headers[HeaderName]))
+        {
+            Reject(context);
+            return;
+        }
+
         try
         {
             await antiforgery.ValidateRequestAsync(context.HttpContext);
         }
         catch (AntiforgeryValidationException)
         {
-            // Not a ControllerBase, so ApiResults.Fail is unavailable here — this is the same
-            // { code, error } shape it produces, built by hand.
-            const string key = "error.auth.antiforgeryTokenInvalid";
-            context.Result = new BadRequestObjectResult(new { code = key, error = localizer.Get(key) });
+            Reject(context);
         }
+    }
+
+    private void Reject(AuthorizationFilterContext context)
+    {
+        // Not a ControllerBase, so ApiResults.Fail is unavailable here. This is the same
+        // { code, error } shape it produces, built by hand.
+        const string key = "error.auth.antiforgeryTokenInvalid";
+        context.Result = new BadRequestObjectResult(new { code = key, error = localizer.Get(key) });
     }
 }
 

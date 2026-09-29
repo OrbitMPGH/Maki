@@ -24,6 +24,12 @@ public class AuthRuntimeOptions
     public const int DefaultLockoutMinutes = 15;
     public const int DefaultSessionDays = 30;
 
+    // Upper bounds exist because TimeSpan.FromDays throws past about 10.6 million days, which would
+    // stop the host from starting, and far smaller values still overflow the cookie's expiry date.
+    public const int MaxLockoutMaxAttempts = 1000;
+    public const int MaxLockoutMinutes = 10080;
+    public const int MaxSessionDays = 3650;
+
     /// <summary>
     /// Redirect to HTTPS, send HSTS, and require <c>Secure</c> on the session cookie.
     /// <para>
@@ -64,13 +70,18 @@ public class AuthRuntimeOptions
         TrustedProxies = (rows.GetValueOrDefault(SettingKeys.AuthTrustedProxies) ?? string.Empty)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        LockoutMaxAttempts = ReadInt(rows, SettingKeys.AuthLockoutMaxAttempts, DefaultLockoutMaxAttempts, min: 0);
+        LockoutMaxAttempts = ReadInt(
+            rows, SettingKeys.AuthLockoutMaxAttempts, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);
         LockoutDuration = TimeSpan.FromMinutes(
-            ReadInt(rows, SettingKeys.AuthLockoutMinutes, DefaultLockoutMinutes, min: 1));
+            ReadInt(rows, SettingKeys.AuthLockoutMinutes, DefaultLockoutMinutes, min: 1, max: MaxLockoutMinutes));
         SessionLifetime = TimeSpan.FromDays(
-            ReadInt(rows, SettingKeys.AuthSessionDays, DefaultSessionDays, min: 1));
+            ReadInt(rows, SettingKeys.AuthSessionDays, DefaultSessionDays, min: 1, max: MaxSessionDays));
     }
 
-    private static int ReadInt(Dictionary<string, string> rows, string key, int fallback, int min) =>
-        int.TryParse(rows.GetValueOrDefault(key), out var value) && value >= min ? value : fallback;
+    /// <summary>
+    /// Below the floor falls back to the default; above the ceiling clamps to it, since a large value
+    /// saved by an older build still states an intent (a long session) worth keeping.
+    /// </summary>
+    private static int ReadInt(Dictionary<string, string> rows, string key, int fallback, int min, int max) =>
+        int.TryParse(rows.GetValueOrDefault(key), out var value) && value >= min ? Math.Min(value, max) : fallback;
 }

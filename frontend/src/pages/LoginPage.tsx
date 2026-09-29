@@ -30,6 +30,8 @@ export function LoginPage() {
   const [code, setCode] = useState('')
   const [rememberMachine, setRememberMachine] = useState(false)
   const [needsCode, setNeedsCode] = useState(false)
+  // For someone who lost their authenticator: one of the codes shown when two-factor was turned on.
+  const [useRecovery, setUseRecovery] = useState(false)
   const [sso, setSso] = useState<{ enabled: boolean; displayName: string; restricted: boolean }>({
     enabled: false,
     displayName: '',
@@ -85,42 +87,78 @@ export function LoginPage() {
 
   function submitCode(event: React.FormEvent) {
     event.preventDefault()
-    verify.mutate({ code, rememberMachine })
+    verify.mutate({ code: code.trim(), rememberMachine: !useRecovery && rememberMachine })
   }
 
   return (
     <AuthFrame
       title={needsCode ? t`Two-factor code` : t`Sign in`}
-      subtitle={needsCode ? <Trans>Enter your authenticator code</Trans> : undefined}
+      subtitle={
+        needsCode
+          ? useRecovery
+            ? <Trans>Enter one of your recovery codes</Trans>
+            : <Trans>Enter your authenticator code</Trans>
+          : undefined
+      }
     >
       {needsCode ? (
         <form onSubmit={submitCode}>
           <Stack>
-            <Center>
-              <PinInput
-                length={6}
-                type="number"
-                inputMode="numeric"
-                oneTimeCode
+            {useRecovery ? (
+              <TextInput
+                label={t`Recovery code`}
+                autoComplete="off"
                 autoFocus
                 value={code}
-                onChange={setCode}
+                onChange={(e) => setCode(e.currentTarget.value)}
               />
-            </Center>
-            <Checkbox
-              label={t`Trust this device for 30 days`}
-              checked={rememberMachine}
-              onChange={(e) => setRememberMachine(e.currentTarget.checked)}
-            />
+            ) : (
+              <>
+                <Center>
+                  <PinInput
+                    length={6}
+                    type="number"
+                    inputMode="numeric"
+                    oneTimeCode
+                    autoFocus
+                    value={code}
+                    onChange={setCode}
+                  />
+                </Center>
+                <Checkbox
+                  label={t`Trust this device for 30 days`}
+                  checked={rememberMachine}
+                  onChange={(e) => setRememberMachine(e.currentTarget.checked)}
+                />
+              </>
+            )}
             {error && <AuthError>{error.message}</AuthError>}
-            <Button type="submit" color="brand" loading={busy} disabled={code.length < 6} fullWidth>
+            <Button
+              type="submit"
+              color="brand"
+              loading={busy}
+              disabled={useRecovery ? !code.trim() : code.length < 6}
+              fullWidth
+            >
               <Trans>Verify</Trans>
             </Button>
             <Anchor
               fz="sm"
               ta="center"
               onClick={() => {
+                setUseRecovery(!useRecovery)
+                setCode('')
+                verify.reset()
+              }}
+            >
+              {useRecovery ? <Trans>Use your authenticator app</Trans> : <Trans>Use a recovery code</Trans>}
+            </Anchor>
+            <Anchor
+              fz="sm"
+              ta="center"
+              onClick={() => {
                 setNeedsCode(false)
+                setUseRecovery(false)
                 setCode('')
                 verify.reset()
               }}

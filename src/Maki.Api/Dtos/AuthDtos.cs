@@ -11,11 +11,13 @@ public record SetupRequest(string? Username, string? Password, string? DisplayNa
 
 public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 
-public record EnableTwoFactorRequest(string? Code);
+public record EnableTwoFactorRequest(string? Code, string? Password = null);
 
 public record DisableTwoFactorRequest(string? Password);
 
-public record CreateApiKeyRequest(string? Name, UserApiKeyScope Scope);
+public record CreateApiKeyRequest(string? Name, UserApiKeyScope Scope, string? Password = null);
+
+public record ConfirmPasswordRequest(string? Password);
 
 /// <summary>
 /// Who the caller is and what they may do. The SPA drives every permission-dependent control off
@@ -53,7 +55,8 @@ public record UserSummaryDto(
     bool PendingSetup,
     bool TwoFactorEnabled,
     DateTime CreatedAt,
-    DateTime? LastLoginAt);
+    DateTime? LastLoginAt,
+    bool OidcLinked = false);
 
 /// <summary>
 /// Admin-side create/update. Every field is optional on update so a partial edit does not have to

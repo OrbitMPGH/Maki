@@ -55,20 +55,31 @@ public class SourceMappingController(
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateMappingRequest request, CancellationToken ct)
     {
-        if (sourceRegistry.Find(request.SourceName) is null)
+        if (sourceRegistry.Find(request.SourceName) is not { } source)
         {
             return this.Fail(localizer, "error.sourceMapping.unknownSource", new { name = request.SourceName });
         }
 
+        // The registry matches names case-insensitively but the column and its unique index do not,
+        // so storing the caller's casing would let "mangadex" and "MangaDex" both map one series.
+        var sourceName = source.Name;
+
+        // Through db.Series, whose query filter hides series in root folders the caller holds no
+        // grant for. The insert below would not check that on its own.
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        {
+            return NotFound();
+        }
+
         // Linking a globally switched-off source would create a mapping that never runs;
         // say so rather than storing something inert.
-        if (!await sourceAvailability.IsEnabledAsync(request.SourceName, ct))
+        if (!await sourceAvailability.IsEnabledAsync(sourceName, ct))
         {
-            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = request.SourceName });
+            return this.Fail(localizer, "error.sourceMapping.sourceDisabled", new { name = sourceName });
         }
 
         if (await db.SourceMappings.AnyAsync(
-                m => m.SeriesId == request.SeriesId && m.SourceName == request.SourceName, ct))
+                m => m.SeriesId == request.SeriesId && m.SourceName == sourceName, ct))
         {
             return this.Conflict(localizer, "error.sourceMapping.alreadyMapped");
         }
@@ -76,15 +87,15 @@ public class SourceMappingController(
         var mapping = new SourceMapping
         {
             SeriesId = request.SeriesId,
-            SourceName = request.SourceName,
+            SourceName = sourceName,
             SourceSeriesId = request.SourceSeriesId,
             Url = request.Url,
             LanguageFilter = string.IsNullOrWhiteSpace(request.LanguageFilter)
                 ? SourceLanguagePreference.SeedFilter(
-                    sourceRegistry.GetRequired(request.SourceName),
+                    source,
                     await SourceLanguagePreference.LoadAsync(settings, ct))
                 : SourceLanguages.Serialize(SourceLanguages.Parse(request.LanguageFilter)),
-            Priority = request.Priority ?? await PriorityForAsync(request.SourceName, ct),
+            Priority = request.Priority ?? await PriorityForAsync(sourceName, ct),
             Enabled = true,
             Origin = SourceMappingOrigin.Manual
         };

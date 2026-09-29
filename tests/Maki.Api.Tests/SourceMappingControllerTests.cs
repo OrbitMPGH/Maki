@@ -73,6 +73,28 @@ public class SourceMappingControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_mapping_stores_the_registry_casing_so_a_second_casing_is_a_duplicate()
+    {
+        var seriesId = _db.SeedSeries("Berserk");
+        var controller = BuildController(null, new FakeSource { Name = "MangaDex" });
+
+        var first = await controller.Create(new(seriesId, "mangadex", "sid", "https://md.test/s"), default);
+        var second = await controller.Create(new(seriesId, "MANGADEX", "sid", "https://md.test/s"), default);
+
+        var mapping = Assert.IsType<SourceMapping>(Assert.IsType<OkObjectResult>(first).Value);
+        Assert.Equal("MangaDex", mapping.SourceName);
+        Assert.IsType<ConflictObjectResult>(second);
+    }
+
+    [Fact]
+    public async Task A_mapping_for_a_series_the_caller_cannot_see_is_not_found()
+    {
+        var result = await BuildController().Create(new(424242, "fake", "sid", "https://fake.test/s"), default);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
     public async Task Flags_the_series_and_hands_it_to_the_worker()
     {
         var first = _db.SeedSeries("Hajime no Ippo");

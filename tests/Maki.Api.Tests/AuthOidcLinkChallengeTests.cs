@@ -44,7 +44,8 @@ public class AuthOidcLinkChallengeTests : IDisposable
             throw new NotImplementedException();
     }
 
-    private async Task<AuthController> ControllerAsync(int userId, IAuthenticationService authService)
+    private async Task<AuthController> ControllerAsync(
+        int userId, IAuthenticationService authService, bool confirmed = true)
     {
         _db.SetConfig(
             (SettingKeys.AuthOidcEnabled, "true"),
@@ -57,16 +58,29 @@ public class AuthOidcLinkChallengeTests : IDisposable
         var controller = new AuthController(
             new TestLocalizer(), db, null!, null!, null!, null!, new TestCurrentUser(userId),
             null!, oidc, null!, new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)),
-            NullLogger<AuthController>.Instance);
+            NullLogger<AuthController>.Instance, null!);
 
         var services = new ServiceCollection();
         services.AddSingleton(authService);
-        controller.ControllerContext = new ControllerContext
+        services.AddDataProtection();
+        var provider = services.BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = provider };
+        if (confirmed)
         {
-            HttpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() },
-        };
+            http.Request.Headers.Cookie = IntentCookie(provider, userId);
+        }
 
+        controller.ControllerContext = new ControllerContext { HttpContext = http };
         return controller;
+    }
+
+    /// <summary>The cookie POST auth/oidc/link sets once the password checks out.</summary>
+    private static string IntentCookie(IServiceProvider services, int userId)
+    {
+        var scratch = new DefaultHttpContext { RequestServices = services };
+        OidcLinkIntent.Issue(scratch, userId);
+        var setCookie = scratch.Response.Headers.SetCookie.ToString();
+        return setCookie[..setCookie.IndexOf(';')];
     }
 
     [Fact]
@@ -78,7 +92,33 @@ public class AuthOidcLinkChallengeTests : IDisposable
         var result = await controller.OidcLink();
 
         var redirect = Assert.IsType<RedirectResult>(result);
-        Assert.StartsWith("/settings?oidcLinkError=", redirect.Url);
+        Assert.Equal("/settings?oidcLinkError=error.auth.ssoChallengeRejected", redirect.Url);
+    }
+
+    [Fact]
+    public async Task Linking_without_a_confirmed_password_never_reaches_the_provider()
+    {
+        var userId = _db.SeedUser("ada");
+        var controller = await ControllerAsync(userId, new ThrowingAuthenticationService(), confirmed: false);
+
+        var result = await controller.OidcLink();
+
+        var redirect = Assert.IsType<RedirectResult>(result);
+        Assert.Equal("/settings?oidcLinkError=error.auth.ssoLinkNeedsPassword", redirect.Url);
+    }
+
+    [Fact]
+    public async Task A_confirmation_minted_for_another_account_does_not_count()
+    {
+        var userId = _db.SeedUser("ada");
+        var otherId = _db.SeedUser("mallory");
+        var controller = await ControllerAsync(userId, new ThrowingAuthenticationService(), confirmed: false);
+        controller.HttpContext.Request.Headers.Cookie = IntentCookie(controller.HttpContext.RequestServices, otherId);
+
+        var result = await controller.OidcLink();
+
+        var redirect = Assert.IsType<RedirectResult>(result);
+        Assert.Equal("/settings?oidcLinkError=error.auth.ssoLinkNeedsPassword", redirect.Url);
     }
 
     [Fact]
@@ -94,7 +134,7 @@ public class AuthOidcLinkChallengeTests : IDisposable
         var disabledController = new AuthController(
             new TestLocalizer(), db, null!, null!, null!, null!, new TestCurrentUser(userId),
             null!, oidc, null!, new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)),
-            NullLogger<AuthController>.Instance)
+            NullLogger<AuthController>.Instance, null!)
         {
             ControllerContext = controller.ControllerContext,
         };

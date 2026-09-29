@@ -97,6 +97,19 @@ public class AccountApiKeyScopeTests : IDisposable
     }
 
     [Fact]
+    public async Task An_account_with_a_password_has_to_confirm_it_to_mint_a_key()
+    {
+        var userId = _db.SeedUser("alice", configure: u =>
+            u.PasswordHash = new PasswordHasher<MakiUser>().HashPassword(u, "correct horse battery"));
+        var request = new CreateApiKeyRequest("a script", UserApiKeyScope.Full);
+
+        var result = await Controller(userId).CreateApiKey(request, CancellationToken.None);
+
+        // A key outlives the session that minted it, so a hijacked session alone must not be enough.
+        Assert.Equal("error.account.incorrectPassword", CodeOf(result));
+    }
+
+    [Fact]
     public async Task The_full_scope_is_accepted()
     {
         var userId = _db.SeedUser("alice");

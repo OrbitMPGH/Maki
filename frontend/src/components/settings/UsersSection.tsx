@@ -21,6 +21,8 @@ import { IconPlus } from '@tabler/icons-react'
 import {
   useCreateUser,
   useDeleteUser,
+  useResetUserTwoFactor,
+  useUnlinkUserOidc,
   useUpdateUser,
   useUsers,
   type Permission,
@@ -218,6 +220,8 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
   const { data: rootFolders } = useRootFolders()
   const create = useCreateUser()
   const update = useUpdateUser()
+  const resetTwoFactor = useResetUserTwoFactor()
+  const unlinkOidc = useUnlinkUserOidc()
 
   const [username, setUsername] = useState(existing?.userName ?? '')
   const [displayName, setDisplayName] = useState(existing?.displayName ?? '')
@@ -371,6 +375,49 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
             disabled={editingSelf}
             onChange={(e) => setDisabled(e.currentTarget.checked)}
           />
+        )}
+
+        {existing && !editingSelf && (existing.twoFactorEnabled || existing.oidcLinked) && (
+          <Group gap="xs">
+            {existing.twoFactorEnabled && (
+              <Button
+                size="xs"
+                variant="light"
+                color="var(--warn)"
+                loading={resetTwoFactor.isPending}
+                onClick={() =>
+                  resetTwoFactor.mutate(existing.id, {
+                    onSuccess: () => {
+                      notifications.show({ message: now`Two-factor turned off for this account`, color: 'var(--ok)' })
+                      onClose()
+                    },
+                    onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+                  })
+                }
+              >
+                <Trans>Reset two-factor</Trans>
+              </Button>
+            )}
+            {existing.oidcLinked && (
+              <Button
+                size="xs"
+                variant="light"
+                color="var(--warn)"
+                loading={unlinkOidc.isPending}
+                onClick={() =>
+                  unlinkOidc.mutate(existing.id, {
+                    onSuccess: () => {
+                      notifications.show({ message: now`Single sign-on removed from this account`, color: 'var(--ok)' })
+                      onClose()
+                    },
+                    onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+                  })
+                }
+              >
+                <Trans>Remove single sign-on</Trans>
+              </Button>
+            )}
+          </Group>
         )}
 
         <Group justify="flex-end">

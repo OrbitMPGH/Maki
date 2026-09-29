@@ -354,10 +354,6 @@ msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} ch"
 
 #: src/pages/SeriesDetailPage.tsx
-#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-#~ msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-
-#: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 msgstr "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 
@@ -1652,6 +1648,10 @@ msgstr "Access token"
 #: src/components/UserMenu.tsx
 msgid "Account"
 msgstr "Account"
+
+#: src/api/inbox.ts
+msgid "Account security"
+msgstr "Account security"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -3401,11 +3401,6 @@ msgstr "Concurrent chapter downloads"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-#~ msgstr "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
 msgstr "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
 
@@ -3428,6 +3423,10 @@ msgstr "Confirm metadata matches"
 #: src/pages/SetupAccountPage.tsx
 msgid "Confirm password"
 msgstr "Confirm password"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Confirm your password to link"
+msgstr "Confirm your password to link"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Confirm your password to turn it off"
@@ -4569,6 +4568,10 @@ msgstr "English (provider default)"
 #: src/components/layout/SidebarFooter.tsx
 msgid "Enjoying Maki?"
 msgstr "Enjoying Maki?"
+
+#: src/pages/LoginPage.tsx
+msgid "Enter one of your recovery codes"
+msgstr "Enter one of your recovery codes"
 
 #: src/pages/LoginPage.tsx
 msgid "Enter your authenticator code"
@@ -6883,10 +6886,6 @@ msgstr "Measured quality"
 #: src/components/SourceMeasurePanel.tsx
 msgid "Measuring {done}/{planned}"
 msgstr "Measuring {done}/{planned}"
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "Measuring {scoutDone}/{scoutPlanned}"
-#~ msgstr "Measuring {scoutDone}/{scoutPlanned}"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Measuring…"
@@ -9311,6 +9310,10 @@ msgstr "Recommendations on"
 msgid "Recommended"
 msgstr "Recommended"
 
+#: src/pages/LoginPage.tsx
+msgid "Recovery code"
+msgstr "Recovery code"
+
 #: src/components/TagBuckets.tsx
 msgid "Recurrent"
 msgstr "Recurrent"
@@ -9456,6 +9459,7 @@ msgstr "Relink files"
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
 msgstr "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
 
+#: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9525,6 +9529,10 @@ msgstr "Remove series, and optionally their files, from disk"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Remove series?"
 msgstr "Remove series?"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Remove single sign-on"
+msgstr "Remove single sign-on"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove source only"
@@ -9752,6 +9760,10 @@ msgstr "Reset bookmarks and resume positions for affected chapters across all us
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Reset two-factor"
+msgstr "Reset two-factor"
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Reset zoom"
@@ -10994,6 +11006,14 @@ msgstr "Single sign-on"
 #: src/components/settings/AccountSection.tsx
 msgid "Single sign-on linked to your account"
 msgstr "Single sign-on linked to your account"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Single sign-on removed from this account"
+msgstr "Single sign-on removed from this account"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Single sign-on removed from your account"
+msgstr "Single sign-on removed from your account"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Single sign-on saved. Restart Maki to apply it."
@@ -12355,6 +12375,10 @@ msgstr "Two-factor authenticator QR code"
 msgid "Two-factor code"
 msgstr "Two-factor code"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Two-factor turned off for this account"
+msgstr "Two-factor turned off for this account"
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
@@ -12586,11 +12610,6 @@ msgstr "Upgrade now"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-#~ msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 
@@ -12601,10 +12620,6 @@ msgstr "Upgrade restore failed"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Upgrade scan finished with nothing to check"
 msgstr "Upgrade scan finished with nothing to check"
-
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
-#~ msgstr "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"
@@ -12636,14 +12651,6 @@ msgstr "Upgrades enabled"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades files Maki knows nothing about, then stops"
 msgstr "Upgrades files Maki knows nothing about, then stops"
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades off"
-#~ msgstr "Upgrades off"
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades on"
-#~ msgstr "Upgrades on"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades until chapters are covered by a digital volume"
@@ -12679,6 +12686,10 @@ msgstr "URL"
 #: src/pages/ScrobblePage.tsx
 msgid "Use"
 msgstr "Use"
+
+#: src/pages/LoginPage.tsx
+msgid "Use a recovery code"
+msgstr "Use a recovery code"
 
 #: src/components/TrackerSyncControls.tsx
 msgid "Use anime for recommendation taste"
@@ -12719,6 +12730,10 @@ msgstr "Use this to clean up chapters pulled in by a wrong source match."
 #: src/components/settings/UsersSection.tsx
 msgid "Use trackers"
 msgstr "Use trackers"
+
+#: src/pages/LoginPage.tsx
+msgid "Use your authenticator app"
+msgstr "Use your authenticator app"
 
 #: src/pages/SettingsPage.tsx
 msgid "Used by any series that hasn't been pinned to a profile of its own."
@@ -13434,6 +13449,10 @@ msgstr "Your new API key"
 #: src/components/discover/DiscoverHero.tsx
 msgid "Your next read"
 msgstr "Your next read"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Your password"
+msgstr "Your password"
 
 #: src/api/hooks.ts
 msgid "Your progress"

@@ -59,6 +59,7 @@ public class InboxRendererTests
         { "inbox.importList.finished", new { tracker = "AniList", added = 3, requested = 0, skipped = 2, errors = 1 } },
         { "inbox.upgrade.torrentProposal", new { replaced = 10, missing = 47, sizeBytes = 480L * 1024 * 1024 } },
         { "inbox.upgrade.volume", new { fileName = "Berserk v03.cbz", replaced = 9 } },
+        { "inbox.account.ssoLinked", new { account = "alice@idp" } },
     };
 
     [Fact]

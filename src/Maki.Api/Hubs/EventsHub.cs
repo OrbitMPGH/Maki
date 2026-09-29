@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using Maki.Core.Security;
 using Maki.Data;
@@ -28,16 +29,41 @@ public class EventsHub(MakiDbContext db) : Hub
 
     public static string UserGroup(int userId) => $"user-{userId}";
 
+    /// <summary>
+    /// Live connections by id. Static because a hub instance lives for one call, and it is what lets
+    /// <see cref="DisconnectUserAsync"/> reach a connection from outside the hub. One process, one
+    /// registry: there is no scale-out backplane here to keep in step with.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, (int UserId, HubCallerContext Context)> Connections = new();
+
+    /// <summary>
+    /// Drops a user's connections after their account changed under them. Group membership is fixed
+    /// when a connection opens, so a demoted admin would otherwise keep receiving admin events until
+    /// they reloaded. The client reconnects on its own and joins the groups that are right now, or
+    /// is refused by <c>CurrentUserMiddleware</c> if the account is disabled or gone.
+    /// </summary>
+    public static async Task DisconnectUserAsync(IHubContext<EventsHub> hub, int userId)
+    {
+        foreach (var (connectionId, entry) in Connections.Where(c => c.Value.UserId == userId).ToList())
+        {
+            // Out of the admin group first, so nothing further reaches it while the abort lands.
+            await hub.Groups.RemoveFromGroupAsync(connectionId, AdminGroup);
+            entry.Context.Abort();
+            Connections.TryRemove(connectionId, out _);
+        }
+    }
+
     public override async Task OnConnectedAsync()
     {
         if (int.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
+            Connections[Context.ConnectionId] = (userId, Context);
             await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
 
             // Read from the database rather than from a claim on the principal: a claim is baked at
             // sign-in, so an account promoted to admin an hour ago would still be in the wrong group.
-            // Group membership is fixed for the life of the connection either way, but this at least
-            // makes it correct as of the moment the client connected.
+            // Group membership is fixed for the life of the connection; DisconnectUserAsync is what
+            // ends a connection whose account has since changed.
             var isAdmin = await db.Users
                 .Where(u => u.Id == userId)
                 .Select(u => (u.Permissions & MakiPermission.Admin) != 0)
@@ -50,6 +76,12 @@ public class EventsHub(MakiDbContext db) : Hub
         }
 
         await base.OnConnectedAsync();
+    }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        Connections.TryRemove(Context.ConnectionId, out _);
+        return base.OnDisconnectedAsync(exception);
     }
 }
 

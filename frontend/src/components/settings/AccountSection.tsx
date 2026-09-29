@@ -22,6 +22,7 @@ import { t as now } from '@lingui/core/macro'
 import {
   useApiKeys,
   useChangePassword,
+  useConfirmOidcLink,
   useCreateApiKey,
   useDisableTwoFactor,
   useEnableTwoFactor,
@@ -29,6 +30,7 @@ import {
   useRevokeSessions,
   useStartTwoFactorSetup,
   useTwoFactorStatus,
+  useUnlinkOidc,
   type ApiKey,
   type CreatedApiKey,
 } from '../../api/auth'
@@ -84,6 +86,9 @@ function SsoCard() {
   const { t } = useLingui()
   const { me } = useAuth()
   const [sso, setSso] = useState<{ enabled: boolean; displayName: string } | null>(null)
+  const [linkPassword, setLinkPassword] = useState('')
+  const confirmLink = useConfirmOidcLink()
+  const unlink = useUnlinkOidc()
 
   // Read once on mount, same as the login page: whether the provider is configured at all comes
   // from the anonymous /initialize.json, not from anything user-specific.
@@ -133,16 +138,52 @@ function SsoCard() {
               Signed in as <Code>{oidcUserName}</Code> on {displayName}.
             </Trans>
           </Text>
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            color="var(--danger)"
+            loading={unlink.isPending}
+            onClick={() =>
+              unlink.mutate(undefined, {
+                onSuccess: () =>
+                  notifications.show({ message: now`Single sign-on removed from your account`, color: 'var(--ok)' }),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+              })
+            }
+          >
+            <Trans>Remove</Trans>
+          </Button>
         </Group>
       ) : (
-        <Group align="center">
+        <Stack gap="xs">
           <Text size="xs" c="var(--ink-3)">
             <Trans>Not linked yet. Sign in with {displayName} once to enable it for this account.</Trans>
           </Text>
-          <Button component="a" href="/api/v1/auth/oidc/link" size="xs" variant="default">
-            <Trans>Link {displayName}</Trans>
-          </Button>
-        </Group>
+          <Group align="flex-end">
+            <PasswordInput
+              label={t`Confirm your password to link`}
+              autoComplete="current-password"
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.currentTarget.value)}
+              w={260}
+            />
+            <Button
+              size="xs"
+              variant="default"
+              loading={confirmLink.isPending}
+              onClick={() =>
+                confirmLink.mutate(linkPassword, {
+                  // The link is a top-level navigation to the provider; the confirmation it needs
+                  // was just set as a cookie.
+                  onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
+                  onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+                })
+              }
+            >
+              <Trans>Link {displayName}</Trans>
+            </Button>
+          </Group>
+        </Stack>
       )}
     </Stack>
   )
@@ -213,6 +254,7 @@ function TwoFactorCard() {
 
   const [enrolling, setEnrolling] = useState<{ sharedKey: string; authenticatorUri: string } | null>(null)
   const [code, setCode] = useState('')
+  const [enablePassword, setEnablePassword] = useState('')
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
   const [disablePassword, setDisablePassword] = useState('')
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
@@ -313,6 +355,7 @@ function TwoFactorCard() {
         onClose={() => {
           setEnrolling(null)
           setCode('')
+          setEnablePassword('')
         }}
         title={t`Set up two-factor authentication`}
         centered
@@ -347,14 +390,21 @@ function TwoFactorCard() {
             value={code}
             onChange={(e) => setCode(e.currentTarget.value)}
           />
+          <PasswordInput
+            label={t`Your password`}
+            autoComplete="current-password"
+            value={enablePassword}
+            onChange={(e) => setEnablePassword(e.currentTarget.value)}
+          />
           <Button
             loading={enable.isPending}
-            disabled={code.length < 6}
+            disabled={code.length < 6 || !enablePassword}
             onClick={() =>
-              enable.mutate(code, {
+              enable.mutate({ code, password: enablePassword }, {
                 onSuccess: (result) => {
                   setEnrolling(null)
                   setCode('')
+                  setEnablePassword('')
                   setRecoveryCodes(result.recoveryCodes)
                 },
                 onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
@@ -396,6 +446,7 @@ function ApiKeysCard() {
   const revoke = useRevokeApiKey()
 
   const [name, setName] = useState('')
+  const [keyPassword, setKeyPassword] = useState('')
   const [created, setCreated] = useState<CreatedApiKey | null>(null)
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
   const secretCopy = useCopyText()
@@ -424,16 +475,24 @@ function ApiKeysCard() {
           onChange={(e) => setName(e.currentTarget.value)}
           w={200}
         />
+        <PasswordInput
+          label={t`Your password`}
+          autoComplete="current-password"
+          value={keyPassword}
+          onChange={(e) => setKeyPassword(e.currentTarget.value)}
+          w={200}
+        />
         <Button
           loading={create.isPending}
           disabled={!name.trim()}
           onClick={() =>
             create.mutate(
-              { name: name.trim() },
+              { name: name.trim(), password: keyPassword },
               {
                 onSuccess: (result) => {
                   setCreated(result)
                   setName('')
+                  setKeyPassword('')
                 },
                 onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
               },

@@ -1,5 +1,6 @@
 using Maki.Api.Auth;
 using Maki.Api.Dtos;
+using Maki.Api.Hubs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Security;
@@ -9,6 +10,7 @@ using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Controllers;
@@ -33,7 +35,9 @@ public class UsersController(
     ICurrentUser currentUser,
     AuthEventLogger auditLog,
     TimeProvider clock,
-    ILogger<UsersController> logger) : ControllerBase
+    ILogger<UsersController> logger,
+    OidcRuntimeOptions oidc,
+    IHubContext<EventsHub> hub) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -41,12 +45,17 @@ public class UsersController(
         var users = await db.Users.AsNoTracking().OrderBy(u => u.Id).ToListAsync(ct);
         var grants = await db.UserRootFolders.AsNoTracking().ToListAsync(ct);
         var allFolders = await db.RootFolders.Select(r => r.Id).ToListAsync(ct);
+        var linked = (await db.UserLogins.AsNoTracking()
+            .Where(l => l.LoginProvider == AuthSchemes.Oidc)
+            .Select(l => l.UserId)
+            .ToListAsync(ct)).ToHashSet();
 
         return Ok(users.Select(u => UserDtoMapper.ToSummary(
             u,
             u.AllRootFolders
                 ? allFolders
-                : grants.Where(g => g.UserId == u.Id).Select(g => g.RootFolderId).ToList())));
+                : grants.Where(g => g.UserId == u.Id).Select(g => g.RootFolderId).ToList(),
+            linked.Contains(u.Id))));
     }
 
     [HttpPost]
@@ -201,6 +210,11 @@ public class UsersController(
             await userManager.UpdateSecurityStampAsync(user);
         }
 
+        if ((wasAdmin && !user.Permissions.Grants(MakiPermission.Admin)) || user.Disabled)
+        {
+            await EventsHub.DisconnectUserAsync(hub, user.Id);
+        }
+
         if (user.Permissions != before)
         {
             await auditLog.LogAsync(AuthEventType.PermissionsChanged, currentUser.UserName, currentUser.UserId,
@@ -238,10 +252,81 @@ public class UsersController(
         var name = user.UserName ?? string.Empty;
         db.Users.Remove(user);
         await db.SaveChangesAsync(ct);
+        await EventsHub.DisconnectUserAsync(hub, id);
 
         await auditLog.LogAsync(AuthEventType.UserDeleted, currentUser.UserName, currentUser.UserId,
             HttpContext, detail: $"deleted \"{name}\"", ct: ct);
         logger.LogInformation("User {UserName} deleted by {Admin}", name, currentUser.UserName);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Turns off another account's two-factor and clears its authenticator, for someone who lost
+    /// their phone and their recovery codes. Refused on your own account: that goes through account
+    /// settings, which ask for the password.
+    /// </summary>
+    [HttpPost("{id:int}/2fa/reset")]
+    public async Task<IActionResult> ResetTwoFactor(int id, CancellationToken ct)
+    {
+        if (id == currentUser.UserId)
+        {
+            return this.Fail(localizer, "error.users.cannotResetOwnTwoFactor");
+        }
+
+        var user = await userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        await userManager.SetTwoFactorEnabledAsync(user, false);
+        await userManager.ResetAuthenticatorKeyAsync(user);
+
+        await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, currentUser.UserName, currentUser.UserId,
+            HttpContext, detail: $"reset two-factor for \"{user.UserName}\"", ct: ct);
+        logger.LogInformation("Two-factor reset for {UserName} by {Admin}", user.UserName, currentUser.UserName);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Removes another account's single sign-on login. Refused when it is that account's only way
+    /// in, which would leave nobody able to sign in to it.
+    /// </summary>
+    [HttpDelete("{id:int}/oidc")]
+    public async Task<IActionResult> UnlinkOidc(int id, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var logins = (await userManager.GetLoginsAsync(user)).Where(l => l.LoginProvider == AuthSchemes.Oidc).ToList();
+        if (logins.Count == 0)
+        {
+            return NotFound();
+        }
+
+        var passwordLogin = await userManager.HasPasswordAsync(user) &&
+            (!oidc.OidcOnly || user.Permissions.Grants(MakiPermission.Admin));
+        if (!passwordLogin)
+        {
+            return this.Conflict(localizer, "error.users.onlySignInMethod");
+        }
+
+        foreach (var login in logins)
+        {
+            var removed = await userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
+            if (!removed.Succeeded)
+            {
+                return BadRequest(new { error = Describe(removed) });
+            }
+        }
+
+        await auditLog.LogAsync(AuthEventType.UserUpdated, currentUser.UserName, currentUser.UserId,
+            HttpContext, detail: $"removed single sign-on login from \"{user.UserName}\"", ct: ct);
 
         return NoContent();
     }

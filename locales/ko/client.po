@@ -421,10 +421,6 @@ msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} 챕터"
 
 #: src/pages/SeriesDetailPage.tsx
-#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-#~ msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 msgstr ""
 
@@ -1999,6 +1995,10 @@ msgstr "액세스 토큰"
 #, fuzzy
 msgid "Account"
 msgstr "계정"
+
+#: src/api/inbox.ts
+msgid "Account security"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4119,12 +4119,6 @@ msgstr "동시 챕터 다운로드 수"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-#~ msgstr "동시 실행, 작업자, 재시도, 최대 시도 횟수, 백오프, Smart Download, 읽지 않음 트리거"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
 msgstr ""
 
@@ -4151,6 +4145,10 @@ msgstr "메타데이터 일치 확인"
 #, fuzzy
 msgid "Confirm password"
 msgstr "비밀번호 확인"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Confirm your password to link"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -5526,6 +5524,10 @@ msgstr "영어 (제공자 기본값)"
 #, fuzzy
 msgid "Enjoying Maki?"
 msgstr "Maki가 마음에 드시나요?"
+
+#: src/pages/LoginPage.tsx
+msgid "Enter one of your recovery codes"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -8327,10 +8329,6 @@ msgstr ""
 #: src/components/SourceMeasurePanel.tsx
 msgid "Measuring {done}/{planned}"
 msgstr ""
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "Measuring {scoutDone}/{scoutPlanned}"
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Measuring…"
@@ -11251,6 +11249,10 @@ msgstr "추천 켜기"
 msgid "Recommended"
 msgstr "추천됨"
 
+#: src/pages/LoginPage.tsx
+msgid "Recovery code"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Recurrent"
@@ -11426,6 +11428,7 @@ msgstr "파일 다시 연결"
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
 msgstr "파일 다시 연결은 각 권 파일을 읽어 안에 든 챕터를 찾습니다. 찾지 못한 항목은 직접 연결할 수 있습니다."
 
+#: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11511,6 +11514,10 @@ msgstr "디스크에서 시리즈와 선택적으로 파일 제거"
 #, fuzzy
 msgid "Remove series?"
 msgstr "시리즈를 제거할까요?"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Remove single sign-on"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -11786,6 +11793,10 @@ msgstr "모든 사용자의 영향을 받은 챕터에 대한 북마크와 재�
 #, fuzzy
 msgid "Reset to defaults"
 msgstr "기본값으로 초기화"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Reset two-factor"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -13286,6 +13297,14 @@ msgstr "싱글 사인온"
 #, fuzzy
 msgid "Single sign-on linked to your account"
 msgstr "계정에 연결된 싱글 사인온"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Single sign-on removed from this account"
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "Single sign-on removed from your account"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -14941,6 +14960,10 @@ msgstr "2단계 인증 앱 QR 코드"
 msgid "Two-factor code"
 msgstr "2단계 인증 코드"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Two-factor turned off for this account"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
@@ -15221,11 +15244,6 @@ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-#~ msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 msgstr ""
 
@@ -15236,10 +15254,6 @@ msgstr ""
 #: src/pages/SeriesDetailPage.tsx
 msgid "Upgrade scan finished with nothing to check"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"
@@ -15271,14 +15285,6 @@ msgstr ""
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades files Maki knows nothing about, then stops"
 msgstr ""
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades off"
-#~ msgstr ""
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades on"
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades until chapters are covered by a digital volume"
@@ -15318,6 +15324,10 @@ msgstr "URL"
 #, fuzzy
 msgid "Use"
 msgstr "사용"
+
+#: src/pages/LoginPage.tsx
+msgid "Use a recovery code"
+msgstr ""
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -15367,6 +15377,10 @@ msgstr "잘못된 소스 일치로 가져온 챕터를 정리할 때 사용하�
 #, fuzzy
 msgid "Use trackers"
 msgstr "트래커 사용"
+
+#: src/pages/LoginPage.tsx
+msgid "Use your authenticator app"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Used by any series that hasn't been pinned to a profile of its own."
@@ -16236,6 +16250,10 @@ msgstr "새 API 키"
 #, fuzzy
 msgid "Your next read"
 msgstr "다음 읽을 항목"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Your password"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy

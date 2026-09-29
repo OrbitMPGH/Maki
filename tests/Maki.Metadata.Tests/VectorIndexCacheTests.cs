@@ -129,6 +129,21 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task A_safe_ceiling_asking_for_only_pornographic_rows_gets_none()
+    {
+        Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (4L, "h", [0f, 1f, 0f, 0f])]);
+        var index = await Cache(dimensions: 4).GetAsync();
+        Assert.True(index!.TryGetRow(4, out var pornographicRow));
+
+        // What a tampered request used to produce: the clamp dropped every requested rating and the
+        // empty list that was left read as "no constraint", so every rating came back.
+        var clamped = ContentRating.Clamp([ContentRating.Pornographic], ContentRating.Safe);
+
+        Assert.False(index.Matches(pornographicRow, index.Plan(new RecommendationFilters(ContentRatings: clamped))));
+        Assert.True(index.Plan(new RecommendationFilters(ContentRatings: [])).Impossible);
+    }
+
+    [Fact]
     public async Task Build_KeepsOnlyVectorsMatchingTheConfiguredModelWidth()
     {
         // What a model change looks like mid-migration: the table holds both widths at once.

@@ -600,6 +600,14 @@ public class RecommendationController(
             return NotFound();
         }
 
+        // Every list endpoint already filters by the ceiling; an id typed in or kept from before the
+        // ceiling was lowered must not open the card anyway. Same answer PreviewController gives.
+        if (detail.ContentRating is { } rating &&
+            !ContentRating.Allowed(currentUser.MaxContentRating).Contains(rating))
+        {
+            return this.Forbidden(localizer, "error.preview.contentRating");
+        }
+
         // Composed here rather than inside the store: the detail row is the same for everybody and
         // the hint is the caller's alone, so mixing them at the query would put a user in a path
         // that has no business knowing about one. Same split MangaBakaRecommendation's "why" flags
@@ -616,6 +624,26 @@ public class RecommendationController(
     [HttpGet("reviews/{malId:int}")]
     public async Task<IActionResult> Reviews(int malId, CancellationToken ct)
     {
+        // Reviews quote the work, so the ceiling applies to them as it does to the detail card they
+        // sit under. Only a restricted account pays for the lookup, and one whose MAL id cannot be
+        // traced back to a catalogue row gets nothing rather than an unchecked answer.
+        var allowed = ContentRating.Allowed(currentUser.MaxContentRating);
+        if (allowed.Count < ContentRating.All.Length)
+        {
+            var ids = await store.GetIdsByExternalIdsAsync(
+                MangaBakaLocalStore.ExternalSource.MyAnimeList, [malId], ct);
+            var detail = ids.TryGetValue(malId, out var seriesId) ? await store.GetDetailAsync(seriesId, ct) : null;
+            if (detail is null)
+            {
+                return Ok(null);
+            }
+
+            if (detail.ContentRating is { } rating && !allowed.Contains(rating))
+            {
+                return this.Forbidden(localizer, "error.preview.contentRating");
+            }
+        }
+
         var found = await reviews.GetReviewsAsync(malId, ct);
 
         // Author and Tags are catalogue keys, not display text; MalReviewClient caches reviews per

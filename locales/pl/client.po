@@ -421,10 +421,6 @@ msgid "{chapterMinChip}–{chapterMaxChip} ch"
 msgstr "{chapterMinChip}–{chapterMaxChip} rozdz."
 
 #: src/pages/SeriesDetailPage.tsx
-#~ msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copies for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
-#~ msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
 msgstr ""
 
@@ -1999,6 +1995,10 @@ msgstr "Token dostępu"
 #, fuzzy
 msgid "Account"
 msgstr "Konto"
+
+#: src/api/inbox.ts
+msgid "Account security"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -4119,12 +4119,6 @@ msgstr "Równoczesne pobrania rozdziałów"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger"
-#~ msgstr "równoczesne, procesy robocze, ponów, maksymalna liczba prób, opóźnienie, smart download, wyzwalacz nieprzeczytanych"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "concurrent, workers, retry, max attempts, backoff, smart download, unread trigger, source order, source priority, best quality"
 msgstr ""
 
@@ -4151,6 +4145,10 @@ msgstr "Potwierdź zgodność metadanych"
 #, fuzzy
 msgid "Confirm password"
 msgstr "Potwierdź hasło"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Confirm your password to link"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -5526,6 +5524,10 @@ msgstr "Angielski (domyślny dostawcy)"
 #, fuzzy
 msgid "Enjoying Maki?"
 msgstr "Podoba Ci się Maki?"
+
+#: src/pages/LoginPage.tsx
+msgid "Enter one of your recovery codes"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -8327,10 +8329,6 @@ msgstr ""
 #: src/components/SourceMeasurePanel.tsx
 msgid "Measuring {done}/{planned}"
 msgstr ""
-
-#: src/components/SourceMappingsSection.tsx
-#~ msgid "Measuring {scoutDone}/{scoutPlanned}"
-#~ msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Measuring…"
@@ -11251,6 +11249,10 @@ msgstr "Rekomendacje włączone"
 msgid "Recommended"
 msgstr "Polecane"
 
+#: src/pages/LoginPage.tsx
+msgid "Recovery code"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Recurrent"
@@ -11426,6 +11428,7 @@ msgstr "Ponownie powiąż pliki"
 msgid "Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand."
 msgstr "Ponowne powiązanie odczytuje każdy plik tomu, aby znaleźć zawarte w nim rozdziały. Elementy, których nie uda się przypisać, możesz powiązać ręcznie."
 
+#: src/components/settings/AccountSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -11511,6 +11514,10 @@ msgstr "Usuwaj serie, opcjonalnie wraz z ich plikami, z dysku"
 #, fuzzy
 msgid "Remove series?"
 msgstr "Usunąć serię?"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Remove single sign-on"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -11786,6 +11793,10 @@ msgstr "Zresetuj zakładki i pozycje wznowienia dla dotkniętych rozdziałów u 
 #, fuzzy
 msgid "Reset to defaults"
 msgstr "Przywróć domyślne"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Reset two-factor"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -13286,6 +13297,14 @@ msgstr "Logowanie jednokrotne"
 #, fuzzy
 msgid "Single sign-on linked to your account"
 msgstr "Logowanie jednokrotne połączone z Twoim kontem"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Single sign-on removed from this account"
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "Single sign-on removed from your account"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -14941,6 +14960,10 @@ msgstr "Kod QR aplikacji uwierzytelniającej"
 msgid "Two-factor code"
 msgstr "Kod uwierzytelniania dwuskładnikowego"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Two-factor turned off for this account"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/NotificationsSection.tsx
@@ -15221,11 +15244,6 @@ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown"
-#~ msgstr ""
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
 msgstr ""
 
@@ -15236,10 +15254,6 @@ msgstr ""
 #: src/pages/SeriesDetailPage.tsx
 msgid "Upgrade scan finished with nothing to check"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Upgrade scan finished with nothing to check. It needs a quality profile and downloaded chapters."
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrade until score"
@@ -15271,14 +15285,6 @@ msgstr ""
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades files Maki knows nothing about, then stops"
 msgstr ""
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades off"
-#~ msgstr ""
-
-#: src/components/settings/UpgradeProfilesSection.tsx
-#~ msgid "Upgrades on"
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Upgrades until chapters are covered by a digital volume"
@@ -15318,6 +15324,10 @@ msgstr "URL"
 #, fuzzy
 msgid "Use"
 msgstr "Użyj"
+
+#: src/pages/LoginPage.tsx
+msgid "Use a recovery code"
+msgstr ""
 
 #: src/components/TrackerSyncControls.tsx
 #, fuzzy
@@ -15367,6 +15377,10 @@ msgstr "Użyj tego, aby wyczyścić rozdziały wprowadzone przez błędne dopaso
 #, fuzzy
 msgid "Use trackers"
 msgstr "Korzystaj z trackerów"
+
+#: src/pages/LoginPage.tsx
+msgid "Use your authenticator app"
+msgstr ""
 
 #: src/pages/SettingsPage.tsx
 msgid "Used by any series that hasn't been pinned to a profile of its own."
@@ -16236,6 +16250,10 @@ msgstr "Twój nowy klucz API"
 #, fuzzy
 msgid "Your next read"
 msgstr "Twoja następna lektura"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Your password"
+msgstr ""
 
 #: src/api/hooks.ts
 #, fuzzy

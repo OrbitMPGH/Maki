@@ -29,6 +29,7 @@ export type InboxEventType =
   | 'upgradeRestoreFailed'
   | 'torrentProposalPending'
   | 'volumeUpgraded'
+  | 'accountSecurity'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -151,6 +152,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   upgradeRestoreFailed: msg`Upgrade restore failed`,
   torrentProposalPending: msg`Volume release proposed`,
   volumeUpgraded: msg`Volume upgraded`,
+  accountSecurity: msg`Account security`,
 }
 
 /**

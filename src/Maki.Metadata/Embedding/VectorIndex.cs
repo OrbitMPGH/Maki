@@ -416,9 +416,10 @@ public sealed class VectorIndex(
 
         var impossible = false;
 
-        byte[]? ResolveBytes(IReadOnlyList<string>? names, IReadOnlyDictionary<string, byte> vocab)
+        byte[]? ResolveBytes(
+            IReadOnlyList<string>? names, IReadOnlyDictionary<string, byte> vocab, bool emptyMatchesNothing = false)
         {
-            if (names is not { Count: > 0 })
+            if (names is null || (names.Count == 0 && !emptyMatchesNothing))
             {
                 return null;
             }
@@ -488,7 +489,9 @@ public sealed class VectorIndex(
             ResolveBytes(filters.Statuses, vocabularies.Statuses),
             resolvedGenres,
             resolvedTags,
-            ResolveBytes(filters.ContentRatings, vocabularies.ContentRatings),
+            // A ceiling-resolved rating list is never empty, so an empty one here means something
+            // upstream dropped every rating; matching nothing is the only safe reading of that.
+            ResolveBytes(filters.ContentRatings, vocabularies.ContentRatings, emptyMatchesNothing: true),
             impossible || filters.CreditIds is { Count: 0 },
             CreditMask: filters.CreditIds is { Count: > 0 } creditIds ? BuildRowMask(creditIds.ToArray()) : null,
             Rules: rules?.ToArray(),

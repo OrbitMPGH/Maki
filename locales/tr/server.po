@@ -80,11 +80,25 @@ msgstr "OPDS akış URL'leri Ayarlar'daki OPDS kartından oluşturulur"
 msgid "error.account.noPasswordLogin"
 msgstr "İki adımlı doğrulama bir parola ile girişi korur, bu hesabın ise parolası yok"
 
+#. Removing single sign-on from an account that has no working password login would leave it with
+#. no way in at all.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Single sign-on is the only way into this account, so it cannot be removed
+msgid "error.account.onlySignInMethod"
+msgstr ""
+
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Current and new password are required
 #, fuzzy
 msgid "error.account.passwordsRequired"
 msgstr "Mevcut ve yeni parola gerekli"
+
+#. An API key tried to manage the account itself (new keys, two-factor, single sign-on). Only a
+#. browser session may.
+#: src/Maki.Api/Auth/CookieSessionOnlyAttribute.cs
+#. English: Account settings can only be changed from a signed-in browser, not with an API key
+msgid "error.account.sessionRequired"
+msgstr ""
 
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Two-factor authentication is already enabled
@@ -217,6 +231,13 @@ msgstr "Oturum açma tamamlanmadı. Yeniden deneyin."
 #, fuzzy
 msgid "error.auth.ssoLinkFailed"
 msgstr "Bu tek oturum açma hesabı bağlanamadı"
+
+#. Linking single sign-on was started without confirming the account password first, or the
+#. confirmation expired (it lasts a few minutes).
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Confirm your password, then start linking single sign-on again
+msgid "error.auth.ssoLinkNeedsPassword"
+msgstr ""
 
 #: src/Maki.Api/Auth/OidcSignInService.cs
 #. English: Could not link that login to a new account
@@ -1720,6 +1741,11 @@ msgstr "Kendi hesabınızı devre dışı bırakamazsınız"
 msgid "error.users.cannotRemoveOwnAdmin"
 msgstr "Kendi yönetici yetkinizi kaldıramazsınız"
 
+#: src/Maki.Api/Controllers/UsersController.cs
+#. English: Turn off your own two-factor from your account settings
+msgid "error.users.cannotResetOwnTwoFactor"
+msgstr ""
+
 #. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
 #. translated.
 #: src/Maki.Api/Controllers/UsersController.cs
@@ -1735,6 +1761,12 @@ msgstr "Derecelendirme şunlardan biri olmalı: {ratings}"
 #, fuzzy
 msgid "error.users.lastAdministrator"
 msgstr "Bu tek yönetici hesabı, önce başka bir hesabı yönetici yapın"
+
+#. Same situation as error.account.onlySignInMethod, refused for an admin acting on another account.
+#: src/Maki.Api/Controllers/UsersController.cs
+#. English: Single sign-on is the only way into this account, so it cannot be removed
+msgid "error.users.onlySignInMethod"
+msgstr ""
 
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: Password is required
@@ -1841,6 +1873,21 @@ msgstr ""
 #, fuzzy
 msgid "error.settings.backupsToKeepRange"
 msgstr "Saklanacak yedek sayısı {min} ile {max} arasında olmalı"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Failed attempts before lockout must be between {min} and {max}
+msgid "error.settings.lockoutMaxAttemptsRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Lockout duration must be between {min} and {max} minutes
+msgid "error.settings.lockoutMinutesRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Session length must be between {min} and {max} days
+msgid "error.settings.sessionDaysRange"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown language code(s): {codes}
@@ -2208,6 +2255,17 @@ msgstr "Kitaplık içe aktarımı hatalarla tamamlandı"
 #, fuzzy
 msgid "inbox.libraryImport.finishedWithErrors.body"
 msgstr "{imported, plural, one {# klasör içe aktarıldı} other {# klasör içe aktarıldı}}, {failed} başarısız"
+
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Single sign-on linked
+msgid "inbox.account.ssoLinked.title"
+msgstr ""
+
+#. {account} is the username the identity provider reported, never translated.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: {account} can now sign in to your account. If that was not you, remove it in account settings and change your password.
+msgid "inbox.account.ssoLinked.body"
+msgstr ""
 
 #. Seen by admins. {user} is a username and is never translated.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs

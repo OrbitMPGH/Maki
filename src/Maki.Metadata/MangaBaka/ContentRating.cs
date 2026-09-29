@@ -28,19 +28,25 @@ public static class ContentRating
 
     /// <summary>
     /// Narrows a requested content-rating filter list to what <paramref name="max"/> permits, so a
-    /// tampered request can't ask for ratings above the caller's ceiling. Null/empty stays
-    /// null/empty ("no constraint" — the caller's ceiling, where enforced, applies independently);
-    /// a non-empty list is intersected with <see cref="Allowed"/>.
+    /// tampered request can't ask for ratings above the caller's ceiling. Null or empty comes back
+    /// null ("no constraint": the caller's ceiling, where enforced, applies independently); a
+    /// non-empty list is intersected with <see cref="Allowed"/>.
+    /// <para>
+    /// An intersection that leaves nothing answers <see cref="Allowed"/> rather than an empty list.
+    /// Every scan reads an empty list as "unrestricted", so returning one would turn a request for
+    /// only the ratings above the ceiling into a request for every rating.
+    /// </para>
     /// </summary>
     public static IReadOnlyList<string>? Clamp(IReadOnlyList<string>? requested, string? max)
     {
         if (requested is not { Count: > 0 })
         {
-            return requested;
+            return null;
         }
 
         var allowed = Allowed(max);
-        return requested.Where(allowed.Contains).ToList();
+        var kept = requested.Where(allowed.Contains).Distinct().ToList();
+        return kept.Count > 0 ? kept : allowed;
     }
 
     /// <summary>

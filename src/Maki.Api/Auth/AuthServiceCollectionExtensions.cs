@@ -88,14 +88,7 @@ public static class AuthServiceCollectionExtensions
 
         // Lockout thresholds come from settings, so they are applied in a second pass that can see
         // the startup-loaded values.
-        services.AddOptions<IdentityOptions>().Configure<AuthRuntimeOptions>((o, auth) =>
-        {
-            o.Lockout.MaxFailedAccessAttempts = auth.LockoutMaxAttempts;
-            o.Lockout.DefaultLockoutTimeSpan = auth.LockoutDuration;
-            // Zero attempts means "never lock out" — expressed by switching lockout off rather than
-            // by a zero threshold, which Identity would read as "lock on the first failure".
-            o.Lockout.AllowedForNewUsers = auth.LockoutMaxAttempts > 0;
-        });
+        services.AddOptions<IdentityOptions>().Configure<AuthRuntimeOptions>(ApplyLockout);
 
         // OWASP's current PBKDF2-SHA256 guidance. Identity's .NET default is 100,000; the cost is
         // paid once per sign-in, not per request, so the higher figure is close to free here.
@@ -292,7 +285,7 @@ public static class AuthServiceCollectionExtensions
 
         services.AddAntiforgery(o =>
         {
-            o.HeaderName = "X-XSRF-TOKEN";
+            o.HeaderName = AntiforgeryCookieFilter.HeaderName;
             // The secret half of the double-submit pair. Stays HttpOnly; the readable XSRF-TOKEN
             // cookie the SPA echoes is issued separately by AntiforgeryTokenMiddleware.
             o.Cookie.Name = "Maki.Antiforgery";
@@ -319,5 +312,18 @@ public static class AuthServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    /// <summary>
+    /// Zero attempts means "never lock out". <c>AllowedForNewUsers</c> alone only reaches accounts
+    /// created after the restart: every existing row keeps <c>LockoutEnabled = true</c>, and a zero
+    /// threshold would then lock those on their first failure. An unreachable threshold covers them.
+    /// </summary>
+    public static void ApplyLockout(IdentityOptions o, AuthRuntimeOptions auth)
+    {
+        var enabled = auth.LockoutMaxAttempts > 0;
+        o.Lockout.MaxFailedAccessAttempts = enabled ? auth.LockoutMaxAttempts : int.MaxValue;
+        o.Lockout.DefaultLockoutTimeSpan = auth.LockoutDuration;
+        o.Lockout.AllowedForNewUsers = enabled;
     }
 }

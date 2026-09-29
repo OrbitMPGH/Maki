@@ -18,9 +18,14 @@ namespace Maki.Api.Controllers;
 /// What a user manages about their own account: password, two-factor, API keys, and signing every
 /// other session out. Nothing here needs a permission — it is all self-service — but everything is
 /// scoped to <see cref="ICurrentUser.UserId"/> and never accepts a user id from the request.
+/// <para>
+/// Session cookie only: an API key that could manage its own account could mint a successor or
+/// enrol its own authenticator before anyone noticed it leaked.
+/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/account")]
+[CookieSessionOnly]
 public class AccountController(
     ILocalizer localizer,
     MakiDbContext db,
@@ -62,6 +67,32 @@ public class AccountController(
     /// </summary>
     private async Task<bool> IsOidcLinkedAsync(MakiUser user) =>
         oidc.Enabled && (await userManager.GetLoginsAsync(user)).Any(l => l.LoginProvider == AuthSchemes.Oidc);
+
+    /// <summary>
+    /// Null when <paramref name="password"/> is the account's password, or the account has none to
+    /// ask for; otherwise the failure to answer with. A wrong one counts toward lockout, the same as
+    /// a failed login.
+    /// </summary>
+    private async Task<IActionResult?> ConfirmPasswordAsync(MakiUser user, string? password)
+    {
+        if (!await userManager.HasPasswordAsync(user))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(password))
+        {
+            return this.Fail(localizer, "error.account.incorrectPassword");
+        }
+
+        var check = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
+        if (check.IsLockedOut)
+        {
+            return this.Fail(localizer, "error.account.lockedOut");
+        }
+
+        return check.Succeeded ? null : this.Fail(localizer, "error.account.incorrectPassword");
+    }
 
     [HttpPost("password")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
@@ -147,6 +178,9 @@ public class AccountController(
         // Always a fresh secret: reusing one across abandoned enrolment attempts means an old QR
         // screenshot still works.
         await userManager.ResetAuthenticatorKeyAsync(user);
+        // Every stamp-rotating call here re-issues this device's cookie, as ChangePassword does.
+        // Otherwise the next stamp validation, a minute away, signs the user out mid-enrolment.
+        await signInManager.RefreshSignInAsync(user);
         var key = await userManager.GetAuthenticatorKeyAsync(user);
         if (string.IsNullOrEmpty(key))
         {
@@ -164,7 +198,12 @@ public class AccountController(
         return Ok(new TwoFactorSetupDto(FormatKey(key), uri));
     }
 
+    /// <summary>
+    /// Requires the account password as well as a code: a hijacked session enrolling an
+    /// authenticator of its own would lock the owner out of password sign-in.
+    /// </summary>
     [HttpPost("2fa/enable")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> EnableTwoFactor([FromBody] EnableTwoFactorRequest request, CancellationToken ct)
     {
         var user = await LoadAsync();
@@ -183,6 +222,11 @@ public class AccountController(
             return this.Fail(localizer, "error.account.codeRequired");
         }
 
+        if (await ConfirmPasswordAsync(user, request.Password) is { } refused)
+        {
+            return refused;
+        }
+
         var valid = await userManager.VerifyTwoFactorTokenAsync(
             user, userManager.Options.Tokens.AuthenticatorTokenProvider, code);
         if (!valid)
@@ -192,6 +236,7 @@ public class AccountController(
 
         await userManager.SetTwoFactorEnabledAsync(user, true);
         var codes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount);
+        await signInManager.RefreshSignInAsync(user);
         await auditLog.LogAsync(AuthEventType.TwoFactorEnabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
 
         // Shown once. Identity stores them hashed, so there is no second chance to read them.
@@ -219,6 +264,7 @@ public class AccountController(
         // Clear the secret too, so re-enabling forces a fresh enrolment rather than silently
         // reactivating whatever app still has the old one.
         await userManager.ResetAuthenticatorKeyAsync(user);
+        await signInManager.RefreshSignInAsync(user);
         await auditLog.LogAsync(AuthEventType.TwoFactorDisabled, user.UserName ?? string.Empty, user.Id, HttpContext, ct: ct);
         return NoContent();
     }
@@ -236,7 +282,12 @@ public class AccountController(
         return Ok(keys);
     }
 
+    /// <summary>
+    /// Requires the account password when there is one: a key outlives the session that minted it,
+    /// through a password change and "sign out everywhere" alike.
+    /// </summary>
     [HttpPost("apikeys")]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> CreateApiKey([FromBody] CreateApiKeyRequest request, CancellationToken ct)
     {
         var name = request.Name?.Trim();
@@ -257,6 +308,14 @@ public class AccountController(
         if (request.Scope != UserApiKeyScope.Full)
         {
             return this.Fail(localizer, "error.account.invalidScope");
+        }
+
+        var user = await LoadAsync();
+        if (user is null) return Unauthorized();
+
+        if (await ConfirmPasswordAsync(user, request.Password) is { } refused)
+        {
+            return refused;
         }
 
         var secret = ApiKeyCrypto.Generate();
@@ -300,6 +359,43 @@ public class AccountController(
                 HttpContext, detail: $"{key.Scope} key \"{key.Name}\"", ct: ct);
         }
 
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Removes the account's single sign-on login. Refused when it is the only way in, since the
+    /// account would then have no login at all.
+    /// </summary>
+    [HttpDelete("oidc")]
+    public async Task<IActionResult> UnlinkOidc(CancellationToken ct)
+    {
+        var user = await LoadAsync();
+        if (user is null) return Unauthorized();
+
+        var logins = (await userManager.GetLoginsAsync(user)).Where(l => l.LoginProvider == AuthSchemes.Oidc).ToList();
+        if (logins.Count == 0)
+        {
+            return NotFound();
+        }
+
+        if (!await PasswordLoginAvailableAsync(user))
+        {
+            return this.Conflict(localizer, "error.account.onlySignInMethod");
+        }
+
+        foreach (var login in logins)
+        {
+            var removed = await userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
+            if (!removed.Succeeded)
+            {
+                return BadRequest(new { error = Describe(removed) });
+            }
+        }
+
+        // RemoveLoginAsync rotates the security stamp.
+        await signInManager.RefreshSignInAsync(user);
+        await auditLog.LogAsync(AuthEventType.UserUpdated, user.UserName ?? string.Empty, user.Id,
+            HttpContext, detail: "single sign-on login removed", ct: ct);
         return NoContent();
     }
 

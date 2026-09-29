@@ -42,6 +42,9 @@ public enum InboxEventType
     UpgradeRestoreFailed = 19,
     TorrentProposalPending = 20,
     VolumeUpgraded = 21,
+
+    /// <summary>Something changed how the account signs in, such as a single sign-on login being linked.</summary>
+    AccountSecurity = 22,
 }
 
 /// <summary>

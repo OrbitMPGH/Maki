@@ -177,6 +177,9 @@ public class DiscoverService(
     /// </summary>
     public const int RefillRailSize = RailSize * 2;
 
+    /// <summary>The same cap <c>SemanticSearcher</c> puts on its own results.</summary>
+    private const int MaxSearchLimit = 200;
+
     private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
     /// <summary>
@@ -769,9 +772,13 @@ public class DiscoverService(
             return new DiscoverSearchResponse("semantic", []);
         }
 
+        // The semantic searcher clamps its own limit; the title index would take this straight into
+        // SQL, so one request could pull the whole catalogue through memory and JSON.
+        var limit = Math.Clamp(request.Limit, 1, MaxSearchLimit);
+
         if (!request.WantsTitleOnly && searcher.IsReady())
         {
-            var outcome = await searcher.SearchAsync(query, request.Filters, request.Limit, ct);
+            var outcome = await searcher.SearchAsync(query, request.Filters, limit, ct);
             if (outcome.Items.Count > 0)
             {
                 return new DiscoverSearchResponse(
@@ -792,10 +799,18 @@ public class DiscoverService(
         // ceiling-resolved Filters.ContentRatings (Allowed/Clamp always produce a prefix of
         // ContentRating.All, so its highest member is the ceiling) so this fallback stays in step
         // with the semantic path it stands in for instead of using a different rule.
+        //
+        // An empty list is a ceiling that admits nothing, not an absent one, and a missing or
+        // unreadable list falls back to Safe: this fallback must not be the one path that fails open.
+        if (request.Filters?.ContentRatings is { Count: 0 })
+        {
+            return new DiscoverSearchResponse("title", []);
+        }
+
         var maxAllowed = request.Filters?.ContentRatings is { Count: > 0 } allowedRatings
-            ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Default
-            : ContentRating.Default;
-        var titleHits = await store.SearchWithCorrectionAsync(query, maxAllowed, limit: request.Limit, ct: ct);
+            ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Safe
+            : ContentRating.Safe;
+        var titleHits = await store.SearchWithCorrectionAsync(query, maxAllowed, limit: limit, ct: ct);
         return new DiscoverSearchResponse(
             "title",
             titleHits.Items.Select(ToRecommendation).ToList(),

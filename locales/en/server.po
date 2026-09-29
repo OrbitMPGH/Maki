@@ -60,9 +60,21 @@ msgstr "OPDS feed URLs are created on the OPDS card in Settings"
 msgid "error.account.noPasswordLogin"
 msgstr "Two-factor protects a password sign-in, and this account has none"
 
+#. Removing single sign-on from an account that has no working password login would leave it with
+#. no way in at all.
+#: src/Maki.Api/Controllers/AccountController.cs
+msgid "error.account.onlySignInMethod"
+msgstr "Single sign-on is the only way into this account, so it cannot be removed"
+
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.passwordsRequired"
 msgstr "Current and new password are required"
+
+#. An API key tried to manage the account itself (new keys, two-factor, single sign-on). Only a
+#. browser session may.
+#: src/Maki.Api/Auth/CookieSessionOnlyAttribute.cs
+msgid "error.account.sessionRequired"
+msgstr "Account settings can only be changed from a signed-in browser, not with an API key"
 
 #: src/Maki.Api/Controllers/AccountController.cs
 msgid "error.account.twoFactorAlreadyEnabled"
@@ -157,6 +169,12 @@ msgstr "The sign-in did not complete. Please try again."
 #: src/Maki.Api/Controllers/AuthController.cs
 msgid "error.auth.ssoLinkFailed"
 msgstr "Could not link that single sign-on account"
+
+#. Linking single sign-on was started without confirming the account password first, or the
+#. confirmation expired (it lasts a few minutes).
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoLinkNeedsPassword"
+msgstr "Confirm your password, then start linking single sign-on again"
 
 #: src/Maki.Api/Auth/OidcSignInService.cs
 msgid "error.auth.ssoLinkNewAccountFailed"
@@ -1228,6 +1246,10 @@ msgstr "You cannot disable your own account"
 msgid "error.users.cannotRemoveOwnAdmin"
 msgstr "You cannot remove your own administrator permission"
 
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.cannotResetOwnTwoFactor"
+msgstr "Turn off your own two-factor from your account settings"
+
 #. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
 #. translated.
 #: src/Maki.Api/Controllers/UsersController.cs
@@ -1239,6 +1261,11 @@ msgstr "Rating must be one of: {ratings}"
 #: src/Maki.Api/Controllers/UsersController.cs
 msgid "error.users.lastAdministrator"
 msgstr "This is the only administrator; promote another account first"
+
+#. Same situation as error.account.onlySignInMethod, refused for an admin acting on another account.
+#: src/Maki.Api/Controllers/UsersController.cs
+msgid "error.users.onlySignInMethod"
+msgstr "Single sign-on is the only way into this account, so it cannot be removed"
 
 #: src/Maki.Api/Controllers/UsersController.cs
 msgid "error.users.passwordRequired"
@@ -1320,6 +1347,18 @@ msgstr "Proposal expiry must be between {min} and {max} days"
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.backupsToKeepRange"
 msgstr "Backups to keep must be between {min} and {max}"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.lockoutMaxAttemptsRange"
+msgstr "Failed attempts before lockout must be between {min} and {max}"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.lockoutMinutesRange"
+msgstr "Lockout duration must be between {min} and {max} minutes"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.sessionDaysRange"
+msgstr "Session length must be between {min} and {max} days"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.unknownSourceLanguage"
@@ -1572,6 +1611,17 @@ msgstr "Library import finished with errors"
 msgid "inbox.libraryImport.finishedWithErrors.body"
 msgstr ""
 "{imported, plural, one {# folder imported} other {# folders imported}}, {failed} failed"
+
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "inbox.account.ssoLinked.title"
+msgstr "Single sign-on linked"
+
+#. {account} is the username the identity provider reported, never translated.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "inbox.account.ssoLinked.body"
+msgstr ""
+"{account} can now sign in to your account. If that was not you, remove it in account settings and "
+"change your password."
 
 #. Seen by admins. {user} is a username and is never translated.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs

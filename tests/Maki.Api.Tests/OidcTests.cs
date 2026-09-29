@@ -693,14 +693,39 @@ public class OidcTests
         var clock = new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero));
         var options = new OidcRuntimeOptions();
         await options.LoadAsync(db);
+        var users = BuildUserManager(db);
+        var signIn = new RefreshCountingSignInManager(users);
         var controller = new Maki.Api.Controllers.AccountController(
-            new TestLocalizer(), db, BuildUserManager(db), null!, new TestCurrentUser(userId),
+            new TestLocalizer(), db, users, signIn, new TestCurrentUser(userId),
             new AuthEventLogger(db, clock), options, clock);
 
         // Linked to SSO, but the password path still works and auth.oidconly is off: refusing
         // enrolment here would be a security downgrade, not a consequence of SSO delegating anything.
         var setup = await controller.SetupTwoFactor();
         Assert.IsType<TwoFactorSetupDto>(Assert.IsType<OkObjectResult>(setup).Value);
+
+        // A fresh authenticator key rotates the security stamp; without re-issuing this device's
+        // cookie the user is signed out a minute later, usually while still scanning the QR code.
+        Assert.Equal(1, signIn.Refreshed);
+    }
+
+    /// <summary>Counts cookie re-issues instead of performing them; there is no HTTP context here.</summary>
+    private sealed class RefreshCountingSignInManager(UserManager<MakiUser> users) : SignInManager<MakiUser>(
+        users,
+        new Microsoft.AspNetCore.Http.HttpContextAccessor(),
+        new UserClaimsPrincipalFactory<MakiUser>(users, Microsoft.Extensions.Options.Options.Create(new IdentityOptions())),
+        Microsoft.Extensions.Options.Options.Create(new IdentityOptions()),
+        NullLogger<SignInManager<MakiUser>>.Instance,
+        null!,
+        null!)
+    {
+        public int Refreshed { get; private set; }
+
+        public override Task RefreshSignInAsync(MakiUser user)
+        {
+            Refreshed++;
+            return Task.CompletedTask;
+        }
     }
 
     // ---- fixture plumbing ----

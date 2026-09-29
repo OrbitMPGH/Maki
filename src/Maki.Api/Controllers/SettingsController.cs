@@ -2012,15 +2012,30 @@ public class SettingsController(
             }
         }
 
+        // Zero is meaningful (lockout off), so that range starts at zero rather than at one.
+        if (request.LockoutMaxAttempts is < 0 or > AuthRuntimeOptions.MaxLockoutMaxAttempts)
+        {
+            return this.Fail(localizer, "error.settings.lockoutMaxAttemptsRange",
+                new { min = 0, max = AuthRuntimeOptions.MaxLockoutMaxAttempts });
+        }
+
+        if (request.LockoutMinutes is < 1 or > AuthRuntimeOptions.MaxLockoutMinutes)
+        {
+            return this.Fail(localizer, "error.settings.lockoutMinutesRange",
+                new { min = 1, max = AuthRuntimeOptions.MaxLockoutMinutes });
+        }
+
+        if (request.SessionDays is < 1 or > AuthRuntimeOptions.MaxSessionDays)
+        {
+            return this.Fail(localizer, "error.settings.sessionDaysRange",
+                new { min = 1, max = AuthRuntimeOptions.MaxSessionDays });
+        }
+
         await settings.SetAsync(SettingKeys.AuthRequireHttps, request.RequireHttps ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.AuthTrustedProxies, request.TrustedProxies, ct);
-        // Zero is meaningful (lockout off), so it is clamped at zero rather than at one.
-        await settings.SetAsync(SettingKeys.AuthLockoutMaxAttempts,
-            Math.Max(0, request.LockoutMaxAttempts).ToString(), ct);
-        await settings.SetAsync(SettingKeys.AuthLockoutMinutes,
-            Math.Max(1, request.LockoutMinutes).ToString(), ct);
-        await settings.SetAsync(SettingKeys.AuthSessionDays,
-            Math.Max(1, request.SessionDays).ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthLockoutMaxAttempts, request.LockoutMaxAttempts.ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthLockoutMinutes, request.LockoutMinutes.ToString(), ct);
+        await settings.SetAsync(SettingKeys.AuthSessionDays, request.SessionDays.ToString(), ct);
 
         return await GetSecurity(ct);
     }

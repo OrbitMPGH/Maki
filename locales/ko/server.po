@@ -80,11 +80,25 @@ msgstr "OPDS 피드 URL은 설정의 OPDS 카드에서 생성합니다"
 msgid "error.account.noPasswordLogin"
 msgstr "2단계 인증은 비밀번호 로그인을 보호하지만 이 계정에는 비밀번호 로그인이 없습니다"
 
+#. Removing single sign-on from an account that has no working password login would leave it with
+#. no way in at all.
+#: src/Maki.Api/Controllers/AccountController.cs
+#. English: Single sign-on is the only way into this account, so it cannot be removed
+msgid "error.account.onlySignInMethod"
+msgstr ""
+
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Current and new password are required
 #, fuzzy
 msgid "error.account.passwordsRequired"
 msgstr "현재 비밀번호와 새 비밀번호가 필요합니다"
+
+#. An API key tried to manage the account itself (new keys, two-factor, single sign-on). Only a
+#. browser session may.
+#: src/Maki.Api/Auth/CookieSessionOnlyAttribute.cs
+#. English: Account settings can only be changed from a signed-in browser, not with an API key
+msgid "error.account.sessionRequired"
+msgstr ""
 
 #: src/Maki.Api/Controllers/AccountController.cs
 #. English: Two-factor authentication is already enabled
@@ -217,6 +231,13 @@ msgstr "로그인이 완료되지 않았습니다. 다시 시도하세요."
 #, fuzzy
 msgid "error.auth.ssoLinkFailed"
 msgstr "해당 SSO 계정을 연결하지 못했습니다"
+
+#. Linking single sign-on was started without confirming the account password first, or the
+#. confirmation expired (it lasts a few minutes).
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Confirm your password, then start linking single sign-on again
+msgid "error.auth.ssoLinkNeedsPassword"
+msgstr ""
 
 #: src/Maki.Api/Auth/OidcSignInService.cs
 #. English: Could not link that login to a new account
@@ -1720,6 +1741,11 @@ msgstr "자신의 계정을 비활성화할 수 없습니다"
 msgid "error.users.cannotRemoveOwnAdmin"
 msgstr "자신의 관리자 권한을 제거할 수 없습니다"
 
+#: src/Maki.Api/Controllers/UsersController.cs
+#. English: Turn off your own two-factor from your account settings
+msgid "error.users.cannotResetOwnTwoFactor"
+msgstr ""
+
 #. {ratings} is the comma-separated list of valid content rating codes (ContentRating.All), not
 #. translated.
 #: src/Maki.Api/Controllers/UsersController.cs
@@ -1735,6 +1761,12 @@ msgstr "평점은 다음 중 하나여야 합니다: {ratings}"
 #, fuzzy
 msgid "error.users.lastAdministrator"
 msgstr "이 계정만 관리자입니다. 먼저 다른 계정을 승격하세요"
+
+#. Same situation as error.account.onlySignInMethod, refused for an admin acting on another account.
+#: src/Maki.Api/Controllers/UsersController.cs
+#. English: Single sign-on is the only way into this account, so it cannot be removed
+msgid "error.users.onlySignInMethod"
+msgstr ""
 
 #: src/Maki.Api/Controllers/UsersController.cs
 #. English: Password is required
@@ -1841,6 +1873,21 @@ msgstr ""
 #, fuzzy
 msgid "error.settings.backupsToKeepRange"
 msgstr "보관할 백업 수는 {min}에서 {max} 사이여야 합니다"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Failed attempts before lockout must be between {min} and {max}
+msgid "error.settings.lockoutMaxAttemptsRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Lockout duration must be between {min} and {max} minutes
+msgid "error.settings.lockoutMinutesRange"
+msgstr ""
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+#. English: Session length must be between {min} and {max} days
+msgid "error.settings.sessionDaysRange"
+msgstr ""
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 #. English: Unknown language code(s): {codes}
@@ -2208,6 +2255,17 @@ msgstr "오류와 함께 라이브러리 가져오기 완료"
 #, fuzzy
 msgid "inbox.libraryImport.finishedWithErrors.body"
 msgstr "{imported, plural, other {폴더 #개 가져옴}}, {failed}개 실패"
+
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: Single sign-on linked
+msgid "inbox.account.ssoLinked.title"
+msgstr ""
+
+#. {account} is the username the identity provider reported, never translated.
+#: src/Maki.Api/Controllers/AuthController.cs
+#. English: {account} can now sign in to your account. If that was not you, remove it in account settings and change your password.
+msgid "inbox.account.ssoLinked.body"
+msgstr ""
 
 #. Seen by admins. {user} is a username and is never translated.
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
