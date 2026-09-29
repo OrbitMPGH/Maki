@@ -330,14 +330,17 @@ public class SeriesCreationService(
         return new SeriesCreationResult(series, null, warnings);
     }
 
-    /// <summary>The <see cref="Series.FolderName"/> of every series in the root but one, compared the way the host does.</summary>
+    /// <summary>
+    /// The <see cref="Series.FolderName"/> of every series in the root but one, ignoring case on every
+    /// host: a case-insensitive share mounted under Docker treats two spellings as one folder.
+    /// </summary>
     internal static async Task<HashSet<string>> SeriesFoldersInRootAsync(
         MakiDbContext db, int rootFolderId, int? exceptSeriesId, CancellationToken ct) =>
         (await db.Series
             .Where(s => s.RootFolderId == rootFolderId && s.Id != exceptSeriesId)
             .Select(s => s.FolderName)
             .ToListAsync(ct))
-        .ToHashSet(LibraryPaths.FolderComparer);
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// <paramref name="wanted"/> when it is free, otherwise the first free one of <c>wanted [mb-id]</c>,

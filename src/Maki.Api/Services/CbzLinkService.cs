@@ -222,14 +222,27 @@ public class CbzLinkService(
             .Select(f => f.Id)
             .ToHashSet();
 
+        // An empty root is usually an unmounted share's mount point, so a folder missing from it
+        // says nothing. Under a root that lists anything, a missing folder was deleted or renamed.
+        var rootListable = Directory.EnumerateFileSystemEntries(rootFolder.Path).Any();
         var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
         var readableFolders = new HashSet<string>(LibraryPaths.FolderComparer);
         foreach (var folder in folders)
         {
             // A symlink or junction anywhere below the root would have adoption read, and the
             // ComicInfo rewrite modify, archives outside the library.
-            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir || !Directory.Exists(seriesDir))
+            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir)
             {
+                continue;
+            }
+
+            if (!Directory.Exists(seriesDir))
+            {
+                if (rootListable)
+                {
+                    readableFolders.Add(folder);
+                }
+
                 continue;
             }
 

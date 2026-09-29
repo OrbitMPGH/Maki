@@ -236,15 +236,26 @@ public class ChapterDownloadProcessor(
 
             // 6. Atomic move into the library.
             await SetStatusAsync(item, QueueStatus.Importing, ct);
+            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct);
+
+            // Released right after the save below; the using covers every other way out.
+            using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
             if (item.UpgradeInfoJson is not null)
             {
                 return await ApplyUpgradeAsync(item, chapter, series, rootFolder, mapping, source, sourceChapterId,
                     tmpCbz, workingDir, ct);
             }
 
+            var seriesFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
+            var heldByOthers = (await db.Chapters
+                    .Where(c => c.SeriesId == series.Id && c.Id != chapter.Id && c.ChapterFileId != null)
+                    .Select(c => c.ChapterFileId!.Value)
+                    .ToListAsync(ct))
+                .ToHashSet();
             var relativePath = await UnclaimedRelativePathAsync(
-                series.Id, chapter.Id, await naming.BuildChapterRelativePathAsync(series, chapter, ct), ct);
+                rootFolder, series.Id, seriesFiles, heldByOthers, desiredPath, ct);
             var finalPath = Path.Combine(rootFolder.Path, relativePath);
+            var chapterFile = seriesFiles.FirstOrDefault(f => SamePath(f.RelativePath, relativePath));
             Directory.CreateDirectory(Path.GetDirectoryName(finalPath)!);
             File.Move(tmpCbz, finalPath, overwrite: true);
 
@@ -255,9 +266,6 @@ public class ChapterDownloadProcessor(
             // series to a better source, or retrying a bad rip) must update that file's row rather
             // than insert a second one for the same path — the old row would keep pointing at bytes
             // that now belong to the new one, and nothing would ever clean it up.
-            var chapterFile = await db.ChapterFiles
-                .FirstOrDefaultAsync(f => f.SeriesId == series.Id && f.RelativePath == relativePath, CancellationToken.None);
-
             var isNewFile = chapterFile is null;
 
             if (chapterFile is null)
@@ -274,6 +282,7 @@ public class ChapterDownloadProcessor(
             }
             else
             {
+                chapterFile.RelativePath = relativePath;
                 chapterFile.Size = new FileInfo(finalPath).Length;
                 chapterFile.SourceName = mapping.SourceName;
                 chapterFile.DateAdded = DateTime.UtcNow;
@@ -318,6 +327,7 @@ public class ChapterDownloadProcessor(
             item.NextAttempt = null;
             item.ClearError();
             await db.SaveChangesAsync(CancellationToken.None);
+            seriesLock.Dispose();
 
             // Downloads from this source are flowing again — reset its escalating rate-limit backoff.
             queue.ClearRateLimitBackoff(mapping.SourceName);
@@ -733,13 +743,14 @@ public class ChapterDownloadProcessor(
     /// <summary>
     /// Parks the item until the root folder is back, without counting an attempt or sending a
     /// failure notification: nothing is wrong with the chapter, and every queued item would otherwise
-    /// burn its retries and send a failure each while the share is down.
+    /// burn its retries and send a failure each while the share is down. RateLimited is claimable
+    /// again once NextAttempt passes, so this does not wait on the retry job or its setting.
     /// </summary>
     private async Task RootFolderUnavailableAsync(DownloadQueueItem item, RootFolder rootFolder, CancellationToken ct)
     {
         logger.LogWarning("Root folder {Path} is not available; queue item {Id} will try again later",
             rootFolder.Path, item.Id);
-        item.Status = QueueStatus.Failed;
+        item.Status = QueueStatus.RateLimited;
         item.SetError("error.download.rootFolderUnavailable");
         item.NextAttempt = queue.NextRetryAttempt(1);
         await db.SaveChangesAsync(ct);
@@ -747,8 +758,6 @@ public class ChapterDownloadProcessor(
         {
             await BroadcastAsync(item, item.Chapter, item.Series, item.SourceMapping?.SourceName ?? "?");
         }
-
-        await batches.FailedAsync(item.SeriesId, item.Id, "error.download.rootFolderUnavailable");
     }
 
     /// <summary>
@@ -756,22 +765,41 @@ public class ChapterDownloadProcessor(
     /// another chapter. Two one-shots with no distinct title render the same name, and moving over
     /// it would replace the other chapter's pages while both rows point at one file.
     /// </summary>
-    private async Task<string> UnclaimedRelativePathAsync(int seriesId, int chapterId, string relativePath, CancellationToken ct)
+    private async Task<string> UnclaimedRelativePathAsync(RootFolder rootFolder, int seriesId,
+        List<ChapterFile> seriesFiles, HashSet<int> heldByOthers, string relativePath, CancellationToken ct)
     {
         var extension = Path.GetExtension(relativePath);
         var stem = relativePath[..^extension.Length];
         var candidate = relativePath;
-        for (var n = 2; n < 1000 && await HeldByOtherChapterAsync(seriesId, chapterId, candidate, ct); n++)
+        for (var n = 2; n < 1000 && await TakenAsync(candidate); n++)
         {
             candidate = $"{stem} ({n}){extension}";
         }
 
         return candidate;
+
+        async Task<bool> TakenAsync(string path) =>
+            seriesFiles.Any(f => heldByOthers.Contains(f.Id) && SamePath(f.RelativePath, path)) ||
+            (File.Exists(Path.Combine(rootFolder.Path, path)) &&
+             await HeldByOtherSeriesAsync(rootFolder.Id, seriesId, path, ct));
     }
 
-    private Task<bool> HeldByOtherChapterAsync(int seriesId, int chapterId, string relativePath, CancellationToken ct) =>
-        db.ChapterFiles.AnyAsync(f => f.SeriesId == seriesId && f.RelativePath == relativePath &&
-                                      db.Chapters.Any(c => c.ChapterFileId == f.Id && c.Id != chapterId), ct);
+    private static bool SamePath(string a, string b) =>
+        string.Equals(LibraryPaths.ComparisonKey(a), LibraryPaths.ComparisonKey(b), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// A series sharing the folder (older data can have one) may own the file already at this path,
+    /// and overwriting it would replace that series' archive.
+    /// </summary>
+    private async Task<bool> HeldByOtherSeriesAsync(int rootFolderId, int seriesId, string relativePath, CancellationToken ct)
+    {
+        var sameLength = await db.ChapterFiles
+            .Where(f => f.SeriesId != seriesId && f.RelativePath.Length == relativePath.Length &&
+                        db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == rootFolderId))
+            .Select(f => f.RelativePath)
+            .ToListAsync(ct);
+        return sameLength.Any(p => SamePath(p, relativePath));
+    }
 
     private void TryDeleteFile(string path)
     {

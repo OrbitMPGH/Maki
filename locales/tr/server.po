@@ -3010,6 +3010,16 @@ msgstr ""
 msgid "error.download.rootFolderUnavailable"
 msgstr ""
 
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: A health review is active for this series
+msgid "error.download.healthReviewActive"
+msgstr ""
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+#. English: This series has no enabled sources
+msgid "error.download.noEnabledMapping"
+msgstr ""
+
 #. Label before a series title in an outbound notification, e.g. "Series: Naruto".
 #: src/Maki.Api/Services/NotificationService.cs
 #. English: Series

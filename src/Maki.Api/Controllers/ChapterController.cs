@@ -214,7 +214,7 @@ public class ChapterController(
             await downloadBatches.QueuedAsync(batch.Key, titles[batch.Key], batch.Select(item => item.Id).ToList());
         }
 
-        return Ok(new { queued = result.Queued.Count, error = result.Error });
+        return Ok(new { queued = result.Queued.Count, error = result.Error is null ? null : localizer.Get(result.Error) });
     }
 
     /// <summary>

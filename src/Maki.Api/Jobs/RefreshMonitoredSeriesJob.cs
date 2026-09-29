@@ -124,6 +124,13 @@ public class RefreshMonitoredSeriesJob(
             var result = await queue.EnqueueChaptersAsync(wanted, DownloadOrigin.MonitorRefresh, null, ct);
             if (result.Error is not null)
             {
+                if (result.Queued.Count > 0)
+                {
+                    var queuedTitle = series?.Title ?? localizer.GetFor(await locales.DefaultAsync(), "inbox.unknownSeries");
+                    await batches.QueuedAsync(seriesId, queuedTitle, result.Queued.Select(item => item.Id).ToList(),
+                        DownloadOrigin.MonitorRefresh);
+                }
+
                 throw new InvalidOperationException(result.Error);
             }
 

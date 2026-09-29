@@ -4,7 +4,7 @@ namespace Maki.Api.Services;
 
 /// <summary>
 /// In-process locks for work that reads a series' files on disk and rewrites its ChapterFile rows
-/// from what it saw: rescan, import linking, rename, move and delete. Each of them is
+/// from what it saw: rescan, import linking, download placement, rename, move and delete. Each is
 /// check-then-act over the folder and the rows, and two of them interleaving on one series
 /// duplicated rows or lost them. Not reentrant: never call into another locked entry point while
 /// holding the same series.
@@ -26,14 +26,16 @@ public static class SeriesLocks
 
     /// <summary>
     /// Queue items a worker is holding right now. Queued, resolving and parked items are not in it:
-    /// nothing has claimed them, and they cascade away with their series or chapter.
+    /// nothing has claimed them, and they cascade away with their series or chapter. A torrent sits
+    /// in Downloading inside the client for as long as it takes, so only its import counts.
     /// </summary>
     public static IQueryable<DownloadQueueItem> InFlight(IQueryable<DownloadQueueItem> queue) =>
-        queue.Where(q => q.Status == QueueStatus.FetchingPages ||
-                         q.Status == QueueStatus.Downloading ||
-                         q.Status == QueueStatus.Validating ||
-                         q.Status == QueueStatus.Packaging ||
-                         q.Status == QueueStatus.Importing);
+        queue.Where(q => q.Status == QueueStatus.Importing ||
+                         (q.Protocol == AcquisitionProtocol.Scraper &&
+                          (q.Status == QueueStatus.FetchingPages ||
+                           q.Status == QueueStatus.Downloading ||
+                           q.Status == QueueStatus.Validating ||
+                           q.Status == QueueStatus.Packaging)));
 }
 
 internal sealed class KeyedAsyncLock<TKey> where TKey : notnull

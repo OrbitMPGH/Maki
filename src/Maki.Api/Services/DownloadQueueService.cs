@@ -280,8 +280,8 @@ public class DownloadQueueService(
 
     /// <param name="Queued">New rows, in the order their chapters were given.</param>
     /// <param name="Error">
-    /// Why some chapters were not queued (a series with no enabled mapping, or under a health
-    /// review, or a chapter that no longer exists). The rest are still queued.
+    /// A catalogue key for why some chapters were not queued (a series with no enabled mapping, or
+    /// under a health review, or a chapter that no longer exists). The rest are still queued.
     /// </param>
     public sealed record BulkEnqueueResult(IReadOnlyList<DownloadQueueItem> Queued, string? Error);
 
@@ -315,7 +315,7 @@ public class DownloadQueueService(
         var missing = ids.Where(id => !seriesOf.ContainsKey(id)).ToList();
         if (missing.Count > 0)
         {
-            error = $"Chapter {missing[0]} not found";
+            error = EnqueueRefusedException.ChapterGone;
         }
 
         var seriesIds = seriesOf.Values.Distinct().ToList();
@@ -328,13 +328,13 @@ public class DownloadQueueService(
             .ToListAsync(ct);
         if (reviewed.Count > 0)
         {
-            error = "A health review is active for this series";
+            error = EnqueueRefusedException.HealthReview;
         }
 
         var mapped = await sourceResolver.SeriesWithEnabledMappingAsync(db, seriesIds, ct);
         if (seriesIds.Any(id => !mapped.Contains(id)))
         {
-            error = "Series has no enabled source mappings";
+            error = EnqueueRefusedException.NoMapping;
         }
 
         var active = (await db.DownloadQueue
@@ -390,9 +390,9 @@ public class DownloadQueueService(
                         queued.Add(item);
                     }
                 }
-                catch (InvalidOperationException ex)
+                catch (EnqueueRefusedException ex)
                 {
-                    error = ex.Message;
+                    error = ex.Key;
                 }
             }
 
@@ -443,10 +443,10 @@ public class DownloadQueueService(
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
         var chapter = await db.Chapters.FirstOrDefaultAsync(c => c.Id == chapterId, ct)
-            ?? throw new InvalidOperationException($"Chapter {chapterId} not found");
+            ?? throw new EnqueueRefusedException(EnqueueRefusedException.ChapterGone, $"Chapter {chapterId} not found");
         if (await db.HealthOperations.AnyAsync(o => db.HealthFiles.Any(f => f.Id == o.FileId && f.SeriesId == chapter.SeriesId)
             && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
-            throw new InvalidOperationException("A health review is active for this series");
+            throw new EnqueueRefusedException(EnqueueRefusedException.HealthReview, "A health review is active for this series");
 
         var existing = await db.DownloadQueue.FirstOrDefaultAsync(q => q.ActiveChapterId == chapterId, ct);
         if (existing is not null)
@@ -458,7 +458,7 @@ public class DownloadQueueService(
         // synchronously (same as before), without waiting on the per-chapter network lookup below.
         if (!await sourceResolver.HasEnabledMappingAsync(db, chapter.SeriesId, ct))
         {
-            throw new InvalidOperationException("Series has no enabled source mappings");
+            throw new EnqueueRefusedException(EnqueueRefusedException.NoMapping, "Series has no enabled source mappings");
         }
 
         var item = new DownloadQueueItem
@@ -1203,4 +1203,14 @@ public class DownloadQueueService(
 
         return eligible.Count;
     }
+}
+
+/// <summary>An enqueue refused for a reason the caller can show, with its catalogue key.</summary>
+public sealed class EnqueueRefusedException(string key, string message) : InvalidOperationException(message)
+{
+    public const string ChapterGone = "error.download.chapterGone";
+    public const string HealthReview = "error.download.healthReviewActive";
+    public const string NoMapping = "error.download.noEnabledMapping";
+
+    public string Key { get; } = key;
 }

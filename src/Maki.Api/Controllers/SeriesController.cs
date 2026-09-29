@@ -184,7 +184,7 @@ public class SeriesController(
         var queuedItemIds = result.Queued.Select(item => item.Id).ToList();
         await downloadBatches.QueuedAsync(seriesId, title, queuedItemIds);
         return result.Error is not null
-            ? BadRequest(new { error = result.Error, queued = queuedItemIds.Count })
+            ? BadRequest(new { error = localizer.Get(result.Error), queued = queuedItemIds.Count })
             : Ok(new { queued = queuedItemIds.Count });
     }
 
@@ -1156,7 +1156,8 @@ public class SeriesController(
         }
 
         // Older data can give two series one folder. A recursive delete of it would take the other
-        // series' files too, so then only the files this series tracks go.
+        // series' files too, so then only the files this series tracks go. Case is ignored on every
+        // host, since a case-insensitive share under Docker holds "One Piece" and "one piece" as one.
         var shared = (await SeriesCreationService.SeriesFoldersInRootAsync(db, series.RootFolderId, series.Id, ct))
             .Contains(series.FolderName);
         if (!shared)
@@ -1168,7 +1169,7 @@ public class SeriesController(
                                 EF.Functions.Like(f.RelativePath, pattern, @"\"))
                     .Select(f => f.RelativePath)
                     .ToListAsync(ct))
-                .Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), series.FolderName));
+                .Any(p => string.Equals(LibraryPaths.TopFolder(p), series.FolderName, StringComparison.OrdinalIgnoreCase));
         }
 
         if (shared)

@@ -356,6 +356,7 @@ public class AccountController(
             // meaningful. A revoked key authenticates nothing.
             key.RevokedAt = clock.GetUtcNow().UtcDateTime;
             await db.SaveChangesAsync(ct);
+            Services.OpdsAccessService.EvictUser(currentUser.UserId);
             await auditLog.LogAsync(AuthEventType.ApiKeyRevoked, currentUser.UserName, currentUser.UserId,
                 HttpContext, detail: $"{key.Scope} key \"{key.Name}\"", ct: ct);
         }

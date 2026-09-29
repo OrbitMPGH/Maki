@@ -154,7 +154,8 @@ public class DownloadQueueServiceTests : IDisposable
     [Fact]
     public async Task Enqueuing_a_missing_chapter_throws()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _queue.EnqueueChapterAsync(999));
+        var ex = await Assert.ThrowsAsync<EnqueueRefusedException>(() => _queue.EnqueueChapterAsync(999));
+        Assert.Equal("error.download.chapterGone", ex.Key);
     }
 
     [Fact]
@@ -162,7 +163,8 @@ public class DownloadQueueServiceTests : IDisposable
     {
         var (_, chapterId) = SeedChapter(Mapping("fake", enabled: false));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _queue.EnqueueChapterAsync(chapterId));
+        var ex = await Assert.ThrowsAsync<EnqueueRefusedException>(() => _queue.EnqueueChapterAsync(chapterId));
+        Assert.Equal("error.download.noEnabledMapping", ex.Key);
     }
 
     [Fact]
@@ -187,7 +189,7 @@ public class DownloadQueueServiceTests : IDisposable
         var queue = new DownloadQueueService(
             _db.ScopeFactory(), _clock, Sources.SingleChapterResolver(Sources.Disabled("off"), "off", "on"), NullLogger<DownloadQueueService>.Instance);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => queue.EnqueueChapterAsync(chapterId));
+        await Assert.ThrowsAsync<EnqueueRefusedException>(() => queue.EnqueueChapterAsync(chapterId));
     }
 
     /// <summary>

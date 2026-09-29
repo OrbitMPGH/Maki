@@ -169,6 +169,7 @@ public class UsersController(
 
             // SetUserNameAsync saves every tracked change, including a permission or disabled edit above.
             snapshots.Evict(user.Id);
+            OpdsAccessService.EvictUser(user.Id);
         }
 
         if (request.DisplayName is not null)
@@ -206,6 +207,7 @@ public class UsersController(
         await ReplaceRootFolderGrantsAsync(user, request.RootFolderIds, ct);
         await db.SaveChangesAsync(ct);
         snapshots.Evict(user.Id);
+        OpdsAccessService.EvictUser(user.Id);
 
         // Any change to what the account may do, or whether it may sign in at all, invalidates its
         // existing cookies. Permission checks read the database per request so they are already
@@ -259,6 +261,7 @@ public class UsersController(
         db.Users.Remove(user);
         await db.SaveChangesAsync(ct);
         snapshots.Evict(id);
+        OpdsAccessService.EvictUser(id);
         await EventsHub.DisconnectUserAsync(hub, id);
 
         await auditLog.LogAsync(AuthEventType.UserDeleted, currentUser.UserName, currentUser.UserId,

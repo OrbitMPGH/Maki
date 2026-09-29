@@ -146,7 +146,25 @@ public class LibraryFolderSafetyTests : IDisposable
     }
 
     [Fact]
-    public async Task RescanKeepsEveryRowWhenTheSeriesFolderIsMissing()
+    public async Task RescanFreesRowsWhenTheSeriesFolderIsGoneFromAReadableRoot()
+    {
+        var (_, seriesId) = Seed("Gone", files: [Path.Combine("Gone", "Chainsaw Man c001.cbz")]);
+        Directory.CreateDirectory(Path.Combine(_root, "Other Series"));
+
+        RescanResult result;
+        await using (var db = _db.NewContext())
+        {
+            result = await LinkService(db).RescanSeriesAsync(
+                await db.Series.Include(s => s.RootFolder).SingleAsync(s => s.Id == seriesId));
+        }
+
+        Assert.Equal(1, result.Removed);
+        await using var check = _db.NewContext();
+        Assert.Equal(0, await check.ChapterFiles.CountAsync(f => f.SeriesId == seriesId));
+    }
+
+    [Fact]
+    public async Task RescanKeepsEveryRowWhenTheRootIsEmpty()
     {
         var (_, seriesId) = Seed("Gone", files: [Path.Combine("Gone", "Chainsaw Man c001.cbz")]);
 

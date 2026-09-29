@@ -156,7 +156,7 @@ public class DownloadPipelineGuardTests : IDisposable
 
         var result = await queue.EnqueueChaptersAsync([orphan.Id, ok.Id], DownloadOrigin.Manual, null);
 
-        Assert.Equal("Series has no enabled source mappings", result.Error);
+        Assert.Equal("error.download.noEnabledMapping", result.Error);
         Assert.Equal(ok.Id, Assert.Single(result.Queued).ChapterId);
     }
 }

@@ -366,6 +366,7 @@ public class SettingsController(
     public async Task<IActionResult> RotateOpdsToken(CancellationToken ct)
     {
         var (prefix, feedUrl) = await MintOpdsKeyAsync(ct);
+        OpdsAccessService.EvictUser(currentUser.UserId);
         var stored = await userSettings.GetManyAsync(
             [SettingKeys.OpdsEnabled, SettingKeys.OpdsTrackProgress], ct);
         return Ok(new OpdsSettingsResponse(

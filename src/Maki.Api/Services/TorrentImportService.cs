@@ -385,9 +385,14 @@ public class TorrentImportService(
         // library its own name for the same bytes; the copy is the fallback when the two folders
         // can't share an inode (different volumes, a share, a filesystem without hardlinks).
         var seriesDir = Path.Combine(rootFolder.Path, series.FolderName);
+        var useHardlinks = await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false";
+        var writeComicInfoSetting = await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false";
+
+        // From the first file placed through the trash moves: a plain copy lands at its final name, so
+        // a rescan running beside it would adopt a half-written archive. Released before the inbox row.
+        using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
         Directory.CreateDirectory(seriesDir);
 
-        var useHardlinks = await settings.GetAsync(SettingKeys.DownloadUseHardlinks, ct) != "false";
         var imported = new List<string>();
         var hardlinked = 0;
         var freshCopies = 0;
@@ -442,8 +447,7 @@ public class TorrentImportService(
         // hardlinks off is how a user picks the other side of that. A file already in the folder is
         // skipped for the same reason — it may be a hardlink from an earlier run, and whatever
         // imported it already decided about its ComicInfo.
-        var writeComicInfo = await settings.GetAsync(SettingKeys.LibraryWriteComicInfo, ct) != "false"
-                             && freshCopies == imported.Count;
+        var writeComicInfo = writeComicInfoSetting && freshCopies == imported.Count;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, seriesDir, imported, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
             updateComicInfo: writeComicInfo, releaseName: ReleaseInfoOf(item)?.Title ?? item.Title,
@@ -473,6 +477,7 @@ public class TorrentImportService(
             ? await TrashSupersededAsync(series, rootFolder.Path, backedBefore, item,
                 importedRows.Select(r => r.Id).ToHashSet(), ct)
             : (0, null);
+        seriesLock.Dispose();
 
         if (upgrade is not null)
         {
@@ -541,12 +546,18 @@ public class TorrentImportService(
         var relativePaths = importedPaths
             .Select(path => Path.Combine(series.FolderName, Path.GetFileName(path)))
             .ToList();
-        var fileIds = await db.ChapterFiles
-            .Where(f => f.SeriesId == series.Id && relativePaths.Contains(f.RelativePath))
-            .Select(f => f.Id)
-            .ToListAsync(ct);
 
-        var result = await seriesRenameService.RenameFilesAsync(series.Id, fileIds, ct);
+        // RenameFilesAsync takes no lock of its own: the public RenameAsync holds it around the same code.
+        SeriesRenameResult result;
+        using (await SeriesLocks.SeriesAsync(series.Id, ct))
+        {
+            var fileIds = await db.ChapterFiles
+                .Where(f => f.SeriesId == series.Id && relativePaths.Contains(f.RelativePath))
+                .Select(f => f.Id)
+                .ToListAsync(ct);
+            result = await seriesRenameService.RenameFilesAsync(series.Id, fileIds, ct);
+        }
+
         if (!result.Applied)
         {
             logger.LogWarning(

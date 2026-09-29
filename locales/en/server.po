@@ -2173,6 +2173,14 @@ msgstr "The torrent is no longer in qBittorrent"
 msgid "error.download.rootFolderUnavailable"
 msgstr "The library folder is not available, check that its drive or share is mounted"
 
+#: src/Maki.Api/Services/DownloadQueueService.cs
+msgid "error.download.healthReviewActive"
+msgstr "A health review is active for this series"
+
+#: src/Maki.Api/Services/DownloadQueueService.cs
+msgid "error.download.noEnabledMapping"
+msgstr "This series has no enabled sources"
+
 #. Label before a series title in an outbound notification, e.g. "Series: Naruto".
 #: src/Maki.Api/Services/NotificationService.cs
 msgid "notify.label.series"
