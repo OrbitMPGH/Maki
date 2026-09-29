@@ -64,7 +64,7 @@ public class HomeControllerTests : IDisposable
 
     private void SeedProgress(
         int seriesId, int chapterId, int pageIndex, bool completed,
-        DateTime updatedAt, DateTime? unreadAt = null, int pageCount = 20)
+        DateTime updatedAt, DateTime? unreadAt = null, int pageCount = 20, bool watched = false)
     {
         using var db = _db.NewContext();
         db.ChapterProgress.Add(new ChapterProgress
@@ -75,6 +75,7 @@ public class HomeControllerTests : IDisposable
             PageIndex = pageIndex,
             PageCount = pageCount,
             Completed = completed,
+            Watched = watched,
             UnreadAt = unreadAt,
             StartedAt = updatedAt,
             UpdatedAt = updatedAt
@@ -176,6 +177,19 @@ public class HomeControllerTests : IDisposable
         var seriesId = _db.SeedSeries();
         var only = SeedChapter(seriesId, 1);
         SeedProgress(seriesId, only, pageIndex: 0, completed: true, updatedAt: Base);
+
+        var response = Reading(await Controller().Reading(ct: CancellationToken.None));
+
+        Assert.Empty(response.JumpBackIn);
+    }
+
+    [Fact]
+    public async Task JumpBackIn_ignores_watched_chapters()
+    {
+        var seriesId = _db.SeedSeries();
+        var watched = SeedChapter(seriesId, 1);
+        SeedChapter(seriesId, 2);
+        SeedProgress(seriesId, watched, pageIndex: 0, completed: true, updatedAt: Base, watched: true);
 
         var response = Reading(await Controller().Reading(ct: CancellationToken.None));
 

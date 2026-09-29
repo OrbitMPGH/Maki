@@ -92,8 +92,11 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
         // One bounded, index-ordered pass over the newest progress rows, grouped in memory. Both
         // rails are "most recently touched first", so the newest RecentProgressScan rows contain
         // every series either of them could show — see the constant for why this is not a GROUP BY.
+        // Watched ticks are not reading, so they neither put a series on a rail nor bring back a
+        // hidden one.
         var recent = await db.ChapterProgress
             .AsNoTracking()
+            .Where(p => !p.Watched)
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.Completed, p.UnreadAt, p.PageIndex, p.UpdatedAt })
