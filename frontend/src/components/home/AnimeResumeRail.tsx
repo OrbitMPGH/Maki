@@ -82,12 +82,16 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
       )}
       <div className="cover-scrim" />
 
+      <div className="cover-corners">
+        <div className="cover-corner cover-corner-left">
+          <span className="cover-chapter" data-tip={item.animeTitle}>
+            <span>{item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}</span>
+          </span>
+        </div>
+      </div>
       {children}
 
       <div className="cover-meta">
-        <span className="cover-chapter" data-tip={item.animeTitle}>
-          <span>{item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}</span>
-        </span>
         <span className="cover-title" title={item.seriesTitle}>
           {item.seriesTitle}
         </span>

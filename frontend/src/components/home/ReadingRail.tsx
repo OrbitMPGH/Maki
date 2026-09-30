@@ -50,11 +50,16 @@ const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem 
         )}
         <div className="cover-scrim" />
 
+        <div className="cover-corners">
+          <div className="cover-corner cover-corner-left">
+            <span className="cover-chapter">
+              <IconPlayerPlayFilled size={10} />
+              <span>{chapterLabel}</span>
+            </span>
+          </div>
+        </div>
+
         <div className="cover-meta">
-          <span className="cover-chapter">
-            <IconPlayerPlayFilled size={10} />
-            <span>{chapterLabel}</span>
-          </span>
           <span className="cover-title" title={item.seriesTitle}>
             {item.seriesTitle}
           </span>

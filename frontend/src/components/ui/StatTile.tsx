@@ -41,7 +41,7 @@ export function StatTile({
   return (
     <Card className="stat-tile" padding="md" radius="lg">
       <div style={{ minWidth: 0 }}>
-        <Text size="xs" c="var(--ink-4)">
+        <Text size="xs" c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
           {label}
         </Text>
         {loading ? (

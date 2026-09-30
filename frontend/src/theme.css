@@ -738,17 +738,19 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-medium);
+  font-size: 10px;
+  font-weight: 600;
   color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
   padding: 2px 4px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-medium);
+  font-size: 10px;
+  font-weight: 600;
   border-radius: 4px;
   transition:
     background-color var(--dur-base) var(--ease),
@@ -889,8 +891,10 @@ body::before {
   }
 }
 .nav-section-label {
-  font-size: 0.75rem;
-  font-weight: var(--fw-semibold);
+  font-size: 10.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   line-height: 16px;
   color: var(--ink-4);
   padding: 0 10px;
@@ -903,7 +907,7 @@ body::before {
   border-radius: var(--radius-pill);
   background: var(--brand);
   color: var(--brand-on);
-  font-size: var(--type-label);
+  font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   line-height: 18px;
   text-align: center;
@@ -1174,17 +1178,20 @@ body::before {
 .cover-state[data-tone='info'] {
   --tone: var(--info);
 }
-/* Publication status, top-right: neutral so the corner stays quiet. */
+/* Publication status, top-right: a disc filled in the status colour (CoverCard sets --tone). */
 .cover-state[data-tone='status'] {
-  --tone: color-mix(in srgb, var(--ink-hi) 90%, transparent);
+  width: 24px;
+  height: 24px;
+  background: var(--tone);
+  box-shadow:
+    0 0 0 1.5px rgba(6, 7, 11, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #fff;
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
-[data-theme='light'] .cover-state,
+[data-theme='light'] .cover-state:not([data-tone='status']),
 [data-theme='light'] .cover-ring-check {
   color: color-mix(in srgb, var(--tone) 55%, white);
-}
-[data-theme='light'] .cover-state[data-tone='status'] {
-  color: rgba(255, 255, 255, 0.9);
 }
 /* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
 .cover-check {
@@ -1267,8 +1274,10 @@ body::before {
   color: var(--brand-on);
   font-size: var(--type-badge);
   font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
-/* Reading card: the chapter it opens, as a chip above the title. */
+/* A chapter chip: top-left on Continue and Resume cards, above the title on Recently added. */
 .cover-chapter {
   display: flex;
   align-items: center;
@@ -1283,7 +1292,21 @@ body::before {
   color: var(--brand-on);
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   white-space: nowrap;
+}
+.cover-corner-left > .cover-chapter {
+  margin-bottom: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+/* Clears the card menu or add cue in the other corner, and lets a long label ellipsize. */
+.cover-corners:has(> .cover-corner-left > .cover-chapter) {
+  right: 40px;
+}
+.cover-corner-left:has(> .cover-chapter) {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 .cover-chapter > svg {
   flex: none;
@@ -1862,8 +1885,10 @@ body::before {
   }
 }
 .discover-hero-eyebrow {
-  font-size: var(--type-micro);
-  text-transform: none;
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--ink-4);
   margin-bottom: 8px;
 }
@@ -1936,9 +1961,11 @@ body::before {
   backdrop-filter: blur(18px) saturate(0.85);
 }
 .discover-hero-strip-label {
-  font-size: var(--type-micro);
-  text-transform: none;
-  color: var(--ink-4);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
 .discover-hero-strip-heading {
   display: flex;
@@ -1947,9 +1974,10 @@ body::before {
   gap: 12px;
 }
 .discover-hero-strip-mode {
-  font-size: var(--type-micro);
-  font-weight: var(--fw-semibold);
-  text-transform: none;
+  font-size: var(--type-badge);
+  font-weight: var(--fw-strong);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--brand-fg, var(--brand));
 }
 .discover-hero-strip-row {
@@ -2080,8 +2108,10 @@ body::before {
 }
 .discover-seeds-label {
   flex: none;
-  font-size: var(--type-micro);
-  text-transform: none;
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--ink-4);
 }
 .discover-seeds-row {
@@ -2295,8 +2325,10 @@ body::before {
   background: var(--surface);
 }
 .discover-taste-lead {
-  font-size: var(--type-micro);
-  text-transform: none;
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--ink-4);
 }
 .discover-taste-chip {
@@ -3377,8 +3409,9 @@ body::before {
 .hero-stat-l {
   color: var(--ink-4);
   font-size: var(--type-micro);
-  line-height: 1.3;
-  text-transform: none;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -3802,7 +3835,6 @@ body::before {
 }
 .section-header-action .mantine-Button-root[data-variant='subtle'] {
   color: var(--ink-2);
-  font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
 }
 .section-header-action .mantine-Button-root[data-variant='subtle']:hover {
@@ -4566,8 +4598,9 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 .stats-figure-l {
   color: var(--ink-4);
   font-size: var(--type-micro);
-  line-height: 1.3;
-  text-transform: none;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 61.9375em) {
@@ -6572,9 +6605,10 @@ body.reader-open {
 }
 .figure-strip-l {
   color: var(--ink-4);
-  font-size: var(--type-micro);
-  line-height: 1.3;
-  text-transform: none;
+  font-size: var(--type-label);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .status-dot {
@@ -7434,12 +7468,14 @@ body.reader-open {
   align-items: center;
   gap: 10px;
   color: var(--ink-3);
-  font-size: var(--type-micro);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
 .continue-tile-unread {
   color: var(--brand-fg);
-  font-weight: var(--fw-semibold);
 }
 .continue-tile-title {
   display: -webkit-box;
