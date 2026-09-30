@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Core.Sources;
@@ -16,7 +17,9 @@ namespace Maki.Core.Sources;
 /// </para>
 /// <para>
 /// Successes only. A failed listing is not cached: a source that was briefly down should be retried
-/// on the next item, not remembered as broken for the rest of the TTL.
+/// on the next item, not remembered as broken for the rest of the TTL. The one exception is the
+/// callers already queued behind the failing fetch: they get its exception (for up to
+/// <see cref="FailureTtl"/>) instead of each re-running a listing that just timed out or was told 429.
 /// </para>
 /// </summary>
 public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChapterListCache> logger)
@@ -34,12 +37,17 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     /// </summary>
     private const int MaxEntries = 512;
 
+    public static readonly TimeSpan FailureTtl = TimeSpan.FromSeconds(20);
+
     private sealed class Entry
     {
         public readonly SemaphoreSlim Gate = new(1, 1);
         public IReadOnlyList<SourceChapter>? Chapters;
         public DateTime FetchedAt = DateTime.MinValue;
         public long LastUsedTicks;
+        public long Failures;
+        public ExceptionDispatchInfo? Failure;
+        public DateTime FailedAt;
     }
 
     private readonly ConcurrentDictionary<string, Entry> _entries = new();
@@ -61,18 +69,35 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
             return entry.Chapters!;
         }
 
+        var failuresSeen = Interlocked.Read(ref entry.Failures);
         await entry.Gate.WaitAsync(ct);
         try
         {
             // Somebody else refreshed it while this call waited for the gate.
-            if (IsFresh(entry, time.GetUtcNow().UtcDateTime))
+            now = time.GetUtcNow().UtcDateTime;
+            if (IsFresh(entry, now))
             {
                 return entry.Chapters!;
             }
 
-            var chapters = await source.ListChaptersAsync(sourceSeriesId, languageFilter, ct);
-            Fill(entry, chapters);
-            return chapters;
+            if (entry.Failure is { } failure && entry.Failures > failuresSeen && now - entry.FailedAt < FailureTtl)
+            {
+                failure.Throw();
+            }
+
+            try
+            {
+                var chapters = await source.ListChaptersAsync(sourceSeriesId, languageFilter, ct);
+                Fill(entry, chapters);
+                return chapters;
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                entry.Failure = ExceptionDispatchInfo.Capture(ex);
+                entry.FailedAt = time.GetUtcNow().UtcDateTime;
+                Interlocked.Increment(ref entry.Failures);
+                throw;
+            }
         }
         finally
         {
@@ -97,6 +122,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     private void Fill(Entry entry, IReadOnlyList<SourceChapter> chapters)
     {
         entry.Chapters = chapters;
+        entry.Failure = null;
         entry.FetchedAt = time.GetUtcNow().UtcDateTime;
         Volatile.Write(ref entry.LastUsedTicks, entry.FetchedAt.Ticks);
         Trim();

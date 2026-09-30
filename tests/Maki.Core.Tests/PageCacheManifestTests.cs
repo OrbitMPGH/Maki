@@ -57,21 +57,45 @@ public class PageCacheManifestTests : IDisposable
         Assert.Equal(4, destination.Length);
     }
 
-    /// <summary>Hands out a few bytes, then never completes another read until cancelled.</summary>
-    private sealed class StallingStream : Stream
+    [Fact]
+    public async Task A_slow_body_that_keeps_arriving_is_not_cut_off()
     {
-        private bool _sent;
+        using var content = new StreamContent(new StallingStream(chunks: 6, gap: TimeSpan.FromMilliseconds(50), stall: false));
+        using var destination = new MemoryStream();
+
+        await PageDownloader.CopyWithStallTimeoutAsync(
+            content, destination, "https://cdn.test/1.jpg", TimeSpan.FromMilliseconds(150), CancellationToken.None);
+
+        Assert.Equal(24, destination.Length);
+    }
+
+    /// <summary>
+    /// Hands out <c>chunks</c> reads of a few bytes <c>gap</c> apart, then either never completes
+    /// another read until cancelled or ends the body.
+    /// </summary>
+    private sealed class StallingStream(int chunks = 1, TimeSpan gap = default, bool stall = true) : Stream
+    {
+        private int _sent;
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
         {
-            if (!_sent)
+            if (_sent < chunks)
             {
-                _sent = true;
+                if (_sent > 0 && gap > TimeSpan.Zero)
+                {
+                    await Task.Delay(gap, ct);
+                }
+
+                _sent++;
                 "page"u8.CopyTo(buffer.Span);
                 return 4;
             }
 
-            await Task.Delay(Timeout.Infinite, ct);
+            if (stall)
+            {
+                await Task.Delay(Timeout.Infinite, ct);
+            }
+
             return 0;
         }
 

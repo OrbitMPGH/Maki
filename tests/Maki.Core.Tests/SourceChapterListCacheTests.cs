@@ -1,3 +1,4 @@
+using Maki.Core.Http;
 using Maki.Core.Sources;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -138,6 +139,29 @@ public class SourceChapterListCacheTests
         var chapters = await cache.GetAsync(source, "series-1", "en");
         Assert.Single(chapters);
         Assert.Equal(3, source.ListCalls);
+    }
+
+    /// <summary>
+    /// Callers queued behind a listing that fails get its exception rather than each re-running a
+    /// fetch that just timed out; a 429 stays a RateLimitException so the item is still parked.
+    /// </summary>
+    [Fact]
+    public async Task Callers_queued_behind_a_failing_listing_share_its_failure()
+    {
+        var source = new CountingSource
+        {
+            Delay = TimeSpan.FromMilliseconds(200),
+            Throws = new RateLimitException("429", TimeSpan.FromSeconds(30)),
+        };
+        var cache = NewCache();
+
+        var calls = Enumerable.Range(0, 5).Select(_ => cache.GetAsync(source, "series-1", "en")).ToList();
+        foreach (var call in calls)
+        {
+            await Assert.ThrowsAsync<RateLimitException>(() => call);
+        }
+
+        Assert.Equal(1, source.ListCalls);
     }
 
     /// <summary>

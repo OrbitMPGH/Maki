@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.ExceptionServices;
 
 namespace Maki.Core.Sources;
 
@@ -15,6 +16,8 @@ namespace Maki.Core.Sources;
 /// An empty result is cached — a site that publishes no tracker links for a title still publishes none
 /// a minute later, and re-fetching to rediscover that is the case this exists to avoid. A *failed*
 /// lookup is not: a source that was briefly down should be retried, not remembered as having no ids.
+/// Only the callers already queued behind a failing fetch get its exception, for up to
+/// <see cref="FailureTtl"/>, rather than each re-running it.
 /// </para>
 /// </summary>
 public sealed class SourceExternalIdCache(TimeProvider time)
@@ -28,6 +31,8 @@ public sealed class SourceExternalIdCache(TimeProvider time)
     /// <summary>Bounds memory at a few candidates per series being matched; the coldest go first.</summary>
     private const int MaxEntries = 512;
 
+    public static readonly TimeSpan FailureTtl = TimeSpan.FromSeconds(20);
+
     private sealed class Entry
     {
         public readonly SemaphoreSlim Gate = new(1, 1);
@@ -35,6 +40,9 @@ public sealed class SourceExternalIdCache(TimeProvider time)
         public bool Filled;
         public DateTime FetchedAt = DateTime.MinValue;
         public long LastUsedTicks;
+        public long Failures;
+        public ExceptionDispatchInfo? Failure;
+        public DateTime FailedAt;
     }
 
     private readonly ConcurrentDictionary<string, Entry> _entries = new();
@@ -55,17 +63,37 @@ public sealed class SourceExternalIdCache(TimeProvider time)
             return entry.Ids;
         }
 
+        var failuresSeen = Interlocked.Read(ref entry.Failures);
         await entry.Gate.WaitAsync(ct);
         try
         {
-            if (IsFresh(entry, time.GetUtcNow().UtcDateTime))
+            now = time.GetUtcNow().UtcDateTime;
+            if (IsFresh(entry, now))
             {
                 return entry.Ids;
             }
 
-            var ids = await source.GetExternalIdsAsync(sourceSeriesId, ct);
+            if (entry.Failure is { } failure && entry.Failures > failuresSeen && now - entry.FailedAt < FailureTtl)
+            {
+                failure.Throw();
+            }
+
+            IReadOnlyDictionary<string, string>? ids;
+            try
+            {
+                ids = await source.GetExternalIdsAsync(sourceSeriesId, ct);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                entry.Failure = ExceptionDispatchInfo.Capture(ex);
+                entry.FailedAt = time.GetUtcNow().UtcDateTime;
+                Interlocked.Increment(ref entry.Failures);
+                throw;
+            }
+
             entry.Ids = ids;
             entry.Filled = true;
+            entry.Failure = null;
             entry.FetchedAt = time.GetUtcNow().UtcDateTime;
             Volatile.Write(ref entry.LastUsedTicks, entry.FetchedAt.Ticks);
             Trim();

@@ -8,6 +8,12 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
 {
     public const string HttpClientName = "flaresolverr";
 
+    // Each solve is a browser tab in FlareSolverr for up to maxTimeout; a small NAS box runs out of
+    // memory well before the download pool runs out of callers.
+    private const int MaxConcurrentSolves = 2;
+
+    private readonly SemaphoreSlim _solves = new(MaxConcurrentSolves, MaxConcurrentSolves);
+
     public record FlareSolution(
         int Status,
         string Html,
@@ -49,11 +55,20 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
             payload["cookies"] = cookies.Select(c => new { name = c.Key, value = c.Value }).ToArray();
         }
 
-        var response = await client.PostAsJsonAsync(endpoint, payload, ct);
-        response.EnsureSuccessStatusCode();
+        FlareResponse body;
+        await _solves.WaitAsync(ct);
+        try
+        {
+            using var response = await client.PostAsJsonAsync(endpoint, payload, ct);
+            response.EnsureSuccessStatusCode();
 
-        var body = await response.Content.ReadFromJsonAsync<FlareResponse>(ct)
-            ?? throw new InvalidOperationException("FlareSolverr returned an empty response");
+            body = await response.Content.ReadFromJsonAsync<FlareResponse>(ct)
+                ?? throw new InvalidOperationException("FlareSolverr returned an empty response");
+        }
+        finally
+        {
+            _solves.Release();
+        }
 
         if (body.Status != "ok" || body.Solution is null)
         {
@@ -64,7 +79,44 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
             body.Solution.Status,
             body.Solution.Response ?? string.Empty,
             body.Solution.UserAgent ?? string.Empty,
-            body.Solution.Cookies.ToDictionary(c => c.Name, c => c.Value));
+            CookieMap(body.Solution.Cookies, new Uri(targetUrl).Host));
+    }
+
+    /// <summary>
+    /// The browser jar can hold one name twice under different domains or paths. A cookie scoped to
+    /// the target host beats one that is not; otherwise the last one wins.
+    /// </summary>
+    private static Dictionary<string, string> CookieMap(List<FlareCookie> cookies, string host)
+    {
+        var map = new Dictionary<string, string>();
+        var hostScoped = new HashSet<string>();
+        foreach (var cookie in cookies)
+        {
+            var matches = DomainMatches(cookie.Domain, host);
+            if (matches || !hostScoped.Contains(cookie.Name))
+            {
+                map[cookie.Name] = cookie.Value;
+            }
+
+            if (matches)
+            {
+                hostScoped.Add(cookie.Name);
+            }
+        }
+
+        return map;
+    }
+
+    private static bool DomainMatches(string? domain, string host)
+    {
+        if (string.IsNullOrEmpty(domain))
+        {
+            return true;
+        }
+
+        var bare = domain.TrimStart('.');
+        return host.Equals(bare, StringComparison.OrdinalIgnoreCase)
+            || host.EndsWith("." + bare, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Checks the instance is alive (GET / returns a ready message).</summary>
@@ -116,5 +168,8 @@ public class FlareSolverrClient(IHttpClientFactory httpClientFactory)
 
         [JsonPropertyName("value")]
         public string Value { get; set; } = string.Empty;
+
+        [JsonPropertyName("domain")]
+        public string? Domain { get; set; }
     }
 }
