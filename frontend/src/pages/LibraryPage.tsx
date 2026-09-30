@@ -983,6 +983,17 @@ export default function LibraryPage() {
                     <IconFilter size={16} />
                   </ActionIcon>
                 </Indicator>
+                <Tooltip label={t`Manage tags`} withArrow>
+                  <ActionIcon
+                    className="library-tags-button"
+                    variant="default"
+                    size={34}
+                    onClick={() => setTagManagerOpen(true)}
+                    aria-label={t`Manage tags`}
+                  >
+                    <IconSettings size={16} />
+                  </ActionIcon>
+                </Tooltip>
                 <Select
                   className="library-sort"
                   data={sortOptions}
@@ -1012,12 +1023,11 @@ export default function LibraryPage() {
         </Panel>
       )}
 
-      {showChrome && !selectMode && (
+      {showChrome && !selectMode && ((savedFilters ?? []).length > 0 || filtersActive) && (
         <Group
           className="library-saved-filters"
           gap="xs"
           wrap="wrap"
-          data-tools-only={((savedFilters ?? []).length === 0 && !filtersActive) || undefined}
         >
           {(savedFilters ?? []).length > 0 && (
             <span className="library-saved-label">
@@ -1072,16 +1082,6 @@ export default function LibraryPage() {
               <Trans>Clear</Trans>
             </Button>
           )}
-          <Tooltip label={t`Manage tags`} withArrow>
-            <ActionIcon
-              variant="subtle"
-              color="var(--neutral)"
-              onClick={() => setTagManagerOpen(true)}
-              aria-label={t`Manage tags`}
-            >
-              <IconSettings size={16} />
-            </ActionIcon>
-          </Tooltip>
         </Group>
       )}
 

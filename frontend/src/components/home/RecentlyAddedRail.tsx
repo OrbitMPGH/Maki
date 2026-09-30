@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { IconBook } from '@tabler/icons-react'
+import { IconPlayerPlayFilled } from '@tabler/icons-react'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
 import { Rail } from '../ui/Rail'
 import { relativeTime } from '../ui/time'
@@ -50,17 +50,20 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
               {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
                   imperatively and stops the outer card's navigation. */}
               <span
-                className="cover-badge home-read-badge"
+                className="cover-chapter home-read-badge"
                 role="button"
                 tabIndex={0}
                 data-tip={t`Read next chapter`}
+                aria-label={t`Read next chapter`}
                 onClick={openReader}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') openReader(e)
                 }}
               >
-                <IconBook size={11} />
-                <Trans>Read</Trans>
+                <IconPlayerPlayFilled size={10} />
+                <span>
+                  <Trans>Read</Trans>
+                </span>
               </span>
             </div>
           )}

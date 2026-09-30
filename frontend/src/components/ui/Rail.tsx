@@ -1,5 +1,4 @@
 import {
-  Children,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -50,7 +49,7 @@ export function Rail({
   const ref = useRef<HTMLDivElement>(null)
   const [reach, setReach] = useState({ left: false, right: false })
   const [slot, setSlot] = useState<HTMLElement | null>(null)
-  const count = Children.count(children)
+  const frame = useRef(0)
 
   const measure = useCallback(() => {
     const rail = ref.current
@@ -61,28 +60,43 @@ export function Rail({
     setReach((prev) => (prev.left === left && prev.right === right ? prev : { left, right }))
   }, [])
 
+  const schedule = useCallback(() => {
+    cancelAnimationFrame(frame.current)
+    frame.current = requestAnimationFrame(measure)
+  }, [measure])
+
+  // The header can mount after the rail, and a rail can be replaced under a stale slot, so the
+  // lookup repeats whenever the children change or the stored slot has left the document.
   useLayoutEffect(() => {
     const rail = ref.current
     if (!rail) return
-    setSlot(findHeader(rail)?.querySelector<HTMLElement>('.section-header-arrows') ?? null)
-  }, [])
+    const found = findHeader(rail)?.querySelector<HTMLElement>('.section-header-arrows') ?? null
+    setSlot(found)
+  }, [children, slot?.isConnected])
 
-  useEffect(() => {
+  // Offscreen rails are content-visibility: auto, so their scrollWidth is only real once they have
+  // been laid out. Children resizing is what reports that, since the scroller's own box never changes.
+  useLayoutEffect(() => {
+    measure()
     const rail = ref.current
     if (!rail) return
-    measure()
-    rail.addEventListener('scroll', measure, { passive: true })
-    // Loading covers change the content width without resizing the scroller's own box, so image
-    // loads are caught in the capture phase.
-    const observer = new ResizeObserver(measure)
-    observer.observe(rail)
-    rail.addEventListener('load', measure, { capture: true, passive: true })
+    rail.addEventListener('scroll', schedule, { passive: true })
+    rail.addEventListener('load', schedule, { capture: true, passive: true })
+    window.addEventListener('resize', schedule)
+    const resize = new ResizeObserver(schedule)
+    resize.observe(rail)
+    for (const child of Array.from(rail.children)) resize.observe(child)
+    const visible = new IntersectionObserver(schedule)
+    visible.observe(rail)
     return () => {
-      rail.removeEventListener('scroll', measure)
-      rail.removeEventListener('load', measure, { capture: true })
-      observer.disconnect()
+      cancelAnimationFrame(frame.current)
+      rail.removeEventListener('scroll', schedule)
+      rail.removeEventListener('load', schedule, { capture: true })
+      window.removeEventListener('resize', schedule)
+      resize.disconnect()
+      visible.disconnect()
     }
-  }, [measure, count])
+  }, [measure, schedule, children])
 
   useEffect(() => {
     const rail = ref.current

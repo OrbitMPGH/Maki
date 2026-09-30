@@ -163,6 +163,18 @@
   --brand-fg: #b8496b;
   --brand-fg-on-art: #f5b6c8;
 }
+:root[data-theme='light'][data-accent='rose'] {
+  --brand-fg: #c0164f;
+  --brand-fg-on-art: #ff9fbd;
+}
+:root[data-theme='light'][data-accent='emerald'] {
+  --brand-fg: #127a4c;
+  --brand-fg-on-art: #96efc4;
+}
+:root[data-theme='light'][data-accent='amber'] {
+  --brand-fg: #8a5a00;
+  --brand-fg-on-art: #ffdf85;
+}
 :root[data-accent='rose'] {
   --brand: #f52069;
   --brand-hover: #e0175c;
@@ -1094,12 +1106,9 @@ body::before {
 /* `.discover-rating` is exempt: it is the only badge on a catalogue poster's top-left and has
    nothing to collide with, and collapsing it to the 20px dot dropped its star (the svg is the
    flex item that shrinks) and left a bare number. Rail cards are exactly 150px, so every rail
-   lost the star while the grid kept it. The home rails' Read pill is exempt for the same reason:
-   nothing beside it to collide with, and at 20px the text spills out of the dot. */
+   lost the star while the grid kept it. */
 @container (max-width: 150px) {
-  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating):not(
-      .home-read-badge
-    ) {
+  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating) {
     width: 20px;
     padding: 0;
     justify-content: center;
@@ -1542,15 +1551,20 @@ body::before {
   border-radius: var(--radius-pill);
   background: var(--brand);
 }
+/* Recently added's jump-to-reader button: the chapter chip, top-right. */
 .home-read-badge {
-  background: #000;
-  opacity: 0.92;
+  margin-bottom: 0;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .home-read-badge:hover {
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
-  opacity: 1;
+  background: var(--brand-hover);
+  transform: translateY(-1px);
+}
+.home-read-badge:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 /* Quick-add / owned cue, top-right of the poster. The poster's full-card button owns the action,
    so this is a visual cue without a second focus stop. */
@@ -1844,10 +1858,8 @@ body::before {
   }
 }
 .discover-hero-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  text-transform: none;
   color: var(--ink-4);
   margin-bottom: 8px;
 }
@@ -1920,11 +1932,9 @@ body::before {
   backdrop-filter: blur(18px) saturate(0.85);
 }
 .discover-hero-strip-label {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+  font-size: var(--type-micro);
+  text-transform: none;
+  color: var(--ink-4);
 }
 .discover-hero-strip-heading {
   display: flex;
@@ -1933,10 +1943,9 @@ body::before {
   gap: 12px;
 }
 .discover-hero-strip-mode {
-  font-size: var(--type-badge);
-  font-weight: var(--fw-strong);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  text-transform: none;
   color: var(--brand-fg, var(--brand));
 }
 .discover-hero-strip-row {
@@ -2067,10 +2076,8 @@ body::before {
 }
 .discover-seeds-label {
   flex: none;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  text-transform: none;
   color: var(--ink-4);
 }
 .discover-seeds-row {
@@ -2284,10 +2291,8 @@ body::before {
   background: var(--surface);
 }
 .discover-taste-lead {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  text-transform: none;
   color: var(--ink-4);
 }
 .discover-taste-chip {
@@ -6980,9 +6985,6 @@ body.reader-open {
   }
   .library-saved-filters > * {
     flex-shrink: 0;
-  }
-  .library-saved-filters[data-tools-only] {
-    display: none;
   }
   .library-selection-bar > .mantine-Group-root:last-child {
     flex-wrap: nowrap;
