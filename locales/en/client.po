@@ -3116,6 +3116,10 @@ msgstr "Chapters: {chaptersMin}–{chaptersMax}"
 msgid "Charcoal"
 msgstr "Charcoal"
 
+#: src/theme-context.tsx
+msgid "Charcoal, lit"
+msgstr "Charcoal, lit"
+
 #: src/components/NotificationsSection.tsx
 msgid "Chat ID"
 msgstr "Chat ID"
@@ -7097,6 +7101,10 @@ msgstr "More options for {seriesTitle}"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "More recommendation feedback actions"
 msgstr "More recommendation feedback actions"
+
+#: src/theme-context.tsx
+msgid "Moss"
+msgstr "Moss"
 
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
@@ -12105,6 +12113,10 @@ msgstr "Time zone"
 #: src/pages/HealthPage.tsx
 msgid "Timezone (empty uses server timezone)"
 msgstr "Timezone (empty uses server timezone)"
+
+#: src/theme-context.tsx
+msgid "Tinted black"
+msgstr "Tinted black"
 
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx

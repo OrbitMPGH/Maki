@@ -3772,6 +3772,10 @@ msgstr "Bölümler: {chaptersMin}–{chaptersMax}"
 msgid "Charcoal"
 msgstr ""
 
+#: src/theme-context.tsx
+msgid "Charcoal, lit"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chat ID"
@@ -8581,6 +8585,10 @@ msgstr "{seriesTitle} için diğer seçenekler"
 #, fuzzy
 msgid "More recommendation feedback actions"
 msgstr "Daha fazla öneri geri bildirim işlemi"
+
+#: src/theme-context.tsx
+msgid "Moss"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14633,6 +14641,10 @@ msgstr "Saat dilimi"
 #, fuzzy
 msgid "Timezone (empty uses server timezone)"
 msgstr "Saat dilimi (boşsa sunucu saat dilimi kullanılır)"
+
+#: src/theme-context.tsx
+msgid "Tinted black"
+msgstr ""
 
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx

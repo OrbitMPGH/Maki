@@ -3772,6 +3772,10 @@ msgstr "Rozdziały: {chaptersMin}–{chaptersMax}"
 msgid "Charcoal"
 msgstr ""
 
+#: src/theme-context.tsx
+msgid "Charcoal, lit"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chat ID"
@@ -8581,6 +8585,10 @@ msgstr "Więcej opcji dla {seriesTitle}"
 #, fuzzy
 msgid "More recommendation feedback actions"
 msgstr "Więcej działań dotyczących rekomendacji"
+
+#: src/theme-context.tsx
+msgid "Moss"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14633,6 +14641,10 @@ msgstr "Strefa czasowa"
 #, fuzzy
 msgid "Timezone (empty uses server timezone)"
 msgstr "Strefa czasowa (puste = strefa czasowa serwera)"
+
+#: src/theme-context.tsx
+msgid "Tinted black"
+msgstr ""
 
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx

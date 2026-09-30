@@ -148,8 +148,44 @@ const charcoal: MantineColorsTuple = [
   '#060606',
 ]
 
+// Faint green: the refresh's surfaces under the default neutral ink.
+const moss: MantineColorsTuple = [
+  '#c7cad4',
+  '#a9adba',
+  '#8b90a0',
+  '#5d6373',
+  '#2e332e',
+  '#222622',
+  '#1b1e1b',
+  '#0e100e',
+  '#0a0c0a',
+  '#060706',
+]
+
+// Charcoal mixed a few percent toward the accent. The CSS side derives this from --brand with
+// color-mix, so it follows any accent; this ramp is the rose result, the only accent it ships with.
+const tinted: MantineColorsTuple = [
+  '#c7cad4',
+  '#a9adba',
+  '#8b90a0',
+  '#5d6373',
+  '#322a2d',
+  '#271e21',
+  '#21181b',
+  '#181013',
+  '#120b0e',
+  '#0a0608',
+]
+
 /** Selectable surface ramps; the CSS-variable side lives in theme.css under [data-ground]. */
-export const grounds: Record<string, MantineColorsTuple> = { night: dark, nori, charcoal }
+export const grounds: Record<string, MantineColorsTuple> = {
+  night: dark,
+  nori,
+  charcoal,
+  'charcoal-lit': charcoal,
+  moss,
+  tinted,
+}
 
 // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
 // Blush fills at shade 4 in dark with dark text; light takes shade 6 with white.
