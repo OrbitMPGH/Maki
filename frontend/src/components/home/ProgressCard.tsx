@@ -1,31 +1,38 @@
-import { Group, Progress, Text } from '@mantine/core'
+import { Group, RingProgress, Stack, Text } from '@mantine/core'
 import { IconFlame, IconTrophy } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { ProgressSummary } from '../../api/hooks'
 import { formatNumber, formatReadingTime } from '../../format'
 import { Trans, useLingui } from '@lingui/react/macro'
 
-function Meta({
+function Figure({
   value,
   label,
-  icon: MetaIcon,
+  icon: FigIcon,
 }: {
   value: string | number
   label: string
   icon?: typeof IconFlame
 }) {
   return (
-    <span className="tnum">
-      {MetaIcon && <MetaIcon size={12} style={{ color: 'var(--brand-fg)', marginRight: 3, verticalAlign: -1 }} />}
-      <b style={{ color: 'var(--ink-hi)', fontWeight: 600 }}>{value}</b> {label}
-    </span>
+    <div className="hero-stat">
+      <span className="hero-stat-n tnum">
+        {FigIcon && (
+          <FigIcon size={16} style={{ color: 'var(--brand)', marginRight: 5, verticalAlign: -2 }} />
+        )}
+        {value}
+      </span>
+      <span className="hero-stat-l">{label}</span>
+    </div>
   )
 }
 
 /**
  * Home's progression figures, matching the Stats page's Progress section so the same numbers read
- * the same in both places. Rendered as the middle cell of Home's `FigureStrip variant="panel"`, and
- * the whole cell links to Stats for the full picture.
+ * the same in both places. The whole group links to Stats for the full picture.
+ *
+ * Deliberately without a card of its own: it is one half of Home's glance strip, which supplies
+ * the border and the padding for both halves. See `.home-glance` in theme.css.
  */
 export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const { t } = useLingui()
@@ -34,47 +41,50 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
   const intoLevelFormatted = formatNumber(intoLevel)
   const levelSpanFormatted = formatNumber(levelSpan)
   const nextLevel = levelNumber + 1
-  const toNext = t`${intoLevelFormatted} / ${levelSpanFormatted} XP to level ${nextLevel}`
 
   return (
-    <Link
-      to="/stats?section=progress"
-      style={{ display: 'grid', gap: 5, color: 'inherit', textDecoration: 'none' }}
-    >
-      <Group justify="space-between" gap={8} wrap="nowrap" align="baseline">
-        <Text fz={15} c="var(--ink-hi)" className="figure">
-          <Trans>Level {levelNumber}</Trans>
-        </Text>
-        <Text fz={12} c="var(--ink-3)" className="tnum" title={toNext}>
-          <Trans>
-            {intoLevelFormatted} / {levelSpanFormatted} XP
-          </Trans>
-        </Text>
+    // A plain Link rather than a Mantine element with `component`: the polymorphic prop types do
+    // not carry react-router's `to` through, and this element only needs to be a flex row.
+    <Link to="/stats?section=progress" className="home-glance-progress">
+      <Group gap={11} wrap="nowrap">
+        <RingProgress
+          size={46}
+          thickness={5}
+          roundCaps
+          sections={[{ value: level.progress * 100, color: 'var(--brand)' }]}
+          label={
+            <Text ta="center" fw={700} fz={11} className="tnum" c="var(--ink-hi)">
+              {level.level}
+            </Text>
+          }
+        />
+        <Stack gap={0}>
+          <Text fw={700} fz={14} c="var(--ink-hi)">
+            <Trans>Level {levelNumber}</Trans>
+          </Text>
+          <Text fz={11} c="var(--ink-4)" className="tnum">
+            <Trans>
+              {intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}
+            </Trans>
+          </Text>
+        </Stack>
       </Group>
 
-      <Progress
-        value={level.progress * 100}
-        size={4}
-        radius="xl"
-        color="var(--brand)"
-        bg="var(--surface-2)"
-        aria-label={toNext}
-      />
-
-      <Group gap="4px 12px" fz={12} c="var(--ink-3)" wrap="wrap" justify="space-between">
-        <Meta value={formatNumber(summary.chaptersRead)} label={t`chapters read`} />
-        <Meta value={`${summary.earned}/${summary.total}`} label={t`achievements`} icon={IconTrophy} />
-      </Group>
-
-      <Group gap="4px 12px" fz={12} c="var(--ink-3)" wrap="wrap" justify="space-between">
-        <Meta value={formatReadingTime(summary.readingSeconds)} label={t`time read`} />
+      <div className="hero-stats">
+        <Figure value={formatNumber(summary.chaptersRead)} label={t`chapters read`} />
+        <Figure value={formatReadingTime(summary.readingSeconds)} label={t`time read`} />
         {summary.showStreaks && (
           <>
-            <Meta value={summary.currentStreak} label={t`day streak`} icon={IconFlame} />
-            <Meta value={summary.longestStreak} label={t`best streak`} />
+            <Figure value={summary.currentStreak} label={t`day streak`} icon={IconFlame} />
+            <Figure value={summary.longestStreak} label={t`best streak`} />
           </>
         )}
-      </Group>
+        <Figure
+          value={`${summary.earned}/${summary.total}`}
+          label={t`achievements`}
+          icon={IconTrophy}
+        />
+      </div>
     </Link>
   )
 }

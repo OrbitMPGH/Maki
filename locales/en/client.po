@@ -583,8 +583,8 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 
 #: src/components/home/ProgressCard.tsx
-msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
-msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP"
+#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+#~ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP"
 
 #: src/components/home/ProgressCard.tsx
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"

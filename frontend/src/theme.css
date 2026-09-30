@@ -1295,6 +1295,91 @@ body::before {
   background: transparent;
 }
 
+.home-glance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+}
+.home-glance > * {
+  flex: 1 1 250px;
+  min-width: 0;
+}
+/* Progression carries a ring and five figures where the others carry three, so it asks for more of
+   the row before anything wraps. */
+.home-glance > .home-glance-wide {
+  flex: 1.7 1 430px;
+}
+/* The progression half links to Stats as one target, the way its card used to. */
+.home-glance-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-md);
+  color: inherit;
+  text-decoration: none;
+}
+/* Tighter than the series band's, where the same figures have a whole band to spread across. */
+.home-glance .hero-stats {
+  --hero-stat-pad: 14px;
+}
+
+/* A panel's figures. One row that never wraps, so the hairline between two numbers can never end
+   up hanging at the start of a wrapped line; a panel narrower than its figures shrinks the columns
+   instead, which the short uppercase labels take without complaint. */
+.home-figures {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+.home-figure {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 14px;
+}
+.home-figure:last-child {
+  padding-right: 0;
+}
+.home-figure + .home-figure {
+  padding-left: 14px;
+  border-left: 1px solid var(--border-strong);
+}
+/* Too narrow for one row, the shrinking columns ran the uppercase labels into each other. Two
+   columns instead, with the hairline only between the pair on each line. Four figures need more
+   room than three, hence the two thresholds. */
+.home-glance > :not(.home-glance-wide) {
+  container-type: inline-size;
+}
+@container (max-width: 23rem) {
+  .home-figures:has(> :nth-child(4)) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--mantine-spacing-sm);
+  }
+  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .home-figures:has(> :nth-child(4)) > .home-figure:nth-child(even) {
+    padding-right: 0;
+  }
+}
+@container (max-width: 14rem) {
+  .home-figures {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--mantine-spacing-sm);
+  }
+  .home-figures > .home-figure:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .home-figures > .home-figure:nth-child(even) {
+    padding-right: 0;
+  }
+}
+
 /* --- Home dashboard rails ------------------------------------------------ */
 /* The chapter line under the title on a Home card, where the library grid carries have/total. */
 .home-chapter-label {
@@ -6301,61 +6386,6 @@ body.reader-open {
   font-weight: var(--fw-semibold);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-}
-
-/* The page-headline strip: a shadowed card whose cells wrap. `.figure-strip-middle` is a caller's
-   own cell (Home's level) between two runs of figures, fenced by a rule on each side. */
-.figure-strip[data-variant='panel'] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  border-top: 2px solid var(--brand);
-  box-shadow: var(--shadow-card);
-}
-.figure-strip[data-variant='panel'] .figure-strip-item {
-  flex: 1 1 4.5rem;
-  align-content: end;
-  gap: 2px;
-  padding: 14px 16px;
-}
-.figure-strip[data-variant='panel'] .figure-strip-n {
-  font-size: 27px;
-  line-height: 1;
-}
-.figure-strip[data-variant='panel'] .figure-strip-l {
-  font-size: 10.5px;
-}
-.figure-strip-middle {
-  display: grid;
-  flex: 0 0 auto;
-  align-content: center;
-  min-width: 228px;
-  padding: 14px 22px;
-  border-right: 1px solid var(--border);
-  border-left: 1px solid var(--border);
-}
-.figure-strip-middle:first-child {
-  border-left: 0;
-}
-.figure-strip-middle:last-child {
-  border-right: 0;
-}
-/* Under the page's wide breakpoint the seven figures and the level no longer share a row: the level
-   takes a full row of its own rather than orphaning the last two figures. */
-@media (max-width: 75em) {
-  .figure-strip-middle {
-    flex: 1 1 100%;
-    border-right: 0;
-    border-left: 0;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-  .figure-strip-middle:first-child {
-    border-top: 0;
-  }
-  .figure-strip-middle:last-child {
-    border-bottom: 0;
-  }
 }
 
 .status-dot {

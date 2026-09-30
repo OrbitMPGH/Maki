@@ -702,8 +702,8 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "距离等级 {nextLevel} 还需 {intoLevel} / {levelSpan} XP"
 
 #: src/components/home/ProgressCard.tsx
-msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
-msgstr ""
+#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+#~ msgstr ""
 
 #: src/components/home/ProgressCard.tsx
 #, fuzzy

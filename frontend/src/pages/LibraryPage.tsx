@@ -795,7 +795,7 @@ export default function LibraryPage() {
       />
 
       {showChrome && (
-        <Panel p={0} className="library-index layer-sunken" edge="brand">
+        <Panel p={0} className="library-index layer-sunken">
           <FigureStrip
             flush
             loading={isLoading}

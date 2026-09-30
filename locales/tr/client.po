@@ -702,8 +702,8 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "Seviye {nextLevel} için {intoLevel} / {levelSpan} XP"
 
 #: src/components/home/ProgressCard.tsx
-msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
-msgstr ""
+#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+#~ msgstr ""
 
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
