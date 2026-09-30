@@ -2041,7 +2041,7 @@ msgstr "成就，徽章，等级，经验值，连续记录，目标，排行榜
 
 #: src/components/home/ProgressCard.tsx
 msgid "Achievements"
-msgstr ""
+msgstr "成就"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3087,7 +3087,7 @@ msgstr ""
 
 #: src/components/home/ProgressCard.tsx
 msgid "Best streak"
-msgstr ""
+msgstr "最长连续记录"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3753,7 +3753,7 @@ msgstr "每页章节数"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Chapters read"
-msgstr ""
+msgstr "已读章节"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4746,7 +4746,7 @@ msgstr "逐日"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Day streak"
-msgstr ""
+msgstr "连续天数"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

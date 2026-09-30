@@ -2041,7 +2041,7 @@ msgstr "Auszeichnung, Abzeichen, Level, XP, Streak, Ziel, Rangliste, Gamificatio
 
 #: src/components/home/ProgressCard.tsx
 msgid "Achievements"
-msgstr ""
+msgstr "Erfolge"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3087,7 +3087,7 @@ msgstr ""
 
 #: src/components/home/ProgressCard.tsx
 msgid "Best streak"
-msgstr ""
+msgstr "Beste Serie"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3753,7 +3753,7 @@ msgstr "Kapitel pro Seite"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Chapters read"
-msgstr ""
+msgstr "Kapitel gelesen"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4746,7 +4746,7 @@ msgstr "Tag für Tag"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Day streak"
-msgstr ""
+msgstr "Tagesfolge"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

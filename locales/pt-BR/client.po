@@ -2041,7 +2041,7 @@ msgstr "conquista, selo, nível, xp, sequência, objetivo, classificação, gami
 
 #: src/components/home/ProgressCard.tsx
 msgid "Achievements"
-msgstr ""
+msgstr "Conquistas"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3087,7 +3087,7 @@ msgstr ""
 
 #: src/components/home/ProgressCard.tsx
 msgid "Best streak"
-msgstr ""
+msgstr "Melhor sequência"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3753,7 +3753,7 @@ msgstr "Capítulos por página"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Chapters read"
-msgstr ""
+msgstr "Capítulos lidos"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4746,7 +4746,7 @@ msgstr "Dia a dia"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Day streak"
-msgstr ""
+msgstr "Sequência de dias"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

@@ -2041,7 +2041,7 @@ msgstr "実績、バッジ、レベル、XP、連続記録、目標、ランキ�
 
 #: src/components/home/ProgressCard.tsx
 msgid "Achievements"
-msgstr ""
+msgstr "実績"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3087,7 +3087,7 @@ msgstr ""
 
 #: src/components/home/ProgressCard.tsx
 msgid "Best streak"
-msgstr ""
+msgstr "最長連続記録"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3753,7 +3753,7 @@ msgstr "1ページあたりの章数"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Chapters read"
-msgstr ""
+msgstr "読んだ章"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -4746,7 +4746,7 @@ msgstr "日ごと"
 
 #: src/components/home/ProgressCard.tsx
 msgid "Day streak"
-msgstr ""
+msgstr "連続日数"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
