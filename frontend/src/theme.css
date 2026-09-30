@@ -6821,12 +6821,41 @@ body.reader-open {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-/* Scheme prefix so the tint outranks the blanket Paper surface rule. */
+/* Long chapter lists: Select (and then the selection actions) stay pinned under the header so
+   picking rows far down never means scrolling back up. Only one of the two is sticky at a time. */
+.series-detail-chapter-toolbar[data-sticky] {
+  position: sticky;
+  top: var(--app-shell-header-height, 58px);
+  z-index: 20;
+  padding-top: 12px;
+  margin-top: -12px;
+  background: var(--app-bg);
+}
+/* Scheme prefix so the tint outranks the blanket Paper surface rule. The tint is layered over the
+   page ground so rows don't show through while it is pinned. */
 [data-mantine-color-scheme] .series-detail-chapter-selection {
+  position: sticky;
+  top: var(--app-shell-header-height, 58px);
+  z-index: 20;
   border-left: 2px solid var(--brand);
   border-right: 0;
   border-radius: 0 var(--radius-surface) var(--radius-surface) 0;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  background:
+    linear-gradient(color-mix(in srgb, var(--surface-2) 72%, transparent), color-mix(in srgb, var(--surface-2) 72%, transparent)),
+    var(--app-bg);
+  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+}
+/* Wrapped, the actions stack four rows deep on a phone and the pinned bar eats a third of the
+   screen. One line that scrolls sideways instead, like the library's selection bar. */
+@media (max-width: 47.9375em) {
+  .series-detail-chapter-selection > .mantine-Group-root > .mantine-Group-root:last-child {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .series-detail-chapter-selection > .mantine-Group-root > .mantine-Group-root:last-child > * {
+    flex-shrink: 0;
+  }
 }
 [data-mantine-color-scheme] .series-detail-chapter-hint,
 [data-mantine-color-scheme] .series-files-hint {

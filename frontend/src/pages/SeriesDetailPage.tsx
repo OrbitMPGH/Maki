@@ -2121,7 +2121,13 @@ export default function SeriesDetailPage() {
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
             {/* Chapters */}
-            <Group className="series-detail-chapter-toolbar" justify="space-between" wrap="wrap" gap="sm">
+            <Group
+                className="series-detail-chapter-toolbar"
+                data-sticky={selectMode ? undefined : true}
+                justify="space-between"
+                wrap="wrap"
+                gap="sm"
+            >
               <Group gap="xs" align="baseline">
                 <Title order={3}><Trans>Chapters</Trans></Title>
                 {chapters && (
