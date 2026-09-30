@@ -666,6 +666,10 @@ msgstr "{free} libres"
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# accordé} many {# accordés} other {# accordés}}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {totalLabel}"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -700,10 +704,6 @@ msgstr "{inLibraryCount, plural, one {Afficher la série déjà présente dans l
 #, fuzzy
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP jusqu'au niveau {nextLevel}"
-
-#: src/components/home/ProgressCard.tsx
-#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
-#~ msgstr ""
 
 #: src/components/home/ProgressCard.tsx
 #, fuzzy
@@ -924,6 +924,10 @@ msgstr "{name} : {ok}/{total} réussis"
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name} : {ok}/{total} réussies, première erreur : {firstError}"
+
+#: src/components/home/RecentlyAddedRail.tsx
+msgid "{newChapterCount, plural, one {# new} other {# new}}"
+msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
@@ -1419,13 +1423,19 @@ msgid "{unread, plural, one {# left} other {# left}}"
 msgstr "{unread, plural, one {# restant} many {# restants} other {# restants}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{unread, plural, one {# new} other {# new}}"
+msgstr ""
+
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, one {# non lu} many {# non lus} other {# non lus}}"
 
-#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+msgid "{unreadChapters, plural, one {# new} other {# new}}"
+msgstr ""
+
+#: src/components/home/ContinueLead.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# non lu} many {# non lus} other {# non lus}}"
@@ -1545,6 +1555,10 @@ msgstr "{workCount, plural, one {# titre dans le catalogue} many {# titres dans 
 #, fuzzy
 msgid "{year} – present"
 msgstr "{year} – aujourd'hui"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "{year}, {status}"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
@@ -1921,11 +1935,6 @@ msgstr "Une série animée bien notée oriente les recommandations vers des mang
 msgid "A small local model lets Discover recommend by feel and lets you search for a plot rather than a title. Its index downloads prebuilt, so your machine skips the heavy work."
 msgstr "Un petit modèle local permet à Découvrir de recommander des titres selon vos goûts et de rechercher une intrigue plutôt qu'un titre. Son index est téléchargé déjà calculé, votre machine n'a donc pas à effectuer le gros du travail."
 
-#: src/components/layout/SidebarFooter.tsx
-#, fuzzy
-msgid "A star on GitHub helps others find it."
-msgstr "Une étoile sur GitHub aide les autres à le découvrir."
-
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
@@ -2003,11 +2012,6 @@ msgstr "Accéder à toutes les bibliothèques"
 msgid "Access token"
 msgstr "Jeton d'accès"
 
-#: src/components/UserMenu.tsx
-#, fuzzy
-msgid "Account"
-msgstr "Compte"
-
 #: src/api/inbox.ts
 msgid "Account security"
 msgstr ""
@@ -2036,9 +2040,8 @@ msgid "achievement, badge, level, xp, streak, goal, leaderboard, gamification, t
 msgstr "succès, badge, niveau, xp, série, objectif, classement, ludification, fuseau horaire"
 
 #: src/components/home/ProgressCard.tsx
-#, fuzzy
-msgid "achievements"
-msgstr "succès"
+msgid "Achievements"
+msgstr "Succès"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2510,11 +2513,6 @@ msgstr "Amber"
 msgid "Ambiguous names"
 msgstr "Noms ambigus"
 
-#: src/components/SetupWizard.tsx
-#, fuzzy
-#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-#~ msgstr "Une couleur d'accent, le thème clair ou celui utilisé par votre système. Le choix est mémorisé sur cet appareil."
-
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin decides where it lands and what gets downloaded."
@@ -2938,7 +2936,7 @@ msgid "Background"
 msgstr "Arrière-plan"
 
 #: src/components/AppearanceAnnouncementModal.tsx
-msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
+msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. To keep the old look, pick Night. You can change this any time under Settings, Appearance."
 msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -3088,9 +3086,8 @@ msgid "Best quality first compares a source's tier before its measured quality, 
 msgstr ""
 
 #: src/components/home/ProgressCard.tsx
-#, fuzzy
-msgid "best streak"
-msgstr "meilleure série"
+msgid "Best streak"
+msgstr "Meilleure série"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -3755,9 +3752,8 @@ msgid "Chapters per page"
 msgstr "Chapitres par page"
 
 #: src/components/home/ProgressCard.tsx
-#, fuzzy
-msgid "chapters read"
-msgstr "chapitres lus"
+msgid "Chapters read"
+msgstr "Chapitres lus"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3792,10 +3788,6 @@ msgstr "Chapitres : {chaptersMin}–{chaptersMax}"
 #: src/theme-context.tsx
 msgid "Charcoal"
 msgstr ""
-
-#: src/theme-context.tsx
-#~ msgid "Charcoal, lit"
-#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -4753,9 +4745,8 @@ msgid "Day by day"
 msgstr "Jour après jour"
 
 #: src/components/home/ProgressCard.tsx
-#, fuzzy
-msgid "day streak"
-msgstr "série de jours"
+msgid "Day streak"
+msgstr "Série de jours"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -4981,6 +4972,10 @@ msgstr "Envoie la notification sans son."
 #, fuzzy
 msgid "Demographic"
 msgstr "Démographie"
+
+#: src/pages/LibraryPage.tsx
+msgid "Density: {densityLabel}"
+msgstr ""
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -5562,11 +5557,6 @@ msgstr "Anglais"
 #, fuzzy
 msgid "English (provider default)"
 msgstr "Anglais (valeur par défaut du fournisseur)"
-
-#: src/components/layout/SidebarFooter.tsx
-#, fuzzy
-msgid "Enjoying Maki?"
-msgstr "Maki vous plaît ?"
 
 #: src/pages/LoginPage.tsx
 msgid "Enter one of your recovery codes"
@@ -7718,6 +7708,7 @@ msgid "Level {currentLevel}"
 msgstr "Niveau {currentLevel}"
 
 #: src/components/home/ProgressCard.tsx
+#: src/components/UserMenu.tsx
 #, fuzzy
 msgid "Level {levelNumber}"
 msgstr "Niveau {levelNumber}"
@@ -8085,11 +8076,6 @@ msgstr "Maki {checkedVersion} est disponible"
 #, fuzzy
 msgid "Maki {latestVersion} available"
 msgstr "Maki {latestVersion} disponible"
-
-#: src/components/layout/SidebarFooter.tsx
-#, fuzzy
-msgid "Maki {latestVersion} is out"
-msgstr "Maki {latestVersion} est disponible"
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -8903,7 +8889,6 @@ msgstr "Nouveau"
 msgid "New chapter available"
 msgstr "Nouveau chapitre disponible"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "New chapters"
@@ -9447,14 +9432,6 @@ msgstr "Aucun des titres de ce créateur ne correspond à ces filtres. Essayez d
 #, fuzzy
 msgid "none yet"
 msgstr "aucun pour l'instant"
-
-#: src/theme-context.tsx
-#~ msgid "Nori"
-#~ msgstr ""
-
-#: src/theme-context.tsx
-#~ msgid "Nori and salmon"
-#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10521,11 +10498,6 @@ msgstr ""
 #, fuzzy
 msgid "Pick a root folder"
 msgstr "Choisir un dossier racine"
-
-#: src/pages/SettingsPage.tsx
-#, fuzzy
-#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-#~ msgstr "Choisissez une couleur d'accent, le thème clair ou le thème clair ou sombre de votre système. Ce choix est mémorisé sur cet appareil."
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -12345,6 +12317,7 @@ msgid "Saved as your default"
 msgstr "Enregistré comme valeur par défaut"
 
 #: src/components/DiscoverPresets.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Saved filters"
 msgstr "Filtres enregistrés"
@@ -12557,10 +12530,18 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr ""
 
+#: src/components/ui/Rail.tsx
+msgid "Scroll back"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
 msgstr "Faire défiler pour le chapitre suivant"
+
+#: src/components/ui/Rail.tsx
+msgid "Scroll forward"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Scroll to finish the preview"
@@ -12576,6 +12557,7 @@ msgstr "Rythme du défilement · {remainingChapters} chapitres restants · basé
 msgid "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads"
 msgstr "Rythme du défilement · {remainingChapters} chapitres restants · basé sur {sampleChapters} lectures similaires"
 
+#: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -12722,11 +12704,6 @@ msgstr ""
 #: src/pages/ActivityPage.tsx
 msgid "Search volumes now"
 msgstr ""
-
-#: src/components/CommandPalette.tsx
-#, fuzzy
-msgid "Search…"
-msgstr "Rechercher…"
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -13192,20 +13169,10 @@ msgstr "Afficher à nouveau"
 msgid "Show all"
 msgstr "Tout afficher"
 
-#: src/components/home/ContinueRail.tsx
-#, fuzzy
-msgid "Show earlier chapters"
-msgstr "Afficher les chapitres précédents"
-
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Show fewer"
 msgstr "Afficher moins"
-
-#: src/components/home/ContinueRail.tsx
-#, fuzzy
-msgid "Show later chapters"
-msgstr "Afficher les chapitres suivants"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
@@ -14724,10 +14691,6 @@ msgid "Time range"
 msgstr "Période"
 
 #: src/components/home/ProgressCard.tsx
-#, fuzzy
-msgid "time read"
-msgstr "temps de lecture"
-
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
@@ -15320,6 +15283,10 @@ msgstr "Jusqu'au chap. {end}"
 msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "À jour, dernière vérification {checkedAtLabel}"
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "Update {latestVersion} available"
+msgstr ""
+
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -15656,6 +15623,10 @@ msgstr "très proche"
 msgid "Vietnamese"
 msgstr "Vietnamien"
 
+#: src/pages/LibraryPage.tsx
+msgid "View"
+msgstr ""
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -15683,11 +15654,6 @@ msgstr "Voir et ajouter {title}"
 #, fuzzy
 msgid "View in library"
 msgstr "Voir dans la bibliothèque"
-
-#: src/components/layout/SidebarFooter.tsx
-#, fuzzy
-msgid "View release"
-msgstr "Voir la version"
 
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
@@ -16309,11 +16275,6 @@ msgstr "Vous et la communauté"
 #, fuzzy
 msgid "You're caught up"
 msgstr "Vous êtes à jour"
-
-#: src/components/layout/SidebarFooter.tsx
-#, fuzzy
-msgid "You're on {currentVersion}"
-msgstr "Vous utilisez la version {currentVersion}"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

@@ -1,8 +1,9 @@
 import { Avatar, Badge, Menu, Text, UnstyledButton } from '@mantine/core'
-import { IconLogout, IconSettings, IconShieldLock } from '@tabler/icons-react'
+import { IconLogout, IconSelector, IconSettings, IconShieldLock } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Trans } from '@lingui/react/macro'
 import { useLogout } from '../api/auth'
+import { useProgressSummary } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
 
 /** Two initials from the display name, or the username. */
@@ -13,23 +14,38 @@ function initials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase()
 }
 
-export function UserMenu() {
+/** The account row at the foot of the sidebar: who is signed in, their level, and the account menu. */
+export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
   const { me } = useAuth()
   const navigate = useNavigate()
   const logout = useLogout()
-  const { t } = useLingui()
+  const { data: progress } = useProgressSummary(undefined, !!me)
 
   if (!me) return null
 
   const name = me.displayName?.trim() || me.userName
+  const level = progress?.enabled ? progress.level : null
+  const levelNumber = level?.level ?? 0
 
   return (
-    <Menu position="bottom-end" width={220} withinPortal>
+    <Menu position="top-start" width={220} offset={6} withinPortal>
       <Menu.Target>
-        <UnstyledButton aria-label={t`Account`}>
-          <Avatar radius="xl" size={30} color="brand">
+        <UnstyledButton className="nav-user">
+          <Avatar radius="xl" size={30} color="brand" variant="filled" className="nav-user-avatar">
             {initials(name)}
           </Avatar>
+          <span className="nav-user-body">
+            <span className="nav-user-name">{name}</span>
+            {level && (
+              <span className="nav-user-level tnum">
+                <Trans>Level {levelNumber}</Trans>
+                <span className="nav-user-xp" aria-hidden>
+                  <span style={{ width: `${Math.round(level.progress * 100)}%` }} />
+                </span>
+              </span>
+            )}
+          </span>
+          <IconSelector size={16} stroke={1.7} className="nav-user-chevron" />
         </UnstyledButton>
       </Menu.Target>
       <Menu.Dropdown>
@@ -46,7 +62,10 @@ export function UserMenu() {
         <Menu.Divider />
         <Menu.Item
           leftSection={<IconSettings size={16} />}
-          onClick={() => navigate('/settings#account')}
+          onClick={() => {
+            onNavigate?.()
+            navigate('/settings#account')
+          }}
         >
           <Trans>My account</Trans>
         </Menu.Item>

@@ -1,20 +1,34 @@
 import { memo } from 'react'
-import { IconBellOff, IconCheck, IconCircleCheckFilled, IconEye, IconEyeOff } from '@tabler/icons-react'
+import {
+  IconBellOff,
+  IconCheck,
+  IconClock,
+  IconDownload,
+  IconEye,
+  IconEyeOff,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconX,
+  type Icon,
+} from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import {
-  BADGE_COLOR,
-  seriesDownloadStateVisual,
-  seriesProgressVisual,
-  seriesStatusVisual,
-} from './status'
+import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual } from './status'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 
+/** Glyphs for the status chip; anything else falls back to the icon `seriesStatusVisual` picks. */
+const STATUS_GLYPH: Record<string, Icon> = {
+  Ongoing: IconPlayerPlay,
+  Completed: IconCheck,
+  Hiatus: IconPlayerPause,
+  Cancelled: IconX,
+}
+
 /**
  * Poster card for the library grid: cover art is the hero, with a bottom
- * scrim carrying the title, a download-progress bar and status. Doubles as a
+ * scrim carrying the title, a download-progress bar and counts. Doubles as a
  * selection target in bulk mode.
  *
  * Deliberately built from plain elements + CSS classes rather than Mantine's Badge/Tooltip/
@@ -46,18 +60,19 @@ export const CoverCard = memo(function CoverCard({
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
-  const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
+  const status = seriesStatusVisual(series.status)
+  const statusLabel = renderLabel(status.label)
+  const StatusGlyph = STATUS_GLYPH[series.status] ?? status.Icon
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
-  // for the same series. Read progress is its own ring badge rather than a second number/marker
-  // sharing the download bar: a second tnum count next to have/total blurred together, and a
-  // marker on the same bar read as a glitch more than a stat. A ring is a distinct-enough shape
-  // not to compete visually.
+  // for the same series.
   const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
     series,
     readTracking,
   )
   const { readChapterCount } = series
+  const totalLabel = total || '?'
+  const downloadTip = download ? renderLabel(download.label) : null
 
   return (
     <Link
@@ -83,17 +98,7 @@ export const CoverCard = memo(function CoverCard({
 
         <div className="cover-corners">
           <div className="cover-corner cover-corner-left">
-            {/* In-flight download work. Absent when the series is idle. */}
-            {download && (
-              <span className="cover-badge" style={{ background: BADGE_COLOR[download.color] }}>
-                <download.Icon size={11} />
-                <span className="cover-badge-label">{renderLabel(download.label)}</span>
-              </span>
-            )}
-            {/* How far into the downloaded chapters you've read: its own ring rather than a
-                number competing with the have/total count below. Absent unless Kavita is
-                configured and has actually reported reading progress for this series. */}
-            {readPct !== null && (
+            {readPct !== null && readPct > 0 && (
               <span
                 className="cover-ring"
                 data-complete={unread === 0 || undefined}
@@ -104,15 +109,22 @@ export const CoverCard = memo(function CoverCard({
                 }
                 style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
               >
-                {unread === 0 && <IconCheck size={12} className="cover-ring-check" />}
+                {unread === 0 && <IconCheck size={14} stroke={2.2} className="cover-ring-check" />}
               </span>
             )}
-            {unread !== null && unread > 0 && (
+            {downloadTip && (
               <span
-                className="cover-badge cover-badge-unread"
-                data-tip={plural(unread, { one: '# unread', other: '# unread' })}
+                className="cover-state"
+                data-tone={series.downloadingCount > 0 ? 'info' : undefined}
+                data-tip={downloadTip}
+                role="img"
+                aria-label={downloadTip}
               >
-                {unread}
+                {series.downloadingCount > 0 ? (
+                  <IconDownload size={13} stroke={2} />
+                ) : (
+                  <IconClock size={13} stroke={2} />
+                )}
               </span>
             )}
           </div>
@@ -124,7 +136,7 @@ export const CoverCard = memo(function CoverCard({
               data-dim={series.monitored || undefined}
               data-tip={series.monitored ? t`Monitored` : t`Not monitored`}
             >
-              {series.monitored ? <IconEye size={12} /> : <IconEyeOff size={12} />}
+              {series.monitored ? <IconEye size={15} /> : <IconEyeOff size={15} />}
             </span>
             {/* Only when muted: the other three modes are the normal case and would be noise. */}
             {series.notificationMode === 'Muted' && (
@@ -133,12 +145,18 @@ export const CoverCard = memo(function CoverCard({
                 data-dim
                 data-tip={t`Notifications muted`}
               >
-                <IconBellOff size={12} />
+                <IconBellOff size={15} />
               </span>
             )}
-            <span className="cover-badge" style={{ background: BADGE_COLOR[status.color] }}>
-              <status.Icon size={11} />
-              <span className="cover-badge-label">{renderLabel(status.label)}</span>
+            {/* Last in the row so it holds the corner; the eye and bell only show on hover. */}
+            <span
+              className="cover-state"
+              data-tone="status"
+              data-tip={statusLabel}
+              role="img"
+              aria-label={statusLabel}
+            >
+              <StatusGlyph size={13} stroke={2} />
             </span>
           </div>
         </div>
@@ -149,17 +167,15 @@ export const CoverCard = memo(function CoverCard({
           <span className="cover-title" title={series.title}>
             {series.displayTitle}
           </span>
-          <div className="cover-progress-row">
-            <div className="cover-bar">
-              <div
-                className="cover-bar-fill"
-                data-complete={complete || undefined}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            {complete && <IconCircleCheckFilled size={13} style={{ color: 'var(--ok)' }} />}
+          <div className="cover-bar">
+            <div
+              className="cover-bar-fill"
+              data-complete={complete || undefined}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="cover-row">
             <span
-              className="cover-count tnum"
               data-nothing-wanted={nothingWanted || undefined}
               data-tip={
                 nothingWanted
@@ -170,8 +186,11 @@ export const CoverCard = memo(function CoverCard({
                   : undefined
               }
             >
-              {have}/{total || '?'}
+              {t`${have} of ${totalLabel}`}
             </span>
+            {unread !== null && unread > 0 && (
+              <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
+            )}
           </div>
         </div>
       </div>

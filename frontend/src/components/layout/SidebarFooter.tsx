@@ -1,5 +1,5 @@
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
-import { Box, Button, Menu, Text, Tooltip } from '@mantine/core'
+import { Menu, Text, Tooltip } from '@mantine/core'
 import {
   IconArrowUpRight,
   IconBook,
@@ -7,7 +7,6 @@ import {
   IconChevronUp,
   IconHelpCircle,
   IconMessages,
-  IconRocket,
   IconSparkles,
   IconStarFilled,
   IconX,
@@ -15,6 +14,7 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAppVersion, useUpdateStatus } from '../../api/hooks'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
+import { UserMenu } from '../UserMenu'
 
 const REPO_URL = 'https://github.com/OrbitMPGH/Maki'
 const STAR_DISMISSED_KEY = 'star-nudge-dismissed'
@@ -27,7 +27,7 @@ function readStarDismissed(): boolean {
   }
 }
 
-export default function SidebarFooter() {
+export default function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useLingui()
   const { data: version } = useAppVersion()
   const { data: update } = useUpdateStatus()
@@ -37,8 +37,8 @@ export default function SidebarFooter() {
   const latestVersion = update?.latestVersion ?? null
   const updateAvailable = !!update?.updateAvailable && !!latestVersion
   const isSkipped = updateAvailable && skipped === latestVersion
-  const showUpdateCard = updateAvailable && !isSkipped
-  const showStarCard = !showUpdateCard && !starDismissed
+  const showUpdate = updateAvailable && !isSkipped
+  const showStar = !showUpdate && !starDismissed
 
   const dismissStar = () => {
     setStarDismissed(true)
@@ -54,47 +54,53 @@ export default function SidebarFooter() {
 
   return (
     <div className="nav-footer">
-      <Box visibleFrom="sm">
-        {showUpdateCard && update && latestVersion ? (
-          <UpdateCard
-            latestVersion={latestVersion}
-            currentVersion={update.currentVersion}
-            releaseUrl={update.releaseUrl}
-          />
-        ) : showStarCard ? (
-          <div className="nav-card-wrap">
-            <a
-              href={REPO_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="nav-card nav-card-star"
-              onClick={dismissStar}
-            >
-              <IconStarFilled size={16} className="nav-card-icon" />
-              <div className="nav-card-body">
-                <div className="nav-card-title">
-                  <Trans>Enjoying Maki?</Trans>
-                </div>
-                <div className="nav-card-sub">
-                  <Trans>A star on GitHub helps others find it.</Trans>
-                </div>
-              </div>
-            </a>
-            <button
-              type="button"
-              className="nav-card-dismiss"
-              aria-label={t`Dismiss`}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                dismissStar()
-              }}
-            >
-              <IconX size={12} stroke={2} />
-            </button>
-          </div>
-        ) : null}
-      </Box>
+      <UserMenu onNavigate={onNavigate} />
+
+      {showUpdate && latestVersion ? (
+        <div className="nav-footer-notice">
+          <a
+            href={update?.releaseUrl ?? `${REPO_URL}/releases`}
+            target="_blank"
+            rel="noreferrer"
+            className="nav-footer-link"
+          >
+            <Trans>Update {latestVersion} available</Trans>
+            <IconArrowUpRight size={14} stroke={1.8} />
+          </a>
+          <button
+            type="button"
+            className="nav-footer-dismiss"
+            aria-label={t`Skip ${latestVersion}`}
+            title={t`Skip ${latestVersion}`}
+            onClick={() => setSkippedVersion(latestVersion)}
+          >
+            <IconX size={12} stroke={2} />
+          </button>
+        </div>
+      ) : showStar ? (
+        <div className="nav-footer-notice">
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="nav-footer-link"
+            onClick={dismissStar}
+          >
+            <IconStarFilled size={13} className="nav-footer-star" />
+            <Trans>Star on GitHub</Trans>
+            <IconArrowUpRight size={14} stroke={1.8} />
+          </a>
+          <button
+            type="button"
+            className="nav-footer-dismiss"
+            aria-label={t`Dismiss`}
+            title={t`Dismiss`}
+            onClick={dismissStar}
+          >
+            <IconX size={12} stroke={2} />
+          </button>
+        </div>
+      ) : null}
 
       <HelpMenu version={tagged ? version : null} />
 
@@ -108,53 +114,6 @@ export default function SidebarFooter() {
           />
         </div>
       )}
-    </div>
-  )
-}
-
-function UpdateCard({
-  latestVersion,
-  currentVersion,
-  releaseUrl,
-}: {
-  latestVersion: string
-  currentVersion: string
-  releaseUrl: string | null | undefined
-}) {
-  return (
-    <div className="nav-card nav-card-update">
-      <IconRocket size={16} stroke={1.8} className="nav-card-icon" />
-      <div className="nav-card-body">
-        <div className="nav-card-title">
-          <Trans>Maki {latestVersion} is out</Trans>
-        </div>
-        <div className="nav-card-sub">
-          <Trans>You're on {currentVersion}</Trans>
-        </div>
-        <div className="nav-card-actions">
-          {releaseUrl && (
-            <Button
-              component="a"
-              href={releaseUrl}
-              target="_blank"
-              rel="noreferrer"
-              size="compact-xs"
-              color="brand"
-              variant="filled"
-              rightSection={<IconArrowUpRight size={12} stroke={2} />}
-            >
-              <Trans>View release</Trans>
-            </Button>
-          )}
-          <button
-            type="button"
-            className="nav-card-link"
-            onClick={() => setSkippedVersion(latestVersion)}
-          >
-            <Trans>Skip {latestVersion}</Trans>
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
@@ -182,7 +141,7 @@ function HelpMenu({ version }: { version: string | null }) {
     <Menu position="top-start" withArrow offset={6} width={228}>
       <Menu.Target>
         <button type="button" className="nav-link nav-footer-help">
-          <IconHelpCircle size={16} stroke={1.7} className="nav-icon" />
+          <IconHelpCircle size={18} stroke={1.7} className="nav-icon" />
           <Trans>Help & feedback</Trans>
           <IconChevronUp size={12} stroke={1.8} className="nav-footer-chevron" />
         </button>

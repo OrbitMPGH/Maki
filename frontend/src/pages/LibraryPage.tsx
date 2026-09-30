@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
@@ -32,6 +32,7 @@ import {
   IconFolderSymlink,
   IconLayoutGrid,
   IconLayoutList,
+  IconLineHeight,
   IconListCheck,
   IconPhoto,
   IconPlus,
@@ -738,6 +739,70 @@ export default function LibraryPage() {
   // Kept mounted through loading and error too, so the grid lands where it will stay and an error isn't a dead end.
   const showChrome = isLoading || error != null || (series != null && series.length > 0)
 
+  const indexRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const panel = indexRef.current
+    const strip = panel?.querySelector<HTMLElement>('.library-index-metrics')
+    if (!panel || !strip) return
+    const apply = () => panel.style.setProperty('--library-strip-h', `${strip.offsetHeight}px`)
+    apply()
+    const observer = new ResizeObserver(apply)
+    observer.observe(strip)
+    return () => observer.disconnect()
+  }, [showChrome])
+
+  const densityLabel = densityOptions.find((o) => o.value === density)?.label ?? ''
+  const cycleDensity = () => {
+    const order: Density[] = ['compact', 'default', 'comfortable']
+    const next = order[(order.indexOf(density) + 1) % order.length]
+    setDensity(next)
+    writeStored(LS_DENSITY, next)
+  }
+
+  const viewControls = (
+    <>
+      <SegmentedControl
+        className="library-view-toggle"
+        size="xs"
+        value={viewMode}
+        onChange={(v) => {
+          setViewMode(v as ViewMode)
+          writeStored(LS_VIEW, v)
+        }}
+        aria-label={t`View`}
+        data={[
+          {
+            value: 'grid',
+            label: (
+              <span className="library-view-option" title={t`Grid view`} aria-label={t`Grid view`}>
+                <IconLayoutGrid size={16} />
+              </span>
+            ),
+          },
+          {
+            value: 'list',
+            label: (
+              <span className="library-view-option" title={t`List view`} aria-label={t`List view`}>
+                <IconLayoutList size={16} />
+              </span>
+            ),
+          },
+        ]}
+      />
+      <Tooltip label={t`Density: ${densityLabel}`} withArrow>
+        <ActionIcon
+          className="library-density-button"
+          variant="default"
+          size={34}
+          onClick={cycleDensity}
+          aria-label={t`Density: ${densityLabel}`}
+        >
+          <IconLineHeight size={16} />
+        </ActionIcon>
+      </Tooltip>
+    </>
+  )
+
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
       <PageHeader
@@ -746,39 +811,9 @@ export default function LibraryPage() {
         actions={
           showChrome && !selectMode ? (
             <>
-              <Button.Group>
-                <Button
-                  variant={viewMode === 'grid' ? 'filled' : 'default'}
-                  size="sm"
-                  onClick={() => {
-                    setViewMode('grid')
-                    writeStored(LS_VIEW, 'grid')
-                  }}
-                  aria-label={t`Grid view`}
-                >
-                  <IconLayoutGrid size={16} />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'filled' : 'default'}
-                  size="sm"
-                  onClick={() => {
-                    setViewMode('list')
-                    writeStored(LS_VIEW, 'list')
-                  }}
-                  aria-label={t`List view`}
-                >
-                  <IconLayoutList size={16} />
-                </Button>
-              </Button.Group>
-              <SegmentedControl
-                size="sm"
-                value={density}
-                onChange={(v) => {
-                  setDensity(v as Density)
-                  writeStored(LS_DENSITY, v)
-                }}
-                data={densityOptions}
-              />
+              <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
+                {viewControls}
+              </Group>
               <Button
                 variant="default"
                 leftSection={<IconListCheck size={16} />}
@@ -795,7 +830,7 @@ export default function LibraryPage() {
       />
 
       {showChrome && (
-        <Panel p={0} className="library-index layer-sunken">
+        <Panel ref={indexRef} p={0} className="library-index layer-sunken">
           <FigureStrip
             flush
             loading={isLoading}
@@ -948,6 +983,17 @@ export default function LibraryPage() {
                     <IconFilter size={16} />
                   </ActionIcon>
                 </Indicator>
+                <Tooltip label={t`Manage tags`} withArrow>
+                  <ActionIcon
+                    className="library-tags-button"
+                    variant="default"
+                    size={34}
+                    onClick={() => setTagManagerOpen(true)}
+                    aria-label={t`Manage tags`}
+                  >
+                    <IconSettings size={16} />
+                  </ActionIcon>
+                </Tooltip>
                 <Select
                   className="library-sort"
                   data={sortOptions}
@@ -968,76 +1014,75 @@ export default function LibraryPage() {
                     <Plural value={totalSeries} one="# series" other="# series" />
                   )}
                 </Text>
-              </Group>
-
-              <Group
-                className="library-saved-filters"
-                gap="xs"
-                wrap="wrap"
-                data-tools-only={((savedFilters ?? []).length === 0 && !filtersActive) || undefined}
-              >
-                {(savedFilters ?? []).map((f) => (
-                <Group key={f.id} gap={2}>
-                  <TagChip
-                    active={activeFilterId === f.id}
-                    onClick={() => applySpec(f.spec, f.id)}
-                  >
-                    <IconBookmark size={11} />
-                    {f.name}
-                  </TagChip>
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    color="var(--ink-4)"
-                    aria-label={t`Delete saved filter`}
-                    onClick={() => {
-                      deleteSavedFilter.mutate(f.id)
-                      if (activeFilterId === f.id) setActiveFilterId(null)
-                    }}
-                  >
-                    <IconX size={11} />
-                  </ActionIcon>
+                <Group className="library-view-controls" gap="sm" wrap="nowrap" visibleFrom="sm">
+                  {viewControls}
                 </Group>
-              ))}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  leftSection={<IconDeviceFloppy size={14} />}
-                  onClick={() => {
-                    const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
-                    setFilterName(active?.name ?? '')
-                    setSaveFilterOpen(true)
-                  }}
-                >
-                  <Trans>Save filter</Trans>
-                </Button>
-              )}
-              {filtersActive && (
-                <Button
-                  size="compact-xs"
-                  variant="subtle"
-                  color="var(--neutral)"
-                  leftSection={<IconX size={14} />}
-                  onClick={() => applySpec(DEFAULT_SPEC, null)}
-                >
-                  <Trans>Clear</Trans>
-                </Button>
-              )}
-              <Tooltip label={t`Manage tags`} withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  onClick={() => setTagManagerOpen(true)}
-                  aria-label={t`Manage tags`}
-                >
-                  <IconSettings size={16} />
-                </ActionIcon>
-              </Tooltip>
               </Group>
             </Stack>
           )}
         </Panel>
+      )}
+
+      {showChrome && !selectMode && ((savedFilters ?? []).length > 0 || filtersActive) && (
+        <Group
+          className="library-saved-filters"
+          gap="xs"
+          wrap="wrap"
+        >
+          {(savedFilters ?? []).length > 0 && (
+            <span className="library-saved-label">
+              <IconBookmark size={14} />
+              <Trans>Saved filters</Trans>
+            </span>
+          )}
+          {(savedFilters ?? []).map((f) => (
+            <Group key={f.id} gap={2}>
+              <TagChip
+                active={activeFilterId === f.id}
+                onClick={() => applySpec(f.spec, f.id)}
+              >
+                {f.name}
+              </TagChip>
+              <ActionIcon
+                size="xs"
+                variant="subtle"
+                color="var(--ink-4)"
+                aria-label={t`Delete saved filter`}
+                onClick={() => {
+                  deleteSavedFilter.mutate(f.id)
+                  if (activeFilterId === f.id) setActiveFilterId(null)
+                }}
+              >
+                <IconX size={11} />
+              </ActionIcon>
+            </Group>
+          ))}
+          {filtersActive && (
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              leftSection={<IconDeviceFloppy size={14} />}
+              onClick={() => {
+                const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+                setFilterName(active?.name ?? '')
+                setSaveFilterOpen(true)
+              }}
+            >
+              <Trans>Save filter</Trans>
+            </Button>
+          )}
+          {filtersActive && (
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color="var(--neutral)"
+              leftSection={<IconX size={14} />}
+              onClick={() => applySpec(DEFAULT_SPEC, null)}
+            >
+              <Trans>Clear</Trans>
+            </Button>
+          )}
+        </Group>
       )}
 
       <Drawer

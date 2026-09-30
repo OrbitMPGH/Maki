@@ -170,7 +170,7 @@ export default function CommandPalette({ navItems }: Props) {
       >
         <IconSearch size={16} stroke={1.8} />
         <span className="command-palette-trigger-label">
-          <Trans>Search…</Trans>
+          <Trans>Search</Trans>
         </span>
         {/* The key names themselves, not words: the same two keys whatever the reader speaks. */}
         <span className="command-palette-trigger-kbd">Ctrl K</span>
