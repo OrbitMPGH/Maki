@@ -3768,6 +3768,10 @@ msgstr "Главы: {chapterRangeMin}–{chapterRangeMax}"
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Главы: {chaptersMin}–{chaptersMax}"
 
+#: src/theme-context.tsx
+msgid "Charcoal"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chat ID"
@@ -9369,6 +9373,14 @@ msgstr "Ни одно из названий этого создателя не �
 #, fuzzy
 msgid "none yet"
 msgstr "пока ничего"
+
+#: src/theme-context.tsx
+msgid "Nori"
+msgstr ""
+
+#: src/theme-context.tsx
+msgid "Nori and salmon"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

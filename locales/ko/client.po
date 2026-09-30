@@ -3768,6 +3768,10 @@ msgstr "챕터: {chapterRangeMin}–{chapterRangeMax}"
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "챕터: {chaptersMin}–{chaptersMax}"
 
+#: src/theme-context.tsx
+msgid "Charcoal"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chat ID"
@@ -9369,6 +9373,14 @@ msgstr "이 제작자의 제목 중 이 필터와 일치하는 것이 없습니�
 #, fuzzy
 msgid "none yet"
 msgstr "아직 없음"
+
+#: src/theme-context.tsx
+msgid "Nori"
+msgstr ""
+
+#: src/theme-context.tsx
+msgid "Nori and salmon"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

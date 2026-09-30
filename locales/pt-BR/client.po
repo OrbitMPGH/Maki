@@ -3768,6 +3768,10 @@ msgstr "Capítulos: {chapterRangeMin}–{chapterRangeMax}"
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Capítulos: {chaptersMin}–{chaptersMax}"
 
+#: src/theme-context.tsx
+msgid "Charcoal"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chat ID"
@@ -9369,6 +9373,14 @@ msgstr "Nenhum dos títulos deste criador corresponde a estes filtros. Tente fle
 #, fuzzy
 msgid "none yet"
 msgstr "nenhum ainda"
+
+#: src/theme-context.tsx
+msgid "Nori"
+msgstr ""
+
+#: src/theme-context.tsx
+msgid "Nori and salmon"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
