@@ -708,10 +708,6 @@ msgstr "{minutes, plural, one {about # min left} other {about # min left}}"
 msgid "{minutesPerChapter} min / ch"
 msgstr "{minutesPerChapter} min / ch"
 
-#: src/components/ui/CoverCard.tsx
-msgid "{missing, plural, one {# chapter missing} other {# chapters missing}}"
-msgstr "{missing, plural, one {# chapter missing} other {# chapters missing}}"
-
 #: src/api/upgrades.ts
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"

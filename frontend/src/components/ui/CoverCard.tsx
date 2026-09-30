@@ -1,19 +1,30 @@
 import { memo } from 'react'
 import {
-  IconAlertTriangle,
   IconBellOff,
   IconCheck,
   IconClock,
   IconDownload,
   IconEye,
   IconEyeOff,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconX,
+  type Icon,
 } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
-import { seriesDownloadStateVisual, seriesProgressVisual } from './status'
+import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusVisual } from './status'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+
+/** Glyphs for the status chip; anything else falls back to the icon `seriesStatusVisual` picks. */
+const STATUS_GLYPH: Record<string, Icon> = {
+  Ongoing: IconPlayerPlay,
+  Completed: IconCheck,
+  Hiatus: IconPlayerPause,
+  Cancelled: IconX,
+}
 
 /**
  * Poster card for the library grid: cover art is the hero, with a bottom
@@ -50,6 +61,9 @@ export const CoverCard = memo(function CoverCard({
   const renderLabel = useLabel()
   const { t } = useLingui()
   const download = seriesDownloadStateVisual(series)
+  const status = seriesStatusVisual(series.status)
+  const statusLabel = renderLabel(status.label)
+  const StatusGlyph = STATUS_GLYPH[series.status] ?? status.Icon
   // Shared with the list row (`SeriesRow`) so the two views can never report different numbers
   // for the same series.
   const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
@@ -57,14 +71,8 @@ export const CoverCard = memo(function CoverCard({
     readTracking,
   )
   const { readChapterCount } = series
-  const missing = download || nothingWanted ? 0 : Math.max(0, total - have)
   const totalLabel = total || '?'
-  const stateTip = download
-    ? renderLabel(download.label)
-    : missing > 0
-      ? plural(missing, { one: '# chapter missing', other: '# chapters missing' })
-      : null
-  const stateTone = download ? (series.downloadingCount > 0 ? 'info' : undefined) : 'warn'
+  const downloadTip = download ? renderLabel(download.label) : null
 
   return (
     <Link
@@ -104,29 +112,33 @@ export const CoverCard = memo(function CoverCard({
                 {unread === 0 && <IconCheck size={14} stroke={2.2} className="cover-ring-check" />}
               </span>
             )}
-            {/* At most one chip, and only when there is something to act on. */}
-            {stateTip && (
+            {downloadTip && (
               <span
                 className="cover-state"
-                data-tone={stateTone}
-                data-tip={stateTip}
+                data-tone={series.downloadingCount > 0 ? 'info' : undefined}
+                data-tip={downloadTip}
                 role="img"
-                aria-label={stateTip}
+                aria-label={downloadTip}
               >
-                {download ? (
-                  series.downloadingCount > 0 ? (
-                    <IconDownload size={13} stroke={2} />
-                  ) : (
-                    <IconClock size={13} stroke={2} />
-                  )
+                {series.downloadingCount > 0 ? (
+                  <IconDownload size={13} stroke={2} />
                 ) : (
-                  <IconAlertTriangle size={13} stroke={2} />
+                  <IconClock size={13} stroke={2} />
                 )}
               </span>
             )}
           </div>
 
           <div className="cover-corner cover-corner-right">
+            <span
+              className="cover-state"
+              data-tone="status"
+              data-tip={statusLabel}
+              role="img"
+              aria-label={statusLabel}
+            >
+              <StatusGlyph size={13} stroke={2} />
+            </span>
             {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
             <span
               className="cover-badge cover-badge-circle"

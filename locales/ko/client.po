@@ -856,10 +856,6 @@ msgstr "{minutes, plural, other {약 #분 남음}}"
 msgid "{minutesPerChapter} min / ch"
 msgstr "챕터당 {minutesPerChapter}분"
 
-#: src/components/ui/CoverCard.tsx
-msgid "{missing, plural, one {# chapter missing} other {# chapters missing}}"
-msgstr ""
-
 #: src/api/upgrades.ts
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr ""

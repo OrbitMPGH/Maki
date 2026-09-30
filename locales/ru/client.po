@@ -856,10 +856,6 @@ msgstr "{minutes, plural, one {осталась примерно # мин} few {
 msgid "{minutesPerChapter} min / ch"
 msgstr "{minutesPerChapter} мин. / гл."
 
-#: src/components/ui/CoverCard.tsx
-msgid "{missing, plural, one {# chapter missing} other {# chapters missing}}"
-msgstr ""
-
 #: src/api/upgrades.ts
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr ""

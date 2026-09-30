@@ -1158,7 +1158,7 @@ body::before {
   margin: auto;
   color: var(--tone);
 }
-/* One actionable state beside the ring: downloading, queued or missing chapters. */
+/* Icon chip on a cover: download state beside the ring, publication status top-right. */
 .cover-state {
   --tone: var(--neutral);
   display: grid;
@@ -1174,13 +1174,17 @@ body::before {
 .cover-state[data-tone='info'] {
   --tone: var(--info);
 }
-.cover-state[data-tone='warn'] {
-  --tone: var(--warn);
+/* Publication status, top-right: neutral so the corner stays quiet. */
+.cover-state[data-tone='status'] {
+  --tone: color-mix(in srgb, var(--ink-hi) 90%, transparent);
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
 [data-theme='light'] .cover-state,
 [data-theme='light'] .cover-ring-check {
   color: color-mix(in srgb, var(--tone) 55%, white);
+}
+[data-theme='light'] .cover-state[data-tone='status'] {
+  color: rgba(255, 255, 255, 0.9);
 }
 /* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
 .cover-check {
