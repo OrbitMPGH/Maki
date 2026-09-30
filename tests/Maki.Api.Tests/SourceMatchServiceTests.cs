@@ -67,7 +67,8 @@ public class SourceMatchServiceTests : IDisposable
         var series = await context.Series.Include(s => s.SourceMappings).FirstAsync(s => s.Id == seriesId);
         var service = new SourceMatchService(
             context, new SourceRegistry(sources), appSettings, availability,
-            new SourceExternalIdCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance);
+            new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
+            NullLogger<SourceMatchService>.Instance);
         return await service.AutoMatchAsync(series, default, progress);
     }
 
@@ -140,13 +141,60 @@ public class SourceMatchServiceTests : IDisposable
         var context = _db.NewContext();
         var service = new SourceMatchService(
             context, new SourceRegistry([first, miss, second]), appSettings, Sources.AllEnabled,
-            new SourceExternalIdCache(TimeProvider.System), NullLogger<SourceMatchService>.Instance);
+            new SourceExternalIdCache(TimeProvider.System), new SourceMatchSearchCache(TimeProvider.System),
+            NullLogger<SourceMatchService>.Instance);
 
         var candidates = await service.FindCandidatesAsync(new Series { Id = seriesId, Title = "Hajime no Ippo" });
 
         Assert.Equal(["second", "first"], candidates.Select(c => c.Source.Name));
         Assert.Equal(["c", "a"], candidates.Select(c => c.SourceSeriesId));
         Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task Adding_after_a_preview_reuses_its_searches_and_retries_only_failed_sources()
+    {
+        var seriesId = _db.SeedSeries("Hajime no Ippo", configure: s => s.MangaBakaId = 42);
+        var hitSearches = 0;
+        var missSearches = 0;
+        var flakySearches = 0;
+        var hit = new FakeSource
+        {
+            Name = "hit",
+            OnSearch = _ => { hitSearches++; return [Hit("a", "Hajime no Ippo")]; }
+        };
+        var miss = new FakeSource
+        {
+            Name = "miss",
+            OnSearch = _ => { missSearches++; return [Hit("b", "Something Else Entirely")]; }
+        };
+        var flaky = new FakeSource
+        {
+            Name = "flaky",
+            OnSearch = _ => ++flakySearches == 1
+                ? throw new HttpRequestException("blip")
+                : [Hit("c", "Hajime no Ippo")]
+        };
+        var sources = new SourceRegistry([hit, miss, flaky]);
+        var appSettings = new FakeAppSettings().Set(SettingKeys.SourcePriorityOrder, "hit,miss,flaky");
+        var searchCache = new SourceMatchSearchCache(TimeProvider.System);
+        SourceMatchService NewService() => new(
+            _db.NewContext(), sources, appSettings, Sources.AllEnabled,
+            new SourceExternalIdCache(TimeProvider.System), searchCache, NullLogger<SourceMatchService>.Instance);
+
+        await NewService().FindCandidatesAsync(
+            new Series { Title = "Hajime no Ippo", MangaBakaId = 42 });
+
+        var mapped = await NewService().AutoMatchAsync(await _db.NewContext().Series.FirstAsync(s => s.Id == seriesId));
+
+        Assert.Equal(["hit", "flaky"], mapped);
+        Assert.Equal(1, hitSearches);
+        Assert.Equal(1, missSearches);
+        Assert.Equal(2, flakySearches);
+
+        // Taken once: a later re-match searches every source again.
+        await NewService().AutoMatchAsync(await _db.NewContext().Series.FirstAsync(s => s.Id == seriesId));
+        Assert.Equal(2, missSearches);
     }
 
     [Fact]

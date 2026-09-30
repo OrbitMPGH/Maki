@@ -49,6 +49,7 @@ public partial class SourceMatchService(
     Maki.Core.Configuration.IAppSettings settings,
     SourceAvailability sourceAvailability,
     SourceExternalIdCache externalIdCache,
+    SourceMatchSearchCache searchCache,
     ILogger<SourceMatchService> logger)
 {
     /// <summary>
@@ -139,13 +140,19 @@ public partial class SourceMatchService(
     /// fan-out starts. Sources are searched in parallel and an EF entity is not thread-safe, so no
     /// task is given the <see cref="Series"/> itself.
     /// </summary>
-    private sealed record MatchTarget(
+    internal sealed record MatchTarget(
         string Title,
         string? OriginalTitle,
         IReadOnlyDictionary<string, string> ExternalIds)
     {
         public static MatchTarget For(Series series) =>
             new(series.Title, DisambiguatingOriginalTitle(series), ExternalIdsOf(series));
+
+        public bool SameAs(MatchTarget other) =>
+            Title == other.Title &&
+            OriginalTitle == other.OriginalTitle &&
+            ExternalIds.Count == other.ExternalIds.Count &&
+            ExternalIds.All(pair => other.ExternalIds.TryGetValue(pair.Key, out var value) && value == pair.Value);
     }
 
     /// <summary>
@@ -332,12 +339,13 @@ public partial class SourceMatchService(
     }
 
     /// <summary>What one source's search came back with. Carries no DbContext state on purpose.</summary>
-    private sealed record SourceOutcome(
+    internal sealed record SourceOutcome(
         ISource Source,
         int Priority,
         SourceSeriesResult? Match,
         SourceMappingOrigin Origin,
-        IReadOnlyDictionary<string, string>? ConfirmedIds);
+        IReadOnlyDictionary<string, string>? ConfirmedIds,
+        bool Failed = false);
 
     /// <summary>
     /// Searches one source and decides what it matched, touching nothing shared. Never throws: a
@@ -390,7 +398,7 @@ public partial class SourceMatchService(
         {
             logger.LogWarning(ex, "Source search failed on {Source} for {Title}", source.Name, target.Title);
             progress?.Report(new SourceMatchStep(source.Name, SourceMatchState.NoMatch));
-            return nothing;
+            return nothing with { Failed = true };
         }
     }
 
@@ -417,10 +425,15 @@ public partial class SourceMatchService(
 
     /// <summary>
     /// Searches every enabled source not in <paramref name="skip"/> for <paramref name="target"/>.
+    /// A source with an entry in <paramref name="known"/> is answered from it instead of searched.
     /// Touches no DbContext, so it is safe for a series that was never saved.
     /// </summary>
     private async Task<SearchRun> SearchSourcesAsync(
-        MatchTarget target, IReadOnlySet<string> skip, IProgress<SourceMatchStep>? progress, CancellationToken ct)
+        MatchTarget target,
+        IReadOnlySet<string> skip,
+        IReadOnlyDictionary<string, SourceOutcome>? known,
+        IProgress<SourceMatchStep>? progress,
+        CancellationToken ct)
     {
         var baseOrder = OrderSources(
             sourceRegistry.All, await settings.GetAsync(Maki.Core.Configuration.SettingKeys.SourcePriorityOrder, ct));
@@ -448,8 +461,18 @@ public partial class SourceMatchService(
         // Every source has its own host and its own rate limiter, so waiting for one before starting
         // the next was costing the sum of every site's latency for nothing.
         using var gate = new SemaphoreSlim(MaxParallelSources, MaxParallelSources);
-        var outcomes = await Task.WhenAll(work.Select(item => WithGate(
-            gate, () => SearchOneAsync(item.Source, item.Priority, target, progress, ct), ct)));
+        var outcomes = await Task.WhenAll(work.Select(item =>
+        {
+            if (known?.TryGetValue(item.Source.Name, out var earlier) == true)
+            {
+                progress?.Report(new SourceMatchStep(
+                    item.Source.Name, earlier.Match is null ? SourceMatchState.NoMatch : SourceMatchState.Matched));
+                // Priority is re-read rather than reused, in case the order changed in between.
+                return Task.FromResult(earlier with { Priority = item.Priority });
+            }
+
+            return WithGate(gate, () => SearchOneAsync(item.Source, item.Priority, target, progress, ct), ct);
+        }));
 
         return new SearchRun(orderedSources, disabledSources, languages, outcomes);
     }
@@ -461,8 +484,14 @@ public partial class SourceMatchService(
     /// </summary>
     public async Task<List<SourceCandidate>> FindCandidatesAsync(Series series, CancellationToken ct = default)
     {
+        var target = MatchTarget.For(series);
         var run = await SearchSourcesAsync(
-            MatchTarget.For(series), new HashSet<string>(StringComparer.OrdinalIgnoreCase), null, ct);
+            target, new HashSet<string>(StringComparer.OrdinalIgnoreCase), null, null, ct);
+
+        if (series.MangaBakaId is { } mangaBakaId)
+        {
+            searchCache.Store(mangaBakaId, target, run.Outcomes);
+        }
 
         return [.. run.Outcomes
             .Where(o => o.Match is not null)
@@ -498,8 +527,16 @@ public partial class SourceMatchService(
                 .ToListAsync(ct),
             StringComparer.OrdinalIgnoreCase);
 
+        // A Discover preview of this series may have searched every source minutes ago.
+        var target = MatchTarget.For(series);
+        var known = series.MangaBakaId is { } mangaBakaId ? searchCache.Take(mangaBakaId, target) : null;
+        if (known is not null)
+        {
+            logger.LogInformation("Reusing {Count} source result(s) from the preview of {Title}", known.Count, series.Title);
+        }
+
         var (orderedSources, disabledSources, languages, outcomes) =
-            await SearchSourcesAsync(MatchTarget.For(series), alreadyMapped, progress, ct);
+            await SearchSourcesAsync(target, alreadyMapped, known, progress, ct);
 
         // Back in priority order and back on one thread. Everything from here is order-sensitive:
         // the highest-ranked source has to win a cross-reference disagreement, the mappings have to
