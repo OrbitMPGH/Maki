@@ -14,7 +14,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core'
 import {
   IconBell,
@@ -51,7 +50,7 @@ import type {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { Panel } from './ui/Panel'
+import { SettingsSection } from '../pages/settings/SettingsSection'
 import { EmptyState } from './ui/EmptyState'
 import { useLabel } from '../i18n-context'
 
@@ -393,9 +392,13 @@ export function NotificationsSection() {
     !form || isBlank(form.name) || (descriptor?.fields ?? []).some((f) => f.required && isBlank(form.config[f.key]))
 
   return (
-    <Panel>
-      <Group justify="space-between" mb="sm">
-        <Title order={4}><Trans>Outbound notifications</Trans></Title>
+    <SettingsSection
+      id="notifications"
+      title={<Trans>Outbound notifications</Trans>}
+      description={
+        <Trans>Send events to chat apps, push services or a webhook. Each connection picks its own events.</Trans>
+      }
+      actions={
         <Button
           size="xs"
           leftSection={<IconBellPlus size={16} />}
@@ -404,10 +407,8 @@ export function NotificationsSection() {
         >
           <Trans>Add connection</Trans>
         </Button>
-      </Group>
-      <Text size="sm" c="var(--ink-3)" mb="md">
-        <Trans>Send events to chat apps, push services or a webhook. Each connection picks its own events.</Trans>
-      </Text>
+      }
+    >
 
       {connectionsError ? (
         <EmptyState
@@ -562,6 +563,6 @@ export function NotificationsSection() {
           </Stack>
         )}
       </Modal>
-    </Panel>
+    </SettingsSection>
   )
 }

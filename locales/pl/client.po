@@ -702,6 +702,10 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP do poziomu {nextLevel}"
 
 #: src/components/home/ProgressCard.tsx
+#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+#~ msgstr ""
+
+#: src/components/home/ProgressCard.tsx
 #, fuzzy
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP do poziomu {nextLevel}"
@@ -1756,6 +1760,10 @@ msgstr "90 dni"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "Anime ocenione na 10/10 zaczyna z wagą {topSeed}, a nieoceniona manga na Twojej półce z wagą 1,00."
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr ""
@@ -1980,6 +1988,10 @@ msgstr "Zajmuje około 3 GB miejsca na dysku i odświeża się co noc. Wyszukiwa
 #, fuzzy
 msgid "about a minute left"
 msgstr "pozostała około minuta"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2500,8 +2512,8 @@ msgstr "Niejednoznaczne nazwy"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "Kolor akcentu, jasny motyw lub ustawienia systemu. Wybór jest zapamiętywany na tym urządzeniu."
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "Kolor akcentu, jasny motyw lub ustawienia systemu. Wybór jest zapamiętywany na tym urządzeniu."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2918,6 +2930,7 @@ msgstr ""
 msgid "Back up now"
 msgstr "Zrób kopię zapasową teraz"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3094,6 +3107,10 @@ msgstr "Zablokowane, dopóki trwa pobieranie dla tej serii, chyba że Maki samo 
 #, fuzzy
 msgid "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 msgstr "Blokuje logowanie i kończy istniejące sesje. Zachowuje konto i jego historię."
+
+#: src/theme-context.tsx
+msgid "Blush"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -3767,6 +3784,14 @@ msgstr "Rozdziały: {chapterRangeMin}–{chapterRangeMax}"
 #, fuzzy
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Rozdziały: {chaptersMin}–{chaptersMax}"
+
+#: src/theme-context.tsx
+msgid "Charcoal"
+msgstr ""
+
+#: src/theme-context.tsx
+#~ msgid "Charcoal, lit"
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -5016,6 +5041,7 @@ msgid "Disabled"
 msgstr "Wyłączone"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Discard"
 msgstr "Odrzuć"
@@ -8605,6 +8631,10 @@ msgstr "Więcej opcji dla {seriesTitle}"
 msgid "More recommendation feedback actions"
 msgstr "Więcej działań dotyczących rekomendacji"
 
+#: src/theme-context.tsx
+msgid "Moss"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Most missing"
@@ -8984,6 +9014,10 @@ msgstr "Następny poziom przy {nextValue}"
 #, fuzzy
 msgid "Next..."
 msgstr "Dalej..."
+
+#: src/theme-context.tsx
+msgid "Night"
+msgstr ""
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
@@ -9400,6 +9434,14 @@ msgstr "Żaden z tytułów tego twórcy nie pasuje do tych filtrów. Spróbuj po
 #, fuzzy
 msgid "none yet"
 msgstr "jeszcze brak"
+
+#: src/theme-context.tsx
+#~ msgid "Nori"
+#~ msgstr ""
+
+#: src/theme-context.tsx
+#~ msgid "Nori and salmon"
+#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10457,6 +10499,10 @@ msgstr "Osobiste wagi dodawania są wyłączone dla tej instancji."
 msgid "Phone reader"
 msgstr "Czytnik na telefonie"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10465,8 +10511,8 @@ msgstr "Wybierz folder główny"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "Wybierz kolor akcentu, jasny motyw lub dopasowanie do jasnego albo ciemnego motywu systemu. Wybór jest zapamiętywany na tym urządzeniu."
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "Wybierz kolor akcentu, jasny motyw lub dopasowanie do jasnego albo ciemnego motywu systemu. Wybór jest zapamiętywany na tym urządzeniu."
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -12188,6 +12234,7 @@ msgstr "Przykładowy rozdział"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/SettingsSection.tsx
 #, fuzzy
 msgid "Save"
 msgstr "Zapisz"
@@ -14689,6 +14736,10 @@ msgstr "Strefa czasowa"
 msgid "Timezone (empty uses server timezone)"
 msgstr "Strefa czasowa (puste = strefa czasowa serwera)"
 
+#: src/theme-context.tsx
+msgid "Tinted black"
+msgstr ""
+
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
@@ -15183,6 +15234,10 @@ msgstr "Nierozpoznana nazwa"
 #, fuzzy
 msgid "Unresolved"
 msgstr "Nierozpoznane"
+
+#: src/pages/settings/SettingsSection.tsx
+msgid "Unsaved"
+msgstr ""
 
 #: src/components/settings/SaveButton.tsx
 #, fuzzy

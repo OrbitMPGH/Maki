@@ -158,6 +158,7 @@ import {
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { useShellTitle } from '../lib/shellTitle'
@@ -1767,7 +1768,7 @@ export default function SeriesDetailPage() {
                 />
             )}
             <div className="series-split">
-              <Paper className="series-detail-synopsis" withBorder radius="lg" p="lg">
+              <Panel className="series-detail-synopsis" edge="brand">
                 <Title order={3} fz={17}>
                   <Trans>Synopsis</Trans>
                 </Title>
@@ -1856,10 +1857,10 @@ export default function SeriesDetailPage() {
                       </div>
                   )}
                 </Stack>
-              </Paper>
+              </Panel>
 
               <div className="series-split-row">
-                <Paper className="series-detail-source-panel" withBorder radius="lg" p="lg">
+                <Panel className="series-detail-source-panel" edge="info" edgeSide="left">
                   {series.numberingClash && (
                       <Alert
                           mb="md"
@@ -1927,8 +1928,8 @@ export default function SeriesDetailPage() {
                         <Trans>Never scanned for upgrades</Trans>
                     )}
                   </Text>
-                </Paper>
-                <Paper className="series-detail-metadata-panel" withBorder radius="lg" p="lg">
+                </Panel>
+                <Panel className="series-detail-metadata-panel" edge="strong" edgeSide="left">
                   <Title order={3} fz={17} mb="sm">
                     <Trans>Metadata</Trans>
                   </Title>
@@ -1982,7 +1983,7 @@ export default function SeriesDetailPage() {
                         </RecordRow>
                     )}
                   </div>
-                </Paper>
+                </Panel>
               </div>
             </div>
 

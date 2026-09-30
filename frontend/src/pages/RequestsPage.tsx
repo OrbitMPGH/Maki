@@ -212,6 +212,7 @@ export default function RequestsPage() {
 
       {!isPending && (requests?.length ?? 0) === 0 ? (
         <EmptyState
+          mood="asleep"
           title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={
             isAdmin

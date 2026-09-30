@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
@@ -28,14 +28,12 @@ import {
   Tabs,
   Text,
   TextInput,
-  Title,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
 import {
   IconAdjustments,
   IconAlertTriangle,
-  IconCheck,
   IconCopy,
   IconDownload,
   IconLayoutDashboard,
@@ -47,7 +45,7 @@ import { notifications } from '@mantine/notifications'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { Panel } from '../components/ui/Panel'
+import { SettingsSection } from './settings/SettingsSection'
 import { RecommendationModelSwitch } from '../components/RecommendationModelSwitch'
 import { NamingFormatInput } from '../components/NamingFormatInput'
 import { PriorityList } from '../components/PriorityList'
@@ -138,7 +136,7 @@ import {
 } from '../api/hooks'
 import { useKavitaReadImport, useReaderSettings, useSaveReaderSettings } from '../api/reader'
 import { ConnectionSettingsCard } from '../components/ConnectionSettingsCard'
-import { SaveButton, UnsavedSettingsContext } from '../components/settings/SaveButton'
+import { UnsavedSettingsContext } from '../components/settings/SaveButton'
 import { SettingsHelp } from '../components/settings/SettingsHelp'
 import { SettingsIndex } from '../components/settings/SettingsIndex'
 import { DumpProgressBar } from '../components/MetadataDumpProgress'
@@ -146,7 +144,7 @@ import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { ImportListsSection } from '../components/ImportListsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
-import { useThemeChoice } from '../theme-context'
+import { AppearancePicker } from '../components/AppearancePicker'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useCopyText } from '../components/ui/useCopyText'
 
@@ -165,13 +163,11 @@ function RootFoldersSection() {
   }
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Root Folders</Trans>
-      </Title>
-      <SettingsHelp mb="md">
-        <Trans>Library folders where series are stored (point Kavita at the same location).</Trans>
-      </SettingsHelp>
+    <SettingsSection
+      id="root-folders"
+      title={<Trans>Root Folders</Trans>}
+      description={<Trans>Library folders where series are stored (point Kavita at the same location).</Trans>}
+    >
       <Stack>
         {rootFolders && rootFolders.length > 0 && (
           <Table className="panel-table ops-table">
@@ -224,7 +220,7 @@ function RootFoldersSection() {
           </Button>
         </Group>
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -251,17 +247,33 @@ function SourceLanguageSection() {
   const noneEnabled = order !== null && disabled !== null && order.every((c) => disabled.includes(c))
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Languages</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="source-languages"
+      title={<Trans>Languages</Trans>}
+      description={
         <Trans>
           Languages to download, most preferred first. Auto-match tries sources that publish your
           top language first and skips sources that publish none of these. New auto-matched
           sources get these languages; existing mappings are never changed. Drag to reorder.
         </Trans>
-      </SettingsHelp>
+      }
+      dirty={dirty}
+      saving={save.isPending}
+      saveDisabled={noneEnabled}
+      onDiscard={() => {
+        if (!languages) return
+        setOrder(languages.order)
+        setDisabled(languages.disabled)
+      }}
+      onSave={() =>
+        order &&
+        disabled &&
+        save.mutate(
+          { order, disabled, available: languages?.available ?? [] },
+          { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+        )
+      }
+    >
       {order && disabled && (
         <PriorityList
           items={order}
@@ -278,26 +290,11 @@ function SourceLanguageSection() {
         />
       )}
       {noneEnabled && (
-        <Text size="sm" c="var(--danger)" mb="md">
+        <Text size="sm" c="var(--danger)" mt="md">
           <Trans>At least one language must stay enabled.</Trans>
         </Text>
       )}
-      <Group justify="flex-end" mt="md">
-        <SaveButton
-          dirty={dirty}
-          disabled={noneEnabled}
-          loading={save.isPending}
-          onClick={() =>
-            order &&
-            disabled &&
-            save.mutate(
-              { order, disabled, available: languages?.available ?? [] },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-            )
-          }
-        />
-      </Group>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -318,27 +315,25 @@ function SourcePrioritySection() {
   const more = enabledCount - 5
 
   return (
-    <Panel>
-      <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
-        <div style={{ flex: '1 1 320px', minWidth: 0 }}>
-          <Title order={4} mb="sm">
-            <Trans>Sources</Trans>
-          </Title>
-          <SettingsHelp>
-            <Trans>
-              Download order when a series matches several sources, highest first. Language ranking
-              above comes first. Applies to new auto-matches and manual Auto-match runs; other series
-              keep their order.
-              Switching a source off pauses it for every series without touching their own toggles.
-            </Trans>
-          </SettingsHelp>
-        </div>
-        <Button leftSection={<IconAdjustments size={16} />} onClick={() => setManaging(true)}>
+    <SettingsSection
+      id="sources"
+      title={<Trans>Sources</Trans>}
+      description={
+        <Trans>
+          Download order when a series matches several sources, highest first. Language ranking
+          above comes first. Applies to new auto-matches and manual Auto-match runs; other series
+          keep their order.
+          Switching a source off pauses it for every series without touching their own toggles.
+        </Trans>
+      }
+      actions={
+        <Button size="xs" leftSection={<IconAdjustments size={14} />} onClick={() => setManaging(true)}>
           <Trans>Manage sources</Trans>
         </Button>
-      </Group>
+      }
+    >
       {(sources || priority) && (
-        <Group gap={14} mt="md" wrap="wrap">
+        <Group gap={14} wrap="wrap">
           {enabledCount > 0 && (
             <div className="source-stack">
               {enabled.slice(0, 5).map((name) => (
@@ -359,7 +354,7 @@ function SourcePrioritySection() {
         </Group>
       )}
       <ManageSourcesModal opened={managing} onClose={() => setManaging(false)} />
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -379,17 +374,17 @@ function MetadataSection() {
     : undefined
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Metadata</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="metadata"
+      title={<Trans>Metadata</Trans>}
+      description={
         <Trans>
           Series metadata comes from MangaBaka. The local database keeps a nightly snapshot on
           disk (~3 GB) so search and imports skip the API's rate limit, and Discover needs it. The
           API is used until the first download finishes.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <Stack gap="sm">
         <Switch
           label={t`Use local MangaBaka database`}
@@ -444,7 +439,7 @@ function MetadataSection() {
           </Button>
         </Group>
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -467,20 +462,19 @@ function RecommendationIndexSection() {
     })
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Recommendations</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="recommendations"
+      title={<Trans>Recommendations</Trans>}
+      description={
         <Trans>
           A local embedding model lets Discover recommend by feel and search by description. The
           vectors download prebuilt, so this normally needs no attention. While it's off or still
           downloading, search falls back to titles and recommendations to genres.
         </Trans>
-      </SettingsHelp>
-
+      }
+    >
       <RecommendationModelSwitch status={status} busy={setModel.isPending} onSelect={selectModel} />
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -519,17 +513,16 @@ function NewSeriesDefaultsSection() {
   const { settings, patch } = useLibraryPatch()
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>New series defaults</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="monitoring"
+      title={<Trans>New series defaults</Trans>}
+      description={
         <Trans>
           What a series starts with when it is added or imported. Changing these never touches
           series already in the library.
         </Trans>
-      </SettingsHelp>
-
+      }
+    >
       <Switch
         mb="lg"
         label={t`Don't want specials`}
@@ -575,7 +568,7 @@ function NewSeriesDefaultsSection() {
           )
         })}
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -584,21 +577,21 @@ function DiscoverSection() {
   const save = useSaveDiscoverSettings()
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Content rating</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="discover-rating"
+      title={<Trans>Content rating</Trans>}
+      description={
         <Trans>
           The most explicit rating shown to you in search, Discover and recommendations. Everything
           up to and including it is allowed.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <ContentRatingCards
         value={settings?.maxContentRating ?? 'erotica'}
         onChange={(rating) => save.mutate(rating)}
       />
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -608,18 +601,18 @@ function LibraryFilesSection() {
   const { settings, patch } = useLibraryPatch()
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Files</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="library-files"
+      title={<Trans>Files</Trans>}
+      description={
         <Trans>
           Writes a standard <Code>ComicInfo.xml</Code> into imported CBZs so Kavita groups and
           names chapters consistently. Off leaves torrent grabs and manual imports untouched.
           Maki's own downloads always get one, and PDFs never do. A series page's "Update
           ComicInfo" action standardizes one series later.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <Switch
         mb="lg"
         label={t`Write ComicInfo.xml into imported files`}
@@ -632,7 +625,7 @@ function LibraryFilesSection() {
         checked={settings?.writeCoverToFolder ?? false}
         onChange={(e) => patch({ writeCoverToFolder: e.currentTarget.checked })}
       />
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -678,17 +671,17 @@ function NamingSection() {
   }
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Naming</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="naming"
+      title={<Trans>Naming</Trans>}
+      description={
         <Trans>
           How Maki names series folders and the chapter files it downloads. The "?" button lists
           every token. Changes apply to new series and downloads; files already on disk stay put
           until you rename them from a series' page or with the button below.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <Stack gap="md" mb="md">
         <NamingFormatInput
           label={t`Series Folder Format`}
@@ -802,7 +795,7 @@ function NamingSection() {
         checked={settings?.renameImportedFiles ?? true}
         onChange={(e) => patch({ renameImportedFiles: e.currentTarget.checked })}
       />
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -822,11 +815,7 @@ function KavitaSyncSection() {
   const ownsKavita = settings?.kavitaUserId != null && settings.kavitaUserId === me?.id
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Kavita sync</Trans>
-      </Title>
-
+    <SettingsSection id="kavita-sync" title={<Trans>Kavita sync</Trans>}>
       <Stack gap="md">
         <div>
           <Switch
@@ -859,7 +848,7 @@ function KavitaSyncSection() {
 
         {ownsKavita ? <KavitaReadImportControl /> : null}
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -906,17 +895,16 @@ function OpdsSection() {
   }
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        OPDS
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="opds"
+      title="OPDS"
+      description={
         <Trans>
           Serves the library as an OPDS catalogue for reading apps like Panels, Chunky, KOReader
           and Mihon. Chapters download whole or stream a page at a time.
         </Trans>
-      </SettingsHelp>
-
+      }
+    >
       <Stack gap="md">
         <div>
           <Switch
@@ -1030,7 +1018,7 @@ function OpdsSection() {
           </Group>
         </Stack>
       </Modal>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -1148,6 +1136,7 @@ function DownloadSection() {
   const [bulkHoldThreshold, setBulkHoldThreshold] = useState<number | string>(5)
   const [sourceOrder, setSourceOrder] = useState<SourceOrderMode>('manual')
   const [scoutOnMatch, setScoutOnMatch] = useState(false)
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useEffect(() => {
     if (settings) {
@@ -1161,7 +1150,7 @@ function DownloadSection() {
       setSourceOrder(settings.sourceOrder)
       setScoutOnMatch(settings.scoutOnMatch)
     }
-  }, [settings])
+  }, [settings, discarded])
 
   const dirty =
     settings !== undefined &&
@@ -1176,16 +1165,40 @@ function DownloadSection() {
       scoutOnMatch !== settings.scoutOnMatch)
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Downloads</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="downloads"
+      title={<Trans>Downloads</Trans>}
+      description={
         <Trans>
           Chapters downloaded at once from scraper sources. More isn't always faster: tripping a
           site's rate limit pauses every download. Torrents aren't affected.
         </Trans>
-      </SettingsHelp>
+      }
+      dirty={dirty}
+      saving={save.isPending}
+      onDiscard={discard}
+      onSave={() =>
+        save.mutate(
+          {
+            concurrentChapters: Number(concurrentChapters),
+            retryEnabled: Number(retryAttempts) > 0,
+            retryMaxAttempts:
+              Number(retryAttempts) > 0 ? Number(retryAttempts) : (settings?.retryMaxAttempts ?? 5),
+            smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
+            smartDownloadChapters: Number(smartDownloadChapters),
+            itemTimeoutMinutes: Number(itemTimeoutMinutes),
+            useHardlinks,
+            bulkHoldThreshold: Number(bulkHoldThreshold),
+            sourceOrder,
+            scoutOnMatch,
+          },
+          {
+            onSuccess: () =>
+              notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+          },
+        )
+      }
+    >
       <NumberInput
         label={t`Concurrent chapter downloads`}
         min={1}
@@ -1327,36 +1340,8 @@ function DownloadSection() {
         value={retryAttempts}
         onChange={setRetryAttempts}
         w={220}
-        mb="md"
       />
-      <Group justify="flex-end" mt="md">
-        <SaveButton
-          dirty={dirty}
-          loading={save.isPending}
-          onClick={() =>
-            save.mutate(
-              {
-                concurrentChapters: Number(concurrentChapters),
-                retryEnabled: Number(retryAttempts) > 0,
-                retryMaxAttempts:
-                  Number(retryAttempts) > 0 ? Number(retryAttempts) : (settings?.retryMaxAttempts ?? 5),
-                smartDownloadChaptersLeft: Number(smartDownloadChaptersLeft),
-                smartDownloadChapters: Number(smartDownloadChapters),
-                itemTimeoutMinutes: Number(itemTimeoutMinutes),
-                useHardlinks,
-                bulkHoldThreshold: Number(bulkHoldThreshold),
-                sourceOrder,
-                scoutOnMatch,
-              },
-              {
-                onSuccess: () =>
-                  notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
-              },
-            )
-          }
-        />
-      </Group>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -1381,6 +1366,7 @@ function UpgradesSettingsSection() {
   const [volumeMissingTolerance, setVolumeMissingTolerance] = useState<number | string>(3)
   const [volumeSearchesPerRun, setVolumeSearchesPerRun] = useState<number | string>(10)
   const [proposalExpiryDays, setProposalExpiryDays] = useState<number | string>(30)
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useEffect(() => {
     if (settings) {
@@ -1398,7 +1384,7 @@ function UpgradesSettingsSection() {
       setVolumeSearchesPerRun(settings.volumeSearchesPerRun)
       setProposalExpiryDays(settings.proposalExpiryDays)
     }
-  }, [settings])
+  }, [settings, discarded])
 
   const autoGrabBytes = Math.round(Number(autoGrabMb) * BYTES_PER_MB)
 
@@ -1419,17 +1405,40 @@ function UpgradesSettingsSection() {
       Number(proposalExpiryDays) !== settings.proposalExpiryDays)
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Upgrades</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="upgrades"
+      title={<Trans>Upgrades</Trans>}
+      description={
         <Trans>
           Whether an existing file should be replaced once a better release shows up, judged against
           a series' quality profile. The daily scan runs after the chosen hour and only replaces
           files a profile actually marks as upgradable.
         </Trans>
-      </SettingsHelp>
+      }
+      dirty={dirty}
+      saving={save.isPending}
+      onDiscard={discard}
+      onSave={() =>
+        save.mutate(
+          {
+            enabled,
+            defaultProfileId,
+            scanHour: Number(scanHour),
+            maxPerDay: Number(maxPerDay),
+            maxProbesPerRun: Number(maxProbesPerRun),
+            quietPeriodDays: Number(quietPeriodDays),
+            trashRetentionDays: Number(trashRetentionDays),
+            scanIncognito,
+            volumeSearch,
+            torrentAutoGrabMaxBytes: autoGrabBytes,
+            volumeMissingTolerance: Number(volumeMissingTolerance),
+            volumeSearchesPerRun: Number(volumeSearchesPerRun),
+            proposalExpiryDays: Number(proposalExpiryDays),
+          },
+          { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+        )
+      }
+    >
       <Switch
         label={t`Enabled`}
         description={t`Runs the daily scan and lets a series-level scan enqueue upgrades too.`}
@@ -1557,7 +1566,7 @@ function UpgradesSettingsSection() {
           disabled={!volumeSearch}
         />
       </Group>
-      <Group justify="space-between" mt="md">
+      <Group mt="md">
         <Button
           variant="default"
           loading={scan.isPending}
@@ -1583,32 +1592,8 @@ function UpgradesSettingsSection() {
         >
           <Trans>Scan now</Trans>
         </Button>
-        <SaveButton
-          dirty={dirty}
-          loading={save.isPending}
-          onClick={() =>
-            save.mutate(
-              {
-                enabled,
-                defaultProfileId,
-                scanHour: Number(scanHour),
-                maxPerDay: Number(maxPerDay),
-                maxProbesPerRun: Number(maxProbesPerRun),
-                quietPeriodDays: Number(quietPeriodDays),
-                trashRetentionDays: Number(trashRetentionDays),
-                scanIncognito,
-                volumeSearch,
-                torrentAutoGrabMaxBytes: autoGrabBytes,
-                volumeMissingTolerance: Number(volumeMissingTolerance),
-                volumeSearchesPerRun: Number(volumeSearchesPerRun),
-                proposalExpiryDays: Number(proposalExpiryDays),
-              },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-            )
-          }
-        />
       </Group>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -1661,17 +1646,26 @@ function BackupSection() {
   }
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Backup &amp; Restore</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="backup"
+      title={<Trans>Backup &amp; Restore</Trans>}
+      description={
         <Trans>
           A zip of your database and <Code>config.json</Code>: the library and every setting.
           Re-downloadable data such as the MangaBaka dump and covers is left out. One is taken
           automatically before every upgrade migration.
         </Trans>
-      </SettingsHelp>
+      }
+      dirty={retentionDirty}
+      saving={saveRetention.isPending}
+      onDiscard={() => retentionSettings && setRetention(retentionSettings.retention)}
+      onSave={() =>
+        saveRetention.mutate(
+          { retention: Number(retention) },
+          { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+        )
+      }
+    >
       <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
         <Trans>
           Backups hold API keys and passwords in plain text. Treat a downloaded one like a
@@ -1760,27 +1754,15 @@ function BackupSection() {
           </FileButton>
         </Group>
 
-        <Group align="flex-end">
-          <NumberInput
-            label={t`Backups to keep (per kind)`}
-            min={1}
-            max={50}
-            clampBehavior="strict"
-            value={retention}
-            onChange={setRetention}
-            w={220}
-          />
-          <SaveButton
-            dirty={retentionDirty}
-            loading={saveRetention.isPending}
-            onClick={() =>
-              saveRetention.mutate(
-                { retention: Number(retention) },
-                { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-              )
-            }
-          />
-        </Group>
+        <NumberInput
+          label={t`Backups to keep (per kind)`}
+          min={1}
+          max={50}
+          clampBehavior="strict"
+          value={retention}
+          onChange={setRetention}
+          w={220}
+        />
       </Stack>
 
       <Modal opened={target !== null} onClose={() => setTarget(null)} title={t`Restore backup`} centered>
@@ -1815,20 +1797,17 @@ function BackupSection() {
           <b>{deleting}</b> is removed from disk. This can't be undone.
         </Trans>
       </ConfirmDialog>
-    </Panel>
+    </SettingsSection>
   )
 }
 
-function ProwlarrOptionsSection() {
-  const { t } = useLingui()
-  const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
-  const configured = Boolean(connection?.url && connection?.apiKey)
-  const { data: indexers, error: indexersError } = useProwlarrIndexers(configured)
-  const indexersErrorMessage = indexersError != null ? String(indexersError) : null
+/** The indexer and category filter, which saves through its own endpoint beside the connection. */
+function useProwlarrOptionsForm() {
   const { data: options } = useProwlarrOptions()
   const save = useSaveProwlarrOptions()
   const [selectedIndexers, setSelectedIndexers] = useState<Set<number>>(new Set())
   const [categories, setCategories] = useState<string[]>([])
+  const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useEffect(() => {
     if (options) {
@@ -1837,7 +1816,7 @@ function ProwlarrOptionsSection() {
       )
       setCategories((options.categories ?? '').split(',').filter(Boolean))
     }
-  }, [options])
+  }, [options, discarded])
 
   const sortedIds = (ids: Iterable<number>) => [...ids].sort((a, b) => a - b).join(',')
   const dirty =
@@ -1845,6 +1824,49 @@ function ProwlarrOptionsSection() {
     (sortedIds(selectedIndexers) !==
       sortedIds((options.indexerIds ?? '').split(',').filter(Boolean).map(Number)) ||
       categories.join(',') !== (options.categories ?? ''))
+
+  return {
+    selectedIndexers,
+    setSelectedIndexers,
+    categories,
+    setCategories,
+    dirty,
+    saving: save.isPending,
+    reset: discard,
+    commit: () =>
+      save.mutateAsync({
+        indexerIds: [...selectedIndexers].sort((a, b) => a - b).join(',') || null,
+        categories: categories.join(',') || null,
+      }),
+  }
+}
+
+function ProwlarrSection() {
+  const { t } = useLingui()
+  const options = useProwlarrOptionsForm()
+  return (
+    <ConnectionSettingsCard
+      name="prowlarr"
+      title="Prowlarr"
+      description={t`Searches your indexers for manga releases through Prowlarr's search API. No app sync needed.`}
+      fields={[
+        { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
+        { key: 'apiKey', label: t`API key`, secret: true },
+      ]}
+      extra={options}
+    >
+      <ProwlarrOptionsSection form={options} />
+    </ConnectionSettingsCard>
+  )
+}
+
+function ProwlarrOptionsSection({ form }: { form: ReturnType<typeof useProwlarrOptionsForm> }) {
+  const { t } = useLingui()
+  const { data: connection } = useConnectionSettings<Record<string, string | null>>('prowlarr')
+  const configured = Boolean(connection?.url && connection?.apiKey)
+  const { data: indexers, error: indexersError } = useProwlarrIndexers(configured)
+  const indexersErrorMessage = indexersError != null ? String(indexersError) : null
+  const { selectedIndexers, setSelectedIndexers, categories, setCategories } = form
 
   const categoryData = [
     ...new Map(
@@ -1910,23 +1932,6 @@ function ProwlarrOptionsSection() {
             searchable
             clearable
           />
-          <Group justify="flex-end">
-            <SaveButton
-              dirty={dirty}
-              loading={save.isPending}
-              onClick={() =>
-                save.mutate(
-                  {
-                    indexerIds: [...selectedIndexers].sort((a, b) => a - b).join(',') || null,
-                    categories: categories.join(',') || null,
-                  },
-                  {
-                    onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
-                  },
-                )
-              }
-            />
-          </Group>
         </Stack>
       )}
     </Stack>
@@ -1976,16 +1981,25 @@ function ScrobbleSection() {
   const origin = window.location.origin
 
   return (
-    <Panel>
-      <Title order={4} mb="xs">
-        <Trans>Scrobbling</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
+    <SettingsSection
+      id="scrobbling"
+      title={<Trans>Scrobbling</Trans>}
+      description={
         <Trans>
           Pushes your reading progress to your trackers. Connect your accounts and review matches
           on the Scrobble page.
         </Trans>
-      </SettingsHelp>
+      }
+      dirty={dirty}
+      saving={save.isPending}
+      onDiscard={() => setForm(data ?? null)}
+      onSave={() =>
+        form &&
+        save.mutate(form, {
+          onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
+        })
+      }
+    >
       <Stack gap="xs">
         <Text size="sm" fw={600}>
           AniList
@@ -2115,44 +2129,44 @@ function ScrobbleSection() {
             set({ planToRead: checked })
           }}
         />
-        <Group justify="flex-end">
-          <SaveButton
-            dirty={dirty}
-            loading={save.isPending}
-            onClick={() =>
-              form &&
-              save.mutate(form, {
-                onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
-              })
-            }
-          />
-        </Group>
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
 function ImportListSettingsSection() {
   const { can } = useAuth()
+  return can('Admin') ? <ImportListSettingsAdmin /> : <ImportListSettingsCard />
+}
+
+function ImportListSettingsAdmin() {
+  const form = useImportListInstanceForm()
+  return <ImportListSettingsCard form={form} />
+}
+
+function ImportListSettingsCard({ form }: { form?: ReturnType<typeof useImportListInstanceForm> }) {
   return (
-    <Panel>
-      <Title order={4} mb="xs">
-        <Trans>Import lists</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
+    <SettingsSection
+      id="import-lists"
+      title={<Trans>Import lists</Trans>}
+      description={
         <Trans>
           Pulls your tracker lists on a schedule and adds matching series to the library, or files
           requests when you cannot add series yourself. Connect trackers under Scrobbling first.
         </Trans>
-      </SettingsHelp>
-      {can('Admin') && <ImportListInstanceControls />}
+      }
+      dirty={form?.dirty}
+      saving={form?.saving}
+      onDiscard={form?.reset}
+      onSave={form?.save}
+    >
+      {form && <ImportListInstanceControls form={form} />}
       <ImportListsSection />
-    </Panel>
+    </SettingsSection>
   )
 }
 
-function ImportListInstanceControls() {
-  const { t } = useLingui()
+function useImportListInstanceForm() {
   const { data } = useImportListSettings()
   const save = useSaveImportListSettings()
   const [form, setForm] = useState<ImportListSettings | null>(null)
@@ -2169,6 +2183,30 @@ function ImportListInstanceControls() {
     setForm((f) => (f ? { ...f, ...patch } : f))
   }
   const dirty = form !== null && data !== undefined && JSON.stringify(form) !== JSON.stringify(data)
+
+  return {
+    data,
+    form,
+    set,
+    dirty,
+    saving: save.isPending,
+    reset: () => {
+      editedRef.current = false
+      if (data) setForm(data)
+    },
+    save: () =>
+      form &&
+      save.mutate(form, {
+        onSuccess: () => {
+          editedRef.current = false
+          notifications.show({ message: now`Saved`, color: 'var(--ok)' })
+        },
+      }),
+  }
+}
+
+function ImportListInstanceControls({ form: { data, form, set } }: { form: ReturnType<typeof useImportListInstanceForm> }) {
+  const { t } = useLingui()
 
   return (
     <Stack gap="xs" mb="lg">
@@ -2187,21 +2225,6 @@ function ImportListInstanceControls() {
         disabled={data === undefined}
         onChange={(value) => set({ intervalMinutes: typeof value === 'number' ? value : 15 })}
       />
-      <Group justify="flex-end">
-        <SaveButton
-          dirty={dirty}
-          loading={save.isPending}
-          onClick={() =>
-            form &&
-            save.mutate(form, {
-              onSuccess: () => {
-                editedRef.current = false
-                notifications.show({ message: now`Saved`, color: 'var(--ok)' })
-              },
-            })
-          }
-        />
-      </Group>
     </Stack>
   )
 }
@@ -2279,16 +2302,16 @@ function LanguageSection() {
   const currentLocaleLabel = locales.find((l) => l.code === locale)?.label ?? locale
 
   return (
-    <Panel>
-      <Title order={4} mb={4}>
-        <Trans>Language</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
+    <SettingsSection
+      id="language"
+      title={<Trans>Language</Trans>}
+      description={
         <Trans>
           The language of Maki's interface, on every device. Title language below is separate:
           it sets the language of series titles.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <Select
         data={options}
         value={ui?.language ?? ''}
@@ -2303,7 +2326,7 @@ function LanguageSection() {
           anything untranslated shows in English.
         </Trans>
       </Text>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -2341,16 +2364,16 @@ function TitleLanguageSection() {
   const primary = stored.split(',')[0] ?? ''
 
   return (
-    <Panel>
-      <Title order={4} mb={4}>
-        <Trans>Title language</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
+    <SettingsSection
+      id="title-language"
+      title={<Trans>Title language</Trans>}
+      description={
         <Trans>
           Which language series titles are shown in, where the metadata provider has one. Display
           only: folders and file names keep the English title, and so does sorting.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <Select
         data={options}
         value={primary}
@@ -2361,7 +2384,7 @@ function TitleLanguageSection() {
         allowDeselect={false}
         maw={260}
       />
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -2381,15 +2404,15 @@ function SeriesPageSection() {
     patch?.({ seriesSections: { related, similar, ...next } })
 
   return (
-    <Panel>
-      <Title order={4} mb={4}>
-        <Trans>Series page</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
+    <SettingsSection
+      id="series-page"
+      title={<Trans>Series page</Trans>}
+      description={
         <Trans>
           Which rails appear below the chapter list. Turning one off also stops it being fetched.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <Stack gap="sm">
         <Switch
           checked={related}
@@ -2406,7 +2429,7 @@ function SeriesPageSection() {
           description={t`Titles that read alike, matched on feel rather than on a declared relation. Needs the recommendation index.`}
         />
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -2423,20 +2446,17 @@ function HomeSectionsSection() {
   const discoverAvailable = Boolean(metadata?.useLocalDb && metadata?.dumpPresent)
 
   return (
-    <Panel>
-      <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
-        <div>
-          <Title order={4} mb={4}>
-            <Trans>Home &amp; start page</Trans>
-          </Title>
-          <SettingsHelp>
-            <Trans>
-              Arrange Home and Discover on the pages themselves: pick which sections show, drag them
-              into order and add your own rails. Turn Home off if you don&apos;t read in Maki: the
-              tab disappears and Library becomes the start page.
-            </Trans>
-          </SettingsHelp>
-        </div>
+    <SettingsSection
+      id="home-screen"
+      title={<Trans>Home &amp; start page</Trans>}
+      description={
+        <Trans>
+          Arrange Home and Discover on the pages themselves: pick which sections show, drag them
+          into order and add your own rails. Turn Home off if you don&apos;t read in Maki: the
+          tab disappears and Library becomes the start page.
+        </Trans>
+      }
+      actions={
         <Switch
           checked={homeEnabled}
           disabled={!patch || !ui}
@@ -2445,7 +2465,8 @@ function HomeSectionsSection() {
           }
           aria-label={t`Enable the Home screen`}
         />
-      </Group>
+      }
+    >
 
       <StartPageSelect />
 
@@ -2470,63 +2491,24 @@ function HomeSectionsSection() {
           </Button>
         )}
       </Group>
-    </Panel>
+    </SettingsSection>
   )
 }
 
 function AppearanceSection() {
-  const renderLabel = useLabel()
-  const { themeId, setThemeId, presets } = useThemeChoice()
-
   return (
-    <Panel>
-      <Title order={4} mb={4}>
-        <Trans>Appearance</Trans>
-      </Title>
-      <SettingsHelp mb="sm">
+    <SettingsSection
+      id="appearance"
+      title={<Trans>Appearance</Trans>}
+      description={
         <Trans>
-          Pick an accent colour, the light theme, or match your system's light or dark mode.
-          Remembered on this device.
+          Pick a background and an accent colour. The background can also be the light theme or
+          whatever your system uses. Remembered on this device.
         </Trans>
-      </SettingsHelp>
-      <Group gap="sm">
-        {presets.map((p) => {
-          const active = p.id === themeId
-          return (
-            <UnstyledButton
-              key={p.id}
-              onClick={() => setThemeId(p.id)}
-              aria-pressed={active}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-surface)',
-                border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                background: active ? 'var(--surface-hover)' : 'transparent',
-                boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
-              }}
-            >
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  background: p.swatch,
-                  border: '1px solid rgba(0,0,0,0.25)',
-                  flexShrink: 0,
-                }}
-              />
-              <Text size="sm" fw={active ? 600 : 500}>
-                {renderLabel(p.label)}
-              </Text>
-              {active && <IconCheck size={14} style={{ color: 'var(--brand)' }} />}
-            </UnstyledButton>
-          )
-        })}
-      </Group>
-    </Panel>
+      }
+    >
+      <AppearancePicker />
+    </SettingsSection>
   )
 }
 
@@ -2545,16 +2527,16 @@ function UpdatesSection() {
     : t`pull the latest code and rebuild`
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Updates</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="updates"
+      title={<Trans>Updates</Trans>}
+      description={
         <Trans>
           Checks GitHub daily for a new release and shows a card in the sidebar and a notification
           when there is one. Updating is manual: {howToUpdate}.
         </Trans>
-      </SettingsHelp>
+      }
+    >
       <Stack gap="sm">
         <Switch
           label={t`Check for updates`}
@@ -2611,7 +2593,7 @@ function UpdatesSection() {
           </Group>
         )}
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -2679,17 +2661,16 @@ function ImageCacheSection() {
     })
 
   return (
-    <Panel>
-      <Title order={4} mb="sm">
-        <Trans>Image cache</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="image-cache"
+      title={<Trans>Image cache</Trans>}
+      description={
         <Trans>
           Clears reader thumbnails and source-comparison samples, removes posters of deleted
           series, and re-downloads posters. Thumbnails regenerate the next time a chapter opens.
         </Trans>
-      </SettingsHelp>
-
+      }
+    >
       {usage && (
         <Stack gap={4} mb="md">
           <Text size="sm" c="var(--ink-3)">
@@ -2793,7 +2774,7 @@ function ImageCacheSection() {
           </Group>
         </Stack>
       </Modal>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -2875,7 +2856,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       downloads: <DownloadSection />,
       upgrades: <UpgradesSettingsSection />,
       sources: (
-        <Stack gap="md">
+        <Stack gap="xl">
           <SourceLanguageSection />
           <SourcePrioritySection />
         </Stack>
@@ -2888,19 +2869,7 @@ function useSectionNodes(): Record<string, ReactNode> {
           fields={[{ key: 'url', label: t`URL`, placeholder: 'http://localhost:8191' }]}
         />
       ),
-      prowlarr: (
-        <ConnectionSettingsCard
-          name="prowlarr"
-          title="Prowlarr"
-          description={t`Searches your indexers for manga releases through Prowlarr's search API. No app sync needed.`}
-          fields={[
-            { key: 'url', label: t`URL`, placeholder: 'http://localhost:9696' },
-            { key: 'apiKey', label: t`API key`, secret: true },
-          ]}
-        >
-          <ProwlarrOptionsSection />
-        </ConnectionSettingsCard>
-      ),
+      prowlarr: <ProwlarrSection />,
       qbittorrent: (
         <ConnectionSettingsCard
           name="qbittorrent"
@@ -2976,7 +2945,7 @@ export default function SettingsPage() {
   const tabEntries = useMemo(() => visible.filter((e) => e.tab === activeTab), [visible, activeTab])
 
   // Panels unmount on a tab change (`keepMounted={false}`), which used to drop half-typed edits
-  // without a word. Cards report through SaveButton; a switch away from unsaved edits asks first.
+  // without a word. Cards report through SettingsSection; a switch away from unsaved edits asks first.
   const unsaved = useRef(new Set<string>())
   const [unsavedCount, setUnsavedCount] = useState(0)
   const reportUnsaved = useCallback((id: string, dirty: boolean) => {
@@ -3068,7 +3037,7 @@ export default function SettingsPage() {
           {tabs.map((tab) => (
             <Tabs.Panel key={tab.key} value={tab.key}>
               <div className="settings-layout">
-                <Stack className="settings-content">
+                <Stack className="settings-content" gap="xl">
                   <Text size="sm" c="var(--ink-3)">
                     {renderLabel(tab.description)}
                   </Text>

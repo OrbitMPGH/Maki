@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
-import { Button, Stack, Text, Title } from '@mantine/core'
+import { Button, Group, Stack, Text, Title } from '@mantine/core'
 import { IconPlus, IconQuestionMark } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
+import { IconBrandMark } from '../IconBrandMark'
 
 type Art = 'shelf' | 'missing'
+type Mood = 'asleep' | 'asking' | 'pleased'
 
 /**
  * What a section says when it has nothing to show: a plain statement, one line on what would fill
@@ -14,6 +16,9 @@ type Art = 'shelf' | 'missing'
  * `art` is for when the whole page is empty rather than one section of it (an empty library, a
  * series or route that doesn't exist): centred in the page, over a row of empty cover slots
  * (`shelf`) or a lone blank cover (`missing`), with room for a second action.
+ *
+ * `mood` puts the mascot beside the text of the inline form (asleep for an empty queue or list,
+ * pleased when there is nothing left to deal with, asking when it needs something from you).
  */
 export function EmptyState({
   title,
@@ -23,6 +28,7 @@ export function EmptyState({
   onAction,
   compact,
   art,
+  mood,
   code,
   headingOrder = 2,
   actionIcon,
@@ -37,6 +43,7 @@ export function EmptyState({
   onAction?: () => void
   compact?: boolean
   art?: Art
+  mood?: Mood
   /** Printed on the `missing` cover: the id or path that led nowhere. */
   code?: string
   /** 1 when the page has no header of its own above the state. */
@@ -83,14 +90,8 @@ export function EmptyState({
     )
   }
 
-  return (
-    <Stack
-      className="empty-state"
-      data-compact={compact || undefined}
-      align="flex-start"
-      gap={4}
-      py={compact ? 'sm' : 'xl'}
-    >
+  const lines = (
+    <>
       <Text className="empty-state-title">{title}</Text>
       {description && (
         <Text c="var(--ink-3)" size="sm" maw={520}>
@@ -107,6 +108,26 @@ export function EmptyState({
             {actionLabel}
           </Button>
         ))}
+    </>
+  )
+  const py = compact ? 'sm' : 'xl'
+
+  if (mood) {
+    return (
+      <Group className="empty-state" data-compact={compact || undefined} gap={16} wrap="nowrap" align="center" py={py}>
+        <span className="empty-state-mark">
+          <IconBrandMark mood={mood} size={56} />
+        </span>
+        <Stack align="flex-start" gap={4}>
+          {lines}
+        </Stack>
+      </Group>
+    )
+  }
+
+  return (
+    <Stack className="empty-state" data-compact={compact || undefined} align="flex-start" gap={4} py={py}>
+      {lines}
     </Stack>
   )
 }

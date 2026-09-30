@@ -14,7 +14,6 @@ import {
   Text,
   TextInput,
   Textarea,
-  Title,
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -56,7 +55,7 @@ import {
 } from '../../api/upgrades'
 import { useSources } from '../../api/hooks'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { Panel } from '../ui/Panel'
+import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { SettingsHelp } from './SettingsHelp'
 import { useLabel } from '../../i18n-context'
 
@@ -117,11 +116,17 @@ export function UpgradeProfilesSection() {
   const [creating, setCreating] = useState(false)
 
   return (
-    <Panel>
-      <Group justify="space-between" mb="sm">
-        <Title order={4}>
-          <Trans>Quality profiles</Trans>
-        </Title>
+    <SettingsSection
+      id="profiles"
+      title={<Trans>Quality profiles</Trans>}
+      description={
+        <Trans>
+          A profile picks which release tier Maki prefers for a series, and how far it goes to
+          replace what's already downloaded. Pin one to a series from its Quality profile menu, or
+          set a default for every series below under Downloads.
+        </Trans>
+      }
+      actions={
         <Button
           size="xs"
           variant="light"
@@ -130,15 +135,8 @@ export function UpgradeProfilesSection() {
         >
           <Trans>New profile</Trans>
         </Button>
-      </Group>
-
-      <SettingsHelp mb="md">
-        <Trans>
-          A profile picks which release tier Maki prefers for a series, and how far it goes to
-          replace what's already downloaded. Pin one to a series from its Quality profile menu, or
-          set a default for every series below under Downloads.
-        </Trans>
-      </SettingsHelp>
+      }
+    >
 
       {creating && (
         <ProfileEditor
@@ -169,7 +167,7 @@ export function UpgradeProfilesSection() {
           </Text>
         )}
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -529,11 +527,17 @@ export function QualityFormatsSection() {
   const [creating, setCreating] = useState(false)
 
   return (
-    <Panel>
-      <Group justify="space-between" mb="sm">
-        <Title order={4}>
-          <Trans>Quality formats</Trans>
-        </Title>
+    <SettingsSection
+      id="formats"
+      title={<Trans>Quality formats</Trans>}
+      description={
+        <Trans>
+          A format matches a file by its source, its group or release name, its resolution, or its
+          image codec. Every required condition has to match, plus at least one condition that isn't
+          marked required.
+        </Trans>
+      }
+      actions={
         <Button
           size="xs"
           variant="light"
@@ -542,15 +546,8 @@ export function QualityFormatsSection() {
         >
           <Trans>New format</Trans>
         </Button>
-      </Group>
-
-      <SettingsHelp mb="md">
-        <Trans>
-          A format matches a file by its source, its group or release name, its resolution, or its
-          image codec. Every required condition has to match, plus at least one condition that isn't
-          marked required.
-        </Trans>
-      </SettingsHelp>
+      }
+    >
 
       {creating && (
         <FormatEditor
@@ -580,7 +577,7 @@ export function QualityFormatsSection() {
           </Text>
         )}
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 

@@ -16,7 +16,6 @@ import {
 import { useIntersection } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
-  IconChevronRight,
   IconCopy,
   IconDots,
   IconFilter,
@@ -123,12 +122,7 @@ export function CustomRailSection({
         action={
           <Group gap={4} wrap="nowrap">
             {!empty && !isError && !data?.unavailable && (
-              <Button
-                variant="subtle"
-                size="xs"
-                rightSection={<IconChevronRight size={14} />}
-                onClick={showMore}
-              >
+              <Button variant="subtle" size="xs" onClick={showMore}>
                 <Trans>Show more</Trans>
               </Button>
             )}
@@ -162,6 +156,7 @@ export function CustomRailSection({
             </Menu>
           </Group>
         }
+        chevron
       />
 
       {data?.unavailable ? (

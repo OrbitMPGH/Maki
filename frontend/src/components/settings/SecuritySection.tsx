@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { SettingsHelp } from './SettingsHelp'
-import { SaveButton } from './SaveButton'
 import {
   Alert,
   Code,
@@ -9,7 +7,6 @@ import {
   Stack,
   Switch,
   TextInput,
-  Title,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -22,7 +19,7 @@ import {
 } from '../../api/auth'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Panel } from '../ui/Panel'
+import { SettingsSection } from '../../pages/settings/SettingsSection'
 
 /**
  * Instance security settings. Admin-only.
@@ -47,14 +44,25 @@ export function SecuritySection() {
   const dirty = data !== undefined && JSON.stringify(draft) !== JSON.stringify(data)
 
   return (
-    <Panel id="security">
-      <Title order={4} mb="sm">
-        <Trans>Security</Trans>
-      </Title>
-      <SettingsHelp mb="md">
-        <Trans>Changes take effect after Maki restarts.</Trans>
-      </SettingsHelp>
-
+    <SettingsSection
+      id="security"
+      title={<Trans>Security</Trans>}
+      description={<Trans>Changes take effect after Maki restarts.</Trans>}
+      dirty={dirty}
+      saving={save.isPending}
+      onDiscard={() => data && setDraft(data)}
+      onSave={() =>
+        save.mutate(draft, {
+          onSuccess: () =>
+            notifications.show({
+              message: now`Security settings saved. Restart Maki to apply them.`,
+              color: 'var(--ok)',
+            }),
+          onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+        })
+      }
+      panelProps={{ id: 'security' }}
+    >
       <Stack gap="md">
         <Switch
           label={t`Require HTTPS`}
@@ -107,25 +115,8 @@ export function SecuritySection() {
             onChange={(v) => setDraft({ ...draft, sessionDays: Number(v) || 1 })}
           />
         </Group>
-
-        <Group justify="flex-end">
-          <SaveButton
-            dirty={dirty}
-            loading={save.isPending}
-            onClick={() =>
-              save.mutate(draft, {
-                onSuccess: () =>
-                  notifications.show({
-                    message: now`Security settings saved. Restart Maki to apply them.`,
-                    color: 'var(--ok)',
-                  }),
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-              })
-            }
-          />
-        </Group>
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 
@@ -151,11 +142,10 @@ export function OidcSection() {
   const redirectUrl = `${window.location.origin}${draft.redirectPath}`
 
   return (
-    <Panel id="oidc">
-      <Title order={4} mb="sm">
-        <Trans>Single sign-on</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="oidc"
+      title={<Trans>Single sign-on</Trans>}
+      description={
         <Trans>
           Sign in through an OpenID Connect provider (Authelia, Keycloak, Authentik, Entra ID). Changes
           take effect after Maki restarts. Register{' '}
@@ -163,8 +153,22 @@ export function OidcSection() {
           If Maki is reached at another host too (a different domain, LAN IP, or reverse-proxy path),
           register that host&apos;s variant as well.
         </Trans>
-      </SettingsHelp>
-
+      }
+      dirty={dirty}
+      saving={save.isPending}
+      onDiscard={() => data && setDraft(data)}
+      onSave={() =>
+        save.mutate(draft, {
+          onSuccess: () =>
+            notifications.show({
+              message: now`Single sign-on saved. Restart Maki to apply it.`,
+              color: 'var(--ok)',
+            }),
+          onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+        })
+      }
+      panelProps={{ id: 'oidc' }}
+    >
       <Stack gap="md">
         <Switch
           label={t`Enable single sign-on`}
@@ -268,24 +272,7 @@ export function OidcSection() {
             </Trans>
           </Alert>
         )}
-
-        <Group justify="flex-end">
-          <SaveButton
-            dirty={dirty}
-            loading={save.isPending}
-            onClick={() =>
-              save.mutate(draft, {
-                onSuccess: () =>
-                  notifications.show({
-                    message: now`Single sign-on saved. Restart Maki to apply it.`,
-                    color: 'var(--ok)',
-                  }),
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-              })
-            }
-          />
-        </Group>
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }

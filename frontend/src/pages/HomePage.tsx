@@ -6,7 +6,6 @@ import { msg } from '@lingui/core/macro'
 import {
   IconBook,
   IconBookmarks,
-  IconChevronRight,
   IconDeviceTv,
   IconDownload,
   IconFlame,
@@ -76,7 +75,6 @@ function FindMore() {
       to="/discover"
       variant="subtle"
       size="compact-sm"
-      rightSection={<IconChevronRight size={14} />}
     >
       <Trans>Find more</Trans>
     </Button>
@@ -375,7 +373,7 @@ export default function HomePage() {
     ) : (
       youMightLike.length > 0 && (
         <>
-          <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} />
+          <SectionHeader icon={IconSparkles} title={t`You might like`} action={<FindMore />} chevron />
           <EngineRailRow items={youMightLike} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
         </>
       )
@@ -386,7 +384,7 @@ export default function HomePage() {
     ) : (
       popular.length > 0 && (
         <>
-          <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} />
+          <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} chevron />
           <DiscoverRailRow
             items={popular.slice(0, RAIL_SIZE)}
             seriesIdFor={seriesIdFor}

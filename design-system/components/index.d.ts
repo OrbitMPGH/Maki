@@ -15,7 +15,7 @@ export declare function PageHeader(props: {
 
 export type PanelEdge = 'brand' | 'info' | 'ok' | 'warn' | 'danger' | 'strong'
 
-/** The house panel: bordered Paper, radius lg, padding lg, no shadow. */
+/** The house panel: bordered Paper, radius lg, padding lg, 1px card shadow. */
 export interface PanelProps extends PaperProps {
   /** Draws the 2px accent rule. `strong` is the neutral border-strong variant. */
   edge?: PanelEdge
@@ -31,14 +31,14 @@ export declare function SectionHeader(props: {
   title: string
   count?: number
   action?: ReactNode
+  /** Trailing chevron after a single text action that opens a bigger view. */
+  chevron?: boolean
 }): JSX.Element
 
-/** Compact metric tile with a left accent and an icon. */
+/** Compact metric tile: label, value in the display face, optional delta. */
 export declare function StatTile(props: {
   label: string
   value: ReactNode
-  icon: Icon
-  accent?: 'brand' | 'ok' | 'warn' | 'info' | 'danger' | 'gray'
   /** Fractional change vs the previous period. null means the baseline was zero. */
   delta?: number | null
   deltaLabel?: string
@@ -61,6 +61,12 @@ export declare function FigureStrip(props: {
   flush?: boolean
   loading?: boolean
   className?: string
+  /** `panel` is the shadowed headline row for the top of a page. */
+  variant?: 'default' | 'panel'
+  /** A node in its own divider cell between figures. */
+  middle?: ReactNode
+  /** How many figures come before `middle`. Default: centred. */
+  middleAfter?: number
 }): JSX.Element
 
 /** A status as a coloured dot and a word. `tone` is a token stem. */
@@ -95,6 +101,8 @@ export declare function EmptyState(props: {
   compact?: boolean
   /** The whole page is empty: centred, over empty cover slots or a lone blank cover. */
   art?: 'shelf' | 'missing'
+  /** The mascot beside the text of the inline form. */
+  mood?: 'asleep' | 'asking' | 'pleased'
   code?: string
   headingOrder?: 1 | 2
   actionIcon?: ReactNode

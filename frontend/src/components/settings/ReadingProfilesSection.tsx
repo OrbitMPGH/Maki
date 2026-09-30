@@ -12,7 +12,6 @@ import {
   Switch,
   Text,
   TextInput,
-  Title,
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
@@ -30,7 +29,7 @@ import {
 import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { Panel } from '../ui/Panel'
+import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
@@ -75,11 +74,18 @@ export function ReadingProfilesSection() {
   const [creating, setCreating] = useState(false)
 
   return (
-    <Panel>
-      <Group justify="space-between" mb="sm">
-        <Title order={4}>
-          <Trans>Reader</Trans>
-        </Title>
+    <SettingsSection
+      id="reader"
+      title={<Trans>Reader</Trans>}
+      description={
+        <Trans>
+          How the built-in reader opens a series. A profile applies automatically to the series
+          types it covers; everything else uses Default, including series whose metadata hasn't
+          been refreshed since upgrading. You can pin a profile or override settings from inside
+          the reader.
+        </Trans>
+      }
+      actions={
         <Button
           size="xs"
           variant="light"
@@ -88,16 +94,8 @@ export function ReadingProfilesSection() {
         >
           <Trans>New profile</Trans>
         </Button>
-      </Group>
-
-      <Text size="sm" c="var(--ink-3)" mb="md">
-        <Trans>
-          How the built-in reader opens a series. A profile applies automatically to the series
-          types it covers; everything else uses Default, including series whose metadata hasn't
-          been refreshed since upgrading. You can pin a profile or override settings from inside
-          the reader.
-        </Trans>
-      </Text>
+      }
+    >
 
       {creating && (
         <ProfileEditor
@@ -124,7 +122,7 @@ export function ReadingProfilesSection() {
           <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
         ))}
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 

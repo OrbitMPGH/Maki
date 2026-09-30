@@ -12,7 +12,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconCheck, IconCopy } from '@tabler/icons-react'
@@ -38,7 +37,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { getInitialize } from '../../api/client'
 import { formatDateTime } from '../../format'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
-import { Panel } from '../ui/Panel'
+import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
 
 /**
@@ -51,10 +50,7 @@ export function AccountSection() {
   const { me } = useAuth()
 
   return (
-    <Panel id="account">
-      <Title order={4} mb="sm">
-        <Trans>My account</Trans>
-      </Title>
+    <SettingsSection id="account" title={<Trans>My account</Trans>} panelProps={{ id: 'account' }}>
       <Group gap="xs" mb="md">
         <Text size="sm" c="var(--ink-3)">
           <Trans>Signed in as</Trans>
@@ -78,7 +74,7 @@ export function AccountSection() {
         <Divider />
         <SessionsCard />
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
 

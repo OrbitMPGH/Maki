@@ -3,9 +3,7 @@ import { randomUUID } from '../../lib/uuid'
 import {
   Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, SimpleGrid, Stack, Text, Tooltip,
 } from '@mantine/core'
-import {
-  IconBooks, IconEyeOff, IconThumbUp, IconBook, IconSparkles,
-} from '@tabler/icons-react'
+import { IconSparkles } from '@tabler/icons-react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
@@ -197,21 +195,16 @@ export function SignalsCard() {
           <>
             <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm">
               <StatTile
-                icon={IconBooks}
                 label={t`titles on the shelf`}
                 value={summary.visibleShelf}
                 hint={t`${adds} added by you, ${excluded} excluded from taste`}
               />
               <StatTile
-                icon={IconBook}
-                accent="info"
                 label={t`read`}
                 value={summary.readSources}
                 hint={t`${rated} rated`}
               />
               <StatTile
-                icon={IconThumbUp}
-                accent="ok"
                 label={t`thumbs up / down`}
                 hint={t`${pushingDown} kept out of your taste`}
                 value={
@@ -223,8 +216,6 @@ export function SignalsCard() {
                 }
               />
               <StatTile
-                icon={IconEyeOff}
-                accent="warn"
                 label={t`hidden or dismissed`}
                 value={suppressed}
                 hint={t`${exposed} seen elsewhere`}

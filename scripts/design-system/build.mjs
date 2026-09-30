@@ -98,21 +98,28 @@ const lightVars = propsOf(":root[data-theme='light']")
 
 // --- Themes (theme-context.tsx) -----------------------------------------------------------------
 
-const presets = [...themeContext.matchAll(/\{\s*id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*accent:\s*'(\w+)',\s*scheme:\s*'(\w+)'/g)]
-  .map(([, id, label, accent, scheme]) => ({ id, label, accent, scheme }))
-  .filter((p) => p.scheme !== 'system')
-const themes = presets.map((p) => ({
-  id: p.scheme === 'light' ? 'light' : p.accent === 'indigo' ? 'dark' : p.accent,
-  name: p.label,
-  accent: p.accent,
-  scheme: p.scheme,
-}))
+// Appearance is a background times an accent. The design system shows one theme per accent on
+// the default dark ground (:root, night) plus the light theme; the other grounds mix their
+// surfaces from the accent with color-mix, which the token reader cannot evaluate.
+const accentEntries = [...themeContext.matchAll(/\{\s*id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*swatch:/g)]
+  .map(([, id, label]) => ({ id, label }))
+const defaultAccent = /const DEFAULT_ACCENT[^=]*=\s*'(\w+)'/.exec(themeContext)?.[1] ?? 'indigo'
+const lightLabel = /id:\s*'light',\s*label:\s*msg`([^`]+)`/.exec(themeContext)?.[1] ?? 'Light'
+const themes = [
+  ...accentEntries.map((a) => ({
+    id: a.id === defaultAccent ? 'dark' : a.id,
+    name: a.label,
+    accent: a.id,
+    scheme: 'dark',
+  })),
+  { id: 'light', name: lightLabel, accent: defaultAccent, scheme: 'light' },
+]
 themes.sort((a, b) => (a.id === 'dark' ? -1 : b.id === 'dark' ? 1 : a.id === 'light' ? -1 : b.id === 'light' ? 1 : 0))
 if (!themes.length) throw new Error('No theme presets found in theme-context.tsx')
 
 const varsFor = (theme) => {
   const v = new Map(rootVars)
-  const over = theme.scheme === 'light' ? lightVars : theme.accent === 'indigo' ? new Map() : propsOf(`:root[data-accent='${theme.accent}']`)
+  const over = theme.scheme === 'light' ? lightVars : propsOf(`:root[data-accent='${theme.accent}']`)
   for (const [k, val] of over) v.set(k, val)
   return v
 }
@@ -134,7 +141,12 @@ const accentPalette = Object.fromEntries(
   }),
 )
 const baseShade = /primaryShade:\s*\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}/.exec(themeTs)
-const shadeOverride = /accent === (\w+) \? \(\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}/.exec(themeTs)
+const shadeOverrides = Object.fromEntries(
+  [...themeTs.matchAll(/\[(\w+),\s*\{\s*light:\s*(\d+),\s*dark:\s*(\d+)\s*\}\]/g)].map(([, pal, light, dark]) => [
+    pal,
+    { light: +light, dark: +dark },
+  ]),
+)
 const autoContrast = /autoContrast:\s*true/.test(themeTs)
 const luminanceThreshold = Number(/luminanceThreshold:\s*([\d.]+)/.exec(themeTs)?.[1] ?? 0.3)
 const tsString = (key) => /* the value is single-quoted in theme.ts */ new RegExp(`${key}:\\s*'([^']+)'`).exec(themeTs)?.[1]
@@ -231,7 +243,7 @@ for (const [name, value] of rootVars) {
 // autoContrast picks for it.
 const primaryOf = (t, step = 0) => {
   const pal = accentPalette[t.accent]
-  const s = shadeOverride && shadeOverride[1] === pal ? { light: +shadeOverride[2], dark: +shadeOverride[3] } : { light: +baseShade[1], dark: +baseShade[2] }
+  const s = shadeOverrides[pal] ?? { light: +baseShade[1], dark: +baseShade[2] }
   return palettes[pal][s[t.scheme === 'light' ? 'light' : 'dark'] + step]
 }
 const glowAt = colours.findIndex((c) => c.name === 'brand-glow')
@@ -313,7 +325,7 @@ const CLASSES = new RegExp(
       String.raw`cover-(card|poster|placeholder|scrim|corners?|badge|ring|meta|title|progress-row|bar|count|check)`,
       String.raw`tip\b`, String.raw`discover-(card|card-action|rating|corner|meta|reason|sub|sub-status|rail|rail-item)\b`,
       'engine-', 'series-row', String.raw`row-(check|cover|cover-placeholder|body|header|title|year|description|progress|bar)\b`,
-      'surface-frame', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`tnum\b`,
+      'surface-frame', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`tnum\b`, String.raw`figure\b`,
     ].join('|') +
     ')',
 )

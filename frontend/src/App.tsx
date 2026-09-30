@@ -139,9 +139,7 @@ function NavLinks({
                 <item.icon size={18} stroke={1.7} className="nav-icon" />
                 {_(item.label)}
                 {count > 0 && (
-                  <Badge size="xs" variant="filled" color="brand" ml="auto" className="tnum">
-                    {count > 99 ? '99+' : count}
-                  </Badge>
+                  <span className="nav-count tnum">{count > 99 ? '99+' : count}</span>
                 )}
               </Link>
             )
@@ -165,6 +163,7 @@ function HealthButton() {
           color={hasError ? 'var(--danger)' : 'var(--warn)'}
           label={health.length}
           withBorder
+          className="count-indicator"
         >
           <ActionIcon
             variant="subtle"

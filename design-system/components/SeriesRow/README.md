@@ -2,7 +2,7 @@
 
 The list-view twin of `CoverCard`: one horizontal row per owned series with a thumbnail, title, year, status, overview and download and read progress.
 
-On `surface` with a `border` outline at `radius-lg`, `spacing-sm` padding; the thumbnail is 2:3 at 8px radius. Hover lifts 2px with `border-strong` and `shadow-sm`; selected in bulk mode takes a `brand` border and a `brand-glow` halo, with a round `row-check` top left.
+On `surface` with a `border` outline at `radius-lg`, `spacing-sm` padding; the thumbnail is 2:3 at 8px radius. Hover lifts 2px with `border-strong` and `shadow-sm`; selected in bulk mode takes a `brand` border and a 1px `brand` ring, with a round `row-check` top left.
 
 **Density** sets the thumbnail and the overview clamp: `compact` 48px and one line, `default` 56px and two, `comfortable` 72px and three, with the title up a tier to `subhead`.
 

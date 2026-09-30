@@ -583,6 +583,10 @@ msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 
 #: src/components/home/ProgressCard.tsx
+#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
+#~ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP"
+
+#: src/components/home/ProgressCard.tsx
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
 
@@ -1447,6 +1451,10 @@ msgstr "90 days"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr "A better release replaced a downloaded chapter's file."
@@ -1636,6 +1644,10 @@ msgstr "About 3 GB on disk, refreshed nightly. Search and imports become instant
 #: src/components/RecommendationModelSwitch.tsx
 msgid "about a minute left"
 msgstr "about a minute left"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr "Accent"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Access all libraries"
@@ -2069,8 +2081,8 @@ msgid "Ambiguous names"
 msgstr "Ambiguous names"
 
 #: src/components/SetupWizard.tsx
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "An admin decides where it lands and what gets downloaded."
@@ -2414,6 +2426,7 @@ msgstr "Back to the series"
 msgid "Back up now"
 msgstr "Back up now"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Background"
@@ -2558,6 +2571,10 @@ msgstr "Blocked while a download for this series is in flight, unless Maki isn't
 #: src/components/settings/UsersSection.tsx
 msgid "Blocks sign-in and kills existing sessions. Keeps the account and its history."
 msgstr "Blocks sign-in and kills existing sessions. Keeps the account and its history."
+
+#: src/theme-context.tsx
+msgid "Blush"
+msgstr "Blush"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -3111,6 +3128,14 @@ msgstr "Chapters: {chapterRangeMin}–{chapterRangeMax}"
 #: src/components/CatalogueFilters.tsx
 msgid "Chapters: {chaptersMin}–{chaptersMax}"
 msgstr "Chapters: {chaptersMin}–{chaptersMax}"
+
+#: src/theme-context.tsx
+msgid "Charcoal"
+msgstr "Charcoal"
+
+#: src/theme-context.tsx
+#~ msgid "Charcoal, lit"
+#~ msgstr "Charcoal, lit"
 
 #: src/components/NotificationsSection.tsx
 msgid "Chat ID"
@@ -4152,6 +4177,7 @@ msgid "Disabled"
 msgstr "Disabled"
 
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/settings/SettingsSection.tsx
 msgid "Discard"
 msgstr "Discard"
 
@@ -7121,6 +7147,10 @@ msgstr "More options for {seriesTitle}"
 msgid "More recommendation feedback actions"
 msgstr "More recommendation feedback actions"
 
+#: src/theme-context.tsx
+msgid "Moss"
+msgstr "Moss"
+
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
 msgstr "Most missing"
@@ -7433,6 +7463,10 @@ msgstr "Next tier at {nextValue}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Next..."
 msgstr "Next..."
+
+#: src/theme-context.tsx
+msgid "Night"
+msgstr "Night"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "No activity in {windowLabel}."
@@ -7778,6 +7812,14 @@ msgstr "None of their titles match these filters. Try loosening one of them."
 #: src/pages/SettingsPage.tsx
 msgid "none yet"
 msgstr "none yet"
+
+#: src/theme-context.tsx
+#~ msgid "Nori"
+#~ msgstr "Nori"
+
+#: src/theme-context.tsx
+#~ msgid "Nori and salmon"
+#~ msgstr "Nori and salmon"
 
 #: src/components/CatalogueRules.tsx
 msgid "not {names}"
@@ -8647,14 +8689,18 @@ msgstr "Personal add weighting is disabled for this instance."
 msgid "Phone reader"
 msgstr "Phone reader"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Pick a root folder"
 msgstr "Pick a root folder"
 
 #: src/pages/SettingsPage.tsx
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
 
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are actually contained in, useful for compilation CBZs or oddly-named releases the automatic matcher couldn't parse."
@@ -10098,6 +10144,7 @@ msgstr "Sample chapter"
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/settings/SettingsSection.tsx
 msgid "Save"
 msgstr "Save"
 
@@ -12161,6 +12208,10 @@ msgstr "Time zone"
 msgid "Timezone (empty uses server timezone)"
 msgstr "Timezone (empty uses server timezone)"
 
+#: src/theme-context.tsx
+msgid "Tinted black"
+msgstr "Tinted black"
+
 #: src/api/customRails.ts
 #: src/components/CatalogueBrowser.tsx
 #: src/components/ReleaseSearchModal.tsx
@@ -12567,6 +12618,10 @@ msgstr "Unrecognized name"
 #: src/sourceLabels.ts
 msgid "Unresolved"
 msgstr "Unresolved"
+
+#: src/pages/settings/SettingsSection.tsx
+msgid "Unsaved"
+msgstr "Unsaved"
 
 #: src/components/settings/SaveButton.tsx
 msgid "Unsaved changes"

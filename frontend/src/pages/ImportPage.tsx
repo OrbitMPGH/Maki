@@ -372,6 +372,7 @@ export default function ImportPage() {
 
       {visibleCandidates && visibleCandidates.length === 0 && (
         <EmptyState
+          mood="asleep"
           title={t`Nothing to import`}
           description={t`Every folder in this root is already claimed by a series in the library.`}
         />

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { SettingsHelp } from './SettingsHelp'
 import {
   ActionIcon,
   Button,
@@ -9,7 +8,6 @@ import {
   Stack,
   Switch,
   Text,
-  Title,
 } from '@mantine/core'
 import { IconTrash } from '@tabler/icons-react'
 import {
@@ -24,7 +22,7 @@ import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { Panel } from '../ui/Panel'
+import { SettingsSection } from '../../pages/settings/SettingsSection'
 
 /**
  * Descriptors, not strings: this table is built once when the module loads, so a rendered string
@@ -101,16 +99,16 @@ export function ProgressSection() {
   const zone = browserTimeZone()
 
   return (
-    <Panel>
-      <Title order={4}>
-        <Trans>Progress & achievements</Trans>
-      </Title>
-      <SettingsHelp mb="md">
+    <SettingsSection
+      id="progress"
+      title={<Trans>Progress & achievements</Trans>}
+      description={
         <Trans>
           Levels, badges and streaks worked out from your reading history. All of it is derived, so
           switching this off stores nothing and switching it back on brings everything back.
         </Trans>
-      </SettingsHelp>
+      }
+    >
 
       <Stack gap="md">
         <Switch
@@ -211,6 +209,6 @@ export function ProgressSection() {
           </Group>
         </Stack>
       </Stack>
-    </Panel>
+    </SettingsSection>
   )
 }
