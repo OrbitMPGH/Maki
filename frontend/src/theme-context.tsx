@@ -25,24 +25,24 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-  { id: 'blush', label: msg`Blush`, accent: 'blush', scheme: 'dark', swatch: '#ee7fa4' },
   { id: 'indigo', label: msg`Indigo`, accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
+  { id: 'blush', label: msg`Blush`, accent: 'blush', scheme: 'dark', swatch: '#ee7fa4' },
   { id: 'rose', label: msg`Rose`, accent: 'rose', scheme: 'dark', swatch: '#f52069' },
   { id: 'emerald', label: msg`Emerald`, accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
   { id: 'amber', label: msg`Amber`, accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
-  { id: 'light', label: msg`Light`, accent: 'blush', scheme: 'light', swatch: '#f4f2ec' },
+  { id: 'light', label: msg`Light`, accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
   {
     id: 'system',
     label: msg`Match system`,
-    accent: 'blush',
+    accent: 'indigo',
     scheme: 'system',
-    swatch: 'linear-gradient(135deg, #f4f2ec 50%, #0e100e 50%)',
+    swatch: 'linear-gradient(135deg, #f4f5fa 50%, #0b0d13 50%)',
   },
 ]
 
 const STORAGE_KEY = 'maki-theme'
 // Nothing stored means the user never picked, so they follow the default. A stored id is kept.
-const DEFAULT_ID = 'blush'
+const DEFAULT_ID = 'indigo'
 
 function presetFor(id: string): ThemePreset {
   return THEME_PRESETS.find((p) => p.id === id) ?? THEME_PRESETS[0]
