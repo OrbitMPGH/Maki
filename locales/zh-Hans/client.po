@@ -2937,6 +2937,10 @@ msgstr "立即备份"
 msgid "Background"
 msgstr "背景"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Backlog"
@@ -5155,6 +5159,7 @@ msgstr "不想要"
 msgid "Don't want specials"
 msgstr "不需要特别篇"
 
+#: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -8631,6 +8636,10 @@ msgstr "{seriesTitle} 的更多选项"
 msgid "More recommendation feedback actions"
 msgstr "更多推荐反馈操作"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "More ways to make Maki yours"
+msgstr ""
+
 #: src/theme-context.tsx
 msgid "Moss"
 msgstr ""
@@ -8914,6 +8923,10 @@ msgstr "过去 30 天自动获取的新章节。"
 #, fuzzy
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "新章节、已完成的下载和已解锁的成就都会显示在这里。"
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "New default"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "New format"
@@ -10681,6 +10694,10 @@ msgstr ""
 #, fuzzy
 msgid "Previous chapter"
 msgstr "上一章"
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Previous default"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy

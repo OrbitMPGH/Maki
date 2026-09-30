@@ -2937,6 +2937,10 @@ msgstr "Şimdi yedekle"
 msgid "Background"
 msgstr "Arka plan"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Backlog"
@@ -5155,6 +5159,7 @@ msgstr "İstemiyorum"
 msgid "Don't want specials"
 msgstr "Özel bölümleri istemiyorum"
 
+#: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -8631,6 +8636,10 @@ msgstr "{seriesTitle} için diğer seçenekler"
 msgid "More recommendation feedback actions"
 msgstr "Daha fazla öneri geri bildirim işlemi"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "More ways to make Maki yours"
+msgstr ""
+
 #: src/theme-context.tsx
 msgid "Moss"
 msgstr ""
@@ -8914,6 +8923,10 @@ msgstr "Son 30 günde otomatik alınan yeni bölümler."
 #, fuzzy
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "Yeni bölümler, tamamlanan indirmeler ve kazanılan başarımlar buraya düşer."
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "New default"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "New format"
@@ -10681,6 +10694,10 @@ msgstr ""
 #, fuzzy
 msgid "Previous chapter"
 msgstr "Önceki bölüm"
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Previous default"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy

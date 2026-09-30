@@ -2937,6 +2937,10 @@ msgstr "지금 백업"
 msgid "Background"
 msgstr "배경"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Backlog"
@@ -5155,6 +5159,7 @@ msgstr "원하지 않음"
 msgid "Don't want specials"
 msgstr "특별편 제외"
 
+#: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -8631,6 +8636,10 @@ msgstr "{seriesTitle}의 추가 옵션"
 msgid "More recommendation feedback actions"
 msgstr "추가 추천 피드백 작업"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "More ways to make Maki yours"
+msgstr ""
+
 #: src/theme-context.tsx
 msgid "Moss"
 msgstr ""
@@ -8914,6 +8923,10 @@ msgstr "지난 30일 동안 새 챕터를 자동으로 가져왔습니다."
 #, fuzzy
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "새 챕터, 완료된 다운로드 및 달성한 업적이 여기에 표시됩니다."
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "New default"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "New format"
@@ -10681,6 +10694,10 @@ msgstr ""
 #, fuzzy
 msgid "Previous chapter"
 msgstr "이전 챕터"
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Previous default"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy

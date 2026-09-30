@@ -43,6 +43,7 @@ import SetupWizard from './components/SetupWizard'
 import { UserMenu } from './components/UserMenu'
 import SidebarFooter from './components/layout/SidebarFooter'
 import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
+import AppearanceAnnouncementModal from './components/AppearanceAnnouncementModal'
 import { NavHistoryProvider, ScrollMemory } from './lib/navHistory'
 import { TipLayer } from './components/ui/TipLayer'
 import { EmptyState } from './components/ui/EmptyState'
@@ -473,6 +474,7 @@ function AppShellRoutes() {
       {/* Only once the instance is past first-run: the wizard owns the screen while it is up, and
           nobody being handed a brand-new Maki needs to be told what changed in it. */}
       {setup?.completed && <LanguageAnnouncementModal />}
+      {setup?.completed && <AppearanceAnnouncementModal />}
       {/* Owns a toast, not a piece of the page, so it sits outside Main and renders nothing. */}
       {isAdmin && <MetadataDumpProgress />}
       <TipLayer />

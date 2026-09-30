@@ -244,6 +244,13 @@ public static class SettingKeys
     /// </summary>
     public const string UiLanguageAnnouncement = "ui.languageannouncement";
 
+    /// <summary>
+    /// Per user: the one-off notice about separate background and accent choices, and the default
+    /// moving from Night to Tinted black. Same lifecycle as <see cref="UiLanguageAnnouncement"/>,
+    /// written as "pending" by the <c>AppearanceAnnouncement</c> migration.
+    /// </summary>
+    public const string UiAppearanceAnnouncement = "ui.appearanceannouncement";
+
     /// <summary>"true" → the first-time setup guide has been finished or skipped; don't show it again.</summary>
     public const string SetupCompleted = "setup.completed";
 

@@ -198,7 +198,8 @@ public class SettingsController(
     /// <param name="Language">
     /// Whether this user still has the one-off "Maki speaks your language now" notice waiting.
     /// </param>
-    public record AnnouncementsResponse(bool Language);
+    /// <param name="Appearance">Same, for the notice about the new background and accent choices.</param>
+    public record AnnouncementsResponse(bool Language, bool Appearance);
 
     public record OpdsSettings(bool Enabled, bool TrackProgress);
 
@@ -539,18 +540,31 @@ public class SettingsController(
 
     /// <summary>
     /// The one-off notices this user has not been shown yet. Read on every app load, so it is one
-    /// key read and nothing more.
+    /// bulk key read and nothing more.
     /// </summary>
     [HttpGet("announcements")]
-    public async Task<IActionResult> GetAnnouncements(CancellationToken ct) =>
-        Ok(new AnnouncementsResponse(
-            await userSettings.GetAsync(SettingKeys.UiLanguageAnnouncement, ct) == "pending"));
+    public async Task<IActionResult> GetAnnouncements(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync(
+            [SettingKeys.UiLanguageAnnouncement, SettingKeys.UiAppearanceAnnouncement], ct);
+        return Ok(new AnnouncementsResponse(
+            rows.GetValueOrDefault(SettingKeys.UiLanguageAnnouncement) == "pending",
+            rows.GetValueOrDefault(SettingKeys.UiAppearanceAnnouncement) == "pending"));
+    }
 
     /// <summary>Marks the language notice as shown. Idempotent, and only ever for the caller.</summary>
     [HttpPost("announcements/language/seen")]
     public async Task<IActionResult> SeenLanguageAnnouncement(CancellationToken ct)
     {
         await userSettings.SetAsync(SettingKeys.UiLanguageAnnouncement, "seen", ct);
+        return NoContent();
+    }
+
+    /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
+    [HttpPost("announcements/appearance/seen")]
+    public async Task<IActionResult> SeenAppearanceAnnouncement(CancellationToken ct)
+    {
+        await userSettings.SetAsync(SettingKeys.UiAppearanceAnnouncement, "seen", ct);
         return NoContent();
     }
 

@@ -1078,6 +1078,8 @@ export interface Announcements {
    * before they did, and only until it is dismissed.
    */
   language: boolean
+  /** Same, for the notice about separate background and accent choices. */
+  appearance: boolean
 }
 
 export function useAnnouncements() {
@@ -1090,18 +1092,21 @@ export function useAnnouncements() {
   })
 }
 
-export function useSeenLanguageAnnouncement() {
+function useSeenAnnouncement(key: keyof Announcements) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api<void>('/settings/announcements/language/seen', { method: 'POST' }),
+    mutationFn: () => api<void>(`/settings/announcements/${key}/seen`, { method: 'POST' }),
     // Written straight into the cache rather than invalidated: the modal closes on the click, and
     // a refetch that lost the race would put it back.
     onSuccess: () =>
       queryClient.setQueryData(['settings', 'announcements'], (old?: Announcements) =>
-        old ? { ...old, language: false } : old,
+        old ? { ...old, [key]: false } : old,
       ),
   })
 }
+
+export const useSeenLanguageAnnouncement = () => useSeenAnnouncement('language')
+export const useSeenAppearanceAnnouncement = () => useSeenAnnouncement('appearance')
 
 /** One tag in the Discover tag filter, with where it sits in MangaBaka's tag tree. */
 export interface TagOption {

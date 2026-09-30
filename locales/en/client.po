@@ -2432,6 +2432,10 @@ msgstr "Back up now"
 msgid "Background"
 msgstr "Background"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
+msgstr "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Backlog"
 msgstr "Backlog"
@@ -4270,6 +4274,7 @@ msgstr "Don't want"
 msgid "Don't want specials"
 msgstr "Don't want specials"
 
+#: src/components/AppearanceAnnouncementModal.tsx
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -7147,6 +7152,10 @@ msgstr "More options for {seriesTitle}"
 msgid "More recommendation feedback actions"
 msgstr "More recommendation feedback actions"
 
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "More ways to make Maki yours"
+msgstr "More ways to make Maki yours"
+
 #: src/theme-context.tsx
 msgid "Moss"
 msgstr "Moss"
@@ -7381,6 +7390,10 @@ msgstr "New chapters fetched automatically, last 30 days."
 #: src/pages/NotificationsPage.tsx
 msgid "New chapters, finished downloads and unlocked achievements land here."
 msgstr "New chapters, finished downloads and unlocked achievements land here."
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "New default"
+msgstr "New default"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "New format"
@@ -8840,6 +8853,10 @@ msgstr "Preview first chapter"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Previous chapter"
 msgstr "Previous chapter"
+
+#: src/components/AppearanceAnnouncementModal.tsx
+msgid "Previous default"
+msgstr "Previous default"
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Previous page"
