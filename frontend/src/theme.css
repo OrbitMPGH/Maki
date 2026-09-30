@@ -244,25 +244,27 @@
   background: rgba(14, 16, 14, 0.72);
 }
 /* Every surface is charcoal mixed 4% toward the accent, so the black belongs to whichever accent
-   is active. The wash uses the default ground's geometry and strength. */
+   is active. The neutral ramp under the mix is wider than charcoal's (16 units from body to card
+   against 9): the mix lifts the body more than the cards in relative terms, so an equal ramp reads
+   flat. The wash is a touch under the default ground's strength for the same reason. */
 :root[data-ground='tinted'] {
-  --app-bg: color-mix(in srgb, #0f0f0f 96%, var(--brand));
-  --surface: color-mix(in srgb, #181818 96%, var(--brand));
-  --surface-2: color-mix(in srgb, #1e1e1e 96%, var(--brand));
-  --surface-hover: color-mix(in srgb, #242424 96%, var(--brand));
-  --border: color-mix(in srgb, #2a2a2a 96%, var(--brand));
-  --border-strong: color-mix(in srgb, #3a3a3a 96%, var(--brand));
+  --app-bg: color-mix(in srgb, #0b0b0b 96%, var(--brand));
+  --surface: color-mix(in srgb, #1b1b1b 96%, var(--brand));
+  --surface-2: color-mix(in srgb, #222222 96%, var(--brand));
+  --surface-hover: color-mix(in srgb, #282828 96%, var(--brand));
+  --border: color-mix(in srgb, #303030 96%, var(--brand));
+  --border-strong: color-mix(in srgb, #3e3e3e 96%, var(--brand));
 }
 [data-ground='tinted'] body {
   background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 55%);
+    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
 }
 [data-ground='tinted'] .app-navbar {
-  background: linear-gradient(180deg, color-mix(in srgb, rgba(24, 24, 24, 0.6) 96%, var(--brand)), color-mix(in srgb, rgba(15, 15, 15, 0.6) 96%, var(--brand)));
+  background: linear-gradient(180deg, color-mix(in srgb, rgba(27, 27, 27, 0.6) 96%, var(--brand)), color-mix(in srgb, rgba(11, 11, 11, 0.6) 96%, var(--brand)));
 }
 [data-ground='tinted'] .app-header {
-  background: color-mix(in srgb, rgba(15, 15, 15, 0.72) 96%, var(--brand));
+  background: color-mix(in srgb, rgba(11, 11, 11, 0.72) 96%, var(--brand));
 }
 :root[data-ground='charcoal'],
 :root[data-ground='charcoal-lit'] {

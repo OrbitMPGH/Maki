@@ -169,12 +169,12 @@ const tinted: MantineColorsTuple = [
   '#a9adba',
   '#8b90a0',
   '#5d6373',
-  '#322a2d',
-  '#271e21',
-  '#21181b',
-  '#181013',
-  '#120b0e',
-  '#0a0608',
+  '#383032',
+  '#2a2225',
+  '#241b1e',
+  '#140c0f',
+  '#0e080a',
+  '#070405',
 ]
 
 /** Selectable surface ramps; the CSS-variable side lives in theme.css under [data-ground]. */
