@@ -6,7 +6,8 @@ namespace Maki.Core.Sources;
 /// Sources list the same chapter more than once — different scanlation groups on MangaDex,
 /// official and unofficial rips on MangaFire — so each keeps one entry per
 /// (Number, Volume, Language) and returns them ascending by number. Unnumbered chapters also key on
-/// their title, since that is what tells specials apart (see <see cref="ChapterIdentity"/>). Only the choice of *which*
+/// their title, since that is what tells specials apart, and an untitled one takes its label as that
+/// title (see <see cref="ChapterIdentity.Labelled"/>). Only the choice of *which*
 /// duplicate wins is source-specific; that's <c>preferred</c>. This lived as four near-identical
 /// LINQ chains, where a fix to one never reached the others.
 /// </para>
@@ -33,8 +34,8 @@ public static class SourceChapterList
         Func<T, SourceChapter> toChapter,
         Func<IEnumerable<T>, T> preferred) =>
         items
-            .GroupBy(item => Key(toChapter(item)))
-            .Select(group => toChapter(preferred(group)))
+            .GroupBy(item => Key(ChapterIdentity.Labelled(toChapter(item))))
+            .Select(group => ChapterIdentity.Labelled(toChapter(preferred(group))))
             .OrderBy(c => c.Number)
             .ToList();
 

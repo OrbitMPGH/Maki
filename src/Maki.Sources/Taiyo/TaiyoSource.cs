@@ -18,7 +18,7 @@ namespace Maki.Sources.Taiyo;
 /// build-time constant baked into the site's Next.js bundle; it is discovered on
 /// first search and cached, and rediscovered once if it stops working.
 /// </summary>
-public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
+public partial class TaiyoSource(IHttpClientFactory httpClientFactory, TimeProvider? timeProvider = null) : ISource
 {
     public const string HttpClientName = "source-taiyo";
 
@@ -26,11 +26,15 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
     private const string DefaultMeilisearchUrl = "https://meilisearch.taiyo.moe";
 
     private const int MaxChapterPages = 200;
+    private const int MaxScannedScripts = 12;
+    private static readonly TimeSpan DiscoveryFailureTtl = TimeSpan.FromMinutes(5);
 
     private static readonly HtmlParser Parser = new();
 
     private readonly SemaphoreSlim _meilisearchLock = new(1, 1);
     private volatile MeilisearchConfig? _meilisearchConfig;
+    private DateTimeOffset _discoveryRetryAt;
+    private Exception? _discoveryFailure;
 
     public string Name => "taiyo";
     public string DisplayName => "Taiyō";
@@ -382,9 +386,27 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
                 return cachedAfterWait;
             }
 
-            var config = await DiscoverMeilisearchConfigAsync(ct);
-            _meilisearchConfig = config;
-            return config;
+            // A broken bundle layout would otherwise repeat the whole walk for every search.
+            var time = timeProvider ?? TimeProvider.System;
+            if (_discoveryFailure is { } failure && time.GetUtcNow() < _discoveryRetryAt)
+            {
+                throw new InvalidOperationException(
+                    $"Meilisearch key discovery failed recently, retrying after {_discoveryRetryAt:u}", failure);
+            }
+
+            try
+            {
+                var config = await DiscoverMeilisearchConfigAsync(ct);
+                _meilisearchConfig = config;
+                _discoveryFailure = null;
+                return config;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _discoveryFailure = ex;
+                _discoveryRetryAt = time.GetUtcNow() + DiscoveryFailureTtl;
+                throw;
+            }
         }
         finally
         {
@@ -417,8 +439,8 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
     /// <summary>
     /// The Meilisearch Bearer key is a public build-time constant baked into the site's Next.js
     /// bundle, not a secret endpoint. It is looked for first in the app/layout-*.js chunk (where it
-    /// lived when this was written), then in every other chunk the home page references, the same
-    /// order Keiyoushi's Taiyo extension uses.
+    /// lived when this was written), then in the other chunks the home page references (the first
+    /// <see cref="MaxScannedScripts"/> in all), the same order Keiyoushi's Taiyo extension uses.
     /// </summary>
     private async Task<MeilisearchConfig> DiscoverMeilisearchConfigAsync(CancellationToken ct)
     {
@@ -433,7 +455,8 @@ public partial class TaiyoSource(IHttpClientFactory httpClientFactory) : ISource
 
         var candidates = scripts.Where(s => s.Contains("/app/layout-", StringComparison.Ordinal))
             .Concat(scripts.Where(s => s.Contains("/_next/static/chunks/", StringComparison.Ordinal)))
-            .Distinct();
+            .Distinct()
+            .Take(MaxScannedScripts);
 
         foreach (var src in candidates)
         {

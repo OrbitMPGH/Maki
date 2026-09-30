@@ -82,7 +82,8 @@ public class AsuraSource(IHttpClientFactory httpClientFactory) : ISource
             : default;
         if (rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"Asura Scans series/{sourceSeriesId}/chapters has no chapter array");
         }
 
         var chapters = new List<SourceChapter>();

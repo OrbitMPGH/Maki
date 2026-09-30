@@ -116,11 +116,8 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var data = await GetAsync("title_detailV3", ct, ("title_id", sourceSeriesId));
-        var view = data?.Message(SuccessTitleDetailView);
-        if (view is null)
-        {
-            return [];
-        }
+        var view = data?.Message(SuccessTitleDetailView)
+            ?? throw new InvalidOperationException($"mangaplus: no title detail for title '{sourceSeriesId}'");
 
         // Read off the title itself rather than the mapping's filter. The id already decides the
         // language, so a filter could only ever contradict it — and before this was read, every

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Maki.Core.Http;
+using Maki.Core.Images;
 using Maki.Core.Parsing;
 using Maki.Core.Sources;
 using SixLabors.ImageSharp;
@@ -22,6 +23,7 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
 
     private static readonly Uri ApiReferer = new("https://mangadenizi.net/manga");
     private const int MaxSearchPages = 3;
+    private const int MaxGrid = 16;
 
     public string Name => "mangadenizi";
     public string DisplayName => "MangaDenizi";
@@ -226,21 +228,25 @@ public class MangaDeniziSource(IHttpClientFactory httpClientFactory) : ISource
         var grid = gridEl.GetInt32();
         var seed = seedEl.GetUInt32();
 
-        if (grid <= 0)
+        if (grid is <= 0 or > MaxGrid)
         {
-            throw new InvalidOperationException($"Unexpected scramble grid {grid} for page {url}: must be positive");
+            throw new InvalidOperationException(
+                $"Unexpected scramble grid {grid} for page {url}: must be between 1 and {MaxGrid}");
         }
 
-        using var source = Image.Load<Rgb24>(raw);
-        using var descrambled = MangaDeniziDescrambler.Descramble(source, grid, seed);
+        return await ImageWorkGate.RunAsync(async () =>
+        {
+            using var source = Image.Load<Rgb24>(raw);
+            using var descrambled = MangaDeniziDescrambler.Descramble(source, grid, seed);
 
-        // PageDownloader names the saved file from PageRequest.Url's own extension, and every
-        // MangaDenizi image URL ends in .webp - re-encoding to JPEG here would write JPEG bytes
-        // under a .webp name, which Maki would then serve back as image/webp.
-        using var output = new MemoryStream();
-        await descrambled.SaveAsWebpAsync(
-            output, new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = 90 }, ct);
-        return output.ToArray();
+            // PageDownloader names the saved file from PageRequest.Url's own extension, and every
+            // MangaDenizi image URL ends in .webp - re-encoding to JPEG here would write JPEG bytes
+            // under a .webp name, which Maki would then serve back as image/webp.
+            using var output = new MemoryStream();
+            await descrambled.SaveAsWebpAsync(
+                output, new WebpEncoder { FileFormat = WebpFileFormatType.Lossy, Quality = 90 }, ct);
+            return output.ToArray();
+        }, ct);
     }
 
     private async Task<byte[]> FetchImageBytesAsync(string url, CancellationToken ct)

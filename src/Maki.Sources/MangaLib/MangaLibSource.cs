@@ -89,7 +89,8 @@ public partial class MangaLibSource(IHttpClientFactory httpClientFactory) : ISou
         var root = await GetJsonAsync($"api/manga/{sourceSeriesId}/chapters", ct);
         if (!root.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"MangaLib api/manga/{sourceSeriesId}/chapters has a missing or non-array 'data'");
         }
 
         var chapters = new List<SourceChapter>();

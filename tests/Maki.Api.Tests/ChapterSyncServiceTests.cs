@@ -373,6 +373,110 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Untitled_unnumbered_chapters_with_different_labels_stay_distinct()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ =>
+            [
+                fake.Chapter(null) with { SourceChapterId = "a", NumberRaw = "Special" },
+                fake.Chapter(null) with { SourceChapterId = "b", NumberRaw = "Extra" },
+            ]
+        };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+        var newIds = await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        var chapters = ChaptersOf(seriesId);
+        Assert.Equal(["Special", "Extra"], chapters.Select(c => c.Title));
+        Assert.All(chapters, c => Assert.True(c.IsOneShot));
+        Assert.Equal(2, LinksOf(seriesId).Count);
+    }
+
+    [Fact]
+    public async Task Labelled_one_shot_is_promoted_once_its_label_parses()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var fake = new FakeSource { Name = "fake" };
+        var listed = new List<SourceChapter> { fake.Chapter(null) with { NumberRaw = "Episode 7" } };
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => listed };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+        listed[0] = fake.Chapter(7) with { NumberRaw = "Episode 7" };
+        var newIds = await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        var chapter = Assert.Single(ChaptersOf(seriesId));
+        Assert.Equal(7m, chapter.Number);
+        Assert.False(chapter.IsOneShot);
+    }
+
+    [Fact]
+    public async Task Untitled_one_shot_from_before_labelling_is_adopted_not_duplicated()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = null, IsOneShot = true, Language = "en" });
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ => [fake.Chapter(null) with { SourceChapterId = "a", NumberRaw = "Special" }]
+        };
+
+        var newIds = await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        Assert.Equal("Special", Assert.Single(ChaptersOf(seriesId)).Title);
+    }
+
+    [Fact]
+    public async Task Empty_listing_keeps_existing_links_and_records_an_error()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var fake = new FakeSource { Name = "fake" };
+        var listed = new List<SourceChapter> { fake.Chapter(1), fake.Chapter(2) };
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => listed };
+        var cache = new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance);
+        ChapterSyncService Service() => new(
+            _db.NewContext(), new SourceRegistry([source]),
+            new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
+            Sources.AllEnabled, cache, new FakeAppSettings(), NullLogger<ChapterSyncService>.Instance);
+
+        await Service().SyncSeriesAsync(seriesId);
+        listed.Clear();
+        await Service().SyncSeriesAsync(seriesId);
+
+        Assert.Equal(2, LinksOf(seriesId).Count);
+        using var db = _db.NewContext();
+        Assert.NotNull(db.SourceMappings.Single(m => m.SeriesId == seriesId).LastError);
+        var cached = await cache.GetAsync(source, "series", null);
+        Assert.Equal(2, cached.Count);
+    }
+
+    [Fact]
+    public async Task Empty_listing_is_accepted_for_a_mapping_with_no_links()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var source = new FakeSource { Name = "fake", OnListChapters = _ => [] };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        using var db = _db.NewContext();
+        var mapping = db.SourceMappings.Single(m => m.SeriesId == seriesId);
+        Assert.Null(mapping.LastError);
+        Assert.NotNull(mapping.ChapterSnapshotAt);
+    }
+
+    [Fact]
     public async Task MainOnly_mode_leaves_specials_unwanted()
     {
         var seriesId = _db.SeedSeries(monitor: NewChapterMonitorMode.MainOnly, mappings: Mapping("fake"));

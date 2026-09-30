@@ -57,6 +57,39 @@ public class TaiyoSourceTests
     }
 
     [Fact]
+    public async Task Failed_key_discovery_is_remembered_for_five_minutes_and_scans_a_bounded_number_of_chunks()
+    {
+        // Only the home page answers: every script 404s, so no key is ever found.
+        var time = new SteppedTime();
+        var factory = new FakeHttpClientFactory(new()
+        {
+            ["https://taiyo.moe/"] = FakeHttpClientFactory.Fixture("taiyo-home.html"),
+        });
+        var source = new TaiyoSource(factory, time);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
+        var firstWalk = factory.Requests.Count;
+        Assert.Equal(13, firstWalk);
+
+        time.Advance(TimeSpan.FromMinutes(4));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
+        Assert.Equal(firstWalk, factory.Requests.Count);
+
+        time.Advance(TimeSpan.FromMinutes(2));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => source.SearchAsync("one piece"));
+        Assert.Equal(2 * firstWalk, factory.Requests.Count);
+    }
+
+    private sealed class SteppedTime : TimeProvider
+    {
+        private DateTimeOffset _now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => _now;
+
+        public void Advance(TimeSpan by) => _now += by;
+    }
+
+    [Fact]
     public async Task GetSeries_parses_title_cover_and_status()
     {
         var source = SourceFor(new()

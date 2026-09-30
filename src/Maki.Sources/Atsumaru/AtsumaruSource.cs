@@ -118,7 +118,8 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
         var root = await GetAsync($"manga/info?mangaId={Uri.EscapeDataString(sourceSeriesId)}", ct);
         if (!root.TryGetProperty("chapters", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"Atsumaru manga/info for {sourceSeriesId} has a missing or non-array 'chapters'");
         }
 
         var listed = new List<ListedChapter>();

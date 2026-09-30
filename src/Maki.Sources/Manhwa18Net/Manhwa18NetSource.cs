@@ -119,7 +119,8 @@ public partial class Manhwa18NetSource(IHtmlFetcher fetcher) : ISource
         if (!props.TryGetProperty("manga", out var manga) ||
             !props.TryGetProperty("chapters", out var rows) || rows.ValueKind != JsonValueKind.Array)
         {
-            return [];
+            throw new InvalidOperationException(
+                $"Manhwa18.net manga/{sourceSeriesId} has no 'manga' or no chapter array");
         }
 
         // A raw series' genres carry "Raw" instead of "Adult"/"Manhwa"/"Mature"/…; this only
