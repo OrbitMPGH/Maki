@@ -1,4 +1,5 @@
 using Maki.Core.Download;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Maki.Core.Tests;
 
@@ -49,54 +50,77 @@ public class PageCacheManifestTests : IDisposable
     [Fact]
     public async Task A_body_that_stops_arriving_fails_instead_of_hanging()
     {
-        using var content = new StreamContent(new StallingStream());
+        var time = new FakeTimeProvider();
+        var stallTimeout = TimeSpan.FromSeconds(60);
+        using var content = new StreamContent(new StallingStream(time, chunks: 1, gap: TimeSpan.Zero, stall: stallTimeout));
         using var destination = new MemoryStream();
 
         await Assert.ThrowsAsync<TimeoutException>(() => PageDownloader.CopyWithStallTimeoutAsync(
-            content, destination, "https://cdn.test/1.jpg", TimeSpan.FromMilliseconds(100), CancellationToken.None));
+            content, destination, "https://cdn.test/1.jpg", stallTimeout, time, CancellationToken.None));
         Assert.Equal(4, destination.Length);
     }
 
     [Fact]
     public async Task A_slow_body_that_keeps_arriving_is_not_cut_off()
     {
-        using var content = new StreamContent(new StallingStream(chunks: 6, gap: TimeSpan.FromMilliseconds(50), stall: false));
+        var time = new FakeTimeProvider();
+        using var content = new StreamContent(new StallingStream(time, chunks: 6, gap: TimeSpan.FromSeconds(50)));
         using var destination = new MemoryStream();
 
         await PageDownloader.CopyWithStallTimeoutAsync(
-            content, destination, "https://cdn.test/1.jpg", TimeSpan.FromMilliseconds(150), CancellationToken.None);
+            content, destination, "https://cdn.test/1.jpg", TimeSpan.FromSeconds(60), time, CancellationToken.None);
 
         Assert.Equal(24, destination.Length);
     }
 
+    [Fact]
+    public async Task Caller_cancellation_is_not_reported_as_a_stall()
+    {
+        var time = new FakeTimeProvider();
+        using var cts = new CancellationTokenSource();
+        using var content = new StreamContent(new StallingStream(time, chunks: 1, gap: TimeSpan.Zero, stall: TimeSpan.Zero, onStall: cts.Cancel));
+        using var destination = new MemoryStream();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => PageDownloader.CopyWithStallTimeoutAsync(
+            content, destination, "https://cdn.test/1.jpg", TimeSpan.FromSeconds(60), time, cts.Token));
+    }
+
     /// <summary>
-    /// Hands out <c>chunks</c> reads of a few bytes <c>gap</c> apart, then either never completes
-    /// another read until cancelled or ends the body.
+    /// Hands out <c>chunks</c> reads of a few bytes, moving the fake clock forward by <c>gap</c>
+    /// before each one after the first. After the last chunk it either ends the body, or moves the
+    /// clock by <c>stall</c> and then honours cancellation, the way a real socket read would once
+    /// the stall timer has fired. Every wait is a clock advance, so nothing here depends on how
+    /// promptly the test runner schedules timers.
     /// </summary>
-    private sealed class StallingStream(int chunks = 1, TimeSpan gap = default, bool stall = true) : Stream
+    private sealed class StallingStream(
+        FakeTimeProvider time, int chunks, TimeSpan gap, TimeSpan? stall = null, Action? onStall = null) : Stream
     {
         private int _sent;
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
         {
             if (_sent < chunks)
             {
-                if (_sent > 0 && gap > TimeSpan.Zero)
+                if (_sent > 0)
                 {
-                    await Task.Delay(gap, ct);
+                    time.Advance(gap);
                 }
 
+                ct.ThrowIfCancellationRequested();
                 _sent++;
                 "page"u8.CopyTo(buffer.Span);
-                return 4;
+                return ValueTask.FromResult(4);
             }
 
-            if (stall)
+            if (stall is { } stallFor)
             {
-                await Task.Delay(Timeout.Infinite, ct);
+                onStall?.Invoke();
+                time.Advance(stallFor);
+                ct.ThrowIfCancellationRequested();
+                throw new InvalidOperationException("The stall timer did not fire");
             }
 
-            return 0;
+            return ValueTask.FromResult(0);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) =>

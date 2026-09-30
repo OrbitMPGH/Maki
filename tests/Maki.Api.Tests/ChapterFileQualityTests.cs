@@ -474,7 +474,7 @@ public class ChapterDownloadQualityTests : IDisposable
         {
             var processor = new ChapterDownloadProcessor(
                 db, registry, Sources.Resolver(registry, availability),
-                new PageDownloader(new StubHttpClientFactory(""), queue, NullLogger<PageDownloader>.Instance),
+                new PageDownloader(new StubHttpClientFactory(""), queue, TimeProvider.System, NullLogger<PageDownloader>.Instance),
                 new EventBroadcaster(new NoopHubContext(), _db.ScopeFactory()),
                 new AppPaths(),
                 new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), _settings,

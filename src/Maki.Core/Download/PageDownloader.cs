@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Maki.Core.Http;
 using Maki.Core.Sources;
 using Microsoft.Extensions.Logging;
@@ -12,6 +12,7 @@ namespace Maki.Core.Download;
 public class PageDownloader(
     IHttpClientFactory httpClientFactory,
     IDownloadCooldown cooldown,
+    TimeProvider time,
     ILogger<PageDownloader> logger)
 {
     public const string HttpClientName = "pages";
@@ -100,7 +101,7 @@ public class PageDownloader(
 
             await using (var file = File.Create(temp))
             {
-                await CopyWithStallTimeoutAsync(response.Content, file, page.Url, StallTimeout, ct);
+                await CopyWithStallTimeoutAsync(response.Content, file, page.Url, StallTimeout, time, ct);
             }
         }
 
@@ -121,18 +122,24 @@ public class PageDownloader(
         logger.LogDebug("Downloaded page {Target}", Path.GetFileName(target));
     }
 
-    /// <summary>Copies the body, failing when no bytes arrive for <paramref name="stallTimeout"/>.</summary>
+    /// <summary>
+    /// Copies the body, failing when no bytes arrive for <paramref name="stallTimeout"/>. The stall
+    /// clock runs on <paramref name="time"/> rather than <see cref="CancellationTokenSource.CancelAfter(TimeSpan)"/>
+    /// so tests can drive it without depending on wall-clock scheduling.
+    /// </summary>
     internal static async Task CopyWithStallTimeoutAsync(
-        HttpContent content, Stream destination, string url, TimeSpan stallTimeout, CancellationToken ct)
+        HttpContent content, Stream destination, string url, TimeSpan stallTimeout, TimeProvider time, CancellationToken ct)
     {
         await using var body = await content.ReadAsStreamAsync(ct);
         using var stall = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        await using var stallTimer = time.CreateTimer(
+            static s => ((CancellationTokenSource)s!).Cancel(), stall, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         var buffer = new byte[CopyBufferSize];
         try
         {
             while (true)
             {
-                stall.CancelAfter(stallTimeout);
+                stallTimer.Change(stallTimeout, Timeout.InfiniteTimeSpan);
                 var read = await body.ReadAsync(buffer, stall.Token);
                 if (read == 0)
                 {

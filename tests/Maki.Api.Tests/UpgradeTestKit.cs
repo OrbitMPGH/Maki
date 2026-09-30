@@ -215,7 +215,7 @@ internal sealed class UpgradeWorld : IDisposable
     }
 
     public SourceProbeService Probes() => new(
-        new PageDownloader(Http, Queue, NullLogger<PageDownloader>.Instance), Queue, new AppPaths(),
+        new PageDownloader(Http, Queue, TimeProvider.System, NullLogger<PageDownloader>.Instance), Queue, new AppPaths(),
         NullLogger<SourceProbeService>.Instance);
 
     public DownloadBatchNotifier Batches() => new(
@@ -228,7 +228,7 @@ internal sealed class UpgradeWorld : IDisposable
 
     public ChapterDownloadProcessor Processor(MakiDbContext db, DownloadBatchNotifier batches, StatsEventService? stats = null) => new(
         db, Registry, Sources.Resolver(Registry, Availability),
-        new PageDownloader(new StubHttpClientFactory(""), Queue, NullLogger<PageDownloader>.Instance),
+        new PageDownloader(new StubHttpClientFactory(""), Queue, TimeProvider.System, NullLogger<PageDownloader>.Instance),
         new EventBroadcaster(new NoopHubContext(), Db.ScopeFactory()),
         new AppPaths(),
         new KavitaScanService(new KavitaClient(new StubHttpClientFactory("{}")), Settings,

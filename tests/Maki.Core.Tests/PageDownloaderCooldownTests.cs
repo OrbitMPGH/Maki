@@ -40,6 +40,7 @@ public class PageDownloaderCooldownTests
         var downloader = new PageDownloader(
             new StubFactory(new RecordingHandler(() => waitsSeenAtSend.Add(Volatile.Read(ref cooldown.Waits)))),
             cooldown,
+            TimeProvider.System,
             NullLogger<PageDownloader>.Instance);
 
         var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
@@ -61,7 +62,7 @@ public class PageDownloaderCooldownTests
     {
         var cooldown = new FakeCooldown();
         var downloader = new PageDownloader(
-            new StubFactory(new RecordingHandler(() => { })), cooldown, NullLogger<PageDownloader>.Instance);
+            new StubFactory(new RecordingHandler(() => { })), cooldown, TimeProvider.System, NullLogger<PageDownloader>.Instance);
 
         var dir = Path.Combine(Path.GetTempPath(), "maki-pd-" + Guid.NewGuid().ToString("N"));
         try
