@@ -135,6 +135,7 @@
     "radius-control": "Small inline controls and counters.",
     "radius-chip": "Tag chips and the Discover rank badge: deliberately squarer than a pill.",
     "radius-thumb": "Cover thumbnails in rows and lists (SeriesRow, requests, the hero strip), and the scrollbar thumb.",
+    "radius-card": "Cover cards: the most repeated object on the page gets the tightest corner.",
     "radius-surface": "Strips and inline surfaces (FigureStrip), Rewind cover art.",
     "radius-hero": "Hero posters and glass panels, the score pill, the brand-mark tile, the reader chapter banner.",
     "radius-overlay": "Overlays: menus, popovers, the reader shortcut sheet.",

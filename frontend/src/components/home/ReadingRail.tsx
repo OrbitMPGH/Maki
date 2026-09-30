@@ -1,9 +1,10 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { IconPlayerPlay } from '@tabler/icons-react'
+import { IconPlayerPlayFilled } from '@tabler/icons-react'
 import type { HomeReadingItem } from '../../api/hooks'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { Rail } from '../ui/Rail'
 import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
 
 /**
@@ -15,14 +16,14 @@ import { ReadingCardMenu, type ReadingRailKind } from './ReadingCardMenu'
  */
 export function ReadingRail({ items, rail }: { items: HomeReadingItem[]; rail: ReadingRailKind }) {
   return (
-    <div className="discover-rail">
+    <Rail>
       {items.map((item) => (
         <div key={item.chapterId} className="discover-rail-item reading-card">
           <ReadingCard item={item} />
           <ReadingCardMenu item={item} rail={rail} className="reading-card-menu" />
         </div>
       ))}
-    </div>
+    </Rail>
   )
 }
 
@@ -49,40 +50,27 @@ const ReadingCard = memo(function ReadingCard({ item }: { item: HomeReadingItem 
         )}
         <div className="cover-scrim" />
 
-        <span className="discover-corner" data-play="true" aria-hidden="true">
-          <IconPlayerPlay size={18} />
-        </span>
-
-        {unreadChapters > 0 && (
-          <div className="cover-corners">
-            <div className="cover-corner cover-corner-left">
-              <span
-                className="cover-badge cover-badge-unread"
-                data-tip={plural(unreadChapters, { one: '# unread', other: '# unread' })}
-              >
-                {unreadChapters}
-              </span>
-            </div>
-          </div>
-        )}
-
         <div className="cover-meta">
+          <span className="cover-chapter">
+            <IconPlayerPlayFilled size={10} />
+            <span>{chapterLabel}</span>
+          </span>
           <span className="cover-title" title={item.seriesTitle}>
             {item.seriesTitle}
-          </span>
-          <span className="home-chapter-label" data-action>
-            <IconPlayerPlay size={10} />
-            {item.page > 0 ? t`Resume` : t`Start`}
-            <span className="home-chapter-sep" aria-hidden="true">
-              {' · '}
-            </span>
-            {item.chapterLabel}
           </span>
           {resumePct !== null && (
             <div className="home-resume-bar" data-tip={t`Page ${pageNumber} of ${pageCount}`}>
               <div className="home-resume-fill" style={{ width: `${resumePct}%` }} />
             </div>
           )}
+          <div className="cover-row">
+            <span>{item.page > 0 ? t`Resume` : t`Start`}</span>
+            {unreadChapters > 0 && (
+              <span className="cover-new">
+                {plural(unreadChapters, { one: '# new', other: '# new' })}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Link>

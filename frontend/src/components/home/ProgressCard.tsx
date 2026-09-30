@@ -67,21 +67,24 @@ export function ProgressCard({ summary }: { summary: ProgressSummary }) {
               {intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}
             </Trans>
           </Text>
+          <div className="home-glance-xp" aria-hidden>
+            <div style={{ width: `${Math.min(100, Math.max(0, level.progress * 100))}%` }} />
+          </div>
         </Stack>
       </Group>
 
       <div className="hero-stats">
-        <Figure value={formatNumber(summary.chaptersRead)} label={t`chapters read`} />
-        <Figure value={formatReadingTime(summary.readingSeconds)} label={t`time read`} />
+        <Figure value={formatNumber(summary.chaptersRead)} label={t`Chapters read`} />
+        <Figure value={formatReadingTime(summary.readingSeconds)} label={t`Time read`} />
         {summary.showStreaks && (
           <>
-            <Figure value={summary.currentStreak} label={t`day streak`} icon={IconFlame} />
-            <Figure value={summary.longestStreak} label={t`best streak`} />
+            <Figure value={summary.currentStreak} label={t`Day streak`} icon={IconFlame} />
+            <Figure value={summary.longestStreak} label={t`Best streak`} />
           </>
         )}
         <Figure
           value={`${summary.earned}/${summary.total}`}
-          label={t`achievements`}
+          label={t`Achievements`}
           icon={IconTrophy}
         />
       </div>
