@@ -1760,6 +1760,10 @@ msgstr "90日"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "10点満点のアニメは{topSeed}として作用します。棚にある未評価の作品は1.00です。"
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr ""
@@ -1984,6 +1988,10 @@ msgstr "約3 GBの容量を使い、毎晩更新されます。検索とイン�
 #, fuzzy
 msgid "about a minute left"
 msgstr "残り約1分"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2500,8 +2508,8 @@ msgstr "名前が曖昧"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "アクセントカラーやライトテーマ、またはシステム設定に合わせた表示です。この端末に保存されます。"
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "アクセントカラーやライトテーマ、またはシステム設定に合わせた表示です。この端末に保存されます。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2918,6 +2926,7 @@ msgstr ""
 msgid "Back up now"
 msgstr "今すぐバックアップ"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3773,8 +3782,8 @@ msgid "Charcoal"
 msgstr ""
 
 #: src/theme-context.tsx
-msgid "Charcoal, lit"
-msgstr ""
+#~ msgid "Charcoal, lit"
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -8970,6 +8979,10 @@ msgstr "{nextValue}で次の段階"
 msgid "Next..."
 msgstr "次へ…"
 
+#: src/theme-context.tsx
+msgid "Night"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No activity in {windowLabel}."
@@ -9383,12 +9396,12 @@ msgid "none yet"
 msgstr "まだありません"
 
 #: src/theme-context.tsx
-msgid "Nori"
-msgstr ""
+#~ msgid "Nori"
+#~ msgstr ""
 
 #: src/theme-context.tsx
-msgid "Nori and salmon"
-msgstr ""
+#~ msgid "Nori and salmon"
+#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10446,6 +10459,10 @@ msgstr "この環境では個人の追加による重み付けは無効です。
 msgid "Phone reader"
 msgstr "スマートフォンリーダー"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10454,8 +10471,8 @@ msgstr "ルートフォルダーを選択"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "アクセントカラーやライトテーマを選ぶか、システムのライト／ダークモードに合わせます。この端末に保存されます。"
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "アクセントカラーやライトテーマを選ぶか、システムのライト／ダークモードに合わせます。この端末に保存されます。"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy

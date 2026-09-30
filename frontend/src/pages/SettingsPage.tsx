@@ -34,7 +34,6 @@ import {
 import {
   IconAdjustments,
   IconAlertTriangle,
-  IconCheck,
   IconCopy,
   IconDownload,
   IconLayoutDashboard,
@@ -145,7 +144,7 @@ import { languageName } from '../api/titles'
 import { NotificationsSection } from '../components/NotificationsSection'
 import { ImportListsSection } from '../components/ImportListsSection'
 import { TrackerSyncControls } from '../components/TrackerSyncControls'
-import { useThemeChoice } from '../theme-context'
+import { AppearancePicker } from '../components/AppearancePicker'
 import { formatBytes, formatDateTime, formatNumber } from '../format'
 import { useCopyText } from '../components/ui/useCopyText'
 
@@ -2497,57 +2496,18 @@ function HomeSectionsSection() {
 }
 
 function AppearanceSection() {
-  const renderLabel = useLabel()
-  const { themeId, setThemeId, presets } = useThemeChoice()
-
   return (
     <SettingsSection
       id="appearance"
       title={<Trans>Appearance</Trans>}
       description={
         <Trans>
-          Pick an accent colour, the light theme, or match your system's light or dark mode.
-          Remembered on this device.
+          Pick a background and an accent colour. The background can also be the light theme or
+          whatever your system uses. Remembered on this device.
         </Trans>
       }
     >
-      <Group gap="sm">
-        {presets.map((p) => {
-          const active = p.id === themeId
-          return (
-            <UnstyledButton
-              key={p.id}
-              onClick={() => setThemeId(p.id)}
-              aria-pressed={active}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-surface)',
-                border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                background: active ? 'var(--surface-hover)' : 'transparent',
-                boxShadow: active ? '0 0 0 1px var(--brand)' : undefined,
-              }}
-            >
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  background: p.swatch,
-                  border: '1px solid rgba(0,0,0,0.25)',
-                  flexShrink: 0,
-                }}
-              />
-              <Text size="sm" fw={active ? 600 : 500}>
-                {renderLabel(p.label)}
-              </Text>
-              {active && <IconCheck size={14} style={{ color: 'var(--brand)' }} />}
-            </UnstyledButton>
-          )
-        })}
-      </Group>
+      <AppearancePicker />
     </SettingsSection>
   )
 }

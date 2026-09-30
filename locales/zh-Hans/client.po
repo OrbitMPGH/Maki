@@ -1760,6 +1760,10 @@ msgstr "90 天"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "评分为 10/10 的动画以 {topSeed} 作为基准值，而书架上未评分的书籍为 1.00。"
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr ""
@@ -1984,6 +1988,10 @@ msgstr "占用约 3 GB 磁盘空间，每晚更新。搜索和导入不再受速
 #, fuzzy
 msgid "about a minute left"
 msgstr "还剩约一分钟"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2500,8 +2508,8 @@ msgstr "名称有歧义"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "选择强调色、浅色主题，或跟随系统设置。选择会保存在此设备上。"
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "选择强调色、浅色主题，或跟随系统设置。选择会保存在此设备上。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2918,6 +2926,7 @@ msgstr ""
 msgid "Back up now"
 msgstr "立即备份"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3773,8 +3782,8 @@ msgid "Charcoal"
 msgstr ""
 
 #: src/theme-context.tsx
-msgid "Charcoal, lit"
-msgstr ""
+#~ msgid "Charcoal, lit"
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -8970,6 +8979,10 @@ msgstr "下一层级：{nextValue}"
 msgid "Next..."
 msgstr "下一项……"
 
+#: src/theme-context.tsx
+msgid "Night"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No activity in {windowLabel}."
@@ -9383,12 +9396,12 @@ msgid "none yet"
 msgstr "暂无"
 
 #: src/theme-context.tsx
-msgid "Nori"
-msgstr ""
+#~ msgid "Nori"
+#~ msgstr ""
 
 #: src/theme-context.tsx
-msgid "Nori and salmon"
-msgstr ""
+#~ msgid "Nori and salmon"
+#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10446,6 +10459,10 @@ msgstr "此实例已禁用个人添加权重。"
 msgid "Phone reader"
 msgstr "手机阅读器"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10454,8 +10471,8 @@ msgstr "选择根文件夹"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "选择强调色、浅色主题，或跟随系统的浅色/深色模式。选择会保存在此设备上。"
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "选择强调色、浅色主题，或跟随系统的浅色/深色模式。选择会保存在此设备上。"
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy

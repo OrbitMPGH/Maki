@@ -1760,6 +1760,10 @@ msgstr "90 jours"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "Un anime noté 10/10 part avec un poids de {topSeed}, contre 1,00 pour un livre non noté sur votre étagère."
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr ""
@@ -1984,6 +1988,10 @@ msgstr "Environ 3 Go sur le disque, actualisés chaque nuit. La recherche et les
 #, fuzzy
 msgid "about a minute left"
 msgstr "il reste environ une minute"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2500,8 +2508,8 @@ msgstr "Noms ambigus"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "Une couleur d'accent, le thème clair ou celui utilisé par votre système. Le choix est mémorisé sur cet appareil."
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "Une couleur d'accent, le thème clair ou celui utilisé par votre système. Le choix est mémorisé sur cet appareil."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2918,6 +2926,7 @@ msgstr ""
 msgid "Back up now"
 msgstr "Sauvegarder maintenant"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3773,8 +3782,8 @@ msgid "Charcoal"
 msgstr ""
 
 #: src/theme-context.tsx
-msgid "Charcoal, lit"
-msgstr ""
+#~ msgid "Charcoal, lit"
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -8970,6 +8979,10 @@ msgstr "Niveau suivant à {nextValue}"
 msgid "Next..."
 msgstr "Suivant..."
 
+#: src/theme-context.tsx
+msgid "Night"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No activity in {windowLabel}."
@@ -9383,12 +9396,12 @@ msgid "none yet"
 msgstr "aucun pour l'instant"
 
 #: src/theme-context.tsx
-msgid "Nori"
-msgstr ""
+#~ msgid "Nori"
+#~ msgstr ""
 
 #: src/theme-context.tsx
-msgid "Nori and salmon"
-msgstr ""
+#~ msgid "Nori and salmon"
+#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10446,6 +10459,10 @@ msgstr "La pondération personnelle des ajouts est désactivée sur cette instan
 msgid "Phone reader"
 msgstr "Lecteur sur téléphone"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10454,8 +10471,8 @@ msgstr "Choisir un dossier racine"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "Choisissez une couleur d'accent, le thème clair ou le thème clair ou sombre de votre système. Ce choix est mémorisé sur cet appareil."
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "Choisissez une couleur d'accent, le thème clair ou le thème clair ou sombre de votre système. Ce choix est mémorisé sur cet appareil."
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy

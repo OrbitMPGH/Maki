@@ -1760,6 +1760,10 @@ msgstr "90 gün"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "10/10 puanlı bir anime, {topSeed} başlangıç ağırlığına sahip olur; rafınızdaki derecelendirilmemiş bir kitap için bu değer 1,00'dır."
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr ""
@@ -1984,6 +1988,10 @@ msgstr "Diskte yaklaşık 3 GB yer kaplar ve her gece yenilenir. Arama ve içe a
 #, fuzzy
 msgid "about a minute left"
 msgstr "yaklaşık bir dakika kaldı"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2500,8 +2508,8 @@ msgstr "Belirsiz adlar"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "Bir vurgu rengi, açık tema veya sisteminizin kullandığı tema. Bu cihazda hatırlanır."
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "Bir vurgu rengi, açık tema veya sisteminizin kullandığı tema. Bu cihazda hatırlanır."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2918,6 +2926,7 @@ msgstr ""
 msgid "Back up now"
 msgstr "Şimdi yedekle"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3773,8 +3782,8 @@ msgid "Charcoal"
 msgstr ""
 
 #: src/theme-context.tsx
-msgid "Charcoal, lit"
-msgstr ""
+#~ msgid "Charcoal, lit"
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -8970,6 +8979,10 @@ msgstr "Sonraki kademe: {nextValue}"
 msgid "Next..."
 msgstr "Sonraki..."
 
+#: src/theme-context.tsx
+msgid "Night"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No activity in {windowLabel}."
@@ -9383,12 +9396,12 @@ msgid "none yet"
 msgstr "henüz yok"
 
 #: src/theme-context.tsx
-msgid "Nori"
-msgstr ""
+#~ msgid "Nori"
+#~ msgstr ""
 
 #: src/theme-context.tsx
-msgid "Nori and salmon"
-msgstr ""
+#~ msgid "Nori and salmon"
+#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10446,6 +10459,10 @@ msgstr "Bu kurulumda kişisel ekleme ağırlıklandırması devre dışı."
 msgid "Phone reader"
 msgstr "Telefon okuyucu"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10454,8 +10471,8 @@ msgstr "Bir kök klasör seçin"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "Bir vurgu rengi veya açık tema seçin ya da sisteminizin açık veya koyu temasını kullanın. Seçim bu cihazda hatırlanır."
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "Bir vurgu rengi veya açık tema seçin ya da sisteminizin açık veya koyu temasını kullanın. Seçim bu cihazda hatırlanır."
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy

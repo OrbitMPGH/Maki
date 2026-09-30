@@ -1451,6 +1451,10 @@ msgstr "90 days"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr "A better release replaced a downloaded chapter's file."
@@ -1640,6 +1644,10 @@ msgstr "About 3 GB on disk, refreshed nightly. Search and imports become instant
 #: src/components/RecommendationModelSwitch.tsx
 msgid "about a minute left"
 msgstr "about a minute left"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr "Accent"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Access all libraries"
@@ -2069,8 +2077,8 @@ msgid "Ambiguous names"
 msgstr "Ambiguous names"
 
 #: src/components/SetupWizard.tsx
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "An admin decides where it lands and what gets downloaded."
@@ -2414,6 +2422,7 @@ msgstr "Back to the series"
 msgid "Back up now"
 msgstr "Back up now"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Background"
@@ -3117,8 +3126,8 @@ msgid "Charcoal"
 msgstr "Charcoal"
 
 #: src/theme-context.tsx
-msgid "Charcoal, lit"
-msgstr "Charcoal, lit"
+#~ msgid "Charcoal, lit"
+#~ msgstr "Charcoal, lit"
 
 #: src/components/NotificationsSection.tsx
 msgid "Chat ID"
@@ -7419,6 +7428,10 @@ msgstr "Next tier at {nextValue}"
 msgid "Next..."
 msgstr "Next..."
 
+#: src/theme-context.tsx
+msgid "Night"
+msgstr "Night"
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "No activity in {windowLabel}."
 msgstr "No activity in {windowLabel}."
@@ -7761,12 +7774,12 @@ msgid "none yet"
 msgstr "none yet"
 
 #: src/theme-context.tsx
-msgid "Nori"
-msgstr "Nori"
+#~ msgid "Nori"
+#~ msgstr "Nori"
 
 #: src/theme-context.tsx
-msgid "Nori and salmon"
-msgstr "Nori and salmon"
+#~ msgid "Nori and salmon"
+#~ msgstr "Nori and salmon"
 
 #: src/components/CatalogueRules.tsx
 msgid "not {names}"
@@ -8636,14 +8649,18 @@ msgstr "Personal add weighting is disabled for this instance."
 msgid "Phone reader"
 msgstr "Phone reader"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Pick a root folder"
 msgstr "Pick a root folder"
 
 #: src/pages/SettingsPage.tsx
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
 
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are actually contained in, useful for compilation CBZs or oddly-named releases the automatic matcher couldn't parse."

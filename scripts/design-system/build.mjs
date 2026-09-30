@@ -98,18 +98,22 @@ const lightVars = propsOf(":root[data-theme='light']")
 
 // --- Themes (theme-context.tsx) -----------------------------------------------------------------
 
-const presets = [...themeContext.matchAll(/\{\s*id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*accent:\s*'(\w+)',\s*scheme:\s*'(\w+)'/g)]
-  .map(([, id, label, accent, scheme]) => ({ id, label, accent, scheme }))
-  .filter((p) => p.scheme !== 'system')
-// The default accent lives in :root with no [data-accent] block; its dark preset is the `dark` theme.
-const defaultId = /const DEFAULT_ID = '(\w+)'/.exec(themeContext)?.[1]
-const defaultAccent = presets.find((p) => p.id === defaultId)?.accent ?? 'indigo'
-const themes = presets.map((p) => ({
-  id: p.scheme === 'light' ? 'light' : p.accent === defaultAccent ? 'dark' : p.accent,
-  name: p.label,
-  accent: p.accent,
-  scheme: p.scheme,
-}))
+// Appearance is a background times an accent. The design system shows one theme per accent on
+// the default dark ground (:root, night) plus the light theme; the other grounds mix their
+// surfaces from the accent with color-mix, which the token reader cannot evaluate.
+const accentEntries = [...themeContext.matchAll(/\{\s*id:\s*'(\w+)',\s*label:\s*msg`([^`]+)`,\s*swatch:/g)]
+  .map(([, id, label]) => ({ id, label }))
+const defaultAccent = /const DEFAULT_ACCENT[^=]*=\s*'(\w+)'/.exec(themeContext)?.[1] ?? 'indigo'
+const lightLabel = /id:\s*'light',\s*label:\s*msg`([^`]+)`/.exec(themeContext)?.[1] ?? 'Light'
+const themes = [
+  ...accentEntries.map((a) => ({
+    id: a.id === defaultAccent ? 'dark' : a.id,
+    name: a.label,
+    accent: a.id,
+    scheme: 'dark',
+  })),
+  { id: 'light', name: lightLabel, accent: defaultAccent, scheme: 'light' },
+]
 themes.sort((a, b) => (a.id === 'dark' ? -1 : b.id === 'dark' ? 1 : a.id === 'light' ? -1 : b.id === 'light' ? 1 : 0))
 if (!themes.length) throw new Error('No theme presets found in theme-context.tsx')
 

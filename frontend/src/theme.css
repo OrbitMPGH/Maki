@@ -162,17 +162,6 @@
   --brand-fg: #b8496b;
   --brand-fg-on-art: #f5b6c8;
 }
-:root[data-accent='salmon'] {
-  --brand: #ef4f3d;
-  --brand-hover: #dc4433;
-  --brand-on: #ffffff;
-  --brand-glow: rgba(239, 79, 61, 0.35);
-  --brand-fg: #ff8a78;
-}
-:root[data-theme='light'][data-accent='salmon'] {
-  --brand-fg: #c23a2a;
-  --brand-fg-on-art: #ff8a78;
-}
 :root[data-accent='rose'] {
   --brand: #f52069;
   --brand-hover: #e0175c;
@@ -195,34 +184,29 @@
   --brand-fg: #ffdf85;
 }
 
-/* --- Selectable grounds --------------------------------------------------- */
-/* The surface ramp under everything. Night (blue-black) is the default and lives in :root; the
-   Mantine dark scale is swapped alongside in theme-context so component surfaces follow. The light
-   theme block below outranks these by order, so a light scheme is unaffected by the ground. */
-:root[data-ground='nori'] {
-  --app-bg: #0c150f;
-  --surface: #14201a;
-  --surface-2: #1a2822;
-  --surface-hover: #203028;
-  --border: #29392f;
-  --border-strong: #3a4d41;
-  --ink-hi: #f5f1e6;
-  --ink: #e4dfd2;
-  --ink-2: #c8c3b6;
-  --ink-3: #a5a194;
-  --ink-4: #8b887c;
-  --neutral: #a5a194;
+/* --- Selectable backgrounds ---------------------------------------------- */
+/* The surface ramp under everything, chosen separately from the accent. Night (blue-black) lives in
+   :root; the Mantine dark scale is swapped alongside in theme-context so component surfaces follow.
+   The light theme block below outranks these by order, so a light scheme ignores them. */
+:root[data-ground='charcoal'] {
+  --app-bg: #0f0f0f;
+  --surface: #181818;
+  --surface-2: #1e1e1e;
+  --surface-hover: #242424;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --ink-hi: #f4f2ee;
+  --ink: #e3e1dc;
+  --ink-2: #c6c4bf;
+  --ink-3: #a3a19c;
+  --ink-4: #888681;
+  --neutral: #a3a19c;
 }
-[data-ground='nori'] body {
-  background-image:
-    radial-gradient(900px 480px at 6% -8%, rgba(243, 238, 226, 0.06), transparent 60%),
-    radial-gradient(760px 420px at 96% -4%, color-mix(in srgb, var(--brand) 7%, transparent), transparent 58%);
+[data-ground='charcoal'] .app-navbar {
+  background: linear-gradient(180deg, rgba(24, 24, 24, 0.6), rgba(15, 15, 15, 0.6));
 }
-[data-ground='nori'] .app-navbar {
-  background: linear-gradient(180deg, rgba(20, 32, 26, 0.6), rgba(12, 21, 15, 0.6));
-}
-[data-ground='nori'] .app-header {
-  background: rgba(12, 21, 15, 0.72);
+[data-ground='charcoal'] .app-header {
+  background: rgba(15, 15, 15, 0.72);
 }
 :root[data-ground='moss'] {
   --app-bg: #0e100e;
@@ -231,11 +215,6 @@
   --surface-hover: #282d28;
   --border: #2e332e;
   --border-strong: #3e453e;
-}
-[data-ground='moss'] body {
-  background-image:
-    radial-gradient(900px 480px at 6% -8%, rgba(255, 255, 255, 0.05), transparent 60%),
-    radial-gradient(760px 420px at 96% -4%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 58%);
 }
 [data-ground='moss'] .app-navbar {
   background: linear-gradient(180deg, rgba(24, 27, 24, 0.6), rgba(14, 16, 14, 0.6));
@@ -246,7 +225,7 @@
 /* Every surface is charcoal mixed 4% toward the accent, so the black belongs to whichever accent
    is active. The neutral ramp under the mix is wider than charcoal's (16 units from body to card
    against 9): the mix lifts the body more than the cards in relative terms, so an equal ramp reads
-   flat. The wash is a touch under the default ground's strength for the same reason. */
+   flat. The wash is a touch under the default strength for the same reason. */
 :root[data-ground='tinted'] {
   --app-bg: color-mix(in srgb, #0b0b0b 96%, var(--brand));
   --surface: color-mix(in srgb, #1b1b1b 96%, var(--brand));
@@ -265,40 +244,6 @@
 }
 [data-ground='tinted'] .app-header {
   background: color-mix(in srgb, rgba(11, 11, 11, 0.72) 96%, var(--brand));
-}
-:root[data-ground='charcoal'],
-:root[data-ground='charcoal-lit'] {
-  --app-bg: #0f0f0f;
-  --surface: #181818;
-  --surface-2: #1e1e1e;
-  --surface-hover: #242424;
-  --border: #2a2a2a;
-  --border-strong: #3a3a3a;
-  --ink-hi: #f4f2ee;
-  --ink: #e3e1dc;
-  --ink-2: #c6c4bf;
-  --ink-3: #a3a19c;
-  --ink-4: #888681;
-  --neutral: #a3a19c;
-}
-[data-ground='charcoal'] body {
-  background-image:
-    radial-gradient(900px 480px at 6% -8%, rgba(255, 255, 255, 0.045), transparent 60%),
-    radial-gradient(760px 420px at 96% -4%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 58%);
-}
-/* Same surfaces as charcoal, lit by the accent at the default ground's wash strength. */
-[data-ground='charcoal-lit'] body {
-  background-image:
-    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 55%);
-}
-[data-ground='charcoal'] .app-navbar,
-[data-ground='charcoal-lit'] .app-navbar {
-  background: linear-gradient(180deg, rgba(24, 24, 24, 0.6), rgba(15, 15, 15, 0.6));
-}
-[data-ground='charcoal'] .app-header,
-[data-ground='charcoal-lit'] .app-header {
-  background: rgba(15, 15, 15, 0.72);
 }
 
 /* --- Light theme --------------------------------------------------------- */
@@ -341,8 +286,8 @@
 }
 [data-theme='light'] body {
   background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.1), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(120, 110, 220, 0.08), transparent 55%);
+    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
 }
 [data-theme='light'] body::before {
   opacity: 0.03;
@@ -381,12 +326,14 @@ body,
   height: 100%;
 }
 
+/* The ambient wash follows the accent on every background, so the page keeps a temperature
+   whatever ground sits under it. */
 body {
   isolation: isolate;
   background-color: var(--app-bg);
   background-image:
-    radial-gradient(1100px 620px at 82% -12%, rgba(85, 102, 245, 0.12), transparent 60%),
-    radial-gradient(900px 520px at 5% 0%, rgba(63, 46, 128, 0.1), transparent 55%);
+    radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
+    radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 55%);
   background-attachment: fixed;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
@@ -2680,6 +2627,17 @@ body::before {
   background: color-mix(in srgb, var(--brand) 10%, transparent);
   box-shadow: 0 0 0 1px var(--brand);
   color: var(--ink-hi);
+}
+.appearance-picker {
+  display: grid;
+  gap: 14px;
+}
+.appearance-picker-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 .setup-swatch-dot {
   width: 16px;

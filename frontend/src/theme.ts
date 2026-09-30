@@ -51,19 +51,6 @@ const blush: MantineColorsTuple = [
   '#752a45',
 ]
 
-const salmon: MantineColorsTuple = [
-  '#ffece8',
-  '#ffd3cc',
-  '#ffb0a4',
-  '#ff8a78',
-  '#ff6b5a',
-  '#ef4f3d',
-  '#dc4433',
-  '#b8382a',
-  '#8f2c21',
-  '#6b2119',
-]
-
 const rose: MantineColorsTuple = [
   '#ffe9f0',
   '#ffd0de',
@@ -104,7 +91,7 @@ const amber: MantineColorsTuple = [
 ]
 
 /** Selectable accent palettes; the CSS-variable side lives in theme.css under [data-accent]. */
-export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, salmon, emerald, amber }
+export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, emerald, amber }
 
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
 // 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the default; the others are
@@ -120,19 +107,6 @@ const dark: MantineColorsTuple = [
   '#0f121a',
   '#0a0c12',
   '#06070b',
-]
-
-const nori: MantineColorsTuple = [
-  '#c8c3b6',
-  '#aaa598',
-  '#8b887c',
-  '#5a655c',
-  '#29392f',
-  '#1a2822',
-  '#14201a',
-  '#0c150f',
-  '#090f0b',
-  '#050806',
 ]
 
 const charcoal: MantineColorsTuple = [
@@ -162,29 +136,47 @@ const moss: MantineColorsTuple = [
   '#060706',
 ]
 
-// Charcoal mixed a few percent toward the accent. The CSS side derives this from --brand with
-// color-mix, so it follows any accent; this ramp is the rose result, the only accent it ships with.
-const tinted: MantineColorsTuple = [
+// Neutral ramp under the tinted ground, wider from body to card than charcoal's: the mix toward
+// the accent lifts the body more than the cards in relative terms, so an equal ramp reads flat.
+const tintedBase: MantineColorsTuple = [
   '#c7cad4',
   '#a9adba',
   '#8b90a0',
   '#5d6373',
-  '#383032',
-  '#2a2225',
-  '#241b1e',
-  '#140c0f',
-  '#0e080a',
-  '#070405',
+  '#303030',
+  '#222222',
+  '#1b1b1b',
+  '#0b0b0b',
+  '#070707',
+  '#040404',
 ]
 
 /** Selectable surface ramps; the CSS-variable side lives in theme.css under [data-ground]. */
-export const grounds: Record<string, MantineColorsTuple> = {
-  night: dark,
-  nori,
-  charcoal,
-  'charcoal-lit': charcoal,
-  moss,
-  tinted,
+export const grounds: Record<string, MantineColorsTuple> = { night: dark, charcoal, moss, tinted: tintedBase }
+
+function mixHex(a: string, b: string, t: number): string {
+  const parse = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+  const [ar, ag, ab] = parse(a)
+  const [br, bg, bb] = parse(b)
+  const channel = (x: number, y: number) => Math.round(x + (y - x) * t).toString(16).padStart(2, '0')
+  return `#${channel(ar, br)}${channel(ag, bg)}${channel(ab, bb)}`
+}
+
+/** The accent's primary shade in the dark scheme, the hex `--brand` carries in theme.css. */
+export function accentSwatch(key: keyof typeof accents): string {
+  const tuple = accents[key]
+  return tuple[Math.min(primaryShades.get(tuple)?.dark ?? 5, 5)]
+}
+
+/**
+ * The surface ramp for a ground. Tinted mixes every surface 4% toward the accent, the same rule
+ * theme.css applies with color-mix, so the black belongs to whichever accent is active.
+ */
+export function groundRamp(ground: keyof typeof grounds, accent: MantineColorsTuple): MantineColorsTuple {
+  const base = grounds[ground] ?? dark
+  if (ground !== 'tinted') return base
+  const hex = accent[Math.min(primaryShades.get(accent)?.dark ?? 5, 5)]
+  return base.map((c, i) => (i >= 4 ? mixHex(c, hex, 0.04) : c)) as unknown as MantineColorsTuple
 }
 
 // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.

@@ -1760,6 +1760,10 @@ msgstr "90일"
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 msgstr "10점 만점 애니메이션은 {topSeed}로 반영되며, 라이브러리의 평가하지 않은 책은 1.00로 반영됩니다."
 
+#: src/components/SetupWizard.tsx
+msgid "A background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/api/inbox.ts
 msgid "A better release replaced a downloaded chapter's file."
 msgstr ""
@@ -1984,6 +1988,10 @@ msgstr "디스크에서 약 3GB를 사용하며 매일 밤 새로 고칩니다. 
 #, fuzzy
 msgid "about a minute left"
 msgstr "약 1분 남음"
+
+#: src/components/AppearancePicker.tsx
+msgid "Accent"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -2500,8 +2508,8 @@ msgstr "모호한 이름"
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
-msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-msgstr "강조 색상, 밝은 테마 또는 시스템 테마를 선택합니다. 이 기기에 저장됩니다."
+#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
+#~ msgstr "강조 색상, 밝은 테마 또는 시스템 테마를 선택합니다. 이 기기에 저장됩니다."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -2918,6 +2926,7 @@ msgstr ""
 msgid "Back up now"
 msgstr "지금 백업"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -3773,8 +3782,8 @@ msgid "Charcoal"
 msgstr ""
 
 #: src/theme-context.tsx
-msgid "Charcoal, lit"
-msgstr ""
+#~ msgid "Charcoal, lit"
+#~ msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -8970,6 +8979,10 @@ msgstr "{nextValue}에서 다음 등급"
 msgid "Next..."
 msgstr "다음..."
 
+#: src/theme-context.tsx
+msgid "Night"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "No activity in {windowLabel}."
@@ -9383,12 +9396,12 @@ msgid "none yet"
 msgstr "아직 없음"
 
 #: src/theme-context.tsx
-msgid "Nori"
-msgstr ""
+#~ msgid "Nori"
+#~ msgstr ""
 
 #: src/theme-context.tsx
-msgid "Nori and salmon"
-msgstr ""
+#~ msgid "Nori and salmon"
+#~ msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -10446,6 +10459,10 @@ msgstr "이 서버에서는 개인 추가 가중치가 비활성화되어 있습
 msgid "Phone reader"
 msgstr "휴대폰 리더"
 
+#: src/pages/SettingsPage.tsx
+msgid "Pick a background and an accent colour. The background can also be the light theme or whatever your system uses. Remembered on this device."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -10454,8 +10471,8 @@ msgstr "루트 폴더 선택"
 
 #: src/pages/SettingsPage.tsx
 #, fuzzy
-msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-msgstr "강조 색상이나 밝은 테마를 선택하거나 시스템의 밝은/어두운 모드를 따르세요. 선택 사항은 이 기기에 저장됩니다."
+#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
+#~ msgstr "강조 색상이나 밝은 테마를 선택하거나 시스템의 밝은/어두운 모드를 따르세요. 선택 사항은 이 기기에 저장됩니다."
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
