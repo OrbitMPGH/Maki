@@ -164,6 +164,8 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
 
             var label = link.TextContent.Trim();
             var parsed = ChapterNumberParser.Parse(label);
+            var title = parsed.Number is null && label.Length > 0 ? label : null;
+            parsed = parsed.OrSlugNumber(href);
 
             var dateText = row.QuerySelector(".update_time")?.TextContent.Trim();
             DateTime? releaseDate = null;
@@ -180,7 +182,7 @@ public partial class MangaKatanaSource(IHttpClientFactory httpClientFactory) : I
                 label,
                 parsed.Number,
                 parsed.Volume,
-                Title: null,
+                title,
                 Language: "en",
                 releaseDate,
                 Url: href));

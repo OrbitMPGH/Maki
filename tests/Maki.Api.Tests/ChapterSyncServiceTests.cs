@@ -373,6 +373,44 @@ public class ChapterSyncServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task One_shot_titled_by_a_now_numbered_label_merges_into_the_existing_number()
+    {
+        var seriesId = _db.SeedSeries(mappings: [Mapping("fake"), Mapping("other")]);
+        int keeperId;
+        using (var db = _db.NewContext())
+        {
+            var numbered = new Chapter { SeriesId = seriesId, Number = 224, Volume = 17, Language = "en" };
+            db.Chapters.AddRange(
+                numbered,
+                new Chapter
+                {
+                    SeriesId = seriesId, Number = null, IsOneShot = true, Title = "Anna-chan Can't Study",
+                    Language = "en"
+                });
+            db.SaveChanges();
+            keeperId = numbered.Id;
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ =>
+                [fake.Chapter(224) with { NumberRaw = "Anna-chan Can't Study", Title = "Anna-chan Can't Study" }]
+        };
+        var other = new FakeSource { Name = "other", OnListChapters = _ => [fake.Chapter(224) with { SourceName = "other" }] };
+
+        var newIds = await BuildService(null, source, other).SyncSeriesAsync(seriesId);
+
+        Assert.Empty(newIds);
+        var chapter = Assert.Single(ChaptersOf(seriesId));
+        Assert.Equal(keeperId, chapter.Id);
+        Assert.Equal(224m, chapter.Number);
+        Assert.Equal("Anna-chan Can't Study", chapter.Title);
+        Assert.All(LinksOf(seriesId), l => Assert.Equal(keeperId, l.ChapterId));
+    }
+
+    [Fact]
     public async Task Untitled_unnumbered_chapters_with_different_labels_stay_distinct()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("fake"));

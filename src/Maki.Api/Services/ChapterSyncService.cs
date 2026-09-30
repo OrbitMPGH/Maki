@@ -57,6 +57,7 @@ public class ChapterSyncService(
         var skipSpecials = await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
         var newChapters = new List<Chapter>();
         var numbersBySource = new Dictionary<string, IReadOnlyCollection<decimal?>>();
+        var promotedBesideExisting = false;
 
         // MangaBaka has no MangaDex ids, so the uuid can only come from a linked
         // source mapping; it feeds the series web links.
@@ -106,16 +107,18 @@ public class ChapterSyncService(
                 {
                     var match = existing.FirstOrDefault(c => ChapterIdentity.Matches(c, sc))
                                 ?? UntitledOneShot(existing, sc);
-                    if (match is null && PromotableOneShot(existing, sc) is { } unnumbered)
+                    if (PromotableOneShot(existing, sc) is { } unnumbered)
                     {
                         // Stored as a one-shot titled by its label back when the parser could not
                         // read that label ("Episode 12"). Numbering it in place keeps its file and
-                        // stops a second row being created, and downloaded, beside it.
+                        // stops a second row being created, and downloaded, beside it. When another
+                        // source already has that number, the two rows are merged below.
                         unnumbered.Number = sc.Number;
                         unnumbered.NumberRaw = sc.NumberRaw;
                         unnumbered.IsOneShot = false;
                         unnumbered.Title = sc.Title;
-                        match = unnumbered;
+                        promotedBesideExisting |= match is not null;
+                        match ??= unnumbered;
                     }
 
                     if (match is not null)
@@ -181,6 +184,11 @@ public class ChapterSyncService(
                     mapping.SourceName, seriesId);
                 mapping.LastError = ex.Message;
             }
+        }
+
+        if (promotedBesideExisting)
+        {
+            MergeDuplicates(existing);
         }
 
         // Flag (or clear) cross-source numbering clashes. A clash is always
