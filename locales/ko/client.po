@@ -3593,6 +3593,10 @@ msgstr "챕터 {chapterId}: {pageCount, plural, other {페이지 #개}}"
 msgid "Chapter {chapterLabel}"
 msgstr ""
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Chapter {chapterLabel} of {title} is ready to read."
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -5252,6 +5256,10 @@ msgstr "{installedDate}에 다운로드됨."
 msgid "Downloaded from"
 msgstr "다운로드 위치"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloaded from {source}"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded the prebuilt index"
@@ -5283,6 +5291,10 @@ msgstr "메타데이터 데이터베이스 다운로드 중"
 #, fuzzy
 msgid "Downloading now"
 msgstr "지금 다운로드 중"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloading, {donePages} of {pageCount} pages"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -6025,6 +6037,10 @@ msgstr "더 나은 파일 찾기"
 msgid "Find more"
 msgstr "더 찾기"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Finding a source…"
+msgstr ""
+
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6082,6 +6098,10 @@ msgstr "첫 번째"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "First chapter"
+msgstr ""
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "First chapter ready"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -6251,6 +6271,10 @@ msgstr "프랑스어"
 #, fuzzy
 msgid "From"
 msgstr "출처"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "From {source}. You can keep browsing while it downloads."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -9252,6 +9276,10 @@ msgstr "일치하는 작품이 없습니다."
 msgid "No snapshot downloaded yet"
 msgstr "아직 다운로드한 스냅샷 없음"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "No source could serve the first chapter."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "No sources linked"
@@ -10599,7 +10627,7 @@ msgstr ""
 msgid "Preview · {chapterName} · via {source}"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/PreviewChapterButton.tsx
 msgid "Preview first chapter"
 msgstr ""
 
@@ -10981,6 +11009,10 @@ msgstr "몇 챕터를 읽으면 여기에 내용이 채워집니다."
 msgid "Read ch. {resumeAt}"
 msgstr "{resumeAt}화 읽기"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read first chapter"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Read in Kavita"
@@ -11009,6 +11041,10 @@ msgstr "소유한 것보다 더 많이 읽음"
 #, fuzzy
 msgid "Read next chapter"
 msgstr "다음 챕터 읽기"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read now"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -14097,6 +14133,10 @@ msgstr "파일 이름에 챕터 또는 볼륨 번호가 없어 일치시킬 수 
 msgid "The file this upgrade was meant to replace is gone"
 msgstr ""
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The first chapter of {title} is ready to read."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
 msgid "The folder and every file already match the current naming formats."
@@ -14175,6 +14215,10 @@ msgstr "특이한 항목"
 
 #: src/api/queue.ts
 msgid "The old file could not be moved aside for the upgrade"
+msgstr ""
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The preview expired. Try again."
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -14894,6 +14938,10 @@ msgstr "다시 시도"
 #, fuzzy
 msgid "Try clearing the filters."
 msgstr "필터를 지워 보세요."
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Try the preview again"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16074,6 +16122,10 @@ msgstr "중단하는 시점은 대략"
 #, fuzzy
 msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
 msgstr "시리즈를 추가할 수 있지만 루트 폴더는 관리자만 선택할 수 있습니다. 관리자에게 이 작품을 추가해 달라고 요청하거나 관리자 권한을 받으세요."
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "You can keep browsing while it looks."
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

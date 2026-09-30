@@ -3593,6 +3593,10 @@ msgstr "章节 {chapterId}：{pageCount, plural, other {# 页}}"
 msgid "Chapter {chapterLabel}"
 msgstr ""
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Chapter {chapterLabel} of {title} is ready to read."
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -5252,6 +5256,10 @@ msgstr "已于 {installedDate} 下载。"
 msgid "Downloaded from"
 msgstr "下载来源"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloaded from {source}"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded the prebuilt index"
@@ -5283,6 +5291,10 @@ msgstr "正在下载元数据数据库"
 #, fuzzy
 msgid "Downloading now"
 msgstr "正在下载"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloading, {donePages} of {pageCount} pages"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -6025,6 +6037,10 @@ msgstr "查找更好的版本"
 msgid "Find more"
 msgstr "查看更多"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Finding a source…"
+msgstr ""
+
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6082,6 +6098,10 @@ msgstr "第一个"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "First chapter"
+msgstr ""
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "First chapter ready"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -6251,6 +6271,10 @@ msgstr "法语"
 #, fuzzy
 msgid "From"
 msgstr "从"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "From {source}. You can keep browsing while it downloads."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -9252,6 +9276,10 @@ msgstr "没有匹配的动画。"
 msgid "No snapshot downloaded yet"
 msgstr "尚未下载快照"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "No source could serve the first chapter."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "No sources linked"
@@ -10599,7 +10627,7 @@ msgstr ""
 msgid "Preview · {chapterName} · via {source}"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/PreviewChapterButton.tsx
 msgid "Preview first chapter"
 msgstr ""
 
@@ -10981,6 +11009,10 @@ msgstr "阅读几章后这里会填充内容。"
 msgid "Read ch. {resumeAt}"
 msgstr "阅读第 {resumeAt} 章"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read first chapter"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Read in Kavita"
@@ -11009,6 +11041,10 @@ msgstr "阅读多于收藏"
 #, fuzzy
 msgid "Read next chapter"
 msgstr "阅读下一章"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read now"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -14097,6 +14133,10 @@ msgstr "文件名不包含章节或卷号，因此无法与任何内容匹配。
 msgid "The file this upgrade was meant to replace is gone"
 msgstr ""
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The first chapter of {title} is ready to read."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
 msgid "The folder and every file already match the current naming formats."
@@ -14175,6 +14215,10 @@ msgstr "与众不同"
 
 #: src/api/queue.ts
 msgid "The old file could not be moved aside for the upgrade"
+msgstr ""
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The preview expired. Try again."
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -14894,6 +14938,10 @@ msgstr "重试"
 #, fuzzy
 msgid "Try clearing the filters."
 msgstr "尝试清除筛选条件。"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Try the preview again"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16074,6 +16122,10 @@ msgstr "你通常在这里弃读"
 #, fuzzy
 msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
 msgstr "你可以添加作品，但只有管理员能选择根文件夹。请管理员添加此作品，或授予你管理员权限。"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "You can keep browsing while it looks."
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

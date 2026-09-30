@@ -4,7 +4,6 @@ import {
   ActionIcon,
   Badge,
   Box,
-  Button,
   CloseButton, Divider,
   Group,
   Modal,
@@ -17,7 +16,6 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
-  IconBook,
   IconStar,
   IconTrendingDown,
   IconTrendingUp,
@@ -47,6 +45,7 @@ import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
+import { PreviewChapterButton } from './PreviewChapterButton'
 import { SeriesPreviewReader } from './SeriesPreviewReader'
 import { DiscoverTags } from './DiscoverTags'
 import { DiceIcon } from '../LuckyButton'
@@ -395,14 +394,12 @@ export function DiscoverDetailModal({
                     addedFrom={feedbackContext ? 'recommendation' : 'library'}
                   />
                   {inLibrarySeriesId == null && (
-                    <Button
-                      variant="default"
-                      fullWidth
-                      leftSection={<IconBook size={16} />}
-                      onClick={() => setPreviewFor(item.providerId)}
-                    >
-                      <Trans>Preview first chapter</Trans>
-                    </Button>
+                    <PreviewChapterButton
+                      key={`preview-${item.providerId}`}
+                      providerId={item.providerId}
+                      title={title}
+                      onRead={() => setPreviewFor(item.providerId)}
+                    />
                   )}
                   {feedbackContext && (
                     <RecommendationFeedbackMenu

@@ -7554,6 +7554,32 @@ body.reader-open {
   background: var(--surface-hover);
 }
 
+/* The preview button doubles as its own progress bar while the chapter downloads behind the card. */
+.preview-chapter-button[data-working] {
+  position: relative;
+  overflow: hidden;
+  cursor: progress;
+}
+.preview-chapter-button[data-working]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--preview-progress, 0%);
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  transition: width var(--dur-base) var(--ease);
+}
+.preview-chapter-button[data-indeterminate]::before {
+  width: 40%;
+  animation: preview-chapter-sweep 1.4s var(--ease) infinite;
+}
+.preview-chapter-button[data-working] .mantine-Button-inner {
+  position: relative;
+}
+@keyframes preview-chapter-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
 /* --- Sources: icon tiles, the Settings summary and the Manage sources modal --- */
 .source-icon {
   display: inline-grid;

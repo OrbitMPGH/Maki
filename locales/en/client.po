@@ -2967,6 +2967,10 @@ msgstr "Chapter {chapterId}: {pageCount, plural, one {# page} other {# pages}}"
 msgid "Chapter {chapterLabel}"
 msgstr "Chapter {chapterLabel}"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Chapter {chapterLabel} of {title} is ready to read."
+msgstr "Chapter {chapterLabel} of {title} is ready to read."
+
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
 msgstr "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -4344,6 +4348,10 @@ msgstr "Downloaded {installedDate}."
 msgid "Downloaded from"
 msgstr "Downloaded from"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloaded from {source}"
+msgstr "Downloaded from {source}"
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Downloaded the prebuilt index"
 msgstr "Downloaded the prebuilt index"
@@ -4369,6 +4377,10 @@ msgstr "Downloading metadata database"
 #: src/pages/HomePage.tsx
 msgid "Downloading now"
 msgstr "Downloading now"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloading, {donePages} of {pageCount} pages"
+msgstr "Downloading, {donePages} of {pageCount} pages"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Downloading…"
@@ -4982,6 +4994,10 @@ msgstr "Find better copy"
 msgid "Find more"
 msgstr "Find more"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Finding a source…"
+msgstr "Finding a source…"
+
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Finding source"
@@ -5030,6 +5046,10 @@ msgstr "first"
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "First chapter"
 msgstr "First chapter"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "First chapter ready"
+msgstr "First chapter ready"
 
 #: src/pages/SettingsPage.tsx
 msgid "First download in progress"
@@ -5168,6 +5188,10 @@ msgstr "French"
 #: src/pages/RequestsPage.tsx
 msgid "From"
 msgstr "From"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "From {source}. You can keep browsing while it downloads."
+msgstr "From {source}. You can keep browsing while it downloads."
 
 #: src/components/RelinkFilesModal.tsx
 msgid "From its name"
@@ -7651,6 +7675,10 @@ msgstr "No shows match."
 msgid "No snapshot downloaded yet"
 msgstr "No snapshot downloaded yet"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "No source could serve the first chapter."
+msgstr "No source could serve the first chapter."
+
 #: src/pages/LibraryPage.tsx
 msgid "No sources linked"
 msgstr "No sources linked"
@@ -8759,7 +8787,7 @@ msgstr "Preview"
 msgid "Preview · {chapterName} · via {source}"
 msgstr "Preview · {chapterName} · via {source}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/PreviewChapterButton.tsx
 msgid "Preview first chapter"
 msgstr "Preview first chapter"
 
@@ -9090,6 +9118,10 @@ msgstr "Read a few chapters and this fills in."
 msgid "Read ch. {resumeAt}"
 msgstr "Read ch. {resumeAt}"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read first chapter"
+msgstr "Read first chapter"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Read in Kavita"
 msgstr "Read in Kavita"
@@ -9113,6 +9145,10 @@ msgstr "Read more than you own"
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "Read next chapter"
 msgstr "Read next chapter"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read now"
+msgstr "Read now"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Read slowly over a long span"
@@ -11664,6 +11700,10 @@ msgstr "The file name carries no chapter or volume number, so nothing can be mat
 msgid "The file this upgrade was meant to replace is gone"
 msgstr "The file this upgrade was meant to replace is gone"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The first chapter of {title} is ready to read."
+msgstr "The first chapter of {title} is ready to read."
+
 #: src/components/RenameSeriesModal.tsx
 msgid "The folder and every file already match the current naming formats."
 msgstr "The folder and every file already match the current naming formats."
@@ -11728,6 +11768,10 @@ msgstr "The odd one out"
 #: src/api/queue.ts
 msgid "The old file could not be moved aside for the upgrade"
 msgstr "The old file could not be moved aside for the upgrade"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The preview expired. Try again."
+msgstr "The preview expired. Try again."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "The profile and its reader settings are removed. This can't be undone."
@@ -12322,6 +12366,10 @@ msgstr "Try again"
 #: src/pages/NotificationsPage.tsx
 msgid "Try clearing the filters."
 msgstr "Try clearing the filters."
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Try the preview again"
+msgstr "Try the preview again"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Turkish"
@@ -13308,6 +13356,10 @@ msgstr "You bail around"
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
 msgstr "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "You can keep browsing while it looks."
+msgstr "You can keep browsing while it looks."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "You can't add series yourself. An admin decides where it lands and what gets downloaded."

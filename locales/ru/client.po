@@ -3593,6 +3593,10 @@ msgstr "Глава {chapterId}: {pageCount, plural, one {# страница} few
 msgid "Chapter {chapterLabel}"
 msgstr ""
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Chapter {chapterLabel} of {title} is ready to read."
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "Chapter {gapFrom} isn't downloaded, so this skips it."
@@ -5252,6 +5256,10 @@ msgstr "Загружено {installedDate}."
 msgid "Downloaded from"
 msgstr "Загружено из"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloaded from {source}"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Downloaded the prebuilt index"
@@ -5283,6 +5291,10 @@ msgstr "Загрузка базы данных метаданных"
 #, fuzzy
 msgid "Downloading now"
 msgstr "Сейчас загружается"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Downloading, {donePages} of {pageCount} pages"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -6025,6 +6037,10 @@ msgstr "Найти более качественную копию"
 msgid "Find more"
 msgstr "Найти ещё"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Finding a source…"
+msgstr ""
+
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6082,6 +6098,10 @@ msgstr "первый"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "First chapter"
+msgstr ""
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "First chapter ready"
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -6251,6 +6271,10 @@ msgstr "Французский"
 #, fuzzy
 msgid "From"
 msgstr "От"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "From {source}. You can keep browsing while it downloads."
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -9252,6 +9276,10 @@ msgstr "Нет подходящих шоу."
 msgid "No snapshot downloaded yet"
 msgstr "Снимок ещё не загружен"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "No source could serve the first chapter."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "No sources linked"
@@ -10599,7 +10627,7 @@ msgstr ""
 msgid "Preview · {chapterName} · via {source}"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/PreviewChapterButton.tsx
 msgid "Preview first chapter"
 msgstr ""
 
@@ -10981,6 +11009,10 @@ msgstr "Прочитайте несколько глав, и здесь появ
 msgid "Read ch. {resumeAt}"
 msgstr "Читать главу {resumeAt}"
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read first chapter"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Read in Kavita"
@@ -11009,6 +11041,10 @@ msgstr "Читаешь больше, чем у тебя есть"
 #, fuzzy
 msgid "Read next chapter"
 msgstr "Прочитать следующую главу"
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Read now"
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -14097,6 +14133,10 @@ msgstr "В имени файла нет номера главы или тома,
 msgid "The file this upgrade was meant to replace is gone"
 msgstr ""
 
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The first chapter of {title} is ready to read."
+msgstr ""
+
 #: src/components/RenameSeriesModal.tsx
 #, fuzzy
 msgid "The folder and every file already match the current naming formats."
@@ -14175,6 +14215,10 @@ msgstr "Отличающийся элемент"
 
 #: src/api/queue.ts
 msgid "The old file could not be moved aside for the upgrade"
+msgstr ""
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "The preview expired. Try again."
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -14894,6 +14938,10 @@ msgstr "Попробовать снова"
 #, fuzzy
 msgid "Try clearing the filters."
 msgstr "Попробуйте очистить фильтры."
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Try the preview again"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16074,6 +16122,10 @@ msgstr "Вы прекращаете примерно на"
 #, fuzzy
 msgid "You can add series, but only an admin can choose a root folder. Ask one to add this title, or to grant you admin."
 msgstr "Вы можете добавлять серии, но выбрать корневую папку может только администратор. Попросите его добавить эту серию или предоставить вам права администратора."
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "You can keep browsing while it looks."
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

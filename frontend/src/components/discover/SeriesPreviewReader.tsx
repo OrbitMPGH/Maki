@@ -1,13 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActionIcon, Button, Center, Group, Portal, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconArrowLeft, IconX } from '@tabler/icons-react'
 import { Trans, useLingui } from '@lingui/react/macro'
-import {
-  previewPageUrl,
-  releaseSeriesPreview,
-  useSeriesPreview,
-  useStartSeriesPreview,
-} from '../../api/preview'
+import { previewPageUrl, useSeriesPreview } from '../../api/preview'
 import { useReaderSettings } from '../../api/reader'
 import { useReadingProfiles } from '../../api/readingProfiles'
 import ContinuousView from '../../pages/reader/ContinuousView'
@@ -19,6 +14,7 @@ type PreviewMode = 'paged' | 'vertical'
 
 /**
  * Reads the first chapter of a series that is not in the library, stacked over the Discover card.
+ * `PreviewChapterButton` owns the server job; this only reads it.
  * Nothing here reports progress, reading time or bookmarks, and prefs changes stay in this session:
  * a preview is a look, not a read.
  */
@@ -36,19 +32,7 @@ export function SeriesPreviewReader({
   onClose: () => void
 }) {
   const { t } = useLingui()
-  const { mutate: start, error: startError, isSuccess: started } = useStartSeriesPreview()
-  const { data: preview } = useSeriesPreview(providerId, started)
-
-  // Released on a timer so StrictMode's mount, unmount, mount in dev joins the same job rather than
-  // cancelling it between the two starts.
-  const releaseTimer = useRef<number | undefined>(undefined)
-  useEffect(() => {
-    window.clearTimeout(releaseTimer.current)
-    start(providerId)
-    return () => {
-      releaseTimer.current = window.setTimeout(() => releaseSeriesPreview(providerId), 0)
-    }
-  }, [providerId, start])
+  const { data: preview, error: lostError } = useSeriesPreview(providerId, true)
 
   // What the user reads this type of series with elsewhere: their defaults, then the profile that
   // claims the type, the same order the real reader resolves in for a series without an override.
@@ -165,7 +149,7 @@ export function SeriesPreviewReader({
     }
   }
 
-  const failure = startError?.message ?? (preview?.status === 'failed' ? preview.error : null)
+  const failure = lostError?.message ?? (preview?.status === 'failed' ? preview.error : null)
   const source = preview?.sourceDisplayName
   const chapterLabel = preview?.chapterLabel
   const pageNumber = page + 1
