@@ -85,10 +85,9 @@ const ContinueTile = memo(function ContinueTile({
           <div className="continue-tile-meta">
             {lastRead && <span>{lastRead}</span>}
             {unreadChapters > 0 && (
-              <>
-                <span className="continue-tile-dot" aria-hidden="true" />
-                <span>{plural(unreadChapters, { one: '# unread', other: '# unread' })}</span>
-              </>
+              <span className="continue-tile-unread">
+                {plural(unreadChapters, { one: '# unread', other: '# unread' })}
+              </span>
             )}
           </div>
 

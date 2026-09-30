@@ -554,6 +554,10 @@ msgstr "{free} free"
 msgid "{granted, plural, one {# granted} other {# granted}}"
 msgstr "{granted, plural, one {# granted} other {# granted}}"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{have} of {totalLabel}"
+msgstr "{have} of {totalLabel}"
+
 #: src/components/series/SeriesHero.tsx
 msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}}"
@@ -581,10 +585,6 @@ msgstr "{inLibraryCount, plural, one {Show # series already in the library} othe
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
-
-#: src/components/home/ProgressCard.tsx
-#~ msgid "{intoLevelFormatted} / {levelSpanFormatted} XP"
-#~ msgstr "{intoLevelFormatted} / {levelSpanFormatted} XP"
 
 #: src/components/home/ProgressCard.tsx
 msgid "{intoLevelFormatted} / {levelSpanFormatted} XP to level {nextLevel}"
@@ -763,6 +763,10 @@ msgstr "{name}: {ok}/{total} succeeded"
 #: src/pages/LibraryPage.tsx
 msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: {ok}/{total} succeeded, first error: {firstError}"
+
+#: src/components/home/RecentlyAddedRail.tsx
+msgid "{newChapterCount, plural, one {# new} other {# new}}"
+msgstr "{newChapterCount, plural, one {# new} other {# new}}"
 
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
@@ -1173,12 +1177,18 @@ msgid "{unread, plural, one {# left} other {# left}}"
 msgstr "{unread, plural, one {# left} other {# left}}"
 
 #: src/components/ui/CoverCard.tsx
+msgid "{unread, plural, one {# new} other {# new}}"
+msgstr "{unread, plural, one {# new} other {# new}}"
+
 #: src/components/ui/SeriesRow.tsx
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, one {# unread} other {# unread}}"
 
-#: src/components/home/ContinueLead.tsx
 #: src/components/home/ReadingRail.tsx
+msgid "{unreadChapters, plural, one {# new} other {# new}}"
+msgstr "{unreadChapters, plural, one {# new} other {# new}}"
+
+#: src/components/home/ContinueLead.tsx
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# unread} other {# unread}}"
 
@@ -1277,6 +1287,10 @@ msgstr "{workCount, plural, one {# title in the catalogue} other {# titles in th
 #: src/components/discover/DiscoverGlance.tsx
 msgid "{year} – present"
 msgstr "{year} – present"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "{year}, {status}"
+msgstr "{year}, {status}"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "{zone} (this browser)"
@@ -1589,10 +1603,6 @@ msgstr "A show you scored well nudges recommendations toward similar manga. A lo
 msgid "A small local model lets Discover recommend by feel and lets you search for a plot rather than a title. Its index downloads prebuilt, so your machine skips the heavy work."
 msgstr "A small local model lets Discover recommend by feel and lets you search for a plot rather than a title. Its index downloads prebuilt, so your machine skips the heavy work."
 
-#: src/components/layout/SidebarFooter.tsx
-msgid "A star on GitHub helps others find it."
-msgstr "A star on GitHub helps others find it."
-
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
 msgstr "A thumbs down hides this title and pushes down titles closer to it than to what you kept. Hide only removes it."
@@ -1657,10 +1667,6 @@ msgstr "Access all libraries"
 msgid "Access token"
 msgstr "Access token"
 
-#: src/components/UserMenu.tsx
-msgid "Account"
-msgstr "Account"
-
 #: src/api/inbox.ts
 msgid "Account security"
 msgstr "Account security"
@@ -1685,8 +1691,8 @@ msgid "achievement, badge, level, xp, streak, goal, leaderboard, gamification, t
 msgstr "achievement, badge, level, xp, streak, goal, leaderboard, gamification, time zone, timezone"
 
 #: src/components/home/ProgressCard.tsx
-msgid "achievements"
-msgstr "achievements"
+msgid "Achievements"
+msgstr "Achievements"
 
 #: src/pages/HealthPage.tsx
 msgid "Acknowledge"
@@ -2080,10 +2086,6 @@ msgstr "Amber"
 msgid "Ambiguous names"
 msgstr "Ambiguous names"
 
-#: src/components/SetupWizard.tsx
-#~ msgid "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-#~ msgstr "An accent colour, the light theme, or whatever your system uses. Remembered on this device."
-
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "An admin decides where it lands and what gets downloaded."
@@ -2433,8 +2435,8 @@ msgid "Background"
 msgstr "Background"
 
 #: src/components/AppearanceAnnouncementModal.tsx
-msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
-msgstr "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. If you preferred the old look, pick Night. You can change this any time under Settings, Appearance."
+msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. To keep the old look, pick Night. You can change this any time under Settings, Appearance."
+msgstr "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. To keep the old look, pick Night. You can change this any time under Settings, Appearance."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Backlog"
@@ -2557,8 +2559,8 @@ msgid "Best quality first compares a source's tier before its measured quality, 
 msgstr "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
 
 #: src/components/home/ProgressCard.tsx
-msgid "best streak"
-msgstr "best streak"
+msgid "Best streak"
+msgstr "Best streak"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Biggest day"
@@ -3106,8 +3108,8 @@ msgid "Chapters per page"
 msgstr "Chapters per page"
 
 #: src/components/home/ProgressCard.tsx
-msgid "chapters read"
-msgstr "chapters read"
+msgid "Chapters read"
+msgstr "Chapters read"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Chapters read in this series"
@@ -3136,10 +3138,6 @@ msgstr "Chapters: {chaptersMin}–{chaptersMax}"
 #: src/theme-context.tsx
 msgid "Charcoal"
 msgstr "Charcoal"
-
-#: src/theme-context.tsx
-#~ msgid "Charcoal, lit"
-#~ msgstr "Charcoal, lit"
 
 #: src/components/NotificationsSection.tsx
 msgid "Chat ID"
@@ -3938,8 +3936,8 @@ msgid "Day by day"
 msgstr "Day by day"
 
 #: src/components/home/ProgressCard.tsx
-msgid "day streak"
-msgstr "day streak"
+msgid "Day streak"
+msgstr "Day streak"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Days active"
@@ -4127,6 +4125,10 @@ msgstr "Delivers without a notification sound."
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "Demographic"
 msgstr "Demographic"
+
+#: src/pages/LibraryPage.tsx
+msgid "Density: {densityLabel}"
+msgstr "Density: {densityLabel}"
 
 #: src/pages/DiscoverPage.tsx
 msgid "Describe what you're after, a title, or author:\"Junji Ito\""
@@ -4607,10 +4609,6 @@ msgstr "English"
 #: src/pages/SettingsPage.tsx
 msgid "English (provider default)"
 msgstr "English (provider default)"
-
-#: src/components/layout/SidebarFooter.tsx
-msgid "Enjoying Maki?"
-msgstr "Enjoying Maki?"
 
 #: src/pages/LoginPage.tsx
 msgid "Enter one of your recovery codes"
@@ -6390,6 +6388,7 @@ msgid "Level {currentLevel}"
 msgstr "Level {currentLevel}"
 
 #: src/components/home/ProgressCard.tsx
+#: src/components/UserMenu.tsx
 msgid "Level {levelNumber}"
 msgstr "Level {levelNumber}"
 
@@ -6691,10 +6690,6 @@ msgstr "Maki {checkedVersion} is available"
 #: src/components/layout/SidebarFooter.tsx
 msgid "Maki {latestVersion} available"
 msgstr "Maki {latestVersion} available"
-
-#: src/components/layout/SidebarFooter.tsx
-msgid "Maki {latestVersion} is out"
-msgstr "Maki {latestVersion} is out"
 
 #: src/components/layout/SidebarFooter.tsx
 msgid "Maki {version}"
@@ -7374,7 +7369,6 @@ msgstr "New"
 msgid "New chapter available"
 msgstr "New chapter available"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ImportListsSection.tsx
 msgid "New chapters"
 msgstr "New chapters"
@@ -7825,14 +7819,6 @@ msgstr "None of their titles match these filters. Try loosening one of them."
 #: src/pages/SettingsPage.tsx
 msgid "none yet"
 msgstr "none yet"
-
-#: src/theme-context.tsx
-#~ msgid "Nori"
-#~ msgstr "Nori"
-
-#: src/theme-context.tsx
-#~ msgid "Nori and salmon"
-#~ msgstr "Nori and salmon"
 
 #: src/components/CatalogueRules.tsx
 msgid "not {names}"
@@ -8710,10 +8696,6 @@ msgstr "Pick a background and an accent colour. The background can also be the l
 #: src/pages/SeriesDetailPage.tsx
 msgid "Pick a root folder"
 msgstr "Pick a root folder"
-
-#: src/pages/SettingsPage.tsx
-#~ msgid "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
-#~ msgstr "Pick an accent colour, the light theme, or match your system's light or dark mode. Remembered on this device."
 
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are actually contained in, useful for compilation CBZs or oddly-named releases the automatic matcher couldn't parse."
@@ -10238,6 +10220,7 @@ msgid "Saved as your default"
 msgstr "Saved as your default"
 
 #: src/components/DiscoverPresets.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Saved filters"
 msgstr "Saved filters"
 
@@ -10421,9 +10404,17 @@ msgstr "Scrobbling"
 msgid "Scroll"
 msgstr "Scroll"
 
+#: src/components/ui/Rail.tsx
+msgid "Scroll back"
+msgstr "Scroll back"
+
 #: src/pages/reader/ContinuousView.tsx
 msgid "Scroll for next chapter"
 msgstr "Scroll for next chapter"
+
+#: src/components/ui/Rail.tsx
+msgid "Scroll forward"
+msgstr "Scroll forward"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Scroll to finish the preview"
@@ -10437,6 +10428,7 @@ msgstr "Scrolling pace · {remainingChapters} chapters left · based on {sampleC
 msgid "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads"
 msgstr "Scrolling pace · {remainingChapters} chapters left · based on {sampleChapters} similar reads"
 
+#: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 msgid "Search"
@@ -10557,10 +10549,6 @@ msgstr "Search volume releases"
 #: src/pages/ActivityPage.tsx
 msgid "Search volumes now"
 msgstr "Search volumes now"
-
-#: src/components/CommandPalette.tsx
-msgid "Search…"
-msgstr "Search…"
 
 #: src/pages/ImportPage.tsx
 msgid "searched as “{cleanedTitle}”"
@@ -10939,17 +10927,9 @@ msgstr "Show again"
 msgid "Show all"
 msgstr "Show all"
 
-#: src/components/home/ContinueRail.tsx
-msgid "Show earlier chapters"
-msgstr "Show earlier chapters"
-
 #: src/components/TagBuckets.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
-
-#: src/components/home/ContinueRail.tsx
-msgid "Show later chapters"
-msgstr "Show later chapters"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
@@ -12202,9 +12182,6 @@ msgid "Time range"
 msgstr "Time range"
 
 #: src/components/home/ProgressCard.tsx
-msgid "time read"
-msgstr "time read"
-
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Time read"
 msgstr "Time read"
@@ -12692,6 +12669,10 @@ msgstr "Up to ch. {end}"
 msgid "Up to date, last checked {checkedAtLabel}"
 msgstr "Up to date, last checked {checkedAtLabel}"
 
+#: src/components/layout/SidebarFooter.tsx
+msgid "Update {latestVersion} available"
+msgstr "Update {latestVersion} available"
+
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 msgid "Update available"
@@ -12981,6 +12962,10 @@ msgstr "very tight"
 msgid "Vietnamese"
 msgstr "Vietnamese"
 
+#: src/pages/LibraryPage.tsx
+msgid "View"
+msgstr "View"
+
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 msgid "View {title}"
@@ -13003,10 +12988,6 @@ msgstr "View and add {title}"
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "View in library"
 msgstr "View in library"
-
-#: src/components/layout/SidebarFooter.tsx
-msgid "View release"
-msgstr "View release"
 
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Vol. {volume}"
@@ -13521,10 +13502,6 @@ msgstr "You vs the crowd"
 #: src/pages/reader/ChapterEnd.tsx
 msgid "You're caught up"
 msgstr "You're caught up"
-
-#: src/components/layout/SidebarFooter.tsx
-msgid "You're on {currentVersion}"
-msgstr "You're on {currentVersion}"
 
 #: src/components/SetupWizard.tsx
 msgid "You're set"

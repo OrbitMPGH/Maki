@@ -1,7 +1,8 @@
 import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { IconBook } from '@tabler/icons-react'
+import { IconPlayerPlayFilled } from '@tabler/icons-react'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
+import { Rail } from '../ui/Rail'
 import { relativeTime } from '../ui/time'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -12,13 +13,13 @@ import { plural } from '@lingui/core/macro'
  */
 export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) {
   return (
-    <div className="discover-rail">
+    <Rail>
       {items.map((item) => (
         <div key={item.seriesId} className="discover-rail-item">
           <RecentCard item={item} />
         </div>
       ))}
-    </div>
+    </Rail>
   )
 }
 
@@ -44,46 +45,51 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
         <div className="cover-scrim" />
 
         <div className="cover-corners">
-          <div className="cover-corner cover-corner-left">
-            <span
-              className="cover-badge cover-badge-unread"
-              data-tip={plural(newChapterCount, {
-                one: '# recent chapter file',
-                other: '# recent chapter files',
-              })}
-            >
-              +{newChapterCount}
-            </span>
-          </div>
-
           {item.readChapterId != null && (
             <div className="cover-corner cover-corner-right">
               {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
                   imperatively and stops the outer card's navigation. */}
               <span
-                className="cover-badge home-read-badge"
+                className="cover-chapter home-read-badge"
                 role="button"
                 tabIndex={0}
                 data-tip={t`Read next chapter`}
+                aria-label={t`Read next chapter`}
                 onClick={openReader}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') openReader(e)
                 }}
               >
-                <IconBook size={11} />
-                <Trans>Read</Trans>
+                <IconPlayerPlayFilled size={10} />
+                <span>
+                  <Trans>Read</Trans>
+                </span>
               </span>
             </div>
           )}
         </div>
 
         <div className="cover-meta">
+          {item.newestChapterLabel && (
+            <span className="cover-chapter">
+              <span>{item.newestChapterLabel}</span>
+            </span>
+          )}
           <span className="cover-title" title={item.seriesTitle}>
             {item.seriesTitle}
           </span>
-          <span className="home-chapter-label">
-            {item.newestChapterLabel ?? t`New chapters`} · {relativeTime(item.addedAt)}
-          </span>
+          <div className="cover-row">
+            <span>{relativeTime(item.addedAt)}</span>
+            <span
+              className="cover-new"
+              data-tip={plural(newChapterCount, {
+                one: '# recent chapter file',
+                other: '# recent chapter files',
+              })}
+            >
+              {plural(newChapterCount, { one: '# new', other: '# new' })}
+            </span>
+          </div>
         </div>
       </div>
     </Link>

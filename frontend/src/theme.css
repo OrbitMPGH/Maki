@@ -69,6 +69,7 @@
   --radius-2xs: 2px;
   --radius-chip: 7px;
   --radius-thumb: 8px;
+  --radius-card: 10px;
   --radius-hero: 12px;
   /* Bars, badges and anything whose ends should be fully round, whatever its height. */
   --radius-pill: 999px;
@@ -162,6 +163,18 @@
   --brand-fg: #b8496b;
   --brand-fg-on-art: #f5b6c8;
 }
+:root[data-theme='light'][data-accent='rose'] {
+  --brand-fg: #c0164f;
+  --brand-fg-on-art: #ff9fbd;
+}
+:root[data-theme='light'][data-accent='emerald'] {
+  --brand-fg: #127a4c;
+  --brand-fg-on-art: #96efc4;
+}
+:root[data-theme='light'][data-accent='amber'] {
+  --brand-fg: #8a5a00;
+  --brand-fg-on-art: #ffdf85;
+}
 :root[data-accent='rose'] {
   --brand: #f52069;
   --brand-hover: #e0175c;
@@ -202,9 +215,6 @@
   --ink-4: #888681;
   --neutral: #a3a19c;
 }
-[data-ground='charcoal'] .app-navbar {
-  background: linear-gradient(180deg, rgba(24, 24, 24, 0.6), rgba(15, 15, 15, 0.6));
-}
 [data-ground='charcoal'] .app-header {
   background: rgba(15, 15, 15, 0.72);
 }
@@ -215,9 +225,6 @@
   --surface-hover: #282d28;
   --border: #2e332e;
   --border-strong: #3e453e;
-}
-[data-ground='moss'] .app-navbar {
-  background: linear-gradient(180deg, rgba(24, 27, 24, 0.6), rgba(14, 16, 14, 0.6));
 }
 [data-ground='moss'] .app-header {
   background: rgba(14, 16, 14, 0.72);
@@ -238,9 +245,6 @@
   background-image:
     radial-gradient(1100px 620px at 82% -12%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 60%),
     radial-gradient(900px 520px at 5% 0%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 55%);
-}
-[data-ground='tinted'] .app-navbar {
-  background: linear-gradient(180deg, color-mix(in srgb, rgba(27, 27, 27, 0.6) 96%, var(--brand)), color-mix(in srgb, rgba(11, 11, 11, 0.6) 96%, var(--brand)));
 }
 [data-ground='tinted'] .app-header {
   background: color-mix(in srgb, rgba(11, 11, 11, 0.72) 96%, var(--brand));
@@ -291,10 +295,6 @@
 }
 [data-theme='light'] body::before {
   opacity: 0.03;
-}
-[data-theme='light'] .app-navbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 248, 252, 0.75));
-  border-right: 1px solid var(--border);
 }
 [data-theme='light'] .app-header {
   background: rgba(255, 255, 255, 0.78);
@@ -463,12 +463,10 @@ body::before {
 }
 
 /* --- App shell ----------------------------------------------------------- */
-/* No backdrop-filter here on purpose: AppShell offsets the main column, so nothing ever scrolls
-   under the navbar: the blur only ever sampled a flat background (no visual effect) while
-   costing a full-height composited layer on every scrolled frame. The header keeps its blur;
-   there content genuinely passes underneath. */
+/* The sidebar has no ground of its own on desktop: the body (ground, wash and grain) shows through,
+   and only the hairline separates it from the page. No backdrop-filter: nothing scrolls under it. */
 .app-navbar {
-  background: linear-gradient(180deg, rgba(22, 25, 34, 0.6), rgba(11, 13, 19, 0.6));
+  background: transparent;
   border-right: 1px solid var(--border);
 }
 .app-header {
@@ -499,8 +497,8 @@ body::before {
    - Mantine sets --app-shell-navbar-width to 100%, so the drawer covers the page edge to edge and
      there is nothing left to tap to dismiss it. Narrowed to a real drawer, with a scrim (rendered
      in App.tsx) taking the rest.
-   - The translucent background only worked because nothing ever sat behind the navbar. Here the
-     page does, and reading the nav through the library grid is the whole complaint. Opaque. */
+   - The see-through desktop sidebar only works because nothing ever sits behind it. Here the page
+     does, and reading the nav through the library grid is the whole complaint. Opaque. */
 @media (max-width: 47.9375em) {
   .mantine-AppShell-root {
     --app-shell-navbar-width: min(272px, 82vw);
@@ -538,23 +536,25 @@ body::before {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-hero);
-  background: color-mix(in srgb, var(--brand) 16%, var(--surface-2));
-  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--border));
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border));
 }
 .brand-mark svg {
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
 }
 
 /* Sidebar nav link */
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 8px 11px;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
   border-radius: var(--radius-control);
   color: var(--ink-2);
   font-size: var(--type-body);
@@ -571,24 +571,26 @@ body::before {
   color: var(--ink-hi);
 }
 .nav-link[data-active='true'] {
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  background: color-mix(in srgb, var(--brand) 13%, transparent);
   color: var(--ink-hi);
 }
 .nav-link[data-active='true']::before {
   content: '';
   position: absolute;
-  left: -5px;
+  left: -6px;
   top: 50%;
   transform: translateY(-50%);
-  width: 2px;
-  height: 18px;
-  border-radius: var(--radius-pill);
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
   background: var(--brand);
 }
 .nav-link .nav-icon {
-  opacity: 0.75;
+  flex-shrink: 0;
+  opacity: 0.8;
 }
 .nav-link[data-active='true'] .nav-icon {
+  color: var(--brand-fg);
   opacity: 1;
 }
 
@@ -604,45 +606,149 @@ body::before {
 .nav-footer {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   border-top: 1px solid var(--border);
   padding-top: 10px;
   margin-top: 8px;
 }
 .nav-footer .nav-footer-help {
   width: 100%;
-  padding: 8px 11px;
-  font-size: 12.5px;
+  padding: 0 10px;
+  font-size: var(--type-body);
   font-weight: var(--fw-semibold);
 }
 .nav-footer-chevron {
   margin-left: auto;
   opacity: 0.5;
 }
+.nav-footer .nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px 6px 4px;
+  border-radius: var(--radius-control);
+  transition: background-color var(--dur-base) var(--ease);
+}
+.nav-footer .nav-user:hover,
+.nav-footer .nav-user[data-expanded] {
+  background: var(--surface-hover);
+}
+.nav-user-avatar {
+  flex-shrink: 0;
+}
+.nav-user-avatar .mantine-Avatar-placeholder {
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+}
+.nav-user-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.nav-user-name {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-user-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-4);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.nav-user-xp {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+.nav-user-xp > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+.nav-user-chevron {
+  flex-shrink: 0;
+  color: var(--ink-4);
+}
+.nav-footer-notice {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.nav-footer-link {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 28px 0 10px;
+  border-radius: var(--radius-control);
+  color: var(--brand-fg);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--dur-base) var(--ease);
+}
+.nav-footer-link:hover {
+  background: var(--surface-hover);
+}
+.nav-footer-star {
+  flex-shrink: 0;
+  margin-right: 2px;
+  color: var(--rating);
+}
+.nav-footer .nav-footer-dismiss {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: var(--ink-4);
+}
+.nav-footer .nav-footer-dismiss:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
 .nav-footer-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 4px;
+  padding: 4px 10px 0;
 }
 .nav-footer-version {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
+  color: var(--ink-4);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
 .nav-footer .nav-footer-version-button {
   margin-left: -4px;
   padding: 2px 4px;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
   border-radius: 4px;
   transition:
     background-color var(--dur-base) var(--ease),
@@ -659,101 +765,22 @@ body::before {
   background: var(--warn);
   flex-shrink: 0;
 }
-.nav-card-wrap {
-  position: relative;
-}
-.nav-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 10px 11px;
-  margin-bottom: 4px;
-  border-radius: var(--radius-surface);
-  border: 1px solid var(--border);
-  color: inherit;
-  text-decoration: none;
-}
-.nav-card-update {
-  background: color-mix(in srgb, var(--brand) 10%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--brand) 32%, var(--border));
-}
-.nav-card-update .nav-card-icon {
-  color: var(--brand-fg);
-}
-.nav-card-star {
-  padding-right: 26px;
-  background: color-mix(in srgb, var(--rating) 9%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--rating) 28%, var(--border));
-  transition: border-color var(--dur-base) var(--ease);
-}
-.nav-card-star:hover {
-  border-color: color-mix(in srgb, var(--rating) 50%, var(--border));
-}
-.nav-card-star .nav-card-icon {
-  color: var(--rating);
-}
-.nav-card-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.nav-card-body {
-  min-width: 0;
-  flex: 1;
-}
-.nav-card-title {
-  font-size: 12.5px;
-  font-weight: var(--fw-semibold);
-  color: var(--ink-hi);
-  line-height: 1.3;
-}
-.nav-card-sub {
-  font-size: 11.5px;
-  color: var(--ink-3);
-  line-height: 1.35;
-  margin-top: 2px;
-}
-.nav-card-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-}
-.nav-footer .nav-card-link {
-  font-size: 11.5px;
-  color: var(--ink-3);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.nav-card-link:hover {
-  color: var(--ink-hi);
-}
-.nav-footer .nav-card-dismiss {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  color: var(--ink-4);
-}
-.nav-card-dismiss:hover {
-  color: var(--ink-hi);
-  background: var(--surface-hover);
-}
 
 /* Command palette */
 .command-palette-trigger {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--radius-control);
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--surface-2);
-  color: var(--ink-2);
+  color: var(--ink-4);
+  font: inherit;
   font-size: var(--type-meta);
   cursor: pointer;
   transition: background-color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
@@ -765,23 +792,35 @@ body::before {
 .command-palette-trigger-label {
   display: none;
 }
-@media (min-width: 48em) {
-  .command-palette-trigger-label {
-    display: inline;
-  }
-}
 .command-palette-trigger-kbd {
   display: none;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-3);
   font-size: var(--type-label);
   font-weight: var(--fw-semibold);
-  color: var(--ink-4);
-  border: 1px solid var(--border);
-  border-radius: var(--mantine-radius-xs);
-  padding: 1px 5px;
 }
 @media (min-width: 48em) {
-  .command-palette-trigger-kbd {
+  .command-palette-trigger {
+    justify-content: flex-start;
+    width: min(320px, 36vw);
+    margin-right: 8px;
+    padding: 0 6px 0 12px;
+  }
+  .command-palette-trigger-label {
     display: inline;
+    flex: 1;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .command-palette-trigger-kbd {
+    display: inline-flex;
   }
 }
 .command-palette-item[data-active='true'] {
@@ -850,19 +889,24 @@ body::before {
   }
 }
 .nav-section-label {
-  font-size: 10.5px;
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: var(--fw-semibold);
+  line-height: 16px;
   color: var(--ink-4);
-  padding: 0 11px;
+  padding: 0 10px;
 }
 .nav-count {
+  min-width: 18px;
+  height: 18px;
   margin-left: auto;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-medium);
-  text-align: right;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  line-height: 18px;
+  text-align: center;
 }
 .count-indicator > .mantine-Indicator-indicator {
   background-image: none;
@@ -878,7 +922,7 @@ body::before {
 .cover-card {
   position: relative;
   display: block;
-  border-radius: var(--mantine-radius-lg);
+  border-radius: var(--radius-card);
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -956,7 +1000,7 @@ body::before {
 .cover-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 4%, rgba(6, 7, 11, 0.35) 34%, transparent 60%);
+  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 0, rgba(6, 7, 11, 0.4) 40%, transparent 62%);
   pointer-events: none;
 }
 .cover-placeholder {
@@ -971,13 +1015,8 @@ body::before {
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
-   Mantine Badge/Tooltip/RingProgress, and why nothing here uses backdrop-filter.
-
-   The two corners share one flex row instead of each being independently absolutely
-   positioned: fixed-anchored corners have no way to notice the other one's content and
-   collide on narrow cards (a wide "Downloading N" + eye + "Completed" outgrows a Compact-
-   density card). `space-between` keeps them apart when there's room; `flex-wrap` drops the
-   right corner to its own line, still pinned to the card's top edge, when there isn't. */
+   Mantine Badge/Tooltip/RingProgress, and why the chips skip backdrop-filter.
+   The two corners share one flex row so they can never overlap on a narrow card. */
 .cover-corners {
   position: absolute;
   top: 8px;
@@ -1027,6 +1066,11 @@ body::before {
   background: #000;
   opacity: 0.7;
 }
+.cover-corner-right > .cover-badge-circle {
+  width: 26px;
+  height: 26px;
+  background: rgba(6, 7, 11, 0.6);
+}
 /* Monitor eye and mute bell on a poster: revealed on hover or keyboard focus with a pointer,
    always shown on touch. Only the two small chips fade, never the card. */
 @media (hover: hover) and (pointer: fine) {
@@ -1062,13 +1106,9 @@ body::before {
 /* `.discover-rating` is exempt: it is the only badge on a catalogue poster's top-left and has
    nothing to collide with, and collapsing it to the 20px dot dropped its star (the svg is the
    flex item that shrinks) and left a bare number. Rail cards are exactly 150px, so every rail
-   lost the star while the grid kept it. The home rails' Read pill and anime chapter badge are
-   exempt for the same reason: nothing beside them to collide with, and at 20px the text spills
-   out of the dot. */
+   lost the star while the grid kept it. */
 @container (max-width: 150px) {
-  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating):not(
-      .home-read-badge
-    ):not(.home-chapter-badge) {
+  .cover-badge:not(.cover-badge-circle):not(.cover-badge-unread):not(.discover-rating) {
     width: 20px;
     padding: 0;
     justify-content: center;
@@ -1080,9 +1120,6 @@ body::before {
   .discover-rating svg {
     flex-shrink: 0;
   }
-  .cover-badge-label {
-    display: none;
-  }
 }
 /* Read progress: a conic-gradient ring, so it costs one element instead of an SVG per card.
    The blur lives on the disc and the ring is masked onto a pseudo-element above it: masking the
@@ -1093,14 +1130,13 @@ body::before {
    three on every poster. */
 .cover-ring {
   position: relative;
-  width: 26px;
-  height: 26px;
+  flex: none;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  /* A dark disc under the blur. Without it the ring rode directly on the cover art and vanished
-     over a pale one: the unfilled track was white at 20%, i.e. nothing at all on white. Tinting
-     the backdrop instead of just recolouring the track keeps the glass look and makes the ring
-     read the same over any cover, which is the same trick the status badges use. */
-  background: rgba(6, 7, 11, 0.55);
+  /* A dark disc under the blur, so the ring reads the same over a pale cover as a dark one. */
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(4px);
 }
 .cover-ring::before {
@@ -1108,20 +1144,47 @@ body::before {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(var(--info) var(--ring-pct), rgba(255, 255, 255, 0.3) 0);
-  -webkit-mask: radial-gradient(circle, transparent 8px, #000 8.5px);
-  mask: radial-gradient(circle, transparent 8px, #000 8.5px);
+  background: conic-gradient(var(--brand) var(--ring-pct), rgba(255, 255, 255, 0.22) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
 }
-/* All downloaded chapters read: the ring completes and turns green instead of a separate
-   "Read" pill (which was the thing overlapping the status badge on narrow cards). */
 .cover-ring[data-complete]::before {
   background: var(--ok);
 }
 .cover-ring-check {
+  --tone: var(--ok);
   position: absolute;
   inset: 0;
   margin: auto;
-  color: var(--ok);
+  color: var(--tone);
+}
+/* Icon chip on a cover: download state beside the ring, publication status top-right. */
+.cover-state {
+  --tone: var(--neutral);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(6, 7, 11, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  color: var(--tone);
+}
+.cover-state[data-tone='info'] {
+  --tone: var(--info);
+}
+/* Publication status, top-right: neutral so the corner stays quiet. */
+.cover-state[data-tone='status'] {
+  --tone: color-mix(in srgb, var(--ink-hi) 90%, transparent);
+}
+/* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. */
+[data-theme='light'] .cover-state,
+[data-theme='light'] .cover-ring-check {
+  color: color-mix(in srgb, var(--tone) 55%, white);
+}
+[data-theme='light'] .cover-state[data-tone='status'] {
+  color: rgba(255, 255, 255, 0.9);
 }
 /* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
 .cover-check {
@@ -1161,23 +1224,76 @@ body::before {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: var(--type-body);
+  font-size: var(--type-meta);
   font-weight: var(--fw-strong);
   line-height: 1.25;
+  text-wrap: pretty;
   color: #fff;
 }
-.cover-progress-row {
+.cover-bar {
+  height: 3px;
+  margin: 7px 0 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+/* "47 of 106" on the left, the "N new" pill on the right. */
+.cover-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  margin-top: 7px;
+  min-height: 16px;
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.7);
 }
-.cover-bar {
-  flex: 1;
-  height: 4px;
+.cover-title + .cover-row {
+  margin-top: 5px;
+}
+.cover-row > [data-nothing-wanted] {
+  color: rgba(255, 255, 255, 0.5);
+}
+.cover-new {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, white 16%, transparent);
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-bold);
+}
+/* Reading card: the chapter it opens, as a chip above the title. */
+.cover-chapter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  height: 20px;
+  margin-bottom: 7px;
+  padding: 0 8px 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: var(--brand-on);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+.cover-chapter > svg {
+  flex: none;
+}
+.cover-chapter:not(:has(> svg)) {
+  padding-left: 8px;
+}
+.cover-chapter > span {
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cover-bar-fill {
   height: 100%;
@@ -1258,13 +1374,16 @@ body::before {
    containment on the cards it was switched off (the old rule here) and every one of the ~240
    posters stayed laid out, painted and image-decoded for as long as the tab was open. */
 .discover-rail {
+  --rail-fade-start: 0px;
+  --rail-fade-end: 0px;
   display: flex;
-  gap: var(--mantine-spacing-md);
+  gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 8px;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
   content-visibility: auto;
   /* Poster height at the 150px item every surface but Discover uses (2/3 ratio) plus the scrollbar
      gutter. `auto` keeps the real measurement once a rail has been on screen; this is only the
@@ -1280,6 +1399,34 @@ body::before {
    size-contained flex item is exactly what the rule above avoids. */
 .discover-rail-item .cover-card {
   content-visibility: visible;
+}
+/* `Rail` sets these while the scroller overflows: each edge fades only when there is more to
+   scroll to on that side, so a rail that fits, or sits at its start, is never masked. */
+.discover-rail:hover {
+  scrollbar-color: var(--border-strong) transparent;
+}
+.discover-rail[data-fade-start] {
+  --rail-fade-start: 24px;
+}
+.discover-rail[data-fade-end] {
+  --rail-fade-end: 24px;
+}
+.discover-rail[data-fade-start],
+.discover-rail[data-fade-end] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--rail-fade-start),
+    #000 calc(100% - var(--rail-fade-end)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--rail-fade-start),
+    #000 calc(100% - var(--rail-fade-end)),
+    transparent
+  );
 }
 .discover-card:has(.discover-card-action:focus-visible) {
   outline: 2px solid var(--brand);
@@ -1318,6 +1465,18 @@ body::before {
   gap: var(--mantine-spacing-md);
   color: inherit;
   text-decoration: none;
+}
+.home-glance-xp {
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.home-glance-xp > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
 }
 /* Tighter than the series band's, where the same figures have a whole band to spread across. */
 .home-glance .hero-stats {
@@ -1381,25 +1540,14 @@ body::before {
 }
 
 /* --- Home dashboard rails ------------------------------------------------ */
-/* The chapter line under the title on a Home card, where the library grid carries have/total. */
-.home-chapter-label {
-  display: block;
-  margin-top: 3px;
-  font-size: var(--type-micro);
-  font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, white 82%, transparent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 /* How far into the current chapter you are. Same geometry as .cover-bar so a Continue-reading
    card and a library card line up, but its own class: this measures pages within one chapter,
    not chapters within a series, and conflating the two would be a lie at a glance. */
 .home-resume-bar {
-  height: 4px;
-  margin-top: 7px;
+  height: 3px;
+  margin: 7px 0 6px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, white 16%, transparent);
+  background: rgba(255, 255, 255, 0.2);
   overflow: hidden;
 }
 .home-resume-fill {
@@ -1407,61 +1555,46 @@ body::before {
   border-radius: var(--radius-pill);
   background: var(--brand);
 }
+/* Recently added's jump-to-reader button: the chapter chip, top-right. */
 .home-read-badge {
-  background: #000;
-  opacity: 0.92;
+  margin-bottom: 0;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
 }
 .home-read-badge:hover {
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
-  opacity: 1;
+  background: var(--brand-hover);
+  transform: translateY(-1px);
+}
+.home-read-badge:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 /* Quick-add / owned cue, top-right of the poster. The poster's full-card button owns the action,
-   so this is a visual cue without a second focus stop. It stays large enough to communicate the
-   action clearly on touch screens, where there is no hover reveal. */
+   so this is a visual cue without a second focus stop. */
 .discover-corner {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 8px;
+  right: 8px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   pointer-events: none;
   color: var(--ok-on);
   background: var(--ok);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 .discover-corner[data-add='true'] {
-  color: var(--mantine-primary-color-contrast);
-  background: var(--mantine-color-brand-filled);
-  opacity: 0;
-  transform: scale(0.85);
-  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
-}
-.discover-corner[data-add='true']:hover {
-  background: var(--mantine-color-brand-filled-hover);
-}
-/* The reading rails open the reader directly, so the cue is a play glyph and it stays visible:
-   a poster with nothing on it reads as a link to the series page. */
-.discover-corner[data-play='true'] {
-  width: 36px;
-  height: 36px;
-  background: var(--brand);
   color: var(--brand-on);
-  opacity: 0.92;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
-}
-.cover-card:hover .discover-corner[data-play='true'],
-.reading-card:hover .discover-corner[data-play='true'] {
-  opacity: 1;
-  transform: scale(1.08);
+  background: var(--brand);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease);
 }
 /* A reading-rail card is its link plus a menu button beside it, not inside it. The wrapper owns
    the hover lift so pointing at the button doesn't drop the card out from under it. */
@@ -1486,10 +1619,9 @@ body::before {
 .continue-tile-menu:hover {
   background: rgba(6, 7, 11, 0.85);
 }
-/* Left of the play cue, centred on it. */
 .reading-card-menu {
-  top: 11px;
-  right: 49px;
+  top: 8px;
+  right: 8px;
 }
 .reading-card:hover > .reading-card-menu {
   transform: translateY(-4px);
@@ -1512,41 +1644,28 @@ body::before {
     opacity: 1;
   }
 }
-.home-chapter-label[data-action] {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: var(--fw-semibold);
-  color: var(--brand-fg-on-art);
-}
-.home-chapter-label[data-action] > svg {
-  flex: none;
-}
-.home-chapter-sep {
-  color: color-mix(in srgb, white 55%, transparent);
-  font-weight: var(--fw-regular);
-}
 .discover-card:hover .discover-corner[data-add='true'],
 .discover-card:focus-within .discover-corner[data-add='true'] {
   opacity: 1;
-  transform: scale(1);
 }
 @media (hover: none), (pointer: coarse) {
   .discover-corner[data-add='true'] {
     opacity: 1;
-    transform: scale(1);
   }
 }
-/* MangaBaka's 0-100 score, shown out of 10. Top-left, where the library card puts its
-   download badge — a catalogue item has no download state to compete with it. */
+/* MangaBaka's 0-100 score, shown out of 10, top-left. */
 .discover-rating {
   position: absolute;
   top: 8px;
   left: 8px;
   z-index: 1;
+  gap: 3px;
+  padding: 0 6px 0 5px;
+  border-radius: var(--radius-chip);
+  letter-spacing: 0;
   text-transform: none;
   font-variant-numeric: tabular-nums;
-  background: #000;
+  background: rgba(6, 7, 11, 0.62);
 }
 .discover-meta {
   position: absolute;
@@ -1555,29 +1674,29 @@ body::before {
   bottom: 9px;
   z-index: 1;
 }
-/* Year · status · chapter count under the title; the chapter count is the one that ellipsizes on a narrow card. */
+/* "2017, Completed" on the left, the chapter count right-aligned. The left side ellipsizes. */
 .discover-sub {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 16px;
   margin-top: 5px;
-  flex-wrap: nowrap;
   white-space: nowrap;
+  font-size: var(--type-label);
+  font-weight: var(--fw-medium);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}
+.discover-sub-status {
+  min-width: 0;
   overflow: hidden;
-  font-size: var(--type-micro);
-  color: color-mix(in srgb, white 82%, transparent);
-}
-.discover-sub > .tnum,
-.discover-sub-status {
-  flex-shrink: 0;
-}
-.discover-sub-status {
+  text-overflow: ellipsis;
   text-transform: capitalize;
 }
 .discover-sub-chapters {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+  flex: none;
 }
 /* --- Engine rails: the rows the recommender produced ---------------------- */
 /* Wider items than a catalogue rail, and a footer under the poster instead of the scrim's single
@@ -1743,10 +1862,8 @@ body::before {
   }
 }
 .discover-hero-eyebrow {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  text-transform: none;
   color: var(--ink-4);
   margin-bottom: 8px;
 }
@@ -1819,11 +1936,9 @@ body::before {
   backdrop-filter: blur(18px) saturate(0.85);
 }
 .discover-hero-strip-label {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+  font-size: var(--type-micro);
+  text-transform: none;
+  color: var(--ink-4);
 }
 .discover-hero-strip-heading {
   display: flex;
@@ -1832,10 +1947,9 @@ body::before {
   gap: 12px;
 }
 .discover-hero-strip-mode {
-  font-size: var(--type-badge);
-  font-weight: var(--fw-strong);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  text-transform: none;
   color: var(--brand-fg, var(--brand));
 }
 .discover-hero-strip-row {
@@ -1966,10 +2080,8 @@ body::before {
 }
 .discover-seeds-label {
   flex: none;
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  text-transform: none;
   color: var(--ink-4);
 }
 .discover-seeds-row {
@@ -2183,10 +2295,8 @@ body::before {
   background: var(--surface);
 }
 .discover-taste-lead {
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  text-transform: none;
   color: var(--ink-4);
 }
 .discover-taste-chip {
@@ -3267,9 +3377,8 @@ body::before {
 .hero-stat-l {
   color: var(--ink-4);
   font-size: var(--type-micro);
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  line-height: 1.3;
+  text-transform: none;
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -3645,12 +3754,19 @@ body::before {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: var(--mantine-spacing-xl);
-  margin-bottom: var(--mantine-spacing-sm);
+  min-height: 30px;
+  margin-top: 44px;
+  margin-bottom: 14px;
   min-width: 0;
 }
 .section-header-icon {
+  display: grid;
   flex-shrink: 0;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand-fg);
 }
 .section-header-title {
@@ -3668,8 +3784,10 @@ body::before {
 }
 .section-header-count {
   flex-shrink: 0;
+  margin-left: -2px;
   color: var(--ink-4);
   font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
 }
 .section-header-rule {
   flex: 1;
@@ -3683,10 +3801,13 @@ body::before {
   align-items: center;
 }
 .section-header-action .mantine-Button-root[data-variant='subtle'] {
-  color: var(--ink-3);
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
 }
 .section-header-action .mantine-Button-root[data-variant='subtle']:hover {
   background-color: var(--surface-hover);
+  color: var(--ink-hi);
 }
 /* Drawn inside the button so it shares the hit area, whatever element the caller passed. */
 .section-header-action[data-chevron] .mantine-Button-inner::after {
@@ -3699,6 +3820,56 @@ body::before {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6l-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
+/* The slot `Rail` portals its prev/next buttons into. Empty for a rail that fits, or a header with
+   no rail under it, and then it takes no room. */
+.section-header-arrows {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+.section-header-arrows:empty {
+  display: none;
+}
+.section-header-arrows[data-hover],
+.section-header-arrows:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .section-header-arrows {
+    opacity: 1;
+  }
+}
+.rail-arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--ink-2);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    color 0.12s var(--ease),
+    border-color 0.12s var(--ease);
+}
+.rail-arrow:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--ink-hi);
+}
+.rail-arrow:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.rail-arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* Below `xs` the title loses the shrinking contest to the rule and gets squeezed to nothing, so the rule drops out and the row wraps naturally. */
 @media (max-width: 36em) {
   .section-header {
@@ -3708,7 +3879,8 @@ body::before {
   .section-header-rule {
     display: none;
   }
-  .section-header-action {
+  .section-header-action,
+  .section-header-rule + .section-header-arrows {
     margin-left: auto;
   }
 }
@@ -4394,9 +4566,8 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 .stats-figure-l {
   color: var(--ink-4);
   font-size: var(--type-micro);
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  line-height: 1.3;
+  text-transform: none;
 }
 
 @media (max-width: 61.9375em) {
@@ -5962,8 +6133,14 @@ body.reader-open {
 /* And the ring's blur is pure compositor cost here: it exists to let cover art show through the
    glass, and there is no art under a row. */
 .series-row .cover-ring {
+  width: 26px;
+  height: 26px;
   backdrop-filter: none;
   background: var(--surface-2);
+  box-shadow: none;
+}
+.series-row .cover-ring::before {
+  background: conic-gradient(var(--brand) var(--ring-pct), var(--border-strong) 0);
 }
 
 /* --- Health workspace ------------------------------------------------------ */
@@ -6395,10 +6572,9 @@ body.reader-open {
 }
 .figure-strip-l {
   color: var(--ink-4);
-  font-size: var(--type-label);
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  line-height: 1.3;
+  text-transform: none;
 }
 
 .status-dot {
@@ -6678,9 +6854,14 @@ body.reader-open {
 
 /* --- Library index: ruled, overflow-clipped block merging stats + toolbar --- */
 .library-index {
-  margin-bottom: var(--mantine-spacing-lg);
+  margin-bottom: var(--mantine-spacing-md);
   /* Clips the metric grid's cell borders back to the rounded edge. */
   overflow: hidden;
+  /* Pins under the app header while the grid scrolls. The strip slides away under the header so only
+     the toolbar stays; its height is measured into --library-strip-h. */
+  position: sticky;
+  top: calc(var(--app-shell-header-height, 58px) - var(--library-strip-h, 0px));
+  z-index: 20;
 }
 .figure-strip.library-index-metrics {
   padding: 0;
@@ -6690,7 +6871,7 @@ body.reader-open {
   padding: 0.875rem 1.125rem;
 }
 .library-toolbar-row {
-  align-items: flex-end;
+  align-items: center;
 }
 .library-toolbar-row .library-search {
   flex: 1 1 15rem;
@@ -6699,9 +6880,62 @@ body.reader-open {
 .library-toolbar-row .library-sort {
   flex: 0 0 10.625rem;
 }
+.library-toolbar-row > .tnum {
+  flex: none;
+  margin-inline: 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+.library-view-controls {
+  flex: none;
+}
+.library-view-toggle {
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+.library-view-toggle .mantine-SegmentedControl-indicator {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  box-shadow: none;
+}
+.library-view-toggle .mantine-SegmentedControl-label {
+  padding: 0;
+  color: var(--ink-3);
+}
+.library-view-toggle .mantine-SegmentedControl-label:hover {
+  color: var(--ink-hi);
+}
+.library-view-toggle .mantine-SegmentedControl-label[data-active] {
+  color: var(--brand-fg);
+}
+.library-view-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+}
+.library-density-button {
+  flex: none;
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--ink-2);
+}
 .library-saved-filters {
-  min-height: 1.5rem;
-  padding-top: 0.15rem;
+  min-height: 1.75rem;
+  margin: 0 0 var(--mantine-spacing-lg);
+}
+.library-saved-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-right: 0.125rem;
+  font-size: 0.75rem;
+  color: var(--ink-4);
 }
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
@@ -6755,9 +6989,6 @@ body.reader-open {
   }
   .library-saved-filters > * {
     flex-shrink: 0;
-  }
-  .library-saved-filters[data-tools-only] {
-    display: none;
   }
   .library-selection-bar > .mantine-Group-root:last-child {
     flex-wrap: nowrap;
@@ -7121,7 +7352,7 @@ body.reader-open {
   min-height: 188px;
   align-items: stretch;
   border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-overlay);
   background: var(--surface-raised);
 }
 .continue-tile .series-hero-art {
@@ -7201,18 +7432,14 @@ body.reader-open {
 .continue-tile-meta {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 10px;
   color: var(--ink-3);
-  font-size: var(--type-badge);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
+  font-size: var(--type-micro);
+  font-variant-numeric: tabular-nums;
 }
-.continue-tile-dot {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: currentColor;
+.continue-tile-unread {
+  color: var(--brand-fg);
+  font-weight: var(--fw-semibold);
 }
 .continue-tile-title {
   display: -webkit-box;
@@ -7220,10 +7447,11 @@ body.reader-open {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: var(--ink-hi);
+  font-family: var(--font-display);
   font-size: var(--type-section);
   font-weight: var(--fw-strong);
-  letter-spacing: -0.02em;
-  line-height: 1.12;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
   text-decoration: none;
 }
 .continue-tile-title:hover {
@@ -7282,25 +7510,6 @@ body.reader-open {
   .continue-lead-grid > :nth-child(3) .continue-tile-motion img {
     animation-delay: 0ms;
   }
-}
-
-/* ── Home: Continue reading spill-over carousel ───────────────────────────── */
-
-.reading-rail-shell--carousel {
-  position: relative;
-}
-.reading-rail-controls {
-  min-height: 2rem;
-  margin-bottom: 0.35rem;
-}
-.reading-rail-controls .mantine-ActionIcon-root {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface-raised);
-}
-.reading-rail-controls .mantine-ActionIcon-root:hover {
-  border-color: var(--brand);
-  background: var(--surface-sunken);
 }
 
 /* --- Utility modal tier --------------------------------------------------- */

@@ -40,7 +40,6 @@ import { IconBrandMark } from './components/IconBrandMark'
 import { NotificationBell } from './components/NotificationBell'
 import MetadataDumpProgress from './components/MetadataDumpProgress'
 import SetupWizard from './components/SetupWizard'
-import { UserMenu } from './components/UserMenu'
 import SidebarFooter from './components/layout/SidebarFooter'
 import LanguageAnnouncementModal from './components/LanguageAnnouncementModal'
 import AppearanceAnnouncementModal from './components/AppearanceAnnouncementModal'
@@ -121,9 +120,9 @@ function NavLinks({
   const { pathname } = useLocation()
   const { _ } = useLinguiReact()
   return (
-    <Stack gap="lg">
+    <Stack gap={22}>
       {sections.map((section) => (
-        <Stack key={section.label.id} gap={4}>
+        <Stack key={section.label.id} gap={2}>
           <Text className="nav-section-label" mb={2}>
             {_(section.label)}
           </Text>
@@ -323,6 +322,7 @@ function AppShellRoutes() {
   const { data: metadata } = useMetadataSettings()
   const { data: ui } = useUiSettings()
   const { can } = useAuth()
+  const { t } = useLingui()
   useLiveEvents()
   // localStorage decided the first paint; the stored preference is what follows the user here.
   useLanguageSync(ui?.language)
@@ -368,18 +368,17 @@ function AppShellRoutes() {
           <Group gap="sm" wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Group gap="sm" wrap="nowrap" hiddenFrom="sm">
-              <span className="brand-mark">
+              <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
                 <IconBrandMark />
               </span>
             </Group>
             <ShellTitle />
           </Group>
-          <Group gap="xs" wrap="nowrap">
+          <Group gap={4} wrap="nowrap">
             <CommandPalette navItems={allItems} />
             <ActivityButton />
             <NotificationBell />
             {isAdmin && <HealthButton />}
-            <UserMenu />
           </Group>
         </Group>
       </AppShell.Header>
@@ -390,19 +389,14 @@ function AppShellRoutes() {
           column and nothing is covered. */}
       {opened && <Box className="nav-scrim" hiddenFrom="sm" onClick={close} />}
 
-      <AppShell.Navbar className="app-navbar" p="md">
-        <Group gap="sm" mb="xl" px={4} wrap="nowrap">
-          <span className="brand-mark">
+      <AppShell.Navbar className="app-navbar" px={12} pt={16} pb={12}>
+        <Group gap={10} mb={18} px={4} wrap="nowrap">
+          <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
             <IconBrandMark />
           </span>
-          <div>
-            <Text fz="lg" lh={1} className="brand-wordmark">
-              Maki
-            </Text>
-            <Text fz={10} c="var(--ink-3)" fw={600} tt="uppercase" style={{ letterSpacing: '0.12em' }}>
-              <Trans>Manga manager</Trans>
-            </Text>
-          </div>
+          <Text fz="1.125rem" lh={1} c="var(--ink-hi)" className="brand-wordmark">
+            Maki
+          </Text>
         </Group>
         <AppShell.Section grow component={ScrollArea} type="never">
           <NavLinks
@@ -412,14 +406,14 @@ function AppShellRoutes() {
           />
         </AppShell.Section>
         <AppShell.Section>
-          <SidebarFooter />
+          <SidebarFooter onNavigate={close} />
         </AppShell.Section>
       </AppShell.Navbar>
 
       {/* Zeroes the shell padding for the pages whose hero band bleeds to the window edges: the
           series page, Home, and Discover's browse tab. Written as "Discover, but not its other two tabs"
           rather than "/discover exactly", because DiscoverPage falls back to the browse tab for any
-          unrecognised :tab — a stale /discover/genres link lands on the band and has to bleed like
+          unrecognised :tab: a stale /discover/genres link lands on the band and has to bleed like
           the canonical URL does. Recommended and Your Taste have no band and keep their padding. */}
       <AppShell.Main
         className={
