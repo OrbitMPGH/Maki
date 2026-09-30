@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { MantineProvider } from '@mantine/core'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { accents, createAppTheme } from './theme'
+import { accents, createAppTheme, grounds } from './theme'
 
 /**
  * User-selectable themes. Each preset pairs an accent palette (drives Mantine's `brand`
@@ -20,6 +20,8 @@ export interface ThemePreset {
   accent: keyof typeof accents
   /** `system` follows the OS light/dark setting and changes with it live. */
   scheme: 'dark' | 'light' | 'system'
+  /** Surface ramp key in theme.ts `grounds`; omitted means the default night ground. */
+  ground?: keyof typeof grounds
   /** Swatch shown in the settings picker (the accent's primary shade). Any CSS background. */
   swatch: string
 }
@@ -28,6 +30,30 @@ export const THEME_PRESETS: ThemePreset[] = [
   { id: 'indigo', label: msg`Indigo`, accent: 'indigo', scheme: 'dark', swatch: '#6d7dff' },
   { id: 'blush', label: msg`Blush`, accent: 'blush', scheme: 'dark', swatch: '#ee7fa4' },
   { id: 'rose', label: msg`Rose`, accent: 'rose', scheme: 'dark', swatch: '#f52069' },
+  {
+    id: 'nori',
+    label: msg`Nori`,
+    accent: 'rose',
+    scheme: 'dark',
+    ground: 'nori',
+    swatch: 'linear-gradient(135deg, #f52069 50%, #14201a 50%)',
+  },
+  {
+    id: 'nori-salmon',
+    label: msg`Nori and salmon`,
+    accent: 'salmon',
+    scheme: 'dark',
+    ground: 'nori',
+    swatch: 'linear-gradient(135deg, #ef4f3d 50%, #14201a 50%)',
+  },
+  {
+    id: 'charcoal',
+    label: msg`Charcoal`,
+    accent: 'rose',
+    scheme: 'dark',
+    ground: 'charcoal',
+    swatch: 'linear-gradient(135deg, #f52069 50%, #181818 50%)',
+  },
   { id: 'emerald', label: msg`Emerald`, accent: 'emerald', scheme: 'dark', swatch: '#1bc97a' },
   { id: 'amber', label: msg`Amber`, accent: 'amber', scheme: 'dark', swatch: '#f0ad14' },
   { id: 'light', label: msg`Light`, accent: 'indigo', scheme: 'light', swatch: '#f4f5fa' },
@@ -96,6 +122,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = document.documentElement
     root.dataset.accent = preset.accent
+    root.dataset.ground = preset.ground ?? 'night'
     root.dataset.theme = scheme
 
     // Keep the browser and OS chrome in step with the choice: Android's address bar, and the
@@ -105,11 +132,11 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     const bg = getComputedStyle(root).getPropertyValue('--app-bg').trim()
     const meta = document.querySelector('meta[name="theme-color"]')
     if (bg && meta) meta.setAttribute('content', bg)
-  }, [preset.accent, scheme])
+  }, [preset.accent, preset.ground, scheme])
 
   const mantineTheme = useMemo(
-    () => createAppTheme(accents[preset.accent], scheme),
-    [preset.accent, scheme],
+    () => createAppTheme(accents[preset.accent], scheme, preset.ground ? grounds[preset.ground] : undefined),
+    [preset.accent, preset.ground, scheme],
   )
   const value = useMemo(
     () => ({ themeId, setThemeId, presets: THEME_PRESETS }),

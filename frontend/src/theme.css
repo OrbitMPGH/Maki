@@ -162,6 +162,17 @@
   --brand-fg: #b8496b;
   --brand-fg-on-art: #f5b6c8;
 }
+:root[data-accent='salmon'] {
+  --brand: #ef4f3d;
+  --brand-hover: #dc4433;
+  --brand-on: #ffffff;
+  --brand-glow: rgba(239, 79, 61, 0.35);
+  --brand-fg: #ff8a78;
+}
+:root[data-theme='light'][data-accent='salmon'] {
+  --brand-fg: #c23a2a;
+  --brand-fg-on-art: #ff8a78;
+}
 :root[data-accent='rose'] {
   --brand: #f52069;
   --brand-hover: #e0175c;
@@ -182,6 +193,61 @@
   --brand-on: #1f1600;
   --brand-glow: rgba(240, 173, 20, 0.3);
   --brand-fg: #ffdf85;
+}
+
+/* --- Selectable grounds --------------------------------------------------- */
+/* The surface ramp under everything. Night (blue-black) is the default and lives in :root; the
+   Mantine dark scale is swapped alongside in theme-context so component surfaces follow. The light
+   theme block below outranks these by order, so a light scheme is unaffected by the ground. */
+:root[data-ground='nori'] {
+  --app-bg: #0c150f;
+  --surface: #14201a;
+  --surface-2: #1a2822;
+  --surface-hover: #203028;
+  --border: #29392f;
+  --border-strong: #3a4d41;
+  --ink-hi: #f5f1e6;
+  --ink: #e4dfd2;
+  --ink-2: #c8c3b6;
+  --ink-3: #a5a194;
+  --ink-4: #8b887c;
+  --neutral: #a5a194;
+}
+[data-ground='nori'] body {
+  background-image:
+    radial-gradient(900px 480px at 6% -8%, rgba(243, 238, 226, 0.06), transparent 60%),
+    radial-gradient(760px 420px at 96% -4%, color-mix(in srgb, var(--brand) 7%, transparent), transparent 58%);
+}
+[data-ground='nori'] .app-navbar {
+  background: linear-gradient(180deg, rgba(20, 32, 26, 0.6), rgba(12, 21, 15, 0.6));
+}
+[data-ground='nori'] .app-header {
+  background: rgba(12, 21, 15, 0.72);
+}
+:root[data-ground='charcoal'] {
+  --app-bg: #0f0f0f;
+  --surface: #181818;
+  --surface-2: #1e1e1e;
+  --surface-hover: #242424;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --ink-hi: #f4f2ee;
+  --ink: #e3e1dc;
+  --ink-2: #c6c4bf;
+  --ink-3: #a3a19c;
+  --ink-4: #888681;
+  --neutral: #a3a19c;
+}
+[data-ground='charcoal'] body {
+  background-image:
+    radial-gradient(900px 480px at 6% -8%, rgba(255, 255, 255, 0.045), transparent 60%),
+    radial-gradient(760px 420px at 96% -4%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 58%);
+}
+[data-ground='charcoal'] .app-navbar {
+  background: linear-gradient(180deg, rgba(24, 24, 24, 0.6), rgba(15, 15, 15, 0.6));
+}
+[data-ground='charcoal'] .app-header {
+  background: rgba(15, 15, 15, 0.72);
 }
 
 /* --- Light theme --------------------------------------------------------- */

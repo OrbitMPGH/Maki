@@ -51,6 +51,19 @@ const blush: MantineColorsTuple = [
   '#752a45',
 ]
 
+const salmon: MantineColorsTuple = [
+  '#ffece8',
+  '#ffd3cc',
+  '#ffb0a4',
+  '#ff8a78',
+  '#ff6b5a',
+  '#ef4f3d',
+  '#dc4433',
+  '#b8382a',
+  '#8f2c21',
+  '#6b2119',
+]
+
 const rose: MantineColorsTuple = [
   '#ffe9f0',
   '#ffd0de',
@@ -91,10 +104,11 @@ const amber: MantineColorsTuple = [
 ]
 
 /** Selectable accent palettes; the CSS-variable side lives in theme.css under [data-accent]. */
-export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, emerald, amber }
+export const accents: Record<string, MantineColorsTuple> = { indigo: brand, blush, rose, salmon, emerald, amber }
 
 // Near-black elevation ramp. 7 = app body, 6 = cards, 5 = elevated (modals),
-// 4 = borders, 2 = dimmed text, 0 = primary text.
+// 4 = borders, 2 = dimmed text, 0 = primary text. `night` is the default; the others are
+// selectable grounds whose CSS side lives in theme.css under [data-ground].
 const dark: MantineColorsTuple = [
   '#c7cad4',
   '#a9adba',
@@ -107,6 +121,35 @@ const dark: MantineColorsTuple = [
   '#0a0c12',
   '#06070b',
 ]
+
+const nori: MantineColorsTuple = [
+  '#c8c3b6',
+  '#aaa598',
+  '#8b887c',
+  '#5a655c',
+  '#29392f',
+  '#1a2822',
+  '#14201a',
+  '#0c150f',
+  '#090f0b',
+  '#050806',
+]
+
+const charcoal: MantineColorsTuple = [
+  '#c6c4bf',
+  '#a8a6a1',
+  '#8a8884',
+  '#5a5956',
+  '#2a2a2a',
+  '#1e1e1e',
+  '#181818',
+  '#0f0f0f',
+  '#0a0a0a',
+  '#060606',
+]
+
+/** Selectable surface ramps; the CSS-variable side lives in theme.css under [data-ground]. */
+export const grounds: Record<string, MantineColorsTuple> = { night: dark, nori, charcoal }
 
 // Rose's shade 5 only reaches 4:1 under white text; one shade down clears 4.5:1.
 // Blush fills at shade 4 in dark with dark text; light takes shade 6 with white.
@@ -133,10 +176,14 @@ const variantColorResolver: VariantColorsResolver = (input) => {
  * when it picks contrast colours for checkboxes, radios and pagination, so a per-scheme object
  * would judge the dark fill by the light one.
  */
-export function createAppTheme(accent: MantineColorsTuple = brand, scheme: MantineColorScheme = 'dark') {
+export function createAppTheme(
+  accent: MantineColorsTuple = brand,
+  scheme: MantineColorScheme = 'dark',
+  ground: MantineColorsTuple = dark,
+) {
   const shades = primaryShades.get(accent) ?? (themeBase.primaryShade as { light: number; dark: number })
   const primaryShade = (scheme === 'light' ? shades.light : shades.dark) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-  return createTheme({ ...themeBase, primaryShade, variantColorResolver, colors: { brand: accent, dark } })
+  return createTheme({ ...themeBase, primaryShade, variantColorResolver, colors: { brand: accent, dark: ground } })
 }
 
 const themeBase: MantineThemeOverride = {
