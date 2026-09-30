@@ -130,15 +130,6 @@ export const CoverCard = memo(function CoverCard({
           </div>
 
           <div className="cover-corner cover-corner-right">
-            <span
-              className="cover-state"
-              data-tone="status"
-              data-tip={statusLabel}
-              role="img"
-              aria-label={statusLabel}
-            >
-              <StatusGlyph size={13} stroke={2} />
-            </span>
             {/* Monitor state on every card: a subtle eye when watched, a clear eye-off when not. */}
             <span
               className="cover-badge cover-badge-circle"
@@ -157,6 +148,16 @@ export const CoverCard = memo(function CoverCard({
                 <IconBellOff size={15} />
               </span>
             )}
+            {/* Last in the row so it holds the corner; the eye and bell only show on hover. */}
+            <span
+              className="cover-state"
+              data-tone="status"
+              data-tip={statusLabel}
+              role="img"
+              aria-label={statusLabel}
+            >
+              <StatusGlyph size={13} stroke={2} />
+            </span>
           </div>
         </div>
 
