@@ -55,6 +55,7 @@ export function useLiveEvents() {
 
   useEffect(() => {
     let cancelled = false
+    let summaryTimer: ReturnType<typeof setTimeout> | null = null
 
     void ensureConnection().then((conn) => {
       if (cancelled) return
@@ -83,6 +84,14 @@ export function useLiveEvents() {
         if (isDone) {
           // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
+        }
+        // The shell badge reads the summary endpoint; a download burst fires many of these, so
+        // coalesce to one refetch per second.
+        if (summaryTimer === null) {
+          summaryTimer = setTimeout(() => {
+            summaryTimer = null
+            void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+          }, 1000)
         }
       })
 
@@ -174,6 +183,7 @@ export function useLiveEvents() {
 
     return () => {
       cancelled = true
+      if (summaryTimer !== null) clearTimeout(summaryTimer)
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
       connection?.off('sourceMatchFinished')
