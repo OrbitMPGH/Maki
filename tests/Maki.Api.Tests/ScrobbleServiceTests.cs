@@ -143,6 +143,66 @@ public class ScrobbleServiceTests
         Assert.DoesNotContain(tracker.Pushes, p => p.RemoteId == "300");
     }
 
+    /// <summary>
+    /// A read unnumbered chapter (a prologue, an extra) is all an ongoing series may have downloaded,
+    /// and neither Maki nor the tracker knows its total while it runs. Only a finished work is
+    /// completed on that evidence; completing the ongoing one would stick, since a completed entry is
+    /// never demoted.
+    /// </summary>
+    [Fact]
+    public async Task NativePassAsync_CompletesAFinishedOneShotButNotAnOngoingSeriesWithUnknownTotals()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var ongoing = db.SeedSeries("Ongoing", configure: s =>
+        {
+            s.MangaBakaId = 500;
+            s.Status = SeriesStatus.Ongoing;
+            s.TotalChapters = null;
+        });
+        var oneShot = db.SeedSeries("One-shot", configure: s =>
+        {
+            s.MangaBakaId = 600;
+            s.Status = SeriesStatus.Completed;
+            s.TotalChapters = null;
+        });
+
+        using (var seed = db.NewContext())
+        {
+            foreach (var seriesId in new[] { ongoing, oneShot })
+            {
+                var file = new ChapterFile
+                {
+                    SeriesId = seriesId, RelativePath = $"{seriesId}/special.cbz", SourceName = "import",
+                    DateAdded = DateTime.UtcNow,
+                };
+                seed.ChapterFiles.Add(file);
+                seed.SaveChanges();
+                var chapter = new Chapter
+                {
+                    SeriesId = seriesId, Number = null, IsOneShot = true, Title = "Prologue", Language = "en",
+                    ChapterFileId = file.Id,
+                };
+                seed.Chapters.Add(chapter);
+                seed.SaveChanges();
+                seed.ChapterProgress.Add(new ChapterProgress
+                {
+                    UserId = user, SeriesId = seriesId, ChapterId = chapter.Id, PageIndex = 19, PageCount = 20,
+                    Completed = true, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+                });
+                seed.SaveChanges();
+            }
+        }
+
+        var service = BuildService(db, new FakeUserSettingsStore(db));
+        var tracker = new FakeScrobbleTracker();
+
+        await service.NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.Contains(tracker.Pushes, p => p.RemoteId == "600" && p.Chapter == 1 && p.Status == ScrobbleStatus.Completed);
+        Assert.DoesNotContain(tracker.Pushes, p => p.RemoteId == "500");
+    }
+
     /// <summary>Covers #101: two library series whose titles normalize to the same key ("Overlord" /
     /// "OVERLORD") must not let either one's cross-ids be attributed to a Kavita series under that
     /// name - the ambiguous key is dropped from the index entirely rather than keeping whichever
@@ -368,7 +428,7 @@ public class ScrobbleServiceTests
 
     private sealed class FakeScrobbleTracker : IScrobbleTracker
     {
-        public List<(string RemoteId, int Chapter, int Volume)> Pushes { get; } = [];
+        public List<(string RemoteId, int Chapter, int Volume, ScrobbleStatus Status)> Pushes { get; } = [];
 
         public string Name => "mangabaka";
         public string Label => "MangaBaka";
@@ -386,7 +446,7 @@ public class ScrobbleServiceTests
             int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,
             CancellationToken ct = default)
         {
-            Pushes.Add((remoteId, chapter, volume));
+            Pushes.Add((remoteId, chapter, volume, status));
             return Task.CompletedTask;
         }
 

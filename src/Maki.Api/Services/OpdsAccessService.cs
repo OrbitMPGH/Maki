@@ -44,16 +44,20 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
     private static readonly TimeSpan CacheFor = TimeSpan.FromSeconds(30);
 
     private static readonly ConcurrentDictionary<int, CancellationTokenSource> UserEntries = new();
+    private static readonly Lock Gate = new();
     private static long _evictions;
 
     /// <summary>Drops every cached resolution for this user's tokens.</summary>
     public static void EvictUser(int userId)
     {
-        Interlocked.Increment(ref _evictions);
-        if (UserEntries.TryRemove(userId, out var entries))
+        CancellationTokenSource? entries;
+        lock (Gate)
         {
-            entries.Cancel();
+            _evictions++;
+            UserEntries.TryRemove(userId, out entries);
         }
+
+        entries?.Cancel();
     }
 
     /// <summary>
@@ -81,7 +85,12 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
             return cached;
         }
 
-        var evictionsBefore = Interlocked.Read(ref _evictions);
+        long evictionsBefore;
+        lock (Gate)
+        {
+            evictionsBefore = _evictions;
+        }
+
         var match = await db.UserApiKeys
             .Where(k => k.KeyHash == hash && k.RevokedAt == null && k.Scope == UserApiKeyScope.Opds)
             .Join(db.Users, k => k.UserId, u => u.Id, (k, u) => new
@@ -139,12 +148,19 @@ public class OpdsAccessService(MakiDbContext db, TimeProvider clock, IMemoryCach
         var access = new OpdsAccess(trackProgress, match.Id, match.AllRootFolders);
 
         // An eviction while this was reading may have been about this key, so the answer is not kept.
-        if (cache is not null && Interlocked.Read(ref _evictions) == evictionsBefore)
+        // Checked and stored under the lock EvictUser takes, so one cannot land in between.
+        if (cache is not null)
         {
-            var entries = UserEntries.GetOrAdd(match.Id, _ => new CancellationTokenSource());
-            cache.Set(cacheKey, access, new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(CacheFor)
-                .AddExpirationToken(new CancellationChangeToken(entries.Token)));
+            lock (Gate)
+            {
+                if (_evictions == evictionsBefore)
+                {
+                    var entries = UserEntries.GetOrAdd(match.Id, _ => new CancellationTokenSource());
+                    cache.Set(cacheKey, access, new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(CacheFor)
+                        .AddExpirationToken(new CancellationChangeToken(entries.Token)));
+                }
+            }
         }
 
         return access;

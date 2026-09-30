@@ -760,8 +760,9 @@ public class DiscoverService(
 
     /// <summary>
     /// Free-text search over the catalogue. Prefers the semantic engine (query embedding fused
-    /// with the title index); falls back to plain title search when the embedding index hasn't
-    /// been built, so the box is never dead — the response says which one answered.
+    /// with the title index); falls back to plain title search, with the never-show list applied,
+    /// when the embedding index isn't built or the query model can't load, so the box is never
+    /// dead. The response says which one answered.
     /// </summary>
     public async Task<DiscoverSearchResponse> SearchAsync(
         DiscoverSearchRequest request, CancellationToken ct = default)
@@ -779,9 +780,11 @@ public class DiscoverService(
         var limit = Math.Clamp(request.Limit, 1, MaxSearchLimit);
 
         // The title index honours only the content-rating ceiling, so a query that narrows further
-        // waits for the semantic engine to warm rather than answering with titles the filters exclude.
+        // waits for the semantic engine to warm rather than answering with titles the filters
+        // exclude. Only while the model can load, though: waiting on one that can't answers nothing.
         var narrowed = Narrows(request.Filters);
-        if (!request.WantsTitleOnly && (searcher.IsReady() || (narrowed && searcher.IsAvailable())))
+        if (!request.WantsTitleOnly &&
+            (searcher.IsReady() || (narrowed && searcher.IsAvailable() && searcher.CanEmbed())))
         {
             var outcome = await searcher.SearchAsync(query, request.Filters, limit, ct);
             if (outcome.Items.Count > 0)
@@ -793,7 +796,7 @@ public class DiscoverService(
             // A resolved credit that matched nothing is a real answer ("no such author", or nobody
             // whose work fits the filters), not a reason to go looking for title hits that would
             // ignore the credit entirely.
-            if (request.Filters is not null || outcome.Credits.Count > 0)
+            if (!outcome.Unavailable && (request.Filters is not null || outcome.Credits.Count > 0))
             {
                 return new DiscoverSearchResponse("semantic", [], null, outcome.Credits);
             }

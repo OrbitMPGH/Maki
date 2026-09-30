@@ -11,6 +11,7 @@ using Maki.Core.Reading;
 using Maki.Core.Sources;
 using SharpCompress.Common;
 using SharpCompress.Writers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -418,6 +419,98 @@ public class TorrentImportServiceTests : IDisposable
         using var db = _db.NewContext();
         var file = Assert.Single(db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
         Assert.EndsWith("Berserk v01 (Digital) (1r0n).cbz", file.RelativePath);
+    }
+
+    /// <summary>
+    /// The unattended job plans without the series lock, so a delete can finish in between. The
+    /// import must not recreate the deleted folder and fill it with files no row owns.
+    /// </summary>
+    [Fact]
+    public async Task A_series_deleted_after_planning_is_not_imported_and_its_folder_stays_gone()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Remove(db.Series.Single(s => s.Id == series.Id));
+            db.SaveChanges();
+        }
+
+        Directory.Delete(Path.Combine(_root, "Berserk"), recursive: true);
+
+        var outcome = await service.ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None, plan);
+
+        Assert.False(outcome.Applied);
+        Assert.Equal(TorrentImportService.SeriesChangedKey, outcome.ErrorKey);
+        Assert.False(Directory.Exists(Path.Combine(_root, "Berserk")));
+    }
+
+    [Fact]
+    public async Task A_series_moved_after_planning_is_not_imported_into_either_folder()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == series.Id).FolderName = "Berserk (Deluxe)";
+            db.SaveChanges();
+        }
+
+        var outcome = await service.ImportAsync(
+            item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None, plan);
+
+        Assert.False(outcome.Applied);
+        Assert.Equal(TorrentImportService.SeriesChangedKey, outcome.ErrorKey);
+        Assert.Empty(Directory.GetFiles(Path.Combine(_root, "Berserk")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Berserk (Deluxe)")));
+        using var check = _db.NewContext();
+        Assert.Empty(check.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList());
+    }
+
+    /// <summary>
+    /// An unattended import never writes Importing to its row, so the series and chapter delete
+    /// guards learn about it from the importer's registry.
+    /// </summary>
+    [Fact]
+    public async Task A_running_unattended_import_counts_as_in_flight_for_the_delete_guards()
+    {
+        var (series, _) = SeedLibrary(withFiles: false);
+        // An id no other test's queue row will have: the registry is process-wide.
+        const int queueId = 918_273;
+        using (var seed = _db.NewContext())
+        {
+            seed.DownloadQueue.Add(new DownloadQueueItem
+            {
+                Id = queueId,
+                SeriesId = series.Id,
+                Title = "Berserk v02",
+                Protocol = AcquisitionProtocol.Torrent,
+                Status = QueueStatus.Downloading
+            });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+        Assert.False(await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.Id == queueId));
+
+        TorrentImportService.BeginAutomaticImport(queueId);
+        try
+        {
+            Assert.True(await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.SeriesId == series.Id));
+        }
+        finally
+        {
+            TorrentImportService.EndAutomaticImport(queueId);
+        }
+
+        Assert.False(await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.Id == queueId));
     }
 
     [Fact]

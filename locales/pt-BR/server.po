@@ -1553,6 +1553,11 @@ msgstr "O download não está mais no qBittorrent"
 msgid "error.torrentImport.pathNotAccessible"
 msgstr "O Maki não consegue acessar o caminho do download: {path}"
 
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: The series was deleted or moved while this download was being imported, so nothing was imported
+msgid "error.torrentImport.seriesChanged"
+msgstr ""
+
 #: src/Maki.Api/Controllers/QualityFormatsController.cs
 #. English: Every condition needs a value
 msgid "error.upgrades.conditionValueRequired"

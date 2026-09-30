@@ -618,6 +618,8 @@ public class SeriesController(
         if (series.RootFolder is null)
             return this.Fail(localizer, "error.series.noRootFolder");
 
+        // A rescan or import holding the lock would otherwise link to, or save over, a row removed here.
+        using var seriesLock = await SeriesLocks.SeriesAsync(id, ct);
         var files = await db.ChapterFiles
             .Where(f => f.SeriesId == id && relativePaths.Contains(f.RelativePath))
             .ToListAsync(ct);

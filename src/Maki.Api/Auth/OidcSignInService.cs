@@ -253,6 +253,7 @@ public class OidcSignInService(
         {
             await db.SaveChangesAsync(ct);
             snapshots.Evict(user.Id);
+            OpdsAccessService.EvictUser(user.Id);
         }
 
         await RefreshLoginDisplayNameAsync(user, provider, providerKey, subject, claims, ct);

@@ -354,18 +354,34 @@ public class ChapterController(
             return this.Fail(localizer, "error.chapter.noChaptersSelected");
         }
 
-        var chapters = await db.Chapters.Where(c => chapterIds.Contains(c.Id)).ToListAsync(ct);
-        if (chapters.Count == 0)
+        var seriesIds = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id))
+            .Select(c => c.SeriesId)
+            .Distinct()
+            .ToListAsync(ct);
+        if (seriesIds.Count == 0)
         {
             return Ok(new { deleted = 0 });
         }
 
-        var seriesId = chapters[0].SeriesId;
         // The root folder below comes from this one series, so a mixed batch would delete series B's
         // file using series A's root path. Same check Link makes, for the same reason.
-        if (chapters.Any(c => c.SeriesId != seriesId))
+        if (seriesIds.Count > 1)
         {
             return this.Fail(localizer, "error.chapter.differentSeries");
+        }
+
+        var seriesId = seriesIds[0];
+
+        // Rows and files are read and removed under the lock a rescan or import holds, so neither
+        // can link a chapter to a file this deletes, or save over a row it removed.
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesId, ct);
+        var chapters = await db.Chapters
+            .Where(c => chapterIds.Contains(c.Id) && c.SeriesId == seriesId)
+            .ToListAsync(ct);
+        if (chapters.Count == 0)
+        {
+            return Ok(new { deleted = 0 });
         }
 
         var deletingIds = chapters.Select(c => c.Id).ToList();
@@ -478,6 +494,10 @@ public class ChapterController(
                 ? this.Conflict(localizer, "error.chapter.alreadyQueued")
                 : Ok(new { queueItemId = item.Id });
         }
+        catch (EnqueueRefusedException ex)
+        {
+            return this.Fail(localizer, ex.Key);
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
@@ -535,6 +555,10 @@ public class ChapterController(
             return item.PreferredMappingId == request.SourceMappingId
                 ? Ok(new { queueItemId = item.Id })
                 : this.Conflict(localizer, "error.chapter.alreadyDownloading");
+        }
+        catch (EnqueueRefusedException ex)
+        {
+            return this.Fail(localizer, ex.Key);
         }
         catch (InvalidOperationException ex)
         {

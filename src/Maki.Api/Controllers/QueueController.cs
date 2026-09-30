@@ -357,6 +357,20 @@ public class QueueController(
             throw;
         }
 
+        if (outcome.ErrorKey == TorrentImportService.SeriesChangedKey)
+        {
+            // Deleted: the row cascaded away with the series. Moved: still the user's to settle.
+            if (await db.DownloadQueue.AnyAsync(q => q.Id == item.Id, ct))
+            {
+                item.Status = QueueStatus.AwaitingImport;
+                item.SetError(outcome.ErrorKey);
+                await db.SaveChangesAsync(ct);
+                await Broadcast(item);
+            }
+
+            return this.Conflict(localizer, outcome.ErrorKey);
+        }
+
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;

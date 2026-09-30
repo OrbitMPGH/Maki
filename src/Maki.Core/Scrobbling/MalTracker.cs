@@ -283,7 +283,7 @@ public class MalTracker(
         int userId, string remoteId, CancellationToken ct = default)
     {
         var data = await RequestAsync(userId, HttpMethod.Get,
-            $"/manga/{remoteId}?fields=title,num_chapters,num_volumes," +
+            $"/manga/{remoteId}?fields=title,status,num_chapters,num_volumes," +
             "my_list_status{status,num_chapters_read,num_volumes_read,score}", null, ct);
         var hasStatus = data.TryGetProperty("my_list_status", out var ls) && ls.ValueKind == JsonValueKind.Object;
         return new RemoteEntry(
@@ -297,7 +297,13 @@ public class MalTracker(
             TotalVolumes: PositiveOrNull(GetInt(data, "num_volumes")),
             Title: GetString(data, "title") ?? "",
             // MAL's score is already 0–10; 0 means unrated.
-            Score: hasStatus ? PositiveOrNull(GetInt(ls, "score")) : null);
+            Score: hasStatus ? PositiveOrNull(GetInt(ls, "score")) : null,
+            Releasing: GetString(data, "status") switch
+            {
+                "currently_publishing" or "on_hiatus" or "not_yet_published" => true,
+                "finished" or "discontinued" => false,
+                _ => null
+            });
     }
 
     public async Task UpdateAsync(

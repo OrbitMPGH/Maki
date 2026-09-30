@@ -1553,6 +1553,11 @@ msgstr "ダウンロードはqBittorrentにありません"
 msgid "error.torrentImport.pathNotAccessible"
 msgstr "Makiからダウンロードパスにアクセスできません: {path}"
 
+#: src/Maki.Api/Services/TorrentImportService.cs
+#. English: The series was deleted or moved while this download was being imported, so nothing was imported
+msgid "error.torrentImport.seriesChanged"
+msgstr ""
+
 #: src/Maki.Api/Controllers/QualityFormatsController.cs
 #. English: Every condition needs a value
 msgid "error.upgrades.conditionValueRequired"

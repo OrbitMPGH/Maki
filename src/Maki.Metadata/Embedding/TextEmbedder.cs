@@ -51,6 +51,12 @@ public sealed class TextEmbedder(
     public bool IsReady => _session is not null;
 
     /// <summary>
+    /// False when embeddings are off or the last load failed and is still in its backoff, so a
+    /// caller can tell a cold model it may wait for from one that will not load.
+    /// </summary>
+    public bool CanLoad => options.Enabled && (_session is not null || !InFailureBackoff());
+
+    /// <summary>
     /// What the loaded session actually runs on, which is not always what was asked for: a CUDA
     /// request falls back to CPU rather than failing. Null until a session is loaded. The build tool
     /// checks this and refuses to start a pass that would silently take the slow path.

@@ -232,7 +232,7 @@ public class AniListTracker(
             userId,
             """
             query($id:Int){ Media(id:$id, type:MANGA){
-              chapters volumes title{ romaji english }
+              chapters volumes status title{ romaji english }
               mediaListEntry{ status progress progressVolumes score(format: POINT_10) } } }
             """,
             new { id = int.Parse(remoteId) }, auth: true, ct);
@@ -255,7 +255,13 @@ public class AniListTracker(
                        ? GetString(titles, "english") ?? GetString(titles, "romaji")
                        : null) ?? "",
             // score(format: POINT_10) comes back as a Float (e.g. 8.0); 0 means unrated.
-            Score: hasEntry ? ScoreOf(entry, "score") : null);
+            Score: hasEntry ? ScoreOf(entry, "score") : null,
+            Releasing: GetString(media, "status") switch
+            {
+                "RELEASING" or "HIATUS" or "NOT_YET_RELEASED" => true,
+                "FINISHED" or "CANCELLED" => false,
+                _ => null
+            });
     }
 
     public async Task UpdateAsync(

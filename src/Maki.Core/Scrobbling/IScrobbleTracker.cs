@@ -21,7 +21,12 @@ public record RemoteEntry(
     int? TotalVolumes = null,
     string Title = "",
     /// <summary>The user's score on the tracker, normalized to 1–10; null = unrated there.</summary>
-    int? Score = null);
+    int? Score = null,
+    /// <summary>
+    /// Whether the tracker says the work is still being published (releasing, on hiatus, not yet
+    /// out); null when it doesn't say.
+    /// </summary>
+    bool? Releasing = null);
 
 /// <summary>
 /// One entry of a user's remote list, as returned by <see cref="IScrobbleTracker.ListAsync"/>.

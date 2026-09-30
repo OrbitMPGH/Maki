@@ -178,6 +178,19 @@ public class TorrentImportService(
 
     public static bool IsManualImportRunning(int queueItemId) => ManualImports.ContainsKey(queueItemId);
 
+    // Queue ids CompletedDownloadJob is importing. That path never persists Importing (the poll would
+    // reset it), so the delete guards read this instead of the row.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, byte> AutomaticImports = new();
+
+    public static void BeginAutomaticImport(int queueItemId) => AutomaticImports.TryAdd(queueItemId, 0);
+
+    public static void EndAutomaticImport(int queueItemId) => AutomaticImports.TryRemove(queueItemId, out _);
+
+    public static int[] AutomaticImportIds() => AutomaticImports.Keys.ToArray();
+
+    /// <summary>The series was deleted or moved between planning and taking its lock.</summary>
+    public const string SeriesChangedKey = "error.torrentImport.seriesChanged";
+
     /// <summary>
     /// Where qBittorrent put this item's data, as Maki sees it. Null when the torrent is gone, or
     /// its path isn't reachable from here (qBittorrent in a container with a different mount).
@@ -391,6 +404,20 @@ public class TorrentImportService(
         // From the first file placed through the trash moves: a plain copy lands at its final name, so
         // a rescan running beside it would adopt a half-written archive. Released before the inbox row.
         using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+        // Everything above was read without the lock. A delete that ran meanwhile would get its
+        // folder recreated and filled with files no row can own.
+        var current = await db.Series.IgnoreQueryFilters()
+            .Where(s => s.Id == series.Id)
+            .Select(s => new { s.FolderName, s.RootFolderId })
+            .FirstOrDefaultAsync(ct);
+        if (current is null || current.FolderName != series.FolderName || current.RootFolderId != series.RootFolderId)
+        {
+            logger.LogWarning("Not importing '{Title}': series {SeriesId} was deleted or moved while it was planned",
+                item.Title, series.Id);
+            return new TorrentImportOutcome(false, null, 0, 0, 0, 0, skipped, [], SeriesChangedKey);
+        }
+
         Directory.CreateDirectory(seriesDir);
 
         var imported = new List<string>();

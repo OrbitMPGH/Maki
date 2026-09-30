@@ -54,6 +54,9 @@ public class ChapterDownloadProcessor(
     IUserLocaleResolver locales,
     ILogger<ChapterDownloadProcessor> logger)
 {
+    /// <summary>A RateLimited row parked for a missing root folder, which no source's cooldown is about.</summary>
+    public const string RootFolderUnavailableKey = "error.download.rootFolderUnavailable";
+
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
         ProcessAsync(queueItemId, [], ct);
 
@@ -751,7 +754,7 @@ public class ChapterDownloadProcessor(
         logger.LogWarning("Root folder {Path} is not available; queue item {Id} will try again later",
             rootFolder.Path, item.Id);
         item.Status = QueueStatus.RateLimited;
-        item.SetError("error.download.rootFolderUnavailable");
+        item.SetError(RootFolderUnavailableKey);
         item.NextAttempt = queue.NextRetryAttempt(1);
         await db.SaveChangesAsync(ct);
         if (item.Series != null)
@@ -793,12 +796,14 @@ public class ChapterDownloadProcessor(
     /// </summary>
     private async Task<bool> HeldByOtherSeriesAsync(int rootFolderId, int seriesId, string relativePath, CancellationToken ct)
     {
-        var sameLength = await db.ChapterFiles
-            .Where(f => f.SeriesId != seriesId && f.RelativePath.Length == relativePath.Length &&
+        // No length pre-filter: SQLite's length() counts code points and C# counts UTF-16 units, so
+        // a name with an emoji would be filtered out and the collision missed.
+        var others = await db.ChapterFiles
+            .Where(f => f.SeriesId != seriesId &&
                         db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == rootFolderId))
             .Select(f => f.RelativePath)
             .ToListAsync(ct);
-        return sameLength.Any(p => SamePath(p, relativePath));
+        return others.Any(p => SamePath(p, relativePath));
     }
 
     private void TryDeleteFile(string path)

@@ -348,6 +348,7 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.OpdsEnabled, request.Enabled ? "true" : "false", ct);
         await userSettings.SetAsync(
             SettingKeys.OpdsTrackProgress, request.TrackProgress ? "true" : "false", ct);
+        OpdsAccessService.EvictUser(currentUser.UserId);
 
         var existing = await CurrentOpdsKeyAsync(ct);
         if (request.Enabled && existing is null)

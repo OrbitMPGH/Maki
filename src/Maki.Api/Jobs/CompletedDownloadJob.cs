@@ -199,6 +199,12 @@ public class CompletedDownloadJob(
                     item.Status = QueueStatus.Failed;
                     item.SetRawError(ex.Message);
                 }
+
+                // Its series was deleted mid-import and the row cascaded away with it.
+                if (db.Entry(item).State == EntityState.Detached)
+                {
+                    continue;
+                }
             }
 
             // Only on a real change. A finished torrent stays finished, so keying this on
@@ -271,6 +277,20 @@ public class CompletedDownloadJob(
     private async Task ImportAsync(
         DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
     {
+        TorrentImportService.BeginAutomaticImport(item.Id);
+        try
+        {
+            await ImportRegisteredAsync(item, torrent, pathMap, ct);
+        }
+        finally
+        {
+            TorrentImportService.EndAutomaticImport(item.Id);
+        }
+    }
+
+    private async Task ImportRegisteredAsync(
+        DownloadQueueItem item, QBittorrentClient.QbtTorrent torrent, (string? From, string? To) pathMap, CancellationToken ct)
+    {
         var series = item.Series!;
 
         // qBittorrent reports the path as it sees it; rewrite it to how Maki does
@@ -306,12 +326,28 @@ public class CompletedDownloadJob(
             return;
         }
 
+        var statusBefore = item.Status;
         item.Status = QueueStatus.Importing;
         // The plan just built, handed over rather than left to be rebuilt: PlanAsync reads the page
         // names out of every volume archive in the download, and the answer cannot have changed
         // between the conflict check above and this line.
         var outcome = await importer.ImportAsync(
             item, series, contentPath, TorrentImportMode.Replace, ct, plan, skipFiles);
+        if (outcome.ErrorKey == TorrentImportService.SeriesChangedKey)
+        {
+            // Deleted: the row went with the series. Moved: the next poll loads the series afresh.
+            if (await db.DownloadQueue.IgnoreQueryFilters().AnyAsync(q => q.Id == item.Id, ct))
+            {
+                item.Status = statusBefore;
+            }
+            else
+            {
+                db.Entry(item).State = EntityState.Detached;
+            }
+
+            return;
+        }
+
         if (!outcome.Applied)
         {
             item.Status = QueueStatus.Failed;

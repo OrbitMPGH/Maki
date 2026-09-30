@@ -60,6 +60,28 @@ public class ScrobblePlannerTests
     }
 
     [Fact]
+    public void AnOngoingSeriesWithNoKnownTotalDoesNotComplete()
+    {
+        // AniList sends chapters: null while a series is releasing, so the total says nothing.
+        var entry = new RemoteEntry(Status: ScrobbleStatus.Reading, TotalChapters: null, Releasing: true);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, finished: true);
+
+        Assert.False(plan.Write);
+        Assert.Equal(ScrobbleStatus.Reading, plan.RecordStatus);
+    }
+
+    [Fact]
+    public void AFinishedOneShotWithNoKnownTotalCompletes()
+    {
+        var entry = new RemoteEntry(Status: ScrobbleStatus.PlanToRead, TotalChapters: null, Releasing: false);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, finished: true);
+
+        Assert.True(plan.Write);
+        Assert.Equal(1, plan.Chapter);
+        Assert.Equal(ScrobbleStatus.Completed, plan.PushStatus);
+    }
+
+    [Fact]
     public void AnUnfinishedOneShotStillOnlyListsWhenNotOnTheList()
     {
         var entry = new RemoteEntry(Status: ScrobbleStatus.Reading);

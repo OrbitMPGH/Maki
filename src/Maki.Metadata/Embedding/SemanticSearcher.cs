@@ -17,6 +17,11 @@ public sealed record SemanticSearchOutcome(
     IReadOnlyList<ResolvedCredit> Credits)
 {
     public static readonly SemanticSearchOutcome Empty = new([], null, []);
+
+    /// <summary>Empty because the index or the query model could not be used, not because nothing matched.</summary>
+    public bool Unavailable { get; init; }
+
+    public static readonly SemanticSearchOutcome NotAvailable = new([], null, []) { Unavailable = true };
 }
 
 /// <summary>
@@ -81,7 +86,7 @@ public class SemanticSearcher(
     /// request for 10 to 20 s, so instead it starts loading in the background and answers false,
     /// and the caller serves this query from the title index.
     /// </summary>
-    public bool IsReady()
+    public virtual bool IsReady()
     {
         if (!IsAvailable())
         {
@@ -108,7 +113,13 @@ public class SemanticSearcher(
     /// True when embeddings are on and the index holds enough vectors, loaded or not. A caller that
     /// cannot accept the title fallback searches anyway and waits out the warm-up.
     /// </summary>
-    public bool IsAvailable() => options.Enabled && store.Count() >= MinIndexed;
+    public virtual bool IsAvailable() => options.Enabled && store.Count() >= MinIndexed;
+
+    /// <summary>
+    /// False while the query model is known not to load (embeddings off, or a failed load still in
+    /// its backoff). Waiting on the semantic path then only buys an empty answer.
+    /// </summary>
+    public virtual bool CanEmbed() => embedder.CanLoad;
 
     private void WarmEmbedder()
     {
@@ -135,10 +146,11 @@ public class SemanticSearcher(
     }
 
     /// <summary>
-    /// Ranked matches for a free-text query. Empty when the index isn't built — the caller falls
-    /// back to title search rather than showing nothing.
+    /// Ranked matches for a free-text query. When the index isn't built or the query model won't
+    /// load the outcome is <see cref="SemanticSearchOutcome.Unavailable"/>, and the caller answers
+    /// from the title index instead. An empty outcome without that flag is a real "no matches".
     /// </summary>
-    public async Task<SemanticSearchOutcome> SearchAsync(
+    public virtual async Task<SemanticSearchOutcome> SearchAsync(
         string query, RecommendationFilters? filters = null, int limit = 60, CancellationToken ct = default)
     {
         query = query?.Trim() ?? string.Empty;
@@ -152,7 +164,7 @@ public class SemanticSearcher(
         var index = await cache.GetAsync(ct);
         if (index is null || index.Count < MinIndexed)
         {
-            return SemanticSearchOutcome.Empty;
+            return SemanticSearchOutcome.NotAvailable;
         }
 
         var parsed = CatalogueQuery.Parse(query);
@@ -202,8 +214,8 @@ public class SemanticSearcher(
 
         if (!await embedder.EnsureReadyAsync(ct))
         {
-            logger.LogWarning("Semantic search skipped — the embedding model isn't available");
-            return SemanticSearchOutcome.Empty with { Credits = credits.Credits };
+            logger.LogWarning("Semantic search skipped, the embedding model isn't available");
+            return SemanticSearchOutcome.NotAvailable with { Credits = credits.Credits };
         }
 
         // How deep each channel ranks before the fusion. This is what a series has to reach to be

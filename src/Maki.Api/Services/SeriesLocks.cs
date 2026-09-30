@@ -27,15 +27,20 @@ public static class SeriesLocks
     /// <summary>
     /// Queue items a worker is holding right now. Queued, resolving and parked items are not in it:
     /// nothing has claimed them, and they cascade away with their series or chapter. A torrent sits
-    /// in Downloading inside the client for as long as it takes, so only its import counts.
+    /// in Downloading inside the client for as long as it takes, so only its import counts; an
+    /// unattended import never writes Importing, so it is read from the importer's own registry.
     /// </summary>
-    public static IQueryable<DownloadQueueItem> InFlight(IQueryable<DownloadQueueItem> queue) =>
-        queue.Where(q => q.Status == QueueStatus.Importing ||
-                         (q.Protocol == AcquisitionProtocol.Scraper &&
-                          (q.Status == QueueStatus.FetchingPages ||
-                           q.Status == QueueStatus.Downloading ||
-                           q.Status == QueueStatus.Validating ||
-                           q.Status == QueueStatus.Packaging)));
+    public static IQueryable<DownloadQueueItem> InFlight(IQueryable<DownloadQueueItem> queue)
+    {
+        var importing = TorrentImportService.AutomaticImportIds();
+        return queue.Where(q => q.Status == QueueStatus.Importing ||
+                                importing.Contains(q.Id) ||
+                                (q.Protocol == AcquisitionProtocol.Scraper &&
+                                 (q.Status == QueueStatus.FetchingPages ||
+                                  q.Status == QueueStatus.Downloading ||
+                                  q.Status == QueueStatus.Validating ||
+                                  q.Status == QueueStatus.Packaging)));
+    }
 }
 
 internal sealed class KeyedAsyncLock<TKey> where TKey : notnull

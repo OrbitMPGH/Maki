@@ -1295,7 +1295,8 @@ public class ScrobbleService(
     /// of them completed. A one-shot never raises <see cref="ReadingState.MaxChapter"/>, so this is the
     /// only way the planner learns it is done. A lone numbered chapter is left out on purpose: it
     /// already raises the mark, and on an ongoing series it is just the first chapter. A series whose
-    /// known chapter count is above one is ongoing, however many unnumbered specials were read.
+    /// known chapter count is above one, or that is still publishing, is not finished however many
+    /// unnumbered specials (a prologue, an extra) were read: its total is usually unknown until it ends.
     /// </summary>
     private async Task<HashSet<int>> FinishedOneShotsAsync(int userId, bool allRootFolders, CancellationToken ct)
     {
@@ -1308,7 +1309,8 @@ public class ScrobbleService(
             .Select(p => p.SeriesId);
         var chapters = await db.Chapters.AsNoTracking()
             .Where(c => c.ChapterFileId != null && readSeries.Contains(c.SeriesId)
-                && (c.Series!.TotalChapters == null || c.Series.TotalChapters <= 1))
+                && (c.Series!.TotalChapters == null || c.Series.TotalChapters <= 1)
+                && c.Series.Status != SeriesStatus.Ongoing && c.Series.Status != SeriesStatus.Hiatus)
             .Select(c => new
             {
                 c.SeriesId,
