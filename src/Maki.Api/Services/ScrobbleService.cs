@@ -27,6 +27,7 @@ public class ScrobbleService(
     IUserSettingsStore userSettings,
     KavitaUserResolver kavitaUser,
     KavitaClient kavita,
+    VolumeBoundaryService volumeBoundaries,
     AniListTracker anilist,
     MalTracker mal,
     MangaBakaTracker mangaBaka,
@@ -47,10 +48,6 @@ public class ScrobbleService(
     private readonly IScrobbleTracker[] _trackers = [anilist, mal, mangaBaka, kitsu];
     private readonly SemaphoreSlim _syncLock = new(1, 1);
     private (DateTime CheckedAt, bool Ok)? _kavitaPing;
-
-    /// <summary>Cached per-archive page-boundary scans, keyed by ChapterFileId; re-scanned when file size changes.</summary>
-    private readonly ConcurrentDictionary<int, (long Size, VolumeChapterProgress.ChapterFileBoundaries Boundaries)>
-        _volumeBoundaryCache = new();
 
     /// <summary>
     /// In-flight OAuth sessions: state → (verifier, redirect URI), plus the user who started the flow.
@@ -400,7 +397,7 @@ public class ScrobbleService(
             .Select(s => MatchLocal(libraryIndex, s)?.Id)
             .OfType<int>()
             .ToHashSet();
-        var boundarySource = await LoadVolumeBoundarySourceAsync(userId, allRootFolders, matchedIds, ct);
+        var boundarySource = await volumeBoundaries.LoadAsync(userId, allRootFolders, matchedIds, ct);
         var finishedOneShots = await FinishedOneShotsAsync(userId, allRootFolders, ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
@@ -422,12 +419,10 @@ public class ScrobbleService(
 
             // Always read chapter-level progress: Kavita's series-level pagesRead
             // aggregate can be stale (often stuck at 0).
-            KavitaProgress.SeriesProgress progress;
             List<KavitaProgress.KavitaVolumeDto> volumesRaw;
             try
             {
                 volumesRaw = await kavita.GetVolumesAsync(kavitaUrl, kavitaKey, series.Id, ct);
-                progress = KavitaProgress.Compute(volumesRaw);
             }
             catch (Exception e)
             {
@@ -438,23 +433,19 @@ public class ScrobbleService(
                 continue;
             }
 
-            var maxChapter = (decimal)progress.MaxChapter;
-
             // When a Kavita "volume" is actually one of Maki's own multi-chapter
             // archives (import/rescan grouped several Chapters under one ChapterFile),
-            // Kavita only reports one pagesRead counter for the whole thing. Refine the
-            // chapter number using the page positions where each chapter starts inside
-            // that archive, so a partially-read volume still advances scrobbling.
+            // Kavita only reports one pagesRead counter for the whole thing. The page
+            // positions where each chapter starts inside that archive let a partially-read
+            // volume still count the chapters already finished, for the trackers and for
+            // the per-chapter read marks alike.
             var localSeries = MatchLocal(libraryIndex, series);
+            var progress = KavitaProgress.Compute(volumesRaw,
+                localSeries is null ? null : volumeBoundaries.For(boundarySource, localSeries.Id));
+            var maxChapter = (decimal)progress.MaxChapter;
 
             if (localSeries is not null)
             {
-                var boundaries = VolumeBoundaries(boundarySource, localSeries.Id);
-                if (boundaries.Count > 0)
-                {
-                    maxChapter = VolumeChapterProgress.Refine(volumesRaw, boundaries, maxChapter);
-                }
-
                 // Per-chapter read state is what the UI counts, so it has to be written here and
                 // not only by the one-off import — otherwise reading done in Kavita after an import
                 // never shows up as read. Uses the payload already fetched above; failure is
@@ -463,8 +454,7 @@ public class ScrobbleService(
                 {
                     using var scope = scopeFactory.CreateScope();
                     var externalReads = scope.ServiceProvider.GetRequiredService<ExternalReadSyncService>();
-                    var marked = await externalReads.MarkAsync(
-                        userId, localSeries.Id, ExternalReadSyncService.ReadChapterNumbers(volumesRaw), ct);
+                    var marked = await externalReads.MarkAsync(userId, localSeries.Id, progress, ct);
                     if (marked > 0)
                     {
                         logger.LogInformation(
@@ -1191,103 +1181,6 @@ public class ScrobbleService(
         }
 
         return local;
-    }
-
-    /// <summary>
-    /// What <see cref="VolumeBoundaries"/> needs from the database, for every matched series at once:
-    /// the files several chapters share, grouped by series, and the root folder each such series
-    /// lives in. Loaded once per Kavita pass rather than three queries per series per tick.
-    /// </summary>
-    private sealed record VolumeBoundarySource(
-        ILookup<int, int> SharedFilesBySeries,
-        Dictionary<int, (string RelativePath, long Size)> Files,
-        Dictionary<int, string> RootPaths);
-
-    private async Task<VolumeBoundarySource> LoadVolumeBoundarySourceAsync(
-        int userId, bool allRootFolders, IReadOnlyCollection<int> seriesIds, CancellationToken ct)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-        db.Scope.SetUser(userId, allRootFolders);
-
-        var chapterFiles = await db.Chapters.AsNoTracking()
-            .Where(c => seriesIds.Contains(c.SeriesId) && c.ChapterFileId != null)
-            .Select(c => new { c.SeriesId, FileId = c.ChapterFileId!.Value })
-            .ToListAsync(ct);
-
-        var shared = chapterFiles
-            .GroupBy(c => c.FileId)
-            .Where(g => g.Count() > 1)
-            .Select(g => (SeriesId: g.First().SeriesId, FileId: g.Key))
-            .ToList();
-        var sharedFileIds = shared.Select(x => x.FileId).ToList();
-        var sharedSeriesIds = shared.Select(x => x.SeriesId).Distinct().ToList();
-
-        var files = sharedFileIds.Count == 0
-            ? []
-            : await db.ChapterFiles.AsNoTracking()
-                .Where(f => sharedFileIds.Contains(f.Id))
-                .Select(f => new { f.Id, f.RelativePath, f.Size })
-                .ToDictionaryAsync(f => f.Id, f => (f.RelativePath, f.Size), ct);
-        var roots = sharedSeriesIds.Count == 0
-            ? []
-            : await db.Series.AsNoTracking()
-                .Where(s => sharedSeriesIds.Contains(s.Id))
-                .Select(s => new { s.Id, s.RootFolder!.Path })
-                .ToDictionaryAsync(s => s.Id, s => s.Path, ct);
-
-        return new VolumeBoundarySource(shared.ToLookup(x => x.SeriesId, x => x.FileId), files, roots);
-    }
-
-    /// <summary>
-    /// Page boundaries of every multi-chapter volume archive belonging to one Maki
-    /// series, keyed by volume number. Only archives where several <see cref="Chapter"/>
-    /// rows share one <see cref="ChapterFile"/> (import/rescan grouped them) qualify;
-    /// Maki's own per-chapter downloads need no refinement. Results are cached per
-    /// ChapterFileId and re-scanned only when the file's size changes.
-    /// </summary>
-    private Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries> VolumeBoundaries(
-        VolumeBoundarySource source, int seriesId)
-    {
-        var result = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>();
-        if (!source.RootPaths.TryGetValue(seriesId, out var rootFolderPath) || string.IsNullOrEmpty(rootFolderPath))
-        {
-            return result;
-        }
-
-        foreach (var fileId in source.SharedFilesBySeries[seriesId])
-        {
-            if (!source.Files.TryGetValue(fileId, out var file))
-            {
-                continue;
-            }
-
-            // A volume-range file (chapters spanning several volume numbers) has no
-            // single Kavita "volume" to attach page boundaries to — skip it.
-            if (!int.TryParse(ChapterController.VolumeFileLabel(file.RelativePath), out var volumeNumber))
-            {
-                continue;
-            }
-
-            if (_volumeBoundaryCache.TryGetValue(fileId, out var cached) && cached.Size == file.Size)
-            {
-                result[volumeNumber] = cached.Boundaries;
-                continue;
-            }
-
-            var absolutePath = Path.Combine(rootFolderPath, file.RelativePath);
-            var (totalPages, boundaries) = VolumeChapterScanner.ScanCbzBoundaries(absolutePath);
-            if (boundaries.Count == 0)
-            {
-                continue;
-            }
-
-            var entry = new VolumeChapterProgress.ChapterFileBoundaries(totalPages, boundaries);
-            _volumeBoundaryCache[fileId] = (file.Size, entry);
-            result[volumeNumber] = entry;
-        }
-
-        return result;
     }
 
     /// <summary>

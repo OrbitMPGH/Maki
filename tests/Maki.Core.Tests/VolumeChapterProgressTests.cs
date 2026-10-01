@@ -12,72 +12,63 @@ public class VolumeChapterProgressTests
         int totalPages, params (decimal Chapter, int PageIndex)[] boundaries) =>
         new(totalPages, boundaries);
 
+    private static readonly Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries> VolumeOne = new()
+    {
+        // Volume 1 = one archive with chapters 1 (pages 0-2), 2 (pages 3-4), 3 (page 5).
+        [1] = Boundaries(6, (1m, 0), (2m, 3), (3m, 5)),
+    };
+
     [Fact]
     public void Advances_to_the_chapter_whose_pages_are_fully_read()
     {
-        // Volume 1 = one archive with chapters 1 (pages 0-2), 2 (pages 3-4), 3 (page 5).
-        var boundaries = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>
-        {
-            [1] = Boundaries(6, (1m, 0), (2m, 3), (3m, 5)),
-        };
-
         // 4 of 6 pages read -> chapter 1 (0-2) fully read, chapter 2 (3-4) not yet (needs 5).
-        var reached = VolumeChapterProgress.Refine([Volume(1, 6, 4)], boundaries, baseMaxChapter: 0);
+        var progress = KavitaProgress.Compute([Volume(1, 6, 4)], VolumeOne);
 
-        Assert.Equal(1m, reached);
+        Assert.Equal(1, progress.MaxChapter);
+        Assert.Equal([(1m, 1m)], progress.Chapters);
+        Assert.Empty(progress.Volumes);
     }
 
     [Fact]
     public void Reaching_the_next_chapters_start_page_completes_the_previous_chapter()
     {
-        var boundaries = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>
-        {
-            [1] = Boundaries(6, (1m, 0), (2m, 3), (3m, 5)),
-        };
+        var progress = KavitaProgress.Compute([Volume(1, 6, 5)], VolumeOne);
 
-        var reached = VolumeChapterProgress.Refine([Volume(1, 6, 5)], boundaries, baseMaxChapter: 0);
-
-        Assert.Equal(2m, reached);
+        Assert.Equal(2, progress.MaxChapter);
+        Assert.Equal([(1m, 2m)], progress.Chapters);
     }
 
     [Fact]
-    public void Reading_every_page_completes_the_last_chapter()
+    public void Reading_every_page_completes_the_last_chapter_and_the_volume()
     {
-        var boundaries = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>
-        {
-            [1] = Boundaries(6, (1m, 0), (2m, 3), (3m, 5)),
-        };
+        var progress = KavitaProgress.Compute([Volume(1, 6, 6)], VolumeOne);
 
-        var reached = VolumeChapterProgress.Refine([Volume(1, 6, 6)], boundaries, baseMaxChapter: 0);
-
-        Assert.Equal(3m, reached);
+        Assert.Equal(3, progress.MaxChapter);
+        Assert.Equal([(1m, 3m)], progress.Chapters);
+        Assert.Equal([(1, 1)], progress.Volumes);
     }
 
     [Fact]
-    public void Never_lowers_the_base_chapter()
+    public void A_numbered_chapter_further_on_still_wins()
     {
-        var boundaries = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>
-        {
-            [1] = Boundaries(6, (1m, 0), (2m, 3)),
-        };
+        // Chapter 10 sits in an already chapter-split volume; the half-read archive must not lower it.
+        var progress = KavitaProgress.Compute(
+        [
+            Volume(1, 6, 3),
+            new KavitaProgress.KavitaVolumeDto(2, 2, 20, 20,
+                [new KavitaProgress.KavitaChapterDto(10, 10, 20, 20, false)]),
+        ], VolumeOne);
 
-        // base already ahead (e.g. from another, already chapter-split volume)
-        var reached = VolumeChapterProgress.Refine([Volume(1, 6, 3)], boundaries, baseMaxChapter: 10);
-
-        Assert.Equal(10m, reached);
+        Assert.Equal(10, progress.MaxChapter);
     }
 
     [Fact]
     public void Ignores_volumes_with_no_matching_boundary_entry()
     {
-        var boundaries = new Dictionary<int, VolumeChapterProgress.ChapterFileBoundaries>
-        {
-            [1] = Boundaries(6, (1m, 0), (2m, 3)),
-        };
-
         // volume 2 has no local archive scanned for it
-        var reached = VolumeChapterProgress.Refine([Volume(2, 40, 40)], boundaries, baseMaxChapter: 0);
+        var progress = KavitaProgress.Compute([Volume(2, 40, 39)], VolumeOne);
 
-        Assert.Equal(0m, reached);
+        Assert.Equal(0, progress.MaxChapter);
+        Assert.True(progress.IsEmpty);
     }
 }

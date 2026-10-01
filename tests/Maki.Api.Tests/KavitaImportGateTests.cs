@@ -23,7 +23,7 @@ public sealed class KavitaImportGateTests : IDisposable
         var settings = new SettingsService(scopeFactory);
         var resolver = new KavitaUserResolver(scopeFactory, settings);
         var import = new KavitaReadImportService(
-            scopeFactory, settings, null!, null!, resolver, NullLogger<KavitaReadImportService>.Instance);
+            scopeFactory, settings, null!, null!, null!, resolver, NullLogger<KavitaReadImportService>.Instance);
         return new ReaderController(
             new TestLocalizer(), _db.NewContext(userId), null!, null!, null!, import, null!, null!, null!,
             NullLogger<ReaderController>.Instance, new TestCurrentUser(userId, permissions: permissions), resolver);

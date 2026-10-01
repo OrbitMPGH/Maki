@@ -30,6 +30,7 @@ public class KavitaReadImportService(
     SettingsService settings,
     KavitaClient kavita,
     ExternalReadSyncService externalReads,
+    VolumeBoundaryService volumeBoundaries,
     KavitaUserResolver kavitaUser,
     ILogger<KavitaReadImportService> logger)
 {
@@ -154,17 +155,17 @@ public class KavitaReadImportService(
                 continue;
             }
 
-            var readNumbers = ExternalReadSyncService.ReadChapterNumbers(volumes);
+            var progress = KavitaProgress.Compute(
+                volumes, await volumeBoundaries.ForSeriesAsync(userId, localSeriesId, ct));
 
             matched++;
-            if (readNumbers.Count == 0)
+            if (progress.IsEmpty)
             {
                 continue;
             }
 
-            marked += await externalReads.MarkAsync(userId, localSeriesId, readNumbers, ct);
+            marked += await externalReads.MarkAsync(userId, localSeriesId, progress, ct);
 
-            var progress = KavitaProgress.Compute(volumes);
             using var scope = scopeFactory.CreateScope();
             var reading = scope.ServiceProvider.GetRequiredService<ReadingProgressService>();
             await reading.ImportSilentAsync(userId, localSeriesId, series.Id, title,
@@ -218,8 +219,9 @@ public class KavitaReadImportService(
         }
 
         var volumes = await kavita.GetVolumesAsync(url, apiKey, kavitaSeriesId, ct);
-        var marked = await externalReads.MarkAsync(
-            userId, localSeriesId.Value, ExternalReadSyncService.ReadChapterNumbers(volumes), ct);
+        var progress = KavitaProgress.Compute(
+            volumes, await volumeBoundaries.ForSeriesAsync(userId, localSeriesId.Value, ct));
+        var marked = await externalReads.MarkAsync(userId, localSeriesId.Value, progress, ct);
         return new SeriesMarkResult(localSeriesId.Value, marked);
     }
 

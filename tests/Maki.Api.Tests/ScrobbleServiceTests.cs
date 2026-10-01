@@ -28,11 +28,12 @@ public class ScrobbleServiceTests
             userSettings,
             kavitaUser: null!,
             kavita: null!,
+            volumeBoundaries: null!,
             anilist: null!,
             mal: null!,
             mangaBaka: null!,
             kitsu: null!,
-            NullLogger<ScrobbleService>.Instance);
+            logger: NullLogger<ScrobbleService>.Instance);
 
     /// <summary>
     /// Builds a service whose <c>_trackers</c> array is all real (if mostly unused) instances -
@@ -55,12 +56,13 @@ public class ScrobbleServiceTests
             userSettings,
             kavitaUser: null!,
             kavita: null!,
+            volumeBoundaries: null!,
             anilist: new AniListTracker(noopHttp, appSettings, tokens, options, NullLogger<AniListTracker>.Instance),
             mal: new MalTracker(noopHttp, appSettings, tokens, options, NullLogger<MalTracker>.Instance),
-            mangaBaka,
+            mangaBaka: mangaBaka,
             kitsu: new KitsuTracker(
                 noopHttp, appSettings, userSettings, tokens, options, NullLogger<KitsuTracker>.Instance),
-            NullLogger<ScrobbleService>.Instance);
+            logger: NullLogger<ScrobbleService>.Instance);
     }
 
     /// <summary>

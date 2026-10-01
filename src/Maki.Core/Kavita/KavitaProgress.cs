@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Maki.Core.Scrobbling;
 
 namespace Maki.Core.Kavita;
 
@@ -8,14 +9,37 @@ namespace Maki.Core.Kavita;
 /// counts as read only when every page is read; specials and sentinel-numbered
 /// items are ignored. Kavita's series-level pagesRead aggregate is denormalized
 /// and can be stale, so progress is always computed from chapter-level data.
+/// <para>
+/// One computation feeds both consumers on purpose: the tracker push takes the highest
+/// chapter/volume from it, and the per-chapter read marks take the items themselves. They
+/// used to read Kavita's payload separately, and the marks only understood numbered
+/// chapters, so a library of volume archives scrobbled fine while nothing was marked read.
+/// </para>
 /// </summary>
 public static class KavitaProgress
 {
     /// <summary>Kavita marks specials/uncounted items with huge sentinel numbers.</summary>
     private const double Sentinel = 10000;
 
-    /// <summary>Highest fully-read chapter/volume numbers across a series.</summary>
-    public record SeriesProgress(double MaxChapter, double MaxVolume, int ReadPages);
+    /// <summary>Highest fully-read chapter/volume numbers across a series, and the items behind them.</summary>
+    public record SeriesProgress(double MaxChapter, double MaxVolume, int ReadPages)
+    {
+        /// <summary>
+        /// Fully read chapter numbers as inclusive ranges: a single chapter is <c>(n, n)</c>, a
+        /// Kavita chapter range "1-5" is <c>(1, 5)</c>, and the chapters reached inside a
+        /// multi-chapter volume archive are <c>(first chapter in it, last one read past)</c>.
+        /// </summary>
+        public IReadOnlyList<(decimal From, decimal To)> Chapters { get; init; } = [];
+
+        /// <summary>Fully read volumes, as Kavita numbers them: <c>(3, 3)</c>, or <c>(1, 3)</c> for a "Vol 1-3" file.</summary>
+        public IReadOnlyList<(int From, int To)> Volumes { get; init; } = [];
+
+        public bool IsEmpty => Chapters.Count == 0 && Volumes.Count == 0;
+
+        public bool CoversChapter(decimal number) => Chapters.Any(r => r.From <= number && number <= r.To);
+
+        public bool CoversVolume(int from, int to) => Volumes.Contains((from, to));
+    }
 
     // Id is last and defaulted so the existing positional construction in tests keeps compiling.
     // It is only needed to write progress back to Kavita, never to read it.
@@ -61,46 +85,52 @@ public static class KavitaProgress
         }
     }
 
-    /// <summary>Countable chapter number, or null for specials/unnumbered chapters.</summary>
-    private static double? ChapterNumber(KavitaChapterDto chapter)
-    {
-        if (chapter.IsSpecial)
-        {
-            return null;
-        }
-
-        var n = chapter.MaxNumber ?? chapter.Number;
-        return n is > 0 and < Sentinel ? n : null;
-    }
-
-    private static double? VolumeNumber(KavitaVolumeDto volume)
-    {
-        var n = volume.MaxNumber ?? volume.Number;
-        return n is > 0 and < Sentinel ? n : null;
-    }
+    private static bool Countable(double? n) => n is > 0 and < Sentinel;
 
     /// <summary>
     /// Volume-only releases (chapters carry no usable number) still advance the
     /// volume counter: a volume is fully read when the sum of its chapters' read
     /// pages (or its own pagesRead) covers all of its pages.
+    /// <para>
+    /// <paramref name="boundariesByVolume"/> maps a volume number to the chapter start pages Maki
+    /// scanned from its own multi-chapter archive for that volume (<see cref="Parsing.VolumeChapterScanner"/>).
+    /// Kavita treats such an archive as one readable unit with one pagesRead counter; the
+    /// boundaries map that counter back onto the chapters inside, so a half-read volume still
+    /// counts the chapters already finished. A chapter counts only once the read-page count
+    /// reaches the start of the next one (or the end of the archive for the last).
+    /// </para>
     /// </summary>
-    public static SeriesProgress Compute(IEnumerable<KavitaVolumeDto> volumes)
+    public static SeriesProgress Compute(
+        IEnumerable<KavitaVolumeDto> volumes,
+        IReadOnlyDictionary<int, VolumeChapterProgress.ChapterFileBoundaries>? boundariesByVolume = null)
     {
         var maxCh = 0.0;
         var maxVol = 0.0;
         var readPages = 0;
+        var chapterRanges = new List<(decimal, decimal)>();
+        var volumeRanges = new List<(int, int)>();
+
         foreach (var vol in volumes)
         {
-            var vnum = VolumeNumber(vol);
             var chapters = vol.Chapters ?? [];
             var volPagesRead = 0;
             foreach (var ch in chapters)
             {
                 volPagesRead += ch.PagesRead;
-                if (ChapterNumber(ch) is { } cnum && ch.Pages > 0 && ch.PagesRead >= ch.Pages)
+                if (ch.IsSpecial || ch.Pages <= 0 || ch.PagesRead < ch.Pages)
                 {
-                    maxCh = Math.Max(maxCh, cnum);
+                    continue;
                 }
+
+                var hi = ch.MaxNumber ?? ch.Number;
+                if (!Countable(hi))
+                {
+                    continue;
+                }
+
+                var lo = Countable(ch.Number) && ch.Number <= hi ? ch.Number!.Value : hi!.Value;
+                chapterRanges.Add(((decimal)lo, (decimal)hi!.Value));
+                maxCh = Math.Max(maxCh, hi.Value);
             }
 
             if (chapters.Count == 0)
@@ -109,13 +139,56 @@ public static class KavitaProgress
             }
 
             readPages += volPagesRead;
-            var volFullyRead = vol.Pages > 0 && Math.Max(volPagesRead, vol.PagesRead) >= vol.Pages;
-            if (vnum is { } v && volFullyRead)
+
+            var vnum = vol.MaxNumber ?? vol.Number;
+            if (!Countable(vnum))
             {
-                maxVol = Math.Max(maxVol, v);
+                continue;
+            }
+
+            if (vol.Pages > 0 && Math.Max(volPagesRead, vol.PagesRead) >= vol.Pages)
+            {
+                maxVol = Math.Max(maxVol, vnum!.Value);
+                var vlo = Countable(vol.Number) && vol.Number <= vnum ? vol.Number!.Value : vnum!.Value;
+                if (vlo == Math.Floor(vlo) && vnum == Math.Floor(vnum!.Value))
+                {
+                    volumeRanges.Add(((int)vlo, (int)vnum.Value));
+                }
+            }
+
+            if (boundariesByVolume is null || vnum != Math.Floor(vnum!.Value) ||
+                !boundariesByVolume.TryGetValue((int)vnum.Value, out var b) || b.Boundaries.Count == 0)
+            {
+                continue;
+            }
+
+            var totalPages = b.TotalPages > 0 ? b.TotalPages : vol.Pages;
+            if (totalPages <= 0)
+            {
+                continue;
+            }
+
+            decimal? reached = null;
+            for (var i = 0; i < b.Boundaries.Count; i++)
+            {
+                var endExclusive = i + 1 < b.Boundaries.Count ? b.Boundaries[i + 1].PageIndex : totalPages;
+                if (volPagesRead >= endExclusive)
+                {
+                    reached = b.Boundaries[i].Chapter;
+                }
+            }
+
+            if (reached is { } r)
+            {
+                chapterRanges.Add((b.Boundaries[0].Chapter, r));
+                maxCh = Math.Max(maxCh, (double)r);
             }
         }
 
-        return new SeriesProgress(maxCh, maxVol, readPages);
+        return new SeriesProgress(maxCh, maxVol, readPages)
+        {
+            Chapters = chapterRanges,
+            Volumes = volumeRanges,
+        };
     }
 }

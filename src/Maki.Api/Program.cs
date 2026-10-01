@@ -851,6 +851,7 @@ try
     // Singleton like the two Kavita services that use it: it opens its own scope per call, so it
     // can be reached from both the import's background task and the scrobble job.
     builder.Services.AddSingleton<ExternalReadSyncService>();
+    builder.Services.AddSingleton<VolumeBoundaryService>();
     builder.Services.AddSingleton<KavitaReadImportService>();
     builder.Services.AddSingleton<KavitaLiveReadSync>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
