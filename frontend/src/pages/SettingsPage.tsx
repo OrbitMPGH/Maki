@@ -846,9 +846,85 @@ function KavitaSyncSection() {
           )}
         </div>
 
+        {ownsKavita ? <KavitaLiveReadControl /> : null}
+
         {ownsKavita ? <KavitaReadImportControl /> : null}
       </Stack>
     </SettingsSection>
+  )
+}
+
+/**
+ * Live pull from Kavita. Kavita only pushes progress events to admins, so a non-admin API key is
+ * the one failure worth explaining; everything else falls back to the regular sync anyway.
+ */
+function KavitaLiveReadControl() {
+  const { t } = useLingui()
+  const { data: settings } = useReaderSettings()
+  const save = useSaveReaderSettings()
+  const queryClient = useQueryClient()
+  const enabled = settings?.pullFromKavita ?? false
+  const status = settings?.kavitaLive
+
+  // The connection settles a moment after the switch flips, so refetch until it does.
+  const settling = enabled && status !== 'Connected' && status !== 'NotAdmin'
+  useEffect(() => {
+    if (!settling) return
+    const id = setInterval(
+      () => void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] }),
+      3000,
+    )
+    return () => clearInterval(id)
+  }, [settling, queryClient])
+
+  return (
+    <div>
+      <Switch
+        label={t`Mark chapters read here as soon as they're read in Kavita`}
+        checked={enabled}
+        disabled={!settings}
+        onChange={(e) =>
+          settings &&
+          save.mutate(
+            {
+              defaults: settings.defaults,
+              pushToKavita: settings.pushToKavita,
+              pullFromKavita: e.currentTarget.checked,
+            },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+          )
+        }
+      />
+      <Text size="xs" c="var(--ink-3)" mt={4}>
+        <Trans>
+          Finished chapters show up as read within seconds, marked the same way the import marks
+          them. Without this they wait for the next scrobble sync.
+        </Trans>
+      </Text>
+      {enabled && status === 'Connected' && (
+        <Text size="xs" c="var(--ok)" mt={4}>
+          <Trans>Connected to Kavita.</Trans>
+        </Text>
+      )}
+      {enabled && (status === 'Connecting' || status === 'Off') && (
+        <Text size="xs" c="var(--ink-3)" mt={4}>
+          <Trans>Connecting to Kavita…</Trans>
+        </Text>
+      )}
+      {enabled && status === 'NotAdmin' && (
+        <Text size="xs" c="var(--danger)" mt={4}>
+          <Trans>
+            Kavita only sends reading updates to admin accounts. Use an API key from a Kavita admin
+            under Settings → Integrations → Kavita.
+          </Trans>
+        </Text>
+      )}
+      {enabled && status === 'Unreachable' && (
+        <Text size="xs" c="var(--danger)" mt={4}>
+          <Trans>Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up.</Trans>
+        </Text>
+      )}
+    </div>
   )
 }
 

@@ -2694,6 +2694,10 @@ msgstr "C:\\Manga (optional)"
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga or /library"
 
+#: src/pages/SettingsPage.tsx
+msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
+msgstr "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
+
 #: src/components/ImportReviewModal.tsx
 msgid "Can't read this download"
 msgstr "Can't read this download"
@@ -3511,9 +3515,17 @@ msgstr "connected"
 msgid "Connected"
 msgstr "Connected"
 
+#: src/pages/SettingsPage.tsx
+msgid "Connected to Kavita."
+msgstr "Connected to Kavita."
+
 #: src/components/SetupWizard.tsx
 msgid "Connected: {connectedList}"
 msgstr "Connected: {connectedList}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Connecting to Kavita…"
+msgstr "Connecting to Kavita…"
 
 #: src/components/SetupWizard.tsx
 #: src/pages/ScrobblePage.tsx
@@ -5060,6 +5072,10 @@ msgstr "Finish setup"
 msgid "Finished"
 msgstr "Finished"
 
+#: src/pages/SettingsPage.tsx
+msgid "Finished chapters show up as read within seconds, marked the same way the import marks them. Without this they wait for the next scrobble sync."
+msgstr "Finished chapters show up as read within seconds, marked the same way the import marks them. Without this they wait for the next scrobble sync."
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Finished in a rush"
 msgstr "Finished in a rush"
@@ -6064,6 +6080,10 @@ msgid "Kavita libraries"
 msgstr "Kavita libraries"
 
 #: src/pages/SettingsPage.tsx
+msgid "Kavita only sends reading updates to admin accounts. Use an API key from a Kavita admin under Settings → Integrations → Kavita."
+msgstr "Kavita only sends reading updates to admin accounts. Use an API key from a Kavita admin under Settings → Integrations → Kavita."
+
+#: src/pages/SettingsPage.tsx
 msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
 msgstr "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
 
@@ -6812,6 +6832,10 @@ msgid "Mark ch. 1 to {coveredTo} watched"
 msgstr "Mark ch. 1 to {coveredTo} watched"
 
 #: src/pages/SettingsPage.tsx
+msgid "Mark chapters read here as soon as they're read in Kavita"
+msgstr "Mark chapters read here as soon as they're read in Kavita"
+
+#: src/pages/SettingsPage.tsx
 msgid "Mark chapters read in Kavita too"
 msgstr "Mark chapters read in Kavita too"
 
@@ -6825,8 +6849,13 @@ msgstr "Mark read"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "mark read in kavita, push to kavita, import read status, kavita progress"
-msgstr "mark read in kavita, push to kavita, import read status, kavita progress"
+#~ msgid "mark read in kavita, push to kavita, import read status, kavita progress"
+#~ msgstr "mark read in kavita, push to kavita, import read status, kavita progress"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
+msgstr "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark unread"

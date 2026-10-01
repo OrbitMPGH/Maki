@@ -3251,6 +3251,10 @@ msgstr "C:\\Manga (facultatif)"
 msgid "C:\\Manga or /library"
 msgstr "C:\\Manga ou /library"
 
+#: src/pages/SettingsPage.tsx
+msgid "Can't reach Kavita right now. Maki keeps retrying, and the scrobble sync still catches up."
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Can't read this download"
@@ -4239,10 +4243,18 @@ msgstr "connecté"
 msgid "Connected"
 msgstr "Connecté"
 
+#: src/pages/SettingsPage.tsx
+msgid "Connected to Kavita."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Connected: {connectedList}"
 msgstr "Connecté : {connectedList}"
+
+#: src/pages/SettingsPage.tsx
+msgid "Connecting to Kavita…"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6102,6 +6114,10 @@ msgstr "Terminer la configuration"
 msgid "Finished"
 msgstr "Terminé"
 
+#: src/pages/SettingsPage.tsx
+msgid "Finished chapters show up as read within seconds, marked the same way the import marks them. Without this they wait for the next scrobble sync."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Finished in a rush"
@@ -7320,6 +7336,10 @@ msgid "Kavita libraries"
 msgstr "Bibliothèques Kavita"
 
 #: src/pages/SettingsPage.tsx
+msgid "Kavita only sends reading updates to admin accounts. Use an API key from a Kavita admin under Settings → Integrations → Kavita."
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Kavita series you haven't started are added as plan to read. Entries already on your lists are never changed."
 msgstr "Les séries Kavita que vous n'avez pas commencées sont ajoutées à la liste À lire. Les éléments déjà présents dans vos listes ne sont jamais modifiés."
@@ -8223,6 +8243,10 @@ msgid "Mark ch. 1 to {coveredTo} watched"
 msgstr "Marquer les chapitres 1 à {coveredTo} comme vus"
 
 #: src/pages/SettingsPage.tsx
+msgid "Mark chapters read here as soon as they're read in Kavita"
+msgstr ""
+
+#: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Mark chapters read in Kavita too"
 msgstr "Marquer également comme lu dans Kavita"
@@ -8240,8 +8264,13 @@ msgstr "Marquer comme lu"
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
-msgid "mark read in kavita, push to kavita, import read status, kavita progress"
-msgstr "marquer comme lu dans Kavita, envoyer à Kavita, importer le statut de lecture, progression Kavita"
+#~ msgid "mark read in kavita, push to kavita, import read status, kavita progress"
+#~ msgstr "marquer comme lu dans Kavita, envoyer à Kavita, importer le statut de lecture, progression Kavita"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

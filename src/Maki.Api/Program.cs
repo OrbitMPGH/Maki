@@ -852,6 +852,8 @@ try
     // can be reached from both the import's background task and the scrobble job.
     builder.Services.AddSingleton<ExternalReadSyncService>();
     builder.Services.AddSingleton<KavitaReadImportService>();
+    builder.Services.AddSingleton<KavitaLiveReadSync>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ContinueReadingService>();
     builder.Services.AddScoped<ReadingProfileService>();

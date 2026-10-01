@@ -70,6 +70,7 @@ public class SettingsController(
     ICurrentUser currentUser,
     IUserSettings userSettings,
     KavitaUserResolver kavitaUser,
+    KavitaLiveReadSync kavitaLive,
     ISchedulerFactory schedulerFactory,
     IServiceScopeFactory scopeFactory,
     ILogger<SettingsController> logger) : ControllerBase
@@ -166,8 +167,14 @@ public class SettingsController(
     public record KavitaSettings(
         string? Url, string? ApiKey, string? PathMapFrom, string? PathMapTo,
         int? UserId = null, int? ResolvedUserId = null);
+    /// <param name="PullFromKavita">
+    /// Nullable so the reader's own prefs write, which predates it and never sends it, leaves the
+    /// stored value alone instead of switching it off.
+    /// </param>
+    /// <param name="KavitaLive">Read-only: the live connection's state, see <see cref="KavitaLiveStatus"/>.</param>
     public record ReaderSettings(
-        Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita, int? KavitaUserId = null);
+        Maki.Core.Reading.ReaderPrefsSpec Defaults, bool PushToKavita, int? KavitaUserId = null,
+        bool? PullFromKavita = null, KavitaLiveStatus? KavitaLive = null);
     /// <param name="SeriesSections">
     /// Nullable, and coalesced to the default on write: a client built before this field existed PUTs
     /// a two-field body, and turning that into "both rails on" is the safe failure — the same
@@ -284,11 +291,13 @@ public class SettingsController(
     public async Task<IActionResult> GetReader(CancellationToken ct)
     {
         var stored = await userSettings.GetManyAsync(
-            [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita], ct);
+            [SettingKeys.ReaderPrefs, SettingKeys.ReaderPushToKavita, SettingKeys.ReaderPullFromKavita], ct);
         return Ok(new ReaderSettings(
             Maki.Core.Reading.ReaderPrefsSpec.Parse(stored.GetValueOrDefault(SettingKeys.ReaderPrefs)),
             stored.GetValueOrDefault(SettingKeys.ReaderPushToKavita) == "true",
-            KavitaUserId: await kavitaUser.ResolveAsync(ct)));
+            KavitaUserId: await kavitaUser.ResolveAsync(ct),
+            PullFromKavita: stored.GetValueOrDefault(SettingKeys.ReaderPullFromKavita) == "true",
+            KavitaLive: kavitaLive.Status));
     }
 
     /// <summary>
@@ -307,7 +316,13 @@ public class SettingsController(
         await userSettings.SetAsync(SettingKeys.ReaderPrefs,
             Maki.Core.Reading.ReaderPrefsSpec.Serialize(defaults), ct);
         await userSettings.SetAsync(SettingKeys.ReaderPushToKavita, request.PushToKavita ? "true" : "false", ct);
-        return Ok(new ReaderSettings(defaults, request.PushToKavita, await kavitaUser.ResolveAsync(ct)));
+        if (request.PullFromKavita is { } pull)
+        {
+            await userSettings.SetAsync(SettingKeys.ReaderPullFromKavita, pull ? "true" : "false", ct);
+            kavitaLive.Nudge();
+        }
+
+        return await GetReader(ct);
     }
 
     /// <summary>
@@ -1302,6 +1317,7 @@ public class SettingsController(
 
         // The resolver caches for a minute; without this the change appears not to have taken.
         kavitaUser.Invalidate();
+        kavitaLive.Nudge();
         return await GetKavita(ct);
     }
 
@@ -1326,6 +1342,7 @@ public class SettingsController(
 
         // The resolver caches for a minute; without this the change appears not to have taken.
         kavitaUser.Invalidate();
+        kavitaLive.Nudge();
         return Ok(new KavitaUserSetting(await kavitaUser.ResolveAsync(ct)));
     }
 

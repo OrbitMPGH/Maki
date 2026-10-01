@@ -147,6 +147,13 @@ public static class SettingKeys
     public const string ReaderPushToKavita = "reader.pushtokavita";
 
     /// <summary>
+    /// "true" → listen to Kavita's realtime channel and mark chapters read here the moment they are
+    /// finished in Kavita, instead of waiting for the next scrobble tick. Default off. Only acts for
+    /// the Kavita-bound user, and Kavita only sends these events to admin accounts.
+    /// </summary>
+    public const string ReaderPullFromKavita = "reader.pullfromkavita";
+
+    /// <summary>
     /// Which page "/" lands on: one of <see cref="StartPage"/>'s values. Applied client-side as a
     /// <em>replacing</em> redirect, so "/" stays a valid bookmark and the nav highlight and page
     /// title work off the real path with no special cases. Unset = <see cref="StartPage.Default"/>.

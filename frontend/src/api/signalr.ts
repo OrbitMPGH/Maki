@@ -147,6 +147,14 @@ export function useLiveEvents() {
         },
       )
 
+      // Kavita's live sync marked chapters read. Same queries a manual mark-read invalidates.
+      conn.on('readProgressChanged', ({ seriesId }: { seriesId: number }) => {
+        void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['series'] })
+        void queryClient.invalidateQueries({ queryKey: ['home'] })
+      })
+
       conn.on('updateAvailable', () => {
         void queryClient.invalidateQueries({ queryKey: ['system', 'update'] })
       })

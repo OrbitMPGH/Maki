@@ -57,7 +57,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         recoGraphCache: null!, coReadInstaller: null!, coReadCache: null!, readerCohortInstaller: null!,
         readerCohortCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!,
         modelSwitcher: null!, db: db, updateCheck: null!, currentUser: new TestCurrentUser(1),
-        userSettings: null!, kavitaUser: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
+        userSettings: null!, kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!, scopeFactory: _db.ScopeFactory(),
         logger: NullLogger<SettingsController>.Instance);
 
     private static UpgradeProfileWriteDto ProfileBody(

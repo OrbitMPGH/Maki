@@ -213,7 +213,7 @@ public class OpdsKeyRotationTests : IDisposable
             readerCohortCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!,
             modelSwitcher: null!, db: db, updateCheck: null!, currentUser: new TestCurrentUser(userId),
             userSettings: new UserSettingsService(db, new TestCurrentUser(userId)),
-            kavitaUser: null!, schedulerFactory: null!, scopeFactory: null!,
+            kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!, scopeFactory: null!,
             logger: NullLogger<SettingsController>.Instance);
 
     private MakiDbContext ScopedContext(int userId, DbContextOptions<MakiDbContext>? options = null)

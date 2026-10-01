@@ -234,7 +234,12 @@ export interface ReaderSettings {
    * "push my reads to Kavita" lives, and that toggle only does anything for this user.
    */
   kavitaUserId?: number | null
+  pullFromKavita?: boolean
+  /** Read-only: state of the live connection that {@link ReaderSettings.pullFromKavita} opens. */
+  kavitaLive?: KavitaLiveStatus
 }
+
+export type KavitaLiveStatus = 'Off' | 'Connecting' | 'Connected' | 'NotAdmin' | 'Unreachable'
 
 export function useReaderSettings() {
   return useQuery({
@@ -246,7 +251,10 @@ export function useReaderSettings() {
 export function useSaveReaderSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (settings: Pick<ReaderSettings, 'defaults' | 'pushToKavita'>) =>
+    mutationFn: (
+      settings: Pick<ReaderSettings, 'defaults' | 'pushToKavita'> &
+        Partial<Pick<ReaderSettings, 'pullFromKavita'>>,
+    ) =>
       api<ReaderSettings>('/settings/reader', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] })

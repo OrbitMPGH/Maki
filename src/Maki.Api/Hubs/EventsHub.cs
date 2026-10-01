@@ -180,6 +180,13 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
             .SendAsync("sourceMatchProgress", new { seriesId, sourceName, state });
     }
 
+    /// <summary>
+    /// Chapters were marked read outside Maki's own reader (Kavita's live sync). Goes only to the
+    /// reader whose progress it is, so their open series page and Home rails refetch.
+    /// </summary>
+    public Task ReadProgressChanged(int userId, int seriesId) =>
+        hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("readProgressChanged", new { seriesId });
+
     /// <summary>Per-folder progress while a library import runs. Stage is a machine key (see
     /// <see cref="Maki.Api.Services.ImportStage"/>), not display text; this reaches every admin
     /// connection at once and they don't share a language, so the client words it; current/total
