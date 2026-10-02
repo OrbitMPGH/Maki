@@ -1833,6 +1833,10 @@ msgstr "有活动下载的系列无法移动文件。"
 msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
 msgstr ""
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "A large selection can take a while."
@@ -8263,12 +8267,6 @@ msgstr "标记为已读"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-#~ msgid "mark read in kavita, push to kavita, import read status, kavita progress"
-#~ msgstr "在 kavita 中标记已读, 推送到 kavita, 导入阅读状态, kavita 阅读进度"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr ""
 
@@ -8370,6 +8368,10 @@ msgstr "最大章节数"
 #, fuzzy
 msgid "Maximum content rating"
 msgstr "最高内容分级"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Maximum score loss for a higher tier"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -15360,7 +15362,7 @@ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
+msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, maximum score loss, allow replacing unknown, resolution weight, compression weight, measured quality"
 msgstr ""
 
 #: src/api/inbox.ts

@@ -1517,6 +1517,10 @@ msgstr "A file move is blocked for any series with an active download."
 msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
 msgstr "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win."
+msgstr "A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win."
+
 #: src/pages/LibraryPage.tsx
 msgid "A large selection can take a while."
 msgstr "A large selection can take a while."
@@ -6849,11 +6853,6 @@ msgstr "Mark read"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#~ msgid "mark read in kavita, push to kavita, import read status, kavita progress"
-#~ msgstr "mark read in kavita, push to kavita, import read status, kavita progress"
-
-#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
-#: src/pages/settings/registry.ts
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 
@@ -6937,6 +6936,10 @@ msgstr "Maximum chapters"
 #: src/components/settings/UsersSection.tsx
 msgid "Maximum content rating"
 msgstr "Maximum content rating"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Maximum score loss for a higher tier"
+msgstr "Maximum score loss for a higher tier"
 
 #: src/pages/rewind/slides.tsx
 msgid "Maybe next year"
@@ -12740,8 +12743,8 @@ msgstr "Upgrade now"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
-msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality"
+msgid "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, maximum score loss, allow replacing unknown, resolution weight, compression weight, measured quality"
+msgstr "upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, maximum score loss, allow replacing unknown, resolution weight, compression weight, measured quality"
 
 #: src/api/inbox.ts
 msgid "Upgrade restore failed"

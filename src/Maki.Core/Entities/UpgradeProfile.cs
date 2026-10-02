@@ -22,6 +22,13 @@ public class UpgradeProfile
     public bool UpgradesEnabled { get; set; }
     public int MinScoreDelta { get; set; } = 1;
 
+    /// <summary>
+    /// How far below the current file's score a higher-tier candidate may be and still win. Tiers are
+    /// provenance, not image quality, so without this an official copy a quarter the size counts as
+    /// an upgrade. Null lets a higher tier always win.
+    /// </summary>
+    public int? MaxTierScoreDrop { get; set; }
+
     /// <summary>0 means the score plays no part in whether the cutoff is met.</summary>
     public int UpgradeUntilScore { get; set; }
 

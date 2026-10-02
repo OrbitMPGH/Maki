@@ -18,6 +18,9 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public string DisplayName => "MangaDex";
     public string BaseUrl => "https://mangadex.org";
     public SourceCapabilities Capabilities => SourceCapabilities.SupportsLanguageFilter;
+
+    /// <summary>Groups upload their own releases here, under their own name, rather than the site re-hosting them.</summary>
+    public SourceKind Kind => SourceKind.Scanlator;
     public SourceContent Content =>
         SourceContent.Manga | SourceContent.Manhwa | SourceContent.Manhua | SourceContent.Doujinshi;
     // Every scanlation group posts in whatever language it works in; there's no fixed catalogue,

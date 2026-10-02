@@ -1133,6 +1133,10 @@ msgid "error.upgrades.minScoreDeltaRange"
 msgstr "Minimum score gain cannot be negative"
 
 #: src/Maki.Api/Controllers/UpgradeProfilesController.cs
+msgid "error.upgrades.maxTierScoreDropRange"
+msgstr "Maximum score loss for a higher tier cannot be negative"
+
+#: src/Maki.Api/Controllers/UpgradeProfilesController.cs
 #: src/Maki.Api/Controllers/QualityFormatsController.cs
 msgid "error.upgrades.nameRequired"
 msgstr "Name is required"

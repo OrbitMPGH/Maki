@@ -15,8 +15,10 @@ namespace Maki.Api.Services;
 /// The profiles share their format scores and weights and differ only in how far they upgrade, which
 /// the names and descriptions say. Sharpness and compression are scored by <see cref="MeasuredQuality"/>
 /// at weight 10, so a copy with twice the image data per pixel is 10 points ahead, and MinScoreDelta 5
-/// ignores differences under about 40%. No starter replaces an Unknown file: that is mostly an
-/// imported library, and the lowest tier, so the first aggregator scrape would win.
+/// ignores differences under about 40%. A higher tier still wins at up to 10 points lower: an
+/// official copy with half the data per pixel replaces a scanlation, one with a quarter does not.
+/// No starter replaces an Unknown file: that is mostly an imported library, and the lowest tier,
+/// so the first aggregator scrape would win.
 /// <para>
 /// An instance seeded under <see cref="PreviousMarkerKey"/> has its untouched starters (still at
 /// version 1) renamed and described in place; edited ones, and ones an admin deleted, are left be.
@@ -28,6 +30,7 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
     public const string PreviousMarkerKey = "upgrades.seeded.v2";
 
     public const int MeasuredWeight = 10;
+    public const int MaxTierScoreDrop = 10;
 
     public const string RawOrMachineTranslated = "Raw or machine translated";
     public const string TrustedDigitalRipper = "Trusted digital ripper";
@@ -124,6 +127,7 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
                 Cutoff = starter.Cutoff,
                 UpgradesEnabled = starter.Upgrades,
                 MinScoreDelta = 5,
+                MaxTierScoreDrop = MaxTierScoreDrop,
                 AllowReplacingUnknown = false,
                 ResolutionWeight = MeasuredWeight,
                 CompressionWeight = MeasuredWeight,

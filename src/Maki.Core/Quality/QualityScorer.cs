@@ -139,7 +139,7 @@ public static class QualityScorer
         var currentRank = Rank(profile, current.Tier);
         if (candidateRank > currentRank)
         {
-            return true;
+            return profile.MaxTierScoreDrop is not { } maxDrop || candidate.Score >= current.Score - maxDrop;
         }
 
         return candidateRank == currentRank && candidate.Score >= current.Score + profile.MinScoreDelta;

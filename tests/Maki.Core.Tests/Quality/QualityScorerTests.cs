@@ -294,6 +294,24 @@ public class QualityScorerTests
             S(QualityTier.Scanlator, 15), 1400, 20));
     }
 
+    [Fact]
+    public void IsUpgrade_to_a_higher_tier_ignores_score_without_a_drop_limit()
+    {
+        Assert.True(QualityScorer.IsUpgrade(Profile(), S(QualityTier.Scanlator, 6), 20, false,
+            S(QualityTier.Official, -10), 1135, 20));
+    }
+
+    [Fact]
+    public void IsUpgrade_to_a_higher_tier_refuses_a_score_drop_past_the_limit()
+    {
+        var profile = Profile(p => p.MaxTierScoreDrop = 10);
+
+        Assert.True(QualityScorer.IsUpgrade(profile, S(QualityTier.Scanlator, 6), 20, false,
+            S(QualityTier.Official, -4), 1135, 20));
+        Assert.False(QualityScorer.IsUpgrade(profile, S(QualityTier.Scanlator, 6), 20, false,
+            S(QualityTier.Official, -5), 1135, 20));
+    }
+
     private static QualityCandidate Listing(QualityTier tier, string source = "site", string? group = null) =>
         new(tier, source, null, group, "Series 012.cbz", null, null, null, null, "en");
 

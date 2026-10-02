@@ -48,6 +48,8 @@ export interface UpgradeProfileDto {
   cutoff: QualityTierName
   upgradesEnabled: boolean
   minScoreDelta: number
+  /** How far below the current file's score a higher-tier candidate may be and still win. Null lets a higher tier always win. */
+  maxTierScoreDrop: number | null
   /** 0 means ignore, i.e. never stop upgrading once the cutoff tier is met. */
   upgradeUntilScore: number
   formatScores: FormatScoreDto[]

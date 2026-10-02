@@ -172,7 +172,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
             "manga_viewer", ct,
             ("chapter_id", chapter.SourceChapterId),
             ("split", "yes"),
-            ("img_quality", "high"));
+            ("img_quality", "super_high"));
 
         var pages = new List<PageRequest>();
         var viewer = data?.Message(SuccessMangaViewer);

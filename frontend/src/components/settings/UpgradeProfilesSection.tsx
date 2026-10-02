@@ -78,6 +78,7 @@ const DEFAULT_PROFILE: UpgradeProfileInput = {
   cutoff: 'aggregator',
   upgradesEnabled: false,
   minScoreDelta: 1,
+  maxTierScoreDrop: 10,
   upgradeUntilScore: 0,
   formatScores: [],
   resolutionWeight: 10,
@@ -284,6 +285,7 @@ function ProfileEditor({
   const [cutoff, setCutoff] = useState<QualityTierName>(initial.cutoff)
   const [upgradesEnabled, setUpgradesEnabled] = useState(initial.upgradesEnabled)
   const [minScoreDelta, setMinScoreDelta] = useState<number | string>(initial.minScoreDelta)
+  const [maxTierScoreDrop, setMaxTierScoreDrop] = useState<number | string>(initial.maxTierScoreDrop ?? '')
   const [upgradeUntilScore, setUpgradeUntilScore] = useState<number | string>(initial.upgradeUntilScore)
   const [formatScores, setFormatScores] = useState<FormatScoreDto[]>(initial.formatScores)
   const [resolutionWeight, setResolutionWeight] = useState<number | string>(initial.resolutionWeight)
@@ -390,6 +392,16 @@ function ProfileEditor({
           onChange={setMinScoreDelta}
         />
         <NumberInput
+          label={t`Maximum score loss for a higher tier`}
+          description={t`A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win.`}
+          min={0}
+          allowDecimal={false}
+          value={maxTierScoreDrop}
+          onChange={setMaxTierScoreDrop}
+        />
+      </Group>
+      <Group grow align="flex-start">
+        <NumberInput
           label={t`Upgrade until score`}
           description={t`Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely.`}
           min={0}
@@ -493,6 +505,7 @@ function ProfileEditor({
               cutoff,
               upgradesEnabled,
               minScoreDelta: Number(minScoreDelta) || 0,
+              maxTierScoreDrop: maxTierScoreDrop === '' ? null : Number(maxTierScoreDrop) || 0,
               upgradeUntilScore: Number(upgradeUntilScore) || 0,
               formatScores,
               resolutionWeight: Number(resolutionWeight) || 0,

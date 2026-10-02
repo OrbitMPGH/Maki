@@ -20,6 +20,7 @@ public record UpgradeProfileDto(
     string Cutoff,
     bool UpgradesEnabled,
     int MinScoreDelta,
+    int? MaxTierScoreDrop,
     int UpgradeUntilScore,
     IReadOnlyList<FormatScoreDto> FormatScores,
     int ResolutionWeight,
@@ -37,6 +38,7 @@ public record UpgradeProfileDto(
         QualityNames.Tier(p.Cutoff),
         p.UpgradesEnabled,
         p.MinScoreDelta,
+        p.MaxTierScoreDrop,
         p.UpgradeUntilScore,
         [.. p.FormatScores.Select(s => new FormatScoreDto(s.FormatId, s.Score))],
         p.ResolutionWeight,
@@ -59,7 +61,8 @@ public record UpgradeProfileWriteDto(
     bool AllowReplacingUnknown,
     int ResolutionWeight = 0,
     int CompressionWeight = 0,
-    string? Description = null);
+    string? Description = null,
+    int? MaxTierScoreDrop = null);
 
 /// <param name="Type">camelCase <see cref="FormatConditionType"/> name, e.g. <c>minWidth</c>.</param>
 public record FormatConditionDto(string Type, string Value, bool Required, bool Negate);

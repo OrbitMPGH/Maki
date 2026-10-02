@@ -190,12 +190,14 @@ public sealed class UpgradeProfilesApiTests : IDisposable
 
         var cutoff = await controller.Create(ProfileBody(tiers: [new("official", false)]), default);
         var delta = await controller.Create(ProfileBody(minScoreDelta: -1), default);
+        var drop = await controller.Create(ProfileBody() with { MaxTierScoreDrop = -1 }, default);
         var tolerance = await controller.Create(ProfileBody(pageTolerance: 101), default);
         var format = await controller.Create(ProfileBody(scores: [new(999, 5)]), default);
         var tier = await controller.Create(ProfileBody(cutoff: "legendary"), default);
 
         Assert.Equal("error.upgrades.cutoffNotAllowed", Code(cutoff));
         Assert.Equal("error.upgrades.minScoreDeltaRange", Code(delta));
+        Assert.Equal("error.upgrades.maxTierScoreDropRange", Code(drop));
         Assert.Equal("error.upgrades.pageToleranceRange", Code(tolerance));
         Assert.Equal("error.upgrades.formatNotFound", Code(format));
         Assert.Equal("error.upgrades.unknownTier", Code(tier));

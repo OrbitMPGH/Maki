@@ -275,7 +275,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Quality profiles`,
     admin: true,
     keywords: msg({
-      message: `upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, allow replacing unknown, resolution weight, compression weight, measured quality`,
+      message: `upgrade profile, quality profile, cutoff, tier, aggregator, scanlator, official, volume, upgrade until score, page tolerance, minimum score gain, maximum score loss, allow replacing unknown, resolution weight, compression weight, measured quality`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },
