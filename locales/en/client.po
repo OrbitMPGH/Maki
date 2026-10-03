@@ -5422,6 +5422,10 @@ msgstr "Grid view"
 msgid "Group matches (regex)"
 msgstr "Group matches (regex)"
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Group with the tier above"
+msgstr "Group with the tier above"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Groups overlap on purpose, so one series can belong to several of them."
 msgstr "Groups overlap on purpose, so one series can belong to several of them."
@@ -5606,8 +5610,8 @@ msgid "Higher numbers are more intrusive."
 msgstr "Higher numbers are more intrusive."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Highest priority first. Switch a tier off to never prefer or accept it."
-msgstr "Highest priority first. Switch a tier off to never prefer or accept it."
+msgid "Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so the better scoring copy wins between them."
+msgstr "Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so the better scoring copy wins between them."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Historical"
@@ -6128,6 +6132,10 @@ msgstr "Keep folder name, but put new downloads in a Maki standard folder"
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "Keep manual priority, but renumber it to follow the measured order."
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop."
+msgstr "Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop."
+
 #: src/components/SetupWizard.tsx
 msgid "Keep the name, download into a new standard folder"
 msgstr "Keep the name, download into a new standard folder"
@@ -6137,8 +6145,8 @@ msgid "Keep the name, download into it too"
 msgstr "Keep the name, download into it too"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely."
-msgstr "Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely."
+msgid "Keeps taking better scoring copies until one scores {upgradeUntilScore}"
+msgstr "Keeps taking better scoring copies until one scores {upgradeUntilScore}"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
@@ -8316,8 +8324,8 @@ msgid "On your shelf, not used for ranking"
 msgstr "On your shelf, not used for ranking"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
-msgstr "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise). A grouped tier's cutoff is its whole group."
+msgstr "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise). A grouped tier's cutoff is its whole group."
 
 #: src/pages/SettingsPage.tsx
 msgid "Once a new series is matched, sample a few pages from three chapters on each linked source, so its first downloads already come from the best one. Downloads a little from every source for every series you add."
@@ -11357,6 +11365,10 @@ msgstr "Spin-off of {relatedTo}"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Split double-width pages"
 msgstr "Split double-width pages"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Split from the tier above"
+msgstr "Split from the tier above"
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler - hover to reveal"

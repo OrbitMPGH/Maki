@@ -23,14 +23,24 @@ namespace Maki.Api.Services;
 /// An instance seeded under <see cref="PreviousMarkerKey"/> has its untouched starters (still at
 /// version 1) renamed and described in place; edited ones, and ones an admin deleted, are left be.
 /// </para>
+/// <para>
+/// <see cref="BestCopyFromAnySource"/> came later, under its own <see cref="AnySourceMarkerKey"/>, so
+/// an instance seeded before it gets it once too. It groups every scraped tier together so score
+/// alone decides, with Volume left above on its own: torrents are scored before anything is
+/// measured, so inside the group a volume would almost never win.
+/// </para>
 /// </remarks>
 public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder> logger)
 {
     public const string MarkerKey = "upgrades.seeded.v3";
     public const string PreviousMarkerKey = "upgrades.seeded.v2";
+    public const string AnySourceMarkerKey = "upgrades.seeded.anysource";
 
     public const int MeasuredWeight = 10;
     public const int MaxTierScoreDrop = 10;
+
+    /// <summary>Above any score a file can reach, so the cutoff is never met and a better copy is always taken.</summary>
+    public const int NeverStopScore = 10000;
 
     public const string RawOrMachineTranslated = "Raw or machine translated";
     public const string TrustedDigitalRipper = "Trusted digital ripper";
@@ -39,6 +49,7 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
     public const string ReplaceAggregatorCopies = "Replace aggregator copies";
     public const string UpgradeToOfficial = "Upgrade to official releases";
     public const string UpgradeToVolumes = "Upgrade to digital volumes";
+    public const string BestCopyFromAnySource = "Best copy from any source";
 
     private static readonly (string Name, FormatCondition[] Conditions)[] Formats =
     [
@@ -69,6 +80,12 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
     ];
 
     public async Task RunOnceAsync(CancellationToken ct = default)
+    {
+        await SeedStartersAsync(ct);
+        await AddAnySourceAsync(ct);
+    }
+
+    private async Task SeedStartersAsync(CancellationToken ct)
     {
         if (await db.AppConfig.AnyAsync(c => c.Key == MarkerKey, ct))
         {
@@ -120,20 +137,7 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
                 continue;
             }
 
-            var profile = new UpgradeProfile
-            {
-                Name = starter.Name,
-                Description = starter.Description,
-                Cutoff = starter.Cutoff,
-                UpgradesEnabled = starter.Upgrades,
-                MinScoreDelta = 5,
-                MaxTierScoreDrop = MaxTierScoreDrop,
-                AllowReplacingUnknown = false,
-                ResolutionWeight = MeasuredWeight,
-                CompressionWeight = MeasuredWeight,
-                FormatScores = [.. scores]
-            };
-            UpgradeProfileDefaults.Normalise(profile);
+            var profile = NewProfile(starter.Name, starter.Description, starter.Cutoff, starter.Upgrades, scores);
             db.UpgradeProfiles.Add(profile);
             profiles.Add(profile);
         }
@@ -143,5 +147,58 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
         logger.LogInformation(seededBefore
             ? "Renamed and described the untouched starter upgrade profiles"
             : "Seeded the starter quality formats and upgrade profiles");
+    }
+
+    private async Task AddAnySourceAsync(CancellationToken ct)
+    {
+        if (await db.AppConfig.AnyAsync(c => c.Key == AnySourceMarkerKey, ct))
+        {
+            return;
+        }
+
+        if (!await db.UpgradeProfiles.AnyAsync(p => p.Name.ToLower() == BestCopyFromAnySource.ToLower(), ct))
+        {
+            var formats = await db.QualityFormats.ToDictionaryAsync(f => f.Name, StringComparer.OrdinalIgnoreCase, ct);
+            var scores = Scores
+                .Where(s => formats.ContainsKey(s.Format))
+                .Select(s => new FormatScore(formats[s.Format].Id, s.Score))
+                .ToList();
+            var profile = NewProfile(BestCopyFromAnySource,
+                "Ignores where a chapter came from and keeps whichever copy scores highest on sharpness, compression and formats, so it never stops looking for a better one. A digital volume still wins outright.",
+                QualityTier.Official, true, scores);
+            profile.UpgradeUntilScore = NeverStopScore;
+            profile.Tiers =
+            [
+                new(QualityTier.Volume, true),
+                new(QualityTier.Official, true),
+                new(QualityTier.Scanlator, true, Grouped: true),
+                new(QualityTier.Aggregator, true, Grouped: true),
+                new(QualityTier.Unknown, true, Grouped: true)
+            ];
+            db.UpgradeProfiles.Add(profile);
+        }
+
+        db.AppConfig.Add(new AppConfigEntry { Key = AnySourceMarkerKey, Value = DateTime.UtcNow.ToString("O") });
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static UpgradeProfile NewProfile(
+        string name, string description, QualityTier cutoff, bool upgrades, List<FormatScore> scores)
+    {
+        var profile = new UpgradeProfile
+        {
+            Name = name,
+            Description = description,
+            Cutoff = cutoff,
+            UpgradesEnabled = upgrades,
+            MinScoreDelta = 5,
+            MaxTierScoreDrop = MaxTierScoreDrop,
+            AllowReplacingUnknown = false,
+            ResolutionWeight = MeasuredWeight,
+            CompressionWeight = MeasuredWeight,
+            FormatScores = [.. scores]
+        };
+        UpgradeProfileDefaults.Normalise(profile);
+        return profile;
     }
 }

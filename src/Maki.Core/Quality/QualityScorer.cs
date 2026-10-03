@@ -86,11 +86,28 @@ public static class QualityScorer
         return new QualityScore(candidate.Tier, score + resolution + compression, matched, resolution, compression);
     }
 
-    /// <summary>Position counted from the bottom of <see cref="UpgradeProfile.Tiers"/>; 0 for a tier the list lacks.</summary>
+    /// <summary>
+    /// How many tier groups sit below <paramref name="tier"/>'s in <see cref="UpgradeProfile.Tiers"/>,
+    /// so grouped tiers rank equal; 0 for a tier the list lacks.
+    /// </summary>
     public static int Rank(UpgradeProfile profile, QualityTier tier)
     {
         var index = profile.Tiers.FindIndex(t => t.Tier == tier);
-        return index < 0 ? 0 : profile.Tiers.Count - 1 - index;
+        if (index < 0)
+        {
+            return 0;
+        }
+
+        var rank = 0;
+        for (var i = index + 1; i < profile.Tiers.Count; i++)
+        {
+            if (!profile.Tiers[i].Grouped)
+            {
+                rank++;
+            }
+        }
+
+        return rank;
     }
 
     public static bool Allows(UpgradeProfile profile, QualityTier tier) =>

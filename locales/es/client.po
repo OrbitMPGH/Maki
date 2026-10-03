@@ -6537,6 +6537,10 @@ msgstr "Vista de cuadrícula"
 msgid "Group matches (regex)"
 msgstr ""
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Group with the tier above"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Groups overlap on purpose, so one series can belong to several of them."
@@ -6760,7 +6764,7 @@ msgid "Higher numbers are more intrusive."
 msgstr "Cuanto mayor sea el número, más intrusivas serán las notificaciones."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Highest priority first. Switch a tier off to never prefer or accept it."
+msgid "Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so the better scoring copy wins between them."
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
@@ -7392,6 +7396,10 @@ msgstr "Conservar el nombre de la carpeta, pero poner las descargas nuevas en un
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr ""
 
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Keep the name, download into a new standard folder"
@@ -7403,7 +7411,7 @@ msgid "Keep the name, download into it too"
 msgstr "Conservar el nombre y descargar también en esa carpeta"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely."
+msgid "Keeps taking better scoring copies until one scores {upgradeUntilScore}"
 msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
@@ -10026,7 +10034,7 @@ msgid "On your shelf, not used for ranking"
 msgstr "En tu estantería, no se usa para el ranking"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
-msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise)."
+msgid "Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise). A grouped tier's cutoff is its whole group."
 msgstr ""
 
 #: src/pages/SettingsPage.tsx
@@ -13682,6 +13690,10 @@ msgstr "Derivado de {relatedTo}"
 #, fuzzy
 msgid "Split double-width pages"
 msgstr "Dividir páginas de doble ancho"
+
+#: src/components/settings/UpgradeProfilesSection.tsx
+msgid "Split from the tier above"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy

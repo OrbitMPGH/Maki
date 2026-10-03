@@ -572,13 +572,19 @@ public sealed class UpgradeProfilesApiTests : IDisposable
             var profiles = db.UpgradeProfiles.ToDictionary(p => p.Name);
             Assert.Equal(2, db.QualityFormats.Count());
             Assert.Equal(
-                [UpgradeProfileSeeder.NeverUpgrade, UpgradeProfileSeeder.ReplaceAggregatorCopies,
-                    UpgradeProfileSeeder.UpgradeToVolumes, UpgradeProfileSeeder.UpgradeToOfficial],
+                [UpgradeProfileSeeder.BestCopyFromAnySource, UpgradeProfileSeeder.NeverUpgrade,
+                    UpgradeProfileSeeder.ReplaceAggregatorCopies, UpgradeProfileSeeder.UpgradeToVolumes,
+                    UpgradeProfileSeeder.UpgradeToOfficial],
                 profiles.Keys.Order());
             Assert.False(profiles[UpgradeProfileSeeder.NeverUpgrade].UpgradesEnabled);
             Assert.Equal(QualityTier.Scanlator, profiles[UpgradeProfileSeeder.ReplaceAggregatorCopies].Cutoff);
             Assert.Equal(QualityTier.Official, profiles[UpgradeProfileSeeder.UpgradeToOfficial].Cutoff);
             Assert.Equal(QualityTier.Volume, profiles[UpgradeProfileSeeder.UpgradeToVolumes].Cutoff);
+            var anySource = profiles[UpgradeProfileSeeder.BestCopyFromAnySource];
+            Assert.Equal(UpgradeProfileSeeder.NeverStopScore, anySource.UpgradeUntilScore);
+            Assert.Equal(
+                QualityScorer.Rank(anySource, QualityTier.Official), QualityScorer.Rank(anySource, QualityTier.Aggregator));
+            Assert.True(QualityScorer.Rank(anySource, QualityTier.Volume) > QualityScorer.Rank(anySource, QualityTier.Official));
             var scores = profiles[UpgradeProfileSeeder.NeverUpgrade].FormatScores;
             Assert.Equal(2, scores.Count);
             Assert.All(profiles.Values, p =>
@@ -652,7 +658,9 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         using (var db = _db.NewContext())
         {
             var profiles = db.UpgradeProfiles.ToDictionary(p => p.Name);
-            Assert.Equal(["Official releases", UpgradeProfileSeeder.ReplaceAggregatorCopies], profiles.Keys.Order());
+            Assert.Equal(
+                [UpgradeProfileSeeder.BestCopyFromAnySource, "Official releases", UpgradeProfileSeeder.ReplaceAggregatorCopies],
+                profiles.Keys.Order());
             var renamed = profiles[UpgradeProfileSeeder.ReplaceAggregatorCopies];
             Assert.NotNull(renamed.Description);
             Assert.Equal(2, renamed.FormatScores.Count);

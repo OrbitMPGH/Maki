@@ -312,6 +312,56 @@ public class QualityScorerTests
             S(QualityTier.Official, -5), 1135, 20));
     }
 
+    private static UpgradeProfile Grouped(params QualityTier[] grouped) => Profile(p => p.Tiers =
+        [.. p.Tiers.Select(t => t with { Grouped = grouped.Contains(t.Tier) })]);
+
+    [Fact]
+    public void Grouped_tiers_share_a_rank()
+    {
+        var profile = Grouped(QualityTier.Scanlator);
+
+        Assert.Equal(QualityScorer.Rank(profile, QualityTier.Official), QualityScorer.Rank(profile, QualityTier.Scanlator));
+        Assert.True(QualityScorer.Rank(profile, QualityTier.Official) > QualityScorer.Rank(profile, QualityTier.Aggregator));
+        Assert.True(QualityScorer.Rank(profile, QualityTier.Volume) > QualityScorer.Rank(profile, QualityTier.Official));
+    }
+
+    [Fact]
+    public void IsUpgrade_inside_a_group_goes_by_score_alone()
+    {
+        var profile = Grouped(QualityTier.Scanlator);
+        profile.Cutoff = QualityTier.Volume;
+        profile.MinScoreDelta = 5;
+
+        Assert.False(QualityScorer.IsUpgrade(profile, S(QualityTier.Scanlator, 6), 20, false,
+            S(QualityTier.Official, -8), 1135, 20));
+        Assert.True(QualityScorer.IsUpgrade(profile, S(QualityTier.Official, -8), 20, false,
+            S(QualityTier.Scanlator, 6), 1680, 20));
+        Assert.True(QualityScorer.IsUpgrade(profile, S(QualityTier.Aggregator, 20), 20, false,
+            S(QualityTier.Scanlator, 0), 1680, 20));
+    }
+
+    [Fact]
+    public void A_cutoff_on_a_grouped_tier_is_met_by_the_whole_group()
+    {
+        var profile = Grouped(QualityTier.Scanlator);
+        profile.Cutoff = QualityTier.Official;
+
+        Assert.True(QualityScorer.CutoffMet(profile, QualityTier.Scanlator, 0));
+        Assert.False(QualityScorer.CutoffMet(profile, QualityTier.Aggregator, 0));
+
+        profile.UpgradeUntilScore = 10000;
+        Assert.False(QualityScorer.CutoffMet(profile, QualityTier.Scanlator, 50));
+    }
+
+    [Fact]
+    public void Normalise_ungroups_the_first_tier()
+    {
+        var profile = new UpgradeProfile { Tiers = [new(QualityTier.Official, true, Grouped: true)] };
+        UpgradeProfileDefaults.Normalise(profile);
+
+        Assert.False(profile.Tiers[0].Grouped);
+    }
+
     private static QualityCandidate Listing(QualityTier tier, string source = "site", string? group = null) =>
         new(tier, source, null, group, "Series 012.cbz", null, null, null, null, "en");
 

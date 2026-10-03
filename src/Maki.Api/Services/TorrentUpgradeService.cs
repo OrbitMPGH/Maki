@@ -467,7 +467,8 @@ public class TorrentUpgradeService(
             return VolumeSearchReasons.ProfileDisabled;
         }
 
-        if (evaluator.Profile.Cutoff != QualityTier.Volume)
+        if (!QualityScorer.Allows(evaluator.Profile, QualityTier.Volume) ||
+            QualityScorer.Rank(evaluator.Profile, evaluator.Profile.Cutoff) < QualityScorer.Rank(evaluator.Profile, QualityTier.Volume))
         {
             return VolumeSearchReasons.Cutoff;
         }

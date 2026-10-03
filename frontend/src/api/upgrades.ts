@@ -31,6 +31,8 @@ export const QUALITY_TIER_COLOR: Record<QualityTierName, string> = {
 export interface ProfileTierDto {
   tier: QualityTierName
   allowed: boolean
+  /** Shares its rank with the tier above it, so score alone decides between them. */
+  grouped: boolean
 }
 
 export interface FormatScoreDto {

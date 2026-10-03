@@ -15,7 +15,11 @@ public class UpgradeProfile
     /// <summary>What choosing this profile does and costs, in the admin's words. Shown wherever profiles are picked.</summary>
     public string? Description { get; set; }
 
-    /// <summary>Highest priority first. Holds every <see cref="QualityTier"/> exactly once after <see cref="UpgradeProfileDefaults.Normalise"/>.</summary>
+    /// <summary>
+    /// Highest priority first. Holds every <see cref="QualityTier"/> exactly once after
+    /// <see cref="UpgradeProfileDefaults.Normalise"/>. Grouped tiers share one rank, so score alone
+    /// decides between them.
+    /// </summary>
     public List<ProfileTier> Tiers { get; set; } = [];
 
     public QualityTier Cutoff { get; set; } = QualityTier.Aggregator;
@@ -23,7 +27,7 @@ public class UpgradeProfile
     public int MinScoreDelta { get; set; } = 1;
 
     /// <summary>
-    /// How far below the current file's score a higher-tier candidate may be and still win. Tiers are
+    /// How far below the current file's score a higher-ranked candidate may be and still win. Tiers are
     /// provenance, not image quality, so without this an official copy a quarter the size counts as
     /// an upgrade. Null lets a higher tier always win.
     /// </summary>
@@ -46,6 +50,7 @@ public class UpgradeProfile
     public int Version { get; set; } = 1;
 }
 
-public record ProfileTier(QualityTier Tier, bool Allowed);
+/// <param name="Grouped">Shares its rank with the tier above it.</param>
+public record ProfileTier(QualityTier Tier, bool Allowed, bool Grouped = false);
 
 public record FormatScore(int FormatId, int Score);

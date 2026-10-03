@@ -10,7 +10,8 @@ public static class UpgradeProfileDefaults
 
     /// <summary>
     /// Drops duplicate and undefined tiers, keeping the first occurrence, then appends any tier still
-    /// missing in <see cref="DefaultOrder"/> as allowed.
+    /// missing in <see cref="DefaultOrder"/> as allowed and ungrouped. The first tier has nothing
+    /// above it to group with.
     /// </summary>
     public static void Normalise(UpgradeProfile profile)
     {
@@ -20,7 +21,7 @@ public static class UpgradeProfileDefaults
         {
             if (Enum.IsDefined(tier.Tier) && seen.Add(tier.Tier))
             {
-                tiers.Add(tier);
+                tiers.Add(tiers.Count == 0 && tier.Grouped ? tier with { Grouped = false } : tier);
             }
         }
 

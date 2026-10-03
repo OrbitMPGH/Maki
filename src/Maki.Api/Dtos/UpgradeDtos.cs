@@ -6,7 +6,8 @@ using Maki.Core.Quality;
 namespace Maki.Api.Dtos;
 
 /// <param name="Tier">Lowercase <see cref="QualityTier"/> name.</param>
-public record ProfileTierDto(string Tier, bool Allowed);
+/// <param name="Grouped">Shares its rank with the tier above it.</param>
+public record ProfileTierDto(string Tier, bool Allowed, bool Grouped = false);
 
 public record FormatScoreDto(int FormatId, int Score);
 
@@ -34,7 +35,7 @@ public record UpgradeProfileDto(
         p.Id,
         p.Name,
         p.Description,
-        [.. p.Tiers.Select(t => new ProfileTierDto(QualityNames.Tier(t.Tier), t.Allowed))],
+        [.. p.Tiers.Select(t => new ProfileTierDto(QualityNames.Tier(t.Tier), t.Allowed, t.Grouped))],
         QualityNames.Tier(p.Cutoff),
         p.UpgradesEnabled,
         p.MinScoreDelta,

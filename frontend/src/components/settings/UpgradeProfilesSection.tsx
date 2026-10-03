@@ -22,6 +22,8 @@ import {
   IconArrowUp,
   IconChevronDown,
   IconChevronUp,
+  IconLink,
+  IconLinkOff,
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react'
@@ -71,10 +73,26 @@ const CUTOFF_SUMMARIES: Record<QualityTierName, MessageDescriptor> = {
   volume: msg`Upgrades until chapters are covered by a digital volume`,
 }
 
+/** Rows split into rank groups, highest first. A grouped row joins the group above it. */
+function tierGroups(tiers: ProfileTierDto[]): ProfileTierDto[][] {
+  const groups: ProfileTierDto[][] = []
+  for (const row of tiers) {
+    if (row.grouped && groups.length > 0) groups[groups.length - 1].push(row)
+    else groups.push([row])
+  }
+  return groups
+}
+
+/** Every tier in a group ranks the same, so a cutoff means its whole group; named by the group's lowest allowed tier. */
+function groupCutoff(tiers: ProfileTierDto[], cutoff: QualityTierName): QualityTierName | null {
+  const allowed = tierGroups(tiers).find((group) => group.some((row) => row.tier === cutoff))?.filter((row) => row.allowed) ?? []
+  return allowed.length > 0 ? allowed[allowed.length - 1].tier : null
+}
+
 const DEFAULT_PROFILE: UpgradeProfileInput = {
   name: '',
   description: null,
-  tiers: DEFAULT_TIER_ORDER.map((tier) => ({ tier, allowed: true })),
+  tiers: DEFAULT_TIER_ORDER.map((tier) => ({ tier, allowed: true, grouped: false })),
   cutoff: 'aggregator',
   upgradesEnabled: false,
   minScoreDelta: 1,
@@ -93,6 +111,11 @@ function moveItem<T>(items: T[], index: number, direction: -1 | 1): T[] {
   const next = [...items]
   ;[next[index], next[target]] = [next[target], next[index]]
   return next
+}
+
+/** Moves the tier, not the grouping: each position keeps its link to the row above. */
+function moveTier(tiers: ProfileTierDto[], index: number, direction: -1 | 1): ProfileTierDto[] {
+  return moveItem(tiers, index, direction).map((row, i) => ({ ...row, grouped: tiers[i].grouped }))
 }
 
 function scoreOf(formatScores: FormatScoreDto[], formatId: number): number {
@@ -179,7 +202,7 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
   const update = useUpdateUpgradeProfile()
   const remove = useDeleteUpgradeProfile()
   const [confirming, setConfirming] = useState(false)
-  const { name, seriesCount } = profile
+  const { name, seriesCount, upgradeUntilScore } = profile
 
   return (
     <Card withBorder radius="sm" padding="xs">
@@ -189,7 +212,13 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
             {name}
           </Text>
           <Text fz="xs" fw={500} c={profile.upgradesEnabled ? 'var(--ok)' : 'var(--ink-3)'}>
-            {profile.upgradesEnabled ? renderLabel(CUTOFF_SUMMARIES[profile.cutoff]) : <Trans>Never upgrades</Trans>}
+            {!profile.upgradesEnabled ? (
+              <Trans>Never upgrades</Trans>
+            ) : upgradeUntilScore > 0 ? (
+              <Trans>Keeps taking better scoring copies until one scores {upgradeUntilScore}</Trans>
+            ) : (
+              renderLabel(CUTOFF_SUMMARIES[groupCutoff(profile.tiers, profile.cutoff) ?? profile.cutoff])
+            )}
           </Text>
           {profile.description && (
             <Text fz="xs" c="var(--ink-2)" mt={2}>
@@ -293,13 +322,72 @@ function ProfileEditor({
   const [pageTolerancePercent, setPageTolerancePercent] = useState<number | string>(initial.pageTolerancePercent)
   const [allowReplacingUnknown, setAllowReplacingUnknown] = useState(initial.allowReplacingUnknown)
 
-  const allowedTiers = tiers.filter((tier) => tier.allowed).map((tier) => tier.tier)
-  const cutoffData = tiers
-    .filter((tier) => tier.allowed)
-    .map((tier) => ({ value: tier.tier, label: renderLabel(QUALITY_TIER_LABELS[tier.tier]) }))
+  const groups = tierGroups(tiers)
+  const cutoffData = groups
+    .map((group) => group.filter((row) => row.allowed))
+    .filter((allowed) => allowed.length > 0)
+    .map((allowed) => ({
+      value: allowed[allowed.length - 1].tier,
+      label: allowed.map((row) => renderLabel(QUALITY_TIER_LABELS[row.tier])).join(' + '),
+    }))
+  const effectiveCutoff = groupCutoff(tiers, cutoff)
 
   const setTierAllowed = (tier: QualityTierName, allowed: boolean) =>
     setTiers((current) => current.map((row) => (row.tier === tier ? { ...row, allowed } : row)))
+  const toggleGrouped = (index: number) =>
+    setTiers((current) => current.map((row, i) => (i === index ? { ...row, grouped: !row.grouped } : row)))
+
+  const tierRow = (row: ProfileTierDto, index: number) => (
+    <Group key={row.tier} gap="xs" wrap="nowrap" justify="space-between">
+      <Group gap="xs" wrap="nowrap">
+        <Group gap={2} wrap="nowrap">
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="var(--neutral)"
+            disabled={index === 0}
+            onClick={() => setTiers((current) => moveTier(current, index, -1))}
+            aria-label={t`Move up`}
+          >
+            <IconArrowUp size={14} />
+          </ActionIcon>
+          <ActionIcon
+            size="sm"
+            variant="subtle"
+            color="var(--neutral)"
+            disabled={index === tiers.length - 1}
+            onClick={() => setTiers((current) => moveTier(current, index, 1))}
+            aria-label={t`Move down`}
+          >
+            <IconArrowDown size={14} />
+          </ActionIcon>
+        </Group>
+        <Text size="sm" fw={500} w={100}>
+          {renderLabel(QUALITY_TIER_LABELS[row.tier])}
+        </Text>
+        {index > 0 && (
+          <Tooltip label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}>
+            <ActionIcon
+              size="sm"
+              variant={row.grouped ? 'light' : 'subtle'}
+              color={row.grouped ? undefined : 'var(--neutral)'}
+              onClick={() => toggleGrouped(index)}
+              aria-label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}
+              aria-pressed={row.grouped}
+            >
+              {row.grouped ? <IconLink size={14} /> : <IconLinkOff size={14} />}
+            </ActionIcon>
+          </Tooltip>
+        )}
+      </Group>
+      <Switch
+        size="sm"
+        label={t`Allowed`}
+        checked={row.allowed}
+        onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
+      />
+    </Group>
+  )
 
   return (
     <Stack gap="sm" mt="sm">
@@ -324,53 +412,35 @@ function ProfileEditor({
           <Trans>Tier order</Trans>
         </Text>
         <SettingsHelp mb="xs">
-          <Trans>Highest priority first. Switch a tier off to never prefer or accept it.</Trans>
+          <Trans>
+            Highest priority first. Switch a tier off to never prefer or accept it. Grouped tiers rank the same, so
+            the better scoring copy wins between them.
+          </Trans>
         </SettingsHelp>
         <Stack gap={4}>
-          {tiers.map((row, index) => (
-            <Group key={row.tier} gap="xs" wrap="nowrap" justify="space-between">
-              <Group gap="xs" wrap="nowrap">
-                <Group gap={2} wrap="nowrap">
-                  <ActionIcon
-                    size="sm"
-                    variant="subtle"
-                    color="var(--neutral)"
-                    disabled={index === 0}
-                    onClick={() => setTiers((current) => moveItem(current, index, -1))}
-                    aria-label={t`Move up`}
-                  >
-                    <IconArrowUp size={14} />
-                  </ActionIcon>
-                  <ActionIcon
-                    size="sm"
-                    variant="subtle"
-                    color="var(--neutral)"
-                    disabled={index === tiers.length - 1}
-                    onClick={() => setTiers((current) => moveItem(current, index, 1))}
-                    aria-label={t`Move down`}
-                  >
-                    <IconArrowDown size={14} />
-                  </ActionIcon>
-                </Group>
-                <Text size="sm" fw={500} w={100}>
-                  {renderLabel(QUALITY_TIER_LABELS[row.tier])}
-                </Text>
-              </Group>
-              <Switch
-                size="sm"
-                label={t`Allowed`}
-                checked={row.allowed}
-                onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
-              />
-            </Group>
-          ))}
+          {groups.map((group) => {
+            const first = tiers.indexOf(group[0])
+            const rows = group.map((row, i) => tierRow(row, first + i))
+            return group.length > 1 ? (
+              <Stack
+                key={group[0].tier}
+                gap={4}
+                p={4}
+                style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--mantine-radius-sm)' }}
+              >
+                {rows}
+              </Stack>
+            ) : (
+              rows
+            )
+          })}
         </Stack>
       </div>
 
       <Select
         label={t`Cutoff`}
-        description={t`Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise).`}
-        value={allowedTiers.includes(cutoff) ? cutoff : null}
+        description={t`Once a file's tier reaches this, upgrading stops (unless upgrade until score says otherwise). A grouped tier's cutoff is its whole group.`}
+        value={effectiveCutoff}
         onChange={(value) => value && setCutoff(value as QualityTierName)}
         data={cutoffData}
         w={260}
@@ -403,7 +473,7 @@ function ProfileEditor({
       <Group grow align="flex-start">
         <NumberInput
           label={t`Upgrade until score`}
-          description={t`Keep upgrading past the cutoff tier until this score is reached. 0 ignores score entirely.`}
+          description={t`Keep taking better scoring copies once the cutoff is reached, until a file scores this much. 0 stops at the cutoff. Set it very high to never stop.`}
           min={0}
           value={upgradeUntilScore}
           onChange={setUpgradeUntilScore}
@@ -502,7 +572,7 @@ function ProfileEditor({
               name: name.trim(),
               description: description.trim() || null,
               tiers,
-              cutoff,
+              cutoff: effectiveCutoff ?? cutoff,
               upgradesEnabled,
               minScoreDelta: Number(minScoreDelta) || 0,
               maxTierScoreDrop: maxTierScoreDrop === '' ? null : Number(maxTierScoreDrop) || 0,

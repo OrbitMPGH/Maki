@@ -122,7 +122,7 @@ public class UpgradeProfilesController(ILocalizer localizer, MakiDbContext db) :
                 return this.Fail(localizer, "error.upgrades.unknownTier", new { tier = tier.Tier });
             }
 
-            tiers.Add(new ProfileTier(parsed, tier.Allowed));
+            tiers.Add(new ProfileTier(parsed, tier.Allowed, tier.Grouped));
         }
 
         if (!QualityNames.TryParseTier(request.Cutoff, out var cutoff))
