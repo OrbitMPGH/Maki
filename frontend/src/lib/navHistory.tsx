@@ -138,6 +138,10 @@ export interface BackTarget {
  * entries of their own (the series page's `?tab=` is a push, deliberately, so the browser's back
  * button steps through them). Those all share a pathname, so skipping them takes one comparison
  * and no per-page knowledge, and the distance covers them in a single jump.
+ *
+ * The reader is skipped too. Reading to a chapter's end and following its link to the series
+ * pushes the series on top of the reader, and a back link that drops you into the chapter you just
+ * finished is never what anyone wants from it.
  */
 export function useBackTarget(fallback: { to: string; label: string | MessageDescriptor }): BackTarget {
   const { entries } = useContext(NavHistoryContext)
@@ -146,7 +150,8 @@ export function useBackTarget(fallback: { to: string; label: string | MessageDes
 
   const origin = useMemo(() => {
     for (let i = entries.length - 1; i >= 0; i--) {
-      if (entries[i].pathname !== location.pathname) {
+      const { pathname } = entries[i]
+      if (pathname !== location.pathname && !pathname.startsWith('/read/')) {
         return { entry: entries[i], distance: entries.length - 1 - i }
       }
     }
