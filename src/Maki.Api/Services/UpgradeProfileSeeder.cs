@@ -1,3 +1,5 @@
+using System.Globalization;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Quality;
 using Maki.Data;
@@ -8,8 +10,9 @@ namespace Maki.Api.Services;
 /// <summary>
 /// Seeds the starter formats and upgrade profiles, once. Gated by an AppConfig marker rather than
 /// by an empty table, so an admin who deletes them does not get them back on the next restart.
-/// Anything whose name is already taken is left alone. No profile is made the default; nothing
-/// changes for any series until an admin picks one.
+/// Anything whose name is already taken is left alone. <see cref="BestCopyFromAnySource"/> becomes
+/// the default profile unless an admin already picked one; files only change once the instance
+/// upgrade switch is on.
 /// </summary>
 /// <remarks>
 /// The profiles share their format scores and weights and differ only in how far they upgrade, which
@@ -176,6 +179,21 @@ public class UpgradeProfileSeeder(MakiDbContext db, ILogger<UpgradeProfileSeeder
                 new(QualityTier.Unknown, true, Grouped: true)
             ];
             db.UpgradeProfiles.Add(profile);
+            await db.SaveChangesAsync(ct);
+
+            var defaultId = await db.AppConfig.FirstOrDefaultAsync(c => c.Key == SettingKeys.UpgradesDefaultProfileId, ct);
+            if (defaultId is null)
+            {
+                db.AppConfig.Add(new AppConfigEntry
+                {
+                    Key = SettingKeys.UpgradesDefaultProfileId,
+                    Value = profile.Id.ToString(CultureInfo.InvariantCulture)
+                });
+            }
+            else if (string.IsNullOrWhiteSpace(defaultId.Value))
+            {
+                defaultId.Value = profile.Id.ToString(CultureInfo.InvariantCulture);
+            }
         }
 
         db.AppConfig.Add(new AppConfigEntry { Key = AnySourceMarkerKey, Value = DateTime.UtcNow.ToString("O") });

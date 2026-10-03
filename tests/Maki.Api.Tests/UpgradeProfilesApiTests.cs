@@ -596,7 +596,7 @@ public sealed class UpgradeProfilesApiTests : IDisposable
                 Assert.Equal(UpgradeProfileSeeder.MeasuredWeight, p.CompressionWeight);
                 Assert.Equal(UpgradeProfileDefaults.DefaultOrder, p.Tiers.Select(t => t.Tier));
             });
-            Assert.False(db.AppConfig.Any(c => c.Key == SettingKeys.UpgradesDefaultProfileId));
+            Assert.Equal(anySource.Id.ToString(), db.AppConfig.Single(c => c.Key == SettingKeys.UpgradesDefaultProfileId).Value);
 
             db.UpgradeProfiles.RemoveRange(profiles.Values);
             db.SaveChanges();
@@ -606,6 +606,24 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         {
             await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
             Assert.Empty(db.UpgradeProfiles);
+        }
+    }
+
+    [Fact]
+    public async Task Seeding_the_any_source_profile_keeps_a_default_the_admin_already_picked()
+    {
+        using (var db = _db.NewContext())
+        {
+            var mine = new UpgradeProfile { Name = "Mine", Cutoff = QualityTier.Official };
+            db.UpgradeProfiles.Add(mine);
+            db.SaveChanges();
+            db.AppConfig.Add(new AppConfigEntry { Key = SettingKeys.UpgradesDefaultProfileId, Value = mine.Id.ToString() });
+            db.SaveChanges();
+
+            await new UpgradeProfileSeeder(db, NullLogger<UpgradeProfileSeeder>.Instance).RunOnceAsync();
+
+            Assert.Contains(db.UpgradeProfiles.ToList(), p => p.Name == UpgradeProfileSeeder.BestCopyFromAnySource);
+            Assert.Equal(mine.Id.ToString(), db.AppConfig.Single(c => c.Key == SettingKeys.UpgradesDefaultProfileId).Value);
         }
     }
 
