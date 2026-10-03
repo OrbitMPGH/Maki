@@ -82,6 +82,7 @@ import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { LibraryFilterSpec, SeriesDto } from '../api/types'
 import { PosterSkeletons } from '../components/CatalogueBrowser'
+import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -182,6 +183,7 @@ function facetOptions(
 const DEFAULT_SPEC: LibraryFilterSpec = {
   query: '',
   status: 'all',
+  types: [],
   tagIds: [],
   tagMatch: 'any',
   monitored: 'all',
@@ -307,6 +309,7 @@ export default function LibraryPage() {
   const [debouncedQuery] = useDebouncedValue(query, 200)
   const [sort, setSort] = usePageState(`${MEM}:sort`, 'added')
   const [statusFilter, setStatusFilter] = usePageState(`${MEM}:status`, 'all')
+  const [typeFilter, setTypeFilter] = usePageState<string[]>(`${MEM}:types`, [])
   // Tag ids live as strings because that's what MultiSelect speaks.
   const [tagFilter, setTagFilter] = usePageState<string[]>(`${MEM}:tags`, [])
   const [tagMatch, setTagMatch] = usePageState(`${MEM}:tag-match`, 'any')
@@ -366,6 +369,7 @@ export default function LibraryPage() {
       )
     }
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
+    if (typeFilter.length > 0) list = list.filter((s) => s.type != null && typeFilter.includes(s.type))
     if (tagFilter.length > 0) {
       const wanted = tagFilter.map(Number)
       list = list.filter((s) => matches(wanted, s.tagIds, tagMatch))
@@ -427,7 +431,7 @@ export default function LibraryPage() {
     })
     return list
   }, [
-    series, debouncedQuery, statusFilter, tagFilter, tagMatch, genreFilter, genreMatch,
+    series, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter,
@@ -437,6 +441,15 @@ export default function LibraryPage() {
     const set = new Set((series ?? []).map((s) => s.status))
     return ['all', ...[...set].sort()]
   }, [series])
+
+  // Only types some series actually carries, in the catalogue's order rather than alphabetical.
+  const typeOptions = useMemo(() => {
+    const present = new Set((series ?? []).map((s) => s.type))
+    return TYPE_OPTIONS.filter((value) => present.has(value)).map((value) => ({
+      value,
+      label: renderLabel(TYPE_LABELS[value]),
+    }))
+  }, [series, renderLabel, i18n.locale])
 
   const tagOptions = useMemo(
     () => (tags ?? []).map((t) => ({ value: String(t.id), label: `${t.label} (${t.seriesCount})` })),
@@ -495,6 +508,7 @@ export default function LibraryPage() {
   const currentSpec = (): LibraryFilterSpec => ({
     query,
     status: statusFilter,
+    types: typeFilter,
     tagIds: tagFilter.map(Number),
     tagMatch,
     monitored: monitoredFilter,
@@ -524,6 +538,7 @@ export default function LibraryPage() {
     const merged = { ...DEFAULT_SPEC, ...spec }
     setQuery(merged.query ?? '')
     setStatusFilter(merged.status)
+    setTypeFilter(merged.types ?? [])
     setTagFilter((merged.tagIds ?? []).map(String))
     setTagMatch(merged.tagMatch)
     setGenreFilter(merged.genres ?? [])
@@ -552,6 +567,7 @@ export default function LibraryPage() {
   /** Everything except the search box: what the "Filters" button badges. */
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) +
+    (typeFilter.length > 0 ? 1 : 0) +
     (tagFilter.length > 0 ? 1 : 0) +
     (genreFilter.length > 0 ? 1 : 0) +
     (metaTagFilter.length > 0 ? 1 : 0) +
@@ -1107,6 +1123,16 @@ export default function LibraryPage() {
             }))}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v ?? 'all')}
+            comboboxProps={{ withinPortal: true }}
+          />
+          <MultiSelect
+            label={t`Type`}
+            placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
+            data={typeOptions}
+            value={typeFilter}
+            onChange={setTypeFilter}
+            disabled={typeOptions.length === 0}
+            clearable
             comboboxProps={{ withinPortal: true }}
           />
           {facetFilter({

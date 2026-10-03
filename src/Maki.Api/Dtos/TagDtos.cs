@@ -76,7 +76,9 @@ public record LibraryFilterSpec(
     /// "all", "default" (no pin of its own, so the instance default applies), or a quality profile id
     /// as a string (<see cref="Maki.Api.Dtos.SeriesDto.UpgradeProfileId"/>).
     /// </summary>
-    string QualityProfile = "all");
+    string QualityProfile = "all",
+    /// <summary><see cref="Maki.Core.Entities.SeriesTypes"/> values to include, empty for "any".</summary>
+    List<string>? Types = null);
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 

@@ -97,6 +97,17 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Equal("total", listed.Spec.ChapterMode);
     }
 
+    [Fact]
+    public async Task Create_round_trips_the_series_types()
+    {
+        var spec = new LibraryFilterSpec(Types: [SeriesTypes.Manhwa, SeriesTypes.Manhua]);
+
+        await Controller().Create(new SaveFilterRequest("Webtoons", spec), CancellationToken.None);
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Single();
+
+        Assert.Equal([SeriesTypes.Manhwa, SeriesTypes.Manhua], listed.Spec.Types);
+    }
+
     [Theory]
     // camelCase is what current builds store; PascalCase is what the first release of saved
     // filters wrote, and it has to keep applying rather than silently reading as "no filter".

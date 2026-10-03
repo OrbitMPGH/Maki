@@ -159,6 +159,8 @@ export interface TagDto {
 export interface LibraryFilterSpec {
   query?: string | null
   status: string
+  /** `SeriesDto.type` values to include. Empty/null means "don't filter"; untyped series only show then. */
+  types?: string[] | null
   tagIds?: number[] | null
   /** "any" | "all": whether a series must carry every listed tag. */
   tagMatch: string

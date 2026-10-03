@@ -12521,6 +12521,7 @@ msgstr "Two-factor turned off for this account"
 #: src/components/NotificationsSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/DiscoverPage.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Type"
 msgstr "Type"
