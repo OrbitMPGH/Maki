@@ -165,6 +165,31 @@ public class SourceChapterListCacheTests
     }
 
     /// <summary>
+    /// An HttpClient timeout surfaces as a TaskCanceledException. The callers queued behind it never
+    /// had their own token cancelled, so they get the shared failure as a timeout, not a cancellation.
+    /// </summary>
+    [Fact]
+    public async Task Callers_queued_behind_a_timed_out_listing_get_a_timeout_not_a_cancellation()
+    {
+        var source = new CountingSource
+        {
+            Delay = TimeSpan.FromMilliseconds(200),
+            Throws = new TaskCanceledException("HttpClient.Timeout", new TimeoutException()),
+        };
+        var cache = NewCache();
+
+        var calls = Enumerable.Range(0, 4).Select(_ => cache.GetAsync(source, "series-1", "en")).ToList();
+
+        await Assert.ThrowsAsync<TaskCanceledException>(() => calls[0]);
+        foreach (var call in calls.Skip(1))
+        {
+            await Assert.ThrowsAsync<TimeoutException>(() => call);
+        }
+
+        Assert.Equal(1, source.ListCalls);
+    }
+
+    /// <summary>
     /// ChapterSyncService lists uncached and seeds the result here, so the enqueues a monitored
     /// refresh fires straight afterwards resolve against the listing that just found their chapter
     /// rather than a stale one that predates it.

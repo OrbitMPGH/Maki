@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Core.Sources;
@@ -20,6 +19,7 @@ namespace Maki.Core.Sources;
 /// on the next item, not remembered as broken for the rest of the TTL. The one exception is the
 /// callers already queued behind the failing fetch: they get its exception (for up to
 /// <see cref="FailureTtl"/>) instead of each re-running a listing that just timed out or was told 429.
+/// That gate is <see cref="SingleFlightGate"/>, shared with <see cref="SourceExternalIdCache"/>.
 /// </para>
 /// </summary>
 public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChapterListCache> logger)
@@ -37,17 +37,14 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     /// </summary>
     private const int MaxEntries = 512;
 
-    public static readonly TimeSpan FailureTtl = TimeSpan.FromSeconds(20);
+    public static readonly TimeSpan FailureTtl = SingleFlightGate.FailureTtl;
 
-    private sealed class Entry
+    private sealed class Entry(TimeProvider time)
     {
-        public readonly SemaphoreSlim Gate = new(1, 1);
+        public readonly SingleFlightGate Flight = new(time);
         public IReadOnlyList<SourceChapter>? Chapters;
         public DateTime FetchedAt = DateTime.MinValue;
         public long LastUsedTicks;
-        public long Failures;
-        public ExceptionDispatchInfo? Failure;
-        public DateTime FailedAt;
     }
 
     private readonly ConcurrentDictionary<string, Entry> _entries = new();
@@ -60,7 +57,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     public async Task<IReadOnlyList<SourceChapter>> GetAsync(
         ISource source, string sourceSeriesId, string? languageFilter, CancellationToken ct = default)
     {
-        var entry = _entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry());
+        var entry = _entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry(time));
         var now = time.GetUtcNow().UtcDateTime;
         Volatile.Write(ref entry.LastUsedTicks, now.Ticks);
 
@@ -69,40 +66,15 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
             return entry.Chapters!;
         }
 
-        var failuresSeen = Interlocked.Read(ref entry.Failures);
-        await entry.Gate.WaitAsync(ct);
-        try
-        {
-            // Somebody else refreshed it while this call waited for the gate.
-            now = time.GetUtcNow().UtcDateTime;
-            if (IsFresh(entry, now))
+        return await entry.Flight.RunAsync(
+            () => (IsFresh(entry, time.GetUtcNow().UtcDateTime), entry.Chapters!),
+            async token =>
             {
-                return entry.Chapters!;
-            }
-
-            if (entry.Failure is { } failure && entry.Failures > failuresSeen && now - entry.FailedAt < FailureTtl)
-            {
-                failure.Throw();
-            }
-
-            try
-            {
-                var chapters = await source.ListChaptersAsync(sourceSeriesId, languageFilter, ct);
+                var chapters = await source.ListChaptersAsync(sourceSeriesId, languageFilter, token);
                 Fill(entry, chapters);
                 return chapters;
-            }
-            catch (Exception ex) when (!ct.IsCancellationRequested)
-            {
-                entry.Failure = ExceptionDispatchInfo.Capture(ex);
-                entry.FailedAt = time.GetUtcNow().UtcDateTime;
-                Interlocked.Increment(ref entry.Failures);
-                throw;
-            }
-        }
-        finally
-        {
-            entry.Gate.Release();
-        }
+            },
+            ct);
     }
 
     /// <summary>
@@ -114,7 +86,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     /// </summary>
     public void Store(
         ISource source, string sourceSeriesId, string? languageFilter, IReadOnlyList<SourceChapter> chapters) =>
-        Fill(_entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry()), chapters);
+        Fill(_entries.GetOrAdd(Key(source, sourceSeriesId, languageFilter), _ => new Entry(time)), chapters);
 
     private static string Key(ISource source, string sourceSeriesId, string? languageFilter) =>
         $"{source.Name} {sourceSeriesId} {languageFilter ?? string.Empty}";
@@ -122,7 +94,6 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
     private void Fill(Entry entry, IReadOnlyList<SourceChapter> chapters)
     {
         entry.Chapters = chapters;
-        entry.Failure = null;
         entry.FetchedAt = time.GetUtcNow().UtcDateTime;
         Volatile.Write(ref entry.LastUsedTicks, entry.FetchedAt.Ticks);
         Trim();
@@ -147,7 +118,7 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
         {
             // Skip an entry whose gate is held: a fetch is in flight against it, and dropping it now
             // would only make the next caller start a second one.
-            if (!IsFresh(entry, now) && entry.Gate.CurrentCount == 1)
+            if (!IsFresh(entry, now) && !entry.Flight.Busy)
             {
                 _entries.TryRemove(key, out _);
             }
