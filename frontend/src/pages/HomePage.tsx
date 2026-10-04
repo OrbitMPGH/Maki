@@ -350,10 +350,10 @@ export default function HomePage() {
     fromanime: fromAnimeLoading ? (
       <RailSkeleton />
     ) : (
-      fromAnime && fromAnime.length > 0 && (
+      fromAnime && fromAnime.items.length > 0 && (
         <>
-          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.length} />
-          <AnimeResumeRail items={fromAnime} onOpen={setDetailItem} />
+          <SectionHeader icon={IconDeviceTv} title={t`Continue from the anime`} count={fromAnime.total} />
+          <AnimeResumeRail items={fromAnime.items} onOpen={setDetailItem} />
         </>
       )
     ),

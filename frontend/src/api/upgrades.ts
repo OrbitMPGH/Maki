@@ -314,6 +314,7 @@ export type UpgradeSkipReasonCode =
   | 'trusted'
   | 'cutoff_met'
   | 'shared_file'
+  | 'same_copy'
   | 'queued'
   | 'memoised'
   | 'probe_budget'
@@ -346,6 +347,7 @@ export const UPGRADE_REASON_LABELS: Record<UpgradeReasonCode | UpgradeSkipReason
   trusted: msg`Protected from upgrades`,
   cutoff_met: msg`Already meets the cutoff`,
   shared_file: msg`Shares a file with another chapter`,
+  same_copy: msg`Same copy as the file on disk`,
   queued: msg`Already queued`,
   memoised: msg`Already checked recently`,
   no_other_source: msg`No other source lists it`,

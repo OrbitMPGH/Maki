@@ -10168,6 +10168,10 @@ msgstr "Safe"
 msgid "same author"
 msgstr "same author"
 
+#: src/api/upgrades.ts
+msgid "Same copy as the file on disk"
+msgstr "Same copy as the file on disk"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Sample a few pages from three chapters on every enabled source and update each source's quality."
 msgstr "Sample a few pages from three chapters on every enabled source and update each source's quality."

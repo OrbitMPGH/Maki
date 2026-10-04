@@ -12246,6 +12246,10 @@ msgstr "Güvenli"
 msgid "same author"
 msgstr "aynı yazar"
 
+#: src/api/upgrades.ts
+msgid "Same copy as the file on disk"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Sample a few pages from three chapters on every enabled source and update each source's quality."
 msgstr ""

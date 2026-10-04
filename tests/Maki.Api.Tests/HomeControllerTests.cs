@@ -434,9 +434,8 @@ public class HomeControllerTests : IDisposable
         };
         var result = await controller.FromAnime(
             AnimeResumeFixture.Service(_db, context, _gate), ct: CancellationToken.None);
-        var items = Assert.IsAssignableFrom<IReadOnlyList<HomeAnimeResumeItem>>(
-            Assert.IsType<OkObjectResult>(result).Value);
-        return (items, controller.Response.Headers["X-Total-Count"].ToString());
+        var page = Assert.IsType<AnimeResumeService.RailPage>(Assert.IsType<OkObjectResult>(result).Value);
+        return (page.Items, page.Total.ToString());
     }
 
     private int SeedFromAnime(string title, int mangaBakaId, int? score, int userId = 1)

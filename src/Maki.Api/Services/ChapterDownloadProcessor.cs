@@ -504,7 +504,7 @@ public class ChapterDownloadProcessor(
                 measurement.PageCount, measurement.MedianWidth, measurement.ImageFormat, size, chapter.Language,
                 measurement.MedianHeight));
             tier = candidate?.Tier ?? tier;
-            var shared = await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct) > 1;
+            var shared = UpgradeCandidateRules.SharedFile(await db.Chapters.CountAsync(c => c.ChapterFileId == current.Id, ct));
             reason = ForcedGuard(info, current, shared, measurement, evaluator?.Profile.PageTolerancePercent ?? 10);
         }
         else if (evaluator?.Evaluate(current, chapter.Language) is { } evaluated)
@@ -677,7 +677,7 @@ public class ChapterDownloadProcessor(
     private static string? ForcedGuard(UpgradeInfo info, ChapterFile current, bool shared,
         ChapterFileMeasurement measurement, int pageTolerancePercent)
     {
-        if (shared) return "shared_file";
+        if (shared) return UpgradeReasons.SharedFile;
         if (info.IgnoreGuards) return null;
         if (current.Trusted) return "trusted";
         if (measurement.MedianWidth is null) return UpgradeReasons.Unmeasurable;
