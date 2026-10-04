@@ -168,33 +168,8 @@ public class ScrobbleServiceTests
             s.Status = SeriesStatus.Completed;
             s.TotalChapters = null;
         });
-
-        using (var seed = db.NewContext())
-        {
-            foreach (var seriesId in new[] { ongoing, oneShot })
-            {
-                var file = new ChapterFile
-                {
-                    SeriesId = seriesId, RelativePath = $"{seriesId}/special.cbz", SourceName = "import",
-                    DateAdded = DateTime.UtcNow,
-                };
-                seed.ChapterFiles.Add(file);
-                seed.SaveChanges();
-                var chapter = new Chapter
-                {
-                    SeriesId = seriesId, Number = null, IsOneShot = true, Title = "Prologue", Language = "en",
-                    ChapterFileId = file.Id,
-                };
-                seed.Chapters.Add(chapter);
-                seed.SaveChanges();
-                seed.ChapterProgress.Add(new ChapterProgress
-                {
-                    UserId = user, SeriesId = seriesId, ChapterId = chapter.Id, PageIndex = 19, PageCount = 20,
-                    Completed = true, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
-                });
-                seed.SaveChanges();
-            }
-        }
+        SeedReadSpecial(db, user, ongoing);
+        SeedReadSpecial(db, user, oneShot);
 
         var service = BuildService(db, new FakeUserSettingsStore(db));
         var tracker = new FakeScrobbleTracker();
@@ -203,6 +178,87 @@ public class ScrobbleServiceTests
 
         Assert.Contains(tracker.Pushes, p => p.RemoteId == "600" && p.Chapter == 1 && p.Status == ScrobbleStatus.Completed);
         Assert.DoesNotContain(tracker.Pushes, p => p.RemoteId == "500");
+    }
+
+    /// <summary>
+    /// A series whose status is unknown and whose total is unknown has no positive evidence of being
+    /// over (Kitsu and MangaBaka never say whether it is releasing). It must not be completed; the
+    /// same series is completed once the tracker confirms it is not releasing.
+    /// </summary>
+    [Fact]
+    public async Task NativePassAsync_DoesNotCompleteAnUnknownStatusSeriesWithoutTrackerEvidence()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var unknown = db.SeedSeries("Unknown", configure: s =>
+        {
+            s.MangaBakaId = 700;
+            s.Status = SeriesStatus.Unknown;
+            s.TotalChapters = null;
+        });
+        SeedReadSpecial(db, user, unknown);
+
+        var service = BuildService(db, new FakeUserSettingsStore(db));
+        var silent = new FakeScrobbleTracker();
+        await service.NativePassAsync(user, [silent], ownsKavita: false, CancellationToken.None);
+        Assert.DoesNotContain(silent.Pushes, p => p.RemoteId == "700");
+
+        var confirming = new FakeScrobbleTracker { Entry = new RemoteEntry(Releasing: false) };
+        await service.NativePassAsync(user, [confirming], ownsKavita: false, CancellationToken.None);
+        Assert.Contains(confirming.Pushes, p => p.RemoteId == "700" && p.Chapter == 1 && p.Status == ScrobbleStatus.Completed);
+    }
+
+    /// <summary>
+    /// Only an unnumbered special was read on a work the tracker lists with 20 chapters: the one-shot
+    /// rule must not lift the mark to chapter 1 and push Reading.
+    /// </summary>
+    [Fact]
+    public async Task NativePassAsync_ASpecialOnlyReadOfAMultiChapterSeriesPushesNothing()
+    {
+        using var db = new TestDb();
+        var user = db.SeedUser("reader", MakiPermission.None);
+        var series = db.SeedSeries("Twenty", configure: s =>
+        {
+            s.MangaBakaId = 800;
+            s.Status = SeriesStatus.Completed;
+            s.TotalChapters = null;
+        });
+        SeedReadSpecial(db, user, series);
+
+        var service = BuildService(db, new FakeUserSettingsStore(db));
+        var tracker = new FakeScrobbleTracker
+        {
+            Entry = new RemoteEntry(Status: ScrobbleStatus.PlanToRead, TotalChapters: 20),
+        };
+
+        await service.NativePassAsync(user, [tracker], ownsKavita: false, CancellationToken.None);
+
+        Assert.DoesNotContain(tracker.Pushes, p => p.RemoteId == "800");
+    }
+
+    private static void SeedReadSpecial(TestDb db, int userId, int seriesId)
+    {
+        using var seed = db.NewContext();
+        var file = new ChapterFile
+        {
+            SeriesId = seriesId, RelativePath = $"{seriesId}/special.cbz", SourceName = "import",
+            DateAdded = DateTime.UtcNow,
+        };
+        seed.ChapterFiles.Add(file);
+        seed.SaveChanges();
+        var chapter = new Chapter
+        {
+            SeriesId = seriesId, Number = null, IsOneShot = true, Title = "Prologue", Language = "en",
+            ChapterFileId = file.Id,
+        };
+        seed.Chapters.Add(chapter);
+        seed.SaveChanges();
+        seed.ChapterProgress.Add(new ChapterProgress
+        {
+            UserId = userId, SeriesId = seriesId, ChapterId = chapter.Id, PageIndex = 19, PageCount = 20,
+            Completed = true, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        seed.SaveChanges();
     }
 
     /// <summary>Covers #101: two library series whose titles normalize to the same key ("Overlord" /
@@ -431,6 +487,7 @@ public class ScrobbleServiceTests
     private sealed class FakeScrobbleTracker : IScrobbleTracker
     {
         public List<(string RemoteId, int Chapter, int Volume, ScrobbleStatus Status)> Pushes { get; } = [];
+        public RemoteEntry Entry { get; init; } = new();
 
         public string Name => "mangabaka";
         public string Label => "MangaBaka";
@@ -442,7 +499,7 @@ public class ScrobbleServiceTests
             Task.FromResult<string?>("fake");
 
         public Task<RemoteEntry> GetEntryAsync(int userId, string remoteId, CancellationToken ct = default) =>
-            Task.FromResult(new RemoteEntry());
+            Task.FromResult(Entry);
 
         public Task UpdateAsync(
             int userId, string remoteId, int chapter, int volume, ScrobbleStatus status,

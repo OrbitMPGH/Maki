@@ -344,16 +344,21 @@ public class ScrobbleService(
 
         var parts = new List<string>();
 
+        var oneShots = pushEnabled
+            ? await FinishedOneShotsAsync(userId, await AllRootFoldersAsync(userId, ct), ct)
+            : new Dictionary<int, bool>();
+
         if (pushEnabled)
         {
-            var native = await NativePassAsync(userId, trackers, ownsKavita, ct);
+            var native = await NativePassAsync(userId, trackers, ownsKavita, ct, oneShots);
             await LogPassAsync(userId, "scrobble.log.readerPass", native, ct);
             parts.Add($"reader: {native}");
         }
 
         if (ownsKavita)
         {
-            var kavitaCounts = await KavitaPassAsync(userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, ct);
+            var kavitaCounts = await KavitaPassAsync(
+                userId, kavitaUrl!, kavitaKey!, trackers, pushEnabled, oneShots, ct);
             await LogPassAsync(userId, "scrobble.log.kavitaPass", kavitaCounts, ct);
             parts.Add($"kavita: {kavitaCounts}");
         }
@@ -373,7 +378,7 @@ public class ScrobbleService(
     /// <summary>The Kavita-driven pass: read progress from Kavita, merge it, push the result.</summary>
     private async Task<PassCounts> KavitaPassAsync(
         int userId, string kavitaUrl, string kavitaKey, List<IScrobbleTracker> trackers, bool pushEnabled,
-        CancellationToken ct)
+        Dictionary<int, bool> oneShots, CancellationToken ct)
     {
         List<KavitaClient.KavitaSeriesSummary> seriesList;
         try
@@ -398,7 +403,6 @@ public class ScrobbleService(
             .OfType<int>()
             .ToHashSet();
         var boundarySource = await volumeBoundaries.LoadAsync(userId, allRootFolders, matchedIds, ct);
-        var finishedOneShots = await FinishedOneShotsAsync(userId, allRootFolders, ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
 
@@ -487,29 +491,33 @@ public class ScrobbleService(
 
             var chapter = (int)Math.Floor(merged.MaxChapter);
             var volume = (int)Math.Floor(merged.MaxVolume);
-            var finished = localSeries is not null && finishedOneShots.Contains(localSeries.Id);
-            if (finished)
-            {
-                chapter = Math.Max(chapter, 1);
-            }
+            var completedLocally = false;
+            var finished = localSeries is not null && oneShots.TryGetValue(localSeries.Id, out completedLocally);
 
             ScrobbleStatus? fallbackStatus = null;
             if (chapter <= 0 && volume <= 0)
             {
-                if (progress.ReadPages > 0)
+                // A finished one-shot has no chapter mark by nature; the planner decides what it means.
+                if (!finished)
                 {
-                    noProgress++;
-                    logger.LogInformation("'{Title}': {Pages} pages read but no fully-read chapter/volume",
-                        title, progress.ReadPages);
-                }
+                    if (progress.ReadPages > 0)
+                    {
+                        noProgress++;
+                        logger.LogInformation("'{Title}': {Pages} pages read but no fully-read chapter/volume",
+                            title, progress.ReadPages);
+                    }
 
-                if (!planToRead)
-                {
-                    continue;
+                    if (!planToRead)
+                    {
+                        continue;
+                    }
                 }
 
                 // nothing scrobbable yet — list the series as planning/reading
-                fallbackStatus = progress.ReadPages > 0 ? ScrobbleStatus.Reading : ScrobbleStatus.PlanToRead;
+                if (planToRead)
+                {
+                    fallbackStatus = progress.ReadPages > 0 ? ScrobbleStatus.Reading : ScrobbleStatus.PlanToRead;
+                }
             }
 
             if (!pushEnabled)
@@ -538,7 +546,7 @@ public class ScrobbleService(
 
                 var state = await GetSyncStateAsync(userId, series.Id, tracker.Name, ct);
                 if (state is not null && string.IsNullOrEmpty(state.Error) &&
-                    state.Chapter >= chapter && state.Volume >= volume)
+                    state.Chapter >= (finished ? Math.Max(chapter, 1) : chapter) && state.Volume >= volume)
                 {
                     skipped++;
                     continue;
@@ -588,7 +596,7 @@ public class ScrobbleService(
                 {
                     var changed = await PushAsync(userId, tracker, remoteId,
                         new PushTarget(series.Id, localSeries?.Id, title), chapter, volume,
-                        fallbackStatus, ct, finished);
+                        fallbackStatus, ct, finished, completedLocally);
                     if (changed)
                     {
                         updates++;
@@ -647,7 +655,8 @@ public class ScrobbleService(
     /// </para>
     /// </summary>
     internal async Task<PassCounts> NativePassAsync(
-        int userId, List<IScrobbleTracker> trackers, bool ownsKavita, CancellationToken ct)
+        int userId, List<IScrobbleTracker> trackers, bool ownsKavita, CancellationToken ct,
+        Dictionary<int, bool>? oneShots = null)
     {
         List<NativeProgress> rows;
         List<NativeProgress> zeroProgress;
@@ -689,7 +698,7 @@ public class ScrobbleService(
                 .ToList();
         }
 
-        var finishedOneShots = await FinishedOneShotsAsync(userId, await AllRootFoldersAsync(userId, ct), ct);
+        oneShots ??= await FinishedOneShotsAsync(userId, await AllRootFoldersAsync(userId, ct), ct);
 
         int updates = 0, errors = 0, skipped = 0;
 
@@ -698,8 +707,9 @@ public class ScrobbleService(
             ct.ThrowIfCancellationRequested();
             var chapter = (int)Math.Floor(row.MaxChapter);
             var volume = (int)Math.Floor(row.MaxVolume);
+            var finished = oneShots.TryGetValue(row.SeriesId, out var completedLocally);
             await PushNativeRowAsync(userId, row, chapter, volume, null, trackers, ct, Counters,
-                finishedOneShots.Contains(row.SeriesId));
+                finished, completedLocally);
         }
 
         // A one-shot never raises MaxChapter, so a finished one sits here with the unstarted series.
@@ -707,9 +717,11 @@ public class ScrobbleService(
         foreach (var row in zeroProgress)
         {
             ct.ThrowIfCancellationRequested();
-            if (finishedOneShots.Contains(row.SeriesId))
+            if (oneShots.TryGetValue(row.SeriesId, out var completedLocally))
             {
-                await PushNativeRowAsync(userId, row, 0, 0, null, trackers, ct, Counters, finished: true);
+                await PushNativeRowAsync(
+                    userId, row, 0, 0, planToRead ? ScrobbleStatus.PlanToRead : null, trackers, ct, Counters,
+                    finished: true, completedLocally);
             }
             else if (planToRead)
             {
@@ -731,13 +743,8 @@ public class ScrobbleService(
     private async Task PushNativeRowAsync(
         int userId, NativeProgress row, int chapter, int volume, ScrobbleStatus? fallbackStatus,
         List<IScrobbleTracker> trackers, CancellationToken ct, Action<bool, bool, bool> report,
-        bool finished = false)
+        bool finished = false, bool completedLocally = false)
     {
-        if (finished)
-        {
-            chapter = Math.Max(chapter, 1);
-        }
-
         foreach (var tracker in trackers)
         {
             if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
@@ -760,7 +767,7 @@ public class ScrobbleService(
 
             var state = await GetSeriesScrobbleStateAsync(userId, row.SeriesId, tracker.Name, ct);
             if (state is not null && string.IsNullOrEmpty(state.Error) &&
-                state.Chapter >= chapter && state.Volume >= volume)
+                state.Chapter >= (finished ? Math.Max(chapter, 1) : chapter) && state.Volume >= volume)
             {
                 report(false, true, false);
                 continue;
@@ -769,7 +776,9 @@ public class ScrobbleService(
             var target = new PushTarget(null, row.SeriesId, row.Title);
             try
             {
-                if (await PushAsync(userId, tracker, remoteId, target, chapter, volume, fallbackStatus, ct, finished))
+                if (await PushAsync(
+                        userId, tracker, remoteId, target, chapter, volume, fallbackStatus, ct, finished,
+                        completedLocally))
                 {
                     report(true, false, false);
                 }
@@ -802,11 +811,12 @@ public class ScrobbleService(
     /// <summary>Forward-only update of one tracker. Returns true when a write happened.</summary>
     private async Task<bool> PushAsync(
         int userId, IScrobbleTracker tracker, string remoteId, PushTarget target,
-        int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct, bool finished = false)
+        int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct, bool finished = false,
+        bool completedLocally = false)
     {
         var title = target.Title;
         var entry = await tracker.GetEntryAsync(userId, remoteId, ct);
-        var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus, finished);
+        var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus, finished, completedLocally);
 
         if (!plan.Write)
         {
@@ -828,7 +838,7 @@ public class ScrobbleService(
         // Three shapes rather than one string glued together, because where the status goes and
         // whether a volume is named at all differ per language.
         var status = StatusName(plan.PushStatus);
-        if (chapter <= 0 && volume <= 0)
+        if (plan.Chapter <= 0 && plan.Volume <= 0)
         {
             await AddKeyedLogAsync(userId, "info", tracker.Name, title,
                 "scrobble.log.addedToList", new { status }, ct);
@@ -1184,39 +1194,34 @@ public class ScrobbleService(
     }
 
     /// <summary>
-    /// One-shots the user has finished: series whose downloaded chapters are all one-shots, every one
-    /// of them completed. A one-shot never raises <see cref="ReadingState.MaxChapter"/>, so this is the
-    /// only way the planner learns it is done. A lone numbered chapter is left out on purpose: it
+    /// One-shot candidates the user has finished: series whose downloaded chapters are all one-shots,
+    /// every one of them completed, filtered in SQL so only series ids come back. The value says
+    /// whether the library itself records the series as completed; without that the planner wants the
+    /// tracker to confirm. A one-shot never raises <see cref="ReadingState.MaxChapter"/>, so this is
+    /// the only way the planner learns it is done. A lone numbered chapter is left out on purpose: it
     /// already raises the mark, and on an ongoing series it is just the first chapter. A series whose
     /// known chapter count is above one, or that is still publishing, is not finished however many
     /// unnumbered specials (a prologue, an extra) were read: its total is usually unknown until it ends.
     /// </summary>
-    private async Task<HashSet<int>> FinishedOneShotsAsync(int userId, bool allRootFolders, CancellationToken ct)
+    private async Task<Dictionary<int, bool>> FinishedOneShotsAsync(
+        int userId, bool allRootFolders, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         db.Scope.SetUser(userId, allRootFolders);
 
-        var readSeries = db.ChapterProgress
-            .Where(p => p.UserId == userId && p.Completed)
-            .Select(p => p.SeriesId);
-        var chapters = await db.Chapters.AsNoTracking()
-            .Where(c => c.ChapterFileId != null && readSeries.Contains(c.SeriesId)
-                && (c.Series!.TotalChapters == null || c.Series.TotalChapters <= 1)
-                && c.Series.Status != SeriesStatus.Ongoing && c.Series.Status != SeriesStatus.Hiatus)
-            .Select(c => new
-            {
-                c.SeriesId,
-                OneShot = c.IsOneShot,
-                Read = db.ChapterProgress.Any(p => p.UserId == userId && p.ChapterId == c.Id && p.Completed),
-            })
+        var rows = await db.Series.AsNoTracking()
+            .Where(s => (s.TotalChapters == null || s.TotalChapters <= 1)
+                && s.Status != SeriesStatus.Ongoing && s.Status != SeriesStatus.Hiatus
+                && db.ChapterProgress.Any(p => p.UserId == userId && p.SeriesId == s.Id && p.Completed)
+                && db.Chapters.Any(c => c.SeriesId == s.Id && c.ChapterFileId != null)
+                && !db.Chapters.Any(c => c.SeriesId == s.Id && c.ChapterFileId != null
+                    && (!c.IsOneShot
+                        || !db.ChapterProgress.Any(p => p.UserId == userId && p.ChapterId == c.Id && p.Completed))))
+            .Select(s => new { s.Id, Completed = s.Status == SeriesStatus.Completed })
             .ToListAsync(ct);
 
-        return chapters
-            .GroupBy(c => c.SeriesId)
-            .Where(g => g.All(c => c.OneShot && c.Read))
-            .Select(g => g.Key)
-            .ToHashSet();
+        return rows.ToDictionary(r => r.Id, r => r.Completed);
     }
 
     /// <summary>
