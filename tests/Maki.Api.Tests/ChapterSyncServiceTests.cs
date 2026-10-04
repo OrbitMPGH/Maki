@@ -476,6 +476,159 @@ public class ChapterSyncServiceTests : IDisposable
         Assert.Equal("Special", Assert.Single(ChaptersOf(seriesId)).Title);
     }
 
+    private int SeedFile(int seriesId, string path)
+    {
+        using var db = _db.NewContext();
+        var file = new ChapterFile { SeriesId = seriesId, RelativePath = path };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+        return file.Id;
+    }
+
+    private void SeedProgress(int userId, int seriesId, int chapterId, int page)
+    {
+        using var db = _db.NewContext();
+        db.ChapterProgress.Add(new ChapterProgress
+        {
+            UserId = userId, SeriesId = seriesId, ChapterId = chapterId, PageIndex = page, PageCount = 20,
+            StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+        });
+        db.SaveChanges();
+    }
+
+    private List<ChapterProgress> ProgressOf(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return db.ChapterProgress.Where(p => p.SeriesId == seriesId).OrderBy(p => p.UserId).ToList();
+    }
+
+    [Fact]
+    public async Task One_shot_with_its_own_file_is_not_promoted_onto_a_numbered_row_with_another()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        var numberedFile = SeedFile(seriesId, "Series/Ch 124.cbz");
+        var oneShotFile = SeedFile(seriesId, "Series/Episode 124.cbz");
+        using (var db = _db.NewContext())
+        {
+            db.Chapters.AddRange(
+                new Chapter { SeriesId = seriesId, Number = 124, Language = "en", ChapterFileId = numberedFile },
+                new Chapter
+                {
+                    SeriesId = seriesId, Number = null, IsOneShot = true, Title = "Episode 124",
+                    Language = "en", ChapterFileId = oneShotFile
+                });
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ => [fake.Chapter(124) with { NumberRaw = "Episode 124" }]
+        };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        var chapters = ChaptersOf(seriesId);
+        Assert.Equal(2, chapters.Count);
+        Assert.Equal([numberedFile, oneShotFile], chapters.Select(c => c.ChapterFileId));
+        Assert.True(chapters[1].IsOneShot);
+    }
+
+    [Fact]
+    public async Task Duplicate_merge_moves_the_removed_rows_progress_to_the_keeper()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake", enabled: false));
+        var reader = _db.SeedUser("merge-reader");
+        var file = SeedFile(seriesId, "Series/Ch 5.cbz");
+        int keeperId, dupId;
+        using (var db = _db.NewContext())
+        {
+            var keeper = new Chapter { SeriesId = seriesId, Number = 5, Language = "en", ChapterFileId = file };
+            var dup = new Chapter { SeriesId = seriesId, Number = 5, Volume = 2, Language = "en" };
+            db.Chapters.AddRange(keeper, dup);
+            db.SaveChanges();
+            keeperId = keeper.Id;
+            dupId = dup.Id;
+        }
+
+        SeedProgress(reader, seriesId, dupId, page: 7);
+
+        await BuildService(null, new FakeSource { Name = "fake" }).SyncSeriesAsync(seriesId);
+
+        var chapter = Assert.Single(ChaptersOf(seriesId));
+        Assert.Equal(keeperId, chapter.Id);
+        Assert.Equal(file, chapter.ChapterFileId);
+        var progress = Assert.Single(ProgressOf(seriesId));
+        Assert.Equal(keeperId, progress.ChapterId);
+        Assert.Equal(7, progress.PageIndex);
+    }
+
+    [Fact]
+    public async Task Duplicate_rows_both_read_by_one_reader_are_left_apart()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake", enabled: false));
+        var reader = _db.SeedUser("both-reader");
+        int keeperId, dupId;
+        using (var db = _db.NewContext())
+        {
+            var keeper = new Chapter { SeriesId = seriesId, Number = 5, Volume = 2, Language = "en" };
+            var dup = new Chapter { SeriesId = seriesId, Number = 5, Language = "en" };
+            db.Chapters.AddRange(keeper, dup);
+            db.SaveChanges();
+            keeperId = keeper.Id;
+            dupId = dup.Id;
+        }
+
+        SeedProgress(reader, seriesId, keeperId, page: 3);
+        SeedProgress(reader, seriesId, dupId, page: 9);
+
+        await BuildService(null, new FakeSource { Name = "fake" }).SyncSeriesAsync(seriesId);
+
+        Assert.Equal(2, ChaptersOf(seriesId).Count);
+        Assert.Equal([3, 9], ProgressOf(seriesId).OrderBy(p => p.PageIndex).Select(p => p.PageIndex));
+    }
+
+    [Fact]
+    public async Task Untitled_one_shot_is_adopted_by_the_listing_it_was_linked_to()
+    {
+        // Before labelling, every unnumbered listing matched the one untitled row, and its link kept
+        // the first one's id. The listing that comes first now is a different chapter.
+        var seriesId = _db.SeedSeries(mappings: Mapping("fake"));
+        int oneShotId;
+        using (var db = _db.NewContext())
+        {
+            var mappingId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+            var oneShot = new Chapter { SeriesId = seriesId, Number = null, IsOneShot = true, Language = "en" };
+            db.Chapters.Add(oneShot);
+            db.SaveChanges();
+            oneShotId = oneShot.Id;
+            db.ChapterSourceLinks.Add(new ChapterSourceLink
+            {
+                ChapterId = oneShot.Id, SourceMappingId = mappingId, SourceChapterId = "a"
+            });
+            db.SaveChanges();
+        }
+
+        var fake = new FakeSource { Name = "fake" };
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnListChapters = _ =>
+            [
+                fake.Chapter(null) with { SourceChapterId = "b", NumberRaw = "Extra" },
+                fake.Chapter(null) with { SourceChapterId = "a", NumberRaw = "Special" },
+            ]
+        };
+
+        await BuildService(null, source).SyncSeriesAsync(seriesId);
+
+        var chapters = ChaptersOf(seriesId);
+        Assert.Equal(2, chapters.Count);
+        Assert.Equal("Special", chapters.Single(c => c.Id == oneShotId).Title);
+        Assert.Equal("Extra", chapters.Single(c => c.Id != oneShotId).Title);
+    }
+
     [Fact]
     public async Task Empty_listing_keeps_existing_links_and_records_an_error()
     {

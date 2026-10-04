@@ -51,7 +51,8 @@ public class ChapterSyncService(
             .Where(c => c.SeriesId == seriesId)
             .Include(c => c.SourceLinks)
             .ToListAsync(ct);
-        MergeDuplicates(existing);
+        var reads = new ReadRows(db, seriesId);
+        await MergeDuplicatesAsync(existing, reads, ct);
         // Read once per sync, not once per discovered chapter: this is the only thing that decides
         // whether a newly listed special is wanted, and a Smart series can't say so via its mode.
         var skipSpecials = await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
@@ -106,13 +107,15 @@ public class ChapterSyncService(
                 foreach (var sc in sourceChapters)
                 {
                     var match = existing.FirstOrDefault(c => ChapterIdentity.Matches(c, sc))
-                                ?? UntitledOneShot(existing, sc);
-                    if (PromotableOneShot(existing, sc) is { } unnumbered)
+                                ?? UntitledOneShot(existing, sc, mapping);
+                    if (PromotableOneShot(existing, sc) is { } unnumbered &&
+                        (match is null || await reads.CanMergeAsync(match, unnumbered, ct)))
                     {
                         // Stored as a one-shot titled by its label back when the parser could not
                         // read that label ("Episode 12"). Numbering it in place keeps its file and
                         // stops a second row being created, and downloaded, beside it. When another
-                        // source already has that number, the two rows are merged below.
+                        // source already has that number, the two rows are merged below, unless
+                        // both hold a file or both hold one reader's progress.
                         unnumbered.Number = sc.Number;
                         unnumbered.NumberRaw = sc.NumberRaw;
                         unnumbered.IsOneShot = false;
@@ -188,7 +191,7 @@ public class ChapterSyncService(
 
         if (promotedBesideExisting)
         {
-            MergeDuplicates(existing);
+            await MergeDuplicatesAsync(existing, reads, ct);
         }
 
         // Flag (or clear) cross-source numbering clashes. A clash is always
@@ -300,16 +303,28 @@ public class ChapterSyncService(
 
     /// <summary>
     /// A one-shot stored before untitled chapters took their label as a title. Adopting it keeps its
-    /// file rather than downloading the same chapter again under the label.
+    /// file rather than downloading the same chapter again under the label. One already linked to a
+    /// different listing of this mapping belongs to that listing, not this one.
     /// </summary>
-    private static Chapter? UntitledOneShot(List<Chapter> existing, SourceChapter sc) =>
-        sc.Number is null && sc.Title is not null &&
-        string.Equals(sc.Title, sc.NumberRaw?.Trim(), StringComparison.OrdinalIgnoreCase)
-            ? existing.FirstOrDefault(c =>
-                c.Number is null && c.IsOneShot && c.Title is null && c.Language == sc.Language)
-            : null;
+    private static Chapter? UntitledOneShot(List<Chapter> existing, SourceChapter sc, SourceMapping mapping)
+    {
+        if (sc.Number is not null || sc.Title is null ||
+            !string.Equals(sc.Title, sc.NumberRaw?.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
 
-    private void MergeDuplicates(List<Chapter> existing)
+        var untitled = existing
+            .Where(c => c.Number is null && c.IsOneShot && c.Title is null && c.Language == sc.Language)
+            .ToList();
+        string? LinkedId(Chapter c) =>
+            c.SourceLinks.FirstOrDefault(l => l.SourceMappingId == mapping.Id)?.SourceChapterId;
+
+        return untitled.FirstOrDefault(c => LinkedId(c) == sc.SourceChapterId)
+               ?? untitled.FirstOrDefault(c => LinkedId(c) is null);
+    }
+
+    private async Task MergeDuplicatesAsync(List<Chapter> existing, ReadRows reads, CancellationToken ct)
     {
         var groups = existing
             .Where(c => c.Number is not null)
@@ -325,19 +340,33 @@ public class ChapterSyncService(
                 continue;
             }
 
+            // Persisted rows before new ones: progress can only move onto a row that has an id.
             var keeper = group
                 .OrderByDescending(c => c.ChapterFileId != null)
+                .ThenByDescending(c => c.Id != 0)
                 .ThenByDescending(c => c.Volume != null)
                 .ThenBy(c => c.Id)
                 .First();
 
+            var merged = 0;
             foreach (var dup in group.Where(c => !ReferenceEquals(c, keeper)))
             {
+                // The keeper holds one file and one progress row per reader, so a duplicate with a
+                // second file or a second read of its own stays rather than losing it.
+                if (!await reads.CanMergeAsync(keeper, dup, ct))
+                {
+                    logger.LogWarning(
+                        "Kept duplicate row {DupId} of chapter {Number} in series {SeriesId}: its file or progress cannot move to row {KeeperId}",
+                        dup.Id, keeper.Number, keeper.SeriesId, keeper.Id);
+                    continue;
+                }
+
                 keeper.Volume ??= dup.Volume;
                 keeper.Title ??= dup.Title;
                 keeper.ReleaseDate ??= dup.ReleaseDate;
                 keeper.ChapterFileId ??= dup.ChapterFileId;
                 keeper.Wanted |= dup.Wanted;
+                await reads.MoveAsync(dup, keeper, ct);
 
                 foreach (var link in dup.SourceLinks.ToList())
                 {
@@ -365,10 +394,72 @@ public class ChapterSyncService(
 
                 existing.Remove(dup);
                 db.Chapters.Remove(dup);
+                merged++;
             }
 
-            logger.LogInformation("Merged {Count} duplicate row(s) of chapter {Number} in series {SeriesId}",
-                group.Count() - 1, keeper.Number, keeper.SeriesId);
+            if (merged > 0)
+            {
+                logger.LogInformation("Merged {Count} duplicate row(s) of chapter {Number} in series {SeriesId}",
+                    merged, keeper.Number, keeper.SeriesId);
+            }
         }
+    }
+
+    /// <summary>
+    /// Every reader's progress and bookmarks on the series, loaded only once a merge needs them.
+    /// Unfiltered, since a sync started from one user's request must not drop another user's reads.
+    /// </summary>
+    private sealed class ReadRows(MakiDbContext db, int seriesId)
+    {
+        private List<ChapterProgress>? _progress;
+        private List<ReaderBookmark>? _bookmarks;
+
+        /// <summary>Whether one row can absorb the other without dropping a file or a reader's progress.</summary>
+        public async Task<bool> CanMergeAsync(Chapter a, Chapter b, CancellationToken ct)
+        {
+            if (a.ChapterFileId is { } fileA && b.ChapterFileId is { } fileB && fileA != fileB)
+            {
+                return false;
+            }
+
+            if (a.Id == 0 || b.Id == 0)
+            {
+                return true;
+            }
+
+            var progress = await ProgressAsync(ct);
+            var readersOfA = progress.Where(p => p.ChapterId == a.Id).Select(p => p.UserId).ToHashSet();
+            return !progress.Any(p => p.ChapterId == b.Id && readersOfA.Contains(p.UserId));
+        }
+
+        public async Task MoveAsync(Chapter from, Chapter to, CancellationToken ct)
+        {
+            if (from.Id == 0 || to.Id == 0)
+            {
+                return;
+            }
+
+            foreach (var row in (await ProgressAsync(ct)).Where(p => p.ChapterId == from.Id))
+            {
+                row.ChapterId = to.Id;
+            }
+
+            var bookmarks = _bookmarks ??= await db.ReaderBookmarks.IgnoreQueryFilters()
+                .Where(b => b.SeriesId == seriesId)
+                .ToListAsync(ct);
+            foreach (var mark in bookmarks.Where(b => b.ChapterId == from.Id).ToList())
+            {
+                // The same page bookmarked on both rows: the keeper's copy already covers it.
+                if (!bookmarks.Any(b => b.ChapterId == to.Id && b.UserId == mark.UserId && b.PageIndex == mark.PageIndex))
+                {
+                    mark.ChapterId = to.Id;
+                }
+            }
+        }
+
+        private async Task<List<ChapterProgress>> ProgressAsync(CancellationToken ct) =>
+            _progress ??= await db.ChapterProgress.IgnoreQueryFilters()
+                .Where(p => p.SeriesId == seriesId)
+                .ToListAsync(ct);
     }
 }
