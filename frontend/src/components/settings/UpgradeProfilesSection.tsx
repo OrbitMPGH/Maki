@@ -59,6 +59,7 @@ import { useSources } from '../../api/hooks'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { SettingsHelp } from './SettingsHelp'
+import { useReportUnsaved } from './SaveButton'
 import { useLabel } from '../../i18n-context'
 
 /** Highest priority first, matches `UpgradeProfileDefaults.DefaultOrder` on the server. */
@@ -291,6 +292,27 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
   )
 }
 
+function profileFingerprint(profile: UpgradeProfileInput): string {
+  return JSON.stringify({
+    name: profile.name.trim(),
+    description: profile.description?.trim() || null,
+    tiers: profile.tiers.map((t) => [t.tier, t.allowed, t.grouped]),
+    cutoff: groupCutoff(profile.tiers, profile.cutoff) ?? profile.cutoff,
+    upgradesEnabled: profile.upgradesEnabled,
+    minScoreDelta: profile.minScoreDelta,
+    maxTierScoreDrop: profile.maxTierScoreDrop,
+    upgradeUntilScore: profile.upgradeUntilScore,
+    formatScores: profile.formatScores
+      .filter((f) => f.score !== 0)
+      .map((f) => [f.formatId, f.score])
+      .sort((x, y) => x[0] - y[0]),
+    resolutionWeight: profile.resolutionWeight,
+    compressionWeight: profile.compressionWeight,
+    pageTolerancePercent: profile.pageTolerancePercent,
+    allowReplacingUnknown: profile.allowReplacingUnknown,
+  })
+}
+
 function ProfileEditor({
   initial,
   formats,
@@ -331,6 +353,22 @@ function ProfileEditor({
       label: allowed.map((row) => renderLabel(QUALITY_TIER_LABELS[row.tier])).join(' + '),
     }))
   const effectiveCutoff = groupCutoff(tiers, cutoff)
+  const draft: UpgradeProfileInput = {
+    name: name.trim(),
+    description: description.trim() || null,
+    tiers,
+    cutoff: effectiveCutoff ?? cutoff,
+    upgradesEnabled,
+    minScoreDelta: Number(minScoreDelta) || 0,
+    maxTierScoreDrop: maxTierScoreDrop === '' ? null : Number(maxTierScoreDrop) || 0,
+    upgradeUntilScore: Number(upgradeUntilScore) || 0,
+    formatScores,
+    resolutionWeight: Number(resolutionWeight) || 0,
+    compressionWeight: Number(compressionWeight) || 0,
+    pageTolerancePercent: Number(pageTolerancePercent) || 0,
+    allowReplacingUnknown,
+  }
+  useReportUnsaved(profileFingerprint(draft) !== profileFingerprint(initial))
 
   const setTierAllowed = (tier: QualityTierName, allowed: boolean) =>
     setTiers((current) => current.map((row) => (row.tier === tier ? { ...row, allowed } : row)))
@@ -567,23 +605,7 @@ function ProfileEditor({
           size="xs"
           loading={busy}
           disabled={name.trim().length === 0}
-          onClick={() =>
-            onSubmit({
-              name: name.trim(),
-              description: description.trim() || null,
-              tiers,
-              cutoff: effectiveCutoff ?? cutoff,
-              upgradesEnabled,
-              minScoreDelta: Number(minScoreDelta) || 0,
-              maxTierScoreDrop: maxTierScoreDrop === '' ? null : Number(maxTierScoreDrop) || 0,
-              upgradeUntilScore: Number(upgradeUntilScore) || 0,
-              formatScores,
-              resolutionWeight: Number(resolutionWeight) || 0,
-              compressionWeight: Number(compressionWeight) || 0,
-              pageTolerancePercent: Number(pageTolerancePercent) || 0,
-              allowReplacingUnknown,
-            })
-          }
+          onClick={() => onSubmit(draft)}
         >
           {submitLabel}
         </Button>
@@ -759,6 +781,11 @@ function splitValue(value: string): string[] {
     .filter(Boolean)
 }
 
+function formatFingerprint(format: QualityFormatInput): string {
+  const conditions = format.conditions.map((c) => ({ type: c.type, value: c.value, required: c.required, negate: c.negate }))
+  return JSON.stringify({ name: format.name.trim(), conditions })
+}
+
 function FormatEditor({
   initial,
   submitLabel,
@@ -777,6 +804,7 @@ function FormatEditor({
   const { data: sources } = useSources()
   const [name, setName] = useState(initial.name)
   const [conditions, setConditions] = useState<FormatConditionDto[]>(initial.conditions)
+  useReportUnsaved(formatFingerprint({ name, conditions }) !== formatFingerprint(initial))
 
   const sourceOptions = (sources ?? []).map((s) => ({ value: s.name, label: s.displayName }))
   const sourceKindOptions = SOURCE_KINDS.map((kind) => ({ value: kind, label: renderLabel(SOURCE_KIND_LABELS[kind]) }))

@@ -62,8 +62,12 @@ export function useLiveEvents() {
 
       conn.on('queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
-        queryClient.setQueriesData<QueueHistoryDto>({ queryKey: ['queue'] }, (old) => {
-          if (!old) return old
+        // Only the paged lists ['queue', page, pageSize] hold `items`; ['queue', 'import-plan', id] does not.
+        queryClient.setQueriesData<QueueHistoryDto>({
+          queryKey: ['queue'],
+          predicate: (q) => typeof q.queryKey[1] === 'number',
+        }, (old) => {
+          if (!old || !Array.isArray(old.items)) return old
           if (isDone) {
             const items = old.items.filter((q) => q.id !== item.id)
             // Only decrement when the item was actually on this page, or repeated events
@@ -194,6 +198,7 @@ export function useLiveEvents() {
       if (summaryTimer !== null) clearTimeout(summaryTimer)
       connection?.off('queueUpdated')
       connection?.off('chapterImported')
+      connection?.off('readProgressChanged')
       connection?.off('sourceMatchFinished')
       connection?.off('sourceMatchProgress')
       connection?.off('updateAvailable')

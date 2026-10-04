@@ -1,4 +1,6 @@
 import {
+  Children,
+  isValidElement,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -50,6 +52,10 @@ export function Rail({
   const [reach, setReach] = useState({ left: false, right: false })
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const frame = useRef(0)
+  // `children` is a new array every render; the effects below only care when the set of cards changes.
+  const childKeys = Children.toArray(children)
+    .map((child) => (isValidElement(child) ? child.key : ''))
+    .join('|')
 
   const measure = useCallback(() => {
     const rail = ref.current
@@ -72,7 +78,7 @@ export function Rail({
     if (!rail) return
     const found = findHeader(rail)?.querySelector<HTMLElement>('.section-header-arrows') ?? null
     setSlot(found)
-  }, [children, slot?.isConnected])
+  }, [childKeys, slot?.isConnected])
 
   // Offscreen rails are content-visibility: auto, so their scrollWidth is only real once they have
   // been laid out. Children resizing is what reports that, since the scroller's own box never changes.
@@ -96,7 +102,7 @@ export function Rail({
       resize.disconnect()
       visible.disconnect()
     }
-  }, [measure, schedule, children])
+  }, [measure, schedule, childKeys])
 
   useEffect(() => {
     const rail = ref.current

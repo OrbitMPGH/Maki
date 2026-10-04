@@ -19,6 +19,7 @@ import {
   Modal,
   MultiSelect,
   NumberInput,
+  PasswordInput,
   Progress,
   Radio,
   Select,
@@ -938,6 +939,8 @@ function OpdsSection() {
   const save = useSaveOpdsSettings()
   const rotate = useRotateOpdsToken()
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
+  const [enableModalOpen, setEnableModalOpen] = useState(false)
+  const [password, setPassword] = useState('')
   const { copy: copyFeedUrl } = useCopyText()
 
   // The token itself is never stored, only its SHA-256 digest, so the full feed URL exists exactly
@@ -951,13 +954,20 @@ function OpdsSection() {
   // so the address the user actually pastes is assembled here.
   const feedUrl = revealedPath ? `${window.location.origin}${revealedPath}` : null
 
-  const saveWith = (patch: Partial<{ enabled: boolean; trackProgress: boolean }>) =>
+  const closePasswordModals = () => {
+    setRotateModalOpen(false)
+    setEnableModalOpen(false)
+    setPassword('')
+  }
+
+  const saveWith = (patch: Partial<{ enabled: boolean; trackProgress: boolean }>, confirmPassword?: string) =>
     save.mutate(
-      { enabled, trackProgress, ...patch },
+      { enabled, trackProgress, ...patch, password: confirmPassword || undefined },
       {
         onSuccess: (result) => {
           // Enabling for the first time mints the token, so this is the one save that reveals a URL.
           if (result.feedUrl) setRevealedPath(result.feedUrl)
+          closePasswordModals()
           notifications.show({ message: now`Saved`, color: 'var(--ok)' })
         },
       },
@@ -986,7 +996,11 @@ function OpdsSection() {
           <Switch
             label={t`Enable the OPDS catalogue`}
             checked={enabled}
-            onChange={(e) => saveWith({ enabled: e.currentTarget.checked })}
+            onChange={(e) => {
+              const next = e.currentTarget.checked
+              if (next && !opds?.hasToken) setEnableModalOpen(true)
+              else saveWith({ enabled: next })
+            }}
           />
           <Text size="xs" c="var(--ink-3)" mt={4}>
             <Trans>
@@ -1058,12 +1072,29 @@ function OpdsSection() {
         )}
       </Stack>
 
-      <Modal
-        opened={rotateModalOpen}
-        onClose={() => setRotateModalOpen(false)}
-        title={t`Regenerate OPDS token`}
-        centered
-      >
+      <Modal opened={enableModalOpen} onClose={closePasswordModals} title={t`Enable the OPDS catalogue`} centered>
+        <Stack>
+          <Text size="sm">
+            <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
+          </Text>
+          <PasswordInput
+            label={t`Your password`}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closePasswordModals}>
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button loading={save.isPending} onClick={() => saveWith({ enabled: true }, password)}>
+              <Trans>Enable</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal opened={rotateModalOpen} onClose={closePasswordModals} title={t`Regenerate OPDS token`} centered>
         <Stack>
           <Text size="sm">
             <Trans>
@@ -1071,17 +1102,23 @@ function OpdsSection() {
               one.
             </Trans>
           </Text>
+          <PasswordInput
+            label={t`Your password`}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+          />
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRotateModalOpen(false)}>
+            <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
             <Button
               color="var(--danger-fill)"
               loading={rotate.isPending}
               onClick={() =>
-                rotate.mutate(undefined, {
+                rotate.mutate(password, {
                   onSuccess: (result) => {
-                    setRotateModalOpen(false)
+                    closePasswordModals()
                     // The only moment the new URL exists in a readable form.
                     setRevealedPath(result.feedUrl)
                     notifications.show({ message: now`New OPDS feed URL generated`, color: 'var(--ok)' })

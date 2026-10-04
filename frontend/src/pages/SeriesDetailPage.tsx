@@ -300,7 +300,14 @@ function readStateOf(p: ChapterProgressDto | undefined): ReadState {
   }
 }
 
+// The route is not keyed by id, so everything below (scan watcher, selection, filters, the sources
+// card's seen-scout marker) would otherwise carry over when navigating from one series to another.
 export default function SeriesDetailPage() {
+  const { id } = useParams()
+  return <SeriesDetailBody key={id} />
+}
+
+function SeriesDetailBody() {
   const renderLabel = useLabel()
   const { t, i18n } = useLingui()
   const chapterPageSizeOptions = useChapterPageSizeOptions()

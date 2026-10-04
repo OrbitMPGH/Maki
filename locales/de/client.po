@@ -2282,7 +2282,6 @@ msgid "Affected chapters:"
 msgstr "Betroffene Kapitel:"
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Aggregator"
@@ -5511,6 +5510,10 @@ msgstr "Leer"
 msgid "Empty."
 msgstr "Leer."
 
+#: src/pages/SettingsPage.tsx
+msgid "Enable"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Enable {label}"
@@ -5549,6 +5552,10 @@ msgstr "OPDS-Katalog aktivieren"
 #, fuzzy
 msgid "Enabled"
 msgstr "Aktiviert"
+
+#: src/pages/SettingsPage.tsx
+msgid "Enabling it creates the feed URL. Confirm your password to continue."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -9967,7 +9974,6 @@ msgid "Off skips any series set to Scrobble-only or Full incognito; on scans the
 msgstr ""
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Official"
@@ -12436,7 +12442,6 @@ msgid "scan, api key, path mapping, covers, library server, attribute reading, k
 msgstr "Scan, API-Schlüssel, Pfadzuordnung, Cover, Bibliotheksserver, Leseaktivität zuordnen, Kavita-Benutzer, Fortschrittskonto"
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Scanlator"
@@ -15727,7 +15732,6 @@ msgid "Vol.{volume} Ch.{chapter}"
 msgstr "Bd.{volume} Kap.{chapter}"
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 msgid "Volume"
 msgstr ""
 
@@ -16381,6 +16385,7 @@ msgid "Your next read"
 msgstr "Deine nächste Lektüre"
 
 #: src/components/settings/AccountSection.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Your password"
 msgstr ""
 

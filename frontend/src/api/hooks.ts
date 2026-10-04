@@ -1804,6 +1804,7 @@ export function useSearchChapter() {
       api<{ queueItemId: number }>(`/chapter/${chapterId}/search`, { method: 'POST' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
     },
   })
 }
@@ -1852,6 +1853,7 @@ export function useDownloadChapters() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1872,6 +1874,7 @@ export function useDownloadChapterFrom() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1889,6 +1892,7 @@ export function useDownloadNext() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -1989,7 +1993,10 @@ export function useRetryQueueItem() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => api<void>(`/queue/${id}/retry`, { method: 'POST' }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['queue'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+    },
   })
 }
 
@@ -2015,6 +2022,7 @@ export function useSettleImport() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
@@ -2025,7 +2033,10 @@ export function useRemoveQueueItem() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => api<void>(`/queue/${id}`, { method: 'DELETE' }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['queue'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+    },
   })
 }
 
@@ -2035,6 +2046,7 @@ export function useClearQueue() {
     mutationFn: () => api<{ cleared: number }>('/queue', { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
     },
   })
@@ -2115,6 +2127,7 @@ export function useSetUpgradeProfile() {
       void queryClient.invalidateQueries({ queryKey: ['chapters'] })
       void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
       void queryClient.invalidateQueries({ queryKey: ['series-files'] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order'] })
     },
   })
 }
@@ -2159,10 +2172,6 @@ export function useSetSeriesNotificationMode() {
   })
 }
 
-/**
- * Applies one notification mode across many series in one request (Library bulk bar). A real
- * endpoint rather than a loop over the per-series one: the selection can run to hundreds.
- */
 /** Pins every given series to a quality profile, or clears the pin with null. */
 export function useBulkSetUpgradeProfile() {
   const queryClient = useQueryClient()
@@ -2175,10 +2184,15 @@ export function useBulkSetUpgradeProfile() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['upgrades'] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order'] })
     },
   })
 }
 
+/**
+ * Applies one notification mode across many series in one request (Library bulk bar). A real
+ * endpoint rather than a loop over the per-series one: the selection can run to hundreds.
+ */
 export function useBulkSetSeriesNotificationMode() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2331,6 +2345,7 @@ export function useSearchMissing() {
       api<{ queued: number }>(`/series/${seriesId}/searchmissing`, { method: 'POST' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
   })
@@ -2386,7 +2401,8 @@ export function useOpdsSettings() {
 export function useSaveOpdsSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (settings: { enabled: boolean; trackProgress: boolean }) =>
+    // `password` is only needed when the save mints the token (first enable); the server decides.
+    mutationFn: (settings: { enabled: boolean; trackProgress: boolean; password?: string }) =>
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
@@ -2399,7 +2415,11 @@ export function useSaveOpdsSettings() {
 export function useRotateOpdsToken() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api<OpdsSettings>('/settings/opds/token', { method: 'POST' }),
+    mutationFn: (password?: string) =>
+      api<OpdsSettings>('/settings/opds/token', {
+        method: 'POST',
+        body: JSON.stringify({ password: password || undefined }),
+      }),
     onSuccess: (data) => {
       queryClient.setQueryData(['settings', 'opds'], data)
     },
@@ -2665,6 +2685,7 @@ export function useRedownloadFromSource() {
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
     },
   })
 }
@@ -2707,6 +2728,7 @@ export function useRemoveMapping() {
       void queryClient.invalidateQueries({ queryKey: ['reader-progress', value.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
       void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
     },
   })
@@ -2859,6 +2881,7 @@ export function useGrabRelease() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
     },
   })
 }
@@ -3229,6 +3252,7 @@ export function useSaveDownloadSettings() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'download'] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order'] })
     },
   })
 }

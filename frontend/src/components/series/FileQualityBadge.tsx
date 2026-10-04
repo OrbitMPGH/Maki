@@ -4,18 +4,10 @@ import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import type { ChapterFileQualityDto } from '../../api/types'
-import { QUALITY_TIER_COLOR } from '../../api/upgrades'
+import { QUALITY_TIER_COLOR, QUALITY_TIER_LABELS } from '../../api/upgrades'
 import { useLabel } from '../../i18n-context'
 
 const TIER_COLOR = QUALITY_TIER_COLOR
-
-const TIER_LABEL: Record<ChapterFileQualityDto['tier'], MessageDescriptor> = {
-  unknown: msg`Unknown`,
-  aggregator: msg`Aggregator`,
-  scanlator: msg`Scanlator`,
-  official: msg`Official`,
-  volume: msg`Volume`,
-}
 
 /** `imageFormat` is mostly raw codec names (jpg, webp, ...), which are data, not copy. Only the
  * two words the backend itself chooses need translating. */
@@ -45,7 +37,7 @@ export function FileQualityBadge({
   if (!quality || (quality.tier === 'unknown' && !quality.measured)) return null
 
   const { tier, group, pageCount, medianWidth, imageFormat, measured, score, cutoffMet, trusted } = quality
-  const tierLabel = renderLabel(TIER_LABEL[tier])
+  const tierLabel = renderLabel(QUALITY_TIER_LABELS[tier])
   const tierUnknown = tier === 'unknown'
   // Subtle by design: this badge is a quiet quality signal already, so the cutoff-unmet marker is a
   // small dot rather than a colour swap that would make it compete with the tier badge next to it.

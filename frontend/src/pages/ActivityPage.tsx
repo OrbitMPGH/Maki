@@ -58,7 +58,6 @@ import {
   QUALITY_TIER_LABELS,
 } from '../api/upgrades'
 import type {
-  CutoffUnmetRowDto,
   QualitySnapshotDto,
   UpgradeHistoryRowDto,
   UpgradeQueueInfoDto,
@@ -86,14 +85,7 @@ const UPGRADES_PAGE_SIZE = 25
 const UPGRADE_HISTORY_PAGE_SIZE = 25
 
 /** "Ch.148", "Ch.148 - Title", or the chapter's own title/"One-shot" when it has no number. */
-function cutoffRowChapterLabel(row: CutoffUnmetRowDto): string {
-  const { chapterNumber, chapterTitle } = row
-  if (chapterNumber === null) return chapterTitle ?? now`One-shot`
-  return chapterTitle ? now`Ch.${chapterNumber} - ${chapterTitle}` : now`Ch.${chapterNumber}`
-}
-
-/** Same shape as `cutoffRowChapterLabel`, for an `UpgradeHistoryRowDto`. */
-function upgradeHistoryChapterLabel(row: UpgradeHistoryRowDto): string {
+function chapterRowLabel(row: { chapterNumber: number | null; chapterTitle: string | null }): string {
   const { chapterNumber, chapterTitle } = row
   if (chapterNumber === null) return chapterTitle ?? now`One-shot`
   return chapterTitle ? now`Ch.${chapterNumber} - ${chapterTitle}` : now`Ch.${chapterNumber}`
@@ -228,7 +220,7 @@ export default function ActivityPage() {
   // Gated on the tab being open: an instance-wide cutoff evaluation is real work, and Queue is the
   // tab most people leave open, so it shouldn't keep re-running one in the background.
   const { data: upgradesSummary } = useUpgradesSummary(upgradesTabActive)
-  const { data: upgradeSettings } = useUpgradeSettings()
+  const { data: upgradeSettings } = useUpgradeSettings(isAdmin)
   const { data: cutoffUnmet } = useCutoffUnmet(upgradesPage, UPGRADES_PAGE_SIZE, undefined, upgradesTabActive)
   const upgradesPageCount = cutoffUnmet ? Math.ceil(cutoffUnmet.total / UPGRADES_PAGE_SIZE) : 0
 
@@ -289,6 +281,10 @@ export default function ActivityPage() {
 
   const revertUpgradeRow = (historyId: number) => revertUpgrade.mutate(historyId, { onError: onRevertError })
   const revertGroupRow = (groupId: string) => revertGroup.mutate(groupId, { onError: onRevertError })
+  // One row spins while its own revert is in flight; every other revert button waits for it.
+  const revertBusy = revertUpgrade.isPending || revertGroup.isPending
+  const revertingRow = revertUpgrade.isPending ? revertUpgrade.variables : -1
+  const revertingGroup = revertGroup.isPending ? revertGroup.variables : ''
 
   const runUpgradeVolumeSearch = () =>
     runVolumeSearch.mutate(undefined, {
@@ -756,8 +752,18 @@ export default function ActivityPage() {
                                   <ActionIcon
                                     variant="subtle"
                                     color="var(--neutral)"
-                                    disabled={!q.upgrade!.trashAvailable}
-                                    loading={revertUpgrade.isPending || revertGroup.isPending}
+                                    disabled={
+                                      !q.upgrade!.trashAvailable ||
+                                      (revertBusy &&
+                                        !(q.upgrade!.historyGroupId
+                                          ? revertingGroup === q.upgrade!.historyGroupId
+                                          : revertingRow === q.upgrade!.historyId))
+                                    }
+                                    loading={
+                                      q.upgrade!.historyGroupId
+                                        ? revertingGroup === q.upgrade!.historyGroupId
+                                        : revertingRow === q.upgrade!.historyId
+                                    }
                                     onClick={() =>
                                       q.upgrade!.historyGroupId
                                         ? revertGroupRow(q.upgrade!.historyGroupId)
@@ -908,7 +914,7 @@ export default function ActivityPage() {
                                     </Table.Td>
                                     <Table.Td>
                                       <Text size="sm" className="tnum">
-                                        {upgradeHistoryChapterLabel(first)}
+                                        {chapterRowLabel(first)}
                                       </Text>
                                     </Table.Td>
                                     <Table.Td>
@@ -934,8 +940,8 @@ export default function ActivityPage() {
                                           <ActionIcon
                                             variant="subtle"
                                             color="var(--neutral)"
-                                            disabled={!first.trashAvailable}
-                                            loading={revertUpgrade.isPending}
+                                            disabled={!first.trashAvailable || (revertBusy && revertingRow !== first.id)}
+                                            loading={revertingRow === first.id}
                                             onClick={() => revertUpgradeRow(first.id)}
                                             aria-label={t`Revert this upgrade`}
                                           >
@@ -1008,8 +1014,8 @@ export default function ActivityPage() {
                                           <ActionIcon
                                             variant="subtle"
                                             color="var(--neutral)"
-                                            disabled={!revertable}
-                                            loading={revertGroup.isPending}
+                                            disabled={!revertable || (revertBusy && revertingGroup !== groupId)}
+                                            loading={revertingGroup === groupId}
                                             onClick={() => revertGroupRow(groupId)}
                                             aria-label={t`Revert this upgrade`}
                                           >
@@ -1025,7 +1031,7 @@ export default function ActivityPage() {
                                         <Table.Td />
                                         <Table.Td colSpan={2}>
                                           <Text size="xs" c="var(--ink-3)" className="tnum">
-                                            {upgradeHistoryChapterLabel(row)}
+                                            {chapterRowLabel(row)}
                                             {' · '}
                                             {snapshotLabel(renderLabel, sourceLabel, row.before)}
                                           </Text>
@@ -1116,7 +1122,7 @@ export default function ActivityPage() {
                                 </Table.Td>
                                 <Table.Td>
                                   <Text size="sm" className="tnum">
-                                    {cutoffRowChapterLabel(row)}
+                                    {chapterRowLabel(row)}
                                   </Text>
                                 </Table.Td>
                                 <Table.Td>

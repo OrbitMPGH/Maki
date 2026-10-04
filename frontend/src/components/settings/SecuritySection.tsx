@@ -94,7 +94,7 @@ export function SecuritySection() {
             label={t`Failed sign-ins before lockout`}
             description={<Trans>Set to <Code>0</Code> to disable lockout.</Trans>}
             min={0}
-            max={100}
+            max={1000}
             value={draft.lockoutMaxAttempts}
             onChange={(v) => setDraft({ ...draft, lockoutMaxAttempts: Number(v) || 0 })}
           />
@@ -102,7 +102,7 @@ export function SecuritySection() {
             label={t`Lockout duration (minutes)`}
             description={t`Sliding: a failed sign-in resets the timer.`}
             min={1}
-            max={1440}
+            max={10080}
             value={draft.lockoutMinutes}
             onChange={(v) => setDraft({ ...draft, lockoutMinutes: Number(v) || 1 })}
           />
@@ -110,7 +110,7 @@ export function SecuritySection() {
             label={t`Session lifetime (days)`}
             description={t`Sliding: activity extends it.`}
             min={1}
-            max={365}
+            max={3650}
             value={draft.sessionDays}
             onChange={(v) => setDraft({ ...draft, sessionDays: Number(v) || 1 })}
           />

@@ -76,19 +76,62 @@ const LEGACY_PRESETS: Record<string, [background: string, accent: AccentOption['
   system: ['system', 'indigo'],
 }
 
+// Storage can be blocked or throw (private windows, cleared site data); the theme must still render.
+function storageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function storageSet(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // The choice still applies for this session.
+  }
+}
+
 function readStored(): { background: string; accent: AccentOption['id'] } {
-  const legacy = localStorage.getItem(LEGACY_KEY)
+  const legacy = storageGet(LEGACY_KEY)
   if (legacy !== null) {
-    localStorage.removeItem(LEGACY_KEY)
-    const mapped = LEGACY_PRESETS[legacy]
+    try {
+      localStorage.removeItem(LEGACY_KEY)
+    } catch {
+      // Nothing to clean up if storage is unavailable.
+    }
+    const mapped = Object.hasOwn(LEGACY_PRESETS, legacy) ? LEGACY_PRESETS[legacy] : undefined
     if (mapped) {
-      localStorage.setItem(BACKGROUND_KEY, mapped[0])
-      localStorage.setItem(ACCENT_KEY, mapped[1])
+      storageSet(BACKGROUND_KEY, mapped[0])
+      storageSet(ACCENT_KEY, mapped[1])
     }
   }
   return {
-    background: localStorage.getItem(BACKGROUND_KEY) ?? DEFAULT_BACKGROUND,
-    accent: (localStorage.getItem(ACCENT_KEY) as AccentOption['id'] | null) ?? DEFAULT_ACCENT,
+    background: storageGet(BACKGROUND_KEY) ?? DEFAULT_BACKGROUND,
+    accent: (storageGet(ACCENT_KEY) as AccentOption['id'] | null) ?? DEFAULT_ACCENT,
+  }
+}
+
+/** The resolved `--app-bg` as a colour a `theme-color` meta accepts; the raw property can be a `color-mix()` string. */
+function resolveAppBackground(): string | null {
+  const probe = document.createElement('div')
+  probe.style.cssText = 'display:none;background-color:var(--app-bg)'
+  document.body.appendChild(probe)
+  const color = getComputedStyle(probe).backgroundColor
+  probe.remove()
+  if (/^(#|rgb)/.test(color)) return color
+  try {
+    const ctx = document.createElement('canvas').getContext('2d')
+    if (!ctx) return null
+    ctx.fillStyle = '#010203'
+    ctx.fillStyle = color
+    if (ctx.fillStyle === '#010203') return null
+    ctx.fillRect(0, 0, 1, 1)
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+    return `rgb(${r}, ${g}, ${b})`
+  } catch {
+    return null
   }
 }
 
@@ -145,11 +188,11 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setBackground = useCallback((id: string) => {
     setBackgroundState(id)
-    localStorage.setItem(BACKGROUND_KEY, id)
+    storageSet(BACKGROUND_KEY, id)
   }, [])
   const setAccent = useCallback((id: AccentOption['id']) => {
     setAccentState(id)
-    localStorage.setItem(ACCENT_KEY, id)
+    storageSet(ACCENT_KEY, id)
   }, [])
 
   // The custom CSS in theme.css reads `[data-accent]`, `[data-ground]` and `[data-theme]` on the
@@ -163,8 +206,9 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     // Keep the browser and OS chrome in step with the choice: Android's address bar, and the
     // status bar of an installed (standalone) window. Read back from `--app-bg` rather than
     // duplicating the hex here, so the two can't drift: a light preset would otherwise leave a
-    // near-black bar above a white app. `getComputedStyle` after the attribute write reflects it.
-    const bg = getComputedStyle(root).getPropertyValue('--app-bg').trim()
+    // near-black bar above a white app. Resolved to a real colour because the tinted ground's
+    // `--app-bg` is a `color-mix()` string.
+    const bg = resolveAppBackground()
     const meta = document.querySelector('meta[name="theme-color"]')
     if (bg && meta) meta.setAttribute('content', bg)
   }, [accent.id, background.ground, scheme])

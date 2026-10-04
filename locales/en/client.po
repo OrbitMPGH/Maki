@@ -1892,7 +1892,6 @@ msgid "Affected chapters:"
 msgstr "Affected chapters:"
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Aggregator"
 msgstr "Aggregator"
@@ -4574,6 +4573,10 @@ msgstr "Empty"
 msgid "Empty."
 msgstr "Empty."
 
+#: src/pages/SettingsPage.tsx
+msgid "Enable"
+msgstr "Enable"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Enable {label}"
 msgstr "Enable {label}"
@@ -4605,6 +4608,10 @@ msgstr "Enable the OPDS catalogue"
 #: src/pages/SettingsPage.tsx
 msgid "Enabled"
 msgstr "Enabled"
+
+#: src/pages/SettingsPage.tsx
+msgid "Enabling it creates the feed URL. Confirm your password to continue."
+msgstr "Enabling it creates the feed URL. Confirm your password to continue."
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "End"
@@ -8269,7 +8276,6 @@ msgid "Off skips any series set to Scrobble-only or Full incognito; on scans the
 msgstr "Off skips any series set to Scrobble-only or Full incognito; on scans them too."
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Official"
 msgstr "Official"
@@ -10330,7 +10336,6 @@ msgid "scan, api key, path mapping, covers, library server, attribute reading, k
 msgstr "scan, api key, path mapping, covers, library server, attribute reading, kavita user, progress owner"
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Scanlator"
 msgstr "Scanlator"
@@ -13057,7 +13062,6 @@ msgid "Vol.{volume} Ch.{chapter}"
 msgstr "Vol.{volume} Ch.{chapter}"
 
 #: src/api/upgrades.ts
-#: src/components/series/FileQualityBadge.tsx
 msgid "Volume"
 msgstr "Volume"
 
@@ -13597,6 +13601,7 @@ msgid "Your next read"
 msgstr "Your next read"
 
 #: src/components/settings/AccountSection.tsx
+#: src/pages/SettingsPage.tsx
 msgid "Your password"
 msgstr "Your password"
 

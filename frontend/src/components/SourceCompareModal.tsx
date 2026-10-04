@@ -175,7 +175,6 @@ export function SourceCompareModal({
     }
   }, [snapshot, order.length])
 
-  /** Bytes across every page this source actually returned. Missing rows count for nothing. */
   const signed = (n: number) => (n > 0 ? `+${i18n.number(n)}` : i18n.number(n))
   const breakdown = (score: number, resolutionPoints: number, compressionPoints: number, bitsPerPixel: number | null) => {
     const resolution = signed(resolutionPoints)
@@ -189,6 +188,7 @@ export function SourceCompareModal({
   const scoreBreakdown = (q: ComparePanelQualityDto) =>
     breakdown(q.score, q.resolutionPoints, q.compressionPoints, q.bitsPerPixel)
 
+  /** Bytes across every page this source actually returned. Missing rows count for nothing. */
   const weightOf = (panel: ComparePanel) =>
     panel.pages.reduce((sum, page) => sum + (page?.bytes ?? 0), 0)
 
