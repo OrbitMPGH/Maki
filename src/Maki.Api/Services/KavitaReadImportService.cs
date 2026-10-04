@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Kavita;
@@ -190,15 +191,32 @@ public class KavitaReadImportService(
     /// </summary>
     public record SeriesMarkResult(int SeriesId, int Marked);
 
+    private static readonly TimeSpan UnmatchedFor = TimeSpan.FromMinutes(5);
+
+    private readonly ConcurrentDictionary<int, DateTime> _unmatched = new();
+
+    /// <summary>
+    /// Kavita series with no local match are remembered briefly: every page turn of one would
+    /// otherwise repeat a Kavita GET and rebuild the library index just to find nothing again.
+    /// </summary>
+    internal bool IsKnownUnmatched(int kavitaSeriesId) =>
+        _unmatched.TryGetValue(kavitaSeriesId, out var at) && DateTime.UtcNow - at < UnmatchedFor;
+
     public async Task<SeriesMarkResult?> MarkSeriesAsync(
         int userId, string url, string apiKey, int kavitaSeriesId, CancellationToken ct)
     {
         var localSeriesId = await AdoptedSeriesIdAsync(userId, kavitaSeriesId, ct);
         if (localSeriesId is null)
         {
+            if (IsKnownUnmatched(kavitaSeriesId))
+            {
+                return null;
+            }
+
             var series = await kavita.GetSeriesAsync(url, apiKey, kavitaSeriesId, ct);
             if (series is null)
             {
+                _unmatched[kavitaSeriesId] = DateTime.UtcNow;
                 return null;
             }
 
@@ -214,10 +232,12 @@ public class KavitaReadImportService(
             }
             else
             {
+                _unmatched[kavitaSeriesId] = DateTime.UtcNow;
                 return null;
             }
         }
 
+        _unmatched.TryRemove(kavitaSeriesId, out _);
         var volumes = await kavita.GetVolumesAsync(url, apiKey, kavitaSeriesId, ct);
         var progress = KavitaProgress.Compute(
             volumes, await volumeBoundaries.ForSeriesAsync(userId, localSeriesId.Value, ct));

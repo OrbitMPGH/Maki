@@ -42,23 +42,35 @@ public class KavitaLiveReadSync(
     private static readonly TimeSpan NotAdminRetryAfter = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan Quiet = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan MaxWait = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan FailureBackoff = TimeSpan.FromSeconds(10);
+    private const int MaxAttempts = 3;
 
-    private sealed record Target(string Url, string ApiKey, int UserId);
+    internal sealed record Target(string Url, string ApiKey, int UserId);
 
-    private readonly ConcurrentDictionary<int, (DateTime First, DateTime Last)> _pending = new();
+    private readonly record struct Pending(DateTime First, DateTime Last, int Attempts = 0, DateTime NotBefore = default);
+
+    private readonly ConcurrentDictionary<int, Pending> _pending = new();
     private readonly SemaphoreSlim _wake = new(0);
     private HubConnection? _connection;
-    private Target? _target;
     private DateTime _retryAt;
+    private DateTime _reconcileAt;
 
-    public KavitaLiveStatus Status { get; private set; }
+    internal Target? Active { get; set; }
+
+    public KavitaLiveStatus Status { get; internal set; }
+
+    internal int PendingCount => _pending.Count;
 
     /// <summary>Re-reads the settings now instead of at the next check, and retries a failed connection.</summary>
     public void Nudge()
     {
         _retryAt = DateTime.MinValue;
+        _reconcileAt = DateTime.MinValue;
         Wake();
     }
+
+    internal void Enqueue(int kavitaSeriesId, DateTime now) =>
+        _pending.AddOrUpdate(kavitaSeriesId, new Pending(now, now), (_, prev) => prev with { Last = now });
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -68,7 +80,12 @@ public class KavitaLiveReadSync(
             {
                 try
                 {
-                    await ReconcileAsync(stoppingToken);
+                    if (DateTime.UtcNow >= _reconcileAt)
+                    {
+                        _reconcileAt = DateTime.UtcNow + CheckInterval;
+                        await ReconcileAsync(stoppingToken);
+                    }
+
                     await FlushAsync(stoppingToken);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -80,7 +97,8 @@ public class KavitaLiveReadSync(
                     logger.LogWarning(e, "Kavita live read sync failed");
                 }
 
-                await _wake.WaitAsync(_pending.IsEmpty ? CheckInterval : TimeSpan.FromSeconds(1), stoppingToken);
+                var busy = !_pending.IsEmpty && Status == KavitaLiveStatus.Connected;
+                await _wake.WaitAsync(busy ? TimeSpan.FromSeconds(1) : CheckInterval, stoppingToken);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -98,15 +116,17 @@ public class KavitaLiveReadSync(
         if (desired is null)
         {
             await DisconnectAsync();
-            _target = null;
+            Active = null;
+            _pending.Clear();
             Status = KavitaLiveStatus.Off;
             return;
         }
 
-        if (desired != _target)
+        if (desired != Active)
         {
             await DisconnectAsync();
-            _target = desired;
+            Active = desired;
+            _pending.Clear();
             _retryAt = DateTime.MinValue;
         }
 
@@ -181,8 +201,7 @@ public class KavitaLiveReadSync(
         {
             if (KavitaLiveEvents.SeriesIdFor(message, kavitaUserId) is { } seriesId)
             {
-                var now = DateTime.UtcNow;
-                _pending.AddOrUpdate(seriesId, (now, now), (_, prev) => (prev.First, now));
+                Enqueue(seriesId, DateTime.UtcNow);
                 Wake();
             }
         });
@@ -232,19 +251,19 @@ public class KavitaLiveReadSync(
         }
     }
 
-    private async Task FlushAsync(CancellationToken ct)
+    internal async Task FlushAsync(CancellationToken ct, DateTime? at = null)
     {
-        if (_target is not { } target || Status != KavitaLiveStatus.Connected)
+        // A dropped connection keeps its queue: a chapter finished during the gap is still owed a mark.
+        if (Active is not { } target || Status != KavitaLiveStatus.Connected)
         {
-            _pending.Clear();
             return;
         }
 
-        var now = DateTime.UtcNow;
+        var now = at ?? DateTime.UtcNow;
         foreach (var entry in _pending)
         {
-            var (first, last) = entry.Value;
-            if (now - last < Quiet && now - first < MaxWait)
+            var pending = entry.Value;
+            if (now < pending.NotBefore || (now - pending.Last < Quiet && now - pending.First < MaxWait))
             {
                 continue;
             }
@@ -267,8 +286,15 @@ public class KavitaLiveReadSync(
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {
-                logger.LogWarning("Could not record Kavita read state for Kavita series {KavitaSeriesId}: {Error}",
-                    entry.Key, e.Message);
+                var attempts = pending.Attempts + 1;
+                logger.LogWarning(
+                    "Could not record Kavita read state for Kavita series {KavitaSeriesId} (attempt {Attempt} of {Max}): {Error}",
+                    entry.Key, attempts, MaxAttempts, e.Message);
+                if (attempts < MaxAttempts)
+                {
+                    var retry = new Pending(pending.First, pending.Last, attempts, now + FailureBackoff);
+                    _pending.AddOrUpdate(entry.Key, retry, (_, newer) => newer);
+                }
             }
         }
     }
