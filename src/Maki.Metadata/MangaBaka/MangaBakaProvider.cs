@@ -182,8 +182,8 @@ public class MangaBakaProvider(
         {
             var name = item.ValueKind == JsonValueKind.Object &&
                        item.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
-                ? n.GetString()
-                : item.ValueKind == JsonValueKind.String ? item.GetString() : null;
+                ? n.GetString()?.Trim()
+                : item.ValueKind == JsonValueKind.String ? item.GetString()?.Trim() : null;
             if (!string.IsNullOrWhiteSpace(name) && !names.Contains(name, StringComparer.OrdinalIgnoreCase))
             {
                 names.Add(name);

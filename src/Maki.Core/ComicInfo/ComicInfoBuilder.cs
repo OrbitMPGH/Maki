@@ -30,17 +30,34 @@ public static class ComicInfoBuilder
             Year = chapter.ReleaseDate?.Year.ToString(CultureInfo.InvariantCulture),
             Month = chapter.ReleaseDate?.Month.ToString(CultureInfo.InvariantCulture),
             Day = chapter.ReleaseDate?.Day.ToString(CultureInfo.InvariantCulture),
-            Writer = series.AuthorStory,
-            Penciller = series.AuthorArt,
-            Publisher = series.Publisher,
-            Genre = series.Genres.Count > 0 ? string.Join(", ", series.Genres) : null,
-            Tags = series.Tags.Count > 0 ? string.Join(", ", series.Tags) : null,
+            Writer = JoinList(series.AuthorStory),
+            Penciller = JoinList(series.AuthorArt),
+            Publisher = JoinList(series.Publisher),
+            Genre = JoinList(series.Genres),
+            Tags = JoinList(series.Tags),
             Web = SeriesWebLinks.Joined(series),
             LanguageISO = chapter.Language,
             Manga = "YesAndRightToLeft",
             PageCount = pageCount.ToString(CultureInfo.InvariantCulture)
         };
     }
+
+    /// <summary>
+    /// A ComicInfo list field: each name trimmed, inner runs of whitespace collapsed, empty entries
+    /// dropped, joined with ", ". Provider data carries stray spaces ("Panini Manga México , Devir"),
+    /// and Kavita splits on the comma and keeps whatever surrounds it.
+    /// </summary>
+    internal static string? JoinList(IEnumerable<string?> items)
+    {
+        var names = items
+            .Select(item => string.Join(' ', (item ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)))
+            .Where(name => name.Length > 0)
+            .ToList();
+        return names.Count > 0 ? string.Join(", ", names) : null;
+    }
+
+    /// <summary>A stored comma-separated list, normalized the same way.</summary>
+    internal static string? JoinList(string? joined) => joined is null ? null : JoinList(joined.Split(','));
 
     /// <summary>
     /// Kavita's localized name for the series: the alt title written in this chapter's language,

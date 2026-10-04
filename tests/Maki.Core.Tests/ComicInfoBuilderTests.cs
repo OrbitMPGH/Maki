@@ -17,6 +17,25 @@ public class ComicInfoBuilderTests
         MangaBakaId = 1692
     };
 
+    // Release smoke test: MangaBaka's publisher list for Chainsaw Man carries "Panini Manga México "
+    // with a trailing space, which reached ComicInfo as "... México , Devir".
+    [Fact]
+    public void List_fields_are_trimmed_and_joined_without_stray_spaces()
+    {
+        var series = TestSeries();
+        series.Publisher = "MANGA Plus, Shueisha, VIZ Media, Norma Editorial, Panini Manga México , Devir";
+        series.AuthorStory = " FUJIMOTO  Tatsuki ,";
+        series.AuthorArt = "   ";
+        series.Genres = ["action ", "", " dark  fantasy"];
+
+        var info = ComicInfoBuilder.Build(series, new Chapter { Number = 1, Language = "en" }, pageCount: 1);
+
+        Assert.Equal("MANGA Plus, Shueisha, VIZ Media, Norma Editorial, Panini Manga México, Devir", info.Publisher);
+        Assert.Equal("FUJIMOTO Tatsuki", info.Writer);
+        Assert.Null(info.Penciller);
+        Assert.Equal("action, dark fantasy", info.Genre);
+    }
+
     [Fact]
     public void Localized_series_prefers_the_alt_title_in_the_chapters_language()
     {

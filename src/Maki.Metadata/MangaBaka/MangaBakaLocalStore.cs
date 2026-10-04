@@ -1313,8 +1313,8 @@ public class MangaBakaLocalStore(
             {
                 var name = element.ValueKind == JsonValueKind.Object &&
                            element.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
-                    ? n.GetString()
-                    : element.ValueKind == JsonValueKind.String ? element.GetString() : null;
+                    ? n.GetString()?.Trim()
+                    : element.ValueKind == JsonValueKind.String ? element.GetString()?.Trim() : null;
                 if (!string.IsNullOrWhiteSpace(name) && !names.Contains(name, StringComparer.OrdinalIgnoreCase))
                 {
                     names.Add(name);
