@@ -374,15 +374,16 @@ public class DownloadWorkerHostedService(
                 return;
             }
 
+            var (key, detail) = DownloadFailureReason.Classify(cause);
             item.Status = QueueStatus.Failed;
-            item.SetError("error.download.unexpected");
+            item.SetError(key, detail: detail);
             item.RetryCount++;
             item.NextAttempt = queue.NextRetryAttempt(item.RetryCount);
             await db.SaveChangesAsync(ct);
 
             // This path bypasses ChapterDownloadProcessor.FailAsync, so report the outcome
             // ourselves — an unreported item would hold its batch open until the stale sweep.
-            await batches.FailedAsync(item.SeriesId, item.Id, "error.download.unexpected");
+            await batches.FailedAsync(item.SeriesId, item.Id, key);
 
             if (item.Series is { } series)
             {

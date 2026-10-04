@@ -1065,6 +1065,12 @@ msgstr "{readValue, plural, other {章を読了}}"
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, other {巻を読了}}"
 
+#. {reason} is one of the download failure reasons above, already translated. {detail} is
+#. the site's own error text, an HTTP status or a file name, shown as it arrived.
+#: src/api/queue.ts
+msgid "{reason}: {detail}"
+msgstr ""
+
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "{reasonText} - {measurement}"
 msgstr ""
@@ -1841,6 +1847,10 @@ msgstr "アクティブなダウンロードがあるシリーズではファイ
 msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
 msgstr ""
 
+#: src/api/queue.ts
+msgid "A health review is active for this series"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win."
 msgstr ""
@@ -1872,6 +1882,10 @@ msgstr "新しいMakiリリースが公開されました。"
 
 #: src/pages/ActivityPage.tsx
 msgid "A newer upgrade has replaced this file since"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "A page the source sent is not a readable image"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -4469,6 +4483,10 @@ msgstr "シグナルを読み込めませんでした: {loadError}"
 msgid "Could not queue the release"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Could not reach the source"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
@@ -4497,6 +4515,10 @@ msgstr ""
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface}のフィードバックを更新できませんでした: {reason}"
+
+#: src/api/queue.ts
+msgid "Could not write the chapter to disk"
+msgstr ""
 
 #: src/api/upgrades.ts
 msgid "Couldn't be measured"
@@ -9376,6 +9398,10 @@ msgstr "スナップショットはまだダウンロードされていません
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "No source could serve the first chapter."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "No source has this chapter right now"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -14285,6 +14311,10 @@ msgstr "レイアウトを読み込めませんでした。"
 msgid "The library"
 msgstr "ライブラリ"
 
+#: src/api/queue.ts
+msgid "The library folder is not available, check that its drive or share is mounted"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
@@ -14379,9 +14409,21 @@ msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "Makiをインターネットから利用できるようにする場合の、最大の改善策です。"
 
 #: src/api/queue.ts
+msgid "The source answered with an error"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The source refused the request"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The source returned no pages"
 msgstr "ソースからページが返されませんでした"
+
+#: src/api/queue.ts
+msgid "The source you picked could not provide this chapter"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -14406,6 +14448,10 @@ msgstr "今、人気が最も急上昇している作品です。"
 #, fuzzy
 msgid "The token @BotFather gave you."
 msgstr "@BotFather から受け取ったトークン。"
+
+#: src/api/queue.ts
+msgid "The torrent is no longer in qBittorrent"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -14616,6 +14662,10 @@ msgstr "現在のライブラリと設定を<0>{backupName}</0>で置き換え�
 #, fuzzy
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
 msgstr "このシリーズにはまだ章がありません。Makiがリンク先を判別できるよう、先にソースの対応付けを追加してください。"
+
+#: src/api/queue.ts
+msgid "This series has no enabled sources"
+msgstr ""
 
 #: src/api/upgrades.ts
 msgid "This series has no quality profile"

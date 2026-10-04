@@ -32,9 +32,16 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
     private const int ResponseSuccess = 1;
     private const int ResponseError = 2;
 
-    // ErrorResult.englishPopup, and Popup.subject inside it.
+    // ErrorResult.englishPopup, and Popup.subject/body inside it.
     private const int ErrorEnglishPopup = 2;
     private const int PopupSubject = 1;
+    private const int PopupBody = 2;
+
+    /// <summary>
+    /// The viewer's answer for a chapter in the paid middle stretch ("Invalid user access(11302)"):
+    /// the session is fine, the chapter just needs a MANGA Plus subscription.
+    /// </summary>
+    private const string SubscriptionRequiredCode = "(11302)";
 
     // SuccessResult.allTitlesViewV2 → AllTitlesViewV2.AllTitlesGroup → AllTitlesGroup.titles.
     private const int SuccessAllTitlesView = 25;
@@ -168,11 +175,23 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
 
     public async Task<ChapterPages> GetPagesAsync(SourceChapter chapter, CancellationToken ct = default)
     {
-        var data = await GetAsync(
-            "manga_viewer", ct,
-            ("chapter_id", chapter.SourceChapterId),
-            ("split", "yes"),
-            ("img_quality", "super_high"));
+        PbMessage? data;
+        try
+        {
+            data = await GetAsync(
+                "manga_viewer", ct,
+                ("chapter_id", chapter.SourceChapterId),
+                ("split", "yes"),
+                ("img_quality", "super_high"));
+        }
+        catch (SourceErrorException ex) when (ex.Message.Contains(SubscriptionRequiredCode, StringComparison.Ordinal))
+        {
+            // Listed, but only for subscribers. A 404 is what sends the download on to the next
+            // source rather than failing the chapter on this one.
+            throw new HttpRequestException(
+                $"mangaplus: chapter {chapter.SourceChapterId} needs a MANGA Plus subscription ({ex.Message})",
+                ex, System.Net.HttpStatusCode.NotFound);
+        }
 
         var pages = new List<PageRequest>();
         var viewer = data?.Message(SuccessMangaViewer);
@@ -262,7 +281,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
 
     /// <summary>
     /// GETs an API path and returns the decoded "success" payload (throwing the site's error
-    /// popup text on failure). Do not add <c>format=json</c> here: the edge 403s any request
+    /// popup text on failure as a <see cref="SourceErrorException"/>). Do not add <c>format=json</c> here: the edge 403s any request
     /// carrying it.
     /// </summary>
     private async Task<PbMessage?> GetAsync(string path, CancellationToken ct, params (string Key, string Value)[] parameters)
@@ -278,8 +297,18 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource
 
         if (root.Message(ResponseError) is { } error)
         {
-            throw new InvalidOperationException(
-                error.Message(ErrorEnglishPopup)?.String(PopupSubject) ?? "MangaPlus API error");
+            var popup = error.Message(ErrorEnglishPopup);
+            var subject = popup?.String(PopupSubject);
+            var detail = popup?.String(PopupBody);
+            throw new SourceErrorException(
+                (subject, detail) switch
+                {
+                    (null, null) => "MangaPlus API error",
+                    (_, null) => subject!,
+                    (null, _) => detail!,
+                    _ when detail!.Contains(subject!, StringComparison.Ordinal) => detail,
+                    _ => $"{subject}: {detail}"
+                });
         }
 
         return root.Message(ResponseSuccess);

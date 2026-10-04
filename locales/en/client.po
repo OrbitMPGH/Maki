@@ -881,6 +881,12 @@ msgstr "{readValue, plural, one {chapter read} other {chapters read}}"
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, one {volume read} other {volumes read}}"
 
+#. {reason} is one of the download failure reasons above, already translated. {detail} is
+#. the site's own error text, an HTTP status or a file name, shown as it arrived.
+#: src/api/queue.ts
+msgid "{reason}: {detail}"
+msgstr "{reason}: {detail}"
+
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
@@ -1525,6 +1531,10 @@ msgstr "A file move is blocked for any series with an active download."
 msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
 msgstr "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
 
+#: src/api/queue.ts
+msgid "A health review is active for this series"
+msgstr "A health review is active for this series"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win."
 msgstr "A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win."
@@ -1552,6 +1562,10 @@ msgstr "A newer Maki release was published."
 #: src/pages/ActivityPage.tsx
 msgid "A newer upgrade has replaced this file since"
 msgstr "A newer upgrade has replaced this file since"
+
+#: src/api/queue.ts
+msgid "A page the source sent is not a readable image"
+msgstr "A page the source sent is not a readable image"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "A profile picks which release tier Maki prefers for a series, and how far it goes to replace what's already downloaded. Pin one to a series from its Quality profile menu, or set a default for every series below under Downloads."
@@ -3705,6 +3719,10 @@ msgstr "Could not load your signals: {loadError}"
 msgid "Could not queue the release"
 msgstr "Could not queue the release"
 
+#: src/api/queue.ts
+msgid "Could not reach the source"
+msgstr "Could not reach the source"
+
 #: src/pages/SettingsPage.tsx
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
 msgstr "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
@@ -3728,6 +3746,10 @@ msgstr "Could not revert this upgrade"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "Could not update {surface} feedback: {reason}"
+
+#: src/api/queue.ts
+msgid "Could not write the chapter to disk"
+msgstr "Could not write the chapter to disk"
 
 #: src/api/upgrades.ts
 msgid "Couldn't be measured"
@@ -7786,6 +7808,10 @@ msgstr "No snapshot downloaded yet"
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "No source could serve the first chapter."
 msgstr "No source could serve the first chapter."
+
+#: src/api/queue.ts
+msgid "No source has this chapter right now"
+msgstr "No source has this chapter right now"
 
 #: src/pages/LibraryPage.tsx
 msgid "No sources linked"
@@ -11857,6 +11883,10 @@ msgstr "The layout could not be loaded."
 msgid "The library"
 msgstr "The library"
 
+#: src/api/queue.ts
+msgid "The library folder is not available, check that its drive or share is mounted"
+msgstr "The library folder is not available, check that its drive or share is mounted"
+
 #: src/pages/HealthPage.tsx
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
 msgstr "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
@@ -11935,8 +11965,20 @@ msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."
 
 #: src/api/queue.ts
+msgid "The source answered with an error"
+msgstr "The source answered with an error"
+
+#: src/api/queue.ts
+msgid "The source refused the request"
+msgstr "The source refused the request"
+
+#: src/api/queue.ts
 msgid "The source returned no pages"
 msgstr "The source returned no pages"
+
+#: src/api/queue.ts
+msgid "The source you picked could not provide this chapter"
+msgstr "The source you picked could not provide this chapter"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "The specific things that keep coming back in your library, each with more of the same beside it."
@@ -11957,6 +11999,10 @@ msgstr "The titles climbing fastest in popularity right now."
 #: src/components/NotificationsSection.tsx
 msgid "The token @BotFather gave you."
 msgstr "The token @BotFather gave you."
+
+#: src/api/queue.ts
+msgid "The torrent is no longer in qBittorrent"
+msgstr "The torrent is no longer in qBittorrent"
 
 #: src/components/ImportReviewModal.tsx
 msgid "The torrent keeps seeding whichever you pick."
@@ -12129,6 +12175,10 @@ msgstr "This replaces your current library and settings with <0>{backupName}</0>
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
 msgstr "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
+
+#: src/api/queue.ts
+msgid "This series has no enabled sources"
+msgstr "This series has no enabled sources"
 
 #: src/api/upgrades.ts
 msgid "This series has no quality profile"

@@ -1065,6 +1065,12 @@ msgstr "{readValue, plural, one {Kapitel gelesen} other {Kapitel gelesen}}"
 msgid "{readValue, plural, one {volume read} other {volumes read}}"
 msgstr "{readValue, plural, one {Band gelesen} other {Bände gelesen}}"
 
+#. {reason} is one of the download failure reasons above, already translated. {detail} is
+#. the site's own error text, an HTTP status or a file name, shown as it arrived.
+#: src/api/queue.ts
+msgid "{reason}: {detail}"
+msgstr ""
+
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "{reasonText} - {measurement}"
 msgstr ""
@@ -1841,6 +1847,10 @@ msgstr "Das Verschieben von Dateien ist für jede Serie mit aktivem Download blo
 msgid "A format matches a file by its source, its group or release name, its resolution, or its image codec. Every required condition has to match, plus at least one condition that isn't marked required."
 msgstr ""
 
+#: src/api/queue.ts
+msgid "A health review is active for this series"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "A higher tier still replaces the current file when its score is at most this much lower. Leave empty to let a higher tier always win."
 msgstr ""
@@ -1872,6 +1882,10 @@ msgstr "Eine neuere Maki-Version wurde veröffentlicht."
 
 #: src/pages/ActivityPage.tsx
 msgid "A newer upgrade has replaced this file since"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "A page the source sent is not a readable image"
 msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -4469,6 +4483,10 @@ msgstr "Deine Signale konnten nicht geladen werden: {loadError}"
 msgid "Could not queue the release"
 msgstr ""
 
+#: src/api/queue.ts
+msgid "Could not reach the source"
+msgstr ""
+
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}"
@@ -4497,6 +4515,10 @@ msgstr ""
 #, fuzzy
 msgid "Could not update {surface} feedback: {reason}"
 msgstr "{surface}-Feedback konnte nicht aktualisiert werden: {reason}"
+
+#: src/api/queue.ts
+msgid "Could not write the chapter to disk"
+msgstr ""
 
 #: src/api/upgrades.ts
 msgid "Couldn't be measured"
@@ -9376,6 +9398,10 @@ msgstr "Noch kein Schnappschuss heruntergeladen"
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "No source could serve the first chapter."
+msgstr ""
+
+#: src/api/queue.ts
+msgid "No source has this chapter right now"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -14285,6 +14311,10 @@ msgstr "Das Layout konnte nicht geladen werden."
 msgid "The library"
 msgstr "Die Bibliothek"
 
+#: src/api/queue.ts
+msgid "The library folder is not available, check that its drive or share is mounted"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "The linked file has not been inventoried yet, so its pages cannot be shown. Run Scan files, then come back to compare them."
@@ -14379,9 +14409,21 @@ msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "Die größte einzelne Verbesserung, wenn Maki aus dem Internet erreichbar ist."
 
 #: src/api/queue.ts
+msgid "The source answered with an error"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "The source refused the request"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The source returned no pages"
 msgstr "Die Quelle hat keine Seiten zurückgegeben"
+
+#: src/api/queue.ts
+msgid "The source you picked could not provide this chapter"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -14406,6 +14448,10 @@ msgstr "Die Titel, die gerade am schnellsten beliebter werden."
 #, fuzzy
 msgid "The token @BotFather gave you."
 msgstr "Der Token, den dir @BotFather gegeben hat."
+
+#: src/api/queue.ts
+msgid "The torrent is no longer in qBittorrent"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -14616,6 +14662,10 @@ msgstr "Dies ersetzt deine aktuelle Bibliothek und Einstellungen durch <0>{backu
 #, fuzzy
 msgid "This series has no chapters yet. Add a source mapping first so Maki knows what to link."
 msgstr "Diese Serie hat noch keine Kapitel. Füge zuerst eine Quellenzuordnung hinzu, damit Maki weiß, was verknüpft werden soll."
+
+#: src/api/queue.ts
+msgid "This series has no enabled sources"
+msgstr ""
 
 #: src/api/upgrades.ts
 msgid "This series has no quality profile"

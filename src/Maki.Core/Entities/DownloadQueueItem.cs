@@ -105,9 +105,9 @@ public class DownloadQueueItem
     public string? ErrorParamsJson { get; set; }
 
     /// <summary>
-    /// Free text, used when <see cref="ErrorKey"/> is null: an error another program worded (a
-    /// torrent client, a scraper), and the English written by Maki itself before the queue was
-    /// keyed. Not a fallback rendering of the key, which would just be English by another route.
+    /// Free text. With <see cref="ErrorKey"/> null: an error another program worded (a torrent
+    /// client, a scraper), and the English written by Maki itself before the queue was keyed. With a
+    /// key: the detail behind it, never a rendering of the key itself.
     /// </summary>
     public string? ErrorMessage { get; set; }
 
@@ -145,11 +145,15 @@ public class DownloadQueueItem
     /// as the retry time: repeating it here freezes one rendering of it.
     /// </para>
     /// </summary>
-    public void SetError(string key, object? args = null)
+    /// <param name="detail">
+    /// Words Maki did not write that explain the keyed reason (a site's own error text, an HTTP
+    /// status, an exception message), shown after it. Stored in <see cref="ErrorMessage"/>.
+    /// </param>
+    public void SetError(string key, object? args = null, string? detail = null)
     {
         ErrorKey = key;
         ErrorParamsJson = args is null ? null : JsonSerializer.Serialize(args);
-        ErrorMessage = null;
+        ErrorMessage = detail;
     }
 
     /// <summary>

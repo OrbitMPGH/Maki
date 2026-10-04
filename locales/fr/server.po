@@ -2962,15 +2962,51 @@ msgstr ""
 msgid "error.download.upgradeMoveFailed"
 msgstr ""
 
-#. Deliberately vague: whatever the exception said went to the log, where it is useful, and not to
-#. the person looking at their queue, where it is noise and can leak a path or a host name.
-#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. A failure Maki has no specific reason for. The queue row shows what the error said after this,
+#. untranslated, as its own detail.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
 #: src/Maki.Api/Services/DownloadQueueService.cs
-#: src/Maki.Api/Services/DownloadWorkerHostedService.cs
 #. English: Something went wrong, Maki will try again
 #, fuzzy
 msgid "error.download.unexpected"
 msgstr "Une erreur s'est produite, Maki réessaiera"
+
+#. The site answered 401 or 403. The queue row shows the status after this.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: The source refused the request
+msgid "error.download.sourceRejected"
+msgstr ""
+
+#. The site answered with an error status or an error message of its own. The queue row shows the
+#. site's own words, untranslated, after this.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: The source answered with an error
+msgid "error.download.sourceError"
+msgstr ""
+
+#. Connection refused, timed out, DNS or SSL failure: the site could not be reached at all.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: Could not reach the source
+msgid "error.download.network"
+msgstr ""
+
+#. Writing the chapter to disk failed: the folder is read-only, full, or a file is in use.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+#. English: Could not write the chapter to disk
+msgid "error.download.disk"
+msgstr ""
+
+#. A downloaded page is not a readable image. The queue row shows the page's file name after this.
+#: src/Maki.Api/Services/ChapterDownloadProcessor.cs
+#. English: A page the source sent is not a readable image
+msgid "error.download.invalidPage"
+msgstr ""
+
+#. No source lists this chapter right now. The queue row shows what each source said after this.
+#: src/Maki.Api/Services/ChapterSourceResolver.cs
+#. English: No source has this chapter right now
+msgid "error.download.notListed"
+msgstr ""
 
 #. {source} is a site name (MangaDex, Weeb Central), never translated. The queue row shows when the
 #. next attempt is as its own field, in the reader's own zone, so it is not repeated here.

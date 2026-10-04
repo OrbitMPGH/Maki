@@ -765,6 +765,7 @@ public class DownloadQueueService(
         {
             ResolvedChapterSource? resolved = null;
             SourceRateLimitedException? rateLimited = null;
+            Exception? resolveError = null;
             try
             {
                 resolved = await sourceResolver.ResolveAsync(db, chapter, pin, ct, onlyPreferred: pin != null);
@@ -776,6 +777,7 @@ public class DownloadQueueService(
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogWarning(ex, "Resolving queue item {Id} failed", itemId);
+                resolveError = ex;
             }
 
             // A pick can land while this resolve is already running, and the enqueue then leaves the
@@ -826,7 +828,10 @@ public class DownloadQueueService(
             else
             {
                 item.Status = QueueStatus.Failed;
-                item.SetError(pin is null ? "error.download.unexpected" : "error.download.pickedSourceUnavailable");
+                var (key, detail) = pin is not null ? ("error.download.pickedSourceUnavailable", null)
+                    : resolveError is not null ? DownloadFailureReason.Classify(resolveError)
+                    : (DownloadFailureReason.Unexpected, (string?)null);
+                item.SetError(key, detail: detail);
                 item.RetryCount++;
                 item.NextAttempt = NextRetryAttempt(item.RetryCount);
                 sourceNameForBroadcast = "?";
