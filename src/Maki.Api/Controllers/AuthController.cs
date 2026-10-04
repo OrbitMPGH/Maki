@@ -476,8 +476,9 @@ public class AuthController(
 
     /// <summary>
     /// Confirms the password before a link starts, since the link itself is a browser navigation
-    /// that cannot carry one. See <see cref="OidcLinkIntent"/>. An account with no password (signed
-    /// up through SSO) has nothing to confirm and passes straight through.
+    /// that cannot carry one. See <see cref="OidcLinkIntent"/>. An account that already has a single
+    /// sign-on login is refused: SSO-provisioned accounts have no password to confirm, and a second
+    /// login on any account would let a stolen session attach the thief's own provider account.
     /// </summary>
     [HttpPost("oidc/link")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
@@ -495,23 +496,14 @@ public class AuthController(
             return Unauthorized();
         }
 
-        if (await userManager.HasPasswordAsync(user))
+        if (await OidcLoginAsync(user) is not null)
         {
-            if (string.IsNullOrEmpty(request.Password))
-            {
-                return this.Fail(localizer, "error.account.incorrectPassword");
-            }
+            return this.Conflict(localizer, "error.auth.ssoAlreadyLinked");
+        }
 
-            var check = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
-            if (check.IsLockedOut)
-            {
-                return this.Fail(localizer, "error.account.lockedOut");
-            }
-
-            if (!check.Succeeded)
-            {
-                return this.Fail(localizer, "error.account.incorrectPassword");
-            }
+        if (await AccountCredentials.ConfirmPasswordAsync(userManager, signInManager, user, request.Password) is { } refused)
+        {
+            return this.Fail(localizer, refused);
         }
 
         OidcLinkIntent.Issue(HttpContext, user.Id);
@@ -572,6 +564,11 @@ public class AuthController(
             // Refused rather than re-linked: moving it here would silently strip the login from
             // whoever it belonged to before.
             return LinkFailure("error.auth.ssoAlreadyLinkedOther");
+        }
+
+        if (existing is null && await OidcLoginAsync(user) is not null)
+        {
+            return LinkFailure("error.auth.ssoAlreadyLinked");
         }
 
         if (existing is null)

@@ -470,6 +470,63 @@ public class AuthorizationTests
     }
 
     [Fact]
+    public async Task AnAccountCreatedWhileLockoutWasOffStillLocksOnceItIsBackOn()
+    {
+        using var db = new TestDb();
+        db.SetConfig((SettingKeys.AuthLockoutMaxAttempts, "0"));
+        var off = new AuthRuntimeOptions();
+        await off.LoadAsync(db.NewContext());
+        var identity = new IdentityOptions();
+        AuthServiceCollectionExtensions.ApplyLockout(identity, off);
+
+        // The threshold alone says "off"; the per-account flag must not, or it outlives the setting.
+        Assert.True(identity.Lockout.AllowedForNewUsers);
+    }
+
+    [Fact]
+    public async Task StartupReEnablesLockoutOnAccountsAnOlderBuildCreatedWithItOff()
+    {
+        using var db = new TestDb();
+        var userId = db.SeedUser("created-while-off", configure: u => u.LockoutEnabled = false);
+        db.SetConfig((SettingKeys.AuthLockoutMaxAttempts, "3"));
+
+        await new AuthRuntimeOptions().LoadAsync(db.NewContext());
+
+        using var check = db.NewContext();
+        Assert.True(check.Users.Single(u => u.Id == userId).LockoutEnabled);
+    }
+
+    [Fact]
+    public async Task TheSecurityCardReadsStoredValuesThroughTheStartupClamp()
+    {
+        using var db = new TestDb();
+        db.SetConfig(
+            (SettingKeys.AuthLockoutMaxAttempts, "99999999"),
+            (SettingKeys.AuthLockoutMinutes, "0"),
+            (SettingKeys.AuthSessionDays, "99999999"));
+        var controller = new Maki.Api.Controllers.SettingsController(
+            localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
+            settings: new Maki.Api.Services.SettingsService(db.ScopeFactory()), naming: null!, flareSolverr: null!,
+            prowlarr: null!, qbittorrent: null!, kavita: null!, sourceRegistry: null!, sourceAvailability: null!,
+            mangaBakaDump: null!, embeddingModel: null!, embeddingStore: null!, embeddingStatus: null!,
+            embeddingIndexer: null!, prebuiltIndex: null!, recoGraph: null!,
+            recoGraphCache: null!, coReadInstaller: null!, coReadCache: null!, readerCohortInstaller: null!,
+            readerCohortCache: null!, tasteVectorInstaller: null!, vectorIndexCache: null!,
+            modelSwitcher: null!, db: db.NewContext(), updateCheck: null!, currentUser: new TestCurrentUser(1),
+            userSettings: null!, kavitaUser: null!, kavitaLive: null!, schedulerFactory: null!,
+            scopeFactory: null!, logger: NullLogger<Maki.Api.Controllers.SettingsController>.Instance);
+
+        var result = await controller.GetSecurity(default);
+
+        // Out of range on disk, so the card used to show values its own save would then refuse.
+        var body = Assert.IsType<Maki.Api.Controllers.SettingsController.SecuritySettings>(
+            Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(AuthRuntimeOptions.MaxLockoutMaxAttempts, body.LockoutMaxAttempts);
+        Assert.Equal(AuthRuntimeOptions.DefaultLockoutMinutes, body.LockoutMinutes);
+        Assert.Equal(AuthRuntimeOptions.MaxSessionDays, body.SessionDays);
+    }
+
+    [Fact]
     public async Task OversizedSecuritySettingsAreClampedSoStartupSurvives()
     {
         using var db = new TestDb();

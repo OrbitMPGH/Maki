@@ -23,10 +23,15 @@ namespace Maki.Api.Controllers;
 /// usable admins. An admin cannot drop their own Admin flag, cannot disable or delete themselves,
 /// and cannot remove the Admin flag from the last account that has it.
 /// </para>
+/// <para>
+/// Session cookie only: an admin API key that leaked could otherwise create accounts, reset their
+/// passwords or strip their second factor, all of which outlive revoking the key.
+/// </para>
 /// </summary>
 [ApiController]
 [Route("api/v1/users")]
 [Authorize(Policy = Policies.Admin)]
+[CookieSessionOnly]
 public class UsersController(
     ILocalizer localizer,
     MakiDbContext db,
@@ -116,12 +121,23 @@ public class UsersController(
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveUserRequest request, CancellationToken ct)
     {
+        if (request.MaxContentRating is { } requestedRating && !ContentRating.IsValid(requestedRating))
+        {
+            return this.Fail(localizer, "error.users.invalidContentRating",
+                new { ratings = string.Join(", ", ContentRating.All) });
+        }
+
         using var adminLock = await AdminGuard.LockAsync(ct);
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
         if (user is null)
         {
             return NotFound();
         }
+
+        // SetUserNameAsync and ResetPasswordAsync each save every tracked change, so without this a
+        // later refusal would leave the earlier edits committed while skipping the stamp rotation,
+        // the hub disconnect and the audit row below.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         var wasAdmin = user.Permissions.Grants(MakiPermission.Admin);
         var before = user.Permissions;
@@ -166,10 +182,6 @@ public class UsersController(
             {
                 return BadRequest(new { error = Describe(renamed) });
             }
-
-            // SetUserNameAsync saves every tracked change, including a permission or disabled edit above.
-            snapshots.Evict(user.Id);
-            OpdsAccessService.EvictUser(user.Id);
         }
 
         if (request.DisplayName is not null)
@@ -179,11 +191,6 @@ public class UsersController(
 
         if (request.MaxContentRating is { } rating)
         {
-            if (!ContentRating.IsValid(rating))
-            {
-                return this.Fail(localizer, "error.users.invalidContentRating",
-                    new { ratings = string.Join(", ", ContentRating.All) });
-            }
             user.MaxContentRating = rating;
         }
 
@@ -206,17 +213,19 @@ public class UsersController(
 
         await ReplaceRootFolderGrantsAsync(user, request.RootFolderIds, ct);
         await db.SaveChangesAsync(ct);
-        snapshots.Evict(user.Id);
-        OpdsAccessService.EvictUser(user.Id);
 
         // Any change to what the account may do, or whether it may sign in at all, invalidates its
         // existing cookies. Permission checks read the database per request so they are already
-        // current (the snapshot cache was evicted above); this is about not leaving a disabled user
-        // with a live session.
+        // current once the snapshot cache is evicted below; this is about not leaving a disabled
+        // user with a live session.
         if (user.Permissions != before || request.Disabled is not null || !string.IsNullOrEmpty(request.Password))
         {
             await userManager.UpdateSecurityStampAsync(user);
         }
+
+        await transaction.CommitAsync(ct);
+        snapshots.Evict(user.Id);
+        OpdsAccessService.EvictUser(user.Id);
 
         if ((wasAdmin && !user.Permissions.Grants(MakiPermission.Admin)) || user.Disabled)
         {
@@ -319,9 +328,7 @@ public class UsersController(
             return NotFound();
         }
 
-        var passwordLogin = await userManager.HasPasswordAsync(user) &&
-            (!oidc.OidcOnly || user.Permissions.Grants(MakiPermission.Admin));
-        if (!passwordLogin)
+        if (!await AccountCredentials.PasswordLoginAvailableAsync(userManager, oidc, user))
         {
             return this.Conflict(localizer, "error.users.onlySignInMethod");
         }

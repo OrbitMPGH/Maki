@@ -99,16 +99,16 @@ public class UserSnapshotCacheTests : IDisposable
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-            var admin = new MakiUser { UserName = "snapshot-admin", NormalizedUserName = "SNAPSHOT-ADMIN", Permissions = MakiPermission.Admin, AllRootFolders = true };
             var reader = new MakiUser { UserName = "snapshot-reader", NormalizedUserName = "SNAPSHOT-READER", Permissions = MakiPermission.None, AllRootFolders = true };
-            db.Users.AddRange(admin, reader);
+            db.Users.Add(reader);
             await db.SaveChangesAsync();
-            const string secret = "snapshot-cache-admin-key";
-            db.UserApiKeys.Add(new UserApiKey { UserId = admin.Id, Name = "snapshot test", KeyHash = ApiKeyCrypto.Hash(secret), Prefix = "snapsh", Scope = UserApiKeyScope.Full, CreatedAt = DateTime.UtcNow });
-            await db.SaveChangesAsync();
-            client.DefaultRequestHeaders.Add(ApiKeyAuthenticationHandler.HeaderName, secret);
             readerId = reader.Id;
         }
+
+        // A browser session: user management refuses API keys.
+        await CookieSession.SignInAsync(factory, client,
+            new MakiUser { UserName = "snapshot-admin", Permissions = MakiPermission.Admin, AllRootFolders = true },
+            "snapshot admin password");
 
         Assert.True((await InvokeInHostAsync(factory, cache, readerId)).Passed);
         Assert.NotNull(cache.Get(readerId));

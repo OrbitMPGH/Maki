@@ -315,15 +315,14 @@ public static class AuthServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Zero attempts means "never lock out". <c>AllowedForNewUsers</c> alone only reaches accounts
-    /// created after the restart: every existing row keeps <c>LockoutEnabled = true</c>, and a zero
-    /// threshold would then lock those on their first failure. An unreachable threshold covers them.
+    /// Zero attempts means "never lock out", expressed by an unreachable threshold alone. Every
+    /// account keeps <c>LockoutEnabled = true</c>, new ones included: a per-row flag set while the
+    /// setting was zero would outlive the setting being turned back on.
     /// </summary>
     public static void ApplyLockout(IdentityOptions o, AuthRuntimeOptions auth)
     {
-        var enabled = auth.LockoutMaxAttempts > 0;
-        o.Lockout.MaxFailedAccessAttempts = enabled ? auth.LockoutMaxAttempts : int.MaxValue;
+        o.Lockout.MaxFailedAccessAttempts = auth.LockoutMaxAttempts > 0 ? auth.LockoutMaxAttempts : int.MaxValue;
         o.Lockout.DefaultLockoutTimeSpan = auth.LockoutDuration;
-        o.Lockout.AllowedForNewUsers = enabled;
+        o.Lockout.AllowedForNewUsers = true;
     }
 }

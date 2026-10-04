@@ -70,18 +70,31 @@ public class AuthRuntimeOptions
         TrustedProxies = (rows.GetValueOrDefault(SettingKeys.AuthTrustedProxies) ?? string.Empty)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        LockoutMaxAttempts = ReadInt(
-            rows, SettingKeys.AuthLockoutMaxAttempts, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);
-        LockoutDuration = TimeSpan.FromMinutes(
-            ReadInt(rows, SettingKeys.AuthLockoutMinutes, DefaultLockoutMinutes, min: 1, max: MaxLockoutMinutes));
-        SessionLifetime = TimeSpan.FromDays(
-            ReadInt(rows, SettingKeys.AuthSessionDays, DefaultSessionDays, min: 1, max: MaxSessionDays));
+        LockoutMaxAttempts = LockoutMaxAttemptsFrom(rows.GetValueOrDefault(SettingKeys.AuthLockoutMaxAttempts));
+        LockoutDuration = TimeSpan.FromMinutes(LockoutMinutesFrom(rows.GetValueOrDefault(SettingKeys.AuthLockoutMinutes)));
+        SessionLifetime = TimeSpan.FromDays(SessionDaysFrom(rows.GetValueOrDefault(SettingKeys.AuthSessionDays)));
+
+        // Lockout is expressed by the threshold alone (see ApplyLockout), so every account has to
+        // carry LockoutEnabled. Accounts created by an older build while the threshold was zero got
+        // false and would otherwise never lock out again once it was raised.
+        await db.Users
+            .Where(u => !u.LockoutEnabled)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LockoutEnabled, true), ct);
     }
+
+    public static int LockoutMaxAttemptsFrom(string? stored) =>
+        ReadInt(stored, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);
+
+    public static int LockoutMinutesFrom(string? stored) =>
+        ReadInt(stored, DefaultLockoutMinutes, min: 1, max: MaxLockoutMinutes);
+
+    public static int SessionDaysFrom(string? stored) =>
+        ReadInt(stored, DefaultSessionDays, min: 1, max: MaxSessionDays);
 
     /// <summary>
     /// Below the floor falls back to the default; above the ceiling clamps to it, since a large value
     /// saved by an older build still states an intent (a long session) worth keeping.
     /// </summary>
-    private static int ReadInt(Dictionary<string, string> rows, string key, int fallback, int min, int max) =>
-        int.TryParse(rows.GetValueOrDefault(key), out var value) && value >= min ? Math.Min(value, max) : fallback;
+    private static int ReadInt(string? stored, int fallback, int min, int max) =>
+        int.TryParse(stored, out var value) && value >= min ? Math.Min(value, max) : fallback;
 }

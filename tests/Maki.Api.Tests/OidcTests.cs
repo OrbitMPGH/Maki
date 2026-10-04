@@ -516,6 +516,37 @@ public class OidcTests
         Assert.True(db.Users.Single(u => u.Id == again.User.Id).Permissions.Grants(MakiPermission.Admin));
     }
 
+    [Fact]
+    public async Task ClaimsThatDemoteAnAdminRotateTheSecurityStamp()
+    {
+        using var fixture = new TestDb();
+        fixture.SeedUser("keeper");
+        (string, string)[] settings =
+        [
+            (SettingKeys.AuthOidcAutoProvision, "true"),
+            (SettingKeys.AuthOidcAdminClaim, "groups=maki-admins"),
+        ];
+        var first = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1",
+            Claims(("preferred_username", "ada"), ("groups", "maki-admins")), default);
+        Assert.NotNull(first.User);
+        string? stampBefore;
+        using (var db = fixture.NewContext())
+        {
+            stampBefore = db.Users.Single(u => u.Id == first.User.Id).SecurityStamp;
+        }
+
+        var again = await (await ServiceAsync(fixture, settings)).SignInAsync("oidc", "sub-1",
+            Claims(("preferred_username", "ada")), default);
+
+        // Same as a demotion on the Users page: sessions elsewhere must not keep admin until they expire.
+        Assert.NotNull(again.User);
+        Assert.False(again.User.Permissions.Grants(MakiPermission.Admin));
+        using (var db = fixture.NewContext())
+        {
+            Assert.NotEqual(stampBefore, db.Users.Single(u => u.Id == first.User.Id).SecurityStamp);
+        }
+    }
+
     // ---- issuer scoping (#15) ----
 
     [Fact]
@@ -788,7 +819,8 @@ public class OidcTests
             db, BuildUserManager(db), options,
             new StoppedClock(new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero)),
             NullLogger<OidcSignInService>.Instance,
-            new UserSnapshotCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())));
+            new UserSnapshotCache(new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())),
+            new NoopHubContext());
     }
 
     private static UserManager<MakiUser> BuildUserManager(MakiDbContext db)

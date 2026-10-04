@@ -230,8 +230,8 @@ public class OpdsKeyRotationTests : IDisposable
         using var db = ScopedContext(1);
         var controller = Controller(1, db);
 
-        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(CancellationToken.None));
-        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(CancellationToken.None));
+        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(null, IdentityTestKit.UserManager(db), null!, CancellationToken.None));
+        Assert.IsType<OkObjectResult>(await controller.RotateOpdsToken(null, IdentityTestKit.UserManager(db), null!, CancellationToken.None));
 
         Assert.Single(LiveOpdsKeyIds(1));
     }
@@ -282,7 +282,7 @@ public class OpdsKeyRotationTests : IDisposable
 
         try
         {
-            await controller.RotateOpdsToken(CancellationToken.None);
+            await controller.RotateOpdsToken(null, IdentityTestKit.UserManager(db), null!, CancellationToken.None);
         }
         catch (DbUpdateException)
         {

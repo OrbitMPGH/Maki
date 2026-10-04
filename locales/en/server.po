@@ -148,6 +148,12 @@ msgstr "That account is disabled"
 msgid "error.auth.ssoAccountNotSetUp"
 msgstr "That account has not been set up yet"
 
+#. Self-service linking (settings page): the account already has a single sign-on login, and only
+#. one is allowed. Removing it first is the way to link a different one.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.ssoAlreadyLinked"
+msgstr "This account already has a single sign-on login. Remove it before linking another."
+
 #. Self-service linking (settings page), not the automatic linking a verified email does at
 #. sign-in: this subject is already linked to a different Maki account.
 #: src/Maki.Api/Controllers/AuthController.cs

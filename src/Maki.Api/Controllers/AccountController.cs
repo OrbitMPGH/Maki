@@ -50,15 +50,8 @@ public class AccountController(
     /// A user who still has a working password path (oidconly off, or an admin, who is exempt from
     /// it) keeps full access to 2FA regardless of any linked SSO login.
     /// </summary>
-    private async Task<bool> PasswordLoginAvailableAsync(MakiUser user)
-    {
-        if (!await userManager.HasPasswordAsync(user))
-        {
-            return false;
-        }
-
-        return !oidc.OidcOnly || user.Permissions.Grants(MakiPermission.Admin);
-    }
+    private Task<bool> PasswordLoginAvailableAsync(MakiUser user) =>
+        AccountCredentials.PasswordLoginAvailableAsync(userManager, oidc, user);
 
     /// <summary>
     /// Whether this account has a linked, enabled single sign-on login. Feeds only the
@@ -69,31 +62,11 @@ public class AccountController(
     private async Task<bool> IsOidcLinkedAsync(MakiUser user) =>
         oidc.Enabled && (await userManager.GetLoginsAsync(user)).Any(l => l.LoginProvider == AuthSchemes.Oidc);
 
-    /// <summary>
-    /// Null when <paramref name="password"/> is the account's password, or the account has none to
-    /// ask for; otherwise the failure to answer with. A wrong one counts toward lockout, the same as
-    /// a failed login.
-    /// </summary>
-    private async Task<IActionResult?> ConfirmPasswordAsync(MakiUser user, string? password)
-    {
-        if (!await userManager.HasPasswordAsync(user))
-        {
-            return null;
-        }
-
-        if (string.IsNullOrEmpty(password))
-        {
-            return this.Fail(localizer, "error.account.incorrectPassword");
-        }
-
-        var check = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
-        if (check.IsLockedOut)
-        {
-            return this.Fail(localizer, "error.account.lockedOut");
-        }
-
-        return check.Succeeded ? null : this.Fail(localizer, "error.account.incorrectPassword");
-    }
+    /// <summary>Null when the password checks out or the account has none; otherwise the refusal.</summary>
+    private async Task<IActionResult?> ConfirmPasswordAsync(MakiUser user, string? password, bool requirePassword = false) =>
+        await AccountCredentials.ConfirmPasswordAsync(userManager, signInManager, user, password, requirePassword) is { } key
+            ? this.Fail(localizer, key)
+            : null;
 
     [HttpPost("password")]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
@@ -255,10 +228,9 @@ public class AccountController(
         var user = await LoadAsync();
         if (user is null) return Unauthorized();
 
-        if (string.IsNullOrEmpty(request.Password) ||
-            !(await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true)).Succeeded)
+        if (await ConfirmPasswordAsync(user, request.Password, requirePassword: true) is { } refused)
         {
-            return this.Fail(localizer, "error.account.incorrectPassword");
+            return refused;
         }
 
         await userManager.SetTwoFactorEnabledAsync(user, false);
