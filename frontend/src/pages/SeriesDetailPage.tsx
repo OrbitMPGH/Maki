@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, FormEvent, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { msg, plural, t as staticT } from '@lingui/core/macro'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -2036,7 +2036,14 @@ function SeriesDetailBody() {
             title={t`Download next chapters`}
             centered
         >
-          <Stack gap="sm">
+          <Stack
+              component="form"
+              gap="sm"
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault()
+                queueNext(Math.max(1, Number(nextCount) || 1))
+              }}
+          >
             <NumberInput
                 label={t`How many`}
                 description={t`${missingWanted} wanted chapter(s) are missing`}
@@ -2049,10 +2056,7 @@ function SeriesDetailBody() {
               <Button variant="default" onClick={() => setNextCountOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
-              <Button
-                  loading={downloadNext.isPending}
-                  onClick={() => queueNext(Math.max(1, Number(nextCount) || 1))}
-              >
+              <Button type="submit" loading={downloadNext.isPending}>
                 <Trans>Download</Trans>
               </Button>
             </Group>

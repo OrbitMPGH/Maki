@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
 import {
   ActionIcon,
@@ -1314,7 +1314,29 @@ export default function LibraryPage() {
         onClose={() => setSaveFilterOpen(false)}
         title={t`Save this filter`}
       >
-        <Stack gap="md">
+        <Stack
+          component="form"
+          gap="md"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            if (!filterName.trim()) return
+            const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
+            const overwrite = active && active.name === filterName.trim()
+            saveFilter.mutate(
+              { id: overwrite ? active.id : undefined, name: filterName.trim(), spec: currentSpec() },
+              {
+                onSuccess: (saved) => {
+                  setActiveFilterId(saved.id)
+                  setSaveFilterOpen(false)
+                },
+                onError: (err) => {
+                  const detail = err instanceof Error ? err.message : String(err)
+                  notifications.show({ color: 'var(--danger)', message: now`Failed to save filter: ${detail}` })
+                },
+              },
+            )
+          }}
+        >
           <Text size="sm" c="var(--ink-3)">
             <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
             <Trans>Reusing the name of the active preset overwrites it.</Trans>
@@ -1330,27 +1352,7 @@ export default function LibraryPage() {
             <Button variant="default" onClick={() => setSaveFilterOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button
-              disabled={!filterName.trim()}
-              loading={saveFilter.isPending}
-              onClick={() => {
-                const active = (savedFilters ?? []).find((f) => f.id === activeFilterId)
-                const overwrite = active && active.name === filterName.trim()
-                saveFilter.mutate(
-                  { id: overwrite ? active.id : undefined, name: filterName.trim(), spec: currentSpec() },
-                  {
-                    onSuccess: (saved) => {
-                      setActiveFilterId(saved.id)
-                      setSaveFilterOpen(false)
-                    },
-                    onError: (err) => {
-                      const detail = err instanceof Error ? err.message : String(err)
-                      notifications.show({ color: 'var(--danger)', message: now`Failed to save filter: ${detail}` })
-                    },
-                  },
-                )
-              }}
-            >
+            <Button type="submit" disabled={!filterName.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
           </Group>

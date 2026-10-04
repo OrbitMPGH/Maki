@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../lib/updateSkip'
@@ -209,14 +209,20 @@ function RootFoldersSection() {
             </Table.Tbody>
           </Table>
         )}
-        <Group>
+        <Group
+          component="form"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            add()
+          }}
+        >
           <TextInput
             placeholder={t`C:\\Manga or /library`}
             value={newPath}
             onChange={(e) => setNewPath(e.currentTarget.value)}
             style={{ flex: 1 }}
           />
-          <Button onClick={add} loading={addFolder.isPending}>
+          <Button type="submit" loading={addFolder.isPending}>
             <Trans>Add</Trans>
           </Button>
         </Group>
@@ -1073,7 +1079,13 @@ function OpdsSection() {
       </Stack>
 
       <Modal opened={enableModalOpen} onClose={closePasswordModals} title={t`Enable the OPDS catalogue`} centered>
-        <Stack>
+        <Stack
+          component="form"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            saveWith({ enabled: true }, password)
+          }}
+        >
           <Text size="sm">
             <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
           </Text>
@@ -1087,7 +1099,7 @@ function OpdsSection() {
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button loading={save.isPending} onClick={() => saveWith({ enabled: true }, password)}>
+            <Button type="submit" loading={save.isPending}>
               <Trans>Enable</Trans>
             </Button>
           </Group>
@@ -1095,7 +1107,20 @@ function OpdsSection() {
       </Modal>
 
       <Modal opened={rotateModalOpen} onClose={closePasswordModals} title={t`Regenerate OPDS token`} centered>
-        <Stack>
+        <Stack
+          component="form"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            rotate.mutate(password, {
+              onSuccess: (result) => {
+                closePasswordModals()
+                // The only moment the new URL exists in a readable form.
+                setRevealedPath(result.feedUrl)
+                notifications.show({ message: now`New OPDS feed URL generated`, color: 'var(--ok)' })
+              },
+            })
+          }}
+        >
           <Text size="sm">
             <Trans>
               The current feed URL stops working immediately. Every app using it needs the new
@@ -1112,20 +1137,7 @@ function OpdsSection() {
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={rotate.isPending}
-              onClick={() =>
-                rotate.mutate(password, {
-                  onSuccess: (result) => {
-                    closePasswordModals()
-                    // The only moment the new URL exists in a readable form.
-                    setRevealedPath(result.feedUrl)
-                    notifications.show({ message: now`New OPDS feed URL generated`, color: 'var(--ok)' })
-                  },
-                })
-              }
-            >
+            <Button type="submit" color="var(--danger-fill)" loading={rotate.isPending}>
               <Trans>Regenerate</Trans>
             </Button>
           </Group>

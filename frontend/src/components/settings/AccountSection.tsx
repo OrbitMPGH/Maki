@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
   Alert,
   Badge,
@@ -155,7 +155,19 @@ function SsoCard() {
           <Text size="xs" c="var(--ink-3)">
             <Trans>Not linked yet. Sign in with {displayName} once to enable it for this account.</Trans>
           </Text>
-          <Group align="flex-end">
+          <Group
+            component="form"
+            align="flex-end"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault()
+              confirmLink.mutate(linkPassword, {
+                // The link is a top-level navigation to the provider; the confirmation it needs
+                // was just set as a cookie.
+                onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
+                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+              })
+            }}
+          >
             <PasswordInput
               label={t`Confirm your password to link`}
               autoComplete="current-password"
@@ -163,19 +175,7 @@ function SsoCard() {
               onChange={(e) => setLinkPassword(e.currentTarget.value)}
               w={260}
             />
-            <Button
-              size="xs"
-              variant="default"
-              loading={confirmLink.isPending}
-              onClick={() =>
-                confirmLink.mutate(linkPassword, {
-                  // The link is a top-level navigation to the provider; the confirmation it needs
-                  // was just set as a cookie.
-                  onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
-                  onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-                })
-              }
-            >
+            <Button type="submit" size="xs" variant="default" loading={confirmLink.isPending}>
               <Trans>Link {displayName}</Trans>
             </Button>
           </Group>
@@ -196,7 +196,31 @@ function PasswordCard() {
       <Text fw={600} size="sm">
         <Trans>Password</Trans>
       </Text>
-      <Group align="flex-end" wrap="wrap">
+      <Group
+        component="form"
+        align="flex-end"
+        wrap="wrap"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault()
+          if (!current || next.length < 10) return
+          change.mutate(
+            { currentPassword: current, newPassword: next },
+            {
+              onSuccess: () => {
+                setCurrent('')
+                setNext('')
+                notifications.show({
+                  // Worth stating plainly: changing the password rotates the security stamp, which
+                  // is what invalidates every other issued cookie.
+                  message: now`Password changed. Other devices have been signed out.`,
+                  color: 'var(--ok)',
+                })
+              },
+              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+            },
+          )
+        }}
+      >
         <PasswordInput
           label={t`Current`}
           autoComplete="current-password"
@@ -212,28 +236,7 @@ function PasswordCard() {
           onChange={(e) => setNext(e.currentTarget.value)}
           w={200}
         />
-        <Button
-          loading={change.isPending}
-          disabled={!current || next.length < 10}
-          onClick={() =>
-            change.mutate(
-              { currentPassword: current, newPassword: next },
-              {
-                onSuccess: () => {
-                  setCurrent('')
-                  setNext('')
-                  notifications.show({
-                    // Worth stating plainly: changing the password rotates the security stamp, which
-                    // is what invalidates every other issued cookie.
-                    message: now`Password changed. Other devices have been signed out.`,
-                    color: 'var(--ok)',
-                  })
-                },
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-              },
-            )
-          }
-        >
+        <Button type="submit" loading={change.isPending} disabled={!current || next.length < 10}>
           <Trans>Change</Trans>
         </Button>
       </Group>
@@ -319,7 +322,21 @@ function TwoFactorCard() {
       </Group>
 
       {status?.enabled && (
-        <Group align="flex-end">
+        <Group
+          component="form"
+          align="flex-end"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            if (!disablePassword) return
+            disable.mutate(disablePassword, {
+              onSuccess: () => {
+                setDisablePassword('')
+                notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
+              },
+              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+            })
+          }}
+        >
           <PasswordInput
             label={t`Confirm your password to turn it off`}
             value={disablePassword}
@@ -327,19 +344,11 @@ function TwoFactorCard() {
             w={260}
           />
           <Button
+            type="submit"
             color="var(--danger)"
             variant="light"
             loading={disable.isPending}
             disabled={!disablePassword}
-            onClick={() =>
-              disable.mutate(disablePassword, {
-                onSuccess: () => {
-                  setDisablePassword('')
-                  notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
-                },
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-              })
-            }
           >
             <Trans>Disable</Trans>
           </Button>
@@ -356,7 +365,22 @@ function TwoFactorCard() {
         title={t`Set up two-factor authentication`}
         centered
       >
-        <Stack>
+        <Stack
+          component="form"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            if (code.length < 6 || !enablePassword) return
+            enable.mutate({ code, password: enablePassword }, {
+              onSuccess: (result) => {
+                setEnrolling(null)
+                setCode('')
+                setEnablePassword('')
+                setRecoveryCodes(result.recoveryCodes)
+              },
+              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+            })
+          }}
+        >
           <Text size="sm">
             <Trans>
               Scan this with your authenticator app, or enter the key manually, then enter the code
@@ -392,21 +416,7 @@ function TwoFactorCard() {
             value={enablePassword}
             onChange={(e) => setEnablePassword(e.currentTarget.value)}
           />
-          <Button
-            loading={enable.isPending}
-            disabled={code.length < 6 || !enablePassword}
-            onClick={() =>
-              enable.mutate({ code, password: enablePassword }, {
-                onSuccess: (result) => {
-                  setEnrolling(null)
-                  setCode('')
-                  setEnablePassword('')
-                  setRecoveryCodes(result.recoveryCodes)
-                },
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-              })
-            }
-          >
+          <Button type="submit" loading={enable.isPending} disabled={code.length < 6 || !enablePassword}>
             <Trans>Verify and enable</Trans>
           </Button>
         </Stack>
@@ -463,7 +473,26 @@ function ApiKeysCard() {
         </Trans>
       </Text>
 
-      <Group align="flex-end" wrap="wrap">
+      <Group
+        component="form"
+        align="flex-end"
+        wrap="wrap"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault()
+          if (!name.trim()) return
+          create.mutate(
+            { name: name.trim(), password: keyPassword },
+            {
+              onSuccess: (result) => {
+                setCreated(result)
+                setName('')
+                setKeyPassword('')
+              },
+              onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
+            },
+          )
+        }}
+      >
         <TextInput
           label={t`Name`}
           placeholder={t`Phone reader`}
@@ -478,23 +507,7 @@ function ApiKeysCard() {
           onChange={(e) => setKeyPassword(e.currentTarget.value)}
           w={200}
         />
-        <Button
-          loading={create.isPending}
-          disabled={!name.trim()}
-          onClick={() =>
-            create.mutate(
-              { name: name.trim(), password: keyPassword },
-              {
-                onSuccess: (result) => {
-                  setCreated(result)
-                  setName('')
-                  setKeyPassword('')
-                },
-                onError: (e) => notifications.show({ message: e.message, color: 'var(--danger)' }),
-              },
-            )
-          }
-        >
+        <Button type="submit" loading={create.isPending} disabled={!name.trim()}>
           <Trans>Create</Trans>
         </Button>
       </Group>

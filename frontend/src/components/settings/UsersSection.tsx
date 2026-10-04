@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -282,7 +282,14 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
       centered
       size="lg"
     >
-      <Stack>
+      <Stack
+        component="form"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault()
+          if (!username.trim() || (isNew && password.length < 10)) return
+          submit()
+        }}
+      >
         <TextInput
           label={t`Username`}
           required
@@ -425,9 +432,9 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
             <Trans>Cancel</Trans>
           </Button>
           <Button
+            type="submit"
             loading={busy}
             disabled={!username.trim() || (isNew && password.length < 10)}
-            onClick={submit}
           >
             {isNew ? <Trans>Create</Trans> : <Trans>Save</Trans>}
           </Button>
