@@ -1,3 +1,4 @@
+using System.Globalization;
 using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Reading;
@@ -369,8 +370,12 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     [HttpGet("from-anime")]
     public async Task<IActionResult> FromAnime(
         [FromServices] AnimeResumeService animeResume,
-        CancellationToken ct = default) =>
-        Ok(await animeResume.RailAsync(ct));
+        CancellationToken ct = default)
+    {
+        var page = await animeResume.RailAsync(ct);
+        Response.Headers["X-Total-Count"] = page.Total.ToString(CultureInfo.InvariantCulture);
+        return Ok(page.Items);
+    }
 
     /// <summary>Labels for a set of chapter ids, in one query.</summary>
     private async Task<Dictionary<int, string>> ChapterLabelsAsync(

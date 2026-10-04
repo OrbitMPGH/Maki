@@ -150,11 +150,12 @@ public class AnimeResumeService(
     /// <summary>
     /// Series whose anime the reader finished and whose reading has not caught up with it: library
     /// series first, then manga nobody has added yet. Once they have read or watched past the
-    /// frontier, Jump back in covers the series instead.
+    /// frontier, Jump back in covers the series instead. The page is capped at
+    /// <see cref="RailLimit"/>; <see cref="RailPage.Total"/> is every match, so a count can stay honest.
     /// </summary>
-    public async Task<IReadOnlyList<HomeAnimeResumeItem>> RailAsync(CancellationToken ct)
+    public async Task<RailPage> RailAsync(CancellationToken ct)
     {
-        if (!await signals.EnabledForAsync(UserId, ct)) return [];
+        if (!await signals.EnabledForAsync(UserId, ct)) return RailPage.Empty;
 
         var rows = await Rows(db.AnimeSignals.Where(x => x.UserId == UserId && x.MangaBakaId != null))
             .ToListAsync(ct);
@@ -165,7 +166,7 @@ public class AnimeResumeService(
             .Select(id => (int)id)
             .Distinct()
             .ToList();
-        if (candidates.Count == 0) return [];
+        if (candidates.Count == 0) return RailPage.Empty;
 
         var library = await LibraryRailAsync(rows, candidates, ct);
 
@@ -177,7 +178,15 @@ public class AnimeResumeService(
         var unowned = candidates.Where(id => !owned.Contains(id)).Select(id => (long)id).ToList();
         var fromCatalogue = await CatalogueRailAsync(rows, unowned, ct);
 
-        return library.Concat(fromCatalogue).ToList();
+        var all = library.Concat(fromCatalogue).ToList();
+        return new RailPage(all.Take(RailLimit).ToList(), all.Count);
+    }
+
+    public const int RailLimit = 50;
+
+    public sealed record RailPage(IReadOnlyList<HomeAnimeResumeItem> Items, int Total)
+    {
+        public static RailPage Empty { get; } = new([], 0);
     }
 
     private async Task<List<HomeAnimeResumeItem>> LibraryRailAsync(

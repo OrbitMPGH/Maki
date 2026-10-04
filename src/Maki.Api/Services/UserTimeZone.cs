@@ -32,8 +32,9 @@ public static class UserTimeZone
         IUserSettingsStore userSettings, int userId, string? browserZone, CancellationToken ct = default)
     {
         var id = browserZone?.Trim();
-        if (string.IsNullOrEmpty(id) || id.Length > 64 || !IsKnown(id) ||
-            !string.IsNullOrWhiteSpace(await userSettings.GetAsync(userId, SettingKeys.UserTimeZone, ct)))
+        if (string.IsNullOrEmpty(id) || id.Length > 64 ||
+            !string.IsNullOrWhiteSpace(await userSettings.GetAsync(userId, SettingKeys.UserTimeZone, ct)) ||
+            !IsKnown(id))
         {
             return;
         }

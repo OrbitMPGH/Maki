@@ -380,6 +380,33 @@ public sealed class ProgressTests : IDisposable
     }
 
     [Fact]
+    public async Task SeedingAZoneIsVisibleToTheNextMetricsReadWithoutWaitingOutTheCache()
+    {
+        // 02:00 local in Tokyo is 17:00 UTC the day before: only a snapshot computed with the zone
+        // sees an after-midnight read.
+        SeedRead(null, 1, new DateTime(2026, 6, 14, 17, 0, 0, DateTimeKind.Utc));
+
+        var before = await Metrics().GetAsync(UserId);
+        Assert.False(before.ReadAfterMidnight);
+
+        await UserTimeZone.SeedAsync(new TestUserSettingsStore(_db), UserId, "Asia/Tokyo");
+
+        var after = await Metrics().GetAsync(UserId);
+        Assert.True(after.ReadAfterMidnight);
+    }
+
+    [Fact]
+    public async Task SeedingNeverOverwritesAStoredZone()
+    {
+        var store = new TestUserSettingsStore(_db);
+        await store.SetAsync(UserId, SettingKeys.UserTimeZone, "Asia/Tokyo");
+
+        await UserTimeZone.SeedAsync(store, UserId, "Europe/Paris");
+
+        Assert.Equal("Asia/Tokyo", await store.GetAsync(UserId, SettingKeys.UserTimeZone));
+    }
+
+    [Fact]
     public async Task AnUnknownTimeZoneFallsBackToUtcRatherThanThrowing()
     {
         await new TestUserSettingsStore(_db).SetAsync(

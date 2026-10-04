@@ -3,6 +3,7 @@ using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Recommendations;
 using Maki.Data.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Maki.Api.Tests;
@@ -420,14 +421,22 @@ public class HomeControllerTests : IDisposable
 
     private readonly ReadingProgressGate _gate = new();
 
-    private async Task<IReadOnlyList<HomeAnimeResumeItem>> FromAnime(int userId = 1, bool allRootFolders = true)
+    private async Task<IReadOnlyList<HomeAnimeResumeItem>> FromAnime(int userId = 1, bool allRootFolders = true) =>
+        (await FromAnimePage(userId, allRootFolders)).Items;
+
+    private async Task<(IReadOnlyList<HomeAnimeResumeItem> Items, string? Total)> FromAnimePage(
+        int userId = 1, bool allRootFolders = true)
     {
         var context = _db.NewContext(userId, allRootFolders);
-        var controller = new HomeController(context, new ContinueReadingService(context));
+        var controller = new HomeController(context, new ContinueReadingService(context))
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
         var result = await controller.FromAnime(
             AnimeResumeFixture.Service(_db, context, _gate), ct: CancellationToken.None);
-        return Assert.IsAssignableFrom<IReadOnlyList<HomeAnimeResumeItem>>(
+        var items = Assert.IsAssignableFrom<IReadOnlyList<HomeAnimeResumeItem>>(
             Assert.IsType<OkObjectResult>(result).Value);
+        return (items, controller.Response.Headers["X-Total-Count"].ToString());
     }
 
     private int SeedFromAnime(string title, int mangaBakaId, int? score, int userId = 1)
@@ -453,6 +462,21 @@ public class HomeControllerTests : IDisposable
         var first = items[0];
         Assert.Equal(5m, first.CoveredTo);
         Assert.Equal("Ch.6", first.ResumeChapterLabel);
+    }
+
+    [Fact]
+    public async Task From_anime_caps_the_response_but_reports_the_real_total()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        for (var i = 1; i <= AnimeResumeService.RailLimit + 3; i++)
+        {
+            SeedFromAnime($"Series {i:000}", i, 8);
+        }
+
+        var (items, total) = await FromAnimePage();
+
+        Assert.Equal(AnimeResumeService.RailLimit, items.Count);
+        Assert.Equal((AnimeResumeService.RailLimit + 3).ToString(), total);
     }
 
     [Fact]

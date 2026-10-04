@@ -58,8 +58,16 @@ public class UserMetricsService(
             return cached;
         }
 
-        var metrics = await ComputeAsync(userId, ct);
-        cache.Set(CacheKey(userId), metrics, CacheFor);
+        var (metrics, hasZone) = await ComputeAsync(userId, ct);
+
+        // A zone-less snapshot is never cached: the browser seeds the zone on its own schedule (a
+        // different request, no invalidation here) and a cached UTC-only result would hide the
+        // clock-based unlocks for the whole TTL after it lands.
+        if (hasZone)
+        {
+            cache.Set(CacheKey(userId), metrics, CacheFor);
+        }
+
         return metrics;
     }
 
@@ -72,7 +80,7 @@ public class UserMetricsService(
     public Task<TimeZoneInfo> TimeZoneForAsync(int userId, CancellationToken ct = default) =>
         UserTimeZone.ResolveAsync(userSettings, userId, ct);
 
-    private async Task<UserMetrics> ComputeAsync(int userId, CancellationToken ct)
+    private async Task<(UserMetrics Metrics, bool HasZone)> ComputeAsync(int userId, CancellationToken ct)
     {
         // Without a stored zone the clock-based unlocks would be judged on UTC and never revoked, so
         // they wait until one is stored. They read the whole history, so nothing is lost by waiting.
@@ -107,7 +115,7 @@ public class UserMetricsService(
         var seriesRead = events.Where(e => e.SeriesId != null).Select(e => e.SeriesId!.Value).ToHashSet();
         var (genres, types) = await BreadthAsync(seriesRead, ct);
 
-        return new UserMetrics
+        var metrics = new UserMetrics
         {
             ChaptersRead = Sum(StatsEventType.ChaptersRead),
             VolumesRead = Sum(StatsEventType.VolumesRead),
@@ -138,6 +146,8 @@ public class UserMetricsService(
                 .Where(e => e.UserId == null && e.Type == StatsEventType.ChapterDownloaded)
                 .SumAsync(e => (long)e.Value, ct),
         };
+
+        return (metrics, stored is not null);
     }
 
     private record ReadEvent(StatsEventType Type, DateTime Timestamp, int Value, int? SeriesId);
