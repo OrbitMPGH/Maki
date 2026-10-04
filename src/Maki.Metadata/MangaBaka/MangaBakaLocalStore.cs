@@ -1517,6 +1517,39 @@ public class MangaBakaLocalStore(
         return result;
     }
 
+    /// <summary>
+    /// The ids among <paramref name="ids"/> that pass <paramref name="filters"/> in SQL. Tags are
+    /// not tested here (see <see cref="RecommendationFilters.BuildClause"/>); callers match those
+    /// by name.
+    /// </summary>
+    public virtual async Task<IReadOnlySet<long>> FilterIdsAsync(
+        IReadOnlyCollection<long> ids, RecommendationFilters filters, CancellationToken ct = default)
+    {
+        var passing = new HashSet<long>();
+        if (ids.Count == 0)
+        {
+            return passing;
+        }
+
+        using var conn = Open();
+        foreach (var chunk in ids.Distinct().Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                $"SELECT series.id FROM series WHERE series.id IN ({string.Join(",", chunk)})" +
+                filters.BuildClause(cmd, "series");
+            cmd.CommandTimeout = 600;
+
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                passing.Add(reader.GetInt64(0));
+            }
+        }
+
+        return passing;
+    }
+
     /// <summary>Which provider's manga ids a lookup is keyed on.</summary>
     public enum ExternalSource { AniList, MyAnimeList, Kitsu }
 

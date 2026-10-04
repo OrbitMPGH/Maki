@@ -760,7 +760,7 @@ public class DiscoverService(
 
     /// <summary>
     /// Free-text search over the catalogue. Prefers the semantic engine (query embedding fused
-    /// with the title index); falls back to plain title search, with the never-show list applied,
+    /// with the title index); falls back to plain title search, with the filters still applied,
     /// when the embedding index isn't built or the query model can't load, so the box is never
     /// dead. The response says which one answered.
     /// </summary>
@@ -818,11 +818,13 @@ public class DiscoverService(
         var maxAllowed = request.Filters?.ContentRatings is { Count: > 0 } allowedRatings
             ? ContentRating.All.LastOrDefault(allowedRatings.Contains) ?? ContentRating.Safe
             : ContentRating.Safe;
-        var titleHits = await store.SearchWithCorrectionAsync(query, maxAllowed, limit: limit, ct: ct);
-        var items = await WithoutHiddenAsync(titleHits.Items, request.Filters?.Hidden, ct);
+        // Filters are applied after the title index answers, so a narrowed query reads deeper first.
+        var titleHits = await store.SearchWithCorrectionAsync(
+            query, maxAllowed, limit: narrowed ? MaxSearchLimit : limit, ct: ct);
+        var items = await WithinFiltersAsync(titleHits.Items, request.Filters, ct);
         return new DiscoverSearchResponse(
             "title",
-            items.Select(ToRecommendation).ToList(),
+            items.Take(limit).Select(ToRecommendation).ToList(),
             titleHits.CorrectedQuery,
             titleHits.Credits);
     }
@@ -835,26 +837,40 @@ public class DiscoverService(
             f.Tags is { Count: > 0 } || f.Rules is { Count: > 0 } || f.Hidden is { Count: > 0 } ||
             f.Credits is { Count: > 0 } || f.CreditIds is not null);
 
-    /// <summary>The never-show list applied to title hits, which the title index cannot test itself.</summary>
-    private async Task<IReadOnlyList<MetadataSearchResult>> WithoutHiddenAsync(
-        IReadOnlyList<MetadataSearchResult> hits, IReadOnlyList<CatalogueTerm>? hidden, CancellationToken ct)
+    /// <summary>
+    /// The caller's filters applied to title hits: the title index honours only the content-rating
+    /// ceiling. The vector index tests every filter on the rows it holds; for the rest the dump tests
+    /// what SQL can and tags are matched by name. A hit neither can vouch for is dropped.
+    /// </summary>
+    private async Task<IReadOnlyList<MetadataSearchResult>> WithinFiltersAsync(
+        IReadOnlyList<MetadataSearchResult> hits, RecommendationFilters? filters, CancellationToken ct)
     {
-        if (hidden is not { Count: > 0 } || hits.Count == 0)
+        if (filters is null || !Narrows(filters) || hits.Count == 0)
         {
             return hits;
         }
 
         var ids = hits
             .Select(h => long.TryParse(h.ProviderId, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
-            .Where(id => id > 0)
             .ToList();
-        var rows = await store.GetProfileRowsAsync(ids, ct);
-        var test = new RecommendationFilters(Hidden: hidden);
+
+        var index = await vectorIndex.GetAsync(ct);
+        var plan = index?.Plan(filters);
+        var unindexed = ids.Where(id => id > 0 && (index is null || !index.TryGetRow(id, out _))).ToList();
+        var passing = await store.FilterIdsAsync(unindexed, filters, ct);
+        var rows = await store.GetProfileRowsAsync(passing.ToList(), ct);
         return hits
-            .Where(h => !long.TryParse(h.ProviderId, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ||
-                        !rows.TryGetValue(id, out var row) ||
-                        test.MatchesNames(row.Genres, row.Tags.Select(t => t.Name).ToList()))
+            .Where((_, i) => index is not null && index.TryGetRow(ids[i], out var row)
+                ? index.Matches(row, plan!)
+                : rows.TryGetValue(ids[i], out var profile) && MatchesByName(filters, profile))
             .ToList();
+    }
+
+    private static bool MatchesByName(RecommendationFilters filters, MangaBakaProfileRow row)
+    {
+        var tags = row.Tags.Select(t => t.Name).ToList();
+        return filters.MatchesNames(row.Genres, tags) &&
+               (filters.Tags ?? []).All(wanted => tags.Contains(wanted, StringComparer.OrdinalIgnoreCase));
     }
 
     /// <summary>Shapes a title-index hit like a semantic one so the UI renders one card type.</summary>
