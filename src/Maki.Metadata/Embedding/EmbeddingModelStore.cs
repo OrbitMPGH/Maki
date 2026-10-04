@@ -97,10 +97,12 @@ public class EmbeddingModelStore(
     /// Deletes the model graph and weights so the next <see cref="EnsureAsync"/> fetches them again.
     /// Presence is only a size check, so a corrupt file of plausible size is otherwise never replaced.
     /// </summary>
-    public void DeleteModelFiles()
+    /// <returns>False when either file is still there, for example held open by another process.</returns>
+    public bool DeleteModelFiles()
     {
         TryDelete(options.ModelPath);
         TryDelete(options.ModelDataPath);
+        return !File.Exists(options.ModelPath) && !File.Exists(options.ModelDataPath);
     }
 
     private async Task DownloadAsync(
@@ -144,7 +146,7 @@ public class EmbeddingModelStore(
         {
             File.Delete(path);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
     }

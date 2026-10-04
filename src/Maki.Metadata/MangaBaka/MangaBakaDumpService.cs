@@ -532,13 +532,26 @@ internal sealed class StallTimeoutStream(Stream inner, TimeSpan? stall = null) :
 
     public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
 
+    private CancellationTokenSource? _quiet;
+    private CancellationToken _linkedTo;
+
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
     {
-        using var quiet = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        quiet.CancelAfter(_stall);
+        // One linked source per stream, its timer armed for each read and disarmed after, rather
+        // than a new one per read. Rebuilt only for a different token, or once its timer has fired.
+        if (_quiet is null || ct != _linkedTo || _quiet.IsCancellationRequested)
+        {
+            _quiet?.Dispose();
+            _quiet = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _linkedTo = ct;
+        }
+
+        _quiet.CancelAfter(_stall);
         try
         {
-            return await inner.ReadAsync(buffer, quiet.Token);
+            var read = await inner.ReadAsync(buffer, _quiet.Token);
+            _quiet.CancelAfter(Timeout.InfiniteTimeSpan);
+            return read;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -561,6 +574,7 @@ internal sealed class StallTimeoutStream(Stream inner, TimeSpan? stall = null) :
     {
         if (disposing)
         {
+            _quiet?.Dispose();
             inner.Dispose();
         }
 

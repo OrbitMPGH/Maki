@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
@@ -106,12 +107,17 @@ public sealed class TextEmbedder(
                 _session = new InferenceSession(options.ModelPath, sessionOptions);
             }
             catch (OnnxRuntimeException ex) when (IsCorruptModel(ex) &&
-                                                  Interlocked.Exchange(ref _deletedCorruptModel, 1) == 0)
+                                                  !DeletedCorruptModels.ContainsKey(options.ModelPath))
             {
                 // The store only checks sizes, so a corrupt file would fail here on every attempt.
                 // Provider and allocation failures are not the file's fault and must not cost a
                 // re-download, and a file that parses badly twice will not be fixed by a third.
-                modelStore.DeleteModelFiles();
+                // Remembered per model, and only once the files are actually gone.
+                if (modelStore.DeleteModelFiles())
+                {
+                    DeletedCorruptModels.TryAdd(options.ModelPath, 0);
+                }
+
                 throw;
             }
 
@@ -153,7 +159,8 @@ public sealed class TextEmbedder(
 
     private long _failedUntilTicks;
 
-    private static int _deletedCorruptModel;
+    private static readonly ConcurrentDictionary<string, byte> DeletedCorruptModels =
+        new(StringComparer.OrdinalIgnoreCase);
 
     private static bool IsCorruptModel(OnnxRuntimeException ex) =>
         ex.Message.Contains("InvalidProtobuf", StringComparison.OrdinalIgnoreCase) ||
