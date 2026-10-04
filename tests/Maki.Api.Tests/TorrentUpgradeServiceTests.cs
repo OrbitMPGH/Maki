@@ -555,4 +555,102 @@ public class TorrentUpgradeServiceTests : IDisposable
 
         Assert.Equal("", Assert.Single(_releases.Queries).Query);
     }
+
+    [Fact]
+    public async Task A_sharp_file_is_still_an_upgrade_for_a_volume_under_a_tier_drop_limit()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            var profile = db.UpgradeProfiles.Single();
+            profile.MaxTierScoreDrop = 10;
+            profile.ResolutionWeight = 10;
+            profile.CompressionWeight = 10;
+            db.SaveChanges();
+        }
+
+        Chapter(1, 1, file: f =>
+        {
+            f.MedianWidth = 2000;
+            f.MedianHeight = 3000;
+            f.ImageFormat = "jpg";
+            f.Size = 90_000_000;
+        });
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+
+        Assert.Equal(1, view.Verdict.UpgradeCount);
+    }
+
+    [Fact]
+    public async Task A_profile_that_never_stops_searches_for_volumes()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            var profile = db.UpgradeProfiles.Single();
+            profile.Cutoff = QualityTier.Official;
+            profile.UpgradeUntilScore = 10000;
+            profile.Tiers =
+            [
+                new(QualityTier.Volume, true),
+                new(QualityTier.Official, true),
+                new(QualityTier.Scanlator, true, Grouped: true),
+                new(QualityTier.Aggregator, true, Grouped: true),
+                new(QualityTier.Unknown, true, Grouped: true)
+            ];
+            db.SaveChanges();
+        }
+
+        Chapter(1, 1, file: f => f.Tier = QualityTier.Official);
+
+        var result = await SearchAsync();
+
+        Assert.True(result.Searched);
+        Assert.Null(result.Reason);
+    }
+
+    [Fact]
+    public async Task A_rejected_import_is_never_grabbed_again_once_the_history_is_cleared()
+    {
+        Chapter(1, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", guid: "g1"));
+        int itemId;
+        using (var db = _world.Db.NewContext())
+        {
+            var item = new DownloadQueueItem
+            {
+                SeriesId = _world.SeriesId, Protocol = AcquisitionProtocol.Torrent, Status = QueueStatus.Cancelled,
+                QueuedAt = DateTime.UtcNow, Origin = DownloadOrigin.Upgrade,
+                ReleaseInfoJson = System.Text.Json.JsonSerializer.Serialize(new ReleaseInfo("g1", "Kaguya v01", "Nyaa", null))
+            };
+            item.SetError("error.download.importRejected");
+            db.DownloadQueue.Add(item);
+            db.SaveChanges();
+            itemId = item.Id;
+        }
+
+        Assert.True((await SearchAsync()).Searched);
+        using (var db = _world.Db.NewContext())
+        {
+            db.DownloadQueue.Where(q => q.Id == itemId).ExecuteDelete();
+        }
+
+        Assert.True((await SearchAsync()).Searched);
+
+        Assert.Empty(_releases.Grabs);
+        using var check = _world.Db.NewContext();
+        Assert.Equal(TorrentProposalStatus.Dismissed, check.TorrentProposals.Single(p => p.ReleaseGuid == "g1").Status);
+    }
+
+    [Fact]
+    public async Task The_job_stamps_a_series_with_nothing_to_upgrade_so_it_is_not_walked_daily()
+    {
+        Chapter(1, 1, file: f => f.Trusted = true);
+
+        Assert.Equal(VolumeSearchReasons.NothingBelowCutoff, (await SearchAsync(respectInterval: true)).Reason);
+
+        using var db = _world.Db.NewContext();
+        Assert.NotNull(db.Series.Single().LastVolumeSearchUtc);
+        Assert.Empty(await Service(db).CandidateSeriesAsync(CancellationToken.None));
+        Assert.Empty(_releases.Queries);
+    }
 }

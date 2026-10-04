@@ -198,4 +198,32 @@ public class SourceQualityTests : IDisposable
             (sample.SourceMappingId, sample.ChapterId, sample.Origin));
         Assert.Equal(600, sample.MedianWidth);
     }
+
+    [Fact]
+    public async Task A_sample_refreshed_earlier_in_the_same_batch_is_not_pruned()
+    {
+        _world.Seed();
+        using var db = _world.Db.NewContext();
+        var mapping = db.SourceMappings.Single(m => m.Id == _world.AggMappingId);
+        var start = DateTime.UtcNow.AddDays(-20);
+        for (var i = 0; i < SourceQualitySamples.Keep; i++)
+        {
+            await SourceQualitySamples.RecordAsync(db, mapping, 100 + i, SourceQualityOrigin.Download, 20, 1000, 1500,
+                ReferenceSize, "jpg", start.AddDays(i), CancellationToken.None);
+        }
+
+        await db.SaveChangesAsync();
+
+        await SourceQualitySamples.RecordAsync(db, mapping, 100, SourceQualityOrigin.Probe, 20, 1600, 2400,
+            ReferenceSize, "jpg", DateTime.UtcNow, CancellationToken.None);
+        await SourceQualitySamples.RecordAsync(db, mapping, 500, SourceQualityOrigin.Probe, 20, 1000, 1500,
+            ReferenceSize, "jpg", DateTime.UtcNow.AddMinutes(-1), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var rows = Samples();
+        Assert.Equal(SourceQualitySamples.Keep, rows.Count);
+        Assert.Contains(rows, r => r.ChapterId == 100);
+        Assert.Contains(rows, r => r.ChapterId == 500);
+        Assert.DoesNotContain(rows, r => r.ChapterId == 101);
+    }
 }

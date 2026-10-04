@@ -53,6 +53,8 @@ public static class SourceCompareQuality
         var language = chapter?.Language;
         var evaluator = await upgrades.ForSeriesAsync(snapshot.SeriesId, ct);
         var current = file is null ? null : evaluator?.Evaluate(file, language);
+        var shared = file is not null &&
+                     UpgradeCandidateRules.SharedFile(await db.Chapters.CountAsync(c => c.ChapterFileId == file.Id, ct));
         var formatNames = evaluator is null
             ? []
             : await db.QualityFormats.AsNoTracking().ToDictionaryAsync(f => f.Id, f => f.Name, ct);
@@ -92,7 +94,10 @@ public static class SourceCompareQuality
             var isUpgrade = false;
             if (file is not null)
             {
+                var sourceChapterId = chapter?.SourceLinks.FirstOrDefault(l => l.SourceMappingId == panel.MappingId)?.SourceChapterId;
                 if (!UpgradeTrash.IsReplaceable(file.RelativePath)) reason = UpgradeReasons.UnsupportedFile;
+                else if (shared) reason = UpgradeReasons.SharedFile;
+                else if (UpgradeCandidateRules.SameCopy(file, panel.SourceName, sourceChapterId)) reason = UpgradeReasons.SameCopy;
                 else if (file.Trusted) reason = "trusted";
                 else if (current is not { } now) reason = "unmeasured";
                 else if (now.CutoffMet) reason = "cutoff_met";

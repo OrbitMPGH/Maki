@@ -120,6 +120,29 @@ public static class QualityScorer
     /// <param name="trusted">The current file's protect flag.</param>
     public static bool IsUpgrade(
         UpgradeProfile profile, QualityScore current, int? currentPageCount, bool trusted,
+        QualityScore candidate, int? candidateWidth, int? candidatePageCount) =>
+        IsUpgrade(profile, current, current.Score, currentPageCount, trusted, candidate, candidateWidth,
+            candidatePageCount);
+
+    /// <summary>
+    /// <see cref="IsUpgrade(UpgradeProfile, QualityScore, int?, bool, QualityScore, int?, int?)"/> for a
+    /// candidate scored before anything about it is measured, such as a torrent release. It has no
+    /// measured points, so the current file's are left out of the comparison too; the cutoff still reads
+    /// the file's full score.
+    /// </summary>
+    public static bool IsUnmeasuredUpgrade(UpgradeProfile profile, QualityScore current, bool trusted, QualityScore candidate) =>
+        IsUpgrade(profile, WithoutMeasured(current), current.Score, null, trusted, WithoutMeasured(candidate),
+            candidateWidth: 1, candidatePageCount: null);
+
+    private static QualityScore WithoutMeasured(QualityScore score) => score with
+    {
+        Score = score.Score - score.ResolutionPoints - score.CompressionPoints,
+        ResolutionPoints = 0,
+        CompressionPoints = 0
+    };
+
+    private static bool IsUpgrade(
+        UpgradeProfile profile, QualityScore current, int cutoffScore, int? currentPageCount, bool trusted,
         QualityScore candidate, int? candidateWidth, int? candidatePageCount)
     {
         if (!profile.UpgradesEnabled || trusted)
@@ -147,7 +170,7 @@ public static class QualityScorer
             return false;
         }
 
-        if (CutoffMet(profile, current.Tier, current.Score))
+        if (CutoffMet(profile, current.Tier, cutoffScore))
         {
             return false;
         }
@@ -159,7 +182,9 @@ public static class QualityScorer
             return profile.MaxTierScoreDrop is not { } maxDrop || candidate.Score >= current.Score - maxDrop;
         }
 
-        return candidateRank == currentRank && candidate.Score >= current.Score + profile.MinScoreDelta;
+        // At least one point even when the profile says 0: an equal score is never an upgrade, or two
+        // mirrors of one copy would swap places on every scan.
+        return candidateRank == currentRank && candidate.Score >= current.Score + Math.Max(1, profile.MinScoreDelta);
     }
 
     /// <summary>

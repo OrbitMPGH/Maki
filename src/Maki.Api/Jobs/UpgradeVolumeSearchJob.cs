@@ -43,8 +43,13 @@ public class UpgradeVolumeSearchJob(
         try
         {
             await torrents.ExpireAsync(options.ProposalExpiryDays, ct);
+            var run = await torrents.LoadSettingsAsync(ct);
             var searched = 0;
-            foreach (var seriesId in await torrents.CandidateSeriesAsync(ct))
+            // Every series would answer the same instance-wide refusal, so there is nothing to walk.
+            var candidates = run is { ProwlarrConfigured: true, Options: { Enabled: true, VolumeSearch: true } }
+                ? await torrents.CandidateSeriesAsync(ct)
+                : [];
+            foreach (var seriesId in candidates)
             {
                 if (searched >= options.VolumeSearchesPerRun)
                 {
@@ -53,7 +58,7 @@ public class UpgradeVolumeSearchJob(
 
                 try
                 {
-                    var result = await torrents.SearchSeriesAsync(seriesId, ct, respectInterval: true);
+                    var result = await torrents.SearchSeriesAsync(seriesId, ct, respectInterval: true, run: run);
                     if (result.Searched)
                     {
                         searched++;

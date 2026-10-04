@@ -304,7 +304,7 @@ public record TrustedDto(bool Trusted);
 /// <summary>Wire spellings for the quality enums: tiers lowercase, condition types camelCase.</summary>
 public static class QualityNames
 {
-    public static string Tier(QualityTier tier) => tier.ToString().ToLowerInvariant();
+    public static string Tier(QualityTier tier) => QualitySnapshot.TierName(tier);
 
     public static bool TryParseTier(string? value, out QualityTier tier) =>
         Enum.TryParse(value, ignoreCase: true, out tier) && Enum.IsDefined(tier) && !int.TryParse(value, out _);

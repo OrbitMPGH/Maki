@@ -630,4 +630,32 @@ public class UpgradeScanServiceTests : IDisposable
         var dto = Maki.Api.Dtos.SeriesDto.FromEntity(series).LastUpgradeScan!;
         Assert.Equal((1, 1), (dto.Probed, dto.Queued));
     }
+
+    [Fact]
+    public async Task A_reverted_copy_stays_out_after_a_profile_edit_and_in_a_scan_by_hand()
+    {
+        _world.Seed();
+        var (chapterId, _) = _world.Chapter(1);
+        using (var db = _world.Db.NewContext())
+        {
+            db.UpgradeAttempts.Add(new UpgradeAttempt
+            {
+                ChapterId = chapterId, SeriesId = _world.SeriesId, SourceMappingId = _world.OfficialMappingId,
+                SourceChapterId = "o1", ProfileId = _world.ProfileId, ProfileVersion = 1,
+                Reason = UpgradeReasons.RevertedByUser, Probed = true, CreatedAtUtc = DateTime.UtcNow
+            });
+            db.SaveChanges();
+            db.UpgradeProfiles.ExecuteUpdate(s => s.SetProperty(p => p.Version, p => p.Version + 1));
+        }
+
+        var manual = await ScanAsync();
+        var daily = await DailyScanAsync();
+
+        Assert.Equal(0, manual.CandidatesProbed);
+        Assert.Equal(1, manual.Skipped["memoised"]);
+        Assert.Equal(0, daily.CandidatesProbed);
+        Assert.Empty(Queue());
+        var outcome = Assert.Single((await ScanChapterAsync(chapterId)).Candidates);
+        Assert.Equal(UpgradeReasons.RevertedByUser, outcome.Reason);
+    }
 }

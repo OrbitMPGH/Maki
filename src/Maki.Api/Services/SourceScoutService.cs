@@ -216,12 +216,11 @@ public sealed class SourceScoutService(
                     }
                     else
                     {
-                        long? size = probe.SampledPages > 0 ? probe.SampleBytes / probe.SampledPages * probe.PageCount : null;
                         await writes.WaitAsync(token);
                         try
                         {
                             await SourceQualitySamples.RecordAsync(db, entry.Mapping, chapter.Id, SourceQualityOrigin.Probe,
-                                probe.PageCount, probe.MedianWidth, probe.MedianHeight, size, probe.ImageFormat,
+                                probe.PageCount, probe.MedianWidth, probe.MedianHeight, probe.SizeBytes, probe.ImageFormat,
                                 DateTime.UtcNow, token);
                             await db.SaveChangesAsync(token);
                         }

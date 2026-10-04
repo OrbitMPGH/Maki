@@ -8,7 +8,11 @@ namespace Maki.Api.Services;
 
 /// <param name="PageCount">Pages the source lists for the chapter, not the number sampled.</param>
 public sealed record ProbeResult(int PageCount, int? MedianWidth, int? MedianHeight,
-    string ImageFormat, long SampleBytes, int SampledPages);
+    string ImageFormat, long SampleBytes, int SampledPages)
+{
+    /// <summary>The whole chapter's size, extrapolated from the sampled pages; null when none were sampled.</summary>
+    public long? SizeBytes => SampledPages > 0 ? SampleBytes / SampledPages * PageCount : null;
+}
 
 /// <summary>
 /// Downloads a few pages of one source's copy of a chapter and measures them, so the upgrade scan can

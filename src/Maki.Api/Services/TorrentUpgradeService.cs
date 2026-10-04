@@ -48,6 +48,9 @@ public static class VolumeSearchReasons
     public const string GrabFailed = "grab_failed";
 }
 
+/// <summary>The instance settings a volume search reads, loaded once per job run rather than per series.</summary>
+public sealed record VolumeSearchSettings(UpgradeOptions Options, bool ProwlarrConfigured);
+
 public enum ProposalActionError
 {
     None,
@@ -63,9 +66,10 @@ public static class TorrentUpgradeRules
         $"torrent:{indexer}", null, group, title, null, null, null, null, null);
 
     /// <summary>
-    /// A chapter with a file is an upgrade when the profile would take the release over it. The width
-    /// is assumed present because nothing is measured before the download; the post-download guard is
-    /// what checks it. A chapter without a file is only ever classified, never wanted by this.
+    /// A chapter with a file is an upgrade when the profile would take the release over it. Nothing is
+    /// measured before the download, so the file's measured points are left out of the comparison
+    /// rather than counted against a release that has none; the post-download guard checks the pages.
+    /// A chapter without a file is only ever classified, never wanted by this.
     /// </summary>
     public static ChapterSpanState StateOf(UpgradeEvaluator evaluator, Chapter chapter, ChapterFile? file, QualityScore candidate)
     {
@@ -79,8 +83,7 @@ public static class TorrentUpgradeRules
             return ChapterSpanState.AlreadyMet;
         }
 
-        return QualityScorer.IsUpgrade(evaluator.Profile, current.Score, file.PageCount, file.Trusted, candidate,
-            candidateWidth: 1, candidatePageCount: null)
+        return QualityScorer.IsUnmeasuredUpgrade(evaluator.Profile, current.Score, file.Trusted, candidate)
             ? ChapterSpanState.Upgrade
             : ChapterSpanState.AlreadyMet;
     }
@@ -270,8 +273,10 @@ public class TorrentUpgradeService(
     /// The manual trigger ignores the weekly interval and passes <paramref name="ignoreGlobalSwitch"/>
     /// so an admin can try a series with the instance switches off; the job passes neither.
     /// </summary>
+    /// <param name="run">The job's settings, read once per run; null reads them here.</param>
     public async Task<SeriesVolumeSearchResult> SearchSeriesAsync(
-        int seriesId, CancellationToken ct, bool respectInterval = false, bool ignoreGlobalSwitch = false)
+        int seriesId, CancellationToken ct, bool respectInterval = false, bool ignoreGlobalSwitch = false,
+        VolumeSearchSettings? run = null)
     {
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series is null)
@@ -279,11 +284,21 @@ public class TorrentUpgradeService(
             return NotEligible(VolumeSearchReasons.NotFound);
         }
 
-        var options = await UpgradeOptions.LoadAsync(settings, ct);
+        run ??= await LoadSettingsAsync(ct);
+        var options = run.Options;
         var evaluator = await evaluation.ForSeriesAsync(seriesId, ct);
-        var eligible = await EligibilityAsync(series, options, evaluator, respectInterval, ignoreGlobalSwitch, ct);
+        var eligible = await EligibilityAsync(series, run, evaluator, respectInterval, ignoreGlobalSwitch, ct);
         if (eligible is not null)
         {
+            // The weekly job would otherwise walk every such series again each day. A change that makes
+            // one eligible waits out the interval, the same as a series that was searched.
+            if (respectInterval && eligible is VolumeSearchReasons.Incognito or VolumeSearchReasons.NoProfile
+                    or VolumeSearchReasons.ProfileDisabled or VolumeSearchReasons.Cutoff
+                    or VolumeSearchReasons.NothingBelowCutoff)
+            {
+                await StampSearchedAsync(seriesId);
+            }
+
             return NotEligible(eligible);
         }
 
@@ -341,11 +356,19 @@ public class TorrentUpgradeService(
         }
         finally
         {
-            await db.Series.Where(s => s.Id == seriesId)
-                .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastVolumeSearchUtc, time.GetUtcNow().UtcDateTime),
-                    CancellationToken.None);
+            await StampSearchedAsync(seriesId);
         }
     }
+
+    public async Task<VolumeSearchSettings> LoadSettingsAsync(CancellationToken ct) => new(
+        await UpgradeOptions.LoadAsync(settings, ct),
+        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrUrl, ct)) &&
+        !string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)));
+
+    private Task StampSearchedAsync(int seriesId) =>
+        db.Series.Where(s => s.Id == seriesId)
+            .ExecuteUpdateAsync(u => u.SetProperty(s => s.LastVolumeSearchUtc, time.GetUtcNow().UtcDateTime),
+                CancellationToken.None);
 
     /// <summary>Queues the proposal's release with the verdict as it reads against the library now.</summary>
     public async Task<(int? QueueItemId, ProposalActionError Error)> GrabProposalAsync(int proposalId, int? userId, CancellationToken ct)
@@ -438,16 +461,16 @@ public class TorrentUpgradeService(
     };
 
     private async Task<string?> EligibilityAsync(
-        Series series, UpgradeOptions options, UpgradeEvaluator? evaluator, bool respectInterval,
+        Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool respectInterval,
         bool ignoreGlobalSwitch, CancellationToken ct)
     {
+        var options = run.Options;
         if (!ignoreGlobalSwitch && (!options.Enabled || !options.VolumeSearch))
         {
             return VolumeSearchReasons.Disabled;
         }
 
-        if (string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrUrl, ct)) ||
-            string.IsNullOrWhiteSpace(await settings.GetAsync(SettingKeys.ProwlarrApiKey, ct)))
+        if (!run.ProwlarrConfigured)
         {
             return VolumeSearchReasons.NoProwlarr;
         }
@@ -467,8 +490,12 @@ public class TorrentUpgradeService(
             return VolumeSearchReasons.ProfileDisabled;
         }
 
-        if (!QualityScorer.Allows(evaluator.Profile, QualityTier.Volume) ||
-            QualityScorer.Rank(evaluator.Profile, evaluator.Profile.Cutoff) < QualityScorer.Rank(evaluator.Profile, QualityTier.Volume))
+        // A cutoff on the tier alone that stops below Volume never asks for one. With a score to reach
+        // as well, a file at any tier can still be short of the cutoff, so the files decide below.
+        var profile = evaluator.Profile;
+        if (!QualityScorer.Allows(profile, QualityTier.Volume) ||
+            profile.UpgradeUntilScore == 0 &&
+            QualityScorer.Rank(profile, profile.Cutoff) < QualityScorer.Rank(profile, QualityTier.Volume))
         {
             return VolumeSearchReasons.Cutoff;
         }
@@ -483,37 +510,120 @@ public class TorrentUpgradeService(
             return VolumeSearchReasons.Recent;
         }
 
+        // The best any volume release could score, put through the same rule the verdict uses.
+        var volume = evaluator.OptimisticScore(new QualityCandidate(QualityTier.Volume, null, null, null, null,
+            null, null, null, null, null));
         var chapters = await db.Chapters.AsNoTracking()
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null && !c.ChapterFile!.Trusted)
             .Include(c => c.ChapterFile)
             .ToListAsync(ct);
-        return chapters.Any(c => evaluator.Evaluate(c.ChapterFile!, c.Language) is { CutoffMet: false })
+        return chapters.Any(c => TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, volume) == ChapterSpanState.Upgrade)
             ? null
             : VolumeSearchReasons.NothingBelowCutoff;
     }
 
-    /// <summary>Releases the user dismissed, and ones already downloading for the series.</summary>
+    /// <summary>
+    /// Releases the user dismissed, reverted or turned down at import, and ones already downloading for
+    /// the series. A turned-down import is written down as a dismissed proposal here, so clearing the
+    /// queue history does not let the search grab it again.
+    /// </summary>
     private async Task<HashSet<string>> BlockedGuidsAsync(int seriesId, CancellationToken ct)
     {
         var dismissed = await db.TorrentProposals
             .Where(p => p.SeriesId == seriesId && (p.Status == TorrentProposalStatus.Dismissed || p.Status == TorrentProposalStatus.Accepted))
             .Select(p => p.ReleaseGuid)
             .ToListAsync(ct);
-        var active = await db.DownloadQueue
+        var torrents = await db.DownloadQueue
             .Where(q => q.SeriesId == seriesId && q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null &&
-                        q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
-            .Select(q => q.ReleaseInfoJson!)
+                        (q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled ||
+                         q.Status == QueueStatus.Cancelled && q.ErrorKey == RejectedImportKey))
+            .Select(q => new { q.Status, Json = q.ReleaseInfoJson! })
             .ToListAsync(ct);
         var blocked = dismissed.ToHashSet(StringComparer.Ordinal);
-        foreach (var json in active)
+        var recorded = dismissed.ToHashSet(StringComparer.Ordinal);
+        var declined = false;
+        foreach (var row in torrents)
         {
-            if (JsonSerializer.Deserialize<ReleaseInfo>(json) is { } info)
+            if (ParseRelease(row.Json) is not { } info)
             {
-                blocked.Add(info.Guid);
+                continue;
             }
+
+            if (row.Status == QueueStatus.Cancelled && recorded.Add(info.Guid))
+            {
+                await DeclineAsync(db, seriesId, row.Json, null, time.GetUtcNow().UtcDateTime, ct);
+                declined = true;
+            }
+
+            blocked.Add(info.Guid);
+        }
+
+        if (declined)
+        {
+            await db.SaveChangesAsync(ct);
         }
 
         return blocked;
+    }
+
+    /// <summary>The error a parked import the user rejected is cancelled with.</summary>
+    private const string RejectedImportKey = "error.download.importRejected";
+
+    /// <summary>
+    /// Records the release on a torrent queue row as dismissed for the series, unsaved, so the volume
+    /// search never grabs or proposes it again. For a release the user reverted or turned down: the
+    /// torrent counterpart of the scraper's <c>reverted_by_user</c> memo.
+    /// </summary>
+    public static async Task DeclineAsync(MakiDbContext db, int seriesId, string? releaseInfoJson, int? userId,
+        DateTime nowUtc, CancellationToken ct)
+    {
+        if (ParseRelease(releaseInfoJson) is not { Guid.Length: > 0 } release)
+        {
+            return;
+        }
+
+        var row = db.TorrentProposals.Local.FirstOrDefault(p => p.SeriesId == seriesId && p.ReleaseGuid == release.Guid)
+                  ?? await db.TorrentProposals.IgnoreQueryFilters()
+                      .FirstOrDefaultAsync(p => p.SeriesId == seriesId && p.ReleaseGuid == release.Guid, ct);
+        if (row is { Status: TorrentProposalStatus.Dismissed or TorrentProposalStatus.Accepted })
+        {
+            return;
+        }
+
+        if (row is null)
+        {
+            row = new TorrentProposal
+            {
+                SeriesId = seriesId,
+                ReleaseGuid = release.Guid,
+                ReleaseInfoJson = releaseInfoJson!,
+                Title = release.Title,
+                Indexer = release.Indexer,
+                CreatedAtUtc = nowUtc
+            };
+            db.TorrentProposals.Add(row);
+        }
+
+        row.Status = TorrentProposalStatus.Dismissed;
+        row.ResolvedByUserId = userId;
+        row.ResolvedAtUtc = nowUtc;
+    }
+
+    private static ReleaseInfo? ParseRelease(string? json)
+    {
+        if (string.IsNullOrEmpty(json))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<ReleaseInfo>(json);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private async Task<LibraryState> LibraryAsync(Series series, CancellationToken ct)

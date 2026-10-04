@@ -450,4 +450,36 @@ public class QualityScorerTests
         Assert.False(profile.Tiers[0].Allowed);
         Assert.All(profile.Tiers.Skip(2), t => Assert.True(t.Allowed));
     }
+
+    [Fact]
+    public void An_equal_score_is_never_an_upgrade_even_with_no_minimum_gain()
+    {
+        var profile = Profile(p => p.MinScoreDelta = 0);
+
+        Assert.False(QualityScorer.IsUpgrade(profile, S(QualityTier.Scanlator, 10), 20, false,
+            S(QualityTier.Scanlator, 10), 1400, 20));
+        Assert.True(QualityScorer.IsUpgrade(profile, S(QualityTier.Scanlator, 10), 20, false,
+            S(QualityTier.Scanlator, 11), 1400, 20));
+    }
+
+    [Fact]
+    public void An_unmeasured_candidate_is_compared_without_the_files_measured_points()
+    {
+        var profile = Profile(p => { p.Cutoff = QualityTier.Volume; p.MaxTierScoreDrop = 10; });
+        var sharp = new QualityScore(QualityTier.Scanlator, 30, [], ResolutionPoints: 10, CompressionPoints: 20);
+        var volume = S(QualityTier.Volume);
+
+        Assert.False(QualityScorer.IsUpgrade(profile, sharp, null, false, volume, 1, null));
+        Assert.True(QualityScorer.IsUnmeasuredUpgrade(profile, sharp, false, volume));
+        Assert.False(QualityScorer.IsUnmeasuredUpgrade(profile, sharp, true, volume));
+    }
+
+    [Fact]
+    public void An_unmeasured_candidate_still_meets_a_cutoff_reached_by_the_full_score()
+    {
+        var profile = Profile(p => { p.Cutoff = QualityTier.Scanlator; p.UpgradeUntilScore = 25; });
+        var sharp = new QualityScore(QualityTier.Scanlator, 30, [], ResolutionPoints: 10, CompressionPoints: 20);
+
+        Assert.False(QualityScorer.IsUnmeasuredUpgrade(profile, sharp, false, S(QualityTier.Volume)));
+    }
 }

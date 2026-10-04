@@ -298,6 +298,8 @@ public class UpgradesController(
             UpgradeRevertError.NotLatest => this.Conflict(localizer, "error.upgrades.notLatest"),
             UpgradeRevertError.TrashGone => this.Conflict(localizer, "error.upgrades.trashGone"),
             UpgradeRevertError.MoveFailed => this.Conflict(localizer, "error.upgrades.revertMoveFailed"),
+            UpgradeRevertError.FileChanged => this.Conflict(localizer, "error.upgrades.fileChangedSinceUpgrade"),
+            UpgradeRevertError.DownloadInFlight => this.Conflict(localizer, "error.upgrades.revertDownloadInFlight"),
             _ => Ok((await RowsAsync([id], ct))[id])
         };
     }
@@ -322,6 +324,7 @@ public class UpgradesController(
             UpgradeRevertError.AlreadyReverted => this.Conflict(localizer, "error.upgrades.alreadyReverted"),
             UpgradeRevertError.NotLatest => this.Conflict(localizer, "error.upgrades.notLatest"),
             UpgradeRevertError.TrashGone => this.Conflict(localizer, "error.upgrades.trashGone"),
+            UpgradeRevertError.DownloadInFlight => this.Conflict(localizer, "error.upgrades.revertDownloadInFlight"),
             _ => this.Conflict(localizer, "error.upgrades.revertMoveFailed")
         };
     }

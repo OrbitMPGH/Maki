@@ -35,6 +35,34 @@ public static class UpgradeAttempts
                   ?? await db.UpgradeAttempts.IgnoreQueryFilters().FirstOrDefaultAsync(a =>
                       a.ChapterId == chapterId && a.SourceMappingId == mappingId && a.SourceChapterId == sourceChapterId &&
                       a.ProfileId == profileId && a.ProfileVersion == profileVersion, ct);
+        return Fill(db, row, chapterId, seriesId, mappingId, sourceChapterId, profileId, profileVersion, reason, probed,
+            pageCount, width, score);
+
+        bool Match(UpgradeAttempt a) =>
+            a.ChapterId == chapterId && a.SourceMappingId == mappingId && a.SourceChapterId == sourceChapterId &&
+            a.ProfileId == profileId && a.ProfileVersion == profileVersion;
+    }
+
+    /// <summary>
+    /// <see cref="UpsertAsync"/> against rows the caller already loaded: every row of
+    /// <paramref name="profileId"/> at <paramref name="profileVersion"/> for the series, keyed by
+    /// candidate. A key missing from it has no row, so nothing is queried; an added row joins it.
+    /// </summary>
+    public static UpgradeAttempt Upsert(MakiDbContext db,
+        Dictionary<(int ChapterId, int MappingId, string SourceChapterId), UpgradeAttempt> loaded, int chapterId,
+        int seriesId, int mappingId, string sourceChapterId, int profileId, int profileVersion, string reason,
+        bool probed, int? pageCount, int? width, int? score)
+    {
+        var row = Fill(db, loaded.GetValueOrDefault((chapterId, mappingId, sourceChapterId)), chapterId, seriesId,
+            mappingId, sourceChapterId, profileId, profileVersion, reason, probed, pageCount, width, score);
+        loaded[(chapterId, mappingId, sourceChapterId)] = row;
+        return row;
+    }
+
+    private static UpgradeAttempt Fill(MakiDbContext db, UpgradeAttempt? row, int chapterId, int seriesId,
+        int mappingId, string sourceChapterId, int profileId, int profileVersion, string reason, bool probed,
+        int? pageCount, int? width, int? score)
+    {
         if (row is null)
         {
             row = new UpgradeAttempt
@@ -56,10 +84,6 @@ public static class UpgradeAttempts
         row.CandidateScore = score;
         row.CreatedAtUtc = DateTime.UtcNow;
         return row;
-
-        bool Match(UpgradeAttempt a) =>
-            a.ChapterId == chapterId && a.SourceMappingId == mappingId && a.SourceChapterId == sourceChapterId &&
-            a.ProfileId == profileId && a.ProfileVersion == profileVersion;
     }
 }
 
@@ -143,14 +167,26 @@ public class UpgradeScanService(
             foreach (var seriesId in seriesIds)
             {
                 ct.ThrowIfCancellationRequested();
-                await ScanSeriesCoreAsync(seriesId, options, disabled, run, ct);
-
-                // One context serves the whole library pass. Without this every series' memo rows
-                // stay tracked, and each later SaveChanges runs DetectChanges over all of them. The
-                // memo stays tracked within a series because UpgradeAttempts.UpsertAsync looks in
-                // Local before it queries.
-                if (onlySeries is null)
+                if (onlySeries is not null)
                 {
+                    await ScanSeriesCoreAsync(seriesId, options, disabled, run, ct);
+                    continue;
+                }
+
+                // One series failing (a chapter re-pointed mid-scan, a source throwing) must not stop
+                // the rest of the library pass.
+                try
+                {
+                    await ScanSeriesCoreAsync(seriesId, options, disabled, run, ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+                {
+                    logger.LogWarning(ex, "Upgrade scan of series {SeriesId} failed", seriesId);
+                }
+                finally
+                {
+                    // One context serves the whole library pass. Without this every series' memo rows
+                    // stay tracked, and each later SaveChanges runs DetectChanges over all of them.
                     db.ChangeTracker.Clear();
                 }
             }
@@ -279,6 +315,12 @@ public class UpgradeScanService(
                 .Where(a => a.SeriesId == seriesId && a.ProfileId == profile.Id && a.ProfileVersion == profile.Version)
                 .ToListAsync(ct))
             .ToDictionary(a => (a.ChapterId, a.SourceMappingId, a.SourceChapterId));
+        // A copy a user reverted stays out under any profile or version, and for a scan by hand too.
+        var reverted = (await db.UpgradeAttempts.AsNoTracking()
+                .Where(a => a.SeriesId == seriesId && a.Reason == UpgradeReasons.RevertedByUser)
+                .ToListAsync(ct))
+            .DistinctBy(a => (a.ChapterId, a.SourceMappingId, a.SourceChapterId))
+            .ToDictionary(a => (a.ChapterId, a.SourceMappingId, a.SourceChapterId));
         var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);
 
         var survivors = new List<Survivor>();
@@ -304,11 +346,15 @@ public class UpgradeScanService(
                 continue;
             }
 
-            // A volume or compilation backing several chapters: replacing it with one chapter's copy
-            // would take the others' pages with it.
-            if (fileUse[file.Id] > 1)
+            // No count means a download re-pointed the chapter between the two reads; the next scan sees it.
+            if (!fileUse.TryGetValue(file.Id, out var uses))
             {
-                run.Skip("shared_file");
+                continue;
+            }
+
+            if (UpgradeCandidateRules.SharedFile(uses))
+            {
+                run.Skip(UpgradeReasons.SharedFile);
                 continue;
             }
 
@@ -343,15 +389,20 @@ public class UpgradeScanService(
                     continue;
                 }
 
-                // The copy on disk came from here. Only a different chapter id on the same source (a
-                // group's re-upload) is a new candidate; with no recorded id there is no telling.
-                if (string.Equals(mapping.SourceName, file.SourceName, StringComparison.OrdinalIgnoreCase) &&
-                    (file.SourceChapterId is null || file.SourceChapterId == link.SourceChapterId))
+                if (UpgradeCandidateRules.SameCopy(file, mapping.SourceName, link.SourceChapterId))
                 {
                     continue;
                 }
 
                 anyOtherSource = true;
+
+                if (reverted.TryGetValue((chapter.Id, mapping.Id, link.SourceChapterId), out var undone))
+                {
+                    run.Skip("memoised");
+                    run.Outcome(mapping, link.SourceChapterId, UpgradeReasons.RevertedByUser, undone.Probed,
+                        undone.CandidatePageCount, undone.CandidateWidth, undone.CandidateScore);
+                    continue;
+                }
 
                 // A scan asked for by hand looks at every candidate again; only a download it already
                 // queued, and that could still happen, keeps it from being queued twice.
@@ -375,13 +426,13 @@ public class UpgradeScanService(
                     chapter.Language);
                 if (!QualityScorer.Allows(profile, listing.Tier))
                 {
-                    await RecordAsync(chapter, mapping, link, profile, UpgradeReasons.TierNotAllowed, false, null, null, null, run, ct);
+                    Record(memo, chapter, mapping, link, profile, UpgradeReasons.TierNotAllowed, false, null, null, null, run);
                     continue;
                 }
 
                 if (!evaluator.CouldUpgrade(current.Score, file.PageCount, file.Trusted, listing))
                 {
-                    await RecordAsync(chapter, mapping, link, profile, UpgradeReasons.ScoreNotHigher, false, null, null, null, run, ct);
+                    Record(memo, chapter, mapping, link, profile, UpgradeReasons.ScoreNotHigher, false, null, null, null, run);
                     continue;
                 }
 
@@ -391,8 +442,8 @@ public class UpgradeScanService(
                     listing = estimate.Apply(listing);
                     if (!evaluator.CouldUpgrade(current.Score, file.PageCount, file.Trusted, listing))
                     {
-                        await RecordAsync(chapter, mapping, link, profile, UpgradeReasons.EstimateNotHigher, false, null,
-                            estimate.MedianWidth, evaluator.Score(listing).Score, run, ct);
+                        Record(memo, chapter, mapping, link, profile, UpgradeReasons.EstimateNotHigher, false, null,
+                            estimate.MedianWidth, evaluator.Score(listing).Score, run);
                         continue;
                     }
                 }
@@ -425,7 +476,7 @@ public class UpgradeScanService(
             var sourceName = s.Mapping.SourceName;
             if (queue.CooldownRemaining(sourceName) > TimeSpan.Zero)
             {
-                await RecordAsync(s.Chapter, s.Mapping, s.Link, profile, UpgradeReasons.SourceCooldown, false, null, null, null, run, ct);
+                Record(memo, s.Chapter, s.Mapping, s.Link, profile, UpgradeReasons.SourceCooldown, false, null, null, null, run);
                 continue;
             }
 
@@ -440,11 +491,11 @@ public class UpgradeScanService(
                 var reason = queue.CooldownRemaining(sourceName) > TimeSpan.Zero
                     ? UpgradeReasons.SourceCooldown
                     : UpgradeReasons.ProbeFailed;
-                await RecordAsync(chapter, s.Mapping, s.Link, profile, reason, true, null, null, null, run, ct);
+                Record(memo, chapter, s.Mapping, s.Link, profile, reason, true, null, null, null, run);
                 continue;
             }
 
-            long? size = probe.SampledPages > 0 ? probe.SampleBytes / probe.SampledPages * probe.PageCount : null;
+            var size = probe.SizeBytes;
             await SourceQualitySamples.RecordAsync(db, s.Mapping, chapter.Id, SourceQualityOrigin.Probe, probe.PageCount,
                 probe.MedianWidth, probe.MedianHeight, size, probe.ImageFormat, now, ct);
             var score = evaluator.Score(evaluator.CandidateFor(sourceName, s.Group, Path.GetFileName(s.File.RelativePath),
@@ -453,8 +504,8 @@ public class UpgradeScanService(
                     probe.PageCount))
             {
                 var reason = UpgradeReasons.Explain(profile, s.File.PageCount, score, probe.MedianWidth, probe.PageCount);
-                await RecordAsync(chapter, s.Mapping, s.Link, profile, reason, true, probe.PageCount, probe.MedianWidth,
-                    score.Score, run, ct);
+                Record(memo, chapter, s.Mapping, s.Link, profile, reason, true, probe.PageCount, probe.MedianWidth,
+                    score.Score, run);
                 continue;
             }
 
@@ -494,9 +545,9 @@ public class UpgradeScanService(
             }
 
             var s = w.Survivor;
-            var attempt = await UpgradeAttempts.UpsertAsync(db, s.Chapter.Id, seriesId, s.Mapping.Id,
+            var attempt = UpgradeAttempts.Upsert(db, memo, s.Chapter.Id, seriesId, s.Mapping.Id,
                 s.Link.SourceChapterId, profile.Id, profile.Version, UpgradeReasons.Enqueued, true, w.Probe.PageCount,
-                w.Probe.MedianWidth, w.Score.Score, ct);
+                w.Probe.MedianWidth, w.Score.Score);
             await db.SaveChangesAsync(ct);
 
             var info = new UpgradeInfo
@@ -525,6 +576,7 @@ public class UpgradeScanService(
             if (item is null)
             {
                 db.UpgradeAttempts.Remove(attempt);
+                memo.Remove((s.Chapter.Id, s.Mapping.Id, s.Link.SourceChapterId));
                 await db.SaveChangesAsync(ct);
                 run.Skip("queued");
                 run.Outcome(s.Mapping, s.Link.SourceChapterId, "queued", true, w.Probe.PageCount, w.Probe.MedianWidth,
@@ -574,11 +626,12 @@ public class UpgradeScanService(
         return (a.Probe.MedianWidth ?? 0) > (b.Probe.MedianWidth ?? 0);
     }
 
-    private async Task RecordAsync(Chapter chapter, SourceMapping mapping, ChapterSourceLink link, UpgradeProfile profile,
-        string reason, bool probed, int? pageCount, int? width, int? score, Run run, CancellationToken ct)
+    private void Record(Dictionary<(int ChapterId, int MappingId, string SourceChapterId), UpgradeAttempt> memo,
+        Chapter chapter, SourceMapping mapping, ChapterSourceLink link, UpgradeProfile profile, string reason,
+        bool probed, int? pageCount, int? width, int? score, Run run)
     {
-        await UpgradeAttempts.UpsertAsync(db, chapter.Id, chapter.SeriesId, mapping.Id, link.SourceChapterId, profile.Id,
-            profile.Version, reason, probed, pageCount, width, score, ct);
+        UpgradeAttempts.Upsert(db, memo, chapter.Id, chapter.SeriesId, mapping.Id, link.SourceChapterId, profile.Id,
+            profile.Version, reason, probed, pageCount, width, score);
         run.Skip(reason);
         run.Outcome(mapping, link.SourceChapterId, reason, probed, pageCount, width, score);
     }

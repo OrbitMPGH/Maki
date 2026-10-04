@@ -182,6 +182,60 @@ public class UpgradeRevertServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_file_downloaded_again_after_the_upgrade_is_left_alone()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            db.ChapterFiles.Single(f => f.Id == _fileId).DateAdded = DateTime.UtcNow.AddMinutes(1);
+            db.SaveChanges();
+        }
+
+        Assert.Equal(UpgradeRevertError.FileChanged, await RevertAsync());
+        Assert.Equal(_upgraded, File.ReadAllBytes(_path));
+        using var check = _world.Db.NewContext();
+        Assert.Null(check.UpgradeHistory.Single().RevertedAtUtc);
+    }
+
+    [Fact]
+    public async Task Refused_while_a_download_of_the_chapter_is_running()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            db.DownloadQueue.Add(new Maki.Core.Entities.DownloadQueueItem
+            {
+                SeriesId = _world.SeriesId, ChapterId = db.UpgradeHistory.Single().ChapterId,
+                Status = Maki.Core.Entities.QueueStatus.Downloading, QueuedAt = DateTime.UtcNow,
+                Origin = Maki.Core.Entities.DownloadOrigin.Manual
+            });
+            db.SaveChanges();
+        }
+
+        Assert.Equal(UpgradeRevertError.DownloadInFlight, await RevertAsync());
+        Assert.Equal(_upgraded, File.ReadAllBytes(_path));
+    }
+
+    [Fact]
+    public async Task A_revert_waits_for_the_series_lock()
+    {
+        var held = await SeriesLocks.SeriesAsync(_world.SeriesId, CancellationToken.None);
+        Task<UpgradeRevertError> revert;
+        try
+        {
+            revert = RevertAsync();
+            await Task.Delay(200);
+            Assert.False(revert.IsCompleted);
+            Assert.Equal(_upgraded, File.ReadAllBytes(_path));
+        }
+        finally
+        {
+            held.Dispose();
+        }
+
+        Assert.Equal(UpgradeRevertError.None, await revert);
+        Assert.Equal(_original, File.ReadAllBytes(_path));
+    }
+
+    [Fact]
     public async Task Refused_when_the_trashed_file_is_gone()
     {
         File.Delete(Path.Combine(_world.Library, ".maki-trash", _world.SeriesId.ToString(), $"{_fileId}-Series 001.cbz"));
@@ -431,5 +485,35 @@ public class UpgradeGroupRevertTests : IDisposable
         using var db = _world.Db.NewContext();
         Assert.All(db.Chapters.Where(c => _chapterIds.Contains(c.Id)).ToList(), c => Assert.Equal(_volumeId, c.ChapterFileId));
         Assert.All(db.UpgradeHistory.ToList(), h => Assert.Null(h.RevertedAtUtc));
+    }
+
+    [Fact]
+    public async Task Reverting_a_volume_replacement_dismisses_its_release()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            var item = new Maki.Core.Entities.DownloadQueueItem
+            {
+                SeriesId = _world.SeriesId, Protocol = Maki.Core.Entities.AcquisitionProtocol.Torrent,
+                Status = Maki.Core.Entities.QueueStatus.Completed, QueuedAt = DateTime.UtcNow,
+                Origin = Maki.Core.Entities.DownloadOrigin.Upgrade,
+                ReleaseInfoJson = System.Text.Json.JsonSerializer.Serialize(new ReleaseInfo("guid-v01", "Series v01", "Nyaa", null))
+            };
+            db.DownloadQueue.Add(item);
+            db.SaveChanges();
+            foreach (var history in db.UpgradeHistory)
+            {
+                history.QueueItemId = item.Id;
+            }
+
+            db.SaveChanges();
+        }
+
+        Assert.Equal(UpgradeRevertError.None, await RevertAsync());
+
+        using var check = _world.Db.NewContext();
+        var proposal = Assert.Single(check.TorrentProposals);
+        Assert.Equal("guid-v01", proposal.ReleaseGuid);
+        Assert.Equal(Maki.Core.Entities.TorrentProposalStatus.Dismissed, proposal.Status);
     }
 }

@@ -31,11 +31,11 @@ public static class SourceQualitySamples
         var sample = db.SourceQualitySamples.Local.FirstOrDefault(Match)
                      ?? await db.SourceQualitySamples.IgnoreQueryFilters()
                          .FirstOrDefaultAsync(s => s.SourceMappingId == mapping.Id && s.ChapterId == chapterId, ct);
+        var added = sample is null;
         if (sample is null)
         {
             sample = new SourceQualitySample { SourceMappingId = mapping.Id, SeriesId = mapping.SeriesId, ChapterId = chapterId };
             db.SourceQualitySamples.Add(sample);
-            await PruneAsync(db, mapping.Id, ct);
         }
 
         sample.Origin = origin;
@@ -45,6 +45,11 @@ public static class SourceQualitySamples
         sample.SizeBytes = sizeBytes.Value;
         sample.ImageFormat = imageFormat;
         sample.MeasuredAtUtc = nowUtc;
+        if (added)
+        {
+            await PruneAsync(db, mapping.Id, ct);
+        }
+
         return;
 
         bool Match(SourceQualitySample s) => s.SourceMappingId == mapping.Id && s.ChapterId == chapterId;
@@ -93,15 +98,24 @@ public static class SourceQualitySamples
         return result;
     }
 
-    /// <summary>Leaves room for one more: the newest <see cref="Keep"/> minus one saved rows survive.</summary>
+    /// <summary>
+    /// Keeps the newest <see cref="Keep"/> of the mapping's samples. Sorted on the tracked values, so a
+    /// sample refreshed or added earlier in the same unsaved batch counts as new.
+    /// </summary>
     private static async Task PruneAsync(MakiDbContext db, int mappingId, CancellationToken ct)
     {
-        var stale = await db.SourceQualitySamples.IgnoreQueryFilters()
+        var saved = await db.SourceQualitySamples.IgnoreQueryFilters()
             .Where(s => s.SourceMappingId == mappingId)
-            .OrderByDescending(s => s.MeasuredAtUtc)
-            .ThenByDescending(s => s.Id)
-            .Skip(Keep - 1)
             .ToListAsync(ct);
+        var stale = saved
+            .Concat(db.SourceQualitySamples.Local.Where(s => s.SourceMappingId == mappingId))
+            .Distinct()
+            .Where(s => db.Entry(s).State != EntityState.Deleted)
+            .OrderByDescending(s => s.MeasuredAtUtc)
+            .ThenByDescending(s => db.Entry(s).State == EntityState.Added)
+            .ThenByDescending(s => s.Id)
+            .Skip(Keep)
+            .ToList();
         db.SourceQualitySamples.RemoveRange(stale);
     }
 }

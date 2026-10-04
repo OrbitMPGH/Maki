@@ -15,24 +15,50 @@ public enum UpgradeRevertError
     AlreadyReverted,
     NotLatest,
     TrashGone,
-    MoveFailed
+    MoveFailed,
+
+    /// <summary>The chapter's file was replaced after the upgrade, by a re-download or an import.</summary>
+    FileChanged,
+
+    /// <summary>A download worker is holding one of the chapters the revert would touch.</summary>
+    DownloadInFlight
 }
 
-/// <summary>Puts an upgraded chapter's previous file back and trashes the upgraded copy in its place.</summary>
+/// <summary>
+/// Puts an upgraded chapter's previous file back and trashes the upgraded copy in its place. Holds the
+/// series lock for the whole check-and-move, like every other path that moves library files and
+/// rewrites their rows.
+/// </summary>
 public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives, ILogger<UpgradeRevertService> logger)
 {
     public async Task<(UpgradeHistory? Row, UpgradeRevertError Error)> RevertAsync(int historyId, int? userId, CancellationToken ct)
+    {
+        var target = await db.UpgradeHistory.AsNoTracking()
+            .Where(h => h.Id == historyId)
+            .Select(h => new { h.SeriesId, h.GroupId })
+            .FirstOrDefaultAsync(ct);
+        if (target is null)
+        {
+            return (null, UpgradeRevertError.NotFound);
+        }
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(target.SeriesId, ct);
+        if (target.GroupId is { } groupId)
+        {
+            var (rows, groupError) = await RevertGroupLockedAsync(groupId, userId, ct);
+            return (rows.FirstOrDefault(r => r.Id == historyId), groupError);
+        }
+
+        return await RevertLockedAsync(historyId, userId, ct);
+    }
+
+    private async Task<(UpgradeHistory? Row, UpgradeRevertError Error)> RevertLockedAsync(
+        int historyId, int? userId, CancellationToken ct)
     {
         var history = await db.UpgradeHistory.FirstOrDefaultAsync(h => h.Id == historyId, ct);
         if (history is null)
         {
             return (null, UpgradeRevertError.NotFound);
-        }
-
-        if (history.GroupId is { } groupId)
-        {
-            var (_, groupError) = await RevertGroupAsync(groupId, userId, ct);
-            return (history, groupError);
         }
 
         if (history.RevertedAtUtc is not null)
@@ -49,6 +75,19 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
         }
 
         var file = await db.ChapterFiles.FirstOrDefaultAsync(f => f.Id == history.ChapterFileId, ct);
+
+        // A re-download at the same path keeps the row and only moves DateAdded. Reverting then would
+        // trash that later copy for the one the upgrade replaced.
+        if (file is not null && file.DateAdded > history.CreatedAtUtc)
+        {
+            return (history, UpgradeRevertError.FileChanged);
+        }
+
+        if (await DownloadInFlightAsync([history.ChapterId], ct))
+        {
+            return (history, UpgradeRevertError.DownloadInFlight);
+        }
+
         var rootPath = await db.Series.Where(s => s.Id == history.SeriesId).Select(s => s.RootFolder!.Path).FirstOrDefaultAsync(ct);
         var trashPath = history.TrashPath is { } relative && rootPath is not null ? LibraryPaths.Resolve(rootPath, relative) : null;
         var currentPath = file is not null && rootPath is not null ? LibraryPaths.Resolve(rootPath, file.RelativePath) : null;
@@ -149,6 +188,27 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
     public async Task<(IReadOnlyList<UpgradeHistory> Rows, UpgradeRevertError Error)> RevertGroupAsync(
         Guid groupId, int? userId, CancellationToken ct)
     {
+        var seriesIds = await db.UpgradeHistory.AsNoTracking()
+            .Where(h => h.GroupId == groupId)
+            .Select(h => h.SeriesId)
+            .Distinct()
+            .ToListAsync(ct);
+        if (seriesIds.Count == 0)
+        {
+            return ([], UpgradeRevertError.NotFound);
+        }
+
+        using var seriesLock = await SeriesLocks.SeriesAsync(seriesIds[0], ct);
+        return await RevertGroupLockedAsync(groupId, userId, ct);
+    }
+
+    private Task<bool> DownloadInFlightAsync(List<int> chapterIds, CancellationToken ct) =>
+        SeriesLocks.InFlight(db.DownloadQueue.IgnoreQueryFilters())
+            .AnyAsync(q => q.ChapterId != null && chapterIds.Contains(q.ChapterId.Value), ct);
+
+    private async Task<(IReadOnlyList<UpgradeHistory> Rows, UpgradeRevertError Error)> RevertGroupLockedAsync(
+        Guid groupId, int? userId, CancellationToken ct)
+    {
         var rows = await db.UpgradeHistory.Where(h => h.GroupId == groupId).OrderBy(h => h.Id).ToListAsync(ct);
         if (rows.Count == 0)
         {
@@ -188,6 +248,15 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
                 !chapters.TryGetValue(c.id, out var chapter) || chapter.ChapterFileId != p.Detail.ReplacementFor(c.i))))
         {
             return (rows, UpgradeRevertError.NotLatest);
+        }
+
+        var touched = await db.Chapters.AsNoTracking()
+            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null && volumeIds.Contains(c.ChapterFileId.Value))
+            .Select(c => c.Id)
+            .ToListAsync(ct);
+        if (await DownloadInFlightAsync([.. touched.Union(chapterIds)], ct))
+        {
+            return (rows, UpgradeRevertError.DownloadInFlight);
         }
 
         // Disk starts changing here: nothing below may be cancelled, or the rows stop describing it.
@@ -315,6 +384,14 @@ public class UpgradeRevertService(MakiDbContext db, ReaderArchiveCache archives,
             plan.Row.TrashPath = aside.Relative;
             plan.Row.TrashBytes = aside.Relative is null ? 0 : aside.Bytes;
         }
+
+        // Undone by the user, so the weekly volume search must not grab the same release again.
+        var queueIds = rows.Select(r => r.QueueItemId).OfType<int>().Distinct().ToList();
+        var releaseInfo = await db.DownloadQueue.IgnoreQueryFilters()
+            .Where(q => queueIds.Contains(q.Id) && q.ReleaseInfoJson != null)
+            .Select(q => q.ReleaseInfoJson)
+            .FirstOrDefaultAsync(CancellationToken.None);
+        await TorrentUpgradeService.DeclineAsync(db, seriesId, releaseInfo, userId, now, CancellationToken.None);
 
         await db.SaveChangesAsync(CancellationToken.None);
         logger.LogInformation("Reverted torrent replacement {Group}: {Files} file(s) restored (user {User})",

@@ -115,4 +115,34 @@ public class SourceCompareQualityTests : IDisposable
 
         Assert.All(filled.Panels, p => Assert.Null(p.Quality));
     }
+
+    [Fact]
+    public async Task A_file_backing_several_chapters_is_never_called_an_upgrade()
+    {
+        _world.Seed();
+        var (_, fileId) = _world.Chapter(1);
+        var (second, _) = _world.Chapter(2, withFile: false);
+        using (var db = _world.Db.NewContext())
+        {
+            db.Chapters.Single(c => c.Id == second).ChapterFileId = fileId;
+            db.SaveChanges();
+        }
+
+        var official = (await FillAsync(Snapshot())).Panels[0].Quality!;
+
+        Assert.False(official.IsUpgrade);
+        Assert.Equal(UpgradeReasons.SharedFile, official.Reason);
+    }
+
+    [Fact]
+    public async Task The_copy_already_on_disk_is_never_called_an_upgrade()
+    {
+        _world.Seed();
+        _world.Chapter(1, file: f => { f.SourceName = UpgradeWorld.Official; f.SourceChapterId = "o1"; });
+
+        var official = (await FillAsync(Snapshot())).Panels[0].Quality!;
+
+        Assert.False(official.IsUpgrade);
+        Assert.Equal(UpgradeReasons.SameCopy, official.Reason);
+    }
 }

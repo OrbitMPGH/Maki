@@ -1218,6 +1218,15 @@ msgstr "The previous file is no longer in the trash, so this upgrade cannot be r
 msgid "error.upgrades.revertMoveFailed"
 msgstr "Could not swap the files back. Another program may have the chapter open"
 
+#. The chapter was downloaded or imported again after the upgrade; reverting would throw that newer copy away.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+msgid "error.upgrades.fileChangedSinceUpgrade"
+msgstr "This chapter's file was replaced after the upgrade, so reverting it would discard the newer copy"
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+msgid "error.upgrades.revertDownloadInFlight"
+msgstr "A download for this chapter is running. Try again once it finishes"
+
 #. An upgrade scan request named both a series and a chapter; it has to name one or neither.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 msgid "error.upgrades.scanTargetAmbiguous"

@@ -1706,6 +1706,17 @@ msgstr ""
 msgid "error.upgrades.revertMoveFailed"
 msgstr ""
 
+#. The chapter was downloaded or imported again after the upgrade; reverting would throw that newer copy away.
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: This chapter's file was replaced after the upgrade, so reverting it would discard the newer copy
+msgid "error.upgrades.fileChangedSinceUpgrade"
+msgstr ""
+
+#: src/Maki.Api/Controllers/UpgradesController.cs
+#. English: A download for this chapter is running. Try again once it finishes
+msgid "error.upgrades.revertDownloadInFlight"
+msgstr ""
+
 #. An upgrade scan request named both a series and a chapter; it has to name one or neither.
 #: src/Maki.Api/Controllers/UpgradesController.cs
 #. English: Scan either a series or a chapter, not both
