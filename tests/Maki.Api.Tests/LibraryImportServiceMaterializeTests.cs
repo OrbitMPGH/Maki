@@ -1,4 +1,3 @@
-using System.Reflection;
 using Maki.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -28,9 +27,7 @@ public class LibraryImportServiceMaterializeTests : IDisposable
 
     /// <summary>
     /// Only <c>logger</c> is touched by <c>MaterializeComics</c>; every other constructor
-    /// dependency is unused on this path, so the rest can stay null for a focused test of the
-    /// method via reflection (it is private, and rightly so, nothing outside the service should
-    /// call it directly).
+    /// dependency is unused on this path, so the rest can stay null for a focused test.
     /// </summary>
     private static List<string> Materialize(string targetDir)
     {
@@ -39,9 +36,7 @@ public class LibraryImportServiceMaterializeTests : IDisposable
             null!, null!, null!,
             NullLogger<LibraryImportService>.Instance);
 
-        var method = typeof(LibraryImportService)
-            .GetMethod("MaterializeComics", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        return (List<string>)method.Invoke(service, [targetDir])!;
+        return service.MaterializeComics(targetDir).Files;
     }
 
     [Fact]

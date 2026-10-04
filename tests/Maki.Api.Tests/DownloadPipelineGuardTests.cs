@@ -65,7 +65,7 @@ public class DownloadPipelineGuardTests : IDisposable
         }]));
 
         using var db = _db.NewContext();
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<ChapterUnavailableException>(
             () => resolver.ResolveAsync(db, oneShot, null, CancellationToken.None));
     }
 
