@@ -132,11 +132,13 @@ public class EmbeddingModelSwitcher(
 
             if (_lastError is null)
             {
-                logger.LogInformation("Model switch to {Model} complete: {Reason}", targetKind, install.Reason);
+                logger.LogInformation("Model switch to {Model} complete, prebuilt index installed ({Rows} rows)",
+                    targetKind, install.RowCount);
             }
             else
             {
-                logger.LogWarning("Model switch to {Model} finished with a caveat: {Reason}", targetKind, _lastError);
+                // _lastError is a catalogue key the settings page words; the log names it as a code.
+                logger.LogWarning("Model switch to {Model} finished with a caveat (reason code {Reason})", targetKind, _lastError);
             }
         }
         catch (Exception ex)

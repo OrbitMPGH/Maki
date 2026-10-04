@@ -1,3 +1,5 @@
+using Maki.Api.Localization;
+using Maki.Core.Localization;
 using Maki.Metadata.ReaderCohorts;
 using Quartz;
 
@@ -19,7 +21,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class ReaderCohortJob(
-    ReaderCohortInstaller installer, ArtifactBuildGate gate, ILogger<ReaderCohortJob> logger) : IJob
+    ReaderCohortInstaller installer, ArtifactBuildGate gate, IMessageCatalog messages, ILogger<ReaderCohortJob> logger) : IJob
 {
     public static readonly JobKey Key = new("reader-cohorts");
 
@@ -38,11 +40,11 @@ public class ReaderCohortJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
-                logger.LogInformation("Reader cohorts installed: {Reason}", result.Reason);
+                logger.LogInformation("Reader cohorts: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else
             {
-                logger.LogDebug("Reader cohorts not installed: {Reason}", result.Reason);
+                logger.LogDebug("Reader cohorts not installed: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
@@ -54,4 +56,7 @@ public class ReaderCohortJob(
             logger.LogWarning(ex, "Reader cohort check failed");
         }
     }
+
+    /// <summary>The installer answers with a catalogue key; the log is English, so render it in English.</summary>
+    private string Outcome(string reason, object? args) => messages.GetFor(SupportedLanguages.Default, reason, args);
 }

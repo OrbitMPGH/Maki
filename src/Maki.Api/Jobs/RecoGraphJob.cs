@@ -1,3 +1,5 @@
+using Maki.Api.Localization;
+using Maki.Core.Localization;
 using Maki.Metadata.RecoGraph;
 using Quartz;
 
@@ -19,7 +21,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class RecoGraphJob(
-    RecoGraphInstaller installer, ArtifactBuildGate gate, ILogger<RecoGraphJob> logger) : IJob
+    RecoGraphInstaller installer, ArtifactBuildGate gate, IMessageCatalog messages, ILogger<RecoGraphJob> logger) : IJob
 {
     public static readonly JobKey Key = new("reco-graph");
 
@@ -38,11 +40,11 @@ public class RecoGraphJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
-                logger.LogInformation("Co-recommendation graph installed: {Reason}", result.Reason);
+                logger.LogInformation("Co-recommendation graph: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else
             {
-                logger.LogDebug("Co-recommendation graph not installed: {Reason}", result.Reason);
+                logger.LogDebug("Co-recommendation graph not installed: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
@@ -54,4 +56,7 @@ public class RecoGraphJob(
             logger.LogWarning(ex, "Co-recommendation graph check failed");
         }
     }
+
+    /// <summary>The installer answers with a catalogue key; the log is English, so render it in English.</summary>
+    private string Outcome(string reason, object? args) => messages.GetFor(SupportedLanguages.Default, reason, args);
 }

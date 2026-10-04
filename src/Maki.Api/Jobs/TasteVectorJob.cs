@@ -1,3 +1,5 @@
+using Maki.Api.Localization;
+using Maki.Core.Localization;
 using Maki.Metadata.Taste;
 using Quartz;
 
@@ -20,7 +22,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class TasteVectorJob(
-    TasteVectorInstaller installer, ArtifactBuildGate gate, ILogger<TasteVectorJob> logger) : IJob
+    TasteVectorInstaller installer, ArtifactBuildGate gate, IMessageCatalog messages, ILogger<TasteVectorJob> logger) : IJob
 {
     public static readonly JobKey Key = new("taste-vectors");
 
@@ -39,11 +41,11 @@ public class TasteVectorJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
-                logger.LogInformation("Behavioural vectors installed: {Reason}", result.Reason);
+                logger.LogInformation("Behavioural vectors: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else
             {
-                logger.LogDebug("Behavioural vectors not installed: {Reason}", result.Reason);
+                logger.LogDebug("Behavioural vectors not installed: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
@@ -55,4 +57,7 @@ public class TasteVectorJob(
             logger.LogWarning(ex, "Behavioural vector check failed");
         }
     }
+
+    /// <summary>The installer answers with a catalogue key; the log is English, so render it in English.</summary>
+    private string Outcome(string reason, object? args) => messages.GetFor(SupportedLanguages.Default, reason, args);
 }

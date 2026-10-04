@@ -1,3 +1,5 @@
+using Maki.Api.Localization;
+using Maki.Core.Localization;
 using Maki.Metadata.CoRead;
 using Quartz;
 
@@ -19,7 +21,7 @@ namespace Maki.Api.Jobs;
 /// </summary>
 [DisallowConcurrentExecution]
 public class CoReadJob(
-    CoReadInstaller installer, ArtifactBuildGate gate, ILogger<CoReadJob> logger) : IJob
+    CoReadInstaller installer, ArtifactBuildGate gate, IMessageCatalog messages, ILogger<CoReadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("coread-graph");
 
@@ -38,11 +40,11 @@ public class CoReadJob(
             var result = await installer.InstallAsync(force, context.CancellationToken);
             if (result.Installed)
             {
-                logger.LogInformation("Co-read graph installed: {Reason}", result.Reason);
+                logger.LogInformation("Co-read graph: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
             else
             {
-                logger.LogDebug("Co-read graph not installed: {Reason}", result.Reason);
+                logger.LogDebug("Co-read graph not installed: {Outcome}", Outcome(result.Reason, result.ReasonArgs));
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
@@ -54,4 +56,7 @@ public class CoReadJob(
             logger.LogWarning(ex, "Co-read graph check failed");
         }
     }
+
+    /// <summary>The installer answers with a catalogue key; the log is English, so render it in English.</summary>
+    private string Outcome(string reason, object? args) => messages.GetFor(SupportedLanguages.Default, reason, args);
 }
