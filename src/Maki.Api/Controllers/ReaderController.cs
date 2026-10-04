@@ -2,6 +2,7 @@
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Progress;
@@ -67,7 +68,8 @@ public class ReaderController(
     AppPaths paths,
     ILogger<ReaderController> logger,
     ICurrentUser currentUser,
-    KavitaUserResolver kavitaUser) : ControllerBase
+    KavitaUserResolver kavitaUser,
+    IAppSettings appSettings) : ControllerBase
 {
     private const int ThumbnailWidth = 200;
 
@@ -575,13 +577,20 @@ public class ReaderController(
     }
 
     /// <summary>
-    /// Whether the built-in reader has ever been used. The UI ORs this with "Kavita is
-    /// configured" to decide whether to show read progress at all — the Kavita check alone used
-    /// to be that gate, and on its own it would hide a reader-only user's progress.
+    /// Whether the built-in reader has ever been used, and whether Kavita is connected. The UI ORs
+    /// the two to decide whether to show read progress at all: the Kavita check alone used to be
+    /// that gate and would hide a reader-only user's progress. Kavita's state is answered here
+    /// rather than read off <c>GET settings/kavita</c>, which is admin-only and 403'd every page
+    /// load for everyone else.
     /// </summary>
     [HttpGet("used")]
     public async Task<IActionResult> Used(CancellationToken ct) =>
-        Ok(new { used = await db.ChapterProgress.AnyAsync(ct) });
+        Ok(new
+        {
+            used = await db.ChapterProgress.AnyAsync(ct),
+            kavita = !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
+                     !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct))
+        });
 
     /// <summary>
     /// Imports read status from Kavita. Runs in the background — a large library is one Kavita

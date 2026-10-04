@@ -570,7 +570,8 @@ function SeriesDetailBody() {
   const createRequest = useCreateSeriesRequest()
   // Already in cache: the sources section below this page fetches the same query. Two enabled
   // mappings is the floor for "find better copy" having anything to show.
-  const { data: sourceMappings } = useSourceMappings(seriesId)
+  const canManageSources = can('ManageSources')
+  const { data: sourceMappings } = useSourceMappings(seriesId, canManageSources)
   const enabledMappings = (sourceMappings ?? []).filter((m) => m.enabled).length
   const [pickChapter, setPickChapter] = useState<PickChapter | null>(null)
   const [requestModalOpen, setRequestModalOpen] = useState(false)
@@ -1896,11 +1897,13 @@ function SeriesDetailBody() {
                         })()}
                       </Alert>
                   )}
-                  <SourceMappingsSection
-                      seriesId={seriesId}
-                      seriesTitle={series.title}
-                      matching={series.sourceMatchPending}
-                  />
+                  {canManageSources && (
+                    <SourceMappingsSection
+                        seriesId={seriesId}
+                        seriesTitle={series.title}
+                        matching={series.sourceMatchPending}
+                    />
+                  )}
                   <Divider my="md" color="var(--hairline)" />
                   <Text size="xs" c="var(--ink-3)">
                     {scanning ? (

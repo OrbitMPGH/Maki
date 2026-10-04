@@ -2081,10 +2081,12 @@ export function useReorderQueue() {
   })
 }
 
-export function useSourceMappings(seriesId: number) {
+/** `enabled` is false for a user without ManageSources, whom the endpoint answers with a 403. */
+export function useSourceMappings(seriesId: number, enabled = true) {
   return useQuery({
     queryKey: ['sourcemappings', seriesId],
     queryFn: () => api<SourceMappingDto[]>(`/sourcemapping?seriesId=${seriesId}`),
+    enabled,
   })
 }
 
@@ -2763,7 +2765,10 @@ export function useSaveConnectionSettings<T>(name: ConnectionName) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', name] })
       // The scrobble card's library picker lists Kavita's libraries through this connection.
-      if (name === 'kavita') void queryClient.invalidateQueries({ queryKey: ['kavita-libraries'] })
+      if (name === 'kavita') {
+        void queryClient.invalidateQueries({ queryKey: ['kavita-libraries'] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-used'] })
+      }
     },
   })
 }

@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import { api, authHeaders, getInitialize } from './client'
-import { useConnectionSettings } from './hooks'
 
 export interface ReaderManifest {
   chapterId: number
@@ -112,14 +111,14 @@ export function useReaderManifest(chapterId: number) {
 }
 
 /**
- * Whether the built-in reader has ever been used. OR this with "Kavita is configured" to decide
- * whether read progress is meaningful: Kavita alone was the old gate and hides a reader-only
- * user's own progress.
+ * Whether the built-in reader has ever been used, and whether Kavita is connected. Kavita's state
+ * comes from here rather than `useConnectionSettings('kavita')`, which is admin-only and 403s for
+ * everyone else on every page that shows read state.
  */
 export function useReaderUsed() {
   return useQuery({
     queryKey: ['reader-used'],
-    queryFn: () => api<{ used: boolean }>('/reader/used'),
+    queryFn: () => api<{ used: boolean; kavita?: boolean }>('/reader/used'),
     staleTime: 60_000,
   })
 }
@@ -130,9 +129,8 @@ export function useReaderUsed() {
  * Kavita connection that has since been removed doesn't linger on the cards.
  */
 export function useReadTracking(): boolean {
-  const { data: kavita } = useConnectionSettings<{ url: string | null; apiKey: string | null }>('kavita')
   const { data: readerUsed } = useReaderUsed()
-  return Boolean(kavita?.url && kavita?.apiKey) || Boolean(readerUsed?.used)
+  return Boolean(readerUsed?.kavita) || Boolean(readerUsed?.used)
 }
 
 /**

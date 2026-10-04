@@ -87,7 +87,8 @@ public sealed class ReaderPdfPageTests : IDisposable
         _paths,
         NullLogger<ReaderController>.Instance,
         null!, // current user
-        null!) // kavita user resolver
+        null!, // kavita user resolver
+        null!) // app settings
     {
         ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
         {
