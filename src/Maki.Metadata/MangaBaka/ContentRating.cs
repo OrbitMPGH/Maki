@@ -50,6 +50,17 @@ public static class ContentRating
     }
 
     /// <summary>
+    /// Whether one series rated <paramref name="rating"/> may be shown under the ceiling
+    /// <paramref name="max"/>, matching the list queries' <c>content_rating IN (...)</c>: an unrated
+    /// series passes only when the ceiling allows every rating, since SQL never matches a null there.
+    /// </summary>
+    public static bool Permits(string? rating, string? max)
+    {
+        var allowed = Allowed(max);
+        return allowed.Count == All.Length || (rating is not null && allowed.Contains(rating));
+    }
+
+    /// <summary>
     /// Ratings at or below <paramref name="max"/> in <see cref="All"/>'s order. An unknown or absent
     /// value falls back to <see cref="Safe"/>, not to <see cref="Default"/>: this is the ceiling a
     /// parental control rests on, so an unreadable one has to fail closed. It never returns an empty

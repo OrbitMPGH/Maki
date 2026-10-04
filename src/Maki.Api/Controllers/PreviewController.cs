@@ -39,8 +39,7 @@ public class PreviewController(
 
         // These are real pages off a real site, so the ceiling applies here even though the
         // detail card itself is just text.
-        if (detail.ContentRating is { } rating &&
-            !ContentRating.Allowed(currentUser.MaxContentRating).Contains(rating))
+        if (!ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
         {
             return this.Forbidden(localizer, "error.preview.contentRating");
         }

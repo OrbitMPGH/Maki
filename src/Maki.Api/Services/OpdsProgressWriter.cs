@@ -71,7 +71,9 @@ public sealed class OpdsProgressWriter(IServiceScopeFactory scopes, ILogger<Opds
         {
             await foreach (var key in _ready.Reader.ReadAllAsync(stoppingToken))
             {
-                await WriteAsync(key, stoppingToken);
+                // Not stoppingToken: the entry is already out of the pending map, so a save cancelled
+                // at shutdown would be lost rather than picked up by the flush below.
+                await WriteAsync(key, CancellationToken.None);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

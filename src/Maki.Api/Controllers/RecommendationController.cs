@@ -602,8 +602,7 @@ public class RecommendationController(
 
         // Every list endpoint already filters by the ceiling; an id typed in or kept from before the
         // ceiling was lowered must not open the card anyway. Same answer PreviewController gives.
-        if (detail.ContentRating is { } rating &&
-            !ContentRating.Allowed(currentUser.MaxContentRating).Contains(rating))
+        if (!ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
         {
             return this.Forbidden(localizer, "error.preview.contentRating");
         }
@@ -627,8 +626,7 @@ public class RecommendationController(
         // Reviews quote the work, so the ceiling applies to them as it does to the detail card they
         // sit under. Only a restricted account pays for the lookup, and one whose MAL id cannot be
         // traced back to a catalogue row gets nothing rather than an unchecked answer.
-        var allowed = ContentRating.Allowed(currentUser.MaxContentRating);
-        if (allowed.Count < ContentRating.All.Length)
+        if (ContentRating.Allowed(currentUser.MaxContentRating).Count < ContentRating.All.Length)
         {
             var ids = await store.GetIdsByExternalIdsAsync(
                 MangaBakaLocalStore.ExternalSource.MyAnimeList, [malId], ct);
@@ -638,7 +636,7 @@ public class RecommendationController(
                 return Ok(null);
             }
 
-            if (detail.ContentRating is { } rating && !allowed.Contains(rating))
+            if (!ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
             {
                 return this.Forbidden(localizer, "error.preview.contentRating");
             }

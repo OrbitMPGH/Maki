@@ -1,12 +1,14 @@
 using System.Data.Common;
+using System.Runtime.CompilerServices;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Maki.Data;
 
 /// <summary>
-/// Connection-level pragmas. SQLite keeps these per native handle and the pool can hand out a new
-/// handle on any open, so they run on every open rather than once at startup. Each is a plain
-/// setter with no I/O.
+/// Connection-level pragmas. SQLite keeps these per native handle, and the pool hands the same handle
+/// back across many logical opens (EF opens and closes around every query), so they run once per
+/// handle: the first open that sees it.
 /// </summary>
 public sealed class SqlitePragmaInterceptor : DbConnectionInterceptor
 {
@@ -19,18 +21,45 @@ public sealed class SqlitePragmaInterceptor : DbConnectionInterceptor
     internal const string Pragmas =
         "PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000; PRAGMA temp_store=MEMORY; PRAGMA cache_size=-4000;";
 
+    // Keyed weakly on the native handle wrapper, which lives exactly as long as the pooled connection.
+    private static readonly ConditionalWeakTable<object, object> Configured = new();
+    private static readonly object Marker = new();
+
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
     {
+        if (!NeedsPragmas(connection))
+        {
+            return;
+        }
+
         using var command = connection.CreateCommand();
         command.CommandText = Pragmas;
         command.ExecuteNonQuery();
+        MarkConfigured(connection);
     }
 
     public override async Task ConnectionOpenedAsync(
         DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
     {
+        if (!NeedsPragmas(connection))
+        {
+            return;
+        }
+
         await using var command = connection.CreateCommand();
         command.CommandText = Pragmas;
         await command.ExecuteNonQueryAsync(cancellationToken);
+        MarkConfigured(connection);
+    }
+
+    private static bool NeedsPragmas(DbConnection connection) =>
+        connection is not SqliteConnection { Handle: { } handle } || !Configured.TryGetValue(handle, out _);
+
+    private static void MarkConfigured(DbConnection connection)
+    {
+        if (connection is SqliteConnection { Handle: { } handle })
+        {
+            Configured.AddOrUpdate(handle, Marker);
+        }
     }
 }
