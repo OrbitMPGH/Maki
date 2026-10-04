@@ -542,6 +542,10 @@ msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 
+#: src/pages/ImportPage.tsx
+msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
+msgstr "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
+
 #: src/pages/reader/ChapterEnd.tsx
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
 msgstr "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -763,6 +767,10 @@ msgstr "{name}: {ok}/{total} succeeded"
 #: src/pages/LibraryPage.tsx
 msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: {ok}/{total} succeeded, first error: {firstError}"
+
+#: src/pages/ImportPage.tsx
+msgid "{name}: {reason}"
+msgstr "{name}: {reason}"
 
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
@@ -3654,6 +3662,10 @@ msgstr "Core"
 #: src/pages/HealthPage.tsx
 msgid "Corrupt"
 msgstr "Corrupt"
+
+#: src/pages/ImportPage.tsx
+msgid "could not be read, the archive is corrupt or truncated"
+msgstr "could not be read, the archive is corrupt or truncated"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Could not build a plan for this series."
@@ -7549,6 +7561,14 @@ msgstr "No changes yet"
 #: src/pages/discover/TasteTab.tsx
 msgid "No chapter here carries a reading time, so there is no pace to report."
 msgstr "No chapter here carries a reading time, so there is no pace to report."
+
+#: src/pages/ImportPage.tsx
+msgid "no chapter or volume number in the name"
+msgstr "no chapter or volume number in the name"
+
+#: src/pages/ImportPage.tsx
+msgid "no chapter with this number in the series"
+msgstr "no chapter with this number in the series"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "No chapters known."

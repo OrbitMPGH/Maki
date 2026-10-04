@@ -651,6 +651,10 @@ msgstr "{folderLabel}：{filesLinked, plural, other {#ファイルをリンク}}
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}：{filesLinked, plural, other {#ファイルをリンク}}、{filesUnrecognized, plural, other {#件を認識できませんでした}}"
 
+#: src/pages/ImportPage.tsx
+msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -924,6 +928,10 @@ msgstr "{name}：{total}件中{ok}件成功"
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: {ok}/{total} 件成功、最初のエラー: {firstError}"
+
+#: src/pages/ImportPage.tsx
+msgid "{name}: {reason}"
+msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
@@ -4410,6 +4418,10 @@ msgstr "コア"
 #, fuzzy
 msgid "Corrupt"
 msgstr "破損"
+
+#: src/pages/ImportPage.tsx
+msgid "could not be read, the archive is corrupt or truncated"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -9096,6 +9108,14 @@ msgstr "変更はありません"
 #, fuzzy
 msgid "No chapter here carries a reading time, so there is no pace to report."
 msgstr "ここに読書時間を持つ章がないため、ペースを表示できません。"
+
+#: src/pages/ImportPage.tsx
+msgid "no chapter or volume number in the name"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "no chapter with this number in the series"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

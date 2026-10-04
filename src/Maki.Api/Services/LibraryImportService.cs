@@ -8,6 +8,7 @@ using Maki.Core.Metadata;
 using Maki.Core.Naming;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
+using Maki.Core.Reading;
 using Maki.Core.Security;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
@@ -60,7 +61,26 @@ public record ImportResult(
     string? NewFolderName = null,
     int FilesLinked = 0,
     int FilesUnrecognized = 0,
-    IReadOnlyList<string>? Warnings = null);
+    IReadOnlyList<string>? Warnings = null,
+    IReadOnlyList<ImportSkippedFile>? Skipped = null);
+
+/// <summary>
+/// A comic in the imported folder that ended up backing no chapter. <paramref name="Reason"/> is
+/// one of <see cref="ImportSkipReason"/>'s wire values; the client words it.
+/// </summary>
+public record ImportSkippedFile(string Name, string Reason);
+
+public static class ImportSkipReason
+{
+    /// <summary>An archive that yields no pages: truncated, corrupt, or not a comic at all.</summary>
+    public const string Unreadable = "unreadable";
+
+    /// <summary>The name carries a chapter or volume the series' chapter list does not have.</summary>
+    public const string NoMatchingChapter = "noMatchingChapter";
+
+    /// <summary>No chapter or volume number could be read off the name.</summary>
+    public const string Unrecognized = "unrecognized";
+}
 
 /// <summary>
 /// Imports an existing on-disk library: scans unclaimed folders in a root,
@@ -421,14 +441,16 @@ public class LibraryImportService(
             }
 
             int linked, unrecognized;
+            List<ImportSkippedFile> skipped;
             using (await SeriesLocks.SeriesAsync(series.Id, ct))
             {
-                var cbzFiles = MaterializeComics(targetDir);
+                var (cbzFiles, unreadable) = MaterializeComics(targetDir);
                 var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
                 (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
                     series, targetDir, cbzFiles, "import",
                     (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
                     updateComicInfo, ct: ct);
+                skipped = await SkippedFilesAsync(series.Id, targetDir, cbzFiles, unreadable, ct);
             }
 
             // After linking rather than at the insert, so an import rolled back below leaves no
@@ -436,7 +458,7 @@ public class LibraryImportService(
             // reads as one continuous history.
             await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
             return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized,
-                warnings.Count > 0 ? warnings : null);
+                warnings.Count > 0 ? warnings : null, skipped.Count > 0 ? skipped : null);
         }
         catch (Exception ex)
         {
@@ -627,15 +649,57 @@ public class LibraryImportService(
             }
         }
 
-        var cbzFiles = MaterializeComics(targetDir);
+        var (cbzFiles, unreadable) = MaterializeComics(targetDir);
         var linkStage = updateComicInfo ? ImportStage.UpdatingComicInfo : ImportStage.LinkingFiles;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, targetDir, cbzFiles, "import",
             (current, total) => events.ImportProgress(item.FolderName, linkStage, current, total, operationId: operationId),
             updateComicInfo, ct: ct);
+        var skipped = await SkippedFilesAsync(series.Id, targetDir, cbzFiles, unreadable, ct);
 
         return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName, linked, unrecognized,
-            warnings.Count > 0 ? warnings : null);
+            warnings.Count > 0 ? warnings : null, skipped.Count > 0 ? skipped : null);
+    }
+
+    /// <summary>
+    /// Every comic the import leaves backing no chapter, and why. Read after linking rather than
+    /// counted during it, since the volume backfill and the lone-file rule link files late.
+    /// </summary>
+    internal async Task<List<ImportSkippedFile>> SkippedFilesAsync(
+        int seriesId, string targetDir, IReadOnlyList<string> files, IReadOnlyList<string> unreadable,
+        CancellationToken ct)
+    {
+        var linkedIds = (await db.Chapters
+                .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+                .Select(c => c.ChapterFileId!.Value)
+                .ToListAsync(ct))
+            .ToHashSet();
+        var linkedPaths = (await db.ChapterFiles
+                .Where(f => f.SeriesId == seriesId)
+                .Select(f => new { f.Id, f.RelativePath })
+                .ToListAsync(ct))
+            .Where(f => linkedIds.Contains(f.Id))
+            .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var folderName = Path.GetFileName(Path.TrimEndingDirectorySeparator(targetDir));
+        var skipped = new List<ImportSkippedFile>();
+        foreach (var file in files.OrderBy(f => f, StringComparer.Ordinal))
+        {
+            var name = Path.GetRelativePath(targetDir, file);
+            if (linkedPaths.Contains(LibraryPaths.ComparisonKey(Path.Combine(folderName, name))))
+            {
+                continue;
+            }
+
+            skipped.Add(new ImportSkippedFile(name, ReleaseNameParser.ParseFileName(file).IsRecognized
+                ? ImportSkipReason.NoMatchingChapter
+                : ImportSkipReason.Unrecognized));
+        }
+
+        skipped.AddRange(unreadable.Select(f =>
+            new ImportSkippedFile(Path.GetRelativePath(targetDir, f), ImportSkipReason.Unreadable)));
+        return skipped;
     }
 
     /// <summary>
@@ -648,10 +712,24 @@ public class LibraryImportService(
     /// hardlinked under its new name, so the common case costs no disk either.
     /// </para>
     /// </summary>
-    private List<string> MaterializeComics(string targetDir)
+    internal (List<string> Files, List<string> Unreadable) MaterializeComics(string targetDir)
     {
         var files = new List<string>();
-        foreach (var source in ComicSourceScanner.Scan(targetDir))
+        var unreadable = new List<string>();
+        var sources = ComicSourceScanner.Scan(targetDir);
+
+        // An archive the scan read nothing out of drops from its list without a trace. One whose
+        // name a found comic shares is a second copy of it (an X.cbr beside X.cbz), not a failure.
+        var found = sources
+            .SelectMany(s => new[] { s.Path, Path.Combine(targetDir, s.Name) })
+            .Select(WithoutExtension)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        unreadable.AddRange(LibraryPaths.EnumerateFilesNoLinks(targetDir)
+            .Where(f => ComicSourceScanner.IsArchive(f) || ComicFile.IsPdf(f))
+            .Where(f => !found.Contains(WithoutExtension(f)))
+            .OrderBy(f => f, StringComparer.Ordinal));
+
+        foreach (var source in sources)
         {
             if (source.Kind is ComicSourceKind.Cbz or ComicSourceKind.Pdf)
             {
@@ -678,11 +756,15 @@ public class LibraryImportService(
             {
                 // One unreadable archive must not cost the folder its other files.
                 logger.LogWarning(ex, "Could not build a CBZ from {Source}", source.Path);
+                unreadable.Add(source.Entry is null ? source.Path : target);
             }
         }
 
-        return files;
+        return (files, unreadable);
     }
+
+    private static string WithoutExtension(string path) =>
+        Path.Combine(Path.GetDirectoryName(path) ?? "", Path.GetFileNameWithoutExtension(path));
 
     private async Task<string> GetFolderNamingModeAsync(CancellationToken ct)
     {

@@ -52,6 +52,13 @@ const STAGE_LABELS: Record<string, MessageDescriptor> = {
   failed: msg`Failed`,
 }
 
+/** Why a file stayed out of the series (`Maki.Api.Services.ImportSkipReason`). */
+const SKIP_REASONS: Record<string, MessageDescriptor> = {
+  unreadable: msg`could not be read, the archive is corrupt or truncated`,
+  noMatchingChapter: msg`no chapter with this number in the series`,
+  unrecognized: msg`no chapter or volume number in the name`,
+}
+
 interface ScanCandidate {
   folderName: string
   cleanedTitle: string
@@ -70,6 +77,8 @@ interface ImportResultDto {
   newFolderName: string | null
   filesLinked: number
   filesUnrecognized: number
+  warnings?: string[] | null
+  skipped?: { name: string; reason: string }[] | null
 }
 
 interface ImportProgressEvent {
@@ -330,25 +339,50 @@ export default function ImportPage() {
           {results.map((r) => {
             const folderLabel = r.newFolderName ?? r.folderName
             const { filesLinked, filesUnrecognized } = r
+            const skipped = r.skipped ?? []
+            const skippedCount = skipped.length
             return (
-              <Text key={r.folderName} c={r.success ? 'var(--ok)' : 'var(--danger)'} size="sm">
-                {r.success ? (
-                  filesUnrecognized > 0 ? (
-                    <Trans>
-                      {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}
-                      <Plural value={filesUnrecognized} one="# unrecognized" other="# unrecognized" />
-                    </Trans>
+              <Stack key={r.folderName} gap={0}>
+                <Text c={!r.success ? 'var(--danger)' : skippedCount > 0 ? 'var(--warn)' : 'var(--ok)'} size="sm">
+                  {r.success ? (
+                    skippedCount > 0 ? (
+                      <Trans>
+                        {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}
+                        <Plural value={skippedCount} one="# not linked" other="# not linked" />
+                      </Trans>
+                    ) : filesUnrecognized > 0 ? (
+                      <Trans>
+                        {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />,{' '}
+                        <Plural value={filesUnrecognized} one="# unrecognized" other="# unrecognized" />
+                      </Trans>
+                    ) : (
+                      <Trans>
+                        {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />
+                      </Trans>
+                    )
                   ) : (
-                    <Trans>
-                      {folderLabel}: linked <Plural value={filesLinked} one="# file" other="# files" />
-                    </Trans>
+                    <>
+                      {r.folderName}: {r.error}
+                    </>
+                  )}
+                </Text>
+                {skipped.map((f) => {
+                  const { name } = f
+                  const reason = label(SKIP_REASONS[f.reason] ?? f.reason)
+                  return (
+                    <Text key={name} size="xs" c="dimmed" pl="md">
+                      <Trans>
+                        {name}: {reason}
+                      </Trans>
+                    </Text>
                   )
-                ) : (
-                  <>
-                    {r.folderName}: {r.error}
-                  </>
-                )}
-              </Text>
+                })}
+                {(r.warnings ?? []).map((w) => (
+                  <Text key={w} size="xs" c="var(--warn)" pl="md">
+                    {w}
+                  </Text>
+                ))}
+              </Stack>
             )
           })}
         </Stack>

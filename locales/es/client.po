@@ -651,6 +651,10 @@ msgstr "{folderLabel}: vinculados {filesLinked, plural, one {# archivo} many {# 
 msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {filesUnrecognized, plural, one {# unrecognized} other {# unrecognized}}"
 msgstr "{folderLabel}: vinculados {filesLinked, plural, one {# archivo} many {# archivos} other {# archivos}}, {filesUnrecognized, plural, one {# no reconocido} many {# no reconocidos} other {# no reconocidos}}"
 
+#: src/pages/ImportPage.tsx
+msgid "{folderLabel}: linked {filesLinked, plural, one {# file} other {# files}}, {skippedCount, plural, one {# not linked} other {# not linked}}"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -924,6 +928,10 @@ msgstr "{name}: {ok}/{total} correctos"
 #, fuzzy
 msgid "{name}: {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: {ok}/{total} completadas, primer error: {firstError}"
+
+#: src/pages/ImportPage.tsx
+msgid "{name}: {reason}"
+msgstr ""
 
 #: src/components/home/RecentlyAddedRail.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
@@ -4410,6 +4418,10 @@ msgstr "Núcleo"
 #, fuzzy
 msgid "Corrupt"
 msgstr "Dañado"
+
+#: src/pages/ImportPage.tsx
+msgid "could not be read, the archive is corrupt or truncated"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -9096,6 +9108,14 @@ msgstr "Aún no hay cambios"
 #, fuzzy
 msgid "No chapter here carries a reading time, so there is no pace to report."
 msgstr "Ningún capítulo de aquí contiene un tiempo de lectura, así que no se puede informar del ritmo."
+
+#: src/pages/ImportPage.tsx
+msgid "no chapter or volume number in the name"
+msgstr ""
+
+#: src/pages/ImportPage.tsx
+msgid "no chapter with this number in the series"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
