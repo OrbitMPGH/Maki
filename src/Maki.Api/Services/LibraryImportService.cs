@@ -659,8 +659,9 @@ public class LibraryImportService(
                 continue;
             }
 
+            // A 7z or RAR under a ".cbz" name targets its own path; Materialize rebuilds it in place.
             var target = Path.Combine(targetDir, source.Name);
-            if (File.Exists(target))
+            if (File.Exists(target) && !ComicSourceConverter.IsSameFile(target, source.Path))
             {
                 files.Add(target);
                 continue;

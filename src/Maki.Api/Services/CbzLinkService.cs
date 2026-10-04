@@ -1,6 +1,7 @@
 ﻿using Maki.Core.ComicInfo;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Import;
 using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
@@ -250,6 +251,19 @@ public class CbzLinkService(
                 .Where(ComicFile.IsComic)
                 .Select(f => (seriesDir, f, Path.Combine(folder, Path.GetRelativePath(seriesDir, f)))));
             readableFolders.Add(folder);
+        }
+
+        // A 7z or RAR under a ".cbz" name links fine and then reads as having no pages.
+        foreach (var file in onDisk.Where(f => ComicFile.IsCbz(f.AbsolutePath)))
+        {
+            if (RepackMislabelled(file.AbsolutePath) &&
+                dbFiles.FirstOrDefault(f => LibraryPaths.ComparisonKey(f.RelativePath)
+                    .Equals(LibraryPaths.ComparisonKey(file.RelativePath), StringComparison.OrdinalIgnoreCase)) is { } known)
+            {
+                known.Size = new FileInfo(file.AbsolutePath).Length;
+                known.MeasuredAtUtc = null;
+                archives.Invalidate(known.Id);
+            }
         }
 
         var diskRelPaths = onDisk
@@ -541,6 +555,24 @@ public class CbzLinkService(
                 .FirstOrDefault(x => volume >= x.Start && volume <= x.End)
                 .File?.Id ?? chapter.ChapterFileId;
         }
+    }
+
+    private bool RepackMislabelled(string path)
+    {
+        try
+        {
+            if (ComicSourceConverter.RepackMislabelled(path))
+            {
+                logger.LogInformation("Rebuilt {File} as a CBZ; it held a 7z, RAR or tar archive", path);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not rebuild {File} as a CBZ", path);
+        }
+
+        return false;
     }
 
     /// <summary>

@@ -226,6 +226,50 @@ public class ComicSourceScannerTests : IDisposable
         Assert.Equal(["Disguised - c001 - p001.jpg"], CbzReader.PageNames(target));
     }
 
+    // A library import builds the CBZ in the folder the file already sits in, so the target is the
+    // mislabelled file's own path. It used to see that name taken and link the 7z unread.
+    [Fact]
+    public void A_mislabelled_archive_is_rebuilt_under_its_own_name()
+    {
+        var original = WriteTar("Blue Period Ch.4.cbz", ("001.jpg", Page("first")));
+        var originalBytes = File.ReadAllBytes(original);
+        var source = Assert.Single(ComicSourceScanner.Scan(_root));
+
+        ComicSourceConverter.Materialize(source, At(source.Name));
+
+        Assert.Equal(ArchiveSignature.Container.Zip, ArchiveSignature.Sniff(original));
+        Assert.Equal(["001.jpg"], CbzReader.PageNames(original));
+        Assert.Equal(originalBytes, File.ReadAllBytes(At("Blue Period Ch.4.cbt")));
+    }
+
+    [Fact]
+    public void Repacking_in_place_leaves_a_real_zip_alone()
+    {
+        var zip = WriteZip("Honest Ch.1.cbz", "001.jpg");
+
+        Assert.False(ComicSourceConverter.RepackMislabelled(zip));
+        Assert.Single(Directory.GetFiles(_root));
+    }
+
+    [Fact]
+    public void Repacking_in_place_names_the_original_after_its_container()
+    {
+        var path = WriteTar("Disguised Ch.2.cbz", ("001.jpg", Page("first")));
+
+        Assert.True(ComicSourceConverter.RepackMislabelled(path));
+
+        Assert.Equal(["001.jpg"], CbzReader.PageNames(path));
+        Assert.True(File.Exists(At("Disguised Ch.2.cbt")));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, 0x00, 0x04 }, ".cb7")]
+    [InlineData(new byte[] { 0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00 }, ".cbr")]
+    [InlineData(new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00 }, null)]
+    [InlineData(new byte[0], null)]
+    public void A_container_names_its_comic_extension(byte[] head, string? expected) =>
+        Assert.Equal(expected, ArchiveSignature.ComicExtension(ArchiveSignature.Detect(head)));
+
     [Theory]
     [InlineData(new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00 }, ArchiveSignature.Container.Zip)]
     [InlineData(new byte[] { 0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, 0x00, 0x04 }, ArchiveSignature.Container.Other)]
