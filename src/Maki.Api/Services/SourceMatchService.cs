@@ -445,7 +445,7 @@ public partial class SourceMatchService(
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
 
         // Priority is the position in the *full* ordered list, so switching a source off
-        // (or back on) never renumbers the mappings around it — and matches what
+        // (or back on) never renumbers the mappings around it, and matches what
         // SourceMappingController assigns when a mapping is added by hand.
         var work = orderedSources
             .Select((source, index) => (Source: source, Priority: index + 1))
