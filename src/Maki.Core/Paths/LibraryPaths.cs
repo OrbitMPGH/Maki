@@ -14,12 +14,21 @@ public static class LibraryPaths
     /// the root folder. Callers taking a path from a request must use this rather than a bare
     /// <see cref="Path.Combine(string, string)"/>: <c>Combine</c> happily accepts <c>..\..</c>
     /// segments, and an absolute second argument silently discards the root entirely.
+    /// <para>
+    /// A backslash counts as a separator on every host, like <see cref="ComparisonKey"/>: a row written
+    /// on Windows holds <c>\</c>, which Linux would otherwise read as part of a single file name.
+    /// </para>
     /// </summary>
     public static string? Resolve(string rootPath, string relativePath)
     {
         if (string.IsNullOrWhiteSpace(rootPath) || string.IsNullOrWhiteSpace(relativePath))
         {
             return null;
+        }
+
+        if (Path.DirectorySeparatorChar != '\\')
+        {
+            relativePath = relativePath.Replace('\\', '/');
         }
 
         try
@@ -223,9 +232,12 @@ public static class LibraryPaths
         return !(listed.Contains(nameA, StringComparer.Ordinal) && listed.Contains(nameB, StringComparer.Ordinal));
     }
 
-    /// <summary>Folder names compare the way the host's filesystem does.</summary>
-    public static StringComparer FolderComparer { get; } =
-        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    /// <summary>
+    /// Folder names ignore case on every host. A case-insensitive share mounted under Docker holds
+    /// <c>One Piece</c> and <c>one piece</c> as one folder, so an ordinal comparison there would let
+    /// one series reach into another's folder, or count a folder it shares as its own.
+    /// </summary>
+    public static StringComparer FolderComparer { get; } = StringComparer.OrdinalIgnoreCase;
 
     /// <summary>
     /// The root-level folder a stored relative path sits in, or null for a file directly in the

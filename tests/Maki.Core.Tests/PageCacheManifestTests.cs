@@ -85,6 +85,29 @@ public class PageCacheManifestTests : IDisposable
             content, destination, "https://cdn.test/1.jpg", TimeSpan.FromSeconds(60), time, cts.Token));
     }
 
+    [Fact]
+    public async Task A_slow_write_is_not_counted_as_a_stall()
+    {
+        var time = new FakeTimeProvider();
+        using var content = new StreamContent(new StallingStream(time, chunks: 3, gap: TimeSpan.Zero));
+        using var destination = new SlowWriteStream(time, TimeSpan.FromSeconds(90));
+
+        await PageDownloader.CopyWithStallTimeoutAsync(
+            content, destination, "https://cdn.test/1.jpg", TimeSpan.FromSeconds(60), time, CancellationToken.None);
+
+        Assert.Equal(12, destination.Length);
+    }
+
+    /// <summary>Moves the fake clock forward on every write, the way a slow disk or share would.</summary>
+    private sealed class SlowWriteStream(FakeTimeProvider time, TimeSpan perWrite) : MemoryStream
+    {
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default)
+        {
+            time.Advance(perWrite);
+            return base.WriteAsync(buffer, ct);
+        }
+    }
+
     /// <summary>
     /// Hands out <c>chunks</c> reads of a few bytes, moving the fake clock forward by <c>gap</c>
     /// before each one after the first. After the last chunk it either ends the body, or moves the

@@ -103,4 +103,62 @@ public class CbzLinkSymlinkTests : IDisposable
         Assert.Equal(before, SHA256.HashData(await File.ReadAllBytesAsync(external)));
         Assert.Equal(writtenBefore, File.GetLastWriteTimeUtc(external));
     }
+
+    /// <summary>A series with chapter 1 linked to a file directly in the root, the way a manual link can leave it.</summary>
+    private int SeedRootLevelRow(string fileName)
+    {
+        using var db = _db.NewContext();
+        var rootFolder = new RootFolder { Path = _root };
+        db.RootFolders.Add(rootFolder);
+        db.SaveChanges();
+        var series = new Series { Title = "Berserk", SortTitle = "Berserk", FolderName = "Berserk", RootFolderId = rootFolder.Id };
+        db.Series.Add(series);
+        db.SaveChanges();
+        var file = new ChapterFile { SeriesId = series.Id, RelativePath = fileName, DateAdded = DateTime.UtcNow };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+        db.Chapters.Add(new Chapter { SeriesId = series.Id, Number = 1, Language = "en", ChapterFileId = file.Id });
+        db.SaveChanges();
+        return series.Id;
+    }
+
+    private async Task RescanAsync(int seriesId)
+    {
+        using var db = _db.NewContext();
+        await Service(db).RescanSeriesAsync(await db.Series.Include(s => s.RootFolder).SingleAsync(s => s.Id == seriesId));
+    }
+
+    [Fact]
+    public async Task Rescan_keeps_a_root_level_row_when_the_root_lists_empty()
+    {
+        // An unmounted share leaves an empty mount point: that says nothing about the file.
+        Directory.CreateDirectory(_root);
+        var seriesId = SeedRootLevelRow("Berserk c001.cbz");
+
+        await RescanAsync(seriesId);
+
+        using var check = _db.NewContext();
+        Assert.Single(check.ChapterFiles);
+        Assert.NotNull((await check.Chapters.SingleAsync(c => c.SeriesId == seriesId)).ChapterFileId);
+    }
+
+    [Fact]
+    public async Task Rescan_keeps_a_root_level_row_whose_file_is_a_symlink()
+    {
+        var external = Path.Combine(_outside, "Berserk c001.cbz");
+        WriteComic(external);
+        Directory.CreateDirectory(_root);
+        if (!TestLinks.TryLinkFile(Path.Combine(_root, "Berserk c001.cbz"), external))
+        {
+            return;
+        }
+
+        var seriesId = SeedRootLevelRow("Berserk c001.cbz");
+
+        await RescanAsync(seriesId);
+
+        using var check = _db.NewContext();
+        Assert.Single(check.ChapterFiles);
+        Assert.NotNull((await check.Chapters.SingleAsync(c => c.SeriesId == seriesId)).ChapterFileId);
+    }
 }

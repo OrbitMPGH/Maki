@@ -194,7 +194,9 @@ public class SeriesCreationService(
         series.RootFolderId = rootFolder.Id;
         series.UpgradeProfileId = upgradeProfileId;
         // Two series in one folder rescan each other's files and delete them with their own, and a
-        // folder that already holds comics belongs to whatever put them there.
+        // folder that already holds comics belongs to whatever put them there. Held through the insert
+        // so a parallel add or import of another work cannot pick the same free name.
+        using var folderNameLock = await SeriesLocks.FolderNamesAsync(ct);
         var otherFolders = await SeriesFoldersInRootAsync(db, rootFolder.Id, null, ct);
         series.FolderName = FreeFolderName(
             await naming.BuildSeriesFolderNameAsync(series, ct), series.MangaBakaId,
@@ -242,6 +244,7 @@ public class SeriesCreationService(
             await creationTransaction.CommitAsync(ct);
         }
 
+        folderNameLock.Dispose();
         providerLock?.Dispose();
 
         await NotifyAddedAsync(series, originatingRequest, ct);
@@ -340,7 +343,7 @@ public class SeriesCreationService(
             .Where(s => s.RootFolderId == rootFolderId && s.Id != exceptSeriesId)
             .Select(s => s.FolderName)
             .ToListAsync(ct))
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        .ToHashSet(LibraryPaths.FolderComparer);
 
     /// <summary>
     /// <paramref name="wanted"/> when it is free, otherwise the first free one of <c>wanted [mb-id]</c>,

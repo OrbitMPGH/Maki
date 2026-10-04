@@ -35,6 +35,28 @@ public class LibraryPathsTests
     }
 
     [Fact]
+    public void Resolve_reads_a_backslash_as_a_separator_on_every_host()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-library-paths-").FullName;
+        try
+        {
+            Assert.Equal(Path.Combine(root, "Berserk", "Berserk c001.cbz"),
+                LibraryPaths.Resolve(root, @"Berserk\Berserk c001.cbz"));
+            Assert.Null(LibraryPaths.Resolve(root, @"Berserk\..\..\outside.cbz"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FolderComparer_ignores_case_on_every_host()
+    {
+        Assert.True(LibraryPaths.FolderComparer.Equals("One Piece", "one piece"));
+    }
+
+    [Fact]
     public void Resolve_joins_root_and_relative_path()
     {
         var root = Directory.CreateTempSubdirectory("maki-library-paths-").FullName;

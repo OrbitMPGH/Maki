@@ -89,11 +89,19 @@ public class LibraryImportService(
     IMessageCatalog catalog,
     ILogger<LibraryImportService> logger)
 {
-    /// <summary>
-    /// Held from "is the target folder free?" through the move. Imports run in parallel, and two of
-    /// them standardizing to the same name must not both be told it is free.
-    /// </summary>
-    private static readonly SemaphoreSlim FolderMoveLock = new(1, 1);
+    /// <summary>The series lock, let go while sources are matched over the network and taken back after.</summary>
+    private sealed class SeriesLockHandle(int seriesId) : IDisposable
+    {
+        private IDisposable? _held;
+
+        public async Task AcquireAsync(CancellationToken ct) => _held = await SeriesLocks.SeriesAsync(seriesId, ct);
+
+        public void Dispose()
+        {
+            _held?.Dispose();
+            _held = null;
+        }
+    }
 
     /// <summary>
     /// Splits a request into groups the import can run side by side. Items naming the same series
@@ -306,7 +314,8 @@ public class LibraryImportService(
             : null;
         if (existingSeries is not null)
         {
-            using var seriesLock = await SeriesLocks.SeriesAsync(existingSeries.Id, ct);
+            using var seriesLock = new SeriesLockHandle(existingSeries.Id);
+            await seriesLock.AcquireAsync(ct);
             if (await db.ChapterFiles.AnyAsync(f => f.SeriesId == existingSeries.Id, ct))
             {
                 return new ImportResult(item.FolderName, false,
@@ -315,7 +324,8 @@ public class LibraryImportService(
 
             try
             {
-                return await ReimportIntoExistingAsync(existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, ct);
+                return await ReimportIntoExistingAsync(
+                    existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, seriesLock, ct);
             }
             catch (Exception ex)
             {
@@ -329,6 +339,9 @@ public class LibraryImportService(
         var series = SeriesMetadataMapper.NewFromMetadata(metadata);
         var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
+        // Held from reading which folders are taken through the insert: imports run in parallel, and
+        // two works standardizing to one name must not both be told it is free.
+        using var folderNameLock = await SeriesLocks.FolderNamesAsync(ct);
         var otherFolders = await SeriesCreationService.SeriesFoldersInRootAsync(db, rootFolder.Id, null, ct);
         var targetDir = sourceDir;
         var seriesFolderName = item.FolderName;
@@ -340,23 +353,14 @@ public class LibraryImportService(
             if (!string.Equals(item.FolderName, wanted, StringComparison.Ordinal))
             {
                 targetDir = LibraryPaths.Resolve(rootFolder.Path, wanted) ?? Path.Combine(rootFolder.Path, wanted);
-                await FolderMoveLock.WaitAsync(ct);
-                try
+                if (!LibraryPaths.IsSameDirectory(sourceDir, targetDir) && Directory.Exists(targetDir))
                 {
-                    if (!LibraryPaths.IsSameDirectory(sourceDir, targetDir) && Directory.Exists(targetDir))
-                    {
-                        return new ImportResult(item.FolderName, false,
-                            localizer.Get("error.libraryImport.renameTargetExists", new { name = wanted }));
-                    }
-
-                    await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
-                    SeriesRenameService.MovePath(sourceDir, targetDir, Directory.Move);
-                }
-                finally
-                {
-                    FolderMoveLock.Release();
+                    return new ImportResult(item.FolderName, false,
+                        localizer.Get("error.libraryImport.renameTargetExists", new { name = wanted }));
                 }
 
+                await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
+                SeriesRenameService.MovePath(sourceDir, targetDir, Directory.Move);
                 logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, wanted);
                 seriesFolderName = wanted;
             }
@@ -390,6 +394,7 @@ public class LibraryImportService(
         series.FolderName = seriesFolderName;
         db.Series.Add(series);
         await db.SaveChangesAsync(ct);
+        folderNameLock.Dispose();
         providerLock?.Dispose();
 
         try
@@ -527,10 +532,11 @@ public class LibraryImportService(
     /// </summary>
     private async Task<ImportResult> ReimportIntoExistingAsync(
         Series series, RootFolder rootFolder, ImportRequestItem item, string sourceDir,
-        bool updateComicInfo, string? operationId, CancellationToken ct)
+        bool updateComicInfo, string? operationId, SeriesLockHandle seriesLock, CancellationToken ct)
     {
         var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
+        using var folderNameLock = await SeriesLocks.FolderNamesAsync(ct);
         var otherFolders = await SeriesCreationService.SeriesFoldersInRootAsync(db, rootFolder.Id, series.Id, ct);
         var targetDir = sourceDir;
         var seriesFolderName = item.FolderName;
@@ -542,43 +548,35 @@ public class LibraryImportService(
             if (!string.Equals(item.FolderName, wanted, StringComparison.Ordinal))
             {
                 targetDir = LibraryPaths.Resolve(rootFolder.Path, wanted) ?? Path.Combine(rootFolder.Path, wanted);
-                await FolderMoveLock.WaitAsync(ct);
-                try
+                if (LibraryPaths.IsSameDirectory(sourceDir, targetDir))
                 {
-                    if (LibraryPaths.IsSameDirectory(sourceDir, targetDir))
+                    // The same folder under another spelling on a case-insensitive filesystem.
+                    // Merging it into itself would move nothing and then delete it.
+                    await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
+                    SeriesRenameService.MovePath(sourceDir, targetDir, Directory.Move);
+                    logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, wanted);
+                }
+                else if (Directory.Exists(targetDir))
+                {
+                    // The series' standardized folder already exists (e.g. an empty folder created
+                    // when it was added), so fold the scanned folder's files into it.
+                    await events.ImportProgress(item.FolderName, ImportStage.MergingFolder, operationId: operationId);
+                    var leftBehind = MergeDirectory(sourceDir, targetDir);
+                    logger.LogInformation("Merged '{Old}' into existing '{New}'", item.FolderName, wanted);
+                    if (leftBehind.Count > 0)
                     {
-                        // The same folder under another spelling on a case-insensitive filesystem.
-                        // Merging it into itself would move nothing and then delete it.
-                        await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
-                        SeriesRenameService.MovePath(sourceDir, targetDir, Directory.Move);
-                        logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, wanted);
-                    }
-                    else if (Directory.Exists(targetDir))
-                    {
-                        // The series' standardized folder already exists (e.g. an empty folder created
-                        // when it was added), so fold the scanned folder's files into it.
-                        await events.ImportProgress(item.FolderName, ImportStage.MergingFolder, operationId: operationId);
-                        var leftBehind = MergeDirectory(sourceDir, targetDir);
-                        logger.LogInformation("Merged '{Old}' into existing '{New}'", item.FolderName, wanted);
-                        if (leftBehind.Count > 0)
-                        {
-                            logger.LogWarning(
-                                "Left {Count} files in '{Old}' whose names already exist in '{New}': {Files}",
-                                leftBehind.Count, item.FolderName, wanted, string.Join(", ", leftBehind));
-                            warnings.Add(localizer.Get("error.libraryImport.mergeLeftFiles",
-                                new { count = leftBehind.Count, folder = item.FolderName }));
-                        }
-                    }
-                    else
-                    {
-                        await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
-                        Directory.Move(sourceDir, targetDir);
-                        logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, wanted);
+                        logger.LogWarning(
+                            "Left {Count} files in '{Old}' whose names already exist in '{New}': {Files}",
+                            leftBehind.Count, item.FolderName, wanted, string.Join(", ", leftBehind));
+                        warnings.Add(localizer.Get("error.libraryImport.mergeLeftFiles",
+                            new { count = leftBehind.Count, folder = item.FolderName }));
                     }
                 }
-                finally
+                else
                 {
-                    FolderMoveLock.Release();
+                    await events.ImportProgress(item.FolderName, ImportStage.RenamingFolder, operationId: operationId);
+                    Directory.Move(sourceDir, targetDir);
+                    logger.LogInformation("Renamed '{Old}' -> '{New}'", item.FolderName, wanted);
                 }
 
                 seriesFolderName = wanted;
@@ -612,12 +610,21 @@ public class LibraryImportService(
             await db.SaveChangesAsync(ct);
         }
 
+        folderNameLock.Dispose();
+
         // Make sure there are chapters to match the files against. A series added but never
-        // refreshed may have no sources/chapters yet.
-        if (!await db.Chapters.AnyAsync(c => c.SeriesId == series.Id, ct) &&
-            !await MatchSourcesAsync(series, item, operationId, ct))
+        // refreshed may have no sources/chapters yet. Matching goes out to the network, so the series
+        // lock is let go meanwhile; the provider-id lock stays, so no other import of this work can
+        // claim the series before these files are linked.
+        if (!await db.Chapters.AnyAsync(c => c.SeriesId == series.Id, ct))
         {
-            warnings.Add(localizer.Get("error.libraryImport.noSourceMatch"));
+            seriesLock.Dispose();
+            var matched = await MatchSourcesAsync(series, item, operationId, ct);
+            await seriesLock.AcquireAsync(ct);
+            if (!matched)
+            {
+                warnings.Add(localizer.Get("error.libraryImport.noSourceMatch"));
+            }
         }
 
         var cbzFiles = MaterializeComics(targetDir);

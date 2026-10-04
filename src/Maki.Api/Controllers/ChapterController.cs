@@ -418,11 +418,11 @@ public class ChapterController(
                      select new { f.Id, f.RelativePath }).ToListAsync(ct)
             : [];
 
-        // fileIds is this same batch: a row also being deleted here doesn't count as a claim,
-        // or two rows pointing at one file that are both removed would each see the other as
-        // still holding it and the file would never actually be deleted from disk.
+        // A row removed in this batch doesn't count as a claim, or two rows pointing at one file that
+        // are both removed would each see the other as still holding it and the file would never be
+        // deleted. A row kept because another chapter still uses it does count.
         var claimedPaths = filesInRoot
-            .Where(f => !fileIds.Contains(f.Id))
+            .Where(f => !fileIds.Contains(f.Id) || stillReferenced.Contains(f.Id))
             .Select(f => LibraryPaths.ComparisonKey(f.RelativePath))
             .ToHashSet(LibraryPaths.FolderComparer);
 

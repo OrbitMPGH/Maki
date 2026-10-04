@@ -13,6 +13,7 @@ public static class SeriesLocks
 {
     private static readonly KeyedAsyncLock<int> Series = new();
     private static readonly KeyedAsyncLock<int> ProviderIds = new();
+    private static readonly KeyedAsyncLock<int> FolderNames = new();
 
     public static Task<IDisposable> SeriesAsync(int seriesId, CancellationToken ct) =>
         Series.AcquireAsync(seriesId, ct);
@@ -25,16 +26,29 @@ public static class SeriesLocks
         ProviderIds.AcquireAsync(mangaBakaId, ct);
 
     /// <summary>
+    /// Process-wide, held from reading which folder names are taken through saving the series that
+    /// claims one. Two different works can standardize to the same name, and the provider-id lock
+    /// does not span them. Never take another lock while holding this one.
+    /// </summary>
+    public static Task<IDisposable> FolderNamesAsync(CancellationToken ct) =>
+        FolderNames.AcquireAsync(0, ct);
+
+    /// <summary>
     /// Queue items a worker is holding right now. Queued, resolving and parked items are not in it:
     /// nothing has claimed them, and they cascade away with their series or chapter. A torrent sits
     /// in Downloading inside the client for as long as it takes, so only its import counts; an
-    /// unattended import never writes Importing, so it is read from the importer's own registry.
+    /// unattended import never writes Importing, so it is read from the importer's own registry, as
+    /// long as the row has not been settled: a hung import must not block a delete once the user has
+    /// removed its row.
     /// </summary>
     public static IQueryable<DownloadQueueItem> InFlight(IQueryable<DownloadQueueItem> queue)
     {
         var importing = TorrentImportService.AutomaticImportIds();
         return queue.Where(q => q.Status == QueueStatus.Importing ||
-                                importing.Contains(q.Id) ||
+                                (importing.Contains(q.Id) &&
+                                 q.Status != QueueStatus.Cancelled &&
+                                 q.Status != QueueStatus.Failed &&
+                                 q.Status != QueueStatus.Completed) ||
                                 (q.Protocol == AcquisitionProtocol.Scraper &&
                                  (q.Status == QueueStatus.FetchingPages ||
                                   q.Status == QueueStatus.Downloading ||

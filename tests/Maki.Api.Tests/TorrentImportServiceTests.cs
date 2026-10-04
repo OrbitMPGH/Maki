@@ -257,6 +257,18 @@ public class TorrentImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Plan_carries_its_scan_so_the_guard_and_import_do_not_walk_the_download_again()
+    {
+        var (series, item) = SeedLibrary(withFiles: false);
+        SeedVolumeDownload(1, 2, 3);
+
+        var plan = await Service().PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        Assert.Equal(plan.Files.Select(f => f.FileName),
+            plan.Sources.Select(s => s.Name).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task Replace_imports_and_trashes_the_files_it_supersedes()
     {
         var (series, item) = SeedLibrary();
@@ -511,6 +523,36 @@ public class TorrentImportServiceTests : IDisposable
         }
 
         Assert.False(await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.Id == queueId));
+    }
+
+    [Fact]
+    public async Task A_hung_automatic_import_stops_blocking_a_delete_once_its_row_is_cancelled()
+    {
+        var (series, _) = SeedLibrary(withFiles: false);
+        const int queueId = 918_274;
+        using (var seed = _db.NewContext())
+        {
+            seed.DownloadQueue.Add(new DownloadQueueItem
+            {
+                Id = queueId,
+                SeriesId = series.Id,
+                Title = "Berserk v02",
+                Protocol = AcquisitionProtocol.Torrent,
+                Status = QueueStatus.Cancelled
+            });
+            seed.SaveChanges();
+        }
+
+        TorrentImportService.BeginAutomaticImport(queueId);
+        try
+        {
+            using var db = _db.NewContext();
+            Assert.False(await SeriesLocks.InFlight(db.DownloadQueue).AnyAsync(q => q.SeriesId == series.Id));
+        }
+        finally
+        {
+            TorrentImportService.EndAutomaticImport(queueId);
+        }
     }
 
     [Fact]

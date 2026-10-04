@@ -141,6 +141,8 @@ public class PageDownloader(
             {
                 stallTimer.Change(stallTimeout, Timeout.InfiniteTimeSpan);
                 var read = await body.ReadAsync(buffer, stall.Token);
+                // Only the read side can stall: a slow disk under the write is not the source's fault.
+                stallTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
                 if (read == 0)
                 {
                     return;

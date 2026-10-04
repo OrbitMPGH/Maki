@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
@@ -128,6 +129,13 @@ public record TorrentImportPlan(
 
     /// <summary>For an upgrade, the files whose chapters are all already at cutoff or protected.</summary>
     public IReadOnlyList<string> SuggestedSkips { get; init; } = [];
+
+    /// <summary>
+    /// The scan <see cref="Files"/> was built from, kept so the guard and the import reuse it rather
+    /// than opening every archive in the download again. Empty for a plan that could not be built.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<ComicSource> Sources { get; init; } = [];
 }
 
 /// <param name="Deleted">Superseded files moved to the trash, under <see cref="TorrentImportMode.Replace"/>.</param>
@@ -330,7 +338,8 @@ public class TorrentImportService(
         return new TorrentImportPlan(item.Id, series.Id, series.Title, releaseName, files)
         {
             IsUpgrade = isUpgrade,
-            SuggestedSkips = suggestedSkips
+            SuggestedSkips = suggestedSkips,
+            Sources = sources
         };
 
         TorrentImportPlan Empty(string errorKey, object? args = null) =>
@@ -386,8 +395,7 @@ public class TorrentImportService(
 
         // Safe to key on the name: the scan already returns one comic per name, which is the same
         // set PlanAsync named its rows after.
-        var byName = ComicSourceScanner.Scan(contentPath!)
-            .ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
+        var byName = SourcesOf(plan, contentPath!).ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
         var sourceFiles = wanted
             .Select(f => byName.GetValueOrDefault(f.FileName))
             .Where(s => s is not null)
@@ -784,7 +792,7 @@ public class TorrentImportService(
             return null;
         }
 
-        var byName = ComicSourceScanner.Scan(contentPath).ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
+        var byName = SourcesOf(plan, contentPath).ToDictionary(s => s.Name, s => s, StringComparer.Ordinal);
         var files = await db.ChapterFiles.AsNoTracking().Where(f => f.SeriesId == series.Id).ToDictionaryAsync(f => f.Id, ct);
         var tolerance = (await evaluation.ForSeriesAsync(series.Id, ct))?.Profile.PageTolerancePercent ?? 10;
         var replaced = upgrade.ReplacedFileIds.ToHashSet();
@@ -852,6 +860,9 @@ public class TorrentImportService(
 
         return new UnattendedDecision(false, null, plan.SuggestedSkips.ToHashSet(StringComparer.Ordinal));
     }
+
+    private static IReadOnlyList<ComicSource> SourcesOf(TorrentImportPlan plan, string contentPath) =>
+        plan.Sources.Count > 0 ? plan.Sources : ComicSourceScanner.Scan(contentPath);
 
     /// <summary>Parks an upgrade download that failed <see cref="CheckVolumeGuardAsync"/> for the user to settle.</summary>
     public static void ParkForGuard(DownloadQueueItem item, VolumeGuardFailure failure)

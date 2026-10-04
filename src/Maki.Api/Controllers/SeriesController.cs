@@ -1145,7 +1145,7 @@ public class SeriesController(
     /// <param name="Files">Single files to delete, for folders the series does not own outright.</param>
     /// <param name="PruneIfEmpty">Folders removed only if nothing is left in them.</param>
     private sealed record SeriesDiskPlan(
-        string? Folder, bool RemoveFolderWhole, List<string> Files, List<string> PruneIfEmpty, string Trash);
+        string? Folder, bool RemoveFolderWhole, List<string> Files, List<string> PruneIfEmpty, string? Trash);
 
     private async Task<SeriesDiskPlan> PlanSeriesDiskDeleteAsync(Series series, bool deleteFiles, CancellationToken ct)
     {
@@ -1171,7 +1171,7 @@ public class SeriesController(
                                 EF.Functions.Like(f.RelativePath, pattern, @"\"))
                     .Select(f => f.RelativePath)
                     .ToListAsync(ct))
-                .Any(p => string.Equals(LibraryPaths.TopFolder(p), series.FolderName, StringComparison.OrdinalIgnoreCase));
+                .Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), series.FolderName));
         }
 
         if (shared)
@@ -1205,9 +1205,16 @@ public class SeriesController(
             prune.Add(folder);
         }
 
-        // Replaced copies from upgrades. Their history rows go with the series, so nothing could
-        // restore them afterwards.
-        return new SeriesDiskPlan(folder, removeWhole, files, prune, UpgradeTrash.SeriesFolder(rootPath, series.Id));
+        // Replaced copies from upgrades, and a volume import's superseded originals. Their history
+        // rows go with the series, so nothing could restore them afterwards; but they are still the
+        // user's files, so "keep files" leaves them for the trash purge to age out.
+        var trash = UpgradeTrash.SeriesFolder(rootPath, series.Id);
+        if (!deleteFiles)
+        {
+            prune.Add(trash);
+        }
+
+        return new SeriesDiskPlan(folder, removeWhole, files, prune, deleteFiles ? trash : null);
     }
 
     /// <summary>
@@ -1252,9 +1259,9 @@ public class SeriesController(
             });
         }
 
-        if (Directory.Exists(plan.Trash))
+        if (plan.Trash is { } trash && Directory.Exists(trash))
         {
-            Attempt(plan.Trash, () => Directory.Delete(plan.Trash, recursive: true));
+            Attempt(trash, () => Directory.Delete(trash, recursive: true));
         }
     }
 

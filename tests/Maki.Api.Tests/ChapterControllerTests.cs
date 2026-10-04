@@ -436,6 +436,44 @@ public class ChapterControllerTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_root, sharedPath)));
     }
 
+    [Fact]
+    public async Task Delete_keeps_the_file_when_a_row_in_the_batch_stays_for_another_chapter()
+    {
+        // Two rows on one path, both in the batch, but the second still backs a chapter that is not
+        // being deleted. That row stays, so the file under it must too.
+        var (seriesId, chapterId) = SeedSeriesWithChapter();
+        var sharedPath = Path.Combine("Series", "v01.cbz");
+        await File.WriteAllTextAsync(Path.Combine(_root, sharedPath), "cbz");
+
+        int secondChapterId, keptFileId;
+        using (var seed = _db.NewContext())
+        {
+            ChapterFile NewFile() => new()
+            {
+                SeriesId = seriesId, RelativePath = sharedPath, Size = 1, SourceName = "Manual", DateAdded = DateTime.UtcNow
+            };
+            var first = NewFile();
+            var second = NewFile();
+            seed.ChapterFiles.AddRange(first, second);
+            seed.SaveChanges();
+            (await seed.Chapters.FirstAsync(c => c.Id == chapterId)).ChapterFileId = first.Id;
+            var secondChapter = new Chapter { SeriesId = seriesId, Number = 2, NumberRaw = "2", ChapterFileId = second.Id };
+            seed.Chapters.AddRange(secondChapter,
+                new Chapter { SeriesId = seriesId, Number = 3, NumberRaw = "3", ChapterFileId = second.Id });
+            seed.SaveChanges();
+            secondChapterId = secondChapter.Id;
+            keptFileId = second.Id;
+        }
+
+        using (var db = _db.NewContext())
+        {
+            Assert.IsType<OkObjectResult>(await Controller(db).Delete([chapterId, secondChapterId], default));
+            Assert.Equal(keptFileId, Assert.Single(db.ChapterFiles).Id);
+        }
+
+        Assert.True(File.Exists(Path.Combine(_root, sharedPath)));
+    }
+
     /// <summary>Throws from <see cref="SaveChangesAsync"/> so a test can force a mid-operation failure.</summary>
     private sealed class FailingSaveDbContext(DbContextOptions<MakiDbContext> options) : MakiDbContext(options)
     {

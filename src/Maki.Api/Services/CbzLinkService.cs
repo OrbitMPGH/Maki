@@ -257,13 +257,25 @@ public class CbzLinkService(
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // 1. Files deleted from disk: drop the record, free the chapters. Only rows whose folder
-        // was actually listed: a folder that is not there says nothing about the files in it.
+        // was actually listed: a folder that is not there says nothing about the files in it, and a
+        // file directly in the root says nothing under a root that lists empty.
+        bool Gone(ChapterFile f)
+        {
+            if (LibraryPaths.TopFolder(f.RelativePath) is { } top
+                    ? !readableFolders.Contains(top) || diskRelPaths.Contains(LibraryPaths.ComparisonKey(f.RelativePath))
+                    : !rootListable)
+            {
+                return false;
+            }
+
+            // The listing above never returns a linked file, but one that is there was not deleted. A
+            // linked folder on the way still counts as gone, as it always has.
+            return LibraryPaths.ResolveForDelete(rootFolder.Path, f.RelativePath) is not { } path ||
+                   !(File.Exists(path) || LibraryPaths.IsLink(path));
+        }
+
         var removed = 0;
-        foreach (var dbFile in dbFiles
-                     .Where(f => LibraryPaths.TopFolder(f.RelativePath) is { } top
-                         ? readableFolders.Contains(top) && !diskRelPaths.Contains(LibraryPaths.ComparisonKey(f.RelativePath))
-                         : !File.Exists(LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(f.RelativePath))))
-                     .ToList())
+        foreach (var dbFile in dbFiles.Where(Gone).ToList())
         {
             foreach (var chapter in chapters.Where(c => c.ChapterFileId == dbFile.Id))
             {

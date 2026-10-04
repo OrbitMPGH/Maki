@@ -60,37 +60,7 @@ public class LibraryImportParallelTests : IDisposable
             s.RemoveAll<ISource>();
         }));
         using var client = factory.CreateClient();
-
-        int rootId;
-        using (var scope = factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
-            var root = new Maki.Core.Entities.RootFolder { Path = _root };
-            db.RootFolders.Add(root);
-            var user = new MakiUser
-            {
-                UserName = "importer",
-                NormalizedUserName = "IMPORTER",
-                Permissions = Maki.Core.Security.MakiPermission.ImportLibrary,
-                AllRootFolders = false,
-            };
-            db.Users.Add(user);
-            await db.SaveChangesAsync();
-            db.UserRootFolders.Add(new UserRootFolder { UserId = user.Id, RootFolderId = root.Id });
-            const string secret = "import-parallel-test-key";
-            db.UserApiKeys.Add(new UserApiKey
-            {
-                UserId = user.Id,
-                Name = "import test",
-                KeyHash = Maki.Api.Auth.ApiKeyCrypto.Hash(secret),
-                Prefix = "import",
-                Scope = UserApiKeyScope.Full,
-                CreatedAt = DateTime.UtcNow,
-            });
-            await db.SaveChangesAsync();
-            rootId = root.Id;
-            client.DefaultRequestHeaders.Add("X-Api-Key", secret);
-        }
+        var rootId = await SeedCallerAsync(factory, client);
 
         string[] folders = ["Alpha (Digital)", "Beta", "Gamma", "Epsilon", "Delta"];
         foreach (var folder in folders)
@@ -129,6 +99,79 @@ public class LibraryImportParallelTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task Parallel_imports_of_two_works_with_one_title_get_two_folders()
+    {
+        // Different works, so the provider-id lock does not keep them apart, and the same standard
+        // folder name. Under keep-new-standard both used to be told that name was free.
+        var provider = new SlowProvider(_ => "Monster");
+        using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+        {
+            s.RemoveAll<IMetadataProvider>();
+            s.AddSingleton<IMetadataProvider>(provider);
+            s.RemoveAll<ISource>();
+        }));
+        using var client = factory.CreateClient();
+        var rootId = await SeedCallerAsync(factory, client);
+        await factory.Services.GetRequiredService<SettingsService>().SetAsync(
+            Maki.Core.Configuration.SettingKeys.LibraryFolderNamingMode,
+            Maki.Core.Naming.FolderNamingMode.KeepOriginalNewStandard);
+        Directory.CreateDirectory(Path.Combine(_root, "Monster 1"));
+        Directory.CreateDirectory(Path.Combine(_root, "Monster 2"));
+
+        var response = await client.PostAsJsonAsync("/api/v1/libraryimport/import", new
+        {
+            rootFolderId = rootId,
+            items = new[]
+            {
+                new { folderName = "Monster 1", metadataProviderId = "1" },
+                new { folderName = "Monster 2", metadataProviderId = "2" },
+            },
+            updateComicInfo = false,
+        });
+        response.EnsureSuccessStatusCode();
+        var results = await response.Content.ReadFromJsonAsync<List<ImportResult>>();
+        Assert.NotNull(results);
+        Assert.All(results, r => Assert.True(r.Success, r.Error));
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var names = await db.Series.IgnoreQueryFilters().Select(s => s.FolderName).ToListAsync();
+        Assert.Equal(2, names.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    /// <summary>A caller granted only this test's root folder, signed in on <paramref name="client"/>.</summary>
+    private async Task<int> SeedCallerAsync(WebApplicationFactory<Program> factory, HttpClient client)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var root = new Maki.Core.Entities.RootFolder { Path = _root };
+        db.RootFolders.Add(root);
+        var user = new MakiUser
+        {
+            UserName = "importer",
+            NormalizedUserName = "IMPORTER",
+            Permissions = Maki.Core.Security.MakiPermission.ImportLibrary,
+            AllRootFolders = false,
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        db.UserRootFolders.Add(new UserRootFolder { UserId = user.Id, RootFolderId = root.Id });
+        const string secret = "import-parallel-test-key";
+        db.UserApiKeys.Add(new UserApiKey
+        {
+            UserId = user.Id,
+            Name = "import test",
+            KeyHash = Maki.Api.Auth.ApiKeyCrypto.Hash(secret),
+            Prefix = "import",
+            Scope = UserApiKeyScope.Full,
+            CreatedAt = DateTime.UtcNow,
+        });
+        await db.SaveChangesAsync();
+        client.DefaultRequestHeaders.Add("X-Api-Key", secret);
+        return root.Id;
+    }
+
     private static void EnsureWebRoot()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
@@ -142,7 +185,7 @@ public class LibraryImportParallelTests : IDisposable
         }
     }
 
-    private sealed class SlowProvider : IMetadataProvider
+    private sealed class SlowProvider(Func<string, string>? title = null) : IMetadataProvider
     {
         private int _inFlight;
         private int _maxInFlight;
@@ -170,7 +213,7 @@ public class LibraryImportParallelTests : IDisposable
                 return new SeriesMetadata
                 {
                     ProviderId = providerId,
-                    Title = $"Series {providerId}",
+                    Title = title?.Invoke(providerId) ?? $"Series {providerId}",
                     MangaBakaId = int.Parse(providerId),
                 };
             }
