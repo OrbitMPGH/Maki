@@ -193,13 +193,20 @@ public enum SourceCapabilities
 /// response already carries tracker ids (MangaDex does); everything else leaves it null and answers
 /// <see cref="ISource.GetExternalIdsAsync"/> instead.
 /// </summary>
+/// <param name="UserGenerated">
+/// Self-published by a site's users (WEBTOON's CANVAS) rather than a catalogued release. Anyone can
+/// call their comic anything, so a matching title says nothing about which work it is.
+/// </param>
+/// <param name="Author">The creator credit the search result shows, when it shows one.</param>
 public record SourceSeriesResult(
     string SourceSeriesId,
     string Title,
     string Url,
     string? CoverUrl = null,
     string? Description = null,
-    IReadOnlyDictionary<string, string>? ExternalIds = null);
+    IReadOnlyDictionary<string, string>? ExternalIds = null,
+    bool UserGenerated = false,
+    string? Author = null);
 
 /// <summary>Full series info as the source presents it.</summary>
 public record SourceSeriesDetail(

@@ -281,6 +281,78 @@ public class SourceMatchServiceTests : IDisposable
         Assert.Equal(["fake"], mapped);
     }
 
+    // Release smoke test: Fujimoto's "Look Back" was mapped to a WEBTOON CANVAS comic of the same
+    // name by somebody else, and its one chapter was downloaded as the series.
+    [Fact]
+    public async Task A_user_made_comic_with_the_same_title_by_someone_else_is_not_mapped()
+    {
+        var seriesId = _db.SeedSeries("Look Back", configure: s => s.AuthorStory = "Tatsuki Fujimoto");
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("canvas/look-back/849510", "LOOK BACK", "https://x.test/lb",
+                    UserGenerated: true, Author: "Jordzart")
+            ]
+        };
+
+        var mapped = await RunAutoMatch(seriesId, webtoons);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task A_user_made_comic_by_the_series_author_is_still_mapped()
+    {
+        var seriesId = _db.SeedSeries("Look Back", configure: s =>
+        {
+            s.AuthorStory = "Someone Else, Tatsuki Fujimoto";
+        });
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("canvas/look-back/1", "Look Back", "https://x.test/lb",
+                    UserGenerated: true, Author: "FUJIMOTO Tatsuki / Assistant")
+            ]
+        };
+
+        Assert.Equal(["webtoons"], await RunAutoMatch(seriesId, webtoons));
+    }
+
+    [Fact]
+    public async Task A_user_made_comic_needs_a_credit_to_compare_against()
+    {
+        var seriesId = _db.SeedSeries("Look Back");
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("canvas/look-back/1", "Look Back", "https://x.test/lb",
+                    UserGenerated: true, Author: "Jordzart")
+            ]
+        };
+
+        Assert.Empty(await RunAutoMatch(seriesId, webtoons));
+    }
+
+    [Fact]
+    public async Task A_catalogued_result_still_matches_on_title_alone()
+    {
+        var seriesId = _db.SeedSeries("Look Back", configure: s => s.AuthorStory = "Tatsuki Fujimoto");
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnSearch = _ => [new SourceSeriesResult("lb", "Look Back", "https://x.test/lb", Author: "Somebody")]
+        };
+
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
+    }
+
     [Fact]
     public async Task Unrelated_title_is_left_unmapped()
     {

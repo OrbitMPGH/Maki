@@ -170,7 +170,11 @@ public class WebtoonsSource(IHttpClientFactory httpClientFactory) : ISource
             }
 
             var cover = FullSizeImage(card.QuerySelector(".image_wrap img")?.GetAttribute("src"));
-            results.Add(new SourceSeriesResult(seriesId, name, href, cover));
+            var canvas = string.Equals(card.GetAttribute("data-webtoon-type"), "CHALLENGE", StringComparison.OrdinalIgnoreCase)
+                         || url.AbsolutePath.Contains("/canvas/", StringComparison.OrdinalIgnoreCase);
+            var author = card.QuerySelector(".info_text .author")?.TextContent.Trim();
+            results.Add(new SourceSeriesResult(seriesId, name, href, cover,
+                UserGenerated: canvas, Author: string.IsNullOrEmpty(author) ? null : author));
         }
 
         return results;

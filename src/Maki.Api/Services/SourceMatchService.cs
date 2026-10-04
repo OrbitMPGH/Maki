@@ -143,14 +143,17 @@ public partial class SourceMatchService(
     internal sealed record MatchTarget(
         string Title,
         string? OriginalTitle,
-        IReadOnlyDictionary<string, string> ExternalIds)
+        IReadOnlyDictionary<string, string> ExternalIds,
+        IReadOnlyList<string> Authors)
     {
         public static MatchTarget For(Series series) =>
-            new(series.Title, DisambiguatingOriginalTitle(series), ExternalIdsOf(series));
+            new(series.Title, DisambiguatingOriginalTitle(series), ExternalIdsOf(series),
+                [.. AuthorNames(series.AuthorStory).Concat(AuthorNames(series.AuthorArt)).Distinct()]);
 
         public bool SameAs(MatchTarget other) =>
             Title == other.Title &&
             OriginalTitle == other.OriginalTitle &&
+            Authors.SequenceEqual(other.Authors) &&
             ExternalIds.Count == other.ExternalIds.Count &&
             ExternalIds.All(pair => other.ExternalIds.TryGetValue(pair.Key, out var value) && value == pair.Value);
     }
@@ -239,6 +242,25 @@ public partial class SourceMatchService(
         SourceSeriesResult? Confirmed,
         IReadOnlyDictionary<string, string>? ConfirmedIds,
         HashSet<string> Rejected);
+
+    /// <summary>
+    /// Each credited name, reduced to its words in sorted order so "Fujimoto Tatsuki" and
+    /// "Tatsuki Fujimoto" compare equal. MangaBaka joins several names with commas; WEBTOON joins
+    /// writer and artist with a slash.
+    /// </summary>
+    internal static IEnumerable<string> AuthorNames(string? credits) =>
+        (credits ?? "")
+            .Split([',', '/', '&', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(name => string.Join(' ', AuthorWord().Matches(name.ToLowerInvariant())
+                .Select(m => m.Value)
+                .Order(StringComparer.Ordinal)))
+            .Where(name => name.Length > 0);
+
+    internal static bool AuthorsAgree(IReadOnlyList<string> ours, string? theirs) =>
+        ours.Count > 0 && AuthorNames(theirs).Any(ours.Contains);
+
+    [GeneratedRegex(@"[\p{L}\p{N}]+")]
+    private static partial Regex AuthorWord();
 
     /// <summary>
     /// How close a result's title is to the series, used only to decide which candidates are worth
@@ -373,10 +395,13 @@ public partial class SourceMatchService(
             }
 
             // A result the cross-id pass ruled out is a different work, whatever its title
-            // scores — which is the whole reason to run that pass before this one.
-            var usable = verdict.Rejected.Count == 0
-                ? results
-                : results.Where(r => !verdict.Rejected.Contains(r.SourceSeriesId)).ToList();
+            // scores — which is the whole reason to run that pass before this one. A user-made
+            // comic needs its credited author to agree as well: "Look Back" on WEBTOON CANVAS is
+            // somebody's office drama, not Fujimoto's one-shot, and the titles are identical.
+            var usable = results
+                .Where(r => !verdict.Rejected.Contains(r.SourceSeriesId))
+                .Where(r => !r.UserGenerated || AuthorsAgree(target.Authors, r.Author))
+                .ToList();
 
             var candidates = usable
                 .Select(r => new ScrobbleCandidate(r.SourceSeriesId, r.Title, [], r.Url))
