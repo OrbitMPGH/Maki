@@ -1,4 +1,6 @@
 using Maki.Api.Auth;
+using Maki.Api.Controllers;
+using Maki.Api.Dtos;
 using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -557,5 +559,40 @@ public class AuthorizationTests
         // Startup reads these; throwing here would make the app unbootable over a typo in a setting.
         Assert.Equal(TimeSpan.FromMinutes(AuthRuntimeOptions.DefaultLockoutMinutes), options.LockoutDuration);
         Assert.Equal(TimeSpan.FromDays(AuthRuntimeOptions.DefaultSessionDays), options.SessionLifetime);
+    }
+
+    [Theory]
+    [InlineData("http://192.168.1.129:8990", true)]
+    [InlineData("http://maki.lan", true)]
+    [InlineData("https://maki.example.com", false)]
+    [InlineData("http://localhost:5173", false)]
+    [InlineData("http://127.0.0.1:8990", false)]
+    [InlineData("http://[::1]:8990", false)]
+    [InlineData("http://maki.localhost", false)]
+    [InlineData(null, false)]
+    [InlineData("null", false)]
+    public void OnlyAPlainHttpNonLoopbackOriginDropsTheSecureCookie(string? origin, bool insecure) =>
+        Assert.Equal(insecure, AuthRuntimeOptions.IsInsecureOrigin(origin));
+
+    [Fact]
+    public async Task LoginOverPlainHttpIsRefusedWhenHttpsIsRequired()
+    {
+        using var db = new TestDb();
+        db.SetConfig((SettingKeys.AuthRequireHttps, "true"));
+        var options = new AuthRuntimeOptions();
+        await options.LoadAsync(db.NewContext());
+
+        var controller = new AuthController(
+            new TestLocalizer(), db.NewContext(), null!, null!, null!, null!, null!,
+            null!, null!, null!, TimeProvider.System, NullLogger<AuthController>.Instance, null!)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
+        controller.Request.Headers.Origin = "http://192.168.1.129:8990";
+
+        var result = await controller.Login(new LoginRequest("admin", "pw"), options, CancellationToken.None);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("error.auth.httpsRequired", System.Text.Json.JsonSerializer.Serialize(bad.Value));
     }
 }

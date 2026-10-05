@@ -82,6 +82,25 @@ public class AuthRuntimeOptions
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.LockoutEnabled, true), ct);
     }
 
+    /// <summary>
+    /// Whether a sign-in from this page would hand the browser a <c>Secure</c> session cookie it is
+    /// going to throw away, leaving a login that answers 200 and then 401s on every request after.
+    /// <para>
+    /// Judged from the browser's <c>Origin</c> rather than <c>Request.IsHttps</c>: behind a TLS proxy
+    /// that is not in <see cref="TrustedProxies"/> the request reaches Maki as plain HTTP while the
+    /// browser is on HTTPS and keeps the cookie just fine. Loopback counts as secure because browsers
+    /// accept <c>Secure</c> cookies there. No <c>Origin</c> means nothing to judge by, so no refusal.
+    /// </para>
+    /// </summary>
+    public bool SessionCookieWouldBeDropped(string? origin) =>
+        RequireHttps && IsInsecureOrigin(origin);
+
+    public static bool IsInsecureOrigin(string? origin) =>
+        Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttp
+        && !uri.IsLoopback
+        && !uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase);
+
     public static int LockoutMaxAttemptsFrom(string? stored) =>
         ReadInt(stored, DefaultLockoutMaxAttempts, min: 0, max: MaxLockoutMaxAttempts);
 

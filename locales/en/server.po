@@ -118,6 +118,12 @@ msgstr "An anime list sync is already running"
 msgid "error.auth.antiforgeryTokenInvalid"
 msgstr "Invalid or missing antiforgery token"
 
+#. auth.requirehttps is on but the browser is on a plain-HTTP, non-localhost address, so it would
+#. discard the Secure session cookie and every request after sign-in would 401.
+#: src/Maki.Api/Controllers/AuthController.cs
+msgid "error.auth.httpsRequired"
+msgstr "This server requires HTTPS, so your browser would drop the sign-in. Open Maki through its https:// address, or turn off Require HTTPS in Settings (it can be reached from http://localhost on the server)."
+
 #. Also shared across several distinct two-factor failures (missing code, expired 2FA cookie,
 #. wrong code, locked out at 2FA) for the same enumeration-safety reason as error.auth.signInFailed.
 #: src/Maki.Api/Controllers/AuthController.cs

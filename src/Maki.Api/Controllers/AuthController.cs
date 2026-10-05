@@ -92,8 +92,15 @@ public class AuthController(
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
+    public async Task<IActionResult> Login(
+        [FromBody] LoginRequest request, [FromServices] AuthRuntimeOptions authOptions, CancellationToken ct)
     {
+        // Before any account lookup, so it says nothing about which usernames exist.
+        if (authOptions.SessionCookieWouldBeDropped(Request.Headers.Origin))
+        {
+            return this.Fail(localizer, "error.auth.httpsRequired");
+        }
+
         var username = request.Username?.Trim();
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(request.Password))
         {
@@ -238,8 +245,14 @@ public class AuthController(
     [HttpPost("setup")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    public async Task<IActionResult> Setup([FromBody] SetupRequest request, CancellationToken ct)
+    public async Task<IActionResult> Setup(
+        [FromBody] SetupRequest request, [FromServices] AuthRuntimeOptions authOptions, CancellationToken ct)
     {
+        if (authOptions.SessionCookieWouldBeDropped(Request.Headers.Origin))
+        {
+            return this.Fail(localizer, "error.auth.httpsRequired");
+        }
+
         var user = await db.Users.FirstOrDefaultAsync(u => u.PendingSetup, ct);
         if (user is null)
         {
