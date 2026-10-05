@@ -4395,9 +4395,9 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   box-shadow: inset 3px 0 0 var(--brand);
 }
 
-/* The desktop chapter table becomes stacked, compact rows on narrow screens. Keeping the same
-   cells preserves every chapter action while removing the minimum-width table and page-level
-   horizontal scroll. */
+/* On narrow screens each chapter is a two-line list row inside the panel: switch, number, title
+   and actions on top, then date, source and status wrapping underneath. The cells stay the same so
+   every action survives; `order` plus a full-width ::before is what forces the line break. */
 @media (max-width: 47.99em) {
   .chapter-table,
   .chapter-table tbody {
@@ -4407,61 +4407,92 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   .chapter-table thead {
     display: none;
   }
-  .chapter-table tbody {
-    display: grid;
-    gap: var(--mantine-spacing-xs);
-  }
   .chapter-table tbody tr {
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr) auto;
+    --chapter-lead: 34px;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    border: 1px solid var(--border);
-    border-radius: var(--mantine-radius-md);
-    overflow: hidden;
-    background-color: var(--surface);
+    gap: 4px 8px;
+    /* The switch hangs out into this padding, so every wrapped line lines up under the number. */
+    padding: 8px 6px 8px calc(10px + var(--chapter-lead) + 8px);
+    border-bottom: 1px solid var(--hairline);
+    box-shadow: inset 3px 0 0 var(--chapter-accent, transparent);
+  }
+  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover {
+    background-image: linear-gradient(color-mix(in srgb, white 2%, transparent), color-mix(in srgb, white 2%, transparent));
+  }
+  [data-mantine-color-scheme='dark'] .chapter-table tbody tr:hover > td {
+    background-color: transparent;
+  }
+  .chapter-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .chapter-table tbody tr::before {
+    content: '';
+    order: 2;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .chapter-table tbody tr.chapter-row-selected {
+    --chapter-accent: var(--brand);
   }
   .chapter-table tbody td {
+    display: block;
     width: auto !important;
+    height: auto;
     min-width: 0;
-    padding: 5px 7px !important;
+    padding: 0 !important;
     border: 0 !important;
+    box-shadow: none !important;
   }
   .chapter-table tbody td:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1;
+    order: 1;
+    flex: 0 0 var(--chapter-lead);
+    margin-inline-start: calc(-1 * (var(--chapter-lead) + 8px));
   }
   .chapter-table tbody td:nth-child(2) {
-    grid-column: 2;
-    grid-row: 1;
+    order: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .chapter-table tbody td:nth-child(3) {
-    grid-column: 2 / 4;
-    grid-row: 2;
-  }
-  .chapter-table tbody td:nth-child(4) {
-    grid-column: 2;
-    grid-row: 3;
-  }
-  .chapter-table tbody td:nth-child(5) {
-    grid-column: 3;
-    grid-row: 3;
-    justify-self: end;
-  }
-  .chapter-table tbody td:nth-child(6) {
-    grid-column: 2 / 4;
-    grid-row: 4;
+    order: 1;
+    flex: 1 1 0;
   }
   .chapter-table tbody td:nth-child(7) {
-    grid-column: 3;
-    grid-row: 1;
+    order: 1;
+    margin-inline-start: auto;
+  }
+  .chapter-table tbody td:nth-child(4),
+  .chapter-table tbody td:nth-child(5),
+  .chapter-table tbody td:nth-child(6) {
+    order: 3;
+  }
+  .chapter-table .chapter-source-empty {
+    display: none;
+  }
+  .chapter-table tbody td:nth-child(5) > div {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  /* A folded span's summary and progress bar need the full second line, and its two empty
+     cells would otherwise add gaps to it. */
+  .chapter-table tbody tr.chapter-span-row td:empty {
+    display: none;
+  }
+  .chapter-table tbody tr.chapter-span-row td:nth-child(3),
+  .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
+    order: 3;
+    flex: 1 1 100%;
   }
   .chapter-table .chapter-cell {
-    padding-inline-end: 7px !important;
+    padding-inline-end: 0 !important;
   }
   .chapter-table .chapter-span-markers {
     position: static;
     min-width: 0;
-    margin-inline-start: auto;
   }
   .chapter-span-overlay {
     display: none;

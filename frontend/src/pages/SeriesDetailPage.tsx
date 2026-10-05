@@ -2670,7 +2670,7 @@ function SeriesDetailBody() {
                                       {/* Where the file on disk actually came from, which is what makes a source
                           comparison actionable: the winner is often not what you already have. */}
                                       {!c.hasFile || !c.fileSourceName ? (
-                                          <Text size="sm" c="var(--ink-3)">
+                                          <Text size="sm" c="var(--ink-3)" className="chapter-source-empty">
                                             -
                                           </Text>
                                       ) : (
