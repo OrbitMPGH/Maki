@@ -11379,7 +11379,6 @@ msgstr "在 {seriesPhrase} 中，被阅读的次数比拥有它所预测的多 {
 msgid "read"
 msgstr "已读"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

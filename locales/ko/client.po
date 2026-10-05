@@ -11379,7 +11379,6 @@ msgstr "소유했을 때 예상되는 것보다 {ratioValue}만큼 더 도달함
 msgid "read"
 msgstr "읽음"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

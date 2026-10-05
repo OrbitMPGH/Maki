@@ -11379,7 +11379,6 @@ msgstr "Atteint {ratioValue} de plus que ne le prédirait votre collection, pour
 msgid "read"
 msgstr "lu"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

@@ -11379,7 +11379,6 @@ msgstr "Обращались к {ratioValue} чаще, чем это предс�
 msgid "read"
 msgstr "прочитано"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

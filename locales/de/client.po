@@ -11379,7 +11379,6 @@ msgstr "Für {seriesPhrase} wurde {ratioValue} mehr aufgerufen, als der Besitz v
 msgid "read"
 msgstr "gelesen"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

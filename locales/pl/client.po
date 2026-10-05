@@ -11379,7 +11379,6 @@ msgstr "Sięgnięto po to {ratioValue} częściej, niż sugerowałoby posiadanie
 msgid "read"
 msgstr "przeczytane"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

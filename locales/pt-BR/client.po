@@ -11379,7 +11379,6 @@ msgstr "Alcançado por {ratioValue} a mais do que possuir preveria, em {seriesPh
 msgid "read"
 msgstr "lido"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

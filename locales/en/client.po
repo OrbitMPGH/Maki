@@ -9225,7 +9225,6 @@ msgstr "Reached for {ratioValue} more than owning it would predict, across {seri
 msgid "read"
 msgstr "read"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

@@ -11379,7 +11379,6 @@ msgstr "{seriesPhrase}全体で、所持していれば予測されるより{rat
 msgid "read"
 msgstr "既読"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx

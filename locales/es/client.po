@@ -11379,7 +11379,6 @@ msgstr "Alcanzado para {ratioValue} más de lo que predeciría tenerla, en {seri
 msgid "read"
 msgstr "leído"
 
-#: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
