@@ -4,7 +4,7 @@ import { IconPlayerPlayFilled } from '@tabler/icons-react'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
 import { Rail } from '../ui/Rail'
 import { relativeTime } from '../ui/time'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 
 /**
@@ -45,12 +45,19 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
         <div className="cover-scrim" />
 
         <div className="cover-corners">
+          {item.newestChapterLabel && (
+            <div className="cover-corner cover-corner-left">
+              <span className="cover-chapter">
+                <span>{item.newestChapterLabel}</span>
+              </span>
+            </div>
+          )}
           {item.readChapterId != null && (
             <div className="cover-corner cover-corner-right">
               {/* Nested inside a Link, so this must not be an anchor of its own: it navigates
                   imperatively and stops the outer card's navigation. */}
               <span
-                className="cover-chapter home-read-badge"
+                className="home-read-button"
                 role="button"
                 tabIndex={0}
                 data-tip={t`Read next chapter`}
@@ -61,20 +68,12 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
                 }}
               >
                 <IconPlayerPlayFilled size={10} />
-                <span>
-                  <Trans>Read</Trans>
-                </span>
               </span>
             </div>
           )}
         </div>
 
         <div className="cover-meta">
-          {item.newestChapterLabel && (
-            <span className="cover-chapter">
-              <span>{item.newestChapterLabel}</span>
-            </span>
-          )}
           <span className="cover-title" title={item.seriesTitle}>
             {item.seriesTitle}
           </span>
