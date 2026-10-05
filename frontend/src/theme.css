@@ -1400,7 +1400,9 @@ body::before {
    is an ordinary block in the page's vertical flow, which is the axis worth skipping. The Discover
    tab stacks a dozen rails, so at any scroll position all but two are off screen; with the
    containment on the cards it was switched off (the old rule here) and every one of the ~240
-   posters stayed laid out, painted and image-decoded for as long as the tab was open. */
+   posters stayed laid out, painted and image-decoded for as long as the tab was open.
+   No scroll-snap: WebKit re-snaps after layout, and a contained rail coming on screen (or posters
+   replacing skeletons) left iOS Safari's rails parked mid-row on first load. */
 .discover-rail {
   --rail-fade-start: 0px;
   --rail-fade-end: 0px;
@@ -1409,7 +1411,6 @@ body::before {
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 8px;
-  scroll-snap-type: x proximity;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   content-visibility: auto;
@@ -1421,7 +1422,6 @@ body::before {
 .discover-rail-item {
   flex: 0 0 auto;
   width: var(--rail-item-w, 150px);
-  scroll-snap-align: start;
 }
 /* Undoes .cover-card's own containment: it is redundant inside a contained rail, and a
    size-contained flex item is exactly what the rule above avoids. */

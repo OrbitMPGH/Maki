@@ -1294,7 +1294,6 @@ function SeriesDetailBody() {
       variant="pill"
       candidates={luckyPool}
       onPick={(next) => {
-        window.scrollTo(0, 0)
         navigate(`/series/${next}`, { state: { lucky: true }, replace: true })
       }}
       onDismiss={() => {

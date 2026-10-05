@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -197,7 +198,9 @@ const USER_SCROLL_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as 
  * its data yet, so the offset is clamped to a document that is still a spinner tall. This records
  * the offset per history entry and re-applies it across frames until the content is there.
  *
- * Only POP is touched, so a fresh navigation keeps whatever the browser does today.
+ * A PUSH or REPLACE to a different path starts at the top. pushState never moves the window, so
+ * without this a series opened from halfway down Home opened halfway down too. Search and state
+ * changes keep their offset, since filters and modals ride on those.
  */
 export function ScrollMemory() {
   const location = useLocation()
@@ -207,10 +210,17 @@ export function ScrollMemory() {
   const slot = `${SCROLL_PREFIX}${location.key}:${location.pathname}`
   const slotRef = useRef(slot)
   slotRef.current = slot
+  const pathRef = useRef(location.pathname)
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'
   }, [])
+
+  useLayoutEffect(() => {
+    if (pathRef.current === location.pathname) return
+    pathRef.current = location.pathname
+    if (navigationType !== 'POP') window.scrollTo(0, 0)
+  }, [location.pathname, navigationType])
 
   // Recorded continuously rather than on unmount: a POP unmounts the old page *after* the router
   // has already moved, so anything read in a cleanup is the new page's offset, not the old one's.
